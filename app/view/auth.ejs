@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><title>Демо Авторизация: nodejs, express и passportjs</title>
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/auth.min.css">
+    <meta name="robots" content="noindex,nofollow">
+</head>
+<body><h1></h1>
+
+<div class="demo"><a href="/admin" class="permalink">← главная</a>
+
+    <h1>Авторизация</h1>
+
+    <div class="auth-form">
+        <% if(error){ %>
+        <div id="error" class="error-msg"><%= error %></div>
+        <% } %>
+        <form action="/auth" method="post">
+            <div><input type="text" name="username" placeholder="логин" class="input user"></div>
+            <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
+            <div class="buttons"><span>Логин <strong>admin</strong>, пароль <strong>123</strong>&nbsp;</span>
+                <button type="submit">Войти</button>
+            </div>
+        </form>
+    </div>
+    <div class="soc-auth"><a href="/auth/fb">Войти через Facebook</a><span>&nbsp;&nbsp;|&nbsp;&nbsp;</span><a
+                href="/auth/vk">Войти через Vk.com</a></div>
+</div>
+</body>
+</html>

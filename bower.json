@@ -1,0 +1,26 @@
+{
+  "name": "ION",
+  "version": "0.2.1",
+  "moduleType": [
+    "node"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "3.3.5",
+    "jquery-zoom": "*",
+    "jquery-validation": "*",
+    "jquery-form": "*",
+    "jquery": "*",
+    "smoothscroll": "*"
+  },
+  "resolutions": {
+    "bootstrap": "3.3.5"
+  }
+}

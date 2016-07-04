@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+'use strict';
+
+/** Сервер http
+ * Инициирует сервер на порту, предварительно проверив что он свободный.
+ * Вешает обработчик приложения на запросы app.js.
+ * Для вывода сообщений от приложения:
+    -все (log/info/warn/error)  SET DEBUG=ION:*
+    -только ошибки              SET DEBUG=ION:*.error*
+    -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
+    -исключая ".log"            SET DEBUG=ION:*,-*|log:*
+
+ Для запуска NODE_PATH должна содержать путь к каталогу системы
+
+ */
+
+var debug = require('debug-log')('ION:www');// TODO писать токены или IP коннекта в дебаге.
+var config = require('app/config');
+
+// Базовые модули приложения
+var initApp = require('app/main').initApp; // Подключаем промизе с приложением
+var initDs = require('app/main').initDs;
+var initTemplates = require('app/main').initTemplates; // Подключаем промизе с шаблонами
+var redirectRootPage = require('app/main').redirectRootPage; // Подключаем промизе с редиректорм корневой стран.
+var staticPage = require('app/main').staticPage; // Подключаем промизе с приложением
+var getModulesName = require('app/main').getModulesName; // Получение имен модулей
+
+// Модули авторизации и безопасности
+
+var auth = require('app/auth');
+var initAuth = auth.init(config);
+
+// 2del var initSecurity = xreq.app('security').initSecurity; // Подключение безопасности
+
+// Модули сессий
+var initSession = require('app/session').initSession; // Подключаем хранение ссесий
+
+// Модули роутов
+var routeCore = require('app/router').coreRoute; // Статичные роуты
+var routeModules = require('app/router').modulesRoute(config, auth.verify); // Роуты к модулям
+
+// Обработчик ошибок
+// TODO var initErrorHandler = xreq.middleware('error-handler').errorHandler;
+
+// Модули запуска сервера
+var createServer = require('app/server').createServer(require('app/main').onStop); // Создаем сервер
+var startServer = require('app/server').startServer; // Запускаем сервер
+
+// Переменные хранения иницилизирвоанного приложения и сервера
+var app; // Express приложение
+var server; // Сервер приложения
+
+/*
+ * Запуск сервера, путем последовательной инициализации всех компонентов
+ */
+debug.info('Запускаем приложение ION');
+initApp // Далее передается объект app
+  .then(initDs)
+  .then(initSession) // FIXME - ссесии генерятся для всех файлов
+  .then(initAuth)
+  .then(initTemplates)
+  .then(redirectRootPage)
+  .then(staticPage)// Подключаем обработчики на статичные страницы,
+ // .then(configAuthorization)
+  .then(attachDB) // Подключаем соединение для страниц (из пула соединений или по другим правилам для БД)
+  .then(routeCore)
+  .then(getModulesName) // Подключаем конфиги модулей
+  .then(routeModules)
+ // .then(initSecurity)
+ // .then(initErrorHandler)
+  .then(function (appExpress) { // Сохраняем ссылку на приложение Express
+    app = appExpress;
+    return appExpress;
+  })
+  .then(createServer) // Далее передается объект server
+  .then(startServer)
+  .then(function (serverHTTP) { // Указываем приложению Express порт, сохраняем ссылку на server
+    var addr = serverHTTP.address();
+    var port = typeof addr === 'string' ? addr : addr.port;
+    app.set('port', port);
+    server = serverHTTP;
+    return serverHTTP;
+  })
+  .catch (function (e) {
+    debug.error(e);
+    process.exit(130);
+  });

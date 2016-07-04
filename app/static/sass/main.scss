@@ -1,0 +1,36 @@
+// Styles.
+// --------
+// Styles are defined as a part of three global groups:
+//
+// 1. "components" - contains styles for current project.
+// 2. "compability" - contains styles especial for browser version,
+//                    type of viewer (pc, pda, ipad ...), print functionality etc.
+// 3. "vendor" - contain third-party styles.
+//—брасываем стили
+
+
+// Reset, variables and basic styles.
+@import "../../vendor/normalize.css/normalize.css";
+//@import 'components/reset';
+@import 'components/variables';
+@import 'components/base';
+
+// Partials.
+@import 'components/grid';
+@import 'components/typography';
+@import 'components/buttons';
+@import 'components/figures';
+@import 'components/links';
+@import 'components/tables';
+@import 'components/icons';
+@import 'components/lists';
+@import 'components/print';
+// ...
+
+// Compabilities.
+//@import 'compability/*';
+
+// Third-party
+// @import 'vendor/colorpicker';
+// @import 'vendor/jquery.ui.core';
+// ...

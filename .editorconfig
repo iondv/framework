@@ -1,0 +1,53 @@
+# EditorConfig is awesome: http://EditorConfig.org или http://habrahabr.ru/post/220131/
+
+# Корневой файл EditorConfig
+root = true
+
+# Для всех файлов используем unix-совместимые переносы строк, перенос в конце файла
+[*]
+end_of_line = lf
+insert_final_newline = true
+# Для всех файлов используем кодировку utf-8
+charset = utf-8
+
+# Для JavaScript файлов отспуы в виде 2х пробелов, убираем пробелы из концов строк
+#[*.js]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+
+# Для JSON файлов отспуы в виде 2х пробелов
+#[*.js]
+indent_style = space
+indent_size = 2
+
+# Документационные файлы не убираем пробелы из концов строк.
+[*.md]
+trim_trailing_whitespace = false
+
+# Только для файлов package.json or .travis.yml отстуы в виде 2х пробелов
+[{package.json,.travis.yml}]
+indent_style = space
+indent_size = 2
+
+# Не переформатируем минифицированные JS и CSS файлы.
+[*.min.*]
+indent_style = ignore
+trim_trailing_whitespace = false
+insert_final_newline = ignore
+
+# Неиспользованные римеры
+# Matches multiple files with brace expansion notation
+# Set default charset
+#[*.{js,py}]
+#charset = utf-8
+
+# Tab indentation (no size specified)
+#[Makefile]
+#indent_style = tab
+
+# Indentation override for all JS under lib directory
+#[lib/**.js]
+#indent_style = space
+#indent_size = 2
+

@@ -1,0 +1,86 @@
+﻿# Игнор-лист файлов проекта
+# Игнорировать ВСЕ файлы и директории, включая поддиректории и файлы в них
+#*
+
+# ---- ФАЙЛЫ ----
+# Игнорирование по типу файла, будут игнорироваться в АБСОЛЮТНО всех директориях
+# Например /files/data.zip, /server.log, /uploads/users/data/info.xls
+#*.zip
+#*.log
+#*.pdf
+#*.xls
+
+# Игнорирование файла во ВСЕХ директориях
+# Например /params/db/config.php, /config.php
+#config.php
+
+# Игнорирование конкретного файла ТОЛЬКО в корне проекта
+# (корнём считается расположение файла .gitignore)
+# Например НЕ БУДЕТ проигнорирован файл /db/config.php
+#/config.php
+/npm-debug.log
+
+# Игнорирование конкретного файла ТОЛЬКО в указанной директории
+# Например НЕ БУДЕТ проигнорирован файл /prod/params/config.php
+#/params/config.php
+
+# ---- ДИРЕКТОРИИ ----
+# Игнорирование всех файлов и папок ТОЛЬКО в конкретной директории(включая поддиректории и файлы в них)
+# Например /images/user.jpg, /images/company/logo.png
+# НЕ БУДУТ проигнорированы файлы и папки /prod/images/user.jpg
+/.hg/*
+/.idea/*
+/.git/*
+/.tmp/*
+/app/init/init-data/mongodb/modules/*
+/app/init/init-data/mysql/modules/*
+/app/init/init-data/mongodb/meta/*
+/app/init/init-data/mysql/meta/*
+/app/config/meta/*
+/app/config/meta.json
+/distr/*
+/docker/*
+/log/*
+
+/modules/*
+/node_modules/*
+
+/public/*
+/src/vendor/*
+
+# Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
+# Например /images/user.jpg, /core/images/user.jpg
+#images/*
+# Игнорирование ВСЕХ html-файлов в ОДНОЙ КОНКРЕТНОЙ директории(НЕ ВКЛЮЧАЯ поддиректории)
+# Например /private/index.html
+
+# ИСКЛЮЧЕНИЯ ИЗ ИГОРИРОВАННЫХ ФАЙЛОВНЕ
+# НЕ БУДУТ проигнорированы файлы в /private/ivan/index.html
+#/private/*.html
+# Игнорирование ВСЕХ html-файлов в КОНКРЕТНОЙ директории ВКЛЮЧАЯ поддиректории
+# Например /private/info.html, /private/users/ivan/info.html
+#/private/**/*.html
+
+# ---- РАЗНОЕ ----
+# Исключение из игнорирования
+# Игнорирование ВСЕХ файлов и папок внутри директории /secret,
+# за исключением файла /secret/free.txt, он не будет проигнорирован
+##!/node_modules/debug-log/*
+##!/node_modules/mysql-utilities-ext/*
+##!/node_modules/chai-json-schema-ext/*
+
+!/modules/readme.md
+!/modules/gulpmodules.js
+!/modules/node_modules/*/**
+!/meta/readme.md
+!/test/.report/E2E/readme.md
+
+# Игнорирование файла с именем, содержащим спецсимволы
+# Например !readme!.txt
+#\!readme!.txt
+
+# Игнорирование всех JPG и JPEG файлов внутри директорий,
+# которые начинаются на "h" и МОГУТ содержать ещё один символ после
+# Например /images/h4/user.jpg, /images/h/company.jpeg
+#/images/h?/*.jp?g
+npm-debug.log

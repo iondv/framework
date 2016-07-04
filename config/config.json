@@ -1,0 +1,41 @@
+{
+    "log_level": "notice",
+    "parametrised": true,
+    "port": [
+        8888,
+        8889
+    ],
+    "defaultModule":"registry",
+    "authCallbacks": ["modules/offline-sync.addCredentials"],
+    "datasources":[
+      {
+        "name":"Db",
+        "module":"core/impl/datasource/mongodb",
+        "config": {
+          "uri": "[[db.uri]]",
+          "options": {
+            "server": {
+              "socketOptions":{
+                "keepAlive": 1
+              }
+            }
+          },
+          "connectionLimit": 10,
+          "schema": "[[db.name]]",
+          "user": "[[db.user]]",
+          "password": "[[db.pwd]]"
+        }
+      }
+    ],
+    "globalDs": "Db",
+    "localAuthDS": "Db",
+    "sessionDs": "Db",
+    "policy": [
+        {
+            "module": "core/impl/access/aclmongo",
+            "config": {
+                "accessDs": "Db"
+            }
+        }
+    ]
+}

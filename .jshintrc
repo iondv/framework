@@ -1,0 +1,125 @@
+{
+  // --------------------------------------------------------------------
+  // http://jshint.com/docs/options/
+
+  // == Enforcing Options ===============================================
+  //
+  // These options tell JSHint to be more strict towards your code. Use
+  // them if you want to allow only a safe subset of JavaScript, very
+  // useful when your codebase is shared with a big number of developers
+  // with different skill levels.
+
+  "bitwise" : true, // Prohibit bitwise operators (&, |, ^, etc.).
+  "curly" : true, // Require {} for every new block or scope.
+  "eqeqeq" : true, // Require triple equals i.e. `===`.
+  "es5" : true, // Allow EcmaScript 5 syntax. // es5 is default https://github.com/jshint/jshint/issues/1411 - This option has been deprecated and will be removed in the next major release of JSHint.
+  "esversion": 6,   // This option is used to specify the ECMAScript version to which the code must adhere. It can assume one of the following values:
+  "esnext": true, // This option tells JSHint that your code uses ECMAScript 6 - This option has been deprecated and will be removed in the next major release of JSHint.
+  "forin" : true, // Tolerate `for in` loops without `hasOwnPrototype`.
+  "freeze":true, //   prohibits overwriting prototypes of native objects such as Array, Date and so on.
+  "funcscope":false, //This option suppresses warnings about declaring variables inside of control structures while accessing them later from the outside. Even though JavaScript has only two real scopes—global and function—such practice leads to confusion among people new to the language and hard-to-debug bugs. This is why, by default, JSHint warns about variables that are used outside of their intended scope.
+  "futurehostile":true,  //enables warnings about the use of identifiers which are defined in future versions of JavaScript. Although overwriting them has no effect in contexts where they are not implemented, this practice can cause issues when migrating codebases to newer versions of the language.
+  "globals"   : {//Глобальные переменные
+    //    "config": false,
+    "browser": false,
+    // "expect": false, //Нужно для e2e тестов, где подгружает глобально protractor, но кофликтует
+    // с подугружаемыми напрямую в BE и ME тестами - вариант - ключевые и общие зависимости вынести в отдельные require
+    "element": false,
+    "Promise": true, // Promise объекты в версии 4.0 node JS
+    "by": false
+	/* MOCHA */
+	/*	"describe"   : false,
+        "it"         : false,
+        "before"     : false,
+        "beforeEach" : false,
+        "after"      : false,
+        "afterEach"  : false*/
+  },
+  "iterator":false, // suppresses warnings about the __iterator__ property. This property is not supported by all browsers so use it carefully.
+  "latedef" : "nofunc", // Prohibit variable use before definition.  "nofunc" will allow function declarations to be ignored
+  "maxcomplexity" : 10, // (рекомендуют 6, в вики до 10, редко до 15 - надо обосновывать) Цикломатическая (топографическая) сложность. . lets you control cyclomatic complexity throughout your code. Cyclomatic complexity measures the number of linearly independent paths through a program's source code. Read more about cyclomatic complexity on Wikipedia.
+  "maxdepth" : 7, // Количество вложений блоков (рекомендуют 4) - lets you control how nested do you want your blocks to be:
+  "maxerr" : 100, // This options allows you to set the maximum amount of warnings JSHint will produce before giving up. Default is 50.
+  "maxparams" : 4, // (рекомендуют 4) set the max number of formal parameters allowed per function
+  "maxstatements" : 20, // (рекомендуют 8-15, встречается 20-25) Количество присваиваний и вызовов в функции(?) lets you set the max number of statements allowed per function:
+  "noarg" : true, // Prohibit use of `arguments.caller` and `arguments.callee`.
+  "nocomma":true, // prohibits the use of the comma operator. When misused, the comma operator can obscure the value of a statement and promote incorrect code.
+  "nonbsp":true, //  warns about "non-breaking whitespace" characters. These characters can be entered with option-space on Mac computers and have a potential of breaking non-UTF8 web pages.
+  "nonew" : true, // Prohibit use of constructors for side-effects. Some people like to call constructor functions without assigning its result to any variable: new MyConstructor(); There is no advantage in this approach over simply calling MyConstructor since the object that the operator new creates isn't used anywhere so you should generally avoid constructors like this one.
+  "notypeof":false, //This option suppresses warnings about invalid typeof operator values. This operator has only a limited set of possible return values. By default, JSHint warns when you compare its result with an invalid value which often can be a typo.
+  "shadow": false,//This option suppresses warnings about variable shadowing i.e. declaring a variable that had been already declared somewhere in the outer scope. "inner" - check for variables defined in the same scope only, "outer" - check for variables defined in outer scopes as well, false - same as inner, true - allow variable shadowing
+  "singleGroups": true,//prohibits the use of the grouping operator when it is not strictly required. Such usage commonly reflects a misunderstanding of unary operators, for example: delete(obj.attr); // Warning: Unnecessary grouping operator.
+  "strict" : false, // Require `use strict` pragma in every file.
+  "undef" : true, // Require all non-global variables be declared before they are used. If your variable is defined in another file, you can use the global directive to tell JSHint about it.
+  "unused": "vars", //warns when you define and never use your variables. It is very useful for general code cleanup, especially when used in addition to undef.
+  "varstmt": false, //When set to true, the use of VariableStatements are forbidden. For example: var a; // Warning: `var` declarations are forbidden. Use `let` or `const` instead.
+
+  // == Relaxing Options ================================================
+  //
+  // These options allow you to suppress certain types of warnings. Use
+  // them only if you are absolutely positive that you know what you are
+  // doing.
+  "asi" : false, // Tolerate Automatic Semicolon Insertion (no semicolons).
+  "boss" : false, // Tolerate assignments inside if, for & while. Usually conditions & loops are for comparison, not assignments.
+  "debug" : false, // Allow debugger statements e.g. browser breakpoints.
+  "elision": false,// This option tells JSHint that your code uses ES3 array elision elements
+  "eqnull" : false, // Tolerate use of `== null`.
+  "evil" : false, // Tolerate use of `eval`.
+  "expr" : false, // Tolerate `ExpressionStatement` as Programs.
+  "globalstrict":true, //This option suppresses warnings about the use of global strict mode. Global strict mode can break third-party widgets so it is not recommended.
+  "lastsemic" : false, // Tolerat missing semicolons when the it is omitted for the last statement in a one-line block.
+  "loopfunc" : false, // Allow functions to be defined within loops. Нужно выносить их, или заключать в скобки ()
+  "moz" : false, // This options tells JSHint that your code uses Mozilla JavaScript extensions. Unless you develop specifically for the Firefox web browser you don't need this option.
+  "noyield":false, //warnings about generator functions with no yield statement in them.
+  "plusplus" : false, // Prohibit use of `++` & `--`. //coding style related only Также в JSLint
+  "proto" : false, // Tolerate __proto__ property. This property is deprecated.
+  "scripturl" : false, // Tolerate script-targeted URLs.
+  "supernew" : false, // Tolerate `new function () { ... };` and `new Object;`.
+  "validthis" : false, // Tolerate strict violations when the code is running in strict mode and you use this in a non-constructor function.
+  "withstmt":false, // suppresses warnings about the use of the with statement..
+
+  // == Environments ====================================================
+  //
+  // These options pre-define global variables that are exposed by
+  // popular JavaScript libraries and runtime environments—such as
+  // browser or node.js.
+  "browser" : false, // Standard browser globals e.g. `window`, `document`.
+  "browserify":false,// Browserify tool to build a project.
+  "couch" : false, // Enable globals exposed by CouchDB.
+  "devel" : false, // Allow development statements e.g. `console.log();`.
+  "dojo" : false, // Enable globals exposed by Dojo Toolkit.
+  "jasmine":false, // defines globals exposed by the Jasmine unit testing framework.
+  "jquery" : false, // Enable globals exposed by jQuery JavaScript library.
+  "mocha": true, //globals exposed by the "BDD" and "TDD" UIs of the Mocha unit testing framework.
+  "module": true, //This option informs JSHint that the input code describes an ECMAScript 6 module. All module code is interpreted as strict mode code.
+  "mootools" : false, // Enable globals exposed by MooTools JavaScript framework.
+  "node" : true, // Enable globals available when code is running inside of the NodeJS runtime environment.
+  "nonstandard" : false, // Define non-standard but widely adopted globals such as escape and unescape.
+  "phantom" : true, //?since version? This option defines globals available when your core is running inside of the PhantomJS runtime environment.
+  "prototypejs" : false, // Enable globals exposed by Prototype JavaScript framework.
+  "qunit":false, // defines globals exposed by the QUnit unit testing framework.
+  "rhino" : false, // Enable globals available when your code is running inside of the Rhino runtime environment.
+  "shelljs":false,// globals exposed by the ShellJS library.
+  "typed": false,// defines globals for typed array constructors.
+  "worker" : false, //?since version? This option defines globals available when your code is running inside of a Web Worker.
+  "wsh" : false, // Enable globals available when your code is running as a script for the Windows Script Host.
+  "yui" : false //?since version? This option defines globals exposed by the YUI JavaScript framework.
+
+	// == JSLint Legacy ===================================================
+	//
+	// These options are legacy from JSLint. Aside from bug fixes they will
+	// not be improved in any way and might be removed at any point.
+/*	"nomen" : false, // Prohibit use of initial or trailing underbars in names:dissalow use _ in variables
+	"onevar" : true, // Только одно место для объявления переменных в функции. Allow only one `var` statement per function.
+	"passfail" : false, // Stop on first error.
+	"white" : false, // Check against strict whitespace and indentation rules.
+
+  "vars":true,
+	"predef" : [ // Extra globals. JSLint. Можно строкой "module,require"
+//	  "it","describe"
+		//"exampleVar",
+		//"anotherCoolGlobal",
+		//"iLoveDouglas"
+//		"Java", "JavaFX", "$ARG" //no effect
+	]*/
+}
