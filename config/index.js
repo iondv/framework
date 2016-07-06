@@ -8,7 +8,7 @@ var fs = require('fs');
 var path = require('path');
 var pr = require('properties-reader')();
 
-var config = require(path.join(__dirname, "config.json"));
+var config = require('./config.json');
 
 var files, i;
 
@@ -16,24 +16,30 @@ var files, i;
  * @param {{}} config
  * @param {PropertiesReader} properties
  */
-function parametrize(config, properties){
+function parametrize(config, properties) {
   if (config) {
-    var nm, type, s;
-    for (nm in config) {
-      if (config.hasOwnProperty(nm)) {
-        type = typeof config[nm];
-        if (type === 'object') {
-          parametrize(config[nm], properties);
-        } else if (type === 'string') {
-          s = config[nm];
-          config[nm] = s.replace(/\[\[([\w\.]+)\]\]/,function(str,setting){
-            return properties.get(setting);
-          });
+    var nm, type, s, i, result;
+    if (typeof config === 'string') {
+      return config.replace(/\[\[([\w\.]+)\]\]/, function (str, setting) {
+        return properties.get(setting);
+      });
+    } else if (config instanceof Array) {
+      result = [];
+      for (i = 0; i < config.length; i++) {
+        result.push(parametrize(config[i], properties));
+      }
+      return result;
+    } else if (config instanceof Object) {
+      result = {};
+      for (nm in config) {
+        if (config.hasOwnProperty(nm)) {
+          result[nm] = parametrize(config[nm], properties);
         }
       }
+      return result;
     }
-    properties.get();
   }
+  return config;
 }
 
 if (config.parametrised) {
@@ -44,7 +50,7 @@ if (config.parametrised) {
     }
   }
 
-  parametrize(config, pr);
+  config = parametrize(config, pr);
 }
 
 module.exports = config;

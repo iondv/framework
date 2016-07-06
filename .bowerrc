@@ -1,4 +1,12 @@
 {
-  "directory": "./src/vendor",
-  "json": "bower.json"
+  "directory": "./view/static/vendor",
+  "json": "bower.json",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "package.json",
+    "src"
+  ]
 }

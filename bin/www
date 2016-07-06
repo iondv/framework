@@ -1,6 +1,25 @@
 #!/usr/bin/env node
 'use strict';
 
+var i;
+var debug = require('debug-log')('ION:www');
+var path = require('path');
+var http = require('http');
+var express = require('express');
+var ejsLocals = require('ejs-locals');
+var session = require('express-session');
+var flash = require('connect-flash');
+var clone = require('clone');
+var fs = require('fs');
+var favicon = require('serve-favicon');
+
+// Ротация логов или обычный логгер для developer режима
+var FileStreamRotator = require('file-stream-rotator');
+var logger = require('morgan');
+
+var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+
 /** Сервер http
  * Инициирует сервер на порту, предварительно проверив что он свободный.
  * Вешает обработчик приложения на запросы app.js.
@@ -14,74 +33,164 @@
 
  */
 
-var debug = require('debug-log')('ION:www');// TODO писать токены или IP коннекта в дебаге.
-var config = require('app/config');
+var config = require('config');
 
-// Базовые модули приложения
-var initApp = require('app/main').initApp; // Подключаем промизе с приложением
-var initDs = require('app/main').initDs;
-var initTemplates = require('app/main').initTemplates; // Подключаем промизе с шаблонами
-var redirectRootPage = require('app/main').redirectRootPage; // Подключаем промизе с редиректорм корневой стран.
-var staticPage = require('app/main').staticPage; // Подключаем промизе с приложением
-var getModulesName = require('app/main').getModulesName; // Получение имен модулей
+// Ядро
+var Datasources = require('core/datasources');
+var AclMediator = require('core/access');
+var MetaRepository = require('core/impl/meta/DsMetaRepository');
+var DataRepository = require('core/impl/datarepository/ionDataRepository');
+var KeyProvider = require('core/impl/meta/MongoMetaKeyProvider');
 
-// Модули авторизации и безопасности
-
-var auth = require('app/auth');
-var initAuth = auth.init(config);
-
-// 2del var initSecurity = xreq.app('security').initSecurity; // Подключение безопасности
-
-// Модули сессий
-var initSession = require('app/session').initSession; // Подключаем хранение ссесий
-
-// Модули роутов
-var routeCore = require('app/router').coreRoute; // Статичные роуты
-var routeModules = require('app/router').modulesRoute(config, auth.verify); // Роуты к модулям
-
-// Обработчик ошибок
-// TODO var initErrorHandler = xreq.middleware('error-handler').errorHandler;
-
-// Модули запуска сервера
-var createServer = require('app/server').createServer(require('app/main').onStop); // Создаем сервер
-var startServer = require('app/server').startServer; // Запускаем сервер
-
-// Переменные хранения иницилизирвоанного приложения и сервера
-var app; // Express приложение
-var server; // Сервер приложения
-
-/*
- * Запуск сервера, путем последовательной инициализации всех компонентов
- */
 debug.info('Запускаем приложение ION');
-initApp // Далее передается объект app
-  .then(initDs)
-  .then(initSession) // FIXME - ссесии генерятся для всех файлов
-  .then(initAuth)
-  .then(initTemplates)
-  .then(redirectRootPage)
-  .then(staticPage)// Подключаем обработчики на статичные страницы,
- // .then(configAuthorization)
-  .then(attachDB) // Подключаем соединение для страниц (из пула соединений или по другим правилам для БД)
-  .then(routeCore)
-  .then(getModulesName) // Подключаем конфиги модулей
-  .then(routeModules)
- // .then(initSecurity)
- // .then(initErrorHandler)
-  .then(function (appExpress) { // Сохраняем ссылку на приложение Express
-    app = appExpress;
-    return appExpress;
-  })
-  .then(createServer) // Далее передается объект server
-  .then(startServer)
-  .then(function (serverHTTP) { // Указываем приложению Express порт, сохраняем ссылку на server
-    var addr = serverHTTP.address();
-    var port = typeof addr === 'string' ? addr : addr.port;
-    app.set('port', port);
-    server = serverHTTP;
-    return serverHTTP;
-  })
-  .catch (function (e) {
-    debug.error(e);
-    process.exit(130);
+
+var app = express();
+
+global.app = app;
+
+// DBAL
+
+/**
+ * @type {Datasources}
+ */
+var dataSources = new Datasources(config);
+global.ionDataSources = dataSources;
+
+// Проверка системных источников данных
+
+var sessDs = dataSources.get(config.sessionDs);
+if (!sessDs) {
+  throw 'Не указан источник данных для сессий!';
+}
+
+var metaDs = dataSources.get(config.metaDs);
+if (!metaDs) {
+  throw 'Не указан источник данных мета-репозитория!';
+}
+
+var dataDs = dataSources.get(config.dataDs);
+if (!dataDs) {
+  throw 'Не указан источник данных репозитория объектов!';
+}
+
+// Модули аутентификации и безопасности
+
+var auth = require('lib/auth');
+auth.init(app, config.auth);
+
+/**
+ * @type {AclMediator}
+ */
+global.ionAcl = new AclMediator(config);
+
+// Мидлвара сохранения сообщений в сессии перед редиректом
+app.use(flash());
+
+// Шаблонизатор
+app.engine('ejs', ejsLocals);
+app.set('views', path.join(__dirname, '../view/templates'));
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, '../view/static')));
+
+// Типовые настройки
+
+app.use(favicon(path.join(__dirname, '../view/static/favicon.ico')));
+
+// Поддержка put и deletes
+// override with different headers; last one takes precedence
+app.use(methodOverride('X-HTTP-Method'));       // Microsoft
+app.use(methodOverride('X-HTTP-Method-Override')); // Google/GData
+app.use(methodOverride('X-Method-Override'));      // IBM
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+
+// Редирект на дефолтный модуль
+if (config.defaultModule) {
+  app.get('/', function (req, res) {
+    res.redirect('/' + config.defaultModule);
   });
+}
+
+// Подключаем модули
+debug.info('Загрузка веб-модулей.');
+var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+for (i = 0; i < candidates.length; i++) {
+  if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+    var module = require('modules/' + candidates[i] + '/web');
+    if (typeof module === 'function') {
+      app.use(module);
+      debug.info('Модуль ' + candidates[i] + ' загружен.');
+    } else {
+      debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+    }
+  }
+}
+
+// Создаем HTTP сервер.
+var server = http.createServer(app);
+
+server.on('listening', function () {
+  debug.info('Слушается ' +
+    typeof this.address() === 'string' ?
+      'конвеер ' + this.address() :
+      'порт ' + this.address().port);
+});
+
+server.on('close', function () { global.ionDataSources.disconnect(); });
+
+var onError = function (error) {
+  debug.error(error);
+  process.exit(130);
+};
+
+server.on('error', onError);
+
+// Подключаемся к источникам данных и в случае успеха запускаем приложение
+dataSources.connect().then(
+      function () {
+        // Создаем репозиторий мета-данных
+        try {
+          app.metaRepo = new MetaRepository({
+            Datasource: metaDs
+          });
+        } catch (err) {
+          return onError(err);
+        }
+        // Инициализируем репозиторий мета-данных
+        app.metaRepo.init().then(function () {
+          var i, ports, err;
+          try {
+            // Создаем репозиторий данных
+            var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
+            app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
+
+            // Инициализируем сессии
+            var sessOpts = clone(config.session || {});
+            var MongoStore = require('connect-mongo')(session);
+            sessOpts.store = new MongoStore({
+              db: sessDs.connection(),
+              ttl: 14 * 24 * 60 * 60
+            });
+            app.use(session(sessOpts));
+          } catch (err) {
+            return onError(err);
+          }
+          // Запускаем приложение
+          ports = config.port;
+          if (!(ports instanceof Array)) {
+            ports = [config.port];
+          }
+          for (i = 0; i < ports.length; i++) {
+            try {
+              server.listen(ports[i]);
+              return;
+            } catch (err) {
+              if ((err.code !== 'EADDRINUSE') || (i === (ports.length - 1))) {
+                return onError(err);
+              }
+            }
+          }
+        }).catch(onError);
+      }
+).catch(onError);

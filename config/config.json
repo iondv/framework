@@ -6,7 +6,6 @@
         8889
     ],
     "defaultModule":"registry",
-    "authCallbacks": ["modules/offline-sync.addCredentials"],
     "datasources":[
       {
         "name":"Db",
@@ -27,9 +26,13 @@
         }
       }
     ],
-    "globalDs": "Db",
-    "localAuthDS": "Db",
+    "metaDs": "Db",
+    "dataDs": "Db",
     "sessionDs": "Db",
+    "auth": {
+      "authCallbacks": ["modules/offline-sync.addCredentials"],
+      "localAuthDS": "Db"
+    },
     "policy": [
         {
             "module": "core/impl/access/aclmongo",
@@ -37,5 +40,10 @@
                 "accessDs": "Db"
             }
         }
-    ]
+    ],
+    "session": {
+      "secret": "ion:demo:secret",
+      "resave": false,
+      "saveUninitialized": true
+    }
 }
