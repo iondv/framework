@@ -25,10 +25,10 @@ var methodOverride = require('method-override');
  * Инициирует сервер на порту, предварительно проверив что он свободный.
  * Вешает обработчик приложения на запросы app.js.
  * Для вывода сообщений от приложения:
-    -все (log/info/warn/error)  SET DEBUG=ION:*
-    -только ошибки              SET DEBUG=ION:*.error*
-    -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
-    -исключая ".log"            SET DEBUG=ION:*,-*|log:*
+ -все (log/info/warn/error)  SET DEBUG=ION:*
+ -только ошибки              SET DEBUG=ION:*.error*
+ -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
+ -исключая ".log"            SET DEBUG=ION:*,-*|log:*
 
  Для запуска NODE_PATH должна содержать путь к каталогу системы
 
@@ -175,46 +175,46 @@ function start(ports, i) {
 
 // Подключаемся к источникам данных и в случае успеха запускаем приложение
 dataSources.connect().then(
-      function () {
-        // Создаем репозиторий мета-данных
-        try {
-          app.metaRepo = new MetaRepository({
-            Datasource: metaDs
-          });
-        } catch (err) {
-          return onError(err);
-        }
-        // Инициализируем репозиторий мета-данных
-        app.metaRepo.init().then(function () {
-          var i, ports, err;
-          try {
-            // Создаем репозиторий данных
-            var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
-            app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
+  function () {
+    // Создаем репозиторий мета-данных
+    try {
+      app.metaRepo = new MetaRepository({
+        Datasource: metaDs
+      });
+    } catch (err) {
+      return onError(err);
+    }
+    // Инициализируем репозиторий мета-данных
+    app.metaRepo.init().then(function () {
+      var i, ports, err;
+      try {
+        // Создаем репозиторий данных
+        var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
+        app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
 
-            // Инициализируем сессии
-            var sessOpts = clone(config.session || {});
-            var MongoStore = require('connect-mongo')(session);
-            sessOpts.store = new MongoStore({
-              db: sessDs.connection(),
-              ttl: 14 * 24 * 60 * 60
-            });
-            app.use(session(sessOpts));
-          } catch (err) {
-            return onError(err);
-          }
-          // Запускаем приложение
-          ports = config.port;
-          if (!(ports instanceof Array)) {
-            ports = [config.port];
-          }
-
-          return start(ports, 0);
-        }).then(function () {
-          server.on('error', onError);
-          debug.info('Слушается ' + (typeof server.address() === 'string' ?
-          'конвеер ' + server.address() :
-          'порт ' + server.address().port));
-        }).catch(onError);
+        // Инициализируем сессии
+        var sessOpts = clone(config.session || {});
+        var MongoStore = require('connect-mongo')(session);
+        sessOpts.store = new MongoStore({
+          db: sessDs.connection(),
+          ttl: 14 * 24 * 60 * 60
+        });
+        app.use(session(sessOpts));
+      } catch (err) {
+        return onError(err);
       }
+      // Запускаем приложение
+      ports = config.port;
+      if (!(ports instanceof Array)) {
+        ports = [config.port];
+      }
+
+      return start(ports, 0);
+    }).then(function () {
+      server.on('error', onError);
+      debug.info('Слушается ' + (typeof server.address() === 'string' ?
+        'конвеер ' + server.address() :
+        'порт ' + server.address().port));
+    }).catch(onError);
+  }
 ).catch(onError);
