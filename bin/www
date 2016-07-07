@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+// jscs:disable requireCapitalizedComments
 'use strict';
 
 var i;
@@ -49,9 +50,7 @@ var app = express();
 
 global.app = app;
 
-if (process.env.NODE_ENV !== 'development') { // Продкутивный режим в NODE_ENV
-  /* Ротация логов. Если нужны логи в один файл
-   * var accessLogStream = fs.createWriteStream(__dirname + '/access.log', {flags: 'a'})  */
+if (process.env.NODE_ENV !== 'development') {
   var logDirectory = path.join(__dirname, '../log');
   if (!fs.existsSync(logDirectory)) {
     fs.mkdirSync(logDirectory);
@@ -95,7 +94,6 @@ if (!dataDs) {
 // Модули аутентификации и безопасности
 
 var auth = require('lib/auth');
-auth.init(app, config.auth);
 
 /**
  * @type {AclMediator}
@@ -105,12 +103,13 @@ global.ionAcl = new AclMediator(config);
 // Мидлвара сохранения сообщений в сессии перед редиректом
 app.use(flash());
 
-// Шаблонизатор
-app.engine('ejs', ejsLocals);
-app.set('views', path.join(__dirname, '../view/templates'));
-app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, '../view/static')));
-
+// Шаблонизатор ВНЕЗАПНО не нужен
+/*
+ * app.engine('ejs', ejsLocals);
+ * app.set('views', path.join(__dirname, '../view/templates'));
+ * app.set('view engine', 'ejs');
+ * app.use(express.static(path.join(__dirname, '../view/static')));
+ */
 // Типовые настройки
 
 app.use(favicon(path.join(__dirname, '../view/static/favicon.ico')));
@@ -129,21 +128,6 @@ if (config.defaultModule) {
   app.get('/', function (req, res) {
     res.redirect('/' + config.defaultModule);
   });
-}
-
-// Подключаем модули
-debug.info('Загрузка веб-модулей.');
-var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-for (i = 0; i < candidates.length; i++) {
-  if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
-    var module = require('modules/' + candidates[i] + '/web');
-    if (typeof module === 'function') {
-      app.use(module);
-      debug.info('Модуль ' + candidates[i] + ' загружен.');
-    } else {
-      debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
-    }
-  }
 }
 
 // Создаем HTTP сервер.
@@ -200,6 +184,22 @@ dataSources.connect().then(
           ttl: 14 * 24 * 60 * 60
         });
         app.use(session(sessOpts));
+        auth.init(app, config.auth);
+
+        // Подключаем модули
+        debug.info('Загрузка веб-модулей.');
+        var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+        for (i = 0; i < candidates.length; i++) {
+          if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+            var module = require('modules/' + candidates[i] + '/web');
+            if (typeof module === 'function') {
+              app.use(module);
+              debug.info('Модуль ' + candidates[i] + ' загружен.');
+            } else {
+              debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+            }
+          }
+        }
       } catch (err) {
         return onError(err);
       }
