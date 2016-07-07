@@ -60,14 +60,14 @@ function DsMetaRepository(config) {
   this.isNavMetaLoaded = false;
   this.navMetaBusy = false;
 
-  if (config.metadata && config.metadata.MetaTableName) {
-    this.metaTableName = config.metadata.MetaTableName;
+  if (config.metaTables && config.metaTables.MetaTableName) {
+    this.metaTableName = config.metaTables.MetaTableName;
   }
-  if (config.metadata && config.metadata.ViewTableName) {
-    this.viewTableName = config.metadata.ViewTableName;
+  if (config.metaTables && config.metaTables.ViewTableName) {
+    this.viewTableName = config.metaTables.ViewTableName;
   }
-  if (config.metadata && config.metadata.NavTableName) {
-    this.navTableName = config.metadata.NavTableName;
+  if (config.metaTables && config.metaTables.NavTableName) {
+    this.navTableName = config.metaTables.NavTableName;
   }
 
   if (config.Datasource) {
