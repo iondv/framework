@@ -46,7 +46,7 @@
 /node_modules/*
 
 /public/*
-/src/vendor/*
+**/vendor/*
 
 # Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
 # Например /images/user.jpg, /core/images/user.jpg

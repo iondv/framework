@@ -1,12 +1,14 @@
+// jscs:disable requireCapitalizedComments
 'use strict';
+
+var config = require('gulptask.conf.js');
 
 var gulp = require('gulp');
 var install = require('gulp-install');
 
-var assert = require('chai').assert;
+// var assert = require('chai').assert;
 var fs = require('fs');
 var path = require('path');
-
 
 var jshint = require('gulp-jshint');
 var jscs = require('gulp-jscs');
@@ -20,8 +22,6 @@ var sourcemaps = require('gulp-sourcemaps');
 var rename = require('gulp-rename');
 var size = require('gulp-size');
 var autoprefixer = require('gulp-autoprefixer');
-
-
 
 /**
  * Инициализируем первичное приложение.
@@ -40,8 +40,7 @@ function npm(path) {
       try {
         process.chdir(path);
         gulp.src(['./package.json'])
-          .pipe(install({production: true}));
-        resolve();
+          .pipe(install({production: true})).on('finish', resolve);
       } catch (error) {
         reject(error);
       }
@@ -49,16 +48,68 @@ function npm(path) {
   };
 }
 
-function bower(path) {
+function onFinishConstructor(text, done) {
+  return function () {
+    console.log(text);
+    done();
+  };
+}
+
+function bower(p) {
   return function () {
     return new Promise(function (resolve, reject) {
-      console.log('Установка пакетов фронтенда для пути ' + path);
+      console.log('Установка пакетов фронтенда для пути ' + p);
       var error;
       try {
-        process.chdir(path);
-        gulp.src(['./bower.json'])
-          .pipe(install({args: ['--config.interactive=false']})); // '--offline' - офлайн ускоряет, но ваклит тестировани и сборку
-        resolve();
+        process.chdir(p);
+        if (fs.existsSync('.bowerrc')) {
+          var bc = JSON.parse(fs.readFileSync('.bowerrc', {encoding: 'utf-8'}));
+          gulp.src(['./' + bc.json])
+          .pipe(install({args: ['--config.interactive=false']})).on('finish', function () {
+            if (fs.existsSync(bc.directory)) {
+              var vendorModules = fs.readdirSync(bc.directory);
+              var dist, min, all, dest;
+              for (var i = 0; i < vendorModules.length; i++) {
+                all = true;
+                dist = path.join(bc.directory, vendorModules[i], 'dist');
+                min = path.join(bc.directory, vendorModules[i], 'min');
+                dest = path.join(bc.vendorDir, vendorModules[i]);
+
+                if (fs.existsSync(dist)) {
+                  all = false;
+                  gulp.src([path.join(dist, '**/*')]).pipe(gulp.dest(dest)).on('finish',
+                    onFinishConstructor(
+                      'Скопированы дистрибутивные файлы вендорского пакета ' + vendorModules[i],
+                      resolve
+                    ));
+                }
+
+                if (fs.existsSync(min)) {
+                  all = false;
+                  gulp.src([path.join(min, '**/*')]).pipe(gulp.dest(dest)).on('finish',
+                    onFinishConstructor(
+                      'Скопированы минифицированные файлы вендорского пакета ' + vendorModules[i],
+                      resolve
+                    )
+                  );
+                }
+
+                if (all) {
+                  gulp.src([path.join(bc.directory, vendorModules[i], '**/*')]).pipe(gulp.dest(dest)).on('finish',
+                    onFinishConstructor(
+                      'Скопированы файлы вендорского пакета ' + vendorModules[i],
+                      resolve
+                    )
+                  );
+                }
+              }
+            } else {
+              resolve();
+            }
+          }); // '--offline' - офлайн ускоряет, но ваклит тестировани и сборку
+        } else {
+          resolve();
+        }
       } catch (error) {
         reject(error);
       }
@@ -108,8 +159,7 @@ function minCss(path) {
         gulp.src([
           join(path, 'view/static/css/**/*.css'),
             join(path, 'view/static/vendor/css/**/*.css'),
-          '!' + join(path, 'view/static/css/**/*.min.css'),
-
+          '!' + join(path, 'view/static/css/**/*.min.css')
         ])
           .pipe(sourcemaps.init())
           .pipe(autoprefixer(aprefConf))
