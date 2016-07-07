@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 'use strict';
 
 var i;
@@ -47,6 +48,24 @@ debug.info('Запускаем приложение ION');
 var app = express();
 
 global.app = app;
+
+if (process.env.NODE_ENV !== 'development') { // Продкутивный режим в NODE_ENV
+  /* Ротация логов. Если нужны логи в один файл
+   * var accessLogStream = fs.createWriteStream(__dirname + '/access.log', {flags: 'a'})  */
+  var logDirectory = path.join(__dirname, '../log');
+  if (!fs.existsSync(logDirectory)) {
+    fs.mkdirSync(logDirectory);
+  }
+  var accessLogStream = FileStreamRotator.getStream({
+    filename: path.join(logDirectory, '/access-%DATE%.log'),
+    frequency: 'daily',
+    verbose: false,
+    date_format: 'YYYY-MM-DD'
+  });
+  app.use(logger('combined', {stream: accessLogStream}));
+} else {
+  app.use(logger('dev'));
+}
 
 // DBAL
 
@@ -130,13 +149,6 @@ for (i = 0; i < candidates.length; i++) {
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
-server.on('listening', function () {
-  debug.info('Слушается ' +
-    typeof this.address() === 'string' ?
-      'конвеер ' + this.address() :
-      'порт ' + this.address().port);
-});
-
 server.on('close', function () { global.ionDataSources.disconnect(); });
 
 var onError = function (error) {
@@ -144,7 +156,22 @@ var onError = function (error) {
   process.exit(130);
 };
 
-server.on('error', onError);
+function start(ports, i) {
+  return new Promise(function (resolve, reject) {
+    server.once('error', function (err) {
+      if (err.code !== 'EADDRINUSE') {
+        return reject(err);
+      }
+      debug.info('Не удалось подключиться к порту ' + ports[i]);
+      start(ports, i + 1).then(resolve).catch(reject);
+    });
+    if (i < ports.length) {
+      server.listen(ports[i], resolve);
+    } else {
+      reject(new Error('Не удалось запустить сервер. Все указанные порты заняты'));
+    }
+  });
+}
 
 // Подключаемся к источникам данных и в случае успеха запускаем приложение
 dataSources.connect().then(
@@ -181,16 +208,13 @@ dataSources.connect().then(
           if (!(ports instanceof Array)) {
             ports = [config.port];
           }
-          for (i = 0; i < ports.length; i++) {
-            try {
-              server.listen(ports[i]);
-              return;
-            } catch (err) {
-              if ((err.code !== 'EADDRINUSE') || (i === (ports.length - 1))) {
-                return onError(err);
-              }
-            }
-          }
+
+          return start(ports, 0);
+        }).then(function () {
+          server.on('error', onError);
+          debug.info('Слушается ' + (typeof server.address() === 'string' ?
+          'конвеер ' + server.address() :
+          'порт ' + server.address().port));
         }).catch(onError);
       }
 ).catch(onError);
