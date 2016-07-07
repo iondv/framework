@@ -61,7 +61,7 @@ function Item(id, base, classMeta, repository) {
    * @returns {Item}
    */
   this.getAggregate = function (name) {
-    var props = me.getProperties();
+    var props = _this.getProperties();
     var p = props[name];
     var i = null;
     if (p && p.getType() === PropertyTypes.STRUCT) {
@@ -135,14 +135,14 @@ function Item(id, base, classMeta, repository) {
         /*
         TODO
         if (pm[p].getType() === PropertyTypes.STRUCT) {
-          var structProperty = new Property(pm[p].name, me, pm[p]);
+          var structProperty = new Property(pm[p].name, _this, pm[p]);
           var sm = structProperty.asItem().getMetaClass();
           while (sm !== null) {
             var spm = sm.getPropertyMetas();
             for (var prop in spm) {
               if (spm.hasOwnProperty(prop)) {
                 var propName = pm[p].name+"$"+spm[prop];
-                _this.properties[propName] = new Property(propName, me, spm[prop]);
+                _this.properties[propName] = new Property(propName, _this, spm[prop]);
               }
             }
             sm = sm.getAncestor();
