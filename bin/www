@@ -103,13 +103,13 @@ global.ionAcl = new AclMediator(config);
 // Мидлвара сохранения сообщений в сессии перед редиректом
 app.use(flash());
 
-// Шаблонизатор ВНЕЗАПНО не нужен
-/*
- * app.engine('ejs', ejsLocals);
- * app.set('views', path.join(__dirname, '../view/templates'));
- * app.set('view engine', 'ejs');
- * app.use(express.static(path.join(__dirname, '../view/static')));
- */
+// Шаблонизатор
+
+app.engine('ejs', ejsLocals);
+app.set('views', path.join(__dirname, '../view/templates'));
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, '../view/static')));
+
 // Типовые настройки
 
 app.use(favicon(path.join(__dirname, '../view/static/favicon.ico')));
