@@ -2,8 +2,9 @@
     "log_level": "notice",
     "parametrised": true,
     "port": [
-        8888,
-        8889
+        "[[server.port1]]",
+        "[[server.port2]]",
+        "[[server.port3]]"
     ],
     "defaultModule":"registry",
     "datasources":[
@@ -30,6 +31,7 @@
     "dataDs": "Db",
     "sessionDs": "Db",
     "auth": {
+      "denyTopLevel": true,
       "authCallbacks": ["modules/offline-sync.addCredentials"],
       "localAuthDS": "Db"
     },
