@@ -238,7 +238,7 @@ function IonDataRepository(datasource,metarepository,keyProvider) {
       }
     }
 
-    console.log(attrs);
+    // console.log(attrs);
 
     var promises, filter;
     promises = [];
@@ -346,7 +346,7 @@ function IonDataRepository(datasource,metarepository,keyProvider) {
               }
             }
           }
-          console.log(src);
+          // console.log(src);
           resolve(src);
         }
       ).catch(reject);

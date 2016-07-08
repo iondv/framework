@@ -72,6 +72,19 @@ function Item(id, base, classMeta, repository) {
     return i;
   };
 
+  /**
+   * @param {String} name
+   * @returns {Array}
+   */
+  this.getAggregates = function (name) {
+    var props = this.getProperties();
+    var p = props[name];
+    if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
+      return this.collections[name];
+    }
+    return [];
+  };
+
   function getFromBase(name) {
     if (_this.base.hasOwnProperty(name)) {
       return _this.base[name];
