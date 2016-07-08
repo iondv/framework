@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><title>Платформа ION: Вход</title>
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/css/auth.css">
+  <meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+<div class="demo">
+  <h1>Вход</h1>
+
+  <div class="auth-form">
+    <%
+    if (errors.length) {
+      errors.forEach(function (error) {
+    %>
+    <div id="error" class="error-msg"><%= error %></div>
+    <%
+      });
+    }
+    %>
+    <form action="/register" method="post">
+      <div><input type="text" name="username" placeholder="логин" class="input user"></div>
+      <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
+      <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
+      <div class="buttons">
+        <button type="submit">Регистрация</button>
+      </div>
+      <div class="forgot-password pull-left">
+        <a href="/auth"><b>Войти</b></a>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>
