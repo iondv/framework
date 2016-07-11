@@ -12,7 +12,7 @@ Testing_platform_master:
     - gulp build
     - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_MASTER
     - gulp test
-Testing_platforma_develop:
+.Testing_platforma_develop:
   type: test
   tags:
     - dev-selenium
