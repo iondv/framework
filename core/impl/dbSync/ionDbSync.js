@@ -353,7 +353,12 @@ function IonDbSync(connection, config) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace;
-        navCollection.updateOne({code: navNode.code}, navNode, {upsert: true}, function (err, ns) {
+        navCollection.updateOne(
+          {
+            code: navNode.code,
+            itemType: navNode.itemType,
+            namespace: navNode.namespace
+          }, navNode, {upsert: true}, function (err, ns) {
           if (err) {
             reject(err);
           }
@@ -366,7 +371,7 @@ function IonDbSync(connection, config) {
   this._undefineNavNode = function (navNodeName, namespace) {
     return new Promise(function (resolve, reject) {
       _this.db.collection(_this.navTableName, function (err, navCollection) {
-        var query = {code: navNodeName};
+        var query = {code: navNodeName, itemType: 'node'};
         if (namespace) {
           query.namespace = namespace;
         } else {
