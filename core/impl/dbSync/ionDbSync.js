@@ -47,18 +47,21 @@ function IonDbSync(connection, config) {
    * @returns {Promise}
    * @private
    */
-  this._createCollection = function (cm) {
+  this._createCollection = function (cm, namespace) {
     return new Promise(function (resolve, reject) {
-      var collection = _this.db.collection(cm.name, function (err, collection) {
-        if (err) {
-          return reject(err);
+      var collection = _this.db.collection(
+        (namespace ? (namespace + '_') : '') + cm.name,
+        function (err, collection) {
+          if (err) {
+            return reject(err);
+          }
+          if (!collection) {
+            _this.db.createCollection(cm.name).then(resolve).catch(reject);
+          } else {
+            resolve(collection);
+          }
         }
-        if (!collection) {
-          _this.db.createCollection(cm.name).then(resolve).catch(reject);
-        } else {
-          resolve(collection);
-        }
-      });
+      );
     });
   };
 
@@ -133,18 +136,24 @@ function IonDbSync(connection, config) {
    * @param {{}} cm
    * @returns {Promise}
    */
-  function findClassRoot(cm) {
+  function findClassRoot(cm, namespace) {
     if (!cm.ancestor) {
       return new Promise(function (resolve, reject) {
         resolve(cm);
       });
     }
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.metaTableName, function (err, collection) {
+      _this.db.collection(_this.metaTableName, function (err, collection) {
         if (err) {
           return reject(err);
         }
-        collection.findOne({name: cm.ancestor}, function (err, anc) {
+        var query = {name: cm.ancestor};
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+        collection.findOne(query, function (err, anc) {
           if (err) {
             return reject(err);
           }
@@ -163,36 +172,49 @@ function IonDbSync(connection, config) {
    * @private
    */
   this._defineClass = function (classMeta, namespace) {
+    classMeta.namespace = namespace;
     return new Promise(function (resolve, reject) {
-      findClassRoot(classMeta).then(function (cm) {
-        _this._createCollection(cm).
-          then(me._addIndexes(classMeta)).
-          then(function () {
-            _this.db.collection(me.metaTableName, function (err, collection) {
-              if (err) {
-                return reject(err);
-              }
-              collection.insertOne(
-                classMeta,
-                function (err, result) {
-                  if (err) {
-                    reject(err);
-                  }
-                  resolve(result);
-                });
-            });
+      findClassRoot(classMeta, namespace).
+      then(function (cm) {
+        return _this._createCollection(cm, namespace);
+      }).
+      then(_this._addIndexes(classMeta)).
+      then(function () {
+        _this.db.collection(_this.metaTableName, function (err, collection) {
+          if (err) {
+            return reject(err);
           }
-        ).catch(reject);
-      }).catch(reject);
+          collection.update(
+            {
+              name: classMeta.name,
+              version: classMeta.version,
+              namespace: namespace
+            },
+            classMeta,
+            {upsert: true},
+            function (err, result) {
+              if (err) {
+                reject(err);
+              }
+              resolve(result);
+            });
+        });
+      }).
+      catch(reject);
     });
   };
 
   this._undefineClass = function (className, version, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.metaTableName, function (err, collection) {
+      _this.db.collection(_this.metaTableName, function (err, collection) {
         var query = {name: className};
         if (version) {
           query.version = version;
+        }
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
         collection.remove(query, function (err, cm) {
           if (err) {
@@ -208,16 +230,27 @@ function IonDbSync(connection, config) {
     return new Promise(function (resolve, reject) {
       viewMeta.type = type;
       viewMeta.className = className;
+      viewMeta.namespace = namespace;
       if (path !== null) {
         viewMeta.path = path;
       } else {
         reject(new Error('не передан path'));
       }
-      _this.db.collection(me.viewTableName, function (err, viewCollection) {
+      _this.db.collection(_this.viewTableName, function (err, viewCollection) {
           if (err) {
             return reject(err);
           }
-          viewCollection.insertOne(viewMeta, function (err, vm) {
+          viewCollection.update(
+            {
+              type: viewMeta.type,
+              className: viewMeta.className,
+              path: viewMeta.path,
+              namespace: viewMeta.namespace,
+              version: viewMeta.version
+            },
+            viewMeta,
+            {upsert: true},
+            function (err, vm) {
             if (err) {
               return reject(err);
             }
@@ -229,15 +262,26 @@ function IonDbSync(connection, config) {
 
   this._undefineView = function (className, type, path, version, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.viewTableName, function (err, viewCollection) {
+      _this.db.collection(_this.viewTableName, function (err, viewCollection) {
           if (err) {
             reject(err);
           }
 
-          var query = {className: className, type: type, path: path};
+          var query = {
+            className: className,
+            type: type,
+            path: path
+          };
           if (version) {
             query.version = version;
           }
+
+          if (namespace) {
+            query.namespace = namespace;
+          } else {
+            query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+          }
+
           viewCollection.remove(query, function (err,vm) {
             if (err) {
               reject(err);
@@ -250,17 +294,23 @@ function IonDbSync(connection, config) {
 
   this._defineNavSection = function (navSection, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.navTableName,
+      _this.db.collection(_this.navTableName,
         /**
          * @param err
          * @param {Collection} navCollection
          */
          function (err, navCollection) {
             navSection.itemType = 'section';
-            if (!navSection.nodes) {
-              navSection.nodes = [];
-            }
-            navCollection.updateOne({name: navSection.name}, navSection, {upsert: true}, function (err, ns) {
+            navSection.namespace = namespace;
+            navCollection.updateOne(
+              {
+                name: navSection.name,
+                itemType: navSection.itemType,
+                namespace: navSection.namespace
+              },
+              navSection,
+              {upsert: true},
+              function (err, ns) {
               if (err) {
                 reject(err);
               }
@@ -273,11 +323,17 @@ function IonDbSync(connection, config) {
 
   this._undefineNavSection = function (sectionName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.navTableName, function (err, navCollection) {
+      _this.db.collection(_this.navTableName, function (err, navCollection) {
         if (err) {
           reject(err);
         }
-        var query = {name: sectionName};
+        var query = {name: sectionName, itemType: 'section'};
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+
         navCollection.remove(query, function (err,nsm) {
           if (err) {
             reject(err);
@@ -290,12 +346,13 @@ function IonDbSync(connection, config) {
 
   this._defineNavNode = function (navNode,navSectionName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.navTableName, function (err, navCollection) {
+      _this.db.collection(_this.navTableName, function (err, navCollection) {
         if (err) {
           reject(err);
         }
         navNode.itemType = 'node';
         navNode.section = navSectionName;
+        navNode.namespace = namespace;
         navCollection.updateOne({code: navNode.code}, navNode, {upsert: true}, function (err, ns) {
           if (err) {
             reject(err);
@@ -308,8 +365,13 @@ function IonDbSync(connection, config) {
 
   this._undefineNavNode = function (navNodeName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(me.navTableName, function (err, navCollection) {
+      _this.db.collection(_this.navTableName, function (err, navCollection) {
         var query = {code: navNodeName};
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
         navCollection.remove(query, function (err,nnm) {
           if (err) {
             reject(err);

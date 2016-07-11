@@ -50,7 +50,7 @@ dataSources.connect().then(function () {
   var keyProvider = new KeyProvider(metaRepo, dataDs.connection());
   var dataRepo = new DataRepository(dataDs, metaRepo, keyProvider);
   var sync = new DbSync(metaDs.connection(), {});
-  return worker(src, sync, dataRepo, {namespace: ns});
+  return worker(src, sync, metaRepo, dataRepo, {namespace: ns});
 }).then(function () {
   console.info('Импорт выполнен успешно.');
   process.exit(0);
