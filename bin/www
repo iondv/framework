@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+// jscs:disable requireCapitalizedComments
 'use strict';
 
 var i;
@@ -24,10 +26,10 @@ var methodOverride = require('method-override');
  * Инициирует сервер на порту, предварительно проверив что он свободный.
  * Вешает обработчик приложения на запросы app.js.
  * Для вывода сообщений от приложения:
-    -все (log/info/warn/error)  SET DEBUG=ION:*
-    -только ошибки              SET DEBUG=ION:*.error*
-    -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
-    -исключая ".log"            SET DEBUG=ION:*,-*|log:*
+ -все (log/info/warn/error)  SET DEBUG=ION:*
+ -только ошибки              SET DEBUG=ION:*.error*
+ -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
+ -исключая ".log"            SET DEBUG=ION:*,-*|log:*
 
  Для запуска NODE_PATH должна содержать путь к каталогу системы
 
@@ -47,6 +49,22 @@ debug.info('Запускаем приложение ION');
 var app = express();
 
 global.app = app;
+
+if (process.env.NODE_ENV !== 'development') {
+  var logDirectory = path.join(__dirname, '../log');
+  if (!fs.existsSync(logDirectory)) {
+    fs.mkdirSync(logDirectory);
+  }
+  var accessLogStream = FileStreamRotator.getStream({
+    filename: path.join(logDirectory, '/access-%DATE%.log'),
+    frequency: 'daily',
+    verbose: false,
+    date_format: 'YYYY-MM-DD'
+  });
+  app.use(logger('combined', {stream: accessLogStream}));
+} else {
+  app.use(logger('dev'));
+}
 
 // DBAL
 
@@ -76,7 +94,6 @@ if (!dataDs) {
 // Модули аутентификации и безопасности
 
 var auth = require('lib/auth');
-auth.init(app, config.auth);
 
 /**
  * @type {AclMediator}
@@ -87,6 +104,7 @@ global.ionAcl = new AclMediator(config);
 app.use(flash());
 
 // Шаблонизатор
+
 app.engine('ejs', ejsLocals);
 app.set('views', path.join(__dirname, '../view/templates'));
 app.set('view engine', 'ejs');
@@ -112,30 +130,8 @@ if (config.defaultModule) {
   });
 }
 
-// Подключаем модули
-debug.info('Загрузка веб-модулей.');
-var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-for (i = 0; i < candidates.length; i++) {
-  if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
-    var module = require('modules/' + candidates[i] + '/web');
-    if (typeof module === 'function') {
-      app.use(module);
-      debug.info('Модуль ' + candidates[i] + ' загружен.');
-    } else {
-      debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
-    }
-  }
-}
-
 // Создаем HTTP сервер.
 var server = http.createServer(app);
-
-server.on('listening', function () {
-  debug.info('Слушается ' +
-    typeof this.address() === 'string' ?
-      'конвеер ' + this.address() :
-      'порт ' + this.address().port);
-});
 
 server.on('close', function () { global.ionDataSources.disconnect(); });
 
@@ -144,53 +140,81 @@ var onError = function (error) {
   process.exit(130);
 };
 
-server.on('error', onError);
+function start(ports, i) {
+  return new Promise(function (resolve, reject) {
+    server.once('error', function (err) {
+      if (err.code !== 'EADDRINUSE') {
+        return reject(err);
+      }
+      debug.info('Не удалось подключиться к порту ' + ports[i]);
+      start(ports, i + 1).then(resolve).catch(reject);
+    });
+    if (i < ports.length) {
+      server.listen(ports[i], resolve);
+    } else {
+      reject(new Error('Не удалось запустить сервер. Все указанные порты заняты'));
+    }
+  });
+}
 
 // Подключаемся к источникам данных и в случае успеха запускаем приложение
 dataSources.connect().then(
-      function () {
-        // Создаем репозиторий мета-данных
-        try {
-          app.metaRepo = new MetaRepository({
-            Datasource: metaDs
-          });
-        } catch (err) {
-          return onError(err);
-        }
-        // Инициализируем репозиторий мета-данных
-        app.metaRepo.init().then(function () {
-          var i, ports, err;
-          try {
-            // Создаем репозиторий данных
-            var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
-            app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
+  function () {
+    // Создаем репозиторий мета-данных
+    try {
+      app.metaRepo = new MetaRepository({
+        Datasource: metaDs
+      });
+    } catch (err) {
+      return onError(err);
+    }
+    // Инициализируем репозиторий мета-данных
+    app.metaRepo.init().then(function () {
+      var i, ports, err;
+      try {
+        // Создаем репозиторий данных
+        var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
+        app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
 
-            // Инициализируем сессии
-            var sessOpts = clone(config.session || {});
-            var MongoStore = require('connect-mongo')(session);
-            sessOpts.store = new MongoStore({
-              db: sessDs.connection(),
-              ttl: 14 * 24 * 60 * 60
-            });
-            app.use(session(sessOpts));
-          } catch (err) {
-            return onError(err);
-          }
-          // Запускаем приложение
-          ports = config.port;
-          if (!(ports instanceof Array)) {
-            ports = [config.port];
-          }
-          for (i = 0; i < ports.length; i++) {
-            try {
-              server.listen(ports[i]);
-              return;
-            } catch (err) {
-              if ((err.code !== 'EADDRINUSE') || (i === (ports.length - 1))) {
-                return onError(err);
-              }
+        // Инициализируем сессии
+        var sessOpts = clone(config.session || {});
+        var MongoStore = require('connect-mongo')(session);
+        sessOpts.store = new MongoStore({
+          db: sessDs.connection(),
+          ttl: 14 * 24 * 60 * 60
+        });
+        app.use(session(sessOpts));
+        auth.init(app, config.auth);
+
+        // Подключаем модули
+        debug.info('Загрузка веб-модулей.');
+        var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+        for (i = 0; i < candidates.length; i++) {
+          if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+            var module = require('modules/' + candidates[i] + '/web');
+            if (typeof module === 'function') {
+              app.use(module);
+              debug.info('Модуль ' + candidates[i] + ' загружен.');
+            } else {
+              debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
             }
           }
-        }).catch(onError);
+        }
+      } catch (err) {
+        return onError(err);
       }
+      // Запускаем приложение
+      ports = config.port;
+      if (!(ports instanceof Array)) {
+        ports = [config.port];
+      }
+
+      return start(ports, 0);
+    }).then(function () {
+      server.on('error', onError);
+      debug.info('Слушается ' + (typeof server.address() === 'string' ?
+        'конвеер ' + server.address() :
+        'порт ' + server.address().port));
+    }).catch(onError);
+  }
 ).catch(onError);
