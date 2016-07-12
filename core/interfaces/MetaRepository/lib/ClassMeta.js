@@ -46,17 +46,17 @@ function ClassMeta(metaObject,metaRepository) {
             pn = this.matrix[j].conditions[k].property;
             v = this.matrix[j].conditions[k].value;
             switch (this.matrix[j].conditions[k].operation) {
-              case 0:found = (String(item.get(pn)) === v) ? true : false;break;
-              case 1:found = (String(item.get(pn)) !== v) ? true : false;break;
-              case 2:found = (!item.get(pn)) ? true : false;break;
+              case 0:found = String(item.get(pn)) === v ? true : false;break;
+              case 1:found = String(item.get(pn)) !== v ? true : false;break;
+              case 2:found = !item.get(pn) ? true : false;break;
               case 3:found = item.get(pn) ? true : false;break;
-              case 4:found = (String(item.get(pn)).match(new RegExp(v))) ? true : false;break;
-              case 5:found = (item.get(pn) < v) ? true : false;break;
-              case 6:found = (item.get(pn) > v) ? true : false;break;
-              case 7:found = (item.get(pn) <= v) ? true : false;break;
-              case 8:found = (item.get(pn) >= v) ? true : false;break;
+              case 4:found = String(item.get(pn)).match(new RegExp(v)) ? true : false;break;
+              case 5:found = item.get(pn) < v ? true : false;break;
+              case 6:found = item.get(pn) > v ? true : false;break;
+              case 7:found = item.get(pn) <= v ? true : false;break;
+              case 8:found = item.get(pn) >= v ? true : false;break;
               case 9:
-              case 10:found = (item.get(pn).indexOf(v) !== -1) ? true : false;break;
+              case 10:found = item.get(pn).indexOf(v) !== -1 ? true : false;break;
             }
             if (!found) {
               break;

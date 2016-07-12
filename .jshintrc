@@ -40,7 +40,7 @@
   "maxcomplexity" : 10, // (рекомендуют 6, в вики до 10, редко до 15 - надо обосновывать) Цикломатическая (топографическая) сложность. . lets you control cyclomatic complexity throughout your code. Cyclomatic complexity measures the number of linearly independent paths through a program's source code. Read more about cyclomatic complexity on Wikipedia.
   "maxdepth" : 7, // Количество вложений блоков (рекомендуют 4) - lets you control how nested do you want your blocks to be:
   "maxerr" : 100, // This options allows you to set the maximum amount of warnings JSHint will produce before giving up. Default is 50.
-  "maxparams" : 4, // (рекомендуют 4) set the max number of formal parameters allowed per function
+  "maxparams" : 6, // (рекомендуют 4) set the max number of formal parameters allowed per function
   "maxstatements" : 20, // (рекомендуют 8-15, встречается 20-25) Количество присваиваний и вызовов в функции(?) lets you set the max number of statements allowed per function:
   "noarg" : true, // Prohibit use of `arguments.caller` and `arguments.callee`.
   "nocomma":true, // prohibits the use of the comma operator. When misused, the comma operator can obscure the value of a statement and promote incorrect code.

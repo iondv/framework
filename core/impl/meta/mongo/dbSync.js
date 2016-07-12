@@ -4,7 +4,6 @@
 'use strict';
 
 var DbSync = require('core/interfaces/DbSync');
-var debug = require('debug-log')('ION:dbSync');
 
 function IonDbSync(connection, config) {
 
@@ -49,8 +48,8 @@ function IonDbSync(connection, config) {
    */
   this._createCollection = function (cm, namespace) {
     return new Promise(function (resolve, reject) {
-      var cn = (namespace ? (namespace + '_') : '') + cm.name;
-      var collection = _this.db.collection(
+      var cn = (namespace ? namespace + '_' : '') + cm.name;
+      _this.db.collection(
         cn,
         {strict: true},
         function (err, collection) {
@@ -114,7 +113,7 @@ function IonDbSync(connection, config) {
         promises.push(createIndexPromise('_class', false));
 
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || (cm.properties[i].indexed === true)) {
+          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
             promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
           }
         }

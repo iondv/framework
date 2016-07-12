@@ -80,12 +80,12 @@ function ChangeLogger() {
   this.getChanges = function (since, till) {
     if (
       Object.prototype.toString.call(since) !== '[object Date]' ||
-      (till && Object.prototype.toString.call(till) !== '[object Date]')
+      till && Object.prototype.toString.call(till) !== '[object Date]'
     ) {
       throw new Error('Интервал должен быть задан объектами класса Date!');
     }
 
-    if (till && (since.getTime() > till.getTime())) {
+    if (till && since.getTime() > till.getTime()) {
       var tmp = till;
       till = since;
       since = tmp;

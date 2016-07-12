@@ -145,12 +145,13 @@ function DsMetaRepository(config) {
   };
 
   this._listMeta = function (ancestor, version, direct, namespace) {
+    var cm, result, ns;
+    result = [];
     if (ancestor) {
-      var cm = getFromMeta(ancestor, version, namespace);
+      cm = getFromMeta(ancestor, version, namespace);
       if (direct) {
         return cm.getDescendants();
       } else {
-        var result = [];
         (function fillDescendants(src) {
           result = result.concat(src);
           for (var i = 0; i < src.length; i++) {
@@ -160,25 +161,22 @@ function DsMetaRepository(config) {
         return result;
       }
     } else {
-      var result = [];
-      var ns = formNs(namespace);
+      ns = formNS(namespace);
       for (var nm  in this.classMeta) {
-        if (this.classMeta.hasOwnProperty(nm) && (ns === nm)) {
+        if (this.classMeta.hasOwnProperty(nm) && ns === nm) {
           for (var cn in this.ClassMeta[nm]) {
             if (this.ClassMeta[nm].hasOwnProperty(cn)) {
               if (version) {
                 if (_this.classMeta[nm][cn].hasOwnProperty(version)) {
-                  return _this.classMeta[nm][cn].byVersion[version];
-                } else {
-                  var cm = findByVersion(_this.classMeta[nm][cn].byOrder, version);
-                  if (cm) {
-                    result.push(cm);
-                  }
+                  result.push(_this.classMeta[nm][cn].byVersion[version]);
+                  continue;
+                }
+                cm = findByVersion(_this.classMeta[nm][cn].byOrder, version);
+                if (cm) {
+                  result.push(cm);
                 }
               } else {
-                for (var i = 0; i < _this.classMeta[nm][cn].byOrder.length; i++) {
-                  result.push(this.classMeta[nm][cn].byOrder[i]);
-                }
+                Array.prototype.push.apply(result, _this.classMeta[nm][cn].byOrder);
               }
             }
           }
@@ -331,7 +329,7 @@ function DsMetaRepository(config) {
   };
 
   function viewPath(nodeCode,className) {
-    return (nodeCode ? (nodeCode + '/') : '') + className;
+    return (nodeCode ? nodeCode + '/' : '') + className;
   }
 
   function init() {
@@ -467,7 +465,7 @@ function DsMetaRepository(config) {
                   var n = _this.navMeta.nodes[ns][name];
                   if (_this.navMeta.sections.hasOwnProperty(ns) &&
                     _this.navMeta.sections[ns].hasOwnProperty(n.section) &&
-                    (n.code.indexOf('.') === -1)) {
+                    n.code.indexOf('.') === -1) {
                     _this.navMeta.sections[ns][n.section].nodes[n.code] = n;
                   }
 

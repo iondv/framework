@@ -17,7 +17,7 @@ function DbSync() {
 
   /**
    * @param {{}} classMeta
-   * @param {String} namespace
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.defineClass = function (classMeta, namespace) {
@@ -28,6 +28,7 @@ function DbSync() {
    *
    * @param {String} classMetaName
    * @param {String} version
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.undefineClass = function (classMetaName,version, namespace) {
@@ -40,6 +41,7 @@ function DbSync() {
    * @param {String} className
    * @param {String} type
    * @param {String} path
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.defineView = function (viewMeta, className, type, path, namespace) {
@@ -51,6 +53,7 @@ function DbSync() {
    * @param {String} type
    * @param {String} path
    * @param {String} version
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.undefineView = function (className, type, path, version, namespace) {
@@ -60,6 +63,7 @@ function DbSync() {
   /**
    *
    * @param {{}} navSection
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.defineNavSection = function (navSection, namespace) {
@@ -69,6 +73,7 @@ function DbSync() {
   /**
    *
    * @param {String} sectionName
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.undefineNavSection = function (sectionName, namespace) {
@@ -78,6 +83,7 @@ function DbSync() {
   /**
    * @param {{}} navNode
    * @param {String} navSectionName
+   * @param {String} [namespace]
    * @returns {Promise}
    */
   this.defineNavNode = function (navNode, navSectionName, namespace) {
@@ -86,6 +92,7 @@ function DbSync() {
 
   /**
    * @param {String} path
+   * @param {String} [namespace]
    * @returns {Promise}
      */
   this.undefineNavNode = function (path, namespace) {

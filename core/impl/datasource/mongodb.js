@@ -8,7 +8,6 @@
 var DataSource = require('core/interfaces/DataSource');
 var mongo = require('mongodb');
 var client = mongo.MongoClient;
-var oid = mongo.ObjectID;
 var debug = require('debug-log')('ION:db');
 var assert = require('chai').assert;
 
@@ -118,7 +117,7 @@ function MongoDs(config) {
     return new Promise(function (resolve, reject) {
       _this.openDb().then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        var c = _this.db.collection(type, {strict: true}, function (err, c) {
+        _this.db.collection(type, {strict: true}, function (err, c) {
           if (!c) {
             c = _this.db.createCollection(type)
               .then(resolve)

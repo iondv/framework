@@ -16,7 +16,7 @@ function Datasources(conf) {
     if (typeof conf.datasources !== 'undefined') {
       for (var i = 0; i < conf.datasources.length; i++) {
         if (typeof conf.datasources[i] === 'object') {
-          if (conf.datasources[i].constructor.prototype.constructor.name === 'DataSource') {
+          if (conf.datasources[i].constructor.prototype.constructor === DataSource) {
             this.sources[conf.datasources[i].name] = conf.datasources[i];
           } else {
             constructor = require(conf.datasources[i].module);
