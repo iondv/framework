@@ -49,7 +49,7 @@
     "method-override": "^2.3.4",
     "mkdirp": "^0.5.1",
     "mongo-fast-join": "0.0.11",
-    "mongodb": "^2.0.42",
+    "mongodb": "~2.0.53",
     "morgan": "^1.5.1",
     "multer": "*",
     "mysql": "^2.7.0",
