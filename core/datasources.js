@@ -11,20 +11,21 @@ function Datasources(conf) {
    */
   this.sources = {};
 
-  if (typeof conf.datasources !== 'undefined') {
-    for (var i = 0; i < conf.datasources.length; i++) {
-      if (typeof conf.datasources[i] === 'object') {
-        if (conf.datasources[i].constructor.prototype.constructor.name === 'DataSource') {
-          this.sources[nm] = conf.datasources[i];
-        } else {
-          var nm = conf.datasources[i].name;
-          var module = conf.datasources[i].module;
-          var constructor = require(module);
-          this.sources[nm] = new constructor(conf.datasources[i].config);
+  (function () {
+    var constructor;
+    if (typeof conf.datasources !== 'undefined') {
+      for (var i = 0; i < conf.datasources.length; i++) {
+        if (typeof conf.datasources[i] === 'object') {
+          if (conf.datasources[i].constructor.prototype.constructor.name === 'DataSource') {
+            this.sources[conf.datasources[i].name] = conf.datasources[i];
+          } else {
+            constructor = require(conf.datasources[i].module);
+            this.sources[conf.datasources[i].name] = new constructor(conf.datasources[i].config);
+          }
         }
       }
     }
-  }
+  })();
 
   /**
    * @param {String} name

@@ -117,15 +117,16 @@ function MongoDs(config) {
   this.getCollection = function (type) {
     return new Promise(function (resolve, reject) {
       _this.openDb().then(function () {
+        // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         var c = _this.db.collection(type, {strict: true}, function (err, c) {
-          if (err) {
-            return reject(err);
-          }
           if (!c) {
             c = _this.db.createCollection(type)
               .then(resolve)
               .catch(reject);
           } else {
+            if (err) {
+              return reject(err);
+            }
             resolve(c);
           }
         });

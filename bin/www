@@ -42,7 +42,8 @@ var Datasources = require('core/datasources');
 var AclMediator = require('core/access');
 var MetaRepository = require('core/impl/meta/DsMetaRepository');
 var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/MongoMetaKeyProvider');
+var KeyProvider = require('core/impl/meta/mongo/keyProvider');
+var DbSync = require('core/impl/meta/mongo/dbSync');
 
 debug.info('Запускаем приложение ION');
 
@@ -168,8 +169,11 @@ dataSources.connect().then(
     } catch (err) {
       return onError(err);
     }
+
+    var sync = new DbSync(metaDs.connection(), {});
+
     // Инициализируем репозиторий мета-данных
-    app.metaRepo.init().then(function () {
+    app.metaRepo.init(sync).then(function () {
       var i, ports, err;
       try {
         // Создаем репозиторий данных

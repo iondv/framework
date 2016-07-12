@@ -4,10 +4,10 @@
 var worker = require('lib/import');
 var config = require('config');
 var DataSources = require('core/datasources');
-var DbSync = require('core/impl/dbSync/ionDbSync');
+var DbSync = require('core/impl/meta/mongo/dbSync');
 var MetaRepository = require('core/impl/meta/DsMetaRepository');
 var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/MongoMetaKeyProvider');
+var KeyProvider = require('core/impl/meta/mongo/keyProvider');
 
 var src = '../in';
 var ns = '';

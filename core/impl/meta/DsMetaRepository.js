@@ -1,3 +1,4 @@
+// jscs:disable requireCapitalizedComments
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 08.04.16.
  */
@@ -158,6 +159,32 @@ function DsMetaRepository(config) {
         })(cm.getDescendants());
         return result;
       }
+    } else {
+      var result = [];
+      var ns = formNs(namespace);
+      for (var nm  in this.classMeta) {
+        if (this.classMeta.hasOwnProperty(nm) && (ns === nm)) {
+          for (var cn in this.ClassMeta[nm]) {
+            if (this.ClassMeta[nm].hasOwnProperty(cn)) {
+              if (version) {
+                if (_this.classMeta[nm][cn].hasOwnProperty(version)) {
+                  return _this.classMeta[nm][cn].byVersion[version];
+                } else {
+                  var cm = findByVersion(_this.classMeta[nm][cn].byOrder, version);
+                  if (cm) {
+                    result.push(cm);
+                  }
+                }
+              } else {
+                for (var i = 0; i < _this.classMeta[nm][cn].byOrder.length; i++) {
+                  result.push(this.classMeta[nm][cn].byOrder[i]);
+                }
+              }
+            }
+          }
+        }
+      }
+      return result;
     }
   };
 
@@ -307,13 +334,13 @@ function DsMetaRepository(config) {
     return (nodeCode ? (nodeCode + '/') : '') + className;
   }
 
-  this._init = function () {
+  function init() {
     return new Promise(function (resolve, reject) {
       Promise.all(
         [
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
-          _this.ds.fetch(_this.viewTableName, {}),
-          _this.ds.fetch(_this.navTableName, {sort: {name: 1}})
+          _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
+          _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
         ]
       ).then(
         function (results) {
@@ -323,22 +350,6 @@ function DsMetaRepository(config) {
           var views = results[1];
           var navs = results[2];
 
-          /*
-          Function sortVer(coll) {
-            for (var path in coll) {
-              if (coll.hasOwnProperty(path)) {
-                coll[path].sort(function(a,b){
-                  if (a.version > b.version) {
-                    return 1;
-                  } else if (a.version < b.version) {
-                    return -1;
-                  }
-                  return 0;
-                });
-              }
-            }
-          }
-          */
           _this.classMeta = {};
           var ns;
           for (i = 0; i < metas.length; i++) {
@@ -412,13 +423,7 @@ function DsMetaRepository(config) {
               default: break;
             }
           }
-          /*
-          SortVer(_this.viewMeta.listModels);
-          sortVer(_this.viewMeta.collectionModels);
-          sortVer(_this.viewMeta.itemModels);
-          sortVer(_this.viewMeta.createModels);
-          sortVer(_this.viewMeta.detailModels);
-*/
+
           _this.navMeta = {
             sections: {},
             nodes: {},
@@ -480,6 +485,20 @@ function DsMetaRepository(config) {
         }
       ).catch(reject);
     });
+  }
+
+  /**
+   * @param {DbSync} sync
+   * @returns {Promise}
+   * @private
+     */
+  this._init = function (sync) {
+    if (sync) {
+      return new Promise(function (resolve, reject) {
+        sync.init().then(init).then(resolve).catch(reject);
+      });
+    }
+    return init();
   };
 }
 

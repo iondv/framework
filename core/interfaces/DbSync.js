@@ -9,6 +9,13 @@
 function DbSync() {
 
   /**
+   * @returns {Promise}
+   */
+  this.init = function () {
+    return this._init();
+  };
+
+  /**
    * @param {{}} classMeta
    * @param {String} namespace
    * @returns {Promise}

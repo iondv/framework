@@ -31,7 +31,6 @@
     "sessionDs": "Db",
     "auth": {
       "denyTopLevel": true,
-      "authCallbacks": ["modules/offline-sync.addCredentials"],
       "localAuthDS": "Db"
     },
     "policy": [
