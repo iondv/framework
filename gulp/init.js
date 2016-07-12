@@ -65,7 +65,7 @@ gulp.task('init:metadata', ['init:meta'], function (done) {
   var qntMetaConfigsUpdated = 0;
   var qntMetaConfigToUpdate;
   function updateConfigFiles(folderOfMeta, callback) {
-    getDirAndFilesList(join(config.path._meta, folderOfMeta, config.folder._config), {recurse: true,
+    getDirAndFilesList(join(config.path.meta, folderOfMeta, config.folder.config), {recurse: true,
           type: 'files',
           regexpFilesMask: new RegExp('.*[.](json$).*$', 'i')},
         function (err, confFilesList) {
@@ -83,8 +83,8 @@ gulp.task('init:metadata', ['init:meta'], function (done) {
             for (var i = 0; i < confFilesList.files.length; i++) {
               console.log('Обновляем конфигурационный файл', baseName(confFilesList.files[i]));
               conf.metaConf[i] = require(confFilesList.files[i]);
-              var confFileData = fs.readFileSync(join(config.path._app,
-                  config.folder._config,
+              var confFileData = fs.readFileSync(join(config.path.app,
+                  config.folder.config,
                   baseName(confFilesList.files[i])));
               conf.appConf[i] = JSON.parse(confFileData);
               for (var key in conf.metaConf[i]) {
@@ -92,8 +92,8 @@ gulp.task('init:metadata', ['init:meta'], function (done) {
                   conf.appConf[i][key] = conf.metaConf[i][key];
                 }
               }
-              fs.writeFileSync(join(config.path._app,
-                  config.folder._config,
+              fs.writeFileSync(join(config.path.app,
+                  config.folder.config,
                   baseName(confFilesList.files[i])), JSON.stringify(conf.appConf[i], null, 2), 'utf8');
             }
             callback(null);
@@ -108,7 +108,7 @@ gulp.task('init:metadata', ['init:meta'], function (done) {
       done();
     }
   }
-  getDirAndFilesList(config.path._meta, {recurse: 0,
+  getDirAndFilesList(config.path.meta, {recurse: 0,
         type: 'dir'},
       function (err, metaList) {
         var folderOfMeta;
@@ -129,11 +129,11 @@ gulp.task('init:metadata', ['init:meta'], function (done) {
             }
             console.log('Обрабатываем метаданные:', folderOfMeta);
             // Копируем инициализирующие данные меты
-            gulp.src(join(metaList.dir[i], config.folder._initdata, confApp.db, '** / *.json'))
-                .pipe(gulp.dest(join(config.path._init, config.folder._initdata, confApp.db, 'meta', folderOfMeta)));
+            gulp.src(join(metaList.dir[i], config.folder.initdata, confApp.db, '** / *.json'))
+                .pipe(gulp.dest(join(config.path.init, config.folder.initdata, confApp.db, 'meta', folderOfMeta)));
             // Копируем тесты меты
-            gulp.src(join(metaList.dir[i], config.path._testE2E, '** / *.js'))
-                .pipe(gulp.dest(join(config.path._testE2E, 'meta', folderOfMeta)));
+            gulp.src(join(metaList.dir[i], config.path.testE2E, '** / *.js'))
+                .pipe(gulp.dest(join(config.path.testE2E, 'meta', folderOfMeta)));
             // Меняем конфигурационный файл, если задано в переменной окружения ION_INIT_META значение config
             if (process.env.ION_INIT_META && process.env.ION_INIT_META.indexOf('config') !== -1) {
               updateConfigFiles(folderOfMeta, checkUpdConfFiles);

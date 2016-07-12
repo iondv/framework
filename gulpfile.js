@@ -10,6 +10,7 @@ assert.notEqual(process.env.NODE_PATH.indexOf(__dirname), -1,
 global.devBuild = process.env.NODE_ENV !== 'production';
 
 require('./gulp/build'); // Таски компоновки проекта и модулей
+require('./gulp/test'); // Таски тестирования проекта и модулей
 
 gulp.task('default', ['build'], function (done) {
   done();

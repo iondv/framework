@@ -37,7 +37,7 @@ var meta = new MetaRepo({
 
 var assert = require('assert');
 describe('запускаем мета репозиторий', function () {
-    it('метод: getMeta', function () {
+    it('метод: getMeta', function (done) {
       meta.getMeta('ion_filter').then(function (classMeta) {
         console.log('rap');
         assert.notEqual(null, classMeta);
