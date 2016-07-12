@@ -20,7 +20,6 @@
             }
           },
           "connectionLimit": 10,
-          "schema": "[[db.name]]",
           "user": "[[db.user]]",
           "password": "[[db.pwd]]"
         }
