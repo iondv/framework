@@ -332,7 +332,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                     for (i = 0; i < items.length; i++) {
                       if (srcByKey.hasOwnProperty(items[i].base[attrs[nm].backRef])) {
                         if (typeof srcByKey[items[i].base[attrs[nm].backRef]].
-                            collections[attrs[nm].attrName] == 'undefined') {
+                            collections[attrs[nm].attrName] === 'undefined') {
                           srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName] = [];
                         }
                         srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName].push(items[i]);
