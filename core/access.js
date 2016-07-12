@@ -23,8 +23,8 @@ function AclMediator(conf) {
           this.providers[this.providers.length] = p;
         }
       } else if (
-        (typeof conf.policy[i] === 'object') && // jscs:ignore disallowTrailingWhitespace
-        (conf.policy[i].constructor.prototype.constructor.name === 'AclProvider')) {
+        typeof conf.policy[i] === 'object' && // jscs:ignore disallowTrailingWhitespace
+        conf.policy[i].constructor.prototype.constructor.name === 'AclProvider') {
         this.providers[this.providers.length] = conf.policy[i];
       }
     }
