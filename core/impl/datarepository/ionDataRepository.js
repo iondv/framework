@@ -520,8 +520,18 @@ function IonDataRepository(datasource,metarepository,keyProvider) {
       if (data.hasOwnProperty(nm)) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
-          data[nm] = _this._castValue(data[nm], pm);
-          updates[nm] = data[nm];
+          if (pm.type === PropertyTypes.COLLECTION) {
+            if (pm.back_ref) {
+
+            } else if (pm.back_coll) {
+
+            } else {
+
+            }
+          } else {
+            data[nm] = _this._castValue(data[nm], pm);
+            updates[nm] = data[nm];
+          }
         }
       }
     }
