@@ -31,8 +31,8 @@ function MongoMetaKeyProvider(metaRep, connection) {
    * @returns {String}
    * @private
    */
-  this._formKey = function (classname, data) {
-    var cm = _this.meta.getMeta(classname);
+  this._formKey = function (classname, data, namespace) {
+    var cm = _this.meta.getMeta(classname, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
@@ -41,10 +41,10 @@ function MongoMetaKeyProvider(metaRep, connection) {
     return result;
   };
 
-  this._keyToData = function (classname, id) {
+  this._keyToData = function (classname, id, namespace) {
     var result = {};
     if (typeof id === 'string') {
-      var cm = _this.meta.getMeta(classname);
+      var cm = _this.meta.getMeta(classname, namespace);
       var keyProps = cm.getKeyProperties();
       var parts = id.split('_');
       for (var i = 0; i < keyProps.length; i++) {
@@ -54,10 +54,10 @@ function MongoMetaKeyProvider(metaRep, connection) {
     return result;
   };
 
-  this._keyData = function (classname, data) {
+  this._keyData = function (classname, data, namespace) {
     var result = {};
     if ((typeof data === 'object') && data) {
-      var cm = _this.meta.getMeta(classname);
+      var cm = _this.meta.getMeta(classname, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
         result[keyProps[i]] = data.hasOwnProperty(keyProps[i]) ? data[keyProps[i]] : null;
@@ -72,11 +72,11 @@ function MongoMetaKeyProvider(metaRep, connection) {
    * @returns {Promise}
    * @private
    */
-  this._preProcess = function (classname, data) {
+  this._preProcess = function (classname, data, namespace) {
     return new Promise(function (resolve, reject) {
-      var cm = _this.meta.getMeta(classname);
+      var cm = _this.meta.getMeta(classname, namespace);
       if (cm.keys.length > 1) {
-        data._id = _this._formKey(classname, data);
+        data._id = _this._formKey(classname, data, namespace);
         resolve(data);
       } else {
         var p = null;
@@ -109,7 +109,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
               data[p.name] = data._id;
             }
           } else {
-            data._id = _this._formKey(classname, data);
+            data._id = _this._formKey(classname, data, namespace);
           }
           resolve(data);
         } else {

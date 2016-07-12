@@ -8,6 +8,8 @@ function ClassMeta(metaObject,metaRepository) {
 
   var _this = this;
 
+  this.namespace = '';
+
   this.plain = metaObject;
 
   this.metaRepository = metaRepository;
@@ -103,6 +105,10 @@ function ClassMeta(metaObject,metaRepository) {
 
   this.getCaption = function () {
     return this.plain.caption;
+  };
+
+  this.getNamespace = function () {
+    return this.namespace;
   };
 
   function buildSemanticGetter(prop,start,count) {
