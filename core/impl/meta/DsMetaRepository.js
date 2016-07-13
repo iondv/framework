@@ -10,22 +10,80 @@ var ClassMeta = MetaRepositoryModule.ClassMeta;
 
 var Datasources = require('core/datasources');
 
+const defaultVersion = '___default';
+
+/* jshint maxstatements: 60, maxcomplexity: 20 */
+
+function viewPath(nodeCode,className) {
+  return (nodeCode ? nodeCode + '/' : '') + className;
+}
+
+function formNS(ns) {
+  return 'ns_' + (ns ? ns : '');
+}
+
+function assignVm(coll, vm) {
+  var ns = formNS(vm.namespace);
+  if (!coll.hasOwnProperty(ns)) {
+    coll[ns] = {};
+  }
+  if (!coll[ns].hasOwnProperty(viewPath(vm.path, vm.className))) {
+    coll[ns][viewPath(vm.path, vm.className)] = [];
+  }
+  var arr = coll[ns][viewPath(vm.path, vm.className)];
+  arr.push(vm);
+}
+
+function findByVersion(arr, version, i1, i2) {
+  if (!i1) { i1 = 0; }
+  if (!i2) { i2 = arr.length - 1; }
+
+  if (arr[i1].version === version) {
+    return arr[i1];
+  }
+
+  if (arr[i2].version === version) {
+    return arr[i2];
+  }
+
+  if (i1 < i2 - 1) {
+    var middle = Math.floor((i1 + i2) / 2);
+    if (arr[middle].version < version) {
+      return findByVersion(arr, version, middle, i2);
+    } else {
+      return findByVersion(arr, version, i1, middle);
+    }
+  } else {
+    return arr[i1];
+  }
+}
+
+/**
+ * @param {{}} config
+ * @param {String} [config.metaDs]
+ * @param {DataSource} [config.Datasource]
+ * @param {{}} [config.metaTables]
+ * @param {String} [config.metaTables.MetaTableName]
+ * @param {String} [config.metaTables.ViewTableName]
+ * @param {String} [config.metaTables.NavTableName]
+ * @constructor
+ */
 function DsMetaRepository(config) {
 
   var _this = this;
 
   /**
-   * @type {Sring}
+   * @type {String}
    */
   this.metaTableName = 'ion_meta';
 
   /**
-   * @type {Sring}
+   * @type {String}
    */
   this.viewTableName = 'ion_view';
 
   /**
-   * @type {Sring}
+   * @type {String}
    */
   this.navTableName = 'ion_nav';
 
@@ -51,15 +109,6 @@ function DsMetaRepository(config) {
     nodes: {},
     classnames: {}
   };
-
-  this.isClassMetaLoaded = false;
-  this.classMetaBusy = false;
-
-  this.isViewMetaLoaded = false;
-  this.viewMetaBusy = false;
-
-  this.isNavMetaLoaded = false;
-  this.navMetaBusy = false;
 
   if (config.metaTables && config.metaTables.MetaTableName) {
     this.metaTableName = config.metaTables.MetaTableName;
@@ -87,39 +136,6 @@ function DsMetaRepository(config) {
 
   if (!this.ds) {
     throw 'Не удалось определить источник данных!';
-  }
-
-  var defaultVersion = '___default';
-
-  function formNS(ns) {
-    return 'ns_' + (ns ? ns : '');
-  }
-
-  function findByVersion(arr, version, i1, i2) {
-    if (!i1) { i1 = 0; }
-    if (!i2) { i2 = arr.length - 1; }
-
-    if (arr[i1].version === version) {
-      return arr[i1];
-    }
-
-    if (arr[i2].version === version) {
-      return arr[i2];
-    }
-
-    // If ((arr[i1].version < version) && (arr[i2].version > version)) {// jscs:ignore requireSpaceAfterLineComment
-    if (i1 < i2 - 1) {
-      var middle = Math.floor((i1 + i2) / 2);
-      if (arr[middle].version < version) {
-        return findByVersion(arr, version, middle, i2);
-      } else {
-        return findByVersion(arr, version, i1, middle);
-      }
-    } else {
-      return arr[i1];
-    }
-    // }
-    return null;
   }
 
   /**
@@ -175,8 +191,8 @@ function DsMetaRepository(config) {
       ns = formNS(namespace);
       for (var nm  in this.classMeta) {
         if (this.classMeta.hasOwnProperty(nm) && ns === nm) {
-          for (var cn in this.ClassMeta[nm]) {
-            if (this.ClassMeta[nm].hasOwnProperty(cn)) {
+          for (var cn in this.classMeta[nm]) {
+            if (this.classMeta[nm].hasOwnProperty(cn)) {
               if (version) {
                 if (_this.classMeta[nm][cn].hasOwnProperty(version)) {
                   result.push(_this.classMeta[nm][cn].byVersion[version]);
@@ -339,8 +355,131 @@ function DsMetaRepository(config) {
     return this.viewMeta.validators;
   };
 
-  function viewPath(nodeCode,className) {
-    return (nodeCode ? nodeCode + '/' : '') + className;
+  function acceptClassMeta(metas) {
+    var i, name, ns, cm;
+    _this.classMeta = {};
+    for (i = 0; i < metas.length; i++) {
+      ns = formNS(metas[i].namespace);
+      if (!_this.classMeta.hasOwnProperty(ns)) {
+        _this.classMeta[ns] = {};
+      }
+
+      if (!_this.classMeta[ns].hasOwnProperty(metas[i].name)) {
+        _this.classMeta[ns][metas[i].name] = {
+          byVersion: {},
+          byOrder: []
+        };
+      }
+      cm = new ClassMeta(metas[i],_this);
+      cm.namespace = metas[i].namespace;
+      _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
+      _this.classMeta[ns][metas[i].name].byOrder.push(cm);
+      _this.classMeta[ns][metas[i].name][defaultVersion] = cm;
+    }
+
+    for (ns in _this.classMeta) {
+      if (_this.classMeta.hasOwnProperty(ns)) {
+        for (name in _this.classMeta[ns]) {
+          if (_this.classMeta[ns].hasOwnProperty(name)) {
+            for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
+              cm = _this.classMeta[ns][name].byOrder[i];
+              if (cm.plain.ancestor) {
+                cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
+                if (cm.ancestor) {
+                  cm.ancestor.descendants.push(cm);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function acceptViews(views) {
+    _this.viewMeta = {
+      listModels: {},
+      collectionModels: {},
+      itemModels: {},
+      createModels: {},
+      detailModels: {},
+      masks: {},
+      validators: {}
+    };
+
+    for (var i = 0; i < views.length; i++) {
+      switch (views[i].type){
+        case 'list': assignVm(_this.viewMeta.listModels, views[i]); break;
+        case 'collection': assignVm(_this.viewMeta.collectionModels, views[i]); break;
+        case 'item': assignVm(_this.viewMeta.itemModels, views[i]); break;
+        case 'create': assignVm(_this.viewMeta.createModels, views[i]); break;
+        case 'detail': assignVm(_this.viewMeta.detailModels, views[i]); break;
+        case 'masks': _this.viewMeta.masks[views[i].name] = views[i]; break;
+        case 'validators': _this.viewMeta.validators[views[i].name] = views[i]; break;
+        default: break;
+      }
+    }
+  }
+
+  function acceptNavigation(navs) {
+    var i, ns, name;
+    _this.navMeta = {
+      sections: {},
+      nodes: {},
+      classnames: {},
+      roots: {}
+    };
+
+    for (i = 0; i < navs.length; i++) {
+      ns = formNS(navs[i].namespace);
+      if (navs[i].itemType === 'section') {
+        if (!_this.navMeta.sections.hasOwnProperty(ns)) {
+          _this.navMeta.sections[ns] = {};
+        }
+        _this.navMeta.sections[ns][navs[i].name] = navs[i];
+        _this.navMeta.sections[ns][navs[i].name].nodes = {};
+      } else if (navs[i].itemType === 'node') {
+        if (!_this.navMeta.nodes.hasOwnProperty(ns)) {
+          _this.navMeta.nodes[ns] = {};
+        }
+        _this.navMeta.nodes[ns][navs[i].code] = navs[i];
+        _this.navMeta.nodes[ns][navs[i].code].children = [];
+        if (navs[i].code.indexOf('.') === -1) {
+          if (!_this.navMeta.roots.hasOwnProperty(ns)) {
+            _this.navMeta.roots[ns] = {};
+          }
+          _this.navMeta.roots[ns][navs[i].code] = _this.navMeta.nodes[ns][navs[i].code];
+        }
+        if (navs[i].type === 1) {
+          if (!_this.navMeta.classnames.hasOwnProperty(ns)) {
+            _this.navMeta.classnames[ns] = {};
+          }
+          _this.navMeta.classnames[ns][navs[i].classname] = navs[i].code;
+        }
+      }
+    }
+
+    for (ns in _this.navMeta.nodes) {
+      if (_this.navMeta.nodes.hasOwnProperty(ns)) {
+        for (name in _this.navMeta.nodes[ns]) {
+          if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
+            var n = _this.navMeta.nodes[ns][name];
+            if (_this.navMeta.sections.hasOwnProperty(ns) &&
+              _this.navMeta.sections[ns].hasOwnProperty(n.section) &&
+              n.code.indexOf('.') === -1) {
+              _this.navMeta.sections[ns][n.section].nodes[n.code] = n;
+            }
+
+            if (n.code.indexOf('.') !== -1) {
+              var p = n.code.substring(0, n.code.lastIndexOf('.'));
+              if (_this.navMeta.nodes[ns].hasOwnProperty(p)) {
+                _this.navMeta.nodes[ns][p].children.push(n);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   function init() {
@@ -353,143 +492,9 @@ function DsMetaRepository(config) {
         ]
       ).then(
         function (results) {
-          var i, name, cm;
-
-          var metas = results[0];
-          var views = results[1];
-          var navs = results[2];
-
-          _this.classMeta = {};
-          var ns;
-          for (i = 0; i < metas.length; i++) {
-            ns = formNS(metas[i].namespace);
-            if (!_this.classMeta.hasOwnProperty(ns)) {
-              _this.classMeta[ns] = {};
-            }
-
-            if (!_this.classMeta[ns].hasOwnProperty(metas[i].name)) {
-              _this.classMeta[ns][metas[i].name] = {
-                byVersion: {},
-                byOrder: []
-              };
-            }
-            cm = new ClassMeta(metas[i],_this);
-            cm.namespace = metas[i].namespace;
-            _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
-            _this.classMeta[ns][metas[i].name].byOrder.push(cm);
-            _this.classMeta[ns][metas[i].name][defaultVersion] = cm;
-          }
-
-          for (ns in _this.classMeta) {
-            if (_this.classMeta.hasOwnProperty(ns)) {
-              for (name in _this.classMeta[ns]) {
-                if (_this.classMeta[ns].hasOwnProperty(name)) {
-                  for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
-                    cm = _this.classMeta[ns][name].byOrder[i];
-                    if (cm.plain.ancestor) {
-                      cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
-                      if (cm.ancestor) {
-                        cm.ancestor.descendants.push(cm);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          _this.viewMeta = {
-            listModels: {},
-            collectionModels: {},
-            itemModels: {},
-            createModels: {},
-            detailModels: {},
-            masks: {},
-            validators: {}
-          };
-
-          function assignVm(coll, vm) {
-            var ns = formNS(vm.namespace);
-            if (!coll.hasOwnProperty(ns)) {
-              coll[ns] = {};
-            }
-            if (!coll[ns].hasOwnProperty(viewPath(vm.path, vm.className))) {
-              coll[ns][viewPath(vm.path, vm.className)] = [];
-            }
-            var arr = coll[ns][viewPath(vm.path, vm.className)];
-            arr.push(vm);
-          }
-
-          for (i = 0; i < views.length; i++) {
-            switch (views[i].type){
-              case 'list': assignVm(_this.viewMeta.listModels, views[i]); break;
-              case 'collection': assignVm(_this.viewMeta.collectionModels, views[i]); break;
-              case 'item': assignVm(_this.viewMeta.itemModels, views[i]); break;
-              case 'create': assignVm(_this.viewMeta.createModels, views[i]); break;
-              case 'detail': assignVm(_this.viewMeta.detailModels, views[i]); break;
-              case 'masks': _this.viewMeta.masks[views[i].name] = views[i]; break;
-              case 'validators': _this.viewMeta.validators[views[i].name] = views[i]; break;
-              default: break;
-            }
-          }
-
-          _this.navMeta = {
-            sections: {},
-            nodes: {},
-            classnames: {},
-            roots: {}
-          };
-
-          for (i = 0; i < navs.length; i++) {
-            ns = formNS(navs[i].namespace);
-            if (navs[i].itemType === 'section') {
-              if (!_this.navMeta.sections.hasOwnProperty(ns)) {
-                _this.navMeta.sections[ns] = {};
-              }
-              _this.navMeta.sections[ns][navs[i].name] = navs[i];
-              _this.navMeta.sections[ns][navs[i].name].nodes = {};
-            } else if (navs[i].itemType === 'node') {
-              if (!_this.navMeta.nodes.hasOwnProperty(ns)) {
-                _this.navMeta.nodes[ns] = {};
-              }
-              _this.navMeta.nodes[ns][navs[i].code] = navs[i];
-              _this.navMeta.nodes[ns][navs[i].code].children = [];
-              if (navs[i].code.indexOf('.') === -1) {
-                if (!_this.navMeta.roots.hasOwnProperty(ns)) {
-                  _this.navMeta.roots[ns] = {};
-                }
-                _this.navMeta.roots[ns][navs[i].code] = _this.navMeta.nodes[ns][navs[i].code];
-              }
-              if (navs[i].type === 1) {
-                if (!_this.navMeta.classnames.hasOwnProperty(ns)) {
-                  _this.navMeta.classnames[ns] = {};
-                }
-                _this.navMeta.classnames[ns][navs[i].classname] = navs[i].code;
-              }
-            }
-          }
-
-          for (ns in _this.navMeta.nodes) {
-            if (_this.navMeta.nodes.hasOwnProperty(ns)) {
-              for (name in _this.navMeta.nodes[ns]) {
-                if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
-                  var n = _this.navMeta.nodes[ns][name];
-                  if (_this.navMeta.sections.hasOwnProperty(ns) &&
-                    _this.navMeta.sections[ns].hasOwnProperty(n.section) &&
-                    n.code.indexOf('.') === -1) {
-                    _this.navMeta.sections[ns][n.section].nodes[n.code] = n;
-                  }
-
-                  if (n.code.indexOf('.') !== -1) {
-                    var p = n.code.substring(0, n.code.lastIndexOf('.'));
-                    if (_this.navMeta.nodes[ns].hasOwnProperty(p)) {
-                      _this.navMeta.nodes[ns][p].children.push(n);
-                    }
-                  }
-                }
-              }
-            }
-          }
+          acceptClassMeta(results[0]);
+          acceptViews(results[1]);
+          acceptNavigation(results[2]);
           resolve();
         }
       ).catch(reject);
