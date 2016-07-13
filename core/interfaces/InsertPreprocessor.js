@@ -9,8 +9,8 @@ function InsertPreprocessor() {
    * @param {{}} data
    * @returns {Promise}
    */
-  this.preProcess = function (classname, data) {
-    return this._preProcess(classname, data);
+  this.preProcess = function (classname, data, namespace) {
+    return this._preProcess(classname, data, namespace);
   };
 }
 

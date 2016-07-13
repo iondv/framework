@@ -1,4 +1,4 @@
-Testing ion-portal(master):
+Testing_platform_master:
   type: test
   tags:
     - master-selenium
@@ -7,57 +7,89 @@ Testing ion-portal(master):
   script:
     - cmd /c mklink /D node_modules "$Env:RUNNER_PATH\node_modules"
     - $env:NODE_PATH = pwd
+    - $env:DEBUG = "ION:*"
     - npm install
     - gulp build
     - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_MASTER
     - gulp test
-Testing ion-portal(develop):
+Testing_platforma_develop:
   type: test
   tags:
     - dev-selenium
   only:
     - develop
+    - raw
   script:
     - cmd /c mklink /D node_modules "$Env:RUNNER_PATH\node_modules"
     - $env:NODE_ENV = "development"
     - $env:NODE_PATH = pwd
+    - $env:DEBUG = "ION:*"
     - npm install
     - gulp build
     - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_DEV
     - gulp test
-"http://docker.local:8000 ion-portal":
+"http://docker.local:8090 platforma":
   type: deploy
   tags:
     - docker
   only:
     - master
   script:
-    - sudo docker stop $PJ_DOCKER_NAME_MASTER
+    - sudo docker stop $PJ_DOCKER_NAME_MASTER || true
+    - sudo docker rm $PJ_DOCKER_NAME_MASTER || true
+    - sudo docker run --name $PJ_DOCKER_NAME_MASTER -d -v /docker/node_modules:/var/www/node_modules -e NODE_PATH=/var/www -e DEBUG=ION:* -e NODE_ENV=development -p $HTTP_PORT_M:8000 -p $SSH_PORT_M:22 iondvww supervisord
     - ln -s /docker/node_modules/ node_modules
     - npm install
     - export NODE_PATH=`pwd -P`
     - export ION_INIT_DB=drop
+    - export DEBUG=ION:*
     - gulp build
     - gulp docker
     - cd docker
     - sudo docker cp ./ $PJ_DOCKER_NAME_MASTER:/var/www
     - sleep 3
-    - sudo docker start $PJ_DOCKER_NAME_MASTER
-"http://docker.local:3000 ion-portal":
+    - sudo docker restart $PJ_DOCKER_NAME_MASTER
+"http://docker.local:3090 platforma":
   type: deploy
   tags:
     - dev-docker
   only:
     - develop
   script:
-    - sudo docker stop $PJ_DOCKER_NAME_DEV
+    - sudo docker stop $PJ_DOCKER_NAME_DEV || true
+    - sudo docker rm $PJ_DOCKER_NAME_DEV || true
+    - sudo docker run --name $PJ_DOCKER_NAME_DEV -d -v /docker/node_modules:/var/www/node_modules -e NODE_PATH=/var/www -e DEBUG=ION:* -e NODE_ENV=development -p $HTTP_PORT_D:3000 -p $SSH_PORT_D:22 iondvww supervisord
     - ln -s /docker/node_modules/ node_modules
     - npm install
     - export NODE_PATH=`pwd -P`
     - export NODE_ENV=development
     - export ION_INIT_DB=drop
+    - export DEBUG=ION:*
     - gulp build
     - gulp docker
     - cd docker
     - sudo docker cp ./ $PJ_DOCKER_NAME_DEV:/var/www
-    - sudo docker start $PJ_DOCKER_NAME_DEV
+    - sleep 3
+    - sudo docker restart $PJ_DOCKER_NAME_DEV
+"http://docker.local:4090 platforma":
+  type: deploy
+  tags:
+    - raw-docker
+  only:
+    - raw
+  script:
+    - sudo docker stop $PJ_DOCKER_NAME_RAW || true
+    - sudo docker rm $PJ_DOCKER_NAME_RAW || true
+    - sudo docker run --name $PJ_DOCKER_NAME_RAW -d -v /docker/node_modules:/var/www/node_modules -e NODE_PATH=/var/www -e DEBUG=ION:* -e NODE_ENV=development -p $HTTP_PORT_R:3000 -p $SSH_PORT_R:22 iondv supervisord
+    - ln -s /docker/node_modules/ node_modules
+    - npm install
+    - export NODE_PATH=`pwd -P`
+    - export NODE_ENV=development
+    - export ION_INIT_DB=drop
+    - export DEBUG=ION:*
+    - gulp build
+    - gulp docker
+    - cd docker
+    - sudo docker cp ./ $PJ_DOCKER_NAME_RAW:/var/www
+    - sleep 3
+    - sudo docker restart $PJ_DOCKER_NAME_RAW
