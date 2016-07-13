@@ -31,12 +31,6 @@ function npm(path) {
   };
 }
 
-function onFinishConstructor(text, done) {
-  return function () {
-    console.log(text);
-  };
-}
-
 function copyResources(src, dest, msg) {
   if (fs.existsSync(src)) {
     return new Promise(function (resolve, reject) {
@@ -51,12 +45,12 @@ function copyResources(src, dest, msg) {
   return false;
 }
 
-function copyVendorResources(src, dest, module) {
+function copyVendorResources(src, dst, module) {
   var result = false;
   var dist = path.join(src, module, 'dist');
   var min = path.join(src, module, 'min');
   var build = path.join(src, module, 'build');
-  var dest = path.join(dest, module);
+  var dest = path.join(dst, module);
 
   result = copyResources(
     dist,
