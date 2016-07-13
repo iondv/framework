@@ -11,6 +11,7 @@ global.devBuild = process.env.NODE_ENV !== 'production';
 
 require('./gulp/build'); // Таски компоновки проекта и модулей
 require('./gulp/test'); // Таски тестирования проекта и модулей
+require('./gulp/json-schema'); // Таски на валидацию меты
 
 gulp.task('default', ['build'], function (done) {
   done();
