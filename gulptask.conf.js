@@ -29,7 +29,7 @@ module.exports = {
     testME: './test/middleware/',
     testSlow: './test/slow/',
     testE2E: './test/e2e/',
-    testCore:'./test/core/',
+    testCore: './test/core/',
     root: './'
   },
   folder: {

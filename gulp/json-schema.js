@@ -37,7 +37,8 @@ gulp.task('validate:meta:class', function () {
 
 gulp.task('validate:meta:view-create&item', function () {
   console.log('Проверяем мету представлений создания и изменения.');
-  return gulp.src([join(config.path.applications, '*/views/*/create.json'),join(config.path.applications, '*/views/*/item.json')])
+  return gulp.src([join(config.path.applications, '*/views/*/create.json'),
+                   join(config.path.applications, '*/views/*/item.json')])
     .pipe(jsonSchema(join(config.path.schema, 'view-createnitem.main.schema.json'), schemaOptions));
 });
 
