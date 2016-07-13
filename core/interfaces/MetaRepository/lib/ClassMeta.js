@@ -111,6 +111,10 @@ function ClassMeta(metaObject,metaRepository) {
     return this.namespace;
   };
 
+  this.getCanonicalName = function () {
+    return this.name + (this.namespace ? '@' + this.namespace : '');
+  };
+
   function buildSemanticGetter(prop,start,count) {
     if (typeof start !== 'undefined') {
       return function () {

@@ -122,7 +122,18 @@ function DsMetaRepository(config) {
     return null;
   }
 
+  /**
+   * @param {String} name
+   * @param {String} [version]
+   * @param {String} [namespace]
+   * @returns {ClassMeta}
+   */
   function getFromMeta(name, version, namespace) {
+    var parts = name.split('@');
+    if (parts.length > 1) {
+      name = parts[0];
+      namespace = parts[1];
+    }
     var ns = formNS(namespace);
     if (_this.classMeta[ns].hasOwnProperty(name)) {
       if (version) {
@@ -140,7 +151,7 @@ function DsMetaRepository(config) {
     throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
-  this._getMeta = function (name,version, namespace) {
+  this._getMeta = function (name, version, namespace) {
     return getFromMeta(name, version, namespace);
   };
 
