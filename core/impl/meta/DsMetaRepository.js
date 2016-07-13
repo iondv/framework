@@ -284,9 +284,15 @@ function DsMetaRepository(config) {
     return null;
   };
 
-  function getViewModel(node, meta, coll, namespace) {
+  /**
+   * @param {String} node
+   * @param {ClassMeta} meta
+   * @param {{}} coll
+   * @returns {*}
+     */
+  function getViewModel(node, meta, coll) {
     var path = viewPath(node, meta.getName());
-    var ns = formNS(namespace);
+    var ns = formNS(meta.getNamespace());
 
     if (coll.hasOwnProperty(ns)) {
       if (coll[ns].hasOwnProperty(path)) {
@@ -294,7 +300,7 @@ function DsMetaRepository(config) {
       } else if (coll[ns].hasOwnProperty(meta.getName())) {
         return findByVersion(coll[ns][meta.getName()], meta.getVersion()); // TODO locate model in parent nodes
       } else if (meta.getAncestor()) {
-        return getViewModel(node, meta.getAncestor(), coll, namespace);
+        return getViewModel(node, meta.getAncestor(), coll);
       }
     }
     return null;
@@ -302,7 +308,7 @@ function DsMetaRepository(config) {
 
   this._getListViewModel = function (classname, node, namespace) {
     var meta = this._getMeta(classname, namespace);
-    var vm = getViewModel(node, meta, this.viewMeta.listModels, namespace);
+    var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
       return this._getListViewModel(meta.getAncestor().getName(), node, namespace);
     }
@@ -311,37 +317,37 @@ function DsMetaRepository(config) {
 
   this._getCollectionViewModel = function (classname, collection, node, namespace) {
     var meta = this._getMeta(classname, namespace);
-    return getViewModel(node, meta, this.viewMeta.collectionModels, namespace);
+    return getViewModel(node, meta, this.viewMeta.collectionModels);
   };
 
   this._getItemViewModel = function (classname, node, namespace) {
     var meta = this._getMeta(classname, namespace);
-    var vm = getViewModel(node, meta, this.viewMeta.itemModels, namespace);
+    var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
       return this._getItemViewModel(meta.getAncestor().getName(), node, namespace);
     }
     return vm;
   };
 
-  function getCVM(node, meta, namespace) {
-    var vm = getViewModel(node, meta, _this.viewMeta.createModels, namespace);
+  function getCVM(node, meta) {
+    var vm = getViewModel(node, meta, _this.viewMeta.createModels);
     if (!vm) {
-      vm = getViewModel(node, meta, _this.viewMeta.itemModels, namespace);
+      vm = getViewModel(node, meta, _this.viewMeta.itemModels);
     }
     if (!vm && meta.getAncestor()) {
-      return getCVM(node, meta.getAncestor(), namespace);
+      return getCVM(node, meta.getAncestor());
     }
     return vm;
   }
 
   this._getCreationViewModel = function (classname, node, namespace) {
     var meta = this._getMeta(classname, namespace);
-    return getCVM(node, meta, namespace);
+    return getCVM(node, meta);
   };
 
   this._getDetailViewModel = function (classname, node, namespace) {
     var meta = this._getMeta(classname, namespace);
-    return getViewModel(node, meta, this.viewMeta.detailModels, namespace);
+    return getViewModel(node, meta, this.viewMeta.detailModels);
   };
 
   this._getMask = function (name) {

@@ -144,7 +144,7 @@ function ClassMeta(metaObject, metaRepository) {
   };
 
   this.getCanonicalName = function () {
-    return this.name + (this.namespace ? '@' + this.namespace : '');
+    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
   this.getSemantic = function () {
