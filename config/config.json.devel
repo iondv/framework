@@ -26,9 +26,13 @@
         }
       }
     ],
-    "globalDs": "Db",
-    "localAuthDS": "Db",
+    "metaDs": "Db",
+    "dataDs": "Db",
     "sessionDs": "Db",
+    "auth": {
+      "denyTopLevel": false,
+      "localAuthDS": "Db"
+    },
     "policy": [
         {
             "module": "core/impl/access/aclmongo",
@@ -36,5 +40,10 @@
                 "accessDs": "Db"
             }
         }
-    ]
+    ],
+    "session": {
+       "secret": "ion:demo:secret",
+       "resave": false,
+       "saveUninitialized": true
+    }
 }

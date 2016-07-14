@@ -21,7 +21,6 @@
             }
           },
           "connectionLimit": 10,
-          "schema": "[[db.name]]",
           "user": "[[db.user]]",
           "password": "[[db.pwd]]"
         }
@@ -31,7 +30,7 @@
     "dataDs": "Db",
     "sessionDs": "Db",
     "auth": {
-      "authCallbacks": ["modules/offline-sync.addCredentials"],
+      "denyTopLevel": true,
       "localAuthDS": "Db"
     },
     "policy": [

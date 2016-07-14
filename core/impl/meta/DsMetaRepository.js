@@ -1,3 +1,4 @@
+// jscs:disable requireCapitalizedComments
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 08.04.16.
  */
@@ -90,6 +91,10 @@ function DsMetaRepository(config) {
 
   var defaultVersion = '___default';
 
+  function formNS(ns) {
+    return 'ns_' + (ns ? ns : '');
+  }
+
   function findByVersion(arr, version, i1, i2) {
     if (!i1) { i1 = 0; }
     if (!i2) { i2 = arr.length - 1; }
@@ -117,34 +122,36 @@ function DsMetaRepository(config) {
     return null;
   }
 
-  function getFromMeta(name, version) {
-    if (_this.classMeta.hasOwnProperty(name)) {
+  function getFromMeta(name, version, namespace) {
+    var ns = formNS(namespace);
+    if (_this.classMeta[ns].hasOwnProperty(name)) {
       if (version) {
-        if (_this.classMeta[name].hasOwnProperty(version)) {
-          return _this.classMeta[name].byVersion[version];
+        if (_this.classMeta[ns][name].hasOwnProperty(version)) {
+          return _this.classMeta[ns][name].byVersion[version];
         } else {
-          var cm = findByVersion(_this.classMeta[name].byOrder, version);
+          var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
           if (cm) {
             return cm;
           }
         }
       }
-      return _this.classMeta[name][defaultVersion];
+      return _this.classMeta[ns][name][defaultVersion];
     }
-    throw new Error('Класс ' + name + '(' + version + ') не найден!');
+    throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
-  this._getMeta = function (name,version) {
-    return getFromMeta(name, version);
+  this._getMeta = function (name,version, namespace) {
+    return getFromMeta(name, version, namespace);
   };
 
-  this._listMeta = function (ancestor,version,direct) {
+  this._listMeta = function (ancestor, version, direct, namespace) {
+    var cm, result, ns;
+    result = [];
     if (ancestor) {
-      var cm = getFromMeta(ancestor, version);
+      cm = getFromMeta(ancestor, version, namespace);
       if (direct) {
         return cm.getDescendants();
       } else {
-        var result = [];
         (function fillDescendants(src) {
           result = result.concat(src);
           for (var i = 0; i < src.length; i++) {
@@ -153,35 +160,69 @@ function DsMetaRepository(config) {
         })(cm.getDescendants());
         return result;
       }
+    } else {
+      ns = formNS(namespace);
+      for (var nm  in this.classMeta) {
+        if (this.classMeta.hasOwnProperty(nm) && ns === nm) {
+          for (var cn in this.ClassMeta[nm]) {
+            if (this.ClassMeta[nm].hasOwnProperty(cn)) {
+              if (version) {
+                if (_this.classMeta[nm][cn].hasOwnProperty(version)) {
+                  result.push(_this.classMeta[nm][cn].byVersion[version]);
+                  continue;
+                }
+                cm = findByVersion(_this.classMeta[nm][cn].byOrder, version);
+                if (cm) {
+                  result.push(cm);
+                }
+              } else {
+                Array.prototype.push.apply(result, _this.classMeta[nm][cn].byOrder);
+              }
+            }
+          }
+        }
+      }
+      return result;
     }
   };
 
-  this._ancestor = function (classname,version) {
-    var cm = getFromMeta(classname, version);
+  this._ancestor = function (classname,version, namespace) {
+    var cm = getFromMeta(classname, version, namespace);
     return cm.getAncestor();
   };
 
-  this._propertyMetas = function (classname,version) {
-    var cm = getFromMeta(classname, version);
+  this._propertyMetas = function (classname,version, namespace) {
+    var cm = getFromMeta(classname, version, namespace);
     return cm.getPropertyMetas();
   };
 
-  this._getNavigationSections = function () {
-    return _this.navMeta.sections;
+  this._getNavigationSections = function (namespace) {
+    var ns = formNS(namespace);
+    if (_this.navMeta.sections.hasOwnProperty(ns)) {
+      return _this.navMeta.sections[ns];
+    }
+    return [];
   };
 
-  this._getNavigationSection = function (code) {
-    if (this.navMeta.sections.hasOwnProperty(code)) {
-      return this.navMeta.sections[code];
+  this._getNavigationSection = function (code, namespace) {
+    var ns = formNS(namespace);
+    if (this.navMeta.sections.hasOwnProperty(ns) && this.navMeta.sections[ns].hasOwnProperty(code)) {
+      return this.navMeta.sections[ns][code];
     }
     return null;
   };
 
-  this._getNodes = function (section, parent) {
+  this._getNodes = function (section, parent, namespace) {
+    var ns = formNS(namespace);
     var result = [];
-    var src = this.navMeta.roots;
-    if (section && this.navMeta.sections.hasOwnProperty(section)) {
-      src = this.navMeta.sections[section].nodes;
+    var src = {};
+
+    if (this.navMeta.roots.hasOwnProperty(ns)) {
+      src = this.navMeta.roots[ns];
+    }
+
+    if (section && this.navMeta.sections.hasOwnProperty(ns) && this.navMeta.sections[ns].hasOwnProperty(section)) {
+      src = this.navMeta.sections[ns][section].nodes;
     }
 
     if (parent) {
@@ -200,73 +241,80 @@ function DsMetaRepository(config) {
     return result;
   };
 
-  this._getNode = function (code) {
-    if (this.navMeta.nodes.hasOwnProperty(code)) {
-      return this.navMeta.nodes[code];
+  this._getNode = function (code, namespace) {
+    var ns = formNS(namespace);
+    if (this.navMeta.nodes.hasOwnProperty(ns) && this.navMeta.nodes[ns].hasOwnProperty(code)) {
+      return this.navMeta.nodes[ns][code];
     }
     return null;
   };
 
-  this._getNodeForClassname = function (className) {
-    if (this.navMeta.classnames.hasOwnProperty(className)) {
-      return this.navMeta.classnames[className];
+  this._getNodeForClassname = function (className, namespace) {
+    var ns = formNS(namespace);
+    if (this.navMeta.classnames.hasOwnProperty(ns) && this.navMeta.classnames[ns].hasOwnProperty(className)) {
+      return this.navMeta.classnames[ns][className];
     }
+    return null;
   };
 
-  function getViewModel(node, meta, coll) {
+  function getViewModel(node, meta, coll, namespace) {
     var path = viewPath(node, meta.getName());
-    if (coll.hasOwnProperty(path)) {
-      return findByVersion(coll[path], meta.getVersion()); // TODO locate model in parent nodes
-    } else if (coll.hasOwnProperty(meta.getName())) {
-      return findByVersion(coll[meta.getName()], meta.getVersion()); // TODO locate model in parent nodes
-    } else if (meta.getAncestor()) {
-      return getViewModel(node, meta.getAncestor(), coll);
+    var ns = formNS(namespace);
+
+    if (coll.hasOwnProperty(ns)) {
+      if (coll[ns].hasOwnProperty(path)) {
+        return findByVersion(coll[ns][path], meta.getVersion()); // TODO locate model in parent nodes
+      } else if (coll[ns].hasOwnProperty(meta.getName())) {
+        return findByVersion(coll[ns][meta.getName()], meta.getVersion()); // TODO locate model in parent nodes
+      } else if (meta.getAncestor()) {
+        return getViewModel(node, meta.getAncestor(), coll, namespace);
+      }
     }
     return null;
   }
 
-  this._getListViewModel = function (classname, node) {
-    var meta = this._getMeta(classname);
-    var vm = getViewModel(node, meta, this.viewMeta.listModels);
+  this._getListViewModel = function (classname, node, namespace) {
+    var meta = this._getMeta(classname, namespace);
+    var vm = getViewModel(node, meta, this.viewMeta.listModels, namespace);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getName(), node);
+      return this._getListViewModel(meta.getAncestor().getName(), node, namespace);
     }
     return vm;
   };
 
-  this._getCollectionViewModel = function (classname, collection, node) {
-    var meta = this._getMeta(classname);
-    return getViewModel(node, meta, this.viewMeta.collectionModels);
+  this._getCollectionViewModel = function (classname, collection, node, namespace) {
+    var meta = this._getMeta(classname, namespace);
+    return getViewModel(node, meta, this.viewMeta.collectionModels, namespace);
   };
 
-  this._getItemViewModel = function (classname, node) {
-    var meta = this._getMeta(classname);
-    var vm = getViewModel(node, meta, this.viewMeta.itemModels);
+  this._getItemViewModel = function (classname, node, namespace) {
+    var meta = this._getMeta(classname, namespace);
+    var vm = getViewModel(node, meta, this.viewMeta.itemModels, namespace);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getName(), node);
+      return this._getItemViewModel(meta.getAncestor().getName(), node, namespace);
     }
     return vm;
   };
 
-  function getCVM(node, meta) {
-    var vm = getViewModel(node, meta, _this.viewMeta.createModels);
+  function getCVM(node, meta, namespace) {
+    var vm = getViewModel(node, meta, _this.viewMeta.createModels, namespace);
     if (!vm) {
-      vm = getViewModel(node, meta, _this.viewMeta.itemModels);
+      vm = getViewModel(node, meta, _this.viewMeta.itemModels, namespace);
     }
     if (!vm && meta.getAncestor()) {
-      return getCVM(node, meta.getAncestor());
+      return getCVM(node, meta.getAncestor(), namespace);
     }
     return vm;
   }
 
-  this._getCreationViewModel = function (classname, node) {
-    var meta = this._getMeta(classname);
-    return getCVM(node, meta);
+  this._getCreationViewModel = function (classname, node, namespace) {
+    var meta = this._getMeta(classname, namespace);
+    return getCVM(node, meta, namespace);
   };
 
-  this._getDetailViewModel = function (classname, node) {
-    var meta = this._getMeta(classname);
-    return getViewModel(node, meta, this.viewMeta.detailModels);
+  this._getDetailViewModel = function (classname, node, namespace) {
+    var meta = this._getMeta(classname, namespace);
+    return getViewModel(node, meta, this.viewMeta.detailModels, namespace);
   };
 
   this._getMask = function (name) {
@@ -281,16 +329,16 @@ function DsMetaRepository(config) {
   };
 
   function viewPath(nodeCode,className) {
-    return (nodeCode ? (nodeCode + '/') : '') + className;
+    return (nodeCode ? nodeCode + '/' : '') + className;
   }
 
-  this._init = function () {
+  function init() {
     return new Promise(function (resolve, reject) {
       Promise.all(
         [
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
-          _this.ds.fetch(_this.viewTableName, {}),
-          _this.ds.fetch(_this.navTableName, {sort: {name: 1}})
+          _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
+          _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
         ]
       ).then(
         function (results) {
@@ -300,45 +348,39 @@ function DsMetaRepository(config) {
           var views = results[1];
           var navs = results[2];
 
-          /*
-          Function sortVer(coll) {
-            for (var path in coll) {
-              if (coll.hasOwnProperty(path)) {
-                coll[path].sort(function(a,b){
-                  if (a.version > b.version) {
-                    return 1;
-                  } else if (a.version < b.version) {
-                    return -1;
-                  }
-                  return 0;
-                });
-              }
-            }
-          }
-          */
           _this.classMeta = {};
+          var ns;
           for (i = 0; i < metas.length; i++) {
-            if (!_this.classMeta.hasOwnProperty(metas[i].name)) {
-              _this.classMeta[metas[i].name] = {
+            ns = formNS(metas[i].namespace);
+            if (!_this.classMeta.hasOwnProperty(ns)) {
+              _this.classMeta[ns] = {};
+            }
+
+            if (!_this.classMeta[ns].hasOwnProperty(metas[i].name)) {
+              _this.classMeta[ns][metas[i].name] = {
                 byVersion: {},
                 byOrder: []
               };
             }
             cm = new ClassMeta(metas[i],_this);
-            cm.version = metas[i].version;
-            _this.classMeta[metas[i].name].byVersion[metas[i].version] = cm;
-            _this.classMeta[metas[i].name].byOrder.push(cm);
-            _this.classMeta[metas[i].name][defaultVersion] = cm;
+            cm.namespace = metas[i].namespace;
+            _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
+            _this.classMeta[ns][metas[i].name].byOrder.push(cm);
+            _this.classMeta[ns][metas[i].name][defaultVersion] = cm;
           }
 
-          for (name in _this.classMeta) {
-            if (_this.classMeta.hasOwnProperty(name)) {
-              for (i = 0; i < _this.classMeta[name].byOrder.length; i++) {
-                cm = _this.classMeta[name].byOrder[i];
-                if (cm.plain.ancestor) {
-                  cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version);
-                  if (cm.ancestor) {
-                    cm.ancestor.descendants.push(cm);
+          for (ns in _this.classMeta) {
+            if (_this.classMeta.hasOwnProperty(ns)) {
+              for (name in _this.classMeta[ns]) {
+                if (_this.classMeta[ns].hasOwnProperty(name)) {
+                  for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
+                    cm = _this.classMeta[ns][name].byOrder[i];
+                    if (cm.plain.ancestor) {
+                      cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
+                      if (cm.ancestor) {
+                        cm.ancestor.descendants.push(cm);
+                      }
+                    }
                   }
                 }
               }
@@ -356,10 +398,14 @@ function DsMetaRepository(config) {
           };
 
           function assignVm(coll, vm) {
-            if (!coll.hasOwnProperty(viewPath(vm.path, vm.className))) {
-              coll[viewPath(vm.path, vm.className)] = [];
+            var ns = formNS(vm.namespace);
+            if (!coll.hasOwnProperty(ns)) {
+              coll[ns] = {};
             }
-            var arr = coll[viewPath(vm.path, vm.className)];
+            if (!coll[ns].hasOwnProperty(viewPath(vm.path, vm.className))) {
+              coll[ns][viewPath(vm.path, vm.className)] = [];
+            }
+            var arr = coll[ns][viewPath(vm.path, vm.className)];
             arr.push(vm);
           }
 
@@ -375,13 +421,7 @@ function DsMetaRepository(config) {
               default: break;
             }
           }
-          /*
-          SortVer(_this.viewMeta.listModels);
-          sortVer(_this.viewMeta.collectionModels);
-          sortVer(_this.viewMeta.itemModels);
-          sortVer(_this.viewMeta.createModels);
-          sortVer(_this.viewMeta.detailModels);
-*/
+
           _this.navMeta = {
             sections: {},
             nodes: {},
@@ -390,32 +430,51 @@ function DsMetaRepository(config) {
           };
 
           for (i = 0; i < navs.length; i++) {
+            ns = formNS(navs[i].namespace);
             if (navs[i].itemType === 'section') {
-              _this.navMeta.sections[navs[i].name] = navs[i];
-              _this.navMeta.sections[navs[i].name].nodes = {};
+              if (!_this.navMeta.sections.hasOwnProperty(ns)) {
+                _this.navMeta.sections[ns] = {};
+              }
+              _this.navMeta.sections[ns][navs[i].name] = navs[i];
+              _this.navMeta.sections[ns][navs[i].name].nodes = {};
             } else if (navs[i].itemType === 'node') {
-              _this.navMeta.nodes[navs[i].code] = navs[i];
-              _this.navMeta.nodes[navs[i].code].children = [];
+              if (!_this.navMeta.nodes.hasOwnProperty(ns)) {
+                _this.navMeta.nodes[ns] = {};
+              }
+              _this.navMeta.nodes[ns][navs[i].code] = navs[i];
+              _this.navMeta.nodes[ns][navs[i].code].children = [];
               if (navs[i].code.indexOf('.') === -1) {
-                _this.navMeta.roots[navs[i].code] = _this.navMeta.nodes[navs[i].code];
+                if (!_this.navMeta.roots.hasOwnProperty(ns)) {
+                  _this.navMeta.roots[ns] = {};
+                }
+                _this.navMeta.roots[ns][navs[i].code] = _this.navMeta.nodes[ns][navs[i].code];
               }
               if (navs[i].type === 1) {
-                _this.navMeta.classnames[navs[i].classname] = navs[i].code;
+                if (!_this.navMeta.classnames.hasOwnProperty(ns)) {
+                  _this.navMeta.classnames[ns] = {};
+                }
+                _this.navMeta.classnames[ns][navs[i].classname] = navs[i].code;
               }
             }
           }
 
-          for (name in _this.navMeta.nodes) {
-            if (_this.navMeta.nodes.hasOwnProperty(name)) {
-              var n = _this.navMeta.nodes[name];
-              if (_this.navMeta.sections.hasOwnProperty(n.section) && (n.code.indexOf('.') === -1)) {
-                _this.navMeta.sections[n.section].nodes[n.code] = n;
-              }
+          for (ns in _this.navMeta.nodes) {
+            if (_this.navMeta.nodes.hasOwnProperty(ns)) {
+              for (name in _this.navMeta.nodes[ns]) {
+                if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
+                  var n = _this.navMeta.nodes[ns][name];
+                  if (_this.navMeta.sections.hasOwnProperty(ns) &&
+                    _this.navMeta.sections[ns].hasOwnProperty(n.section) &&
+                    n.code.indexOf('.') === -1) {
+                    _this.navMeta.sections[ns][n.section].nodes[n.code] = n;
+                  }
 
-              if (n.code.indexOf('.') !== -1) {
-                var p = n.code.substring(0, n.code.lastIndexOf('.'));
-                if (_this.navMeta.nodes.hasOwnProperty(p)) {
-                  _this.navMeta.nodes[p].children.push(n);
+                  if (n.code.indexOf('.') !== -1) {
+                    var p = n.code.substring(0, n.code.lastIndexOf('.'));
+                    if (_this.navMeta.nodes[ns].hasOwnProperty(p)) {
+                      _this.navMeta.nodes[ns][p].children.push(n);
+                    }
+                  }
                 }
               }
             }
@@ -424,6 +483,20 @@ function DsMetaRepository(config) {
         }
       ).catch(reject);
     });
+  }
+
+  /**
+   * @param {DbSync} sync
+   * @returns {Promise}
+   * @private
+     */
+  this._init = function (sync) {
+    if (sync) {
+      return new Promise(function (resolve, reject) {
+        sync.init().then(init).then(resolve).catch(reject);
+      });
+    }
+    return init();
   };
 }
 

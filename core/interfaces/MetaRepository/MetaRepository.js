@@ -16,8 +16,8 @@ function MetaRepository() {
    * @param {String} [version]
    * @returns {ClassMeta}
    */
-  this.getMeta = function (name,version) {
-    return this._getMeta(name, version);
+  this.getMeta = function (name,version, namespace) {
+    return this._getMeta(name, version, namespace);
   };
 
   /**
@@ -27,8 +27,8 @@ function MetaRepository() {
    * @param {Boolean} [direct]
    * @returns {ClassMeta[]}
    */
-  this.listMeta = function (ancestor,version,direct) {
-    return this._listMeta(ancestor, version, direct);
+  this.listMeta = function (ancestor, version, direct, namespace) {
+    return this._listMeta(ancestor, version, direct, namespace);
   };
 
   /**
@@ -36,8 +36,8 @@ function MetaRepository() {
    * @param {String} [version]
    * @returns {ClassMeta}
    */
-  this.ancestor = function (classname, version) {
-    return this._ancestor(classname, version);
+  this.ancestor = function (classname, version, namespace) {
+    return this._ancestor(classname, version, namespace);
   };
 
   /**
@@ -45,8 +45,8 @@ function MetaRepository() {
    * @param {String} [version]
    * @returns {Object[]}
    */
-  this.propertyMetas = function (classname, version) {
-    return this._propertyMetas(classname, version);
+  this.propertyMetas = function (classname, version, namespace) {
+    return this._propertyMetas(classname, version, namespace);
   };
 
   // NavigationRepository
@@ -54,23 +54,23 @@ function MetaRepository() {
   /**
    * @returns {Object[]}
    */
-  this.getNavigationSections = function () {
-    return this._getNavigationSections();
+  this.getNavigationSections = function (namespace) {
+    return this._getNavigationSections(namespace);
   };
 
   /**
    * @param {String} code
    * @returns {Object | null}
    */
-  this.getNavigationSection = function (code) {
-    return this._getNavigationSection(code);
+  this.getNavigationSection = function (code, namespace) {
+    return this._getNavigationSection(code, namespace);
   };
 
   /**
    * @param {String} code
    * @returns {Object | null}
    */
-  this.getNode = function (code) {
+  this.getNode = function (code, namespace) {
     return this._getNode(code);
   };
 
@@ -78,7 +78,7 @@ function MetaRepository() {
    * @param {String} sections
    * @returns {Object[]}
    */
-  this.getNodes = function (sections, parent) {
+  this.getNodes = function (sections, parent, namespace) {
     return this._getNodes(sections, parent);
   };
 
@@ -86,8 +86,8 @@ function MetaRepository() {
    * @param {String} className
    * @returns {Object | null}
    */
-  this.getNodeForClassname = function (className) {
-    return this._getNodeForClassname(className);
+  this.getNodeForClassname = function (className, namespace) {
+    return this._getNodeForClassname(className, namespace);
   };
 
   // ViewModelRepository
@@ -97,8 +97,8 @@ function MetaRepository() {
    * @param {String} node
    * @returns {Object | null}
    */
-  this.getListViewModel = function (className, node) {
-    return this._getListViewModel(className, node);
+  this.getListViewModel = function (className, node, namespace) {
+    return this._getListViewModel(className, node, namespace);
   };
 
   /**
@@ -107,8 +107,8 @@ function MetaRepository() {
    * @param {String} node
    * @returns {Object | null}
    */
-  this.getCollectionViewModel = function (className, collection, node) {
-    return this._getCollectionViewModel(className, collection, node);
+  this.getCollectionViewModel = function (className, collection, node, namespace) {
+    return this._getCollectionViewModel(className, collection, node, namespace);
   };
 
   /**
@@ -116,8 +116,8 @@ function MetaRepository() {
    * @param {String} node
    * @returns {Object | null}
    */
-  this.getItemViewModel = function (className, node) {
-    return this._getItemViewModel(className, node);
+  this.getItemViewModel = function (className, node, namespace) {
+    return this._getItemViewModel(className, node, namespace);
   };
 
   /**
@@ -125,8 +125,8 @@ function MetaRepository() {
    * @param {String} node
    * @returns {Object | null}
    */
-  this.getCreationViewModel = function (className, node) {
-    return this._getCreationViewModel(className, node);
+  this.getCreationViewModel = function (className, node, namespace) {
+    return this._getCreationViewModel(className, node, namespace);
   };
 
   /**
@@ -134,8 +134,8 @@ function MetaRepository() {
    * @param {String} node
    * @returns {Object | null}
    */
-  this.getDetailViewModel = function (className, node) {
-    return this._getDetailViewModel(className, node);
+  this.getDetailViewModel = function (className, node, namespace) {
+    return this._getDetailViewModel(className, node, namespace);
   };
 
   /**
@@ -154,10 +154,11 @@ function MetaRepository() {
   };
 
   /**
+   * @param {DbSync} sync
    * @returns {Promise}
    */
-  this.init = function () {
-    return this._init();
+  this.init = function (sync) {
+    return this._init(sync);
   };
 }
 

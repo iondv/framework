@@ -12,9 +12,9 @@
   "bitwise" : true, // Prohibit bitwise operators (&, |, ^, etc.).
   "curly" : true, // Require {} for every new block or scope.
   "eqeqeq" : true, // Require triple equals i.e. `===`.
-  "es5" : true, // Allow EcmaScript 5 syntax. // es5 is default https://github.com/jshint/jshint/issues/1411 - This option has been deprecated and will be removed in the next major release of JSHint.
+  "es5" : false, // Allow EcmaScript 5 syntax. // es5 is default https://github.com/jshint/jshint/issues/1411 - This option has been deprecated and will be removed in the next major release of JSHint.
   "esversion": 6,   // This option is used to specify the ECMAScript version to which the code must adhere. It can assume one of the following values:
-  "esnext": true, // This option tells JSHint that your code uses ECMAScript 6 - This option has been deprecated and will be removed in the next major release of JSHint.
+  "esnext": false, // This option tells JSHint that your code uses ECMAScript 6 - This option has been deprecated and will be removed in the next major release of JSHint.
   "forin" : true, // Tolerate `for in` loops without `hasOwnPrototype`.
   "freeze":true, //   prohibits overwriting prototypes of native objects such as Array, Date and so on.
   "funcscope":false, //This option suppresses warnings about declaring variables inside of control structures while accessing them later from the outside. Even though JavaScript has only two real scopes—global and function—such practice leads to confusion among people new to the language and hard-to-debug bugs. This is why, by default, JSHint warns about variables that are used outside of their intended scope.
@@ -40,7 +40,7 @@
   "maxcomplexity" : 10, // (рекомендуют 6, в вики до 10, редко до 15 - надо обосновывать) Цикломатическая (топографическая) сложность. . lets you control cyclomatic complexity throughout your code. Cyclomatic complexity measures the number of linearly independent paths through a program's source code. Read more about cyclomatic complexity on Wikipedia.
   "maxdepth" : 7, // Количество вложений блоков (рекомендуют 4) - lets you control how nested do you want your blocks to be:
   "maxerr" : 100, // This options allows you to set the maximum amount of warnings JSHint will produce before giving up. Default is 50.
-  "maxparams" : 4, // (рекомендуют 4) set the max number of formal parameters allowed per function
+  "maxparams" : 6, // (рекомендуют 4) set the max number of formal parameters allowed per function
   "maxstatements" : 20, // (рекомендуют 8-15, встречается 20-25) Количество присваиваний и вызовов в функции(?) lets you set the max number of statements allowed per function:
   "noarg" : true, // Prohibit use of `arguments.caller` and `arguments.callee`.
   "nocomma":true, // prohibits the use of the comma operator. When misused, the comma operator can obscure the value of a statement and promote incorrect code.

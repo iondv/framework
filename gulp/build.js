@@ -166,7 +166,7 @@ function minCss(path) {
           .pipe(minifyCSS())
           .pipe(rename({suffix: '.min'}))
           .pipe(sourcemaps.write('./maps'))
-          .pipe(gulp.dest(join(config.path._public, config.folder._css)))
+          .pipe(gulp.dest(join(config.path.public, config.folder.css)))
           .pipe(size({title: 'Total compressed CSS files (with source maps) size:'}));
         resolve();
       } catch (error) {
@@ -199,14 +199,14 @@ function minJs(path) {
       var error;
       try {
         process.chdir(path);
-        gulp.src(join(config.path._public, config.folder._js, config.file.mainJS))
+        gulp.src(join(config.path.public, config.folder.js, config.file.mainJS))
           .pipe(sourcemaps.init())
           .pipe(stripDebug())
           .pipe(uglify())
           .pipe(rename({suffix: '.min'}))
           // For using ES6 .pipe(plugins.babel())
           .pipe(sourcemaps.write('.'))
-          .pipe(gulp.dest(join(config.path._public, config.folder._js)))
+          .pipe(gulp.dest(join(config.path.public, config.folder.js)))
           .pipe(size({title: 'Total compressed JavaScript files (with source maps) size:'}));
         resolve();
       } catch (error) {

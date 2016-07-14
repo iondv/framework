@@ -13,8 +13,6 @@ var PropertyTypes = require('core/PropertyTypes');
  */
 function Property(item, propertyMeta) {
 
-  var _this = this;
-
   /**
    * @type {Item}
    */
@@ -77,7 +75,7 @@ function Property(item, propertyMeta) {
       }
     }
 
-    return (v !== null) ? v : '';
+    return v !== null ? v : '';
   };
 
   this.evaluate = function () {
