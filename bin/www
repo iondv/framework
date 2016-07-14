@@ -3,7 +3,6 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var i;
 var debug = require('debug-log')('ION:www');
 var path = require('path');
 var http = require('http');
@@ -141,6 +140,7 @@ var onError = function (error) {
   process.exit(130);
 };
 
+/* jshint maxstatements: 30 */
 function start(ports, i) {
   return new Promise(function (resolve, reject) {
     server.once('error', function (err) {
@@ -174,7 +174,6 @@ dataSources.connect().then(
 
     // Инициализируем репозиторий мета-данных
     app.metaRepo.init(sync).then(function () {
-      var i, ports, err;
       try {
         // Создаем репозиторий данных
         var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
@@ -188,10 +187,15 @@ dataSources.connect().then(
           ttl: 14 * 24 * 60 * 60
         });
         app.use(session(sessOpts));
-        auth.init(app, config.auth);
-
-        // Подключаем модули
-        debug.info('Загрузка веб-модулей.');
+        return auth.init(app, config.auth);
+      } catch (err) {
+        return onError(err);
+      }
+    }).then(function () {
+      var i, ports;
+      // Подключаем модули
+      debug.info('Загрузка веб-модулей.');
+      try {
         var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
         for (i = 0; i < candidates.length; i++) {
           if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
@@ -212,7 +216,6 @@ dataSources.connect().then(
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
-
       return start(ports, 0);
     }).then(function () {
       server.on('error', onError);

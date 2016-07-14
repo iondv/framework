@@ -92,6 +92,16 @@ function DataSource() {
   this.get = function (type, conditions) {
     return this._get(type, conditions);
   };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @param {{unique: Boolean}} [options]
+   * @returns {Promise}
+   */
+  this.ensureIndex = function (type, properties, options) {
+    return this._ensureIndex(type, properties, options);
+  };
 }
 
 module.exports = DataSource;

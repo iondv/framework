@@ -119,7 +119,7 @@ function MongoDs(config) {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         _this.db.collection(type, {strict: true}, function (err, c) {
           if (!c) {
-            c = _this.db.createCollection(type)
+            this.db.createCollection(type)
               .then(resolve)
               .catch(reject);
           } else {
@@ -167,10 +167,7 @@ function MongoDs(config) {
           };
 
           if (_this.insertPreprocessor) {
-            _this.insertPreprocessor.
-              preProcess(type, data).
-              then(f).
-              catch(reject);
+            _this.insertPreprocessor.preProcess(type, data).then(f).catch(reject);
           } else {
             f(data);
           }
@@ -213,10 +210,7 @@ function MongoDs(config) {
           };
 
           if (upsert && _this.insertPreprocessor) {
-            _this.insertPreprocessor.
-              preProcess(type, data).
-              then(f).
-              catch(reject);
+            _this.insertPreprocessor.preProcess(type, data).then(f).catch(reject);
           } else {
             f(data);
           }
@@ -233,53 +227,53 @@ function MongoDs(config) {
   };
 
   this._fetch = function (type, options) {
-      return this.getCollection(type).then(
-        function (c) {
-          return new Promise(function (resolve, reject) {
-            var r = c.find(options.filter || {});
+    return this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          var r = c.find(options.filter || {});
 
-            if (options.sort) {
-              r = r.sort(options.sort);
-            }
+          if (options.sort) {
+            r = r.sort(options.sort);
+          }
 
-            if (options.offset) {
-              r = r.skip(options.offset);
-            }
+          if (options.offset) {
+            r = r.skip(options.offset);
+          }
 
-            if (options.count) {
-              r = r.limit(options.count);
-            }
+          if (options.count) {
+            r = r.limit(options.count);
+          }
 
-            function work(amount) {
-              r.toArray(function (err, docs) {
+          function work(amount) {
+            r.toArray(function (err, docs) {
+              r.close();
+              if (err) {
+                debug.error(err);
+                return reject(err);
+              }
+              if (amount !== null) {
+                docs.total = amount;
+              }
+              resolve(docs);
+            });
+          }
+
+          if (options.countTotal) {
+            r.count(false, function (err, amount) {
+              if (err) {
                 r.close();
-                if (err) {
-                  debug.error(err);
-                  return reject(err);
-                }
-                if (amount !== null) {
-                  docs.total = amount;
-                }
-                resolve(docs);
-              });
-            }
-
-            if (options.countTotal) {
-              r.count(false, function (err, amount) {
-                if (err) {
-                  r.close();
-                  debug.error(err);
-                  return reject(err);
-                }
-                work(amount);
-              });
-            } else {
-              work(null);
-            }
-          });
-        }
-      );
-    };
+                debug.error(err);
+                return reject(err);
+              }
+              work(amount);
+            });
+          } else {
+            work(null);
+          }
+        });
+      }
+    );
+  };
 
   this._count = function (type, options) {
     return this.getCollection(type).then(
@@ -307,20 +301,37 @@ function MongoDs(config) {
   };
 
   this._get = function (type, conditions) {
-      return _this.getCollection(type).then(
-        function (c) {
-          return new Promise(function (resolve, reject) {
-            c.findOne(conditions, function (err, result) {
-              if (err) {
-                debug.error(err);
-                reject(err);
-              } else {
-                resolve(result);
-              }
-            });
+    return _this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          c.findOne(conditions, function (err, result) {
+            if (err) {
+              debug.error(err);
+              reject(err);
+            } else {
+              resolve(result);
+            }
           });
         });
-    };
+      });
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @param {{unique: Boolean}} [options]
+   * @returns {Promise}
+   */
+  this._ensureIndex = function (type, properties, options) {
+    return _this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve) {
+          c.createIndex(properties, options || {}, function () {
+            resolve(c);
+          });
+        });
+      });
+  };
 }
 
 // Util.inherits(MongoDs, DataSource); //jscs:ignore requireSpaceAfterLineComment
