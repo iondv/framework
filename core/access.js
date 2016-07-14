@@ -18,13 +18,13 @@ function AclMediator(conf) {
     for (i = 0; i < conf.policy.length; i++) {
       if (conf.policy[i].module) {
         var constructor = require(conf.policy[i].module);
-        if (constructor.prototype.constructor.name === 'AclProvider') {
+        if (constructor.prototype.constructor === AclProvider) {
           p = new constructor(conf.policy[i].config);
           this.providers[this.providers.length] = p;
         }
       } else if (
         typeof conf.policy[i] === 'object' && // jscs:ignore disallowTrailingWhitespace
-        conf.policy[i].constructor.prototype.constructor.name === 'AclProvider') {
+        conf.policy[i].constructor.prototype.constructor === AclProvider) {
         this.providers[this.providers.length] = conf.policy[i];
       }
     }

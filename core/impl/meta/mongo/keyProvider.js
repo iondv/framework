@@ -56,7 +56,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
 
   this._keyData = function (classname, data, namespace) {
     var result = {};
-    if ((typeof data === 'object') && data) {
+    if (typeof data === 'object' && data) {
       var cm = _this.meta.getMeta(classname, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
@@ -66,7 +66,9 @@ function MongoMetaKeyProvider(metaRep, connection) {
     return result;
   };
 
+  /* jshint maxstatements: 30 */
   /**
+   * TODO Применить и отладить
    * @param {String} classname
    * @param {Object} data
    * @returns {Promise}
@@ -93,7 +95,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
               // Data._id =
               var counters = _this.db.collection('counters');
               return counters.findOneAndUpdate(
-                {_id: name},
+                {_id: cm.name},
                 {$set: {$inc: {seq: 1}}},
                 {upsert: true}
               ).then(function (c) {

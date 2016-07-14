@@ -4,9 +4,8 @@
 'use strict';
 
 var DbSync = require('core/interfaces/DbSync');
-var debug = require('debug-log')('ION:dbSync');
-
-function IonDbSync(connection, config) {
+/* jshint maxstatements: 30 */
+function MongoDbSync(connection, config) {
 
   var _this = this;
 
@@ -49,15 +48,17 @@ function IonDbSync(connection, config) {
    */
   this._createCollection = function (cm, namespace) {
     return new Promise(function (resolve, reject) {
-      var collection = _this.db.collection(
-        (namespace ? (namespace + '_') : '') + cm.name,
+      var cn = (namespace ? namespace + '_' : '') + cm.name;
+      _this.db.collection(
+        cn,
+        {strict: true},
         function (err, collection) {
-          if (err) {
-            return reject(err);
-          }
           if (!collection) {
-            _this.db.createCollection(cm.name).then(resolve).catch(reject);
+            _this.db.createCollection(cn).then(resolve).catch(reject);
           } else {
+            if (err) {
+              return reject(err);
+            }
             resolve(collection);
           }
         }
@@ -112,7 +113,7 @@ function IonDbSync(connection, config) {
         promises.push(createIndexPromise('_class', false));
 
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || (cm.properties[i].indexed === true)) {
+          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
             promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
           }
         }
@@ -132,6 +133,96 @@ function IonDbSync(connection, config) {
     };
   };
 
+  function sysIndexer(tableType) {
+    return function (collection) {
+      switch (tableType) {
+        case 'meta': {
+          return new Promise(function (resolve, reject) {
+            collection.createIndex({
+                namespace: 1,
+                name: 1,
+                version: 1
+              },
+              {
+                unique: true
+              }, function (err, iname) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(collection);
+              });
+          });
+        }break;
+        case 'view': {
+          return new Promise(function (resolve, reject) {
+            collection.createIndex({
+                namespace: 1,
+                type: 1,
+                path: 1,
+                className: 1,
+                version: 1
+              },
+              {
+                unique: true
+              }, function (err, iname) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(collection);
+              });
+          });
+        }break;
+        case 'nav': {
+          return new Promise(function (resolve, reject) {
+            collection.createIndex({
+                namespace: 1,
+                itemType: 1,
+                name: 1,
+                code: 1
+              },
+              {
+                unique: true
+              }, function (err, iname) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(collection);
+              });
+          });
+        }break;
+      }
+      throw new Error('Unsupported table type specified!');
+    };
+  }
+
+  function getMetaTable(type) {
+    return new Promise(function (resolve, reject) {
+      var tn = '';
+      switch (type) {
+        case 'meta':
+          tn = _this.metaTableName;
+          break;
+        case 'view':
+          tn = _this.viewTableName;
+          break;
+        case 'nav':
+          tn = _this.navTableName;
+          break;
+      }
+
+      if (!tn) {
+        return reject('Unsupported meta type specified!');
+      }
+
+      _this.db.collection(tn, {strict: true}, function (err, collection) {
+        if (collection) {
+          return resolve(collection);
+        }
+        _this.db.createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
+      });
+    });
+  }
+
   /**
    * @param {{}} cm
    * @returns {Promise}
@@ -143,10 +234,7 @@ function IonDbSync(connection, config) {
       });
     }
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.metaTableName, function (err, collection) {
-        if (err) {
-          return reject(err);
-        }
+      getMetaTable('meta').then(function (collection) {
         var query = {name: cm.ancestor};
         if (namespace) {
           query.namespace = namespace;
@@ -162,9 +250,19 @@ function IonDbSync(connection, config) {
           }
           reject({Error: 'Класс ' + cm.ancestor + ' не найден!'});
         });
-      });
+      }).catch(reject);
     });
   }
+
+  this._init = function () {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('meta').
+        then(function () {return getMetaTable('view');}).
+        then(function () {return getMetaTable('nav');}).
+        then(resolve).
+        catch(reject);
+    });
+  };
 
   /**
    * @param {{}} classMeta
@@ -180,10 +278,7 @@ function IonDbSync(connection, config) {
       }).
       then(_this._addIndexes(classMeta)).
       then(function () {
-        _this.db.collection(_this.metaTableName, function (err, collection) {
-          if (err) {
-            return reject(err);
-          }
+        getMetaTable('meta').then(function (collection) {
           collection.update(
             {
               name: classMeta.name,
@@ -198,15 +293,14 @@ function IonDbSync(connection, config) {
               }
               resolve(result);
             });
-        });
-      }).
-      catch(reject);
+        }).catch(reject);
+      }).catch(reject);
     });
   };
 
   this._undefineClass = function (className, version, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.metaTableName, function (err, collection) {
+      getMetaTable('meta').then(function (collection) {
         var query = {name: className};
         if (version) {
           query.version = version;
@@ -222,7 +316,7 @@ function IonDbSync(connection, config) {
           }
           resolve(cm);
         });
-      });
+      }).catch(reject);
     });
   };
 
@@ -236,97 +330,83 @@ function IonDbSync(connection, config) {
       } else {
         reject(new Error('не передан path'));
       }
-      _this.db.collection(_this.viewTableName, function (err, viewCollection) {
-          if (err) {
-            return reject(err);
-          }
-          viewCollection.update(
-            {
-              type: viewMeta.type,
-              className: viewMeta.className,
-              path: viewMeta.path,
-              namespace: viewMeta.namespace,
-              version: viewMeta.version
-            },
-            viewMeta,
-            {upsert: true},
-            function (err, vm) {
+
+      getMetaTable('view').then(function (collection) {
+        collection.update(
+          {
+            type: viewMeta.type,
+            className: viewMeta.className,
+            path: viewMeta.path,
+            namespace: viewMeta.namespace,
+            version: viewMeta.version
+          },
+          viewMeta,
+          {upsert: true},
+          function (err, vm) {
             if (err) {
               return reject(err);
             }
             resolve(vm);
           });
-        });
+
+      }).catch(reject);
     });
   };
 
   this._undefineView = function (className, type, path, version, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.viewTableName, function (err, viewCollection) {
+      getMetaTable('view').then(function (collection) {
+        var query = {
+          className: className,
+          type: type,
+          path: path
+        };
+        if (version) {
+          query.version = version;
+        }
+
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+
+        collection.remove(query, function (err,vm) {
           if (err) {
             reject(err);
           }
-
-          var query = {
-            className: className,
-            type: type,
-            path: path
-          };
-          if (version) {
-            query.version = version;
-          }
-
-          if (namespace) {
-            query.namespace = namespace;
-          } else {
-            query.$or = [{namespace: {$exists: false}}, {namespace: false}];
-          }
-
-          viewCollection.remove(query, function (err,vm) {
-            if (err) {
-              reject(err);
-            }
-            resolve(vm);
-          });
+          resolve(vm);
         });
+      }).catch(reject);
     });
   };
 
   this._defineNavSection = function (navSection, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.navTableName,
-        /**
-         * @param err
-         * @param {Collection} navCollection
-         */
-         function (err, navCollection) {
-            navSection.itemType = 'section';
-            navSection.namespace = namespace;
-            navCollection.updateOne(
-              {
-                name: navSection.name,
-                itemType: navSection.itemType,
-                namespace: navSection.namespace
-              },
-              navSection,
-              {upsert: true},
-              function (err, ns) {
-              if (err) {
-                reject(err);
-              }
-              resolve(ns);
-            });
-          }
-        );
+      getMetaTable('nav').then(function (collection) {
+        navSection.itemType = 'section';
+        navSection.namespace = namespace;
+        collection.updateOne(
+          {
+            name: navSection.name,
+            itemType: navSection.itemType,
+            namespace: navSection.namespace
+          },
+          navSection,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              reject(err);
+            }
+            resolve(ns);
+          });
+      }).catch(reject);
     });
   };
 
   this._undefineNavSection = function (sectionName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.navTableName, function (err, navCollection) {
-        if (err) {
-          reject(err);
-        }
+      getMetaTable('nav').then(function (collection) {
         var query = {name: sectionName, itemType: 'section'};
         if (namespace) {
           query.namespace = namespace;
@@ -334,26 +414,23 @@ function IonDbSync(connection, config) {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
 
-        navCollection.remove(query, function (err,nsm) {
+        collection.remove(query, function (err,nsm) {
           if (err) {
             reject(err);
           }
           resolve(nsm);
         });
-      });
+      }).catch(reject);
     });
   };
 
   this._defineNavNode = function (navNode,navSectionName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.navTableName, function (err, navCollection) {
-        if (err) {
-          reject(err);
-        }
+      getMetaTable('nav').then(function (collection) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace;
-        navCollection.updateOne(
+        collection.updateOne(
           {
             code: navNode.code,
             itemType: navNode.itemType,
@@ -364,30 +441,29 @@ function IonDbSync(connection, config) {
           }
           resolve(ns);
         });
-      });
+      }).catch(reject);
     });
   };
 
   this._undefineNavNode = function (navNodeName, namespace) {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(_this.navTableName, function (err, navCollection) {
+      getMetaTable('nav').then(function (collection) {
         var query = {code: navNodeName, itemType: 'node'};
         if (namespace) {
           query.namespace = namespace;
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
-        navCollection.remove(query, function (err,nnm) {
+        collection.remove(query, function (err,nnm) {
           if (err) {
             reject(err);
           }
           resolve(nnm);
         });
-      });
+      }).catch(reject);
     });
   };
-
 }
 
-IonDbSync.prototype = new DbSync();
-module.exports = IonDbSync;
+MongoDbSync.prototype = new DbSync();
+module.exports = MongoDbSync;

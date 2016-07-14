@@ -89,12 +89,13 @@ function DataRepository() {
    * @param {String} className
    * @param {String} id
    * @param {{}} data
+   * @param {String} [version]
    * @param {ChangeLogger} [changeLogger]
    * @param {Number} [nestingDepth]
    * @returns {Promise}
    */
-  this.saveItem = function (className, id, data, changeLogger, nestingDepth) {
-    return this._saveItem(className, id, data, changeLogger, nestingDepth);
+  this.saveItem = function (className, id, data, version, changeLogger, nestingDepth) {
+    return this._saveItem(className, id, data, version, changeLogger, nestingDepth);
   };
 
   /**

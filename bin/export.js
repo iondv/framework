@@ -1,35 +1,46 @@
 /**
- * Created by kras on 10.07.16.
+ * Created by kras on 13.07.16.
  */
-var worker = require('lib/import');
+var worker = require('lib/export');
 var config = require('config');
 var DataSources = require('core/datasources');
-var DbSync = require('core/impl/meta/mongo/dbSync');
 var MetaRepository = require('core/impl/meta/DsMetaRepository');
 var DataRepository = require('core/impl/datarepository/ionDataRepository');
 var KeyProvider = require('core/impl/meta/mongo/keyProvider');
 
-var src = '../in';
+var dst = '../out';
+var version = '';
 var ns = '';
 
-var setSrc = false;
+var setDst = false;
+var setVer = false;
 var setNamespace = false;
 
 process.argv.forEach(function (val) {
-  if (val === '--src') {
-    setSrc = true;
+  if (val === '--dst') {
+    setDst = true;
+    setVer = false;
     setNamespace = false;
     return;
   } else if (val === '--ns') {
+    setDst = false;
+    setVer = false;
     setNamespace = true;
-    setSrc = false;
     return;
-  } else if (setSrc) {
-    src = val;
+  } else if (val === '--ver') {
+    setDst = false;
+    setVer = true;
+    setNamespace = false;
+    return;
+  } else if (setDst) {
+    dst = val;
+  } else if (setVer) {
+    version = val;
   } else if (setNamespace) {
     ns = val;
   }
-  setSrc = false;
+  setDst = false;
+  setVer = false;
   setNamespace = false;
 });
 
@@ -49,10 +60,16 @@ dataSources.connect().then(function () {
   var metaRepo = new MetaRepository({Datasource: metaDs});
   var keyProvider = new KeyProvider(metaRepo, dataDs.connection());
   var dataRepo = new DataRepository(dataDs, metaRepo, keyProvider);
-  var sync = new DbSync(metaDs.connection(), {});
-  return worker(src, sync, metaRepo, dataRepo, {namespace: ns});
+  return worker(
+    dst,
+    metaRepo,
+    dataRepo,
+    {
+      namespace: ns,
+      version: version
+    });
 }).then(function () {
-  console.info('Импорт выполнен успешно.');
+  console.info('Экспорт выполнен успешно.');
   process.exit(0);
 }).catch(function (err) {
   console.error(err);

@@ -154,10 +154,11 @@ function MetaRepository() {
   };
 
   /**
+   * @param {DbSync} sync
    * @returns {Promise}
    */
-  this.init = function () {
-    return this._init();
+  this.init = function (sync) {
+    return this._init(sync);
   };
 }
 

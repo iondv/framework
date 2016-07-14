@@ -52,7 +52,6 @@
     "morgan": "^1.5.1",
     "multer": "*",
     "mysql": "^2.7.0",
-    "mysql-utilities": "^1.0.7",
     "nodemailer": "^1.4.0",
     "node-uuid": "^1.4.7",
     "optimist": "^0.6.1",
