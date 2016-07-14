@@ -545,13 +545,13 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
           if (pm.type === PropertyTypes.COLLECTION) {
-            if (pm.back_ref) {
-
-            } else if (pm.back_coll) {
-
-            } else {
-
-            }
+            // if (pm.back_ref) {
+            //
+            // } else if (pm.back_coll) {
+            //
+            // } else {
+            //
+            // }
           } else {
             data[nm] = _this._castValue(data[nm], pm);
             updates[nm] = data[nm];
