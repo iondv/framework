@@ -6,6 +6,7 @@
 var DataSource = require('core/interfaces/DataSource');
 
 function Datasources(conf) {
+  var _this = this;
   /**
    * @type {DataSource[]}
    */
@@ -17,10 +18,10 @@ function Datasources(conf) {
       for (var i = 0; i < conf.datasources.length; i++) {
         if (typeof conf.datasources[i] === 'object') {
           if (conf.datasources[i].constructor.prototype.constructor === DataSource) {
-            this.sources[conf.datasources[i].name] = conf.datasources[i];
+            _this.sources[conf.datasources[i].name] = conf.datasources[i];
           } else {
             constructor = require(conf.datasources[i].module);
-            this.sources[conf.datasources[i].name] = new constructor(conf.datasources[i].config);
+            _this.sources[conf.datasources[i].name] = new constructor(conf.datasources[i].config);
           }
         }
       }

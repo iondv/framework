@@ -46,7 +46,7 @@ function Item(id, base, classMeta, repository) {
   };
 
   this.getClassName = function () {
-    return this.classMeta.getName();
+    return this.classMeta.getCanonicalName();
   };
 
   /**

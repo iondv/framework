@@ -3,8 +3,111 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 'use strict';
+/* jshint maxstatements: 30 */
+function loadPropertyMetas(cm, plain) {
+  var i,j,k,properties, key, v;
+  properties = plain.properties.sort(function (a,b) {
+    return a.order_number - b.order_number;
+  });
 
-function ClassMeta(metaObject,metaRepository) {
+  function selectionConstructor1() {
+    return function (item) {
+      return this.selection;
+    };
+  }
+
+  function selectionConstructor2() {
+    /* jshint maxcomplexity: 30 */
+    /**
+     * @param {Item} item
+     */
+    return function (item) {
+      var found, pn, v, j, k;
+      for (j = 0; j < this.matrix.length; j++) {
+        found = true;
+        for (k = 0; k < this.matrix[j].conditions.length; k++) {
+          pn = this.matrix[j].conditions[k].property;
+          v = this.matrix[j].conditions[k].value;
+          switch (this.matrix[j].conditions[k].operation) {
+            case 0:found = String(item.get(pn)) === v ? true : false;break;
+            case 1:found = String(item.get(pn)) !== v ? true : false;break;
+            case 2:found = !item.get(pn) ? true : false;break;
+            case 3:found = item.get(pn) ? true : false;break;
+            case 4:found = String(item.get(pn)).match(new RegExp(v)) ? true : false;break;
+            case 5:found = item.get(pn) < v ? true : false;break;
+            case 6:found = item.get(pn) > v ? true : false;break;
+            case 7:found = item.get(pn) <= v ? true : false;break;
+            case 8:found = item.get(pn) >= v ? true : false;break;
+            case 9:
+            case 10:found = item.get(pn).indexOf(v) !== -1 ? true : false;break;
+          }
+          if (!found) {
+            break;
+          }
+        }
+
+        if (found) {
+          return this.matrix[j].selection;
+        }
+      }
+    };
+  }
+
+  for (i = 0; i < properties.length; i++) {
+    cm.propertyMetas[properties[i].name] = properties[i];
+    if (properties[i].selection_provider) {
+      if (properties[i].selection_provider.type === 'SIMPLE') {
+        properties[i].selection_provider.selection = {};
+        for (j = 0; j < properties[i].selection_provider.list.length; j++) {
+          key = properties[i].selection_provider.list[j].key;
+          properties[i].selection_provider.selection[key] = properties[i].selection_provider.list[j].value;
+        }
+        properties[i].selection_provider.getSelection = selectionConstructor1();
+      } else if (properties[i].selection_provider.type === 'MATRIX') {
+        for (j = 0; j < properties[i].selection_provider.matrix.length; j++) {
+          properties[i].selection_provider.matrix[j].selection = {};
+          for (k = 0; k < properties[i].selection_provider.matrix[j].result.length; k++) {
+            key = properties[i].selection_provider.matrix[j].result[k].key;
+            v = properties[i].selection_provider.matrix[j].result[k].value;
+            properties[i].selection_provider.matrix[j].selection[key] = v;
+          }
+        }
+        properties[i].selection_provider.getSelection = selectionConstructor2();
+      }
+    }
+  }
+}
+
+function buildSemanticGetter(prop,start,count) {
+  if (typeof start !== 'undefined') {
+    return function () {
+      var p = this.property(prop);
+      if (p === null) {
+        return prop;
+      }
+
+      var v = this.get(prop);
+      if (!v) {
+        return '';
+      }
+      return v.toString().substr(start, count);
+    };
+  }
+  return function () {
+    var p = this.property(prop);
+    if (p === null) {
+      return prop;
+    }
+
+    var v = this.get(prop);
+    if (!v) {
+      return '';
+    }
+    return v.toString();
+  };
+}
+
+function ClassMeta(metaObject, metaRepository) {
 
   var _this = this;
 
@@ -22,78 +125,7 @@ function ClassMeta(metaObject,metaRepository) {
 
   var semanticFunc = null;
 
-  (function loadPropertyMetas(plain) {
-    var i,j,k,properties, key, v;
-    properties = plain.properties.sort(function (a,b) {
-      return a.order_number - b.order_number;
-    });
-
-    function selectionConstructor1() {
-      return function (item) {
-        return this.selection;
-      };
-    }
-
-    function selectionConstructor2() {
-      /**
-       * @param {Item} item
-       */
-      return function (item) {
-        var found, pn, v, j, k;
-        for (j = 0; j < this.matrix.length; j++) {
-          found = true;
-          for (k = 0; k < this.matrix[j].conditions.length; k++) {
-            pn = this.matrix[j].conditions[k].property;
-            v = this.matrix[j].conditions[k].value;
-            switch (this.matrix[j].conditions[k].operation) {
-              case 0:found = String(item.get(pn)) === v ? true : false;break;
-              case 1:found = String(item.get(pn)) !== v ? true : false;break;
-              case 2:found = !item.get(pn) ? true : false;break;
-              case 3:found = item.get(pn) ? true : false;break;
-              case 4:found = String(item.get(pn)).match(new RegExp(v)) ? true : false;break;
-              case 5:found = item.get(pn) < v ? true : false;break;
-              case 6:found = item.get(pn) > v ? true : false;break;
-              case 7:found = item.get(pn) <= v ? true : false;break;
-              case 8:found = item.get(pn) >= v ? true : false;break;
-              case 9:
-              case 10:found = item.get(pn).indexOf(v) !== -1 ? true : false;break;
-            }
-            if (!found) {
-              break;
-            }
-          }
-
-          if (found) {
-            return this.matrix[j].selection;
-          }
-        }
-      };
-    }
-
-    for (i = 0; i < properties.length; i++) {
-      _this.propertyMetas[properties[i].name] = properties[i];
-      if (properties[i].selection_provider) {
-        if (properties[i].selection_provider.type === 'SIMPLE') {
-          properties[i].selection_provider.selection = {};
-          for (j = 0; j < properties[i].selection_provider.list.length; j++) {
-            key = properties[i].selection_provider.list[j].key;
-            properties[i].selection_provider.selection[key] = properties[i].selection_provider.list[j].value;
-          }
-          properties[i].selection_provider.getSelection = selectionConstructor1();
-        } else if (properties[i].selection_provider.type === 'MATRIX') {
-          for (j = 0; j < properties[i].selection_provider.matrix.length; j++) {
-            properties[i].selection_provider.matrix[j].selection = {};
-            for (k = 0; k < properties[i].selection_provider.matrix[j].result.length; k++) {
-              key = properties[i].selection_provider.matrix[j].result[k].key;
-              v = properties[i].selection_provider.matrix[j].result[k].value;
-              properties[i].selection_provider.matrix[j].selection[key] = v;
-            }
-          }
-          properties[i].selection_provider.getSelection = selectionConstructor2();
-        }
-      }
-    }
-  })(metaObject);
+  loadPropertyMetas(_this, metaObject);
 
   this.getVersion = function () {
     return this.plain.version;
@@ -111,34 +143,9 @@ function ClassMeta(metaObject,metaRepository) {
     return this.namespace;
   };
 
-  function buildSemanticGetter(prop,start,count) {
-    if (typeof start !== 'undefined') {
-      return function () {
-        var p = this.property(prop);
-        if (p === null) {
-          return prop;
-        }
-
-        var v = this.get(prop);
-        if (!v) {
-          return '';
-        }
-        return v.toString().substr(start, count);
-      };
-    }
-    return function () {
-      var p = this.property(prop);
-      if (p === null) {
-        return prop;
-      }
-
-      var v = this.get(prop);
-      if (!v) {
-        return '';
-      }
-      return v.toString();
-    };
-  }
+  this.getCanonicalName = function () {
+    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
+  };
 
   this.getSemantic = function () {
     if (this.plain.semantic && this.plain.semantic.trim()) {
@@ -156,13 +163,9 @@ function ClassMeta(metaObject,metaRepository) {
         }
 
         semanticFunc = function () {
-          /**
-           * @type {Item} Функция будет всегда вызываться относительно объекта типа Item
-           */
-          var _this = this;
           var result = '';
           for (var i = 0; i < parts.length; i++) {
-            result = result + (typeof parts[i] === 'function') ? parts[i].call(_this) : parts[i];
+            result = result + (typeof parts[i] === 'function') ? parts[i].call(this) : parts[i];
           }
           return result;
         };
@@ -230,7 +233,6 @@ function ClassMeta(metaObject,metaRepository) {
     }
     return result;
   };
-
 }
 
 module.exports = ClassMeta;

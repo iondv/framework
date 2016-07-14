@@ -4,8 +4,8 @@
 'use strict';
 
 var DbSync = require('core/interfaces/DbSync');
-
-function IonDbSync(connection, config) {
+/* jshint maxstatements: 30 */
+function MongoDbSync(connection, config) {
 
   var _this = this;
 
@@ -465,5 +465,5 @@ function IonDbSync(connection, config) {
   };
 }
 
-IonDbSync.prototype = new DbSync();
-module.exports = IonDbSync;
+MongoDbSync.prototype = new DbSync();
+module.exports = MongoDbSync;

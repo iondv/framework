@@ -66,6 +66,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
     return result;
   };
 
+  /* jshint maxstatements: 30 */
   /**
    * TODO Применить и отладить
    * @param {String} classname
