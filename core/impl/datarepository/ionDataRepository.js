@@ -509,25 +509,60 @@ function IonDataRepository(datasource,metarepository,keyProvider) {
     return value;
   };
 
+  function processCollection(pm, data, id) {
+    return new Promise(function (resolve, reject) {
+      var ccm = _this.meta.getMeta(pm.items_class);
+      if (ccm) {
+        if (pm.back_ref) {
+          var filter = {};
+          fitler[pm.back_ref] = {$eq: id};
+          _this.getList(pm.items_class, {
+            filter: filter,
+            nestingDepth: depth - 1
+          }).then(function (results) {
+            var edits, promises;
+            promises = [];
+            for (var i = 0; i < results.length; i++) {
+              var arrIndex = data[nm].indexOf(results[i].getItemId());
+              if (arrIndex < 0) {
+                edits = {};
+                edits[pm.back_ref] = null;
+                promises.push(_this._editItem(pm.items_class, results[i].getItemId(), edits));
+              } else {
+                data[nm].splice(arrIndex, 1);
+              }
+            }
+            for (var j = 0; data[nm].length; j++) {
+              edits = {};
+              edits[pm.back_ref] = id;
+              promises.push(_this._editItem(pm.items_class, data[nm][j], edits));
+            }
+            Promise.all(promises).then(function (results) {
+              resolve(null);
+            }).catch(reject);
+          });
+        // } else if (pm.back_coll) {
+        //
+        // } else {
+        //
+        // }
+      }
+    });
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
    */
-  function formUpdatedData(cm, data) {
+  function formUpdatedData(cm, data, id) {
     var updates, pm, nm;
     updates = {};
     for (nm in data) {
       if (data.hasOwnProperty(nm)) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
-          if (pm.type === PropertyTypes.COLLECTION) {
-            if (pm.back_ref) {
+          if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
 
-            } else if (pm.back_coll) {
-
-            } else {
-
-            }
           } else {
             data[nm] = _this._castValue(data[nm], pm);
             updates[nm] = data[nm];
