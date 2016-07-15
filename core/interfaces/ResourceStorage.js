@@ -14,20 +14,20 @@ function ResourceStorage() {
   };
 
   /**
-   * @param {String} id
+   * @param {String[]} ids
    * @returns {Promise}
    */
-  this.data = function (id) {
-    return this._data(id);
+  this.data = function (ids) {
+    return this._data(ids);
   };
 
   /**
    * @param {String} uid
-   * @param {String} id
+   * @param {String[]} ids
    * @returns {Promise}
    */
-  this.resourceURL = function (uid, id) {
-    return this._resourceURL(uid, id);
+  this.resourceLinks = function (uid, ids) {
+    return this._resourceLinks(uid, ids);
   };
 
   /**
