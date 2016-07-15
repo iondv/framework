@@ -102,6 +102,15 @@ function DataSource() {
   this.ensureIndex = function (type, properties, options) {
     return this._ensureIndex(type, properties, options);
   };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @returns {Promise}
+   */
+  this.ensureAutoincrement = function (type, properties) {
+    return this._ensureAutoincrement(type, properties);
+  };
 }
 
 module.exports = DataSource;

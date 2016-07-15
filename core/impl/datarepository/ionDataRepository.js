@@ -52,7 +52,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
    * @returns {Promise}
    */
   this._setValidators = function (validators) {
-    return new Promise(function (resolve, reject) { resolve(); });
+    return new Promise(function (resolve) { resolve(); });
   };
 
   /**
@@ -112,7 +112,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       conditions = [filter];
       props = item.getProperties();
       for (var nm in props) {
-        if (item.base.hasOwnProperty(nm)) {
+        if (props.hasOwnProperty(nm) && item.base.hasOwnProperty(nm)) {
           var c = {};
           c[nm] = item.base[nm];
           conditions[conditions.length] = c;
@@ -227,7 +227,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     attrs = {};
     promises = [];
     if (depth <= 0) {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         resolve(src);
       });
     }
@@ -272,7 +272,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     }
 
     if (promises.length === 0) {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         resolve(src);
       });
     }
@@ -544,6 +544,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
           pm = properties[i];
           if (pm.autoassigned) {
             switch (pm.type) {
+              case PropertyTypes.STRING:
               case PropertyTypes.GUID: {
                 updates[pm.name] = uuid.v1();
               }break;
@@ -551,8 +552,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                 updates[pm.name] = new Date();
               }break;
               case PropertyTypes.INT: {
-                updates[pm.name] = null;
-                // TODO Implement autoincrement
+                delete updates[pm.name];
               }break;
             }
           } else if (pm.default_value) {
@@ -588,12 +588,12 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                 item.getMetaClass().getCanonicalName(),
                 item.getItemId(),
                 updates
-              ).then(function (record) {
+              ).then(function () {
                 resolve([item]);
               }).catch(reject);
             });
           } else {
-            return new Promise(function (resolve, reject) {
+            return new Promise(function (resolve) {
               resolve([item]);
             });
           }
@@ -640,12 +640,12 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                   item.getMetaClass().getCanonicalName(),
                   item.getItemId(),
                   updates
-                ).then(function (record) {
+                ).then(function () {
                   resolve([item]);
                 }).catch(reject);
               });
             } else {
-              return new Promise(function (resolve, reject) {
+              return new Promise(function (resolve) {
                 resolve([item]);
               });
             }
@@ -681,6 +681,8 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
 
         var updates = formUpdatedData(cm, data);
         var conditions;
+        var worker;
+
         if (id) {
           conditions = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
         } else {
@@ -690,21 +692,29 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         updates._class = cm.getName();
         updates._classVer = cm.getVersion();
 
-        _this.ds.upsert(tn(rcm), conditions, updates).then(function (data) {
+        var event = EventType.UPDATE;
+        if (conditions) {
+          worker = function () {return _this.ds.upsert(tn(rcm), conditions, updates);};
+        } else {
+          event = EventType.CREATE;
+          worker = function () {return _this.ds.insert(tn(rcm), updates);};
+        }
+
+        worker().then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           if (changeLogger) {
             return new Promise(function (resolve, reject) {
               changeLogger.LogChange(
-                EventType.UPDATE, // TODO Определять факт создания объекта
+                event,
                 item.getMetaClass().getCanonicalName(),
                 item.getItemId(),
                 updates
-              ).then(function (record) {
+              ).then(function () {
                 resolve([item]);
               }).catch(reject);
             });
           } else {
-            return new Promise(function (resolve, reject) {
+            return new Promise(function (resolve) {
               resolve([item]);
             });
           }
@@ -774,7 +784,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()),
               mdata).
             then(
-              function (mdata) {
+              function () {
                 if (changeLogger) {
                   var updates = {};
                   updates[collection] = {
@@ -822,7 +832,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                 _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()),
                 mdata).
                 then(
-                function (mdata) {
+                function () {
                   if (changeLogger) {
                     var updates = {};
                     updates[collection] = {
