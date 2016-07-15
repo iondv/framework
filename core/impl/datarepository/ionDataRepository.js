@@ -582,63 +582,64 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               promises.push(_this._editItem(pm.items_class, collection[j], edits));
             }
             Promise.all(promises).then(function (results) {
-              resolve(pm.name,null);
+              resolve(pm.name, null);
             }).catch(reject);
           }).catch(reject);
         } else if (pm.back_coll) {
-          processManyToManyCollection(id,collection,pm.back_coll,ccm)
-            .then(function(value){
-            resolve(pm.name,value);
-          }).catch(reject);
+          processManyToManyCollection(id, collection, pm.back_coll, ccm)
+            .then(function (value) {
+              resolve(pm.name, value);
+            }).catch(reject);
         } else {
           var ccmPropertyMetas = ccm.getPropertyMetas();
           var backColProperty = null;
           for (var i = 0; i < ccmPropertyMetas.length; i++) {
             if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION
-              && ccmPropertyMetas[i].items_class == cm.name && ccmPropertyMetas[i].back_coll == pm.name ) {
+              && ccmPropertyMetas[i].items_class == cm.name && ccmPropertyMetas[i].back_coll == pm.name) {
               backColProperty = ccmPropertyMetas[i];
             }
           }
           if (backColProperty) {
-            processManyToManyCollection(id,collection,backColProperty.name,ccm)
-              .then(function(value){
-                resolve(pm.name,value);
+            processManyToManyCollection(id, collection, backColProperty.name, ccm)
+              .then(function (value) {
+                resolve(pm.name, value);
               }).catch(reject);
           } else {
-            resolve(pm.name,collection);
+            resolve(pm.name, collection);
           }
         }
       }
     });
+  }
 
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
    */
   function formUpdatedData(cm, data, id) {
-      var updates, pm, nm, promises;
-      updates = {};
-      promises = [];
-      for (nm in data) {
-        if (data.hasOwnProperty(nm)) {
-          pm = cm.getPropertyMeta(nm);
-          if (pm) {
-            if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
-              promises.push(processCollection(cm, pm, data, id));
-            } else {
-              data[nm] = _this._castValue(data[nm], pm);
-              updates[nm] = data[nm];
-            }
+    var updates, pm, nm, promises;
+    updates = {};
+    promises = [];
+    for (nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        pm = cm.getPropertyMeta(nm);
+        if (pm) {
+          if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
+            promises.push(processCollection(cm, pm, data, id));
+          } else {
+            data[nm] = _this._castValue(data[nm], pm);
+            updates[nm] = data[nm];
           }
         }
       }
-      return new Promise(function (resolve, reject) {
-        Promise.all(promises).then(
-          function (results) {
-            console.log(results);
-            resolve(updates);
-          }).catch(reject);
-      });
+    }
+    return new Promise(function (resolve, reject) {
+      Promise.all(promises).then(
+        function (results) {
+          console.log(results);
+          resolve(updates);
+        }).catch(reject);
+    });
   }
 
   /**
@@ -656,7 +657,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, id);
         var properties = cm.getPropertyMetas();
         var pm;
         for (var i = 0;  i < properties.length; i++) {
