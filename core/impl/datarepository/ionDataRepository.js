@@ -394,7 +394,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     var rcm = this._getRootType(cm);
     if (id) {
       return new Promise(function (resolve, reject) {
-        _this.ds.get(tn(rcm), _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace())).
+        _this.ds.get(
+          tn(rcm),
+          formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()))
+        ).
         then(function (data) {
           var result = [];
           if (data) {
@@ -628,7 +631,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         /**
          * @var {{}}
          */
-        var conditions = _this.keyProvider.keyToData(rcm.getName(), id);
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id));
 
         if (conditions) {
           _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
@@ -684,9 +687,9 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         var worker;
 
         if (id) {
-          conditions = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
+          conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
         } else {
-          conditions = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
+          conditions = formUpdatedData(rcm, _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace()));
         }
 
         updates._class = cm.getName();
@@ -740,7 +743,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     var rcm = _this._getRootType(cm);
 
     return new Promise(function (resolve, reject) {
-      _this.ds.delete(tn(rcm), _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace())).then(function () {
+      _this.ds.delete(
+        tn(rcm),
+        formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()))
+      ).then(function () {
         if (changeLogger) {
           changeLogger.LogChange(
             EventType.DELETE,
@@ -773,7 +779,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-        _this.ds.get(tn(mrcm), master.getItemId()).then(
+        _this.ds.get(
+          tn(mrcm),
+          formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
+        ).then(
           function (mdata) {
             if (!mdata[collection]) {
               mdata[collection] = [];
@@ -781,7 +790,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
             mdata[collection][mdata[collection].length] = detail.getItemId();
             _this.ds.update(
               tn(mrcm),
-              _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()),
+              formUpdatedData(
+                mrcm,
+                _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+              ),
               mdata).
             then(
               function () {
@@ -824,12 +836,19 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-        _this.ds.get(tn(mrcm), master.getItemId()).then(
+        _this.ds.get(
+          tn(mrcm),
+          formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
+        ).then(
           function (mdata) {
             if (mdata[collection]) {
               mdata[collection].splice(mdata[collection].indexOf(detail.getItemId()), 1);
-              _this.ds.update(tn(mrcm),
-                _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()),
+              _this.ds.update(
+                tn(mrcm),
+                formUpdatedData(
+                  mrcm,
+                  _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+                ),
                 mdata).
                 then(
                 function () {
@@ -877,7 +896,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, null, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
-      _this.ds.get(tn(mrcm), _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())).
+      _this.ds.get(
+        tn(mrcm),
+        formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
+      ).
         then(function (mdata) {
           if (mdata[collection]) {
             var idf = {_id: {$in: mdata[collection]}};
@@ -915,7 +937,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
-      _this.ds.get(tn(mrcm), _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())).
+      _this.ds.get(
+        tn(mrcm),
+        formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
+      ).
         then(function (mdata) {
           if (mdata[collection]) {
             var idf = {_id: {$in: mdata[collection]}};
