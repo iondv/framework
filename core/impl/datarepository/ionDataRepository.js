@@ -503,12 +503,13 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return value;
   }
 
-  function processCollection(pm, data, id) {
+  function processCollection(cm, pm, data, id) {
     return new Promise(function (resolve, reject) {
       var ccm = _this.meta.getMeta(pm.items_class);
+      var filter;
       if (ccm) {
         if (pm.back_ref) {
-          var filter = {};
+          filter = {};
           fitler[pm.back_ref] = {$eq: id};
           _this.getList(pm.items_class, {
             filter: filter,
@@ -534,15 +535,112 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
             Promise.all(promises).then(function (results) {
               resolve(null);
             }).catch(reject);
-          });
-        // } else if (pm.back_coll) {
-        //
-        // } else {
-        //
-        // }
+          }).catch(reject);
+        } else if (pm.back_coll) {
+          filter = {};
+          fitler[pm.back_coll] = {$elemMatch:{$eq:id}};
+          _this.getList(pm.items_class, {
+            filter: filter,
+            nestingDepth: depth - 1
+          }).then(function (results) {
+            var edits, promises, newElements;
+            promises = [];
+            newElements = data[nm].slice(0);
+            for (var i = 0; i < results.length; i++) {
+              var arrIndex = newElements.indexOf(results[i].getItemId());
+              if (arrIndex < 0) {
+                var backCol = results[i].getFromBase(pm.back_coll);
+                if(backCol){
+                  bacCol.splice(backCol.indexOf(id));
+                  edits = {};
+                  edits[pm.back_coll] = bacCol;
+                  promises.push(_this._editItem(pm.items_class, results[i].getItemId(), edits));
+                }
+              } else {
+                newElements.splice(arrIndex, 1);
+              }
+            }
+            filter = {};
+            fitler[ccm.getKeyProperties()[0]] = {$in:newElements};
+            _this.getList(pm.items_class, {
+              filter: filter,
+              nestingDepth: depth - 1
+            }).then(function (newResults) {
+              for (var i = 0; newResults.length; i++) {
+                var backCol = newResults[i].getFromBase(pm.back_coll);
+                if(!backCol){
+                  backCol = [];
+                }
+                backCol.push(id);
+                edits = {};
+                edits[pm.back_coll] = backCol;
+                promises.push(_this._editItem(pm.items_class, newResults[i].getItemId(), edits));
+              }
+              Promise.all(promises).then(function (promiseResults) {
+                resolve(data[nm]);
+              }).catch(reject);
+            }).catch(reject);
+          }).catch(reject);
+        } else {
+          var ccmPropertyMetas = ccm.getPropertyMetas();
+          var backColProperty = null;
+          for (var i = 0; i < ccmPropertyMetas.length; i++) {
+            if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION
+              && ccmPropertyMetas[i].items_class == cm.name && ccmPropertyMetas[i].back_coll == pm.name ) {
+              backColProperty = ccmPropertyMetas[i];
+            }
+          }
+          if (backColProperty) {
+            filter = {};
+            fitler[backColProperty.name] = {$elemMatch:{$eq:id}};
+            _this.getList(pm.items_class, {
+              filter: filter,
+              nestingDepth: depth - 1
+            }).then(function (results) {
+              var edits, promises, newElements;
+              promises = [];
+              newElements = data[nm].slice(0);
+              for (var i = 0; i < results.length; i++) {
+                var arrIndex = newElements.indexOf(results[i].getItemId());
+                if (arrIndex < 0) {
+                  var backCol = results[i].getFromBase(backColProperty.name);
+                  if(backCol){
+                    bacCol.splice(backCol.indexOf(id));
+                    edits = {};
+                    edits[backColProperty.name] = bacCol;
+                    promises.push(_this._editItem(pm.items_class, results[i].getItemId(), edits));
+                  }
+                } else {
+                  newElements.splice(arrIndex, 1);
+                }
+              }
+              filter = {};
+              fitler[ccm.getKeyProperties()[0]] = {$in:newElements};
+              _this.getList(pm.items_class, {
+                filter: filter,
+                nestingDepth: depth - 1
+              }).then(function (newResults) {
+                for (var i = 0; newResults.length; i++) {
+                  var backCol = newResults[i].getFromBase(backColProperty.name);
+                  if(!backCol){
+                    backCol = [];
+                  }
+                  backCol.push(id);
+                  edits = {};
+                  edits[pm.back_coll] = backCol;
+                  promises.push(_this._editItem(pm.items_class, newResults[i].getItemId(), edits));
+                }
+                Promise.all(promises).then(function (promiseResults) {
+                  resolve(data[nm]);
+                }).catch(reject);
+              }).catch(reject);
+            }).catch(reject);
+          } else {
+            resolve(data[nm]);
+          }
+        }
       }
     });
-  }
 
   /**
    * @param {ClassMeta} cm
