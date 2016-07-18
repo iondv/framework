@@ -92,6 +92,25 @@ function DataSource() {
   this.get = function (type, conditions) {
     return this._get(type, conditions);
   };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @param {{unique: Boolean}} [options]
+   * @returns {Promise}
+   */
+  this.ensureIndex = function (type, properties, options) {
+    return this._ensureIndex(type, properties, options);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @returns {Promise}
+   */
+  this.ensureAutoincrement = function (type, properties) {
+    return this._ensureAutoincrement(type, properties);
+  };
 }
 
 module.exports = DataSource;

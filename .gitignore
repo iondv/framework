@@ -38,7 +38,7 @@
 /log/*
 
 /modules/*
-/application/*
+/applications/*
 /node_modules/*
 
 /view/vendor/*
