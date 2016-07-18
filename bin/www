@@ -140,7 +140,6 @@ var onError = function (error) {
   process.exit(130);
 };
 
-/* jshint maxstatements: 30 */
 function start(ports, i) {
   return new Promise(function (resolve, reject) {
     server.once('error', function (err) {
@@ -201,6 +200,13 @@ dataSources.connect().then(
           if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
             var module = require('modules/' + candidates[i] + '/web');
             if (typeof module === 'function') {
+              if (module.locals.sysTitle) {
+                app.locals.sysMenu.push({
+                  name: candidates[i],
+                  description: module.locals.sysTitle
+                });
+              }
+              module.locals.sysMenu = app.locals.sysMenu;
               app.use(module);
               debug.info('Модуль ' + candidates[i] + ' загружен.');
             } else {
