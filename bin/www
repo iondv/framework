@@ -3,7 +3,6 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var i;
 var debug = require('debug-log')('ION:www');
 var path = require('path');
 var http = require('http');
@@ -191,12 +190,20 @@ dataSources.connect().then(
         auth.init(app, config.auth);
 
         // Подключаем модули
+        app.locals.sysMenu = [];
         debug.info('Загрузка веб-модулей.');
         var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
         for (i = 0; i < candidates.length; i++) {
           if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
             var module = require('modules/' + candidates[i] + '/web');
             if (typeof module === 'function') {
+              if (module.locals.sysTitle) {
+                app.locals.sysMenu.push({
+                  name: candidates[i],
+                  description: module.locals.sysTitle
+                });
+              }
+              module.locals.sysMenu = app.locals.sysMenu;
               app.use(module);
               debug.info('Модуль ' + candidates[i] + ' загружен.');
             } else {
