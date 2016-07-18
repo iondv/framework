@@ -556,7 +556,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return new Promise(function (resolve, reject) {
       var ccm = _this.meta.getMeta(pm.items_class);
       var filter;
-      if (ccm) {
+      if (ccm && id) {
         if (pm.back_ref) {
           filter = {};
           fitler[pm.back_ref] = {$eq: id};
@@ -608,6 +608,8 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
             resolve(pm.name, collection);
           }
         }
+      } else {
+        resolve(pm.name, collection);
       }
     });
   }
@@ -615,6 +617,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
+   * @param {String} id
    */
   function formUpdatedData(cm, data, id) {
     var updates, pm, nm, promises;
@@ -657,71 +660,72 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data, id);
-        var properties = cm.getPropertyMetas();
-        var pm;
-        for (var i = 0;  i < properties.length; i++) {
-          pm = properties[i];
-          if (pm.autoassigned) {
-            switch (pm.type) {
-              case PropertyTypes.GUID: {
-                updates[pm.name] = uuid.v1();
-              }break;
-              case PropertyTypes.DATETIME: {
-                updates[pm.name] = new Date();
-              }break;
-              case PropertyTypes.INT: {
-                updates[pm.name] = null;
-                // TODO Implement autoincrement
-              }break;
-            }
-          } else if (pm.default_value) {
-            try {
+        formUpdatedData(cm, data).then(function (updates) {
+          var properties = cm.getPropertyMetas();
+          var pm;
+          for (var i = 0;  i < properties.length; i++) {
+            pm = properties[i];
+            if (pm.autoassigned) {
               switch (pm.type) {
+                case PropertyTypes.GUID: {
+                  updates[pm.name] = uuid.v1();
+                }break;
                 case PropertyTypes.DATETIME: {
-                  updates[pm.name] = new Date(pm.default_value);
+                  updates[pm.name] = new Date();
                 }break;
                 case PropertyTypes.INT: {
-                  updates[pm.name] = parseInt(pm.default_value);
-                }break;
-                case PropertyTypes.REAL:
-                case PropertyTypes.DECIMAL: {
-                  updates[pm.name] = parseFloat(pm.default_value);
-                }break;
-                default: {
-                  updates[pm.name] = pm.default_value;
+                  updates[pm.name] = null;
+                  // TODO Implement autoincrement
                 }break;
               }
-            } catch (err) {
+            } else if (pm.default_value) {
+              try {
+                switch (pm.type) {
+                  case PropertyTypes.DATETIME: {
+                    updates[pm.name] = new Date(pm.default_value);
+                  }break;
+                  case PropertyTypes.INT: {
+                    updates[pm.name] = parseInt(pm.default_value);
+                  }break;
+                  case PropertyTypes.REAL:
+                  case PropertyTypes.DECIMAL: {
+                    updates[pm.name] = parseFloat(pm.default_value);
+                  }break;
+                  default: {
+                    updates[pm.name] = pm.default_value;
+                  }break;
+                }
+              } catch (err) {
+              }
             }
           }
-        }
-        updates._class = cm.getCanonicalName();
-        updates._classVer = cm.getVersion();
+          updates._class = cm.getCanonicalName();
+          updates._classVer = cm.getVersion();
 
-        _this.ds.insert(tn(rcm), updates).then(function (data) {
-          var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                EventType.CREATE,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function (record) {
+          _this.ds.insert(tn(rcm), updates).then(function (data) {
+            var item = _this._wrap(data._class, data, data._classVer);
+            if (changeLogger) {
+              return new Promise(function (resolve, reject) {
+                changeLogger.LogChange(
+                  EventType.CREATE,
+                  item.getMetaClass().getCanonicalName(),
+                  item.getItemId(),
+                  updates
+                ).then(function (record) {
+                  resolve([item]);
+                }).catch(reject);
+              });
+            } else {
+              return new Promise(function (resolve, reject) {
                 resolve([item]);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve, reject) {
-              resolve([item]);
-            });
-          }
-        }).then(function (items) {
-          return enrich(items, nestingDepth !== null ? nestingDepth : 1);
-        }).then(function (items) {
+              });
+            }
+          }).then(function (items) {
+            return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+          }).then(function (items) {
             resolve(items[0]);
           }).catch(reject);
+        }).catch(reject);
       } catch (err) {
         reject(err);
       }
@@ -743,40 +747,40 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
-
         /**
          * @var {{}}
          */
         var conditions = _this.keyProvider.keyToData(rcm.getName(), id);
 
-        if (conditions) {
-          _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
-            var item = _this._wrap(data._class, data, data._classVer);
-            if (changeLogger) {
-              return new Promise(function (resolve, reject) {
-                changeLogger.LogChange(
-                  EventType.UPDATE,
-                  item.getMetaClass().getCanonicalName(),
-                  item.getItemId(),
-                  updates
-                ).then(function (record) {
+        formUpdatedData(cm, data, id).then(function (updates) {
+          if (conditions) {
+            _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
+              var item = _this._wrap(data._class, data, data._classVer);
+              if (changeLogger) {
+                return new Promise(function (resolve, reject) {
+                  changeLogger.LogChange(
+                    EventType.UPDATE,
+                    item.getMetaClass().getCanonicalName(),
+                    item.getItemId(),
+                    updates
+                  ).then(function (record) {
+                    resolve([item]);
+                  }).catch(reject);
+                });
+              } else {
+                return new Promise(function (resolve, reject) {
                   resolve([item]);
-                }).catch(reject);
-              });
-            } else {
-              return new Promise(function (resolve, reject) {
-                resolve([item]);
-              });
-            }
-          }).then(function (items) {
-            return enrich(items, nestingDepth !== null ? nestingDepth : 1);
-          }).then(function (items) {
-            resolve(items[0]);
-          }).catch(reject);
-        } else {
-          reject({Error: 'Не указан идентификатор объекта!'});
-        }
+                });
+              }
+            }).then(function (items) {
+              return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+            }).then(function (items) {
+              resolve(items[0]);
+            }).catch(reject);
+          } else {
+            reject({Error: 'Не указан идентификатор объекта!'});
+          }
+        }).catch(reject);
       } catch (err) {
         reject(err);
       }
