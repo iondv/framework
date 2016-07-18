@@ -194,6 +194,7 @@ dataSources.connect().then(
       var i, ports;
       // Подключаем модули
       debug.info('Загрузка веб-модулей.');
+      app.locals.sysMenu = [];
       try {
         var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
         for (i = 0; i < candidates.length; i++) {
