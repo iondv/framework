@@ -8,41 +8,29 @@ var DbSync = require('core/interfaces/DbSync');
 const AUTOINC_COLL = '__autoinc';
 
 /* jshint maxstatements: 30 */
-function MongoDbSync(connection, config) {
+function MongoDbSync(options) {
 
   var _this = this;
 
   /**
    * @type {String}
    */
-  this.metaTableName = 'ion_meta';
+  this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
    * @type {String}
    */
-  this.viewTableName = 'ion_view';
+  this.viewTableName = options.ViewTableName || 'ion_view';
 
   /**
    * @type {String}
    */
-  this.navTableName = 'ion_nav';
+  this.navTableName = options.NavTableName || 'ion_nav';
 
   /**
-   * @type {Db}
+   * @returns {Db}
    */
-  this.db = connection;
-
-  if (config.metaTables) {
-    if (config.metaTables.MetaTableName) {
-      this.metaTableName = config.metaTables.MetaTableName;
-    }
-    if (config.metaTables.ViewTableName) {
-      this.viewTableName = config.metaTables.ViewTableName;
-    }
-    if (config.metaTables.NavTableName) {
-      this.navTableName = config.metaTables.NavTableName;
-    }
-  }
+  function db() {return options.dataSource.connection(); }
 
   function sysIndexer(tableType) {
     return function (collection) {
@@ -125,11 +113,11 @@ function MongoDbSync(connection, config) {
         return reject('Unsupported meta type specified!');
       }
 
-      _this.db.collection(tn, {strict: true}, function (err, collection) {
+      db().collection(tn, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        _this.db.createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
+        db().createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
       });
     });
   }

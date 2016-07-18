@@ -3,30 +3,17 @@
  */
 'use strict';
 
-var DataSource = require('core/interfaces/DataSource');
-
-function Datasources(conf) {
+function Datasources(options) {
   var _this = this;
   /**
    * @type {DataSource[]}
    */
-  this.sources = {};
+  this.sources = options.sources;
 
-  (function () {
-    var constructor;
-    if (typeof conf.datasources !== 'undefined') {
-      for (var i = 0; i < conf.datasources.length; i++) {
-        if (typeof conf.datasources[i] === 'object') {
-          if (conf.datasources[i].constructor.prototype.constructor === DataSource) {
-            _this.sources[conf.datasources[i].name] = conf.datasources[i];
-          } else {
-            constructor = require(conf.datasources[i].module);
-            _this.sources[conf.datasources[i].name] = new constructor(conf.datasources[i].config);
-          }
-        }
-      }
-    }
-  })();
+  /**
+   * @type {RuntimeEvents}
+   */
+  this.runtimeEvents = options.runtimeEvents;
 
   /**
    * @param {String} name
@@ -44,7 +31,7 @@ function Datasources(conf) {
     all = [];
     i = 0;
     for (var nm in this.sources) {
-      if (nm !== undefined) {
+      if (this.sources.hasOwnProperty(nm)) {
         all[i] = this.sources[nm].open();
         i++;
       }
@@ -60,13 +47,23 @@ function Datasources(conf) {
     all = [];
     i = 0;
     for (var nm in this.sources) {
-      if (nm !== undefined) {
+      if (this.sources.hasOwnProperty(nm)) {
         all[i] = this.sources[nm].close();
         i++;
       }
     }
     return Promise.all(all);
   };
+
+  if (this.runtimeEvents) {
+    this.runtimeEvents.on('stop', function () {
+      _this.disconnect().then(function () {
+        console.info('Successfully disconnected from datasources!');
+      }).catch(function (err) {
+        console.error(err);
+      });
+    });
+  }
 }
 
 module.exports = Datasources;

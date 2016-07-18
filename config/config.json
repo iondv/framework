@@ -42,9 +42,83 @@
             }
         }
     ],
-    "session": {
-      "secret": "ion:demo:secret",
-      "resave": false,
-      "saveUninitialized": true
+    "di" : {
+      "rtEvents": {
+        "module": "core/RuntimeEvents",
+        "options": {
+          "target": "ion://server",
+          "stopEvent": "close"
+        }
+      },
+      "dataSources": {
+        "module": "core/datasources",
+        "initMethid": "connect",
+        "initLevel": 0,
+        "options": {
+          "runtimeEvents": "ion://rtEvents",
+          "sources": [
+            {
+              "name":"Db",
+              "module":"core/impl/datasource/mongodb",
+              "options": {
+                "uri": "[[db.uri]]",
+                "options": {
+                  "server": {
+                    "socketOptions":{
+                      "keepAlive": 1
+                    }
+                  }
+                },
+                "connectionLimit": 10,
+                "user": "[[db.user]]",
+                "password": "[[db.pwd]]"
+              }
+            }
+          ]
+        }
+      },
+      "sessionHandler": {
+        "module": "lib/sessions",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "session": {
+            "secret": "ion:demo:secret",
+            "resave": false,
+            "saveUninitialized": true
+          },
+          "dataSource": "ion://Db",
+          "app": "ion://application"
+        }
+      },
+      "metaRepo": {
+        "module": "core/impl/meta/DsMetaRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "sync": {
+            "name": "dbSync",
+            "module": "core/impl/meta/mongo/dbSync",
+            "options": {
+              "dataSource": "ion://Db"
+            }
+          }
+        }
+      },
+      "dataRepo": {
+        "module": "core/impl/datarepository/ionDataRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepository": "ion://metaRepo",
+          "keyProvider": {
+            "name": "keyProvider",
+            "module": "core/impl/meta/keyProvider",
+            "options": {
+              "metaRepo": "ion://metaRepo"
+            }
+          }
+        }
+      }
     }
 }

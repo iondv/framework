@@ -6,20 +6,14 @@
 var KeyProvider = require('core/interfaces/KeyProvider');
 
 /**
- * @param {MetaRepository} metaRep
- * @param {Db} connection
+ * @param {{}} options
+ * @param {MetaRepository} options.metaRepo
  */
-function MongoMetaKeyProvider(metaRep, connection) {
-  var _this = this;
+function MetaKeyProvider(options) {
   /**
    * @type {MetaRepository}
    */
-  this.meta = metaRep;
-
-  /**
-   * @type {Db}
-   */
-  this.db = connection;
+  this.meta = options.metaRepo;
 
   /**
    * @param {String} classname
@@ -29,7 +23,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
    * @private
    */
   this._formKey = function (classname, data, namespace) {
-    var cm = _this.meta.getMeta(classname, namespace);
+    var cm = this.meta.getMeta(classname, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
@@ -41,7 +35,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
   this._keyToData = function (classname, id, namespace) {
     var result = {};
     if (typeof id === 'string') {
-      var cm = _this.meta.getMeta(classname, namespace);
+      var cm = this.meta.getMeta(classname, namespace);
       var keyProps = cm.getKeyProperties();
       var parts = id.split('_');
       for (var i = 0; i < keyProps.length; i++) {
@@ -54,7 +48,7 @@ function MongoMetaKeyProvider(metaRep, connection) {
   this._keyData = function (classname, data, namespace) {
     var result = {};
     if (typeof data === 'object' && data) {
-      var cm = _this.meta.getMeta(classname, namespace);
+      var cm = this.meta.getMeta(classname, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
         if (data.hasOwnProperty(keyProps[i]) && data[keyProps[i]] !== null) {
@@ -70,4 +64,4 @@ function MongoMetaKeyProvider(metaRep, connection) {
   KeyProvider.apply(this);
 }
 
-module.exports = MongoMetaKeyProvider;
+module.exports = MetaKeyProvider;

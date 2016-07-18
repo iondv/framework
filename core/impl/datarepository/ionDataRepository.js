@@ -13,29 +13,31 @@ var uuid = require('node-uuid');
 
 /* jshint maxstatements: 40, maxcomplexity: 40 */
 /**
- * @param {DataSource} datasource
- * @param {MetaRepository} metarepository
- * @param {KeyProvider} keyProvider
+ * @param {{}} options
+ * @param {DataSource} options.dataSource
+ * @param {MetaRepository} options.metaRepository
+ * @param {KeyProvider} options.keyProvider
+ * @param {String} [options.namespaceSeparator]
  * @constructor
  */
-function IonDataRepository(datasource, metarepository, keyProvider) {
+function IonDataRepository(options) {
   var _this = this;
   /**
    * @type {DataSource}
    */
-  this.ds = datasource;
+  this.ds = options.dataSource;
 
   /**
    * @type {MetaRepository}
    */
-  this.meta = metarepository;
+  this.meta = options.metaRepository;
 
   /**
    * @type {KeyProvider}
    */
-  this.keyProvider = keyProvider;
+  this.keyProvider = options.keyProvider;
 
-  this.namespaceSeparator = '__';
+  this.namespaceSeparator = options.namespaceSeparator || '__';
 
   /**
    *
