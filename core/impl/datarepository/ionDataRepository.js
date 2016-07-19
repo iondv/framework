@@ -377,7 +377,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
             result.total = data.total;
           }
           return enrich(result, options.nestingDepth ? options.nestingDepth : 0);
-        }).
+      }).
         then(resolve).
         catch(reject);
     });
@@ -556,7 +556,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
   }
 
   function processCollection(cm, pm, collection, id) {
-    console.log('processCollection',cm.getName(), pm.name, collection, id);
+    // console.log('processCollection',cm.getName(), pm.name, collection, id);
     return new Promise(function (resolve, reject) {
       var ccm = _this.meta.getMeta(pm.items_class);
       var filter;
@@ -649,7 +649,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
           for (var i = 0; i < results.length; i++) {
             updates[results[i].property] = results[i].value;
           }
-          console.log('updates:',updates);
+          // console.log('updates:',updates);
           resolve(updates);
         }).catch(reject);
     });
