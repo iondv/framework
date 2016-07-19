@@ -6,14 +6,17 @@ var install = require('gulp-install');
 
 var fs = require('fs');
 var path = require('path');
+var runSequence = require('run-sequence');
 
 /**
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', ['build:npm', 'build:bower'/*, 'minify:css', 'minify:js'*/], function (done) {
-  console.log('Сборка приложения завершена.');
-  done();
+  runSequence('build:npm', 'build:bower', function () {
+    console.log('Сборка приложения завершена.');
+    done();
+  });
 });
 
 function npm(path) {
