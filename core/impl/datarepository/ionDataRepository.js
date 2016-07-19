@@ -280,7 +280,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return new Promise(function (resolve, reject) {
       Promise.all(promises).then(
         function (results) {
-          var nm, items, itemsByKey, srcByKey, ids, i;
+          var nm, items, itemsByKey, srcByKey, ids, i, j;
           for (nm in attrs) {
             if (attrs.hasOwnProperty(nm)) {
               items = results[attrs[nm].pIndex];
@@ -325,9 +325,9 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
                   for (i = 0; i < src.length; i++) {
                     ids = src[i].get(attrs[nm].attrName) || [];
                     src[i].collections[attrs[nm].attrName] = [];
-                    for (i = 0; i < ids.length; i++) {
+                    for (j = 0; j < ids.length; j++) {
                       if (itemsByKey.hasOwnProperty(ids[i])) {
-                        src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[i]]);
+                        src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[j]]);
                       }
                     }
                   }
@@ -556,6 +556,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
   }
 
   function processCollection(cm, pm, collection, id) {
+    console.log('processCollection',cm.getName(), pm.name, collection, id);
     return new Promise(function (resolve, reject) {
       var ccm = _this.meta.getMeta(pm.items_class);
       var filter;
@@ -585,34 +586,36 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               promises.push(_this._editItem(pm.items_class, collection[j], edits));
             }
             Promise.all(promises).then(function (results) {
-              resolve(pm.name, null);
+              resolve({property:pm.name, value:null});
             }).catch(reject);
           }).catch(reject);
         } else if (pm.back_coll) {
           processManyToManyCollection(id, collection, pm.back_coll, ccm)
             .then(function (value) {
-              resolve(pm.name, value);
+              resolve({property:pm.name, value:value});
             }).catch(reject);
         } else {
+
           var ccmPropertyMetas = ccm.getPropertyMetas();
           var backColProperty = null;
           for (var i = 0; i < ccmPropertyMetas.length; i++) {
             if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION
-              && ccmPropertyMetas[i].items_class == cm.name && ccmPropertyMetas[i].back_coll == pm.name) {
+              && ccmPropertyMetas[i].items_class == cm.getName() && ccmPropertyMetas[i].back_coll == pm.name) {
               backColProperty = ccmPropertyMetas[i];
             }
           }
           if (backColProperty) {
             processManyToManyCollection(id, collection, backColProperty.name, ccm)
               .then(function (value) {
-                resolve(pm.name, value);
+                resolve({property:pm.name, value:value});
               }).catch(reject);
           } else {
-            resolve(pm.name, collection);
+            // console.log('мы заходим сюда!',pm.name, collection);
+            resolve({property:pm.name, value:collection});
           }
         }
       } else {
-        resolve(pm.name, collection);
+        resolve({property:pm.name, value:collection});
       }
     });
   }
@@ -631,9 +634,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
           if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
-            promises.push(processCollection(cm, pm, data, id));
+            // console.log('заходим в коллекцию');
+            promises.push(processCollection(cm, pm, data[nm], id));
           } else {
-            data[nm] = _this._castValue(data[nm], pm);
+            data[nm] = castValue(data[nm], pm);
             updates[nm] = data[nm];
           }
         }
@@ -642,7 +646,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return new Promise(function (resolve, reject) {
       Promise.all(promises).then(
         function (results) {
-          console.log(results);
+          for (var i = 0; i < results.length; i++) {
+            updates[results[i].property] = results[i].value;
+          }
+          console.log('updates:',updates);
           resolve(updates);
         }).catch(reject);
     });
@@ -754,7 +761,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
          * @var {{}}
          */
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id));
-        
+
         formUpdatedData(cm, data, id).then(function (updates) {
           if (conditions) {
             _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
