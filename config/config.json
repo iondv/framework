@@ -95,6 +95,16 @@
             }
           }
         }
+      },
+      "fileStorage": {
+        "module": "core/impl/resource/FsStorage",
+        "initMethod":"_init",
+        "initLevel": 1,
+        "options": {
+          "storageBase": "[[fs.storageRoot]]",
+          "urlBase": "[[fs.urlBase]]",
+          "dataSource": "ion://Db"
+        }
       }
     }
 }

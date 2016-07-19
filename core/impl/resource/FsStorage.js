@@ -13,17 +13,22 @@ var clone = require('clone');
 
 /* jshint maxcomplexity: 20 */
 /**
- * @param {{storageBase: String, urlBase: String}} options
+ * @param {{storageBase: String, urlBase: String, dataSource: DataSource, fragmentation: String}} options
  * @constructor
  */
 function FsStorage(options) {
   var _this = this;
 
-  var _options = options;
   /**
    * @type {DataSource}
    */
-  var dataSource = null;
+  var dataSource = options.dataSource;
+  if (!dataSource) {
+    throw new Error('Не указан источник данных файлового хранилища!');
+  }
+
+  delete options.dataSource;
+  var _options = clone(options) || {};
 
   /**
    * @param {Buffer | String | {} | stream.Readable} data
@@ -31,7 +36,7 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._accept = function (data, options) {
-    var opts = options || {};
+    var opts = clone(options) || {};
     var m = moment();
     var pth = m.format('YYYY' + path.delimiter + 'MM' + path.delimiter + 'DD');
     switch (_options.fragmentation) {
@@ -187,16 +192,6 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._init = function () {
-    if (options.DataSource.constructor.prototype.constructor.name === 'DataSource') {
-      dataSource = options.DataSource;
-    }
-
-    dataSource = global.ionDatasources.get(options.dataSource);
-
-    if (!dataSource) {
-      throw new Error('Не указан источник данных файлового хранилища!');
-    }
-
     return new Promise(function (resolve, reject) {
       dataSource.ensureIndex('ion_files', {path: 1}).then(function () {resolve();}).catch(reject);
     });
