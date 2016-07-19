@@ -63,8 +63,8 @@
         "options": {
           "app": "ion://application",
           "dataSource": "ion://Db",
-          "denyTopLevel": true,
-          "authCallbacks": []
+          "denyTopLevel": "[[auth.denyTop]]",
+          "authCallbacks": ["[[auth.callback]]"]
         }
       },
       "metaRepo": {
