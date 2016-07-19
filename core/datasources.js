@@ -16,25 +16,14 @@ function Datasources(options) {
   this.runtimeEvents = options.runtimeEvents;
 
   /**
-   * @param {String} name
-   * @returns {DataSource}
-   */
-  this.get = function (name) {
-    return this.sources[name];
-  };
-
-  /**
    * @returns {Promise}
    */
   this.connect = function () {
     var all, i;
     all = [];
-    i = 0;
-    for (var nm in this.sources) {
-      if (this.sources.hasOwnProperty(nm)) {
-        all[i] = this.sources[nm].open();
-        i++;
-      }
+    console.log('Подключение источников данных');
+    for (i = 0; i < this.sources.length; i++) {
+      all.push(this.sources[i].open());
     }
     return Promise.all(all);
   };
@@ -45,12 +34,8 @@ function Datasources(options) {
   this.disconnect = function () {
     var all, i;
     all = [];
-    i = 0;
-    for (var nm in this.sources) {
-      if (this.sources.hasOwnProperty(nm)) {
-        all[i] = this.sources[nm].close();
-        i++;
-      }
+    for (i = 0; i < this.sources.length; i++) {
+      all.push(this.sources[i].close());
     }
     return Promise.all(all);
   };

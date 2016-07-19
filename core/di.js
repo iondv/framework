@@ -2,10 +2,49 @@
  * Created by kras on 18.07.16.
  */
 'use strict';
-
 var contexts = {};
 
-// jshint maxstatements: 30, maxcomplexity: 30
+// jshint maxstatements: 35, maxcomplexity: 30
+
+/**
+ * @param {{}} options
+ * @param {{}} components
+ */
+function normalizeOptions(options, components) {
+  if (options) {
+    var nm, i, result;
+    if (options instanceof Array) {
+      result = [];
+      for (i = 0; i < options.length; i++) {
+        result.push(normalizeOptions(options[i], components));
+      }
+      return result;
+    } else if (options instanceof Object) {
+      if (typeof options.module !== 'undefined') {
+        result = options;
+        if (options.name) {
+          components[options.name] = options;
+          result = 'ion://' + options.name;
+          delete options.name;
+        }
+        if (options.options) {
+          options.options = normalizeOptions(options.options, components);
+        }
+        return result;
+      } else {
+        result = {};
+        for (nm in options) {
+          if (options.hasOwnProperty(nm)) {
+            result[nm] = normalizeOptions(options[nm], components);
+          }
+        }
+        return result;
+      }
+    }
+  }
+  return options;
+}
+
 /**
  * @param {{}} options
  * @param {{}} scope
@@ -30,7 +69,7 @@ function processOptions(options, scope, components, init) {
     } else if (options instanceof Array) {
       result = [];
       for (i = 0; i < options.length; i++) {
-        result.push(processOptions(options[i], scope));
+        result.push(processOptions(options[i], scope, components, init));
       }
       return result;
     } else if (options instanceof Object) {
@@ -40,7 +79,7 @@ function processOptions(options, scope, components, init) {
         result = {};
         for (nm in options) {
           if (options.hasOwnProperty(nm)) {
-            result[nm] = processOptions(options[nm], scope);
+            result[nm] = processOptions(options[nm], scope, components, init);
           }
         }
         return result;
@@ -59,10 +98,16 @@ function processOptions(options, scope, components, init) {
  * @returns {{}}
  */
 function loadComponent(name, component, scope, components, init) {
+  if (component.loaded) {
+    if (scope.hasOwnProperty(name)) {
+      return scope[name];
+    }
+  }
   var constructor = require(component.module);
-  var result = new constructor(processOptions(component.options, scope, components));
+  var result = new constructor(processOptions(component.options, scope, components, init));
   scope[name] = result;
   component.name = name;
+  component.loaded = true;
   if (component.initMethod) {
     init.push(component);
   }
@@ -88,7 +133,7 @@ function levelConstructor(initLoaders) {
 function diInit(levels, level) {
   return function () {
     return new Promise(function (resolve, reject) {
-      if (level < levels.length) {
+      if (level >= levels.length) {
         resolve();
         return;
       }
@@ -108,12 +153,12 @@ function diInit(levels, level) {
  * @returns {Promise}
  */
 function di(context, components, presets, parentContext) {
-  var nm, pc;
+  var nm, pc, src;
   var scope = presets || {};
   if (parentContext && contexts.hasOwnProperty(parentContext)) {
     pc = contexts[parentContext];
     for (nm in pc) {
-      if (pc.hasOwnProperty()) {
+      if (pc.hasOwnProperty(nm)) {
         scope[nm] = pc[nm];
       }
     }
@@ -121,9 +166,29 @@ function di(context, components, presets, parentContext) {
 
   var init = [];
 
+  var norm = {};
+  for (nm in components) {
+    if (components.hasOwnProperty(nm) && components[nm].options) {
+      normalizeOptions(components[nm], norm);
+    }
+  }
+
+  src = {};
   for (nm in components) {
     if (components.hasOwnProperty(nm)) {
-      loadComponent(nm, components[nm], scope, components, init);
+      src[nm] = components[nm];
+    }
+  }
+
+  for (nm in norm) {
+    if (norm.hasOwnProperty(nm)) {
+      src[nm] = norm[nm];
+    }
+  }
+
+  for (nm in src) {
+    if (src.hasOwnProperty(nm)) {
+      loadComponent(nm, src[nm], scope, src, init);
     }
   }
 
@@ -150,7 +215,7 @@ function di(context, components, presets, parentContext) {
   }
 
   return new Promise(function (resolve, reject) {
-    diInit(initLevels, 0, scope).then(
+    diInit(initLevels, 0, scope)().then(
       function () {
         resolve(scope);
       }).
@@ -159,3 +224,14 @@ function di(context, components, presets, parentContext) {
 }
 
 module.exports = di;
+
+/**
+ * @param {String} name
+ * @returns {*}
+ */
+module.exports.context = function (name) {
+  if (contexts.hasOwnProperty(name)) {
+    return contexts[name];
+  }
+  return {};
+};

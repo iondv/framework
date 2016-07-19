@@ -124,11 +124,11 @@ function MongoDbSync(options) {
 
   function getAutoIncColl() {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
+      db().collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        _this.db.createCollection(AUTOINC_COLL).then(
+        db().createCollection(AUTOINC_COLL).then(
           function (autoinc) {
             return new Promise(function (rs, rj) {
               autoinc.createIndex({type: 1}, {unique: true}, function (err) {
@@ -196,12 +196,12 @@ function MongoDbSync(options) {
   this._createCollection = function (cm, namespace) {
     return new Promise(function (resolve, reject) {
       var cn = (namespace ? namespace + '_' : '') + cm.name;
-      _this.db.collection(
+      db().collection(
         cn,
         {strict: true},
         function (err, collection) {
           if (!collection) {
-            _this.db.createCollection(cn).then(resolve).catch(reject);
+            db().createCollection(cn).then(resolve).catch(reject);
           } else {
             if (err) {
               return reject(err);

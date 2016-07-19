@@ -40,7 +40,6 @@ function IonDataRepository(options) {
   this.namespaceSeparator = options.namespaceSeparator || '__';
 
   /**
-   *
    * @param {ClassMeta} cm
    * @returns {String}
    */

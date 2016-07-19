@@ -20,7 +20,7 @@ var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 
 var config = require('../config');
-var di = require('lib/di');
+var di = require('core/di');
 
 /** Сервер http
  Для запуска NODE_PATH должна содержать путь к каталогу системы
@@ -47,9 +47,6 @@ if (process.env.NODE_ENV !== 'development') {
 } else {
   app.use(logger('dev'));
 }
-
-// Модули аутентификации и безопасности
-var auth = require('lib/auth');
 
 // Мидлвара сохранения сообщений в сессии перед редиректом
 app.use(flash());
@@ -87,7 +84,9 @@ var server = http.createServer(app);
 // jshint maxstatements: 30
 var onError = function (error) {
   debug.error(error);
-  process.exit(130);
+  server.close(function (err) {
+    process.exit(130);
+  });
 };
 
 function start(ports, i) {
@@ -107,14 +106,17 @@ function start(ports, i) {
   });
 }
 
-di(server, app).then(function (scope) {
-  return auth.init(app, config.auth);
-}).
+// Связываем приложение
+di('app', config.di,
+  {
+    server: server,
+    application: app
+  }).
 then(
+  // Подключаем модули
   function () {
       return new Promise(function (resolve, reject) {
         var i, moduleInitiators;
-        // Подключаем модули
         debug.info('Загрузка веб-модулей.');
         app.locals.sysMenu = [];
         moduleInitiators = [];
@@ -132,8 +134,8 @@ then(
                 }
                 module.locals.sysMenu = app.locals.sysMenu;
                 app.use(module);
-                if (typeof module.init === 'function') {
-                  moduleInitiators.push(module.init());
+                if (typeof module._init === 'function') {
+                  moduleInitiators.push(module._init());
                 }
                 debug.info('Модуль ' + candidates[i] + ' загружен.');
               } else {
@@ -152,8 +154,8 @@ then(
       });
     }
 ).then(
+  // Запускаем приложение
   function () {
-      // Запускаем приложение
       var ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];

@@ -7,41 +7,6 @@
         "[[server.port3]]"
     ],
     "defaultModule":"registry",
-    "datasources":[
-      {
-        "name":"Db",
-        "module":"core/impl/datasource/mongodb",
-        "config": {
-          "uri": "[[db.uri]]",
-          "options": {
-            "server": {
-              "socketOptions":{
-                "keepAlive": 1
-              }
-            }
-          },
-          "connectionLimit": 10,
-          "user": "[[db.user]]",
-          "password": "[[db.pwd]]"
-        }
-      }
-    ],
-    "metaDs": "Db",
-    "dataDs": "Db",
-    "sessionDs": "Db",
-    "auth": {
-      "denyTopLevel": true,
-      "authCallbacks": [],
-      "localAuthDS": "Db"
-    },
-    "policy": [
-        {
-            "module": "core/impl/access/aclmongo",
-            "config": {
-                "accessDs": "Db"
-            }
-        }
-    ],
     "di" : {
       "rtEvents": {
         "module": "core/RuntimeEvents",
@@ -52,7 +17,7 @@
       },
       "dataSources": {
         "module": "core/datasources",
-        "initMethid": "connect",
+        "initMethod": "connect",
         "initLevel": 0,
         "options": {
           "runtimeEvents": "ion://rtEvents",
@@ -78,17 +43,28 @@
         }
       },
       "sessionHandler": {
-        "module": "lib/sessions",
+        "module": "lib/session",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
+          "app": "ion://application",
+          "dataSource": "ion://Db",
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
             "saveUninitialized": true
-          },
+          }
+        }
+      },
+      "auth": {
+        "module": "lib/auth",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
           "dataSource": "ion://Db",
-          "app": "ion://application"
+          "denyTopLevel": true,
+          "authCallbacks": []
         }
       },
       "metaRepo": {

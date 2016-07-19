@@ -49,12 +49,11 @@ function MongoDs(config) {
               '\n    URI: ' + config.uri +
               '\n    Параметры: ' + config.options +
               '\n    Ошибка: ' + err);
-            debug.log('Получено соединение с базой: ', db.s.databaseName, '. URI: ', db.s.options.url);
             _this.db = db;
             _this.db.open(function () {
               _this.busy = false;
               _this.isOpen = true;
-              debug.info('БД открыта');
+              debug.log('Получено соединение с базой: ', db.s.databaseName, '. URI: ', db.s.options.url);
               _this._ensureIndex(AUTOINC_COLLECTION, {type: 1}, {unique: true}).then(
                 function () {
                   resolve(_this.db);
@@ -221,7 +220,6 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          var f = function (data) {
             debug.debug('Запиcь в коллекцию ' + type + ' по условию ', conditions);
             if (!multi) {
               c.updateOne(conditions, {$set: data}, {upsert: upsert},
@@ -248,10 +246,7 @@ function MongoDs(config) {
                   }
                 });
             }
-          };
-
-          f(data);
-        });
+          });
       });
   };
 
