@@ -161,7 +161,7 @@ function MongoDbSync(options) {
         if (namespace) {
           query.namespace = namespace;
         } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+          query.$or = [{namespace: {$exists: false}}, {namespace: null}];
         }
         collection.findOne(query, function (err, anc) {
           if (err) {
@@ -170,7 +170,7 @@ function MongoDbSync(options) {
           if (anc) {
             return findClassRoot(anc).then(resolve).catch(reject);
           }
-          reject({Error: 'Класс ' + cm.ancestor + ' не найден!'});
+          reject(new Error('Класс ' + cm.ancestor + ' не найден!'));
         });
       }).catch(reject);
     });
