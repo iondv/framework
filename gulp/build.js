@@ -13,8 +13,8 @@ var runSequence = require('run-sequence');
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
  */
-gulp.task('build', ['build:npm', 'build:bower'/*, 'minify:css', 'minify:js'*/], function (done) {
-  runSequence('build:npm', 'build:bower', 'compile:less', function () {
+gulp.task('build', function (done) {
+  runSequence('build:npm', 'build:bower', function () {
     console.log('Сборка приложения завершена.');
     done();
   });
@@ -183,8 +183,8 @@ gulp.task('build:bower', function (done) {
 
 gulp.task('compile:less', function (done) {
   less = require('gulp-less');
-  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
+  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var start = compileless(process.env.NODE_PATH)();
   var stat;
   for (var i = 0; i < modules.length; i++) {
@@ -201,90 +201,3 @@ gulp.task('compile:less', function (done) {
     done();
   });
 });
-
-/*
-function minCss(path) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      console.log('Минификация css-файлов фронтенда для пути ' + path);
-      try {
-        process.chdir(path);
-        gulp.src([*/
-       //   join(path, 'view/static/css/**/*.css'),
-       //     join(path, 'view/static/vendor/css/**/*.css'),
-       //   '!' + join(path, 'view/static/css/**/*.min.css')
-/*        ])
-          .pipe(sourcemaps.init())
-          .pipe(autoprefixer(aprefConf))
-          .pipe(minifyCSS())
-          .pipe(rename({suffix: '.min'}))
-          .pipe(sourcemaps.write('./maps'))
-          .pipe(gulp.dest(join(config.path.public, config.folder.css)))
-          .pipe(size({title: 'Total compressed CSS files (with source maps) size:'}));
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
-*/
-/*
-gulp.task('minify:css', function (done) {
-  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = minCss(process.env.NODE_PATH)();
-  for (var i = 0; i < modules.length; i++) {
-    start = start.then(minCss(path.join(modulesDir, modules[i])));
-  }
-  start.then(function () {
-    process.chdir(process.env.NODE_PATH);
-    done();
-  }).catch(function (err) {
-    console.error(err);
-    done();
-  });
-});
-*/
-/*
-function minJs(path) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      console.log('Минификация js-файлов фронтенда для пути ' + path);
-      var error;
-      try {
-        process.chdir(path);
-        gulp.src(join(config.path.public, config.folder.js, config.file.mainJS))
-          .pipe(sourcemaps.init())
-          .pipe(stripDebug())
-          .pipe(uglify())
-          .pipe(rename({suffix: '.min'}))
-          // For using ES6 .pipe(plugins.babel())
-          .pipe(sourcemaps.write('.'))
-          .pipe(gulp.dest(join(config.path.public, config.folder.js)))
-          .pipe(size({title: 'Total compressed JavaScript files (with source maps) size:'}));
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
-*/
-/*
-gulp.task('minify:js', function (done) {
-  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = minJs(process.env.NODE_PATH)();
-  for (var i = 0; i < modules.length; i++) {
-    start = start.then(minJs(path.join(modulesDir, modules[i])));
-  }
-  start.then(function () {
-    process.chdir(process.env.NODE_PATH);
-    done();
-  }).catch(function (err) {
-    console.error(err);
-    done();
-  });
-});
-*/

@@ -8,8 +8,7 @@
 var DataSource = require('core/interfaces/DataSource');
 var mongo = require('mongodb');
 var client = mongo.MongoClient;
-var debug = require('debug-log')('ION:db');
-var assert = require('chai').assert;
+var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
@@ -30,6 +29,8 @@ function MongoDs(config) {
 
   this.busy = false;
 
+  var log = config.logger || new LoggerProxy();
+
   /**
    * @returns {Promise}
    */
@@ -44,16 +45,15 @@ function MongoDs(config) {
       } else {
         _this.busy = true;
         client.connect(config.uri, config.options, function (err, db) {
+          if (err) {
+            reject(err);
+          }
           try {
-            assert.equal(err, null, '(x) При открытии соединения с БД возвращен код ошибки. Ожидаемые параметры.' +
-              '\n    URI: ' + config.uri +
-              '\n    Параметры: ' + config.options +
-              '\n    Ошибка: ' + err);
             _this.db = db;
             _this.db.open(function () {
               _this.busy = false;
               _this.isOpen = true;
-              debug.log('Получено соединение с базой: ', db.s.databaseName, '. URI: ', db.s.options.url);
+              log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
               _this._ensureIndex(AUTOINC_COLLECTION, {type: 1}, {unique: true}).then(
                 function () {
                   resolve(_this.db);
@@ -62,7 +62,6 @@ function MongoDs(config) {
               ).catch(reject);
             });
           } catch (e) {
-            debug.error(e);
             _this.busy = false;
             _this.isOpen = false;
             reject(e);
@@ -133,7 +132,6 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                debug.error(err);
                 reject(err);
               } else if (result.deletedCount > 0) {
                 resolve(result.deletedCount);
@@ -151,7 +149,6 @@ function MongoDs(config) {
           var f = function (data) {
             c.insertOne(data, function (err, result) {
               if (err) {
-                debug.error(err);
                 mainReject(err);
               } else if (result.insertedId) {
                 _this._get(type, {_id: result.insertedId}).then(mainResolve).catch(mainReject);
@@ -220,12 +217,10 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-            debug.debug('Запиcь в коллекцию ' + type + ' по условию ', conditions);
             if (!multi) {
               c.updateOne(conditions, {$set: data}, {upsert: upsert},
                 function (err, result) {
                   if (err) {
-                    debug.error(err);
                     reject(err);
                   } else if (result.result && result.result.n > 0) {
                     _this._get(type, conditions).then(resolve).catch(reject);
@@ -237,7 +232,6 @@ function MongoDs(config) {
               c.updateMany(conditions, {$set: data},
                 function (err, result) {
                   if (err) {
-                    debug.error(err);
                     reject(err);
                   } else if (result.result && result.result.n > 0) {
                     _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
@@ -280,7 +274,6 @@ function MongoDs(config) {
             r.toArray(function (err, docs) {
               r.close();
               if (err) {
-                debug.error(err);
                 return reject(err);
               }
               if (amount !== null) {
@@ -294,7 +287,6 @@ function MongoDs(config) {
             r.count(false, function (err, amount) {
               if (err) {
                 r.close();
-                debug.error(err);
                 return reject(err);
               }
               work(amount);
@@ -321,7 +313,6 @@ function MongoDs(config) {
 
           c.count(options.filter || {}, opts, function (err, cnt) {
             if (err) {
-              debug.error(err);
               reject(err);
             } else {
               resolve(cnt);
@@ -338,7 +329,6 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              debug.error(err);
               reject(err);
             } else {
               resolve(result);

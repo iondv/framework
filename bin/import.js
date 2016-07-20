@@ -7,7 +7,7 @@ var DataSources = require('core/datasources');
 var DbSync = require('core/impl/meta/mongo/dbSync');
 var MetaRepository = require('core/impl/meta/DsMetaRepository');
 var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/mongo/keyProvider');
+var KeyProvider = require('core/impl/meta/keyProvider');
 
 var src = '../in';
 var ns = '';
