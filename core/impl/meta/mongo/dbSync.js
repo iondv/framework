@@ -4,134 +4,33 @@
 'use strict';
 
 var DbSync = require('core/interfaces/DbSync');
+
+const AUTOINC_COLL = '__autoinc';
+
 /* jshint maxstatements: 30 */
-function MongoDbSync(connection, config) {
+function MongoDbSync(options) {
 
   var _this = this;
 
   /**
    * @type {String}
    */
-  this.metaTableName = 'ion_meta';
+  this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
    * @type {String}
    */
-  this.viewTableName = 'ion_view';
+  this.viewTableName = options.ViewTableName || 'ion_view';
 
   /**
    * @type {String}
    */
-  this.navTableName = 'ion_nav';
+  this.navTableName = options.NavTableName || 'ion_nav';
 
   /**
-   * @type {Db}
+   * @returns {Db}
    */
-  this.db = connection;
-
-  if (config.metaTables) {
-    if (config.metaTables.MetaTableName) {
-      this.metaTableName = config.metaTables.MetaTableName;
-    }
-    if (config.metaTables.ViewTableName) {
-      this.viewTableName = config.metaTables.ViewTableName;
-    }
-    if (config.metaTables.NavTableName) {
-      this.navTableName = config.metaTables.NavTableName;
-    }
-  }
-
-  /**
-   * @param {{}} cm
-   * @returns {Promise}
-   * @private
-   */
-  this._createCollection = function (cm, namespace) {
-    return new Promise(function (resolve, reject) {
-      var cn = (namespace ? namespace + '_' : '') + cm.name;
-      _this.db.collection(
-        cn,
-        {strict: true},
-        function (err, collection) {
-          if (!collection) {
-            _this.db.createCollection(cn).then(resolve).catch(reject);
-          } else {
-            if (err) {
-              return reject(err);
-            }
-            resolve(collection);
-          }
-        }
-      );
-    });
-  };
-
-  /**
-   * @param {{}} cm
-   * @private
-   */
-  this._addIndexes = function (cm) {
-    /**
-     * @param {Collection} collection
-     */
-    return function (collection) {
-      var i, promises;
-      promises = [];
-
-      function createIndexPromise(props, unique) {
-        return new Promise(
-          function (resolve, reject) {
-            var opts, i;
-            opts = {};
-            if (unique) {
-              opts.unique = true;
-            }
-
-            var indexDef = {};
-            if (typeof props === 'string') {
-              indexDef = props;
-            } else if (Array.isArray(props)) {
-              for (i = 0; i < props.length; i++) {
-                indexDef[props[i]] = 1;
-              }
-            }
-            collection.createIndex(indexDef, opts, function (err, iname) {
-              /*
-              If (err) {
-                return reject(err);
-              }
-              */
-              resolve(iname);
-            });
-          }
-        );
-      }
-
-      return new Promise(function (resolve, reject) {
-        var promises = [];
-        promises.push(createIndexPromise(cm.key, true));
-        promises.push(createIndexPromise('_class', false));
-
-        for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
-            promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
-          }
-        }
-
-        if (cm.compositeIndexes) {
-          for (i = 0; i < cm.compositeIndexes.length; i++) {
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
-          }
-        }
-
-        Promise.all(promises).
-          then(function (inames) {
-            resolve(collection);
-          }).
-          catch(reject);
-      });
-    };
-  };
+  function db() {return options.dataSource.connection(); }
 
   function sysIndexer(tableType) {
     return function (collection) {
@@ -145,7 +44,7 @@ function MongoDbSync(connection, config) {
               },
               {
                 unique: true
-              }, function (err, iname) {
+              }, function (err) {
                 if (err) {
                   return reject(err);
                 }
@@ -164,7 +63,7 @@ function MongoDbSync(connection, config) {
               },
               {
                 unique: true
-              }, function (err, iname) {
+              }, function (err) {
                 if (err) {
                   return reject(err);
                 }
@@ -182,7 +81,7 @@ function MongoDbSync(connection, config) {
               },
               {
                 unique: true
-              }, function (err, iname) {
+              }, function (err) {
                 if (err) {
                   return reject(err);
                 }
@@ -214,22 +113,45 @@ function MongoDbSync(connection, config) {
         return reject('Unsupported meta type specified!');
       }
 
-      _this.db.collection(tn, {strict: true}, function (err, collection) {
+      db().collection(tn, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        _this.db.createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
+        db().createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
+      });
+    });
+  }
+
+  function getAutoIncColl() {
+    return new Promise(function (resolve, reject) {
+      db().collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
+        if (collection) {
+          return resolve(collection);
+        }
+        db().createCollection(AUTOINC_COLL).then(
+          function (autoinc) {
+            return new Promise(function (rs, rj) {
+              autoinc.createIndex({type: 1}, {unique: true}, function (err) {
+                if (err) {
+                  rj(err);
+                }
+                rs(autoinc);
+              });
+            });
+          }
+        ).then(resolve).catch(reject);
       });
     });
   }
 
   /**
    * @param {{}} cm
+   * @param {String} namespace
    * @returns {Promise}
    */
   function findClassRoot(cm, namespace) {
     if (!cm.ancestor) {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         resolve(cm);
       });
     }
@@ -259,13 +181,150 @@ function MongoDbSync(connection, config) {
       getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
+        then(function () {return getAutoIncColl();}).
         then(resolve).
         catch(reject);
     });
   };
 
   /**
+   * @param {{}} cm
+   * @param {String} namespace
+   * @returns {Promise}
+   * @private
+   */
+  this._createCollection = function (cm, namespace) {
+    return new Promise(function (resolve, reject) {
+      var cn = (namespace ? namespace + '_' : '') + cm.name;
+      db().collection(
+        cn,
+        {strict: true},
+        function (err, collection) {
+          if (!collection) {
+            db().createCollection(cn).then(resolve).catch(reject);
+          } else {
+            if (err) {
+              return reject(err);
+            }
+            resolve(collection);
+          }
+        }
+      );
+    });
+  };
+
+  /**
+   * @param {{}} cm
+   * @private
+   */
+  this._addIndexes = function (cm) {
+    /**
+     * @param {Collection} collection
+     */
+    return function (collection) {
+      function createIndexPromise(props, unique) {
+        return new Promise(
+          function (resolve) {
+            var opts, i;
+            opts = {};
+            if (unique) {
+              opts.unique = true;
+            }
+
+            var indexDef = {};
+            if (typeof props === 'string') {
+              indexDef = props;
+            } else if (Array.isArray(props)) {
+              for (i = 0; i < props.length; i++) {
+                indexDef[props[i]] = 1;
+              }
+            }
+            collection.createIndex(indexDef, opts, function (err, iname) {
+              /*
+               If (err) {
+               return reject(err);
+               }
+               */
+              resolve(iname);
+            });
+          }
+        );
+      }
+
+      return new Promise(function (resolve, reject) {
+        var i, promises;
+        promises = [];
+        promises.push(createIndexPromise(cm.key, true));
+        promises.push(createIndexPromise('_class', false));
+
+        for (i = 0; i < cm.properties.length; i++) {
+          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
+            promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
+          }
+        }
+
+        if (cm.compositeIndexes) {
+          for (i = 0; i < cm.compositeIndexes.length; i++) {
+            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
+          }
+        }
+
+        Promise.all(promises).
+        then(function () {
+          resolve(collection);
+        }).
+        catch(reject);
+      });
+    };
+  };
+
+  this._addAutoInc = function (cm) {
+    var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
+    /**
+     * @param {Collection} collection
+     */
+    return function (collection) {
+      return new Promise(function (resolve, reject) {
+        var inc = {};
+        for (var i = 0; i < cm.properties.length; i++) {
+          if (cm.properties[i].type === 6 && cm.properties[i].autoassigned === true) {
+            inc[cm.properties[i].name] = 0;
+          }
+        }
+
+        if (Object.keys(inc).length > 0) {
+          getAutoIncColl().then(function (autoinc) {
+            autoinc.find({type: cn}).limit(1).next(function (err, c) {
+              if (err) {
+                reject(err);
+              }
+
+              if (c && c.counters) {
+                for (var nm in c.counters) {
+                  if (c.counters.hasOwnProperty(nm) && inc.hasOwnProperty(nm)) {
+                    inc[nm] = c.counters[nm];
+                  }
+                }
+              }
+
+              autoinc.updateOne({type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
+                if (err) {
+                  reject(err);
+                }
+                resolve(collection);
+              });
+            });
+          }).catch(reject);
+          return;
+        }
+        resolve(collection);
+      });
+    };
+  };
+
+  /**
    * @param {{}} classMeta
+   * @param {String} [namespace]
    * @returns {Promise}
    * @private
    */
@@ -276,6 +335,7 @@ function MongoDbSync(connection, config) {
       then(function (cm) {
         return _this._createCollection(cm, namespace);
       }).
+      then(_this._addAutoInc(classMeta)).
       then(_this._addIndexes(classMeta)).
       then(function () {
         getMetaTable('meta').then(function (collection) {

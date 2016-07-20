@@ -8,8 +8,6 @@ var MetaRepositoryModule = require('core/interfaces/MetaRepository');
 var MetaRepository = MetaRepositoryModule.MetaRepository;
 var ClassMeta = MetaRepositoryModule.ClassMeta;
 
-var Datasources = require('core/datasources');
-
 const defaultVersion = '___default';
 
 /* jshint maxstatements: 60, maxcomplexity: 20 */
@@ -59,38 +57,42 @@ function findByVersion(arr, version, i1, i2) {
 }
 
 /**
- * @param {{}} config
- * @param {String} [config.metaDs]
- * @param {DataSource} [config.Datasource]
- * @param {{}} [config.metaTables]
- * @param {String} [config.metaTables.MetaTableName]
- * @param {String} [config.metaTables.ViewTableName]
- * @param {String} [config.metaTables.NavTableName]
+ * @param {{}} options
+ * @param {DataSource} options.dataSource
+ * @param {String} [options.MetaTableName]
+ * @param {String} [options.ViewTableName]
+ * @param {String} [options.NavTableName]
+ * @param {DbSync} [options.sync]
  * @constructor
  */
-function DsMetaRepository(config) {
+function DsMetaRepository(options) {
 
   var _this = this;
 
   /**
    * @type {String}
    */
-  this.metaTableName = 'ion_meta';
+  this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
    * @type {String}
    */
-  this.viewTableName = 'ion_view';
+  this.viewTableName = options.ViewTableName || 'ion_view';
 
   /**
    * @type {String}
    */
-  this.navTableName = 'ion_nav';
+  this.navTableName = options.NavTableName || 'ion_nav';
 
   /**
    * @type {DataSource}
    */
   this.ds = null;
+
+  /**
+   * @type {DbSync}
+   */
+  this.sync = options.sync;
 
   this.classMeta = {};
 
@@ -110,32 +112,10 @@ function DsMetaRepository(config) {
     classnames: {}
   };
 
-  if (config.metaTables && config.metaTables.MetaTableName) {
-    this.metaTableName = config.metaTables.MetaTableName;
-  }
-  if (config.metaTables && config.metaTables.ViewTableName) {
-    this.viewTableName = config.metaTables.ViewTableName;
-  }
-  if (config.metaTables && config.metaTables.NavTableName) {
-    this.navTableName = config.metaTables.NavTableName;
-  }
-
-  if (config.Datasource) {
-    this.ds = config.Datasource;
-  }
-
-  if (!this.ds && config.metaDs) {
-    if (global.ionDataSources) {
-      this.ds = global.ionDataSources.get(config.metaDs);
-    }
-    if (!this.ds) {
-      var dataSources = new Datasources(config);
-      this.ds = dataSources.get(config.metaDs);
-    }
-  }
+  this.ds = options.dataSource;
 
   if (!this.ds) {
-    throw 'Не удалось определить источник данных!';
+    throw 'Не указан источник данных мета репозитория!';
   }
 
   /**
@@ -508,14 +488,13 @@ function DsMetaRepository(config) {
   }
 
   /**
-   * @param {DbSync} sync
    * @returns {Promise}
    * @private
      */
-  this._init = function (sync) {
-    if (sync) {
+  this._init = function () {
+    if (this.sync) {
       return new Promise(function (resolve, reject) {
-        sync.init().then(init).then(resolve).catch(reject);
+        _this.sync.init().then(init).then(resolve).catch(reject);
       });
     }
     return init();
