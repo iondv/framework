@@ -14,7 +14,7 @@ var runSequence = require('run-sequence');
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', ['build:npm', 'build:bower'/*, 'minify:css', 'minify:js'*/], function (done) {
-  runSequence('build:npm', 'build:bower', function () {
+  runSequence('build:npm', 'build:bower', 'compile:less', function () {
     console.log('Сборка приложения завершена.');
     done();
   });
@@ -161,7 +161,7 @@ gulp.task('build:npm', function (done) {
   });
 });
 
-gulp.task('build:bower', ['build:npm'], function (done) {
+gulp.task('build:bower', function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
   var start = bower(process.env.NODE_PATH)();
@@ -181,7 +181,7 @@ gulp.task('build:bower', ['build:npm'], function (done) {
   });
 });
 
-gulp.task('compile:less', ['build:bower'], function (done) {
+gulp.task('compile:less', function (done) {
   less = require('gulp-less');
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
