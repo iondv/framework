@@ -3,7 +3,6 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var debug = require('debug-log')('ION:www');
 var path = require('path');
 var http = require('http');
 var express = require('express');
@@ -12,26 +11,29 @@ var flash = require('connect-flash');
 var fs = require('fs');
 var favicon = require('serve-favicon');
 
-// Ротация логов или обычный логгер для developer режима
-var FileStreamRotator = require('file-stream-rotator');
-var logger = require('morgan');
-
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 
 var config = require('../config');
 var di = require('core/di');
 
+var IonLogger = require('core/impl/log/IonLogger');
+
+var sysLog = new IonLogger(config.log || {});
+
 /** Сервер http
  Для запуска NODE_PATH должна содержать путь к каталогу системы
  */
 
-debug.info('Запускаем приложение ION');
+sysLog.info('Запуск приложения ION');
 
 var app = express();
 
 global.app = app;
 
+// TODO Access-лог надо реализовать через IonLogger
+var FileStreamRotator = require('file-stream-rotator');
+var Morgan = require('morgan');
 if (process.env.NODE_ENV !== 'development') {
   var logDirectory = path.join(__dirname, '../log');
   if (!fs.existsSync(logDirectory)) {
@@ -43,9 +45,9 @@ if (process.env.NODE_ENV !== 'development') {
     verbose: false,
     date_format: 'YYYY-MM-DD'
   });
-  app.use(logger('combined', {stream: accessLogStream}));
+  app.use(Morgan('combined', {stream: accessLogStream}));
 } else {
-  app.use(logger('dev'));
+  app.use(Morgan('dev'));
 }
 
 // Мидлвара сохранения сообщений в сессии перед редиректом
@@ -83,7 +85,7 @@ var server = http.createServer(app);
 
 // jshint maxstatements: 30
 var onError = function (error) {
-  debug.error(error);
+  sysLog.error(error);
   server.close(function (err) {
     process.exit(130);
   });
@@ -95,7 +97,7 @@ function start(ports, i) {
       if (err.code !== 'EADDRINUSE') {
         return reject(err);
       }
-      debug.info('Не удалось подключиться к порту ' + ports[i]);
+      sysLog.info('Не удалось подключиться к порту ' + ports[i]);
       start(ports, i + 1).then(resolve).catch(reject);
     });
     if (i < ports.length) {
@@ -110,14 +112,15 @@ function start(ports, i) {
 di('app', config.di,
   {
     server: server,
-    application: app
+    application: app,
+    sysLog: sysLog
   }).
 then(
   // Подключаем модули
   function () {
       return new Promise(function (resolve, reject) {
         var i, moduleInitiators;
-        debug.info('Загрузка веб-модулей.');
+        sysLog.info('Загрузка веб-модулей.');
         app.locals.sysMenu = [];
         moduleInitiators = [];
         try {
@@ -137,9 +140,9 @@ then(
                 if (typeof module._init === 'function') {
                   moduleInitiators.push(module._init());
                 }
-                debug.info('Модуль ' + candidates[i] + ' загружен.');
+                sysLog.info('Модуль ' + candidates[i] + ' загружен.');
               } else {
-                debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+                sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
               }
             }
           }
@@ -165,7 +168,7 @@ then(
 ).then(
   function () {
       server.on('error', onError);
-      debug.info('Слушается ' + (typeof server.address() === 'string' ?
+      sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
     }

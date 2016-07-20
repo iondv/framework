@@ -6,7 +6,7 @@ var config = require('config');
 var DataSources = require('core/datasources');
 var MetaRepository = require('core/impl/meta/DsMetaRepository');
 var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/mongo/keyProvider');
+var KeyProvider = require('core/impl/meta/keyProvider');
 
 var dst = '../out';
 var version = '';

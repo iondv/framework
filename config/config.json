@@ -7,6 +7,9 @@
         "[[server.port3]]"
     ],
     "defaultModule":"registry",
+    "log": {
+      "logDestinations": ["console", "./log"]
+    },
     "di" : {
       "rtEvents": {
         "module": "core/RuntimeEvents",
@@ -20,12 +23,14 @@
         "initMethod": "connect",
         "initLevel": 0,
         "options": {
+          "logger": "ion://sysLog",
           "runtimeEvents": "ion://rtEvents",
           "sources": [
             {
               "name":"Db",
               "module":"core/impl/datasource/mongodb",
               "options": {
+                "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
                   "server": {
@@ -62,6 +67,7 @@
         "initLevel": 1,
         "options": {
           "app": "ion://application",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"]
