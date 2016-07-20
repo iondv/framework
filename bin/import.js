@@ -37,8 +37,10 @@ process.argv.forEach(function (val) {
 di('app', config.di,
   {
     sysLog: sysLog
-  }).
-then(
+  },
+  null,
+  ['auth', 'rtEvents', 'sessionHandler']
+).then(
   // Импорт
   function (scope) {
     return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns});

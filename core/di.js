@@ -110,7 +110,7 @@ function loadComponent(name, component, scope, components, init, skip) {
     }
   }
   var constructor = require(component.module);
-  var result = new constructor(processOptions(component.options, scope, components, init));
+  var result = new constructor(processOptions(component.options, scope, components, init, skip));
   scope[name] = result;
   component.name = name;
   component.loaded = true;
