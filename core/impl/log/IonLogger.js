@@ -33,16 +33,19 @@ function IonLogger(options) {
         result.push(dest[i]);
       } else if (typeof dest[i] === 'string' && dest[i] !== 'console') {
         if (!streams.hasOwnProperty(dest[i])) {
-          stat = fs.statSync(dest[i]);
-          if (stat.isDirectory()) {
-            result.push(FileStreamRotator.getStream({
-              filename: path.join(dest[i], type + '-%DATE%.log'),
-              frequency: 'daily',
-              verbose: false,
-              date_format: 'YYYY-MM-DD'
-            }));
-          } else if (stat.isFile()) {
-            result.push(fs.createWriteStream(dest[i], {encoding: 'utf-8'}));
+          try {
+            stat = fs.statSync(dest[i]);
+            if (stat.isDirectory()) {
+              result.push(FileStreamRotator.getStream({
+                filename: path.join(dest[i], type + '-%DATE%.log'),
+                frequency: 'daily',
+                verbose: false,
+                date_format: 'YYYY-MM-DD'
+              }));
+            } else if (stat.isFile()) {
+              result.push(fs.createWriteStream(dest[i], {encoding: 'utf-8'}));
+            }
+          } catch (err) {
           }
         } else {
           result.push(streams[dest[i]]);
