@@ -385,11 +385,7 @@ function MongoDbSync(options) {
       viewMeta.type = type;
       viewMeta.className = className;
       viewMeta.namespace = namespace;
-      if (path !== null) {
-        viewMeta.path = path;
-      } else {
-        reject(new Error('не передан path'));
-      }
+      viewMeta.path = path || '';
 
       getMetaTable('view').then(function (collection) {
         collection.update(
