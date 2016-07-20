@@ -63,7 +63,8 @@
     "properties-reader": "^0.0.15",
     "request": "^2.57.0",
     "require-new": "^1.1.0",
-    "serve-favicon": "^2.2.0"
+    "serve-favicon": "^2.2.0",
+    "gulp-less": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",

@@ -3,6 +3,7 @@
 
 var gulp = require('gulp');
 var install = require('gulp-install');
+var less = null;
 
 var fs = require('fs');
 var path = require('path');
@@ -11,7 +12,7 @@ var path = require('path');
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
  */
-gulp.task('build', ['build:npm', 'build:bower'/*, 'minify:css', 'minify:js'*/], function (done) {
+gulp.task('build', ['compile:less'/*, 'minify:css', 'minify:js'*/], function (done) {
   console.log('Сборка приложения завершена.');
   done();
 });
@@ -118,6 +119,25 @@ function bower(p) {
   };
 }
 
+function compileless(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Компиляция less-файлов для пути ' + p);
+      try {
+        process.chdir(p);
+        gulp.src([path.join(p, 'view/less/*.less')])
+          .pipe(less({
+            paths: [path.join(p, 'view/less/*.less')]
+          }))
+          .pipe(gulp.dest(path.join(p, 'view/static/css')));
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
 gulp.task('build:npm', function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
@@ -138,7 +158,7 @@ gulp.task('build:npm', function (done) {
   });
 });
 
-gulp.task('build:bower', function (done) {
+gulp.task('build:bower', ['build:npm'], function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
   var start = bower(process.env.NODE_PATH)();
@@ -147,6 +167,27 @@ gulp.task('build:bower', function (done) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
       start = start.then(bower(path.join(modulesDir, modules[i])));
+    }
+  }
+  start.then(function () {
+    process.chdir(process.env.NODE_PATH);
+    done();
+  }).catch(function (err) {
+    console.error(err);
+    done();
+  });
+});
+
+gulp.task('compile:less', ['build:bower'], function (done) {
+  less = require('gulp-less');
+  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
+  var modules = fs.readdirSync(modulesDir);
+  var start = compileless(process.env.NODE_PATH)();
+  var stat;
+  for (var i = 0; i < modules.length; i++) {
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(compileless(path.join(modulesDir, modules[i])));
     }
   }
   start.then(function () {
