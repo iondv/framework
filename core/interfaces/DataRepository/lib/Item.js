@@ -55,7 +55,7 @@ function Item(id, base, classMeta, repository) {
   this.getMetaClass = function () {
     return this.classMeta;
   };
-
+  
   /**
    * @param {String} name
    * @returns {Item}
