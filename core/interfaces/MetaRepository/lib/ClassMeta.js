@@ -165,7 +165,7 @@ function ClassMeta(metaObject, metaRepository) {
         semanticFunc = function () {
           var result = '';
           for (var i = 0; i < parts.length; i++) {
-            result = result + (typeof parts[i] === 'function') ? parts[i].call(this) : parts[i];
+            result = result + (typeof parts[i] === 'function' ? parts[i].call(this) : parts[i]);
           }
           return result;
         };

@@ -57,13 +57,18 @@ function IonLogger(options) {
 
   function writeToDest(dest, message, type, consoleMethod) {
     var d = moment().format('DD.MM HH:mm');
+    var m = message instanceof Error ? message.message : message;
     for (var i = 0; i < dest.length; i++) {
       if (dest[i] === 'console') {
-        consoleMethod.call(console, d + ' ' + prefix + ' ' + message);
+        if (consoleMethod.name === console.error && message instanceof Error) {
+          console.error(message);
+        } else {
+          consoleMethod.call(console, d + ' ' + prefix + ' ' + m);
+        }
       } else if (typeof dest[i].info === 'function') {
-        dest[i].info(prefix + ' ' + message);
+        dest[i].info(prefix + ' ' + m);
       } else if (typeof dest[i].write === 'function') {
-        dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + message + '\r\n');
+        dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
       }
     }
   }

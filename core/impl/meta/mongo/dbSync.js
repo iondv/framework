@@ -161,7 +161,7 @@ function MongoDbSync(options) {
         if (namespace) {
           query.namespace = namespace;
         } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+          query.$or = [{namespace: {$exists: false}}, {namespace: null}];
         }
         collection.findOne(query, function (err, anc) {
           if (err) {
@@ -170,7 +170,7 @@ function MongoDbSync(options) {
           if (anc) {
             return findClassRoot(anc).then(resolve).catch(reject);
           }
-          reject({Error: 'Класс ' + cm.ancestor + ' не найден!'});
+          reject(new Error('Класс ' + cm.ancestor + ' не найден!'));
         });
       }).catch(reject);
     });
@@ -385,11 +385,7 @@ function MongoDbSync(options) {
       viewMeta.type = type;
       viewMeta.className = className;
       viewMeta.namespace = namespace;
-      if (path !== null) {
-        viewMeta.path = path;
-      } else {
-        reject(new Error('не передан path'));
-      }
+      viewMeta.path = path || '';
 
       getMetaTable('view').then(function (collection) {
         collection.update(
