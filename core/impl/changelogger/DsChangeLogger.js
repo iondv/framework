@@ -72,14 +72,14 @@ function DsChangeLogger(ds, authCallback) {
         function (changes) {
           var result = [];
           for (var i = 0; i < changes.length; i++) {
-            result = new ChangeLogger.Change(
+            result.push(new ChangeLogger.Change(
               Date.parse(changes[i].timestamp),
               changes[i].type,
               changes[i].className,
               changes[i].id,
               changes[i].author,
-              changes[i].updates
-            );
+              changes[i].data
+            ));
           }
           resolve(result);
         }
