@@ -63,7 +63,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
   this._getMeta = function (obj) {
     if (typeof obj === 'string') {
       return this.meta.getMeta(obj);
-    } else if (typeof obj === 'object' && obj.constructor.name === 'Item') {
+    } else if (typeof obj === 'object' && obj.constructor.name === 'Item') { 
       return obj.classMeta;
     }
     return null;
@@ -396,21 +396,19 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     var rcm = this._getRootType(cm);
     if (id) {
       return new Promise(function (resolve, reject) {
-        formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()), id)
-          .then(function (updates) {
-            _this.ds.get(tn(rcm), updates).
-            then(function (data) {
-              var result = [];
-              if (data) {
-                result.push(_this._wrap(data._class, data, data._classVer));
-              }
-              try {
-                return enrich(result, nestingDepth ? nestingDepth : 0);
-              } catch (err) {
-                reject(err);
-              }
-            }).then(function (items) { resolve(items[0]); }).catch(reject);
-        }).catch(reject);
+        var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+        _this.ds.get(tn(rcm), updates).
+        then(function (data) {
+          var result = [];
+          if (data) {
+            result.push(_this._wrap(data._class, data, data._classVer));
+          }
+          try {
+            return enrich(result, nestingDepth ? nestingDepth : 0);
+          } catch (err) {
+            reject(err);
+          }
+        }).then(function (items) { resolve(items[0]); }).catch(reject);
       });
     } else {
       var options = {};
@@ -508,10 +506,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return value;
   }
 
-  function processManyToManyCollection(itemId,value,backColPropertyName,backColCm) {
+  function processManyToManyCollection(backColCm,backColPropertyName,value,newId,oldId) {
     return new Promise(function (resolve, reject) {
       var filter = {};
-      filter[backColPropertyName] = {$elemMatch:{$eq:itemId}};
+      filter[backColPropertyName] = {$elemMatch:{$eq:oldId}};
       _this.getList(backColCm.getName(), {
         filter: filter
       }).then(function (results) {
@@ -528,7 +526,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               edits[backColPropertyName] = backCol;
               promises.push(_this.ds.update(tn(backColCm), _this.keyProvider.keyToData(backColCm.getName(), results[i].getItemId()), edits));
             }
-          } else {
+          } else if (newId == oldId) {
             newElements.splice(arrIndex, 1);
           }
         }
@@ -542,8 +540,10 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               var backCol = newResults[i].get(backColPropertyName);
               if(!backCol){
                 backCol = [];
+              } else if (newId != oldId){
+                backCol.splice(backCol.indexOf(oldId),1);
               }
-              backCol.push(itemId);
+              backCol.push(newId);
               edits = {};
               edits[backColPropertyName] = backCol;
               promises.push(_this.ds.update(tn(backColCm), _this.keyProvider.keyToData(backColCm.getName(), newResults[i].getItemId()), edits));
@@ -561,14 +561,14 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     });
   }
 
-  function processCollection(cm, pm, collection, id) {
+  function processCollection(cm, pm, collection, newId, oldId) {
     return new Promise(function (resolve, reject) {
       var ccm = _this.meta.getMeta(pm.items_class);
       var filter;
-      if (ccm && id) {
+      if (ccm) {
         if (pm.back_ref) {
           filter = {};
-          filter[pm.back_ref] = {$eq: id};
+          filter[pm.back_ref] = {$eq: oldId};
           _this.getList(pm.items_class, {
             filter: filter
           }).then(function (results) {
@@ -579,22 +579,22 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
               if (arrIndex < 0) {
                 edits = {};
                 edits[pm.back_ref] = null;
-                promises.push(_this.editItem(pm.items_class, results[i].getItemId(), edits));
-              } else {
+                promises.push(_this.ds.update(tn(ccm),_this.keyProvider.keyToData(pm.items_class, results[i].getItemId()), edits));
+              } else if(newId == oldId) {
                 collection.splice(arrIndex, 1);
               }
             }
             for (var j = 0; j < collection.length; j++) {
               edits = {};
-              edits[pm.back_ref] = id;
-              promises.push(_this.editItem(pm.items_class, collection[j], edits));
+              edits[pm.back_ref] = newId;
+              promises.push(_this.ds.update(tn(ccm),_this.keyProvider.keyToData(pm.items_class, collection[j]), edits));
             }
             Promise.all(promises).then(function (rs) {
               resolve({property: pm.name, value: null});
             }).catch(reject);
           }).catch(reject);
         } else if (pm.back_coll) {
-          processManyToManyCollection(id, collection, pm.back_coll, ccm)
+          processManyToManyCollection(ccm, pm.back_coll, collection, newId, oldId)
             .then(function (value) {
               resolve({property:pm.name, value:value});
             }).catch(reject);
@@ -608,7 +608,7 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
             }
           }
           if (backColProperty) {
-            processManyToManyCollection(id, collection, backColProperty.name, ccm)
+            processManyToManyCollection(ccm, backColProperty.name, collection, newId, oldId)
               .then(function (value) {
                 resolve({property:pm.name, value:value});
               }).catch(reject);
@@ -623,23 +623,20 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
   }
 
   /**
-   * @param {ClassMeta} cm
-   * @param {Object} data
-   * @param {String} id
+   * @param {{}} data
+   * @param {Item} item
+   * @param {String} oldId
    */
-  function formUpdatedData(cm, data, id) {
-    var updates, pm, nm, promises;
-    updates = {};
+  function updateCollections(data, item, oldId) {
+    var cm, pm, nm, promises;
+    cm = item.getMetaClass();
     promises = [];
     for (nm in data) {
       if (data.hasOwnProperty(nm)) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
           if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
-            promises.push(processCollection(cm, pm, data[nm], id));
-          } else {
-            data[nm] = castValue(data[nm], pm);
-            updates[nm] = data[nm];
+            promises.push(processCollection(cm, pm, data[nm], item.getItemId(), oldId));
           }
         }
       }
@@ -647,12 +644,39 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     return new Promise(function (resolve, reject) {
       Promise.all(promises).then(
         function (results) {
+          var updates = {};
           for (var i = 0; i < results.length; i++) {
-            updates[results[i].property] = results[i].value;
+              updates[results[i].property] = results[i].value;
           }
-          resolve(updates);
+          _this.ds.update(tn(item.getMetaClass()),_this.keyProvider.keyToData(item.getClassName(), item.getItemId()), updates)
+            .then(function (newItemData) {
+            var item = _this._wrap(newItemData._class, newItemData, newItemData._classVer);
+            resolve(item);
+          });
         }).catch(reject);
     });
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   * @param {Object} data
+   * @param {String} id
+   */
+  function formUpdatedData(cm, data) {
+    var updates, pm, nm;
+    updates = {};
+    for (nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        pm = cm.getPropertyMeta(nm);
+        if (pm) {
+          if (pm.type !== PropertyTypes.COLLECTION) {
+            data[nm] = castValue(data[nm], pm);
+            updates[nm] = data[nm];
+          }
+        }
+      }
+    }
+    return updates;
   }
 
   /**
@@ -669,71 +693,70 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       try {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
-        formUpdatedData(cm, data).then(function (updates) {
-          var properties = cm.getPropertyMetas();
-          var pm;
-          for (var i = 0;  i < properties.length; i++) {
-            pm = properties[i];
-            if (pm.autoassigned) {
+        var updates = formUpdatedData(cm, data);
+        var properties = cm.getPropertyMetas();
+        var pm;
+        for (var i = 0;  i < properties.length; i++) {
+          pm = properties[i];
+          if (pm.autoassigned) {
+            switch (pm.type) {
+              case PropertyTypes.GUID: {
+                updates[pm.name] = uuid.v1();
+              }break;
+              case PropertyTypes.DATETIME: {
+                updates[pm.name] = new Date();
+              }break;
+              case PropertyTypes.INT: {
+                updates[pm.name] = null;
+                // TODO Implement autoincrement
+              }break;
+            }
+          } else if (pm.default_value) {
+            try {
               switch (pm.type) {
-                case PropertyTypes.GUID: {
-                  updates[pm.name] = uuid.v1();
-                }break;
                 case PropertyTypes.DATETIME: {
-                  updates[pm.name] = new Date();
+                  updates[pm.name] = new Date(pm.default_value);
                 }break;
                 case PropertyTypes.INT: {
-                  updates[pm.name] = null;
-                  // TODO Implement autoincrement
+                  updates[pm.name] = parseInt(pm.default_value);
+                }break;
+                case PropertyTypes.REAL:
+                case PropertyTypes.DECIMAL: {
+                  updates[pm.name] = parseFloat(pm.default_value);
+                }break;
+                default: {
+                  updates[pm.name] = pm.default_value;
                 }break;
               }
-            } else if (pm.default_value) {
-              try {
-                switch (pm.type) {
-                  case PropertyTypes.DATETIME: {
-                    updates[pm.name] = new Date(pm.default_value);
-                  }break;
-                  case PropertyTypes.INT: {
-                    updates[pm.name] = parseInt(pm.default_value);
-                  }break;
-                  case PropertyTypes.REAL:
-                  case PropertyTypes.DECIMAL: {
-                    updates[pm.name] = parseFloat(pm.default_value);
-                  }break;
-                  default: {
-                    updates[pm.name] = pm.default_value;
-                  }break;
-                }
-              } catch (err) {
-              }
+            } catch (err) {
             }
           }
-          updates._class = cm.getCanonicalName();
-          updates._classVer = cm.getVersion();
+        }
+        updates._class = cm.getCanonicalName();
+        updates._classVer = cm.getVersion();
 
-          _this.ds.insert(tn(rcm), updates).then(function (data) {
-            var item = _this._wrap(data._class, data, data._classVer);
-            if (changeLogger) {
-              return new Promise(function (resolve, reject) {
-                changeLogger.LogChange(
-                  EventType.CREATE,
-                  item.getMetaClass().getCanonicalName(),
-                  item.getItemId(),
-                  updates
-                ).then(function (record) {
-                  resolve([item]);
-                }).catch(reject);
-              });
-            } else {
-              return new Promise(function (resolve, reject) {
+        _this.ds.insert(tn(rcm), updates).then(function (data) {
+          var item = _this._wrap(data._class, data, data._classVer);
+          if (changeLogger) {
+            return new Promise(function (resolve, reject) {
+              changeLogger.LogChange(
+                EventType.CREATE,
+                item.getMetaClass().getCanonicalName(),
+                item.getItemId(),
+                updates
+              ).then(function (record) {
                 resolve([item]);
-              });
-            }
-          }).then(function (items) {
-            return enrich(items, nestingDepth !== null ? nestingDepth : 1);
-          }).then(function (items) {
-            resolve(items[0]);
-          }).catch(reject);
+              }).catch(reject);
+            });
+          } else {
+            return new Promise(function (resolve, reject) {
+              resolve([item]);
+            });
+          }
+        }).then(function (items) {
+          return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+        }).then(function (items) {
+          resolve(items[0]);
         }).catch(reject);
       } catch (err) {
         reject(err);
@@ -755,38 +778,37 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       try {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
-
-        formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id), id).then(function (conditions) {
-          formUpdatedData(cm, data, id).then(function (updates) {
-            if (conditions) {
-              _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
-                var item = _this._wrap(data._class, data, data._classVer);
-                if (changeLogger) {
-                  return new Promise(function (resolve, reject) {
-                    changeLogger.LogChange(
-                      EventType.UPDATE,
-                      item.getMetaClass().getCanonicalName(),
-                      item.getItemId(),
-                      updates
-                    ).then(function (record) {
-                      resolve([item]);
-                    }).catch(reject);
-                  });
-                } else {
-                  return new Promise(function (resolve, reject) {
-                    resolve([item]);
-                  });
-                }
-              }).then(function (items) {
-                return enrich(items, nestingDepth !== null ? nestingDepth : 1);
-              }).then(function (items) {
-                resolve(items[0]);
-              }).catch(reject);
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id));
+        var updates = formUpdatedData(cm, data);
+        if (conditions) {
+          _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
+            var item = _this._wrap(data._class, data, data._classVer);
+            if (changeLogger) {
+              return new Promise(function (resolve, reject) {
+                changeLogger.LogChange(
+                  EventType.UPDATE,
+                  item.getMetaClass().getCanonicalName(),
+                  item.getItemId(),
+                  updates
+                ).then(function (record) {
+                  resolve(item);
+                }).catch(reject);
+              });
             } else {
-              reject({Error: 'Не указан идентификатор объекта!'});
+              return new Promise(function (resolve, reject) {
+                resolve(item);
+              });
             }
+          }).then(function (item) {
+            return updateCollections(data, item, id);
+          }).then(function (item) {
+            return enrich([item], nestingDepth !== null ? nestingDepth : 1);
+          }).then(function (items) {
+            resolve(items[0]);
           }).catch(reject);
-        }).catch(reject);
+        } else {
+          reject({Error: 'Не указан идентификатор объекта!'});
+        }
       } catch (err) {
         reject(err);
       }
@@ -809,54 +831,51 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        formUpdatedData(cm, data, id).then(function (updates) {
-          var conditionsData;
-          var worker;
+        var updates = formUpdatedData(cm, data);
+        var conditionsData;
+        var worker;
 
-          if (id) {
-            conditionsData = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
+        if (id) {
+          conditionsData = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
+        } else {
+          conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
+        }
+
+        var conditions = formUpdatedData(rcm, conditionsData);
+        updates._class = cm.getName();
+        updates._classVer = cm.getVersion();
+
+        var event = EventType.UPDATE;
+        if (conditions) {
+          worker = function () {return _this.ds.upsert(tn(rcm), conditions, updates);};
+        } else {
+          event = EventType.CREATE;
+          worker = function () {return _this.ds.insert(tn(rcm), updates);};
+        }
+
+        worker().then(function (data) {
+          var item = _this._wrap(data._class, data, data._classVer);
+          if (changeLogger) {
+            return new Promise(function (resolve, reject) {
+              changeLogger.LogChange(
+                event,
+                item.getMetaClass().getCanonicalName(),
+                item.getItemId(),
+                updates
+              ).then(function () {
+                resolve([item]);
+              }).catch(reject);
+            });
           } else {
-            conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
+            return new Promise(function (resolve) {
+              resolve([item]);
+            });
           }
-
-          formUpdatedData(rcm, conditionsData, id).then(function (conditions) {
-            updates._class = cm.getName();
-            updates._classVer = cm.getVersion();
-
-            var event = EventType.UPDATE;
-            if (conditions) {
-              worker = function () {return _this.ds.upsert(tn(rcm), conditions, updates);};
-            } else {
-              event = EventType.CREATE;
-              worker = function () {return _this.ds.insert(tn(rcm), updates);};
-            }
-
-            worker().then(function (data) {
-              var item = _this._wrap(data._class, data, data._classVer);
-              if (changeLogger) {
-                return new Promise(function (resolve, reject) {
-                  changeLogger.LogChange(
-                    event,
-                    item.getMetaClass().getCanonicalName(),
-                    item.getItemId(),
-                    updates
-                  ).then(function () {
-                    resolve([item]);
-                  }).catch(reject);
-                });
-              } else {
-                return new Promise(function (resolve) {
-                  resolve([item]);
-                });
-              }
-            }).then(function (items) {
-              return enrich(items, nestingDepth !== null ? nestingDepth : 1);
-            }).then(function (items) {
-              resolve(items[0]);
-            }).catch(reject);
-          }).catch(reject);
+        }).then(function (items) {
+          return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+        }).then(function (items) {
+          resolve(items[0]);
         }).catch(reject);
-
       } catch (err) {
         reject(err);
       }
@@ -874,22 +893,20 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
     var rcm = _this._getRootType(cm);
 
     return new Promise(function (resolve, reject) {
-      formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()),id)
-        .then(function (updates) {
-          _this.ds.delete(tn(rcm), updates).then(function () {
-            if (changeLogger) {
-              changeLogger.LogChange(
-                EventType.DELETE,
-                cm.getCanonicalName(),
-                id,
-                {}).
-              then(resolve).
-              catch(reject);
-            } else {
-              resolve();
-            }
-          }).catch(reject);
-        });
+      var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      _this.ds.delete(tn(rcm), updates).then(function () {
+        if (changeLogger) {
+          changeLogger.LogChange(
+            EventType.DELETE,
+            cm.getCanonicalName(),
+            id,
+            {}).
+          then(resolve).
+          catch(reject);
+        } else {
+          resolve();
+        }
+      }).catch(reject);
     });
   };
 
@@ -910,37 +927,33 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-      formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
-        .then(function (updates) {
-          _this.ds.get(tn(mrcm), updates).then(
-            function (mdata) {
-              if (!mdata[collection]) {
-                mdata[collection] = [];
+      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      _this.ds.get(tn(mrcm), updates).then(
+        function (mdata) {
+          if (!mdata[collection]) {
+            mdata[collection] = [];
+          }
+          mdata[collection][mdata[collection].length] = detail.getItemId();
+          var dsUpdates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+          _this.ds.update(tn(mrcm), dsUpdates, mdata).then(
+            function () {
+              if (changeLogger) {
+                var updates = {};
+                updates[collection] = {
+                  className: detail.metaClass.getCanonicalName(),
+                  id: detail.getItemId()
+                };
+                changeLogger.LogChange(
+                  EventType.PUT,
+                  master.classMeta.getCanonicalName(),
+                  master.getItemId(),
+                  updates);
+              } else {
+                resolve();
               }
-              mdata[collection][mdata[collection].length] = detail.getItemId();
-              formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
-                .then(function(dsUpdates){
-                  _this.ds.update(tn(mrcm), dsUpdates, mdata).then(
-                    function () {
-                      if (changeLogger) {
-                        var updates = {};
-                        updates[collection] = {
-                          className: detail.metaClass.getCanonicalName(),
-                          id: detail.getItemId()
-                        };
-                        changeLogger.LogChange(
-                          EventType.PUT,
-                          master.classMeta.getCanonicalName(),
-                          master.getItemId(),
-                          updates);
-                      } else {
-                        resolve();
-                      }
-                    }
-                  ).catch(reject);
-              }).catch(reject);
-            }).catch(reject);
-      }).catch(reject);
+            }
+          ).catch(reject);
+        }).catch(reject);
       }
     );
   };
@@ -962,38 +975,35 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-      formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())).then(function(updates){
-        _this.ds.get(tn(mrcm),updates)
-          .then(function (mdata) {
-            if (mdata[collection]) {
-              mdata[collection].splice(mdata[collection].indexOf(detail.getItemId()), 1);
-              formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
-                .then(function (dsUpdates) {
-                  _this.ds.update(tn(mrcm), dsUpdates, mdata).
-                  then(
-                    function () {
-                      if (changeLogger) {
-                        var updates = {};
-                        updates[collection] = {
-                          className: detail.metaClass.getCanonicalName(),
-                          id: detail.getItemId()
-                        };
-                        changeLogger.LogChange(
-                          EventType.EJECT,
-                          master.classMeta.getCanonicalName(),
-                          master.getItemId(),
-                          updates);
-                      } else {
-                        resolve();
-                      }
-                    }
-                  ).catch(reject);
-              });
-            } else {
-              resolve();
-            }
-          }).catch(reject);
-      });
+      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      _this.ds.get(tn(mrcm),updates)
+        .then(function (mdata) {
+          if (mdata[collection]) {
+            mdata[collection].splice(mdata[collection].indexOf(detail.getItemId()), 1);
+            var dsUpdates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+            _this.ds.update(tn(mrcm), dsUpdates, mdata).
+            then(
+              function () {
+                if (changeLogger) {
+                  var updates = {};
+                  updates[collection] = {
+                    className: detail.metaClass.getCanonicalName(),
+                    id: detail.getItemId()
+                  };
+                  changeLogger.LogChange(
+                    EventType.EJECT,
+                    master.classMeta.getCanonicalName(),
+                    master.getItemId(),
+                    updates);
+                } else {
+                  resolve();
+                }
+              }
+            ).catch(reject);
+          } else {
+            resolve();
+          }
+        }).catch(reject);
       }
     );
   };
@@ -1017,29 +1027,27 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, null, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
-      formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
-        .then(function (updates) {
-          _this.ds.get(tn(mrcm), updates).
-          then(function (mdata) {
-            if (mdata[collection]) {
-              var idf = {_id: {$in: mdata[collection]}};
-              if (!options) {
-                options = {};
-              }
-              options.filter = options.filter ? {$and: [options.filter,idf]} : idf;
-              _this.ds.fetch(tn(drcm), options).
-              then(function (data) {
-                var result = [];
-                for (var i = 0; i < data.length; i++) {
-                  result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-                }
-                return enrich(result, options.nestingDepth ? options.nestingDepth : 1);
-              }).then(resolve).
-              catch(reject);
-            } else {
-              resolve([]);
+      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      _this.ds.get(tn(mrcm), updates).
+      then(function (mdata) {
+        if (mdata[collection]) {
+          var idf = {_id: {$in: mdata[collection]}};
+          if (!options) {
+            options = {};
+          }
+          options.filter = options.filter ? {$and: [options.filter,idf]} : idf;
+          _this.ds.fetch(tn(drcm), options).
+          then(function (data) {
+            var result = [];
+            for (var i = 0; i < data.length; i++) {
+              result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
             }
-          }).catch(reject);
+            return enrich(result, options.nestingDepth ? options.nestingDepth : 1);
+          }).then(resolve).
+          catch(reject);
+        } else {
+          resolve([]);
+        }
       }).catch(reject);
     });
   };
@@ -1057,23 +1065,21 @@ function IonDataRepository(datasource, metarepository, keyProvider) {
       this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
-      formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()))
-        .then(function (updates) {
-          _this.ds.get(tn(mrcm), updates).
-          then(function (mdata) {
-            if (mdata[collection]) {
-              var idf = {_id: {$in: mdata[collection]}};
-              if (!options) {
-                options = {};
-              }
-              options.filter = options.filter ? {$and: [options.filter,idf]} : idf;
-              _this.ds.count(tn(drcm), options).
-              then(resolve).
-              catch(reject);
-            } else {
-              resolve(0);
-            }
-          }).catch(reject);
+      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      _this.ds.get(tn(mrcm), updates).
+      then(function (mdata) {
+        if (mdata[collection]) {
+          var idf = {_id: {$in: mdata[collection]}};
+          if (!options) {
+            options = {};
+          }
+          options.filter = options.filter ? {$and: [options.filter,idf]} : idf;
+          _this.ds.count(tn(drcm), options).
+          then(resolve).
+          catch(reject);
+        } else {
+          resolve(0);
+        }
       }).catch(reject);
     });
   };
