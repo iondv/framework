@@ -23,7 +23,7 @@ function MetaKeyProvider(options) {
    * @private
    */
   this._formKey = function (classname, data, namespace) {
-    var cm = this.meta.getMeta(classname, namespace);
+    var cm = this.meta.getMeta(classname, null, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
@@ -35,7 +35,7 @@ function MetaKeyProvider(options) {
   this._keyToData = function (classname, id, namespace) {
     var result = {};
     if (typeof id === 'string') {
-      var cm = this.meta.getMeta(classname, namespace);
+      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       var parts = id.split('_');
       for (var i = 0; i < keyProps.length; i++) {
@@ -48,7 +48,7 @@ function MetaKeyProvider(options) {
   this._keyData = function (classname, data, namespace) {
     var result = {};
     if (typeof data === 'object' && data) {
-      var cm = this.meta.getMeta(classname, namespace);
+      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
         if (data.hasOwnProperty(keyProps[i]) && data[keyProps[i]] !== null) {
