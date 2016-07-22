@@ -75,7 +75,7 @@ function Property(item, propertyMeta) {
       }
     }
 
-    return v !== null ? v : '';
+    return v !== null && !isNaN(v) ? v : '';
   };
 
   this.getSelection = function () {
