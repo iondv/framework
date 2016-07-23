@@ -4,8 +4,11 @@
 var gulp = require('gulp');
 var install = require('gulp-install');
 var less = null;
+var cssMin = null;
+var jsMin = null;
 
 var fs = require('fs');
+var rmdir = require('rmdir');
 var path = require('path');
 var runSequence = require('run-sequence');
 
@@ -14,7 +17,7 @@ var runSequence = require('run-sequence');
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', function (done) {
-  runSequence('build:npm', 'build:bower', 'compile:less', function () {
+  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function () {
     console.log('Сборка приложения завершена.');
     done();
   });
@@ -122,17 +125,56 @@ function bower(p) {
   };
 }
 
-function compileless(p) {
+function compileLess(p) {
   return function () {
     return new Promise(function (resolve, reject) {
       console.log('Компиляция less-файлов для пути ' + p);
+      rmdir(path.join(p, 'view/static/less-css'));
       try {
         process.chdir(p);
         gulp.src([path.join(p, 'view/less/*.less')])
           .pipe(less({
             paths: [path.join(p, 'view/less/*.less')]
           }))
-          .pipe(gulp.dest(path.join(p, 'view/static/css')));
+          .pipe(gulp.dest(path.join(p, 'view/static/less-css')));
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
+function minifyCSS(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Минификация файлов стилей фронтенда для пути ' + p);
+      try {
+        rmdir(path.join(p, 'view/static/minified/css'));
+        rmdir(path.join(p, 'view/static/minified/less-css'));
+        process.chdir(p);
+        gulp.src([path.join(p, 'view/static/css/**/*.css'),
+                  path.join(p, 'view/static/less-css/**/*.css')], {base: path.join(p, 'view/static')})
+          .pipe(cssMin())
+          .pipe(gulp.dest('view/static/minified'));
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
+function minifyJS(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Минификация файлов скриптов фронтенда для пути ' + p);
+      try {
+        rmdir(path.join(p, 'view/static/minified/js'));
+        process.chdir(p);
+        gulp.src([path.join(p, 'view/static/js/**/*.js')], {base: path.join(p, 'view/static')})
+          .pipe(jsMin())
+          .pipe(gulp.dest('view/static/minified'));
         resolve();
       } catch (error) {
         reject(error);
@@ -185,12 +227,54 @@ gulp.task('compile:less', function (done) {
   less = require('gulp-less');
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
-  var start = compileless(process.env.NODE_PATH)();
+  var start = compileLess(process.env.NODE_PATH)();
   var stat;
   for (var i = 0; i < modules.length; i++) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
-      start = start.then(compileless(path.join(modulesDir, modules[i])));
+      start = start.then(compileLess(path.join(modulesDir, modules[i])));
+    }
+  }
+  start.then(function () {
+    process.chdir(process.env.NODE_PATH);
+    done();
+  }).catch(function (err) {
+    console.error(err);
+    done();
+  });
+});
+
+gulp.task('minify:css', function (done) {
+  cssMin = require('gulp-clean-css');
+  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
+  var modules = fs.readdirSync(modulesDir);
+  var start = minifyCSS(process.env.NODE_PATH)();
+  var stat;
+  for (var i = 0; i < modules.length; i++) {
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(minifyCSS(path.join(modulesDir, modules[i])));
+    }
+  }
+  start.then(function () {
+    process.chdir(process.env.NODE_PATH);
+    done();
+  }).catch(function (err) {
+    console.error(err);
+    done();
+  });
+});
+
+gulp.task('minify:js', function (done) {
+  jsMin = require('gulp-jsmin');
+  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
+  var modules = fs.readdirSync(modulesDir);
+  var start = minifyJS(process.env.NODE_PATH)();
+  var stat;
+  for (var i = 0; i < modules.length; i++) {
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(minifyJS(path.join(modulesDir, modules[i])));
     }
   }
   start.then(function () {

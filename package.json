@@ -66,7 +66,10 @@
     "request": "^2.57.0",
     "require-new": "^1.1.0",
     "serve-favicon": "^2.2.0",
-    "gulp-less": "*"
+    "gulp-less": "*",
+    "rmdir": "*",
+    "gulp-clean-css": "*",
+    "gulp-jsmin": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
@@ -82,7 +85,6 @@
     "gulp-jscs": "^4.0.0",
     "gulp-jshint": "^2.0.1",
     "gulp-less": "^3.0.3",
-    "gulp-minify-css": "^1.2.0",
     "gulp-mocha": "^2.1.2",
     "gulp-rename": "^1.2.2",
     "gulp-shrinkwrap": "^2.0.1",
