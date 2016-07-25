@@ -502,7 +502,7 @@ function IonDataRepository(options) {
           return Boolean(value);
         }
       }break;
-      case PropertyTypes.DATETIME: return new Date(value);
+      case PropertyTypes.DATETIME: return value ? new Date(value) : null;
       case PropertyTypes.REAL:
       case PropertyTypes.DECIMAL: {
         value = parseFloat(value);
