@@ -37,7 +37,7 @@ function IonDataRepository(options) {
    */
   this.keyProvider = options.keyProvider;
 
-  this.namespaceSeparator = options.namespaceSeparator || '__';
+  this.namespaceSeparator = options.namespaceSeparator || '_';
 
   /**
    * @param {ClassMeta} cm
@@ -88,7 +88,7 @@ function IonDataRepository(options) {
    * @private
    */
   this._addDiscriminatorFilter = function (filter, cm) {
-    var descendants = this.meta.listMeta(cm.getName(), cm.getVersion(), false, cm.getNamespace());
+    var descendants = this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
     var cnFilter = [cm.getCanonicalName()];
     for (var i = 0; i < descendants.length; i++) {
       cnFilter[cnFilter.length] = descendants[i].getCanonicalName();
@@ -364,7 +364,7 @@ function IonDataRepository(options) {
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return new Promise(function (resolve, reject) {
       var result = [];
-      _this.ds.fetch(rcm.getName(), options).
+      _this.ds.fetch(tn(rcm), options).
         then(function (data) {
           try {
             for (var i = 0; i < data.length; i++) {
@@ -478,9 +478,13 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function castValue(value, pm, ns) {
+    if (value === null) {
+      return value;
+    }
     if (pm.type === PropertyTypes.REFERENCE) {
-      var refcm = _this.meta.getMeta(pm.ref_class, ns);
+      var refcm = _this.meta.getMeta(pm.ref_class, null, ns);
       var refkey = refcm.getPropertyMeta(refcm.getKeyProperties()[0]);
+
       if (refkey) {
         return castValue(value, refkey);
       }
@@ -498,11 +502,17 @@ function IonDataRepository(options) {
           return Boolean(value);
         }
       }break;
-      case PropertyTypes.DATETIME: return new Date(value);
+      case PropertyTypes.DATETIME: return value ? new Date(value) : null;
       case PropertyTypes.REAL:
-      case PropertyTypes.DECIMAL: return parseFloat(value);
+      case PropertyTypes.DECIMAL: {
+        value = parseFloat(value);
+        return isNaN(value) ? null : value;
+      }break;
       case PropertyTypes.SET:
-      case PropertyTypes.INT: return parseInt(value);
+      case PropertyTypes.INT: {
+        value = parseInt(value);
+        return isNaN(value) ? null : value;
+      }break;
     }
     return value;
   }
@@ -632,7 +642,7 @@ function IonDataRepository(options) {
         /**
          * @var {{}}
          */
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id));
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
 
         if (conditions) {
           _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
@@ -935,7 +945,7 @@ function IonDataRepository(options) {
   this._getAssociationsCount = function (master, collection, options) {
     var mrcm = this._getRootType(master.classMeta);
     var drcm = this._getRootType(
-      this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, master.classMeta.getNamespace())
+      this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, null, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
       _this.ds.get(
