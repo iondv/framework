@@ -88,20 +88,6 @@
           }
         }
       },
-      "dataRepo": {
-        "module": "core/impl/datarepository/ionDataRepository",
-        "options": {
-          "dataSource": "ion://Db",
-          "metaRepository": "ion://metaRepo",
-          "keyProvider": {
-            "name": "keyProvider",
-            "module": "core/impl/meta/keyProvider",
-            "options": {
-              "metaRepo": "ion://metaRepo"
-            }
-          }
-        }
-      },
       "fileStorage": {
         "module": "core/impl/resource/FsStorage",
         "initMethod":"_init",
@@ -110,6 +96,21 @@
           "storageBase": "[[fs.storageRoot]]",
           "urlBase": "[[fs.urlBase]]",
           "dataSource": "ion://Db"
+        }
+      },
+      "dataRepo": {
+        "module": "core/impl/datarepository/ionDataRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepository": "ion://metaRepo",
+          "fileStorage": "ion://fileStorage",
+          "keyProvider": {
+            "name": "keyProvider",
+            "module": "core/impl/meta/keyProvider",
+            "options": {
+              "metaRepo": "ion://metaRepo"
+            }
+          }
         }
       }
     }

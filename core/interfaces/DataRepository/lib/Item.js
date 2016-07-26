@@ -41,6 +41,8 @@ function Item(id, base, classMeta, repository) {
 
   this.references = {};
 
+  this.files = {};
+
   this.getItemId = function () {
     return this.id;
   };
@@ -74,6 +76,13 @@ function Item(id, base, classMeta, repository) {
 
   function getFromBase(name) {
     if (_this.base.hasOwnProperty(name)) {
+      var props = _this.getProperties();
+      var p = props[name];
+      if (p && (p.getType() === PropertyTypes.FILE || p.getType === PropertyTypes.IMAGE)) {
+        if (_this.files.hasOwnProperty(name)) {
+          return _this.files[name];
+        }
+      }
       return _this.base[name];
     }
     return null;

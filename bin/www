@@ -117,45 +117,48 @@ di('app', config.di,
   }).
 then(
   // Подключаем модули
-  function () {
-      return new Promise(function (resolve, reject) {
-        var i, moduleInitiators;
-        sysLog.info('Загрузка веб-модулей.');
-        app.locals.sysMenu = [];
-        moduleInitiators = [];
-        try {
-          var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-          for (i = 0; i < candidates.length; i++) {
-            if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
-              var module = require('modules/' + candidates[i] + '/web');
-              if (typeof module === 'function') {
-                if (module.locals.sysTitle) {
-                  app.locals.sysMenu.push({
-                    name: candidates[i],
-                    description: module.locals.sysTitle
-                  });
-                }
-                module.locals.sysMenu = app.locals.sysMenu;
-                app.use(module);
-                if (typeof module._init === 'function') {
-                  moduleInitiators.push(module._init());
-                }
-                sysLog.info('Модуль ' + candidates[i] + ' загружен.');
-              } else {
-                sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+  function (scope) {
+    if (scope.fileStorage) {
+      app.use(scope.fileStorage.middle());
+    }
+    return new Promise(function (resolve, reject) {
+      var i, moduleInitiators;
+      sysLog.info('Загрузка веб-модулей.');
+      app.locals.sysMenu = [];
+      moduleInitiators = [];
+      try {
+        var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+        for (i = 0; i < candidates.length; i++) {
+          if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+            var module = require('modules/' + candidates[i] + '/web');
+            if (typeof module === 'function') {
+              if (module.locals.sysTitle) {
+                app.locals.sysMenu.push({
+                  name: candidates[i],
+                  description: module.locals.sysTitle
+                });
               }
+              module.locals.sysMenu = app.locals.sysMenu;
+              app.use(module);
+              if (typeof module._init === 'function') {
+                moduleInitiators.push(module._init());
+              }
+              sysLog.info('Модуль ' + candidates[i] + ' загружен.');
+            } else {
+              sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
             }
           }
-        } catch (err) {
-          reject(err);
         }
-        if (moduleInitiators.length > 0) {
-          Promise.all(moduleInitiators).then(resolve).catch(reject);
-          return;
-        }
-        resolve();
-      });
-    }
+      } catch (err) {
+        reject(err);
+      }
+      if (moduleInitiators.length > 0) {
+        Promise.all(moduleInitiators).then(resolve).catch(reject);
+        return;
+      }
+      resolve();
+    });
+  }
 ).then(
   // Запускаем приложение
   function () {

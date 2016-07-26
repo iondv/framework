@@ -3,7 +3,8 @@
  */
 'use strict';
 
-var ResourceStorage = require('core/interfaces/ResourceStorage');
+var ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
+var StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 var moment = require('moment');
 var fs = require('fs');
 var path = require('path');
@@ -11,7 +12,7 @@ var cuid = require('cuid');
 var merge = require('merge');
 var clone = require('clone');
 
-/* jshint maxcomplexity: 20 */
+/* jshint maxcomplexity: 20, maxstatements: 30 */
 /**
  * @param {{storageBase: String, urlBase: String, dataSource: DataSource, fragmentation: String}} options
  * @constructor
@@ -46,9 +47,10 @@ function FsStorage(options) {
 
     var d;
     var fn;
+    var id = cuid();
 
     if (typeof data === 'object' && typeof data.originalname !== 'undefined') {
-      fn = opts.name || data.originalname || cuid();
+      fn = opts.name || data.originalname || id;
       if (typeof data.buffer !== 'undefined') {
         d = data.buffer;
       } else if (typeof data.path !== 'undefined') {
@@ -62,25 +64,24 @@ function FsStorage(options) {
       opts = merge(opts, dt);
     } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
       d = data;
-      fn = opts.name || cuid();
+      fn = opts.name || id;
     } else {
       throw new Error('Переданы данные недопустимого типа!');
     }
 
-    function checkDest(filename) {
+    function checkDest(filename, prompt) {
       return new Promise(function (resolve, reject) {
         var result = path.join(_options.storageBase, pth, filename);
-        fs.stat(result, function (err, stats) {
+        fs.access(result, function (err, stats) {
           if (err) {
-            return reject(err);
-          }
-
-          if (stats && stats.isFile()) {
-            checkDest(cuid()).then(resolve).catch(reject);
+            resolve({dest: result, path: path.join(pth, filename)});
             return;
           }
+          var p = 1 + (prompt || 0);
+          var lind = filename.lastIndexOf('.');
+          var fn = lind > 0 ? filename.substring(0, lind - 1) + p + filename.substring(lind) : filename + p;
 
-          resolve({dest: result, path: path.join(pth, filename)});
+          checkDest(fn, p).then(resolve).catch(reject);
         });
       });
     }
@@ -111,48 +112,63 @@ function FsStorage(options) {
           }
         });
       }).then(function (pth) { // TODO ОПределять mime-type и content-type
-        return dataSource.insert('ion_files', {path: pth, options: opts});
+        return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
       }).then(function (r) {
-        resolve(r._id.toString());
+        resolve(r._id);
       }).catch(reject);
     });
   };
 
   /**
-   * @param {String[]} ids
+   * @param {String} id
    * @returns {Promise}
    */
-  this._data = function (ids) {
+  this._remove = function (id) {
     return new Promise(function (resolve, reject) {
-      dataSource.fetch('ion_files', {_id: {$in: ids}}).
-      then(function (files) {
-        var result = [];
-        for (var i = 0; i < files.length; i++) {
-          result.push(
-            {
-              stream: fs.createReadStream(path.join(_options.storageBase, files[i].path), files[i].options),
-              options: files[i].options
+      dataSource.get('ion_files', {id: id}).
+      then(function (file) {
+        if (file) {
+          var result = path.join(_options.storageBase, file.path);
+          fs.unlink(result, function (err) {
+            if (err) {
+              reject(err);
             }
-          );
+            dataSource.delete('ion_files', {id: id})
+              .then(resolve)
+              .catch(reject);
+          });
+        } else {
+          resolve();
         }
-        resolve(result);
       }).
       catch(reject);
     });
   };
 
+  function streamGetter(file) {
+    return function () {
+      return fs.createReadStream(path.join(_options.storageBase, file.path), file.options);
+    };
+  }
+
   /**
-   * @param {String} uid
    * @param {String[]} ids
    * @returns {Promise}
    */
-  this._resourceLinks = function (uid, ids) {
+  this._fetch = function (ids) {
     return new Promise(function (resolve, reject) {
-      dataSource.fetch('ion_files', {_id: {$in: ids}}).
+      dataSource.fetch('ion_files', {id: {$in: ids}}).
       then(function (files) {
         var result = [];
         for (var i = 0; i < files.length; i++) {
-          result.push(_options.urlBase + '/' + files[i]._id.toString());
+          result.push(
+            new StoredFile(
+              files[i].id,
+              _options.urlBase + '/' + files[i].id,
+              files[i].options,
+              streamGetter(files[i])
+            )
+          );
         }
         resolve(result);
       }).
@@ -165,26 +181,35 @@ function FsStorage(options) {
    */
   this._middle = function () {
     return function (req, res, next) {
-      if (req.params.fileId) {
-        _this._data([req.params.fileId])
-          .then(
-            function (data) {
-              if (data.length > 0) {
-                res.state(200); // TODO set headers for file based on options
-                data[0].stream.pipe(res);
-                return;
-              }
-              res.state(404).send('File not found!');
-            }
-          )
-          .catch(
-            function (err) {
-              res.state(500).send(err.message);
-            }
-          );
-        return;
+      if (req.path.indexOf(_options.urlBase) !== 0) {
+        next();
       }
-      next();
+
+      var fileId = req.path.replace(_options.urlBase + '/', '');
+
+      if (!fileId) {
+        next();
+      }
+
+      _this._fetch([req.params.fileId])
+        .then(
+          function (data) {
+            if (data.length > 0) {
+              return data[0].getContents();
+            }
+            res.state(404).send('File not found!');
+          }
+        ).then(
+          function (stream) {
+            res.state(200); // TODO set http headers for file based on options
+            stream.pipe(res);
+          }
+        )
+        .catch(
+          function (err) {
+            res.state(500).send(err.message);
+          }
+        );
     };
   };
 
@@ -193,7 +218,10 @@ function FsStorage(options) {
    */
   this._init = function () {
     return new Promise(function (resolve, reject) {
-      dataSource.ensureIndex('ion_files', {path: 1}).then(function () {resolve();}).catch(reject);
+      dataSource.ensureIndex('ion_files', {id: 1}, {unique: true})
+        .then(function () { return dataSource.ensureIndex('ion_files', {path: 1}); })
+        .then(function () {resolve();})
+        .catch(reject);
     });
   };
 }
