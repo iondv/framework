@@ -3,9 +3,9 @@
 
 var gulp = require('gulp');
 var install = require('gulp-install');
-var less = null;
-var cssMin = null;
-var jsMin = null;
+var less = require('gulp-less');
+var cssMin = require('gulp-clean-css');
+var jsMin = require('gulp-jsmin');
 
 var fs = require('fs');
 var rmdir = require('rmdir');
@@ -56,21 +56,21 @@ function copyVendorResources(src, dst, module) {
   var result = false;
   var dist = path.join(src, module, 'dist');
   var min = path.join(src, module, 'min');
-  var build = path.join(src, module, 'build');
+  // var build = path.join(src, module, 'build');
   var dest = path.join(dst, module);
 
   result = copyResources(
     dist,
     dest,
     'Скопированы дистрибутивные файлы вендорского пакета ' + module);
-
+  /*
   if (!result) {
     result = copyResources(
       build,
       dest,
       'Скопированы дистрибутивные файлы вендорского пакета ' + module);
   }
-
+  */
   if (!result) {
     result = copyResources(
       min,
@@ -136,8 +136,9 @@ function compileLess(p) {
           .pipe(less({
             paths: [path.join(p, 'view/less/*.less')]
           }))
-          .pipe(gulp.dest(path.join(p, 'view/static/less-css')));
-        resolve();
+          .pipe(gulp.dest(path.join(p, 'view/static/less-css')))
+          .on('finish', resolve)
+          .on('error', reject);
       } catch (error) {
         reject(error);
       }
@@ -153,11 +154,14 @@ function minifyCSS(p) {
         rmdir(path.join(p, 'view/static/minified/css'));
         rmdir(path.join(p, 'view/static/minified/less-css'));
         process.chdir(p);
-        gulp.src([path.join(p, 'view/static/css/**/*.css'),
-                  path.join(p, 'view/static/less-css/**/*.css')], {base: path.join(p, 'view/static')})
+        gulp.src([
+          path.join(p, 'view/static/css/*.css'),
+          path.join(p, 'view/static/less-css/**/*.css')
+        ], {base: path.join(p, 'view/static')})
           .pipe(cssMin())
-          .pipe(gulp.dest('view/static/minified'));
-        resolve();
+          .pipe(gulp.dest('view/static/minified'))
+          .on('finish', resolve)
+          .on('error', reject);
       } catch (error) {
         reject(error);
       }
@@ -172,9 +176,11 @@ function minifyJS(p) {
       try {
         rmdir(path.join(p, 'view/static/minified/js'));
         process.chdir(p);
-        gulp.src([path.join(p, 'view/static/js/**/*.js')], {base: path.join(p, 'view/static')})
+        gulp.src([path.join(p, 'view/static/js/*.js')], {base: path.join(p, 'view/static')})
           .pipe(jsMin())
-          .pipe(gulp.dest('view/static/minified'));
+          .pipe(gulp.dest('view/static/minified'))
+          .on('finish', resolve)
+          .on('error', reject);
         resolve();
       } catch (error) {
         reject(error);
@@ -224,7 +230,6 @@ gulp.task('build:bower', function (done) {
 });
 
 gulp.task('compile:less', function (done) {
-  less = require('gulp-less');
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
   var start = compileLess(process.env.NODE_PATH)();
@@ -245,7 +250,6 @@ gulp.task('compile:less', function (done) {
 });
 
 gulp.task('minify:css', function (done) {
-  cssMin = require('gulp-clean-css');
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
   var start = minifyCSS(process.env.NODE_PATH)();
@@ -266,7 +270,6 @@ gulp.task('minify:css', function (done) {
 });
 
 gulp.task('minify:js', function (done) {
-  jsMin = require('gulp-jsmin');
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
   var start = minifyJS(process.env.NODE_PATH)();
