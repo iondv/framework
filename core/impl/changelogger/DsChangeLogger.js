@@ -64,9 +64,9 @@ function DsChangeLogger(ds, authCallback) {
    */
   this._getChanges = function (since, till) {
     return new Promise(function (resolve, reject) {
-      var opts = {timestamp: {$gte: new Date(since).toISOString()}};
+      var opts = {timestamp: {$gte: since.toISOString()}};
       if (till) {
-        opts = {$and: [opts, {timestamp: {$lt: new Date(till).toISOString()}}]};
+        opts = {$and: [opts, {timestamp: {$lt: till.toISOString()}}]};
       }
       _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
         function (changes) {
