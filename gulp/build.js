@@ -6,9 +6,9 @@ var install = require('gulp-install');
 var less = require('gulp-less');
 var cssMin = require('gulp-clean-css');
 var jsMin = require('gulp-jsmin');
+var rename = require('gulp-rename');
 
 var fs = require('fs');
-var rmdir = require('rmdir');
 var path = require('path');
 var runSequence = require('run-sequence');
 
@@ -129,14 +129,16 @@ function compileLess(p) {
   return function () {
     return new Promise(function (resolve, reject) {
       console.log('Компиляция less-файлов для пути ' + p);
-      rmdir(path.join(p, 'view/static/less-css'));
       try {
         process.chdir(p);
         gulp.src([path.join(p, 'view/less/*.less')])
           .pipe(less({
             paths: [path.join(p, 'view/less/*.less')]
           }))
-          .pipe(gulp.dest(path.join(p, 'view/static/less-css')))
+          .pipe(rename({
+            suffix: '.less'
+          }))
+          .pipe(gulp.dest(path.join(p, 'view/static/css')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -151,15 +153,14 @@ function minifyCSS(p) {
     return new Promise(function (resolve, reject) {
       console.log('Минификация файлов стилей фронтенда для пути ' + p);
       try {
-        rmdir(path.join(p, 'view/static/minified/css'));
-        rmdir(path.join(p, 'view/static/minified/less-css'));
         process.chdir(p);
         gulp.src([
           path.join(p, 'view/static/css/*.css'),
-          path.join(p, 'view/static/less-css/**/*.css')
-        ], {base: path.join(p, 'view/static')})
+          '!' + path.join(p, 'view/static/css/*.min.css')
+        ], {base: path.join(p, 'view/static/css')})
           .pipe(cssMin())
-          .pipe(gulp.dest('view/static/minified'))
+          .pipe(rename({suffix: '.min'}))
+          .pipe(gulp.dest(path.join(p, 'view/static/css')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -174,14 +175,16 @@ function minifyJS(p) {
     return new Promise(function (resolve, reject) {
       console.log('Минификация файлов скриптов фронтенда для пути ' + p);
       try {
-        rmdir(path.join(p, 'view/static/minified/js'));
         process.chdir(p);
-        gulp.src([path.join(p, 'view/static/js/*.js')], {base: path.join(p, 'view/static')})
+        gulp.src(
+          [
+            path.join(p, 'view/static/js/*.js'),
+            '!' + path.join(p, 'view/static/js/*.min.js')
+          ], {base: path.join(p, 'view/static/js')})
           .pipe(jsMin())
-          .pipe(gulp.dest('view/static/minified'))
+          .pipe(gulp.dest(path.join(p, 'view/static/js')))
           .on('finish', resolve)
           .on('error', reject);
-        resolve();
       } catch (error) {
         reject(error);
       }
