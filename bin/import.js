@@ -33,6 +33,7 @@ process.argv.forEach(function (val) {
   setNamespace = false;
 });
 
+var scope = null;
 // Связываем приложение
 di('app', config.di,
   {
@@ -42,10 +43,13 @@ di('app', config.di,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(
   // Импорт
-  function (scope) {
+  function (scp) {
+    scope = scp;
     return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns});
   }
-).then(
+).then(function () {
+  return scope.dataSources.disconnect();
+}).then(
   // Справились
   function () {
     console.info('Импорт выполнен успешно.');
