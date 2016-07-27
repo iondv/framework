@@ -8,41 +8,29 @@ var DbSync = require('core/interfaces/DbSync');
 const AUTOINC_COLL = '__autoinc';
 
 /* jshint maxstatements: 30 */
-function MongoDbSync(connection, config) {
+function MongoDbSync(options) {
 
   var _this = this;
 
   /**
    * @type {String}
    */
-  this.metaTableName = 'ion_meta';
+  this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
    * @type {String}
    */
-  this.viewTableName = 'ion_view';
+  this.viewTableName = options.ViewTableName || 'ion_view';
 
   /**
    * @type {String}
    */
-  this.navTableName = 'ion_nav';
+  this.navTableName = options.NavTableName || 'ion_nav';
 
   /**
-   * @type {Db}
+   * @returns {Db}
    */
-  this.db = connection;
-
-  if (config.metaTables) {
-    if (config.metaTables.MetaTableName) {
-      this.metaTableName = config.metaTables.MetaTableName;
-    }
-    if (config.metaTables.ViewTableName) {
-      this.viewTableName = config.metaTables.ViewTableName;
-    }
-    if (config.metaTables.NavTableName) {
-      this.navTableName = config.metaTables.NavTableName;
-    }
-  }
+  function db() {return options.dataSource.connection(); }
 
   function sysIndexer(tableType) {
     return function (collection) {
@@ -125,22 +113,22 @@ function MongoDbSync(connection, config) {
         return reject('Unsupported meta type specified!');
       }
 
-      _this.db.collection(tn, {strict: true}, function (err, collection) {
+      db().collection(tn, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        _this.db.createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
+        db().createCollection(tn).then(sysIndexer(type)).then(resolve).catch(reject);
       });
     });
   }
 
   function getAutoIncColl() {
     return new Promise(function (resolve, reject) {
-      _this.db.collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
+      db().collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        _this.db.createCollection(AUTOINC_COLL).then(
+        db().createCollection(AUTOINC_COLL).then(
           function (autoinc) {
             return new Promise(function (rs, rj) {
               autoinc.createIndex({type: 1}, {unique: true}, function (err) {
@@ -173,7 +161,7 @@ function MongoDbSync(connection, config) {
         if (namespace) {
           query.namespace = namespace;
         } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+          query.$or = [{namespace: {$exists: false}}, {namespace: null}];
         }
         collection.findOne(query, function (err, anc) {
           if (err) {
@@ -182,7 +170,7 @@ function MongoDbSync(connection, config) {
           if (anc) {
             return findClassRoot(anc).then(resolve).catch(reject);
           }
-          reject({Error: 'Класс ' + cm.ancestor + ' не найден!'});
+          reject(new Error('Класс ' + cm.ancestor + ' не найден!'));
         });
       }).catch(reject);
     });
@@ -208,12 +196,12 @@ function MongoDbSync(connection, config) {
   this._createCollection = function (cm, namespace) {
     return new Promise(function (resolve, reject) {
       var cn = (namespace ? namespace + '_' : '') + cm.name;
-      _this.db.collection(
+      db().collection(
         cn,
         {strict: true},
         function (err, collection) {
           if (!collection) {
-            _this.db.createCollection(cn).then(resolve).catch(reject);
+            db().createCollection(cn).then(resolve).catch(reject);
           } else {
             if (err) {
               return reject(err);
@@ -397,11 +385,7 @@ function MongoDbSync(connection, config) {
       viewMeta.type = type;
       viewMeta.className = className;
       viewMeta.namespace = namespace;
-      if (path !== null) {
-        viewMeta.path = path;
-      } else {
-        reject(new Error('не передан path'));
-      }
+      viewMeta.path = path || '';
 
       getMetaTable('view').then(function (collection) {
         collection.update(

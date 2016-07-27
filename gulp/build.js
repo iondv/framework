@@ -3,17 +3,24 @@
 
 var gulp = require('gulp');
 var install = require('gulp-install');
+var less = require('gulp-less');
+var cssMin = require('gulp-clean-css');
+var jsMin = require('gulp-jsmin');
+var rename = require('gulp-rename');
 
 var fs = require('fs');
 var path = require('path');
+var runSequence = require('run-sequence');
 
 /**
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
  */
-gulp.task('build', ['build:npm', 'build:bower'/*, 'minify:css', 'minify:js'*/], function (done) {
-  console.log('Сборка приложения завершена.');
-  done();
+gulp.task('build', function (done) {
+  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function () {
+    console.log('Сборка приложения завершена.');
+    done();
+  });
 });
 
 function npm(path) {
@@ -49,21 +56,21 @@ function copyVendorResources(src, dst, module) {
   var result = false;
   var dist = path.join(src, module, 'dist');
   var min = path.join(src, module, 'min');
-  var build = path.join(src, module, 'build');
+  // var build = path.join(src, module, 'build');
   var dest = path.join(dst, module);
 
   result = copyResources(
     dist,
     dest,
     'Скопированы дистрибутивные файлы вендорского пакета ' + module);
-
+  /*
   if (!result) {
     result = copyResources(
       build,
       dest,
       'Скопированы дистрибутивные файлы вендорского пакета ' + module);
   }
-
+  */
   if (!result) {
     result = copyResources(
       min,
@@ -118,6 +125,73 @@ function bower(p) {
   };
 }
 
+function compileLess(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Компиляция less-файлов для пути ' + p);
+      try {
+        process.chdir(p);
+        gulp.src([path.join(p, 'view/less/*.less')])
+          .pipe(less({
+            paths: [path.join(p, 'view/less/*.less')]
+          }))
+          .pipe(rename({
+            suffix: '.less'
+          }))
+          .pipe(gulp.dest(path.join(p, 'view/static/css')))
+          .on('finish', resolve)
+          .on('error', reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
+function minifyCSS(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Минификация файлов стилей фронтенда для пути ' + p);
+      try {
+        process.chdir(p);
+        gulp.src([
+          path.join(p, 'view/static/css/*.css'),
+          '!' + path.join(p, 'view/static/css/*.min.css')
+        ], {base: path.join(p, 'view/static/css')})
+          .pipe(cssMin())
+          .pipe(rename({suffix: '.min'}))
+          .pipe(gulp.dest(path.join(p, 'view/static/css')))
+          .on('finish', resolve)
+          .on('error', reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
+function minifyJS(p) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Минификация файлов скриптов фронтенда для пути ' + p);
+      try {
+        process.chdir(p);
+        gulp.src(
+          [
+            path.join(p, 'view/static/js/*.js'),
+            '!' + path.join(p, 'view/static/js/*.min.js')
+          ], {base: path.join(p, 'view/static/js')})
+          .pipe(jsMin())
+          .pipe(gulp.dest(path.join(p, 'view/static/js')))
+          .on('finish', resolve)
+          .on('error', reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
 gulp.task('build:npm', function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
@@ -158,40 +232,36 @@ gulp.task('build:bower', function (done) {
   });
 });
 
-/*
-function minCss(path) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      console.log('Минификация css-файлов фронтенда для пути ' + path);
-      try {
-        process.chdir(path);
-        gulp.src([*/
-       //   join(path, 'view/static/css/**/*.css'),
-       //     join(path, 'view/static/vendor/css/**/*.css'),
-       //   '!' + join(path, 'view/static/css/**/*.min.css')
-/*        ])
-          .pipe(sourcemaps.init())
-          .pipe(autoprefixer(aprefConf))
-          .pipe(minifyCSS())
-          .pipe(rename({suffix: '.min'}))
-          .pipe(sourcemaps.write('./maps'))
-          .pipe(gulp.dest(join(config.path.public, config.folder.css)))
-          .pipe(size({title: 'Total compressed CSS files (with source maps) size:'}));
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
-*/
-/*
+gulp.task('compile:less', function (done) {
+  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
+  var modules = fs.readdirSync(modulesDir);
+  var start = compileLess(process.env.NODE_PATH)();
+  var stat;
+  for (var i = 0; i < modules.length; i++) {
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(compileLess(path.join(modulesDir, modules[i])));
+    }
+  }
+  start.then(function () {
+    process.chdir(process.env.NODE_PATH);
+    done();
+  }).catch(function (err) {
+    console.error(err);
+    done();
+  });
+});
+
 gulp.task('minify:css', function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
-  var start = minCss(process.env.NODE_PATH)();
+  var start = minifyCSS(process.env.NODE_PATH)();
+  var stat;
   for (var i = 0; i < modules.length; i++) {
-    start = start.then(minCss(path.join(modulesDir, modules[i])));
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(minifyCSS(path.join(modulesDir, modules[i])));
+    }
   }
   start.then(function () {
     process.chdir(process.env.NODE_PATH);
@@ -201,39 +271,17 @@ gulp.task('minify:css', function (done) {
     done();
   });
 });
-*/
-/*
-function minJs(path) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      console.log('Минификация js-файлов фронтенда для пути ' + path);
-      var error;
-      try {
-        process.chdir(path);
-        gulp.src(join(config.path.public, config.folder.js, config.file.mainJS))
-          .pipe(sourcemaps.init())
-          .pipe(stripDebug())
-          .pipe(uglify())
-          .pipe(rename({suffix: '.min'}))
-          // For using ES6 .pipe(plugins.babel())
-          .pipe(sourcemaps.write('.'))
-          .pipe(gulp.dest(join(config.path.public, config.folder.js)))
-          .pipe(size({title: 'Total compressed JavaScript files (with source maps) size:'}));
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
-*/
-/*
+
 gulp.task('minify:js', function (done) {
   var modulesDir = path.join(process.env.NODE_PATH, 'modules');
   var modules = fs.readdirSync(modulesDir);
-  var start = minJs(process.env.NODE_PATH)();
+  var start = minifyJS(process.env.NODE_PATH)();
+  var stat;
   for (var i = 0; i < modules.length; i++) {
-    start = start.then(minJs(path.join(modulesDir, modules[i])));
+    stat = fs.statSync(path.join(modulesDir, modules[i]));
+    if (stat.isDirectory()) {
+      start = start.then(minifyJS(path.join(modulesDir, modules[i])));
+    }
   }
   start.then(function () {
     process.chdir(process.env.NODE_PATH);
@@ -243,4 +291,3 @@ gulp.task('minify:js', function (done) {
     done();
   });
 });
-*/

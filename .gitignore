@@ -43,6 +43,9 @@
 
 /view/vendor/*
 /view/static/vendor/*
+/view/static/css/*.less.css
+/view/static/**/*.min.css
+/view/static/**/*.min.js
 
 # Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
 # Например /images/user.jpg, /core/images/user.jpg

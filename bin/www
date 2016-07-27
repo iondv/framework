@@ -3,53 +3,37 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var debug = require('debug-log')('ION:www');
 var path = require('path');
 var http = require('http');
 var express = require('express');
 var ejsLocals = require('ejs-locals');
-var session = require('express-session');
 var flash = require('connect-flash');
-var clone = require('clone');
 var fs = require('fs');
 var favicon = require('serve-favicon');
-
-// Ротация логов или обычный логгер для developer режима
-var FileStreamRotator = require('file-stream-rotator');
-var logger = require('morgan');
 
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 
+var config = require('../config');
+var di = require('core/di');
+
+var IonLogger = require('core/impl/log/IonLogger');
+
+var sysLog = new IonLogger(config.log || {});
+
 /** Сервер http
- * Инициирует сервер на порту, предварительно проверив что он свободный.
- * Вешает обработчик приложения на запросы app.js.
- * Для вывода сообщений от приложения:
- -все (log/info/warn/error)  SET DEBUG=ION:*
- -только ошибки              SET DEBUG=ION:*.error*
- -ошибки и предпреждения     SET DEBUG=ION:*.error*,ION:*.warn*
- -исключая ".log"            SET DEBUG=ION:*,-*|log:*
-
  Для запуска NODE_PATH должна содержать путь к каталогу системы
-
  */
 
-var config = require('config');
-
-// Ядро
-var Datasources = require('core/datasources');
-var AclMediator = require('core/access');
-var MetaRepository = require('core/impl/meta/DsMetaRepository');
-var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/mongo/keyProvider');
-var DbSync = require('core/impl/meta/mongo/dbSync');
-
-debug.info('Запускаем приложение ION');
+sysLog.info('Запуск приложения ION');
 
 var app = express();
 
 global.app = app;
 
+// TODO Access-лог надо реализовать через IonLogger
+var FileStreamRotator = require('file-stream-rotator');
+var Morgan = require('morgan');
 if (process.env.NODE_ENV !== 'development') {
   var logDirectory = path.join(__dirname, '../log');
   if (!fs.existsSync(logDirectory)) {
@@ -61,44 +45,10 @@ if (process.env.NODE_ENV !== 'development') {
     verbose: false,
     date_format: 'YYYY-MM-DD'
   });
-  app.use(logger('combined', {stream: accessLogStream}));
+  app.use(Morgan('combined', {stream: accessLogStream}));
 } else {
-  app.use(logger('dev'));
+  app.use(Morgan('dev'));
 }
-
-// DBAL
-
-/**
- * @type {Datasources}
- */
-var dataSources = new Datasources(config);
-global.ionDataSources = dataSources;
-
-// Проверка системных источников данных
-
-var sessDs = dataSources.get(config.sessionDs);
-if (!sessDs) {
-  throw 'Не указан источник данных для сессий!';
-}
-
-var metaDs = dataSources.get(config.metaDs);
-if (!metaDs) {
-  throw 'Не указан источник данных мета-репозитория!';
-}
-
-var dataDs = dataSources.get(config.dataDs);
-if (!dataDs) {
-  throw 'Не указан источник данных репозитория объектов!';
-}
-
-// Модули аутентификации и безопасности
-
-var auth = require('lib/auth');
-
-/**
- * @type {AclMediator}
- */
-global.ionAcl = new AclMediator(config);
 
 // Мидлвара сохранения сообщений в сессии перед редиректом
 app.use(flash());
@@ -133,21 +83,21 @@ if (config.defaultModule) {
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
-server.on('close', function () { global.ionDataSources.disconnect(); });
-
+// jshint maxstatements: 30
 var onError = function (error) {
-  debug.error(error);
-  process.exit(130);
+  sysLog.error(error);
+  server.close(function (err) {
+    process.exit(130);
+  });
 };
 
-/* jshint maxstatements: 30 */
 function start(ports, i) {
   return new Promise(function (resolve, reject) {
     server.once('error', function (err) {
       if (err.code !== 'EADDRINUSE') {
         return reject(err);
       }
-      debug.info('Не удалось подключиться к порту ' + ports[i]);
+      sysLog.info('Не удалось подключиться к порту ' + ports[i]);
       start(ports, i + 1).then(resolve).catch(reject);
     });
     if (i < ports.length) {
@@ -158,70 +108,68 @@ function start(ports, i) {
   });
 }
 
-// Подключаемся к источникам данных и в случае успеха запускаем приложение
-dataSources.connect().then(
+// Связываем приложение
+di('app', config.di,
+  {
+    server: server,
+    application: app,
+    sysLog: sysLog
+  }).
+then(
+  // Подключаем модули
   function () {
-    // Создаем репозиторий мета-данных
-    try {
-      app.metaRepo = new MetaRepository({
-        Datasource: metaDs
-      });
-    } catch (err) {
-      return onError(err);
-    }
-
-    var sync = new DbSync(metaDs.connection(), {});
-
-    // Инициализируем репозиторий мета-данных
-    app.metaRepo.init(sync).then(function () {
-      try {
-        // Создаем репозиторий данных
-        var keyProvider = new KeyProvider(app.metaRepo, dataDs.connection());
-        app.dataRepo = new DataRepository(dataDs, app.metaRepo, keyProvider);
-
-        // Инициализируем сессии
-        var sessOpts = clone(config.session || {});
-        var MongoStore = require('connect-mongo')(session);
-        sessOpts.store = new MongoStore({
-          db: sessDs.connection(),
-          ttl: 14 * 24 * 60 * 60
-        });
-        app.use(session(sessOpts));
-        return auth.init(app, config.auth);
-      } catch (err) {
-        return onError(err);
-      }
-    }).then(function () {
-      var i, ports;
-      // Подключаем модули
-      debug.info('Загрузка веб-модулей.');
-      try {
-        var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-        for (i = 0; i < candidates.length; i++) {
-          if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
-            var module = require('modules/' + candidates[i] + '/web');
-            if (typeof module === 'function') {
-              app.use(module);
-              debug.info('Модуль ' + candidates[i] + ' загружен.');
-            } else {
-              debug.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+      return new Promise(function (resolve, reject) {
+        var i, moduleInitiators;
+        sysLog.info('Загрузка веб-модулей.');
+        app.locals.sysMenu = [];
+        moduleInitiators = [];
+        try {
+          var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+          for (i = 0; i < candidates.length; i++) {
+            if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+              var module = require('modules/' + candidates[i] + '/web');
+              if (typeof module === 'function') {
+                if (module.locals.sysTitle) {
+                  app.locals.sysMenu.push({
+                    name: candidates[i],
+                    description: module.locals.sysTitle
+                  });
+                }
+                module.locals.sysMenu = app.locals.sysMenu;
+                app.use(module);
+                if (typeof module._init === 'function') {
+                  moduleInitiators.push(module._init());
+                }
+                sysLog.info('Модуль ' + candidates[i] + ' загружен.');
+              } else {
+                sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+              }
             }
           }
+        } catch (err) {
+          reject(err);
         }
-      } catch (err) {
-        return onError(err);
-      }
-      // Запускаем приложение
-      ports = config.port;
+        if (moduleInitiators.length > 0) {
+          Promise.all(moduleInitiators).then(resolve).catch(reject);
+          return;
+        }
+        resolve();
+      });
+    }
+).then(
+  // Запускаем приложение
+  function () {
+      var ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
       return start(ports, 0);
-    }).then(function () {
+    }
+).then(
+  function () {
       server.on('error', onError);
-      debug.info('Слушается ' + (typeof server.address() === 'string' ?
+      sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
-    }).catch(onError);
-  }
+    }
 ).catch(onError);

@@ -2,12 +2,12 @@
  * Created by kras on 10.07.16.
  */
 var worker = require('lib/import');
-var config = require('config');
-var DataSources = require('core/datasources');
-var DbSync = require('core/impl/meta/mongo/dbSync');
-var MetaRepository = require('core/impl/meta/DsMetaRepository');
-var DataRepository = require('core/impl/datarepository/ionDataRepository');
-var KeyProvider = require('core/impl/meta/mongo/keyProvider');
+var config = require('../config');
+var di = require('core/di');
+
+var IonLogger = require('core/impl/log/IonLogger');
+
+var sysLog = new IonLogger({});
 
 var src = '../in';
 var ns = '';
@@ -33,28 +33,25 @@ process.argv.forEach(function (val) {
   setNamespace = false;
 });
 
-var dataSources = new DataSources(config);
-
-var metaDs = dataSources.get(config.metaDs);
-if (!metaDs) {
-  throw 'Не указан источник данных мета-репозитория!';
-}
-
-var dataDs = dataSources.get(config.dataDs);
-if (!dataDs) {
-  throw 'Не указан источник данных репозитория объектов!';
-}
-
-dataSources.connect().then(function () {
-  var metaRepo = new MetaRepository({Datasource: metaDs});
-  var keyProvider = new KeyProvider(metaRepo, dataDs.connection());
-  var dataRepo = new DataRepository(dataDs, metaRepo, keyProvider);
-  var sync = new DbSync(metaDs.connection(), {});
-  return worker(src, sync, metaRepo, dataRepo, {namespace: ns});
-}).then(function () {
-  console.info('Импорт выполнен успешно.');
-  process.exit(0);
-}).catch(function (err) {
+// Связываем приложение
+di('app', config.di,
+  {
+    sysLog: sysLog
+  },
+  null,
+  ['auth', 'rtEvents', 'sessionHandler']
+).then(
+  // Импорт
+  function (scope) {
+    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns});
+  }
+).then(
+  // Справились
+  function () {
+    console.info('Импорт выполнен успешно.');
+    process.exit(0);
+  }
+).catch(function (err) {
   console.error(err);
   process.exit(130);
 });
