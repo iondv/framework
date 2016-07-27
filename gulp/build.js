@@ -187,6 +187,7 @@ function minifyJS(p) {
             '!' + path.join(p, 'view/static/js/*.min.js')
           ], {base: path.join(p, 'view/static/js')})
           .pipe(jsMin())
+          .pipe(rename({suffix: '.min'}))
           .pipe(gulp.dest(path.join(p, 'view/static/js')))
           .on('finish', resolve)
           .on('error', reject);
