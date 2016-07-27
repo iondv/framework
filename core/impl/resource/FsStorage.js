@@ -11,6 +11,7 @@ var path = require('path');
 var cuid = require('cuid');
 var merge = require('merge');
 var clone = require('clone');
+var mkdirp = require('mkdirp');
 
 /* jshint maxcomplexity: 20, maxstatements: 30 */
 /**
@@ -39,7 +40,7 @@ function FsStorage(options) {
   this._accept = function (data, options) {
     var opts = clone(options) || {};
     var m = moment();
-    var pth = m.format('YYYY' + path.delimiter + 'MM' + path.delimiter + 'DD');
+    var pth = m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
     switch (_options.fragmentation) {
       case 'hour':pth = path.join(pth, m.format('HH'));break;
       case 'minute':pth = path.join(pth, m.format('mm'));break;
@@ -49,8 +50,8 @@ function FsStorage(options) {
     var fn;
     var id = cuid();
 
-    if (typeof data === 'object' && typeof data.originalname !== 'undefined') {
-      fn = opts.name || data.originalname || id;
+    if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+      fn = opts.name || data.originalname || data.name || id;
       if (typeof data.buffer !== 'undefined') {
         d = data.buffer;
       } else if (typeof data.path !== 'undefined') {
@@ -65,7 +66,9 @@ function FsStorage(options) {
     } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
       d = data;
       fn = opts.name || id;
-    } else {
+    }
+
+    if (!d) {
       throw new Error('Переданы данные недопустимого типа!');
     }
 
@@ -74,12 +77,12 @@ function FsStorage(options) {
         var result = path.join(_options.storageBase, pth, filename);
         fs.access(result, function (err, stats) {
           if (err) {
-            resolve({dest: result, path: path.join(pth, filename)});
+            resolve({path: pth, filename: filename});
             return;
           }
           var p = 1 + (prompt || 0);
           var lind = filename.lastIndexOf('.');
-          var fn = lind > 0 ? filename.substring(0, lind - 1) + p + filename.substring(lind) : filename + p;
+          var fn = lind > 0 ? filename.substring(0, lind) + p + filename.substring(lind) : filename + p;
 
           checkDest(fn, p).then(resolve).catch(reject);
         });
@@ -87,36 +90,43 @@ function FsStorage(options) {
     }
 
     return new Promise(function (resolve, reject) {
-      checkDest(fn).
-      then(function (check) {
-        return new Promise(function (rs, rj) {
-          if (typeof d === 'string' || typeof d.pipe === 'function') {
-            var writer, reader;
-            writer = fs.createWriteStream(check.dest, opts);
-            reader = d;
-            if (typeof d === 'string') {
-              reader = fs.createReadStream(d, opts);
-            }
-            writer.on('error', rj);
-            writer.on('finish', function () {
-              rs(check.path); // TODO Фиксировать размер файла
-            });
-            reader.pipe(writer);
-          } else {
-            fs.writeFile(check.dest, d, opts, function (err) {
+        checkDest(fn).then(function (check) {
+          return new Promise(function (rs, rj) {
+            mkdirp(path.join(_options.storageBase, check.path), function (err) {
               if (err) {
                 rj(err);
               }
-              rs(check.path);
+
+              var dest = path.join(_options.storageBase, check.path, check.filename);
+
+              if (typeof d === 'string' || typeof d.pipe === 'function') {
+                var writer, reader;
+                writer = fs.createWriteStream(dest, opts);
+                reader = d;
+                if (typeof d === 'string') {
+                  reader = fs.createReadStream(d, opts);
+                }
+                writer.on('error', rj);
+                writer.on('finish', function () {
+                  rs(dest); // TODO Фиксировать размер файла
+                });
+                reader.pipe(writer);
+              } else {
+                fs.writeFile(dest, d, function (err) {
+                  if (err) {
+                    rj(err);
+                  }
+                  rs(path.join(check.path, check.filename));
+                });
+              }
             });
-          }
-        });
-      }).then(function (pth) { // TODO ОПределять mime-type и content-type
-        return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
-      }).then(function (r) {
-        resolve(r._id);
-      }).catch(reject);
-    });
+          });
+        }).then(function (pth) { // TODO ОПределять mime-type и content-type
+          return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
+        }).then(function (r) {
+          resolve(r._id);
+        }).catch(reject);
+      });
   };
 
   /**
