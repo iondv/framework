@@ -9,6 +9,8 @@ server.port1=8888
 server.port2=8889
 server.port3=3000
 
+module.default=registry // модуль по умолчанию
+
 // Настройки файлового хранилища
 fs.storageRoot=./files // корневая директория хранилища, куда будут сохраняться файлы
 fs.urlBase=/files // база для публикации файлов в http (база URL файлов)
