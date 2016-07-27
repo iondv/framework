@@ -6,7 +6,7 @@
         "[[server.port2]]",
         "[[server.port3]]"
     ],
-    "defaultModule":"registry",
+    "defaultModule":"[[module.default]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },

@@ -45,6 +45,7 @@ process.argv.forEach(function (val) {
   setNamespace = false;
 });
 
+var scope = null;
 // Связываем приложение
 di('app', config.di,
   {
@@ -54,16 +55,22 @@ di('app', config.di,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(
   // Импорт
-  function (scope) {
-  return worker(
-    dst,
-    scope.metaRepo,
-    scope.dataRepo,
-    {
-      namespace: ns,
-      version: version
-    });
-}).then(function () {
+  function (scp) {
+    scope = scp;
+    return worker(
+      dst,
+      scope.metaRepo,
+      scope.dataRepo,
+      {
+        namespace: ns,
+        version: version
+      });
+  }
+).then(
+  function () {
+    return scope.dataSources.disconnect();
+  }
+).then(function () {
   console.info('Экспорт выполнен успешно.');
   process.exit(0);
 }).catch(function (err) {

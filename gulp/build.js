@@ -12,14 +12,19 @@ var fs = require('fs');
 var path = require('path');
 var runSequence = require('run-sequence');
 
+var importer = require('lib/import');
+
+// jshint maxcomplexity: 30, maxstatements: 40
 /**
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', function (done) {
-  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function () {
-    console.log('Сборка приложения завершена.');
-    done();
+  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function (err) {
+    if (!err) {
+      console.log('Сборка приложения завершена.');
+    }
+    done(err);
   });
 });
 
@@ -114,7 +119,7 @@ function bower(p) {
               }
             }
             resolve();
-          }); // '--offline' - офлайн ускоряет, но ваклит тестировани и сборку
+          });
         } else {
           resolve();
         }
@@ -182,6 +187,7 @@ function minifyJS(p) {
             '!' + path.join(p, 'view/static/js/*.min.js')
           ], {base: path.join(p, 'view/static/js')})
           .pipe(jsMin())
+          .pipe(rename({suffix: '.min'}))
           .pipe(gulp.dest(path.join(p, 'view/static/js')))
           .on('finish', resolve)
           .on('error', reject);
@@ -192,18 +198,24 @@ function minifyJS(p) {
   };
 }
 
-gulp.task('build:npm', function (done) {
-  var modulesDir = path.join(process.env.NODE_PATH, 'modules');
+function buildDir(start, dir) {
+  var modulesDir = path.join(process.env.NODE_PATH, dir);
   var modules = fs.readdirSync(modulesDir);
-  var start = npm(process.env.NODE_PATH)();
   var stat;
+  var f = start;
   for (var i = 0; i < modules.length; i++) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
-      start = start.then(npm(path.join(modulesDir, modules[i])));
+      f = f.then(npm(path.join(modulesDir, modules[i])));
     }
   }
-  start.then(function () {
+  return f;
+}
+
+gulp.task('build:npm', function (done) {
+  var w = buildDir(buildDir(npm(process.env.NODE_PATH)(), 'modules'), 'applications');
+
+  w.then(function () {
     process.chdir(process.env.NODE_PATH);
     done();
   }).catch(function (err) {
@@ -228,7 +240,7 @@ gulp.task('build:bower', function (done) {
     done();
   }).catch(function (err) {
     console.error(err);
-    done();
+    done(err);
   });
 });
 
@@ -248,7 +260,7 @@ gulp.task('compile:less', function (done) {
     done();
   }).catch(function (err) {
     console.error(err);
-    done();
+    done(err);
   });
 });
 
@@ -268,7 +280,7 @@ gulp.task('minify:css', function (done) {
     done();
   }).catch(function (err) {
     console.error(err);
-    done();
+    done(err);
   });
 });
 
@@ -288,6 +300,167 @@ gulp.task('minify:js', function (done) {
     done();
   }).catch(function (err) {
     console.error(err);
-    done();
+    done(err);
+  });
+});
+
+function setup(appDir, scope, navSetup) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      console.log('Установка приложения по пути ' + appDir);
+      var nav = null;
+      try {
+        fs.accessSync(path.join(appDir, 'navigation.json'));
+        nav = JSON.parse(fs.readFileSync(path.join(appDir, 'navigation.json')));
+      } catch (err) {
+        console.warn('Не удалось прочитать конфигурацию навигации.');
+        return;
+      }
+
+      var ns = nav ? nav.namespace || '' : '';
+
+      console.log('Импорт выполняется в ' + (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
+      importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
+        namespace: ns
+      }).then(
+        function () {
+          console.log('Мета и данные импортированы в БД');
+          if (nav) {
+            for (var module in nav.modules) {
+              if (nav.modules.hasOwnProperty(module)) {
+                if (!navSetup.hasOwnProperty(module)) {
+                  navSetup[module] = {namespaces: {}, menus: {}};
+                }
+
+                if (nav.namespace) {
+                  navSetup[module].namespaces[nav.namespace] = nav.namespaceCaption || '';
+                }
+
+                for (var nm in nav.modules[module]) {
+                  if (nav.modules[module].hasOwnProperty(nm)) {
+                    if (!navSetup[module].hasOwnProperty(nm)) {
+                      navSetup[module].menus[nm] = [];
+                    }
+                    Array.prototype.push.apply(navSetup[module].menus[nm], nav.modules[module][nm]);
+                  }
+                }
+              }
+            }
+          }
+          resolve();
+        }
+      ).catch(reject);
+    });
+  };
+}
+
+gulp.task('setup', function (done) {
+  console.log('Установка приложений.');
+  var config = require('../config');
+  var di = require('core/di');
+
+  var IonLogger = require('core/impl/log/IonLogger');
+
+  var sysLog = new IonLogger({});
+
+  di('app', config.di,
+    {
+      sysLog: sysLog
+    },
+    null,
+    ['auth', 'rtEvents', 'sessionHandler']
+  ).then(function (scope) {
+    return new Promise(function (rs, rj) {
+      var appDir =  path.join(process.env.NODE_PATH, 'applications');
+      var stage, stat;
+      var navSetup = {};
+
+      try {
+        var applications = fs.readdirSync(appDir);
+        for (var i = 0; i < applications.length; i++) {
+          stat = fs.statSync(path.join(appDir, applications[i]));
+          if (stat.isDirectory()) {
+            if (!stage) {
+              stage = setup(path.join(appDir, applications[i]), scope, navSetup)();
+            } else {
+              stage = stage.then(setup(path.join(appDir, applications[i]), scope, navSetup));
+            }
+          }
+        }
+      } catch (err) {
+        rj(err);
+        return;
+      }
+
+      if (stage) {
+        stage.then(function () {
+          var dir, fn, old, nm;
+          for (var module in navSetup) {
+            if (navSetup.hasOwnProperty(module)) {
+              dir = path.join(process.env.NODE_PATH, 'modules', module);
+              fn = path.join(dir, 'config', 'navigation.json');
+              try {
+                fs.accessSync(dir);
+                console.log('Запись конфигурации навигации модуля ' + module);
+                try {
+                  fs.accessSync(fn);
+                  old = JSON.parse(fs.readFileSync(fn));
+                  for (nm in navSetup[module].namespaces) {
+                    if (navSetup[module].namespaces.hasOwnProperty(nm)) {
+                      if (!old.namespaces) {
+                        old.namespaces = {};
+                      }
+                      old.namespaces[nm] = navSetup[module].namespaces[nm];
+                    }
+                  }
+
+                  for (nm in navSetup[module].menus) {
+                    if (navSetup[module].menus.hasOwnProperty(nm)) {
+                      if (!old.menus) {
+                        old.menus = {};
+                      }
+                      if (old.menus.hasOwnProperty(nm)) {
+                        Array.prototype.push.apply(old.menus[nm], navSetup[module].menus[nm]);
+                      } else {
+                        old.menus[nm] = navSetup[module].menus[nm];
+                      }
+                    }
+                  }
+                  fs.writeFileSync(fn, JSON.stringify(old));
+                } catch (err) {
+                  fs.writeFileSync(fn, JSON.stringify(navSetup[module]));
+                }
+              } catch (err) {
+                console.warn(err);
+              }
+            }
+          }
+          return scope.dataSources.disconnect();
+        }).then(function () {
+          console.log('Установка приложений завершена.');
+          rs();
+        }).catch(rj);
+      } else {
+        console.log('Нет приложений для установки.');
+        scope.dataSources.disconnect().then(function () {
+          rs();
+        }).catch(rj);
+      }
+    });
+  }).
+  then(done).
+  catch(function (err) {
+    console.error(err);
+    done(err);
+  });
+});
+
+gulp.task('install', function (done) {
+  console.log('Установка платформы ION.');
+  runSequence('build', 'setup', function (err) {
+    if (!err) {
+      console.log('Платформа ION установлена.');
+    }
+    done(err);
   });
 });
