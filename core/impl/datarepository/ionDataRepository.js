@@ -804,7 +804,6 @@ function IonDataRepository(options) {
 
         var updates = formUpdatedData(cm, data);
         var conditions;
-        var worker;
 
         if (id) {
           conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
@@ -829,7 +828,7 @@ function IonDataRepository(options) {
         }
 
         Promise.all(fileSavers).then(function () {
-          updates._class = cm.getName();
+          updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (conditions) {
             return _this.ds.upsert(tn(rcm), conditions, updates);
