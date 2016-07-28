@@ -314,7 +314,6 @@ function setup(appDir, scope, navSetup) {
         nav = JSON.parse(fs.readFileSync(path.join(appDir, 'navigation.json')));
       } catch (err) {
         console.warn('Не удалось прочитать конфигурацию навигации.');
-        return;
       }
 
       var ns = nav ? nav.namespace || '' : '';
@@ -363,13 +362,16 @@ gulp.task('setup', function (done) {
 
   var sysLog = new IonLogger({});
 
+  var scope = null;
+
   di('app', config.di,
     {
       sysLog: sysLog
     },
     null,
     ['auth', 'rtEvents', 'sessionHandler']
-  ).then(function (scope) {
+  ).then(function (scp) {
+    scope = scp;
     return new Promise(function (rs, rj) {
       var appDir =  path.join(process.env.NODE_PATH, 'applications');
       var stage, stat;
@@ -451,7 +453,11 @@ gulp.task('setup', function (done) {
   then(done).
   catch(function (err) {
     console.error(err);
-    done(err);
+    scope.dataSources.disconnect().then(function () {
+      done(err);
+    }).catch(function () {
+      done(err);
+    });
   });
 });
 
