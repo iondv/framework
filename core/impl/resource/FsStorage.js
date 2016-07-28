@@ -101,14 +101,14 @@ function FsStorage(options) {
 
               if (typeof d === 'string' || typeof d.pipe === 'function') {
                 var writer, reader;
-                writer = fs.createWriteStream(dest, opts);
+                writer = fs.createWriteStream(dest);
                 reader = d;
                 if (typeof d === 'string') {
-                  reader = fs.createReadStream(d, opts);
+                  reader = fs.createReadStream(d);
                 }
                 writer.on('error', rj);
                 writer.on('finish', function () {
-                  rs(dest); // TODO Фиксировать размер файла
+                  rs(dest);
                 });
                 reader.pipe(writer);
               } else {
@@ -124,7 +124,7 @@ function FsStorage(options) {
         }).then(function (pth) { // TODO ОПределять mime-type и content-type
           return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
         }).then(function (r) {
-          resolve(r._id);
+          resolve(r.id);
         }).catch(reject);
       });
   };
@@ -157,7 +157,7 @@ function FsStorage(options) {
 
   function streamGetter(file) {
     return function () {
-      return fs.createReadStream(path.join(_options.storageBase, file.path), file.options);
+      return fs.createReadStream(path.join(_options.storageBase, file.path));
     };
   }
 
@@ -167,7 +167,7 @@ function FsStorage(options) {
    */
   this._fetch = function (ids) {
     return new Promise(function (resolve, reject) {
-      dataSource.fetch('ion_files', {id: {$in: ids}}).
+      dataSource.fetch('ion_files', {filter: {id: {$in: ids}}}).
       then(function (files) {
         var result = [];
         for (var i = 0; i < files.length; i++) {
@@ -192,32 +192,44 @@ function FsStorage(options) {
   this._middle = function () {
     return function (req, res, next) {
       if (req.path.indexOf(_options.urlBase) !== 0) {
-        next();
+        return next();
       }
 
       var fileId = req.path.replace(_options.urlBase + '/', '');
 
       if (!fileId) {
-        next();
+        return next();
       }
 
-      _this._fetch([req.params.fileId])
+      _this._fetch([fileId])
         .then(
           function (data) {
             if (data.length > 0) {
               return data[0].getContents();
             }
-            res.state(404).send('File not found!');
+            return null;
           }
         ).then(
-          function (stream) {
-            res.state(200); // TODO set http headers for file based on options
-            stream.pipe(res);
+          function (file) {
+            if (file && file.stream) {
+              res.status(200);
+              res.set('Content-Disposition', 'inline; filename="' + file.name + '"');
+              res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
+              if (file.options.size) {
+                res.set('Content-Length', file.options.size);
+              }
+              if (file.options.encoding) {
+                res.set('Content-Encoding', file.options.encoding);
+              }
+              file.stream.pipe(res);
+            } else {
+              res.status(404).send('File not found!');
+            }
           }
         )
         .catch(
           function (err) {
-            res.state(500).send(err.message);
+            res.status(500).send(err.message);
           }
         );
     };

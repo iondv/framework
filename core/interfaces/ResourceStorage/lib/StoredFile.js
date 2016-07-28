@@ -4,6 +4,8 @@
 'use strict';
 
 function StoredFile(id, link, options, streamGetter) {
+  var _this = this;
+  
   this.id = id;
 
   this.link = link;
@@ -17,15 +19,19 @@ function StoredFile(id, link, options, streamGetter) {
    */
   this.getContents = function () {
     return new Promise(function (resolve, reject) {
-      var stream = null;
       if (typeof streamGetter === 'function') {
         try {
-          stream = streamGetter();
+          resolve({
+            name: _this.name,
+            options: _this.options,
+            stream: streamGetter()
+          });
         } catch (err) {
           reject(err);
         }
+      } else {
+        reject(new Error('Не указана функция получения потока ввода для файла.'));
       }
-      resolve(stream);
     });
   };
 }
