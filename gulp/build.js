@@ -31,8 +31,9 @@ gulp.task('build', function (done) {
 });
 
 function run(path, command, args, resolve, reject) {
+  let winExt = /^win/.test(process.platform) ? '.cmd' : ''; // Расширение необходимо задавать при запуске childProccess
   try {
-    var child = spawn(command,
+    var child = spawn(command + winExt,
       args,
       {
         cwd: path,
