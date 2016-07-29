@@ -70,50 +70,52 @@ function npm(path) {
 }
 
 function copyResources(src, dest, msg) {
-  return new Promise(function (resolve, reject) {
-    gulp.src([path.join(src, '**/*')]).pipe(gulp.dest(dest)).
-    on('finish', function () {
-      console.log(msg);
-      resolve();
-    }).
-    on('error', reject);
-  });
+  return function (skip) {
+    return new Promise(function (resolve, reject) {
+      if (!skip) {
+        try {
+          fs.accessSync(src);
+        } catch (err) {
+          resolve(false);
+          return;
+        }
+        gulp.src([path.join(src, '**', '*')]).
+        pipe(gulp.dest(dest)).
+        on('finish', function () {
+          console.log(msg);
+          resolve(true);
+        }).
+        on('error', reject);
+      } else {
+        resolve(true);
+      }
+    });
+  };
 }
 
 function copyVendorResources(src, dst, module) {
-  var result = false;
-  var dist = path.join(src, module, 'dist');
-  var min = path.join(src, module, 'min');
-  // var build = path.join(src, module, 'build');
-  var dest = path.join(dst, module);
+  return new Promise(function (resolve, reject) {
+    var dist = path.join(src, module, 'dist');
+    var min = path.join(src, module, 'min');
+    // var build = path.join(src, module, 'build');
+    var dest = path.join(dst, module);
 
-  result = copyResources(
-    dist,
-    dest,
-    'Скопированы дистрибутивные файлы вендорского пакета ' + module);
-  /*
-  if (!result) {
-    result = copyResources(
-      build,
+    copyResources(
+      dist,
       dest,
-      'Скопированы дистрибутивные файлы вендорского пакета ' + module);
-  }
-  */
-  if (!result) {
-    result = copyResources(
+      'Скопированы дистрибутивные файлы вендорского пакета ' + module
+    )(false).then(copyResources(
       min,
       dest,
-      'Скопированы минифицированные файлы вендорского пакета ' + module);
-  }
-
-  if (!result) {
-    result = copyResources(
+        'Скопированы минифицированные файлы вендорского пакета ' + module
+      )
+    ).then(copyResources(
       path.join(src, module),
       dest,
-      'Скопированы файлы вендорского пакета ' + module);
-  }
-
-  return result;
+      'Скопированы файлы вендорского пакета ' + module
+      )
+    ).then(resolve).catch(reject);
+  });
 }
 
 function bower(p) {
