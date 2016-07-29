@@ -1,20 +1,20 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var gulp = require('gulp');
-var less = require('gulp-less');
-var cssMin = require('gulp-clean-css');
-var jsMin = require('gulp-jsmin');
-var rename = require('gulp-rename');
+const gulp = require('gulp');
+const less = require('gulp-less');
+const cssMin = require('gulp-clean-css');
+const jsMin = require('gulp-jsmin');
+const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
 
-var fs = require('fs');
-var path = require('path');
-var runSequence = require('run-sequence');
+const fs = require('fs');
+const path = require('path');
+const runSequence = require('run-sequence');
+const importer = require('lib/import');
 
-var importer = require('lib/import');
-
-var platformPath = path.normalize(path.join(__dirname, '..'));
+const platformPath = path.normalize(path.join(__dirname, '..'));
+const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 
 // jshint maxcomplexity: 30, maxstatements: 40
 /**
@@ -31,9 +31,8 @@ gulp.task('build', function (done) {
 });
 
 function run(path, command, args, resolve, reject) {
-  let winExt = /^win/.test(process.platform) ? '.cmd' : ''; // Расширение необходимо задавать при запуске childProccess
   try {
-    var child = spawn(command + winExt,
+    var child = spawn(command + commandExtension,
       args,
       {
         cwd: path,
