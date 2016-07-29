@@ -119,7 +119,6 @@ function copyVendorResources(src, dst, module) {
 function bower(p) {
   return function () {
     return new Promise(function (resolve, reject) {
-      console.log('Установка пакетов фронтенда для пути ' + p);
       try {
         fs.accessSync(path.join(p, '.bowerrc'));
       } catch (error) {
@@ -128,14 +127,21 @@ function bower(p) {
       }
       try {
         var bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
+        console.log('Установка пакетов фронтенда для пути ' + p);
         run(p, 'bower', ['install', '--config.interactive=false'], function () {
+          var srcDir = path.join(p, bc.directory);
           try {
-            fs.accessSync(bc.directory);
-            var vendorModules = fs.readdirSync(bc.directory);
+            fs.accessSync(srcDir);
+          } catch (err) {
+            resolve();
+            return;
+          }
+          try {
+            var vendorModules = fs.readdirSync(srcDir);
             var copyers, copyer;
             copyers = [];
             for (var i = 0; i < vendorModules.length; i++) {
-              copyer = copyVendorResources(bc.directory, bc.vendorDir, vendorModules[i]);
+              copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
               if (copyer) {
                 copyers.push(copyer);
               }
@@ -144,7 +150,10 @@ function bower(p) {
               Promise.all(copyers).then(resolve).catch(reject);
               return;
             }
-          } catch (error) {}
+          } catch (error) {
+            reject(error);
+            return;
+          }
           resolve();
         }, reject);
       } catch (error) {
