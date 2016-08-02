@@ -18,6 +18,6 @@ function ISignedDataHandler() {
   this.process = function (itemId, action, attributes, data, signatures) {
     return this._process(itemId, action, attributes, data, signatures);
   };
-};
+}
 
 module.export = ISignedDataHandler;

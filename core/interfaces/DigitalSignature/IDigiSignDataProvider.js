@@ -13,7 +13,7 @@ function IDigiSignProvider() {
    * @param {String} action
    * @returns {Boolean}
    */
-  this.hasData = function(c, action) {
+  this.hasData = function (c, action) {
     return this._hasData(c, action);
   };
   /**

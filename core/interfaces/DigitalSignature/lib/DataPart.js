@@ -11,7 +11,6 @@ var conv = require('binstring');
  * @param {String} mT - mimeType
  */
 function DataPart(c, mT) {
-  var _this = this;
   var mimeType = typeof mT !== 'undefined' ? mT : 'text/plain';
   var contents = typeof c === 'string' ? conv(c, {in: 'utf8', out: 'bytes'}) : Array.isArray(c) ? c : [];
 

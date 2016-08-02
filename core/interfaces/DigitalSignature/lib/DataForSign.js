@@ -10,7 +10,6 @@
  * @constructor
  */
 function DataForSign(p, a) {
-  var _this = this;
   var parts = Array.isArray(p) ? p : p instanceof 'DataPart' ? [p] : [];
   var attributes = typeof a === 'object' ? a : {};
 

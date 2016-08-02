@@ -70,7 +70,8 @@
     "rmdir": "*",
     "gulp-clean-css": "*",
     "gulp-jsmin": "*",
-    "binstring": "*"
+    "binstring": "*",
+    "base64-js": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
