@@ -40,4 +40,4 @@ function JsonDigiSignDataProvider() {
 }
 
 JsonDigiSignDataProvider.prototype = new IDigiSignDataProvider();
-module.export = JsonDigiSignDataProvider;
+module.exports = JsonDigiSignDataProvider;

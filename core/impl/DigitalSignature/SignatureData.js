@@ -20,4 +20,4 @@ function SignatureData(id, action, attributes, parts, signatures) {
   this.signatures = signatures;
 }
 
-module.export = SignatureData;
+module.exports = SignatureData;

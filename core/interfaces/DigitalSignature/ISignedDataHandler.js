@@ -20,4 +20,4 @@ function ISignedDataHandler() {
   };
 }
 
-module.export = ISignedDataHandler;
+module.exports = ISignedDataHandler;
