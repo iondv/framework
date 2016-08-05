@@ -44,4 +44,4 @@ Testing:
     - sudo docker cp ../platform $PJ_DOCKER_NAME$CI_BUILD_REF_NAME:/var/www
     - sudo docker exec $PJ_DOCKER_NAME$CI_BUILD_REF_NAME bash -c 'sleep 3 && node /var/www/bin/import.js'
     - sudo docker restart $PJ_DOCKER_NAME$CI_BUILD_REF_NAME
-    - sudo docker port $PJ_DOCKER_NAME$CI_BUILD_REF_NAME 8888 | sed -r 's/[0.0.0.0]+/http:\/\/192.168.0.228/g'
+    - sudo docker port $PJ_DOCKER_NAME$CI_BUILD_REF_NAME 8888 | sed -r 's/'0.0.0.0'+/http:\/\/192.168.0.228/g'
