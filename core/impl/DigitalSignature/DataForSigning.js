@@ -19,6 +19,10 @@ function DataForSigning(src) {
   for (var i = 0; i < prts.length; i++) {
     this.parts[this.parts.length] = new DataPart(prts[i]);
   }
+
+  this.toString = function() {
+    return {parts: this.pats, attributes: this.attributes};
+  };
 }
 
 module.export = DataForSigning;

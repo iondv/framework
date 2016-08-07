@@ -27,4 +27,4 @@ function IDigiSignProvider() {
   };
 }
 
-module.export = IDigiSignProvider;
+module.exports = IDigiSignProvider;
