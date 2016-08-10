@@ -260,11 +260,19 @@ function IonDataRepository(options) {
         attrs[nm].pIndex = i;
         i++;
 
-        if (attrs[nm].type  === PropertyTypes.REFERENCE && Array.isArray(attrs[nm].filter) && attrs[nm].filter.length) {
+        if (
+          attrs[nm].type  === PropertyTypes.REFERENCE &&
+          Array.isArray(attrs[nm].filter) &&
+          attrs[nm].filter.length
+        ) {
           filter = {};
           filter[attrs[nm].key] = {$in: attrs[nm].filter};
           cn = attrs[nm].refClassName;
-        } else if (attrs[nm].type  === PropertyTypes.COLLECTION && Array.isArray(attrs[nm].colItems) && attrs[nm].colItems.length) {
+        } else if (
+          attrs[nm].type  === PropertyTypes.COLLECTION &&
+          Array.isArray(attrs[nm].colItems) &&
+          attrs[nm].colItems.length
+        ) {
           filter = {};
           filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
           cn = attrs[nm].colClassName;
@@ -605,7 +613,13 @@ function IonDataRepository(options) {
               backCol.splice(backCol.indexOf(oldId), 1);
               edits = {};
               edits[backColPropertyName] = backCol;
-              promises.push(_this.ds.update(tn(backColCm), _this.keyProvider.keyToData(backColCm.getName(), results[i].getItemId()), edits));
+              promises.push(
+                _this.ds.update(
+                  tn(backColCm),
+                  _this.keyProvider.keyToData(backColCm.getName(), results[i].getItemId()),
+                  edits
+                )
+              );
             }
           } else if (newId === oldId) {
             newElements.splice(arrIndex, 1);
@@ -627,7 +641,13 @@ function IonDataRepository(options) {
               backCol.push(newId);
               edits = {};
               edits[backColPropertyName] = backCol;
-              promises.push(_this.ds.update(tn(backColCm), _this.keyProvider.keyToData(backColCm.getName(), newResults[i].getItemId()), edits));
+              promises.push(
+                _this.ds.update(
+                  tn(backColCm),
+                  _this.keyProvider.keyToData(backColCm.getName(), newResults[i].getItemId()),
+                  edits
+                )
+              );
             }
             Promise.all(promises).then(function (promiseResults) {
               resolve(value);
@@ -660,7 +680,13 @@ function IonDataRepository(options) {
               if (arrIndex < 0) {
                 edits = {};
                 edits[pm.back_ref] = null;
-                promises.push(_this.ds.update(tn(ccm), _this.keyProvider.keyToData(pm.items_class, results[i].getItemId()), edits));
+                promises.push(
+                  _this.ds.update(
+                    tn(ccm),
+                    _this.keyProvider.keyToData(pm.items_class, results[i].getItemId()),
+                    edits
+                  )
+                );
               } else if (newId === oldId) {
                 collection.splice(arrIndex, 1);
               }
@@ -668,7 +694,13 @@ function IonDataRepository(options) {
             for (var j = 0; j < collection.length; j++) {
               edits = {};
               edits[pm.back_ref] = newId;
-              promises.push(_this.ds.update(tn(ccm), _this.keyProvider.keyToData(pm.items_class, collection[j]), edits));
+              promises.push(
+                _this.ds.update(
+                  tn(ccm),
+                  _this.keyProvider.keyToData(pm.items_class, collection[j]),
+                  edits
+                )
+              );
             }
             Promise.all(promises).then(function (rs) {
               resolve({property: pm.name, value: null});
@@ -683,8 +715,9 @@ function IonDataRepository(options) {
           var ccmPropertyMetas = ccm.getPropertyMetas();
           var backColProperty = null;
           for (var i = 0; i < ccmPropertyMetas.length; i++) {
-            if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION
-              && ccmPropertyMetas[i].items_class === cm.getName() && ccmPropertyMetas[i].back_coll === pm.name) {
+            if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION &&
+              ccmPropertyMetas[i].items_class === cm.getName() &&
+              ccmPropertyMetas[i].back_coll === pm.name) {
               backColProperty = ccmPropertyMetas[i];
             }
           }
@@ -729,8 +762,11 @@ function IonDataRepository(options) {
           for (var i = 0; i < results.length; i++) {
             updates[results[i].property] = results[i].value;
           }
-          _this.ds.update(tn(item.getMetaClass()), _this.keyProvider.keyToData(item.getClassName(), item.getItemId()), updates)
-            .then(function (newItemData) {
+          _this.ds.update(
+            tn(item.getMetaClass()),
+            _this.keyProvider.keyToData(item.getClassName(), item.getItemId()),
+            updates
+          ).then(function (newItemData) {
             var item = _this._wrap(newItemData._class, newItemData, newItemData._classVer);
             resolve(item);
           });
@@ -741,7 +777,6 @@ function IonDataRepository(options) {
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
-   * @param {String} id
    */
   function formUpdatedData(cm, data) {
     var updates, pm, nm;
@@ -883,8 +918,6 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
-
         /**
          * @var {{}}
          */
@@ -962,7 +995,6 @@ function IonDataRepository(options) {
 
         var updates = formUpdatedData(cm, data);
         var conditionsData;
-        var worker;
 
         if (id) {
           conditionsData = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
@@ -1073,14 +1105,20 @@ function IonDataRepository(options) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-        var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+        var updates = formUpdatedData(
+          mrcm,
+          _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+        );
         _this.ds.get(tn(mrcm), updates).then(
           function (mdata) {
             if (!mdata[collection]) {
               mdata[collection] = [];
             }
             mdata[collection][mdata[collection].length] = detail.getItemId();
-            var dsUpdates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+            var dsUpdates = formUpdatedData(
+              mrcm,
+              _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+            );
             _this.ds.update(tn(mrcm), dsUpdates, mdata).then(
               function () {
                 if (changeLogger) {
@@ -1121,12 +1159,18 @@ function IonDataRepository(options) {
       return this.EditItem(detail.classMeta.getCanonicalName(), detail.getItemId(), update, changeLogger);
     }
     return new Promise(function (resolve, reject) {
-        var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+        var updates = formUpdatedData(
+          mrcm,
+          _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+        );
         _this.ds.get(tn(mrcm), updates)
           .then(function (mdata) {
             if (mdata[collection]) {
               mdata[collection].splice(mdata[collection].indexOf(detail.getItemId()), 1);
-              var dsUpdates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+              var dsUpdates = formUpdatedData(
+                mrcm,
+                _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+              );
               _this.ds.update(tn(mrcm), dsUpdates, mdata).
               then(
                 function () {
@@ -1173,7 +1217,10 @@ function IonDataRepository(options) {
       this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, null, master.classMeta.getNamespace())
     );
     return new Promise(function (resolve, reject) {
-      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      var updates = formUpdatedData(
+        mrcm,
+        _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+      );
       _this.ds.get(tn(mrcm), updates).
       then(function (mdata) {
         if (mdata[collection]) {
@@ -1208,10 +1255,17 @@ function IonDataRepository(options) {
   this._getAssociationsCount = function (master, collection, options) {
     var mrcm = this._getRootType(master.classMeta);
     var drcm = this._getRootType(
-      this.meta.getMeta(master.classMeta.getPropertyMeta(collection).items_class, null, master.classMeta.getNamespace())
+      this.meta.getMeta(
+        master.classMeta.getPropertyMeta(collection).items_class,
+        null,
+        master.classMeta.getNamespace()
+      )
     );
     return new Promise(function (resolve, reject) {
-      var updates = formUpdatedData(mrcm, _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace()));
+      var updates = formUpdatedData(
+        mrcm,
+        _this.keyProvider.keyToData(mrcm.getName(), master.getItemId(), mrcm.getNamespace())
+      );
       _this.ds.get(tn(mrcm), updates).
       then(function (mdata) {
         if (mdata[collection]) {

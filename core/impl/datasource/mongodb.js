@@ -236,7 +236,7 @@ function MongoDs(config) {
             c.updateMany(conditions, {$set: data},
               function (err, result) {
                 if (err) {
-                  debug.error(err);
+                  log.error(err);
                   reject(err);
                 } else if (result.result && result.result.n > 0) {
                   _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
