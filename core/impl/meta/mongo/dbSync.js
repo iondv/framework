@@ -112,7 +112,6 @@ function MongoDbSync(options) {
       if (!tn) {
         return reject('Unsupported meta type specified!');
       }
-
       db().collection(tn, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
@@ -149,30 +148,25 @@ function MongoDbSync(options) {
    * @param {String} namespace
    * @returns {Promise}
    */
-  function findClassRoot(cm, namespace) {
+  function findClassRoot(cm, namespace, metaCollection, done) {
     if (!cm.ancestor) {
-      return new Promise(function (resolve) {
-        resolve(cm);
-      });
+      return done(null, cm);
     }
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').then(function (collection) {
-        var query = {name: cm.ancestor};
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: null}];
-        }
-        collection.findOne(query, function (err, anc) {
-          if (err) {
-            return reject(err);
-          }
-          if (anc) {
-            return findClassRoot(anc).then(resolve).catch(reject);
-          }
-          reject(new Error('Класс ' + cm.ancestor + ' не найден!'));
-        });
-      }).catch(reject);
+    var query = {name: cm.ancestor};
+    if (namespace) {
+      query.namespace = namespace;
+    } else {
+      query.$or = [{namespace: {$exists: false}}, {namespace: null}];
+    }
+    metaCollection.find(query).limit(1).next(function (err, anc) {
+      if (err) {
+        return done(err);
+      }
+      if (anc) {
+        findClassRoot(anc, namespace, metaCollection, done);
+      } else {
+        done(new Error('Класс ' + cm.ancestor + ' не найден!'));
+      }
     });
   }
 
@@ -331,29 +325,33 @@ function MongoDbSync(options) {
   this._defineClass = function (classMeta, namespace) {
     classMeta.namespace = namespace;
     return new Promise(function (resolve, reject) {
-      findClassRoot(classMeta, namespace).
-      then(function (cm) {
-        return _this._createCollection(cm, namespace);
-      }).
-      then(_this._addAutoInc(classMeta)).
-      then(_this._addIndexes(classMeta)).
-      then(function () {
-        getMetaTable('meta').then(function (collection) {
-          collection.update(
-            {
-              name: classMeta.name,
-              version: classMeta.version,
-              namespace: namespace
-            },
-            classMeta,
-            {upsert: true},
-            function (err, result) {
-              if (err) {
-                return reject(err);
+      getMetaTable('meta').then(function (metaCollection) {
+        findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
+          if (err) {
+            reject(err);
+          }
+          _this._createCollection(cm, namespace).
+          then(_this._addAutoInc(classMeta)).
+          then(_this._addIndexes(classMeta)).
+          then(function () {
+            console.log('Регистрируем класс ' + classMeta.name);
+            metaCollection.updateOne(
+              {
+                name: classMeta.name,
+                version: classMeta.version,
+                namespace: namespace
+              },
+              classMeta,
+              {upsert: true},
+              function (err, result) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(result);
               }
-              resolve(result);
-            });
-        }).catch(reject);
+            );
+          }).catch(reject);
+        });
       }).catch(reject);
     });
   };
