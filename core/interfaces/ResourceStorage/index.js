@@ -1,5 +1,5 @@
 /**
- * Created by kras on 14.07.16.
+ * Created by kras on 26.07.16.
  */
 'use strict';
 
@@ -14,27 +14,26 @@ function ResourceStorage() {
   };
 
   /**
-   * @param {String[]} ids
+   * @param {String} id
    * @returns {Promise}
    */
-  this.data = function (ids) {
-    return this._data(ids);
+  this.remove = function (id) {
+    return this._remove(id);
   };
 
   /**
-   * @param {String} uid
    * @param {String[]} ids
    * @returns {Promise}
    */
-  this.resourceLinks = function (uid, ids) {
-    return this._resourceLinks(uid, ids);
+  this.fetch = function (ids) {
+    return this._fetch(ids);
   };
 
   /**
    * @returns {Function}
    */
   this.middle = function () {
-    if (typeof this.middle === 'function') {
+    if (typeof this._middle === 'function') {
       return this._middle();
     }
     return function (req, res, next) { next(); };
@@ -51,4 +50,5 @@ function ResourceStorage() {
   };
 }
 
-module.exports = ResourceStorage;
+module.exports.ResourceStorage = ResourceStorage;
+module.exports.StoredFile = require('./lib/StoredFile');

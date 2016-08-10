@@ -1,3 +1,4 @@
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 29.04.16.
  */
@@ -10,6 +11,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
+/* jshint maxstatements: 40, maxcomplexity: 40 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -34,6 +36,11 @@ function IonDataRepository(options) {
    * @type {KeyProvider}
    */
   this.keyProvider = options.keyProvider;
+
+  /**
+   * @type {ResourceStorage}
+   */
+  this.fs = options.fileStorage;
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
@@ -343,6 +350,49 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  function loadFiles(item) {
+    var pm;
+    var fids = [];
+    var attrs = {};
+    for (var nm in item.base) {
+      if (item.base.hasOwnProperty(nm) && item.base[nm]) {
+        pm = item.classMeta.getPropertyMeta(nm);
+        if (pm && (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE)) {
+          fids.push(item.base[nm]);
+          if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
+            attrs['f_' + item.base[nm]] = [];
+          }
+          attrs['f_' + item.base[nm]].push(nm);
+        }
+      }
+    }
+    return new Promise(function (resolve, reject) {
+      if (fids.length === 0) {
+        resolve(item);
+        return;
+      }
+
+      _this.fs.fetch(fids)
+        .then(
+          function (files) {
+            for (var i = 0; i < files.length; i++) {
+              if (attrs.hasOwnProperty('f_' + files[i].id)) {
+                for (var j = 0; j < attrs['f_' + files[i].id].length; j++) {
+                  item.files[attrs['f_' + files[i].id][j]] = files[i];
+                }
+              }
+            }
+            resolve(item);
+          }
+        )
+        .catch(reject);
+    });
+  }
+
+  /**
    *
    * @param {String | Item} obj
    * @param {Object} [options]
@@ -364,19 +414,31 @@ function IonDataRepository(options) {
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return new Promise(function (resolve, reject) {
       var result = [];
-      _this.ds.fetch(tn(rcm), options).
-        then(function (data) {
-          try {
-            for (var i = 0; i < data.length; i++) {
-              result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+      _this.ds.fetch(tn(rcm), options)
+        .then(
+          function (data) {
+            var fl = [];
+            try {
+              for (var i = 0; i < data.length; i++) {
+                result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+                fl.push(loadFiles(result[i]));
+              }
+            } catch (err) {
+              return reject(err);
             }
-          } catch (err) {
-            return reject(err);
-          }
 
-          if (typeof data.total !== 'undefined' && data.total !== null) {
-            result.total = data.total;
+            if (typeof data.total !== 'undefined' && data.total !== null) {
+              result.total = data.total;
+            }
+
+            return new Promise(function (rs, rj) {
+              Promise.all(fl).then(function () {
+                resolve(result);
+              }).catch(rj);
+            });
           }
+        ).
+        then(function (result) {
           return enrich(result, options.nestingDepth ? options.nestingDepth : 0);
         }).
         then(resolve).
@@ -399,15 +461,19 @@ function IonDataRepository(options) {
         _this.ds.get(tn(rcm), updates).
         then(function (data) {
           var result = [];
+          var item = null;
           if (data) {
-            result.push(_this._wrap(data._class, data, data._classVer));
+            item = _this._wrap(data._class, data, data._classVer);
+            result.push(item);
+            return loadFiles(item);
           }
-          try {
-            return enrich(result, nestingDepth ? nestingDepth : 0);
-          } catch (err) {
-            reject(err);
-          }
-        }).then(function (items) { resolve(items[0]); }).catch(reject);
+          resolve(null);
+        }).
+        then(function (item) {
+          return enrich([item], nestingDepth ? nestingDepth : 0);
+        }).
+        then(function (items) { resolve(items[0]); }).
+        catch(reject);
       });
     } else {
       var options = {};
@@ -416,12 +482,18 @@ function IonDataRepository(options) {
       options.count = 1;
       return new Promise(function (resolve, reject) {
         _this.ds.fetch(tn(rcm), options).then(function (data) {
-          var result = [];
+          var item;
           for (var i = 0; i < data.length; i++) {
-            result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+            item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+            return loadFiles(item);
           }
-          return enrich(result);
-        }).then(function (items) { resolve(items[0]); }).catch(reject);
+          resolve(null);
+        }).
+        then(function (item) {
+          return enrich([item]);
+        }).
+        then(function (items) { resolve(items[0]); }).
+        catch(reject);
       });
     }
   };
@@ -688,6 +760,15 @@ function IonDataRepository(options) {
     return updates;
   }
 
+  function fileSaver(updates, nm) {
+    return new Promise(function (rs, rj) {
+      _this.fs.accept(updates[nm]).then(function (id) {
+        updates[nm] = id;
+        rs();
+      }).catch(rj);
+    });
+  }
+
   /**
    *
    * @param {String} classname
@@ -702,13 +783,24 @@ function IonDataRepository(options) {
       try {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
+
         var updates = formUpdatedData(cm, data);
         var properties = cm.getPropertyMetas();
         var pm;
+
+        var fileSavers = [];
+
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
+          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+            if (updates.hasOwnProperty(pm.name) && updates[pm.name]) {
+              fileSavers.push(fileSaver(updates, pm.name));
+            }
+          }
+
           if (pm.autoassigned) {
             switch (pm.type) {
+              case PropertyTypes.STRING:
               case PropertyTypes.GUID: {
                 updates[pm.name] = uuid.v1();
               }break;
@@ -716,8 +808,7 @@ function IonDataRepository(options) {
                 updates[pm.name] = new Date();
               }break;
               case PropertyTypes.INT: {
-                updates[pm.name] = null;
-                // TODO Implement autoincrement
+                delete updates[pm.name];
               }break;
             }
           } else if (pm.default_value) {
@@ -741,10 +832,12 @@ function IonDataRepository(options) {
             }
           }
         }
-        updates._class = cm.getCanonicalName();
-        updates._classVer = cm.getVersion();
 
-        _this.ds.insert(tn(rcm), updates).then(function (data) {
+        Promise.all(fileSavers).then(function () {
+          updates._class = cm.getCanonicalName();
+          updates._classVer = cm.getVersion();
+          return _this.ds.insert(tn(rcm), updates);
+        }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           if (changeLogger) {
             return new Promise(function (resolve, reject) {
@@ -753,17 +846,19 @@ function IonDataRepository(options) {
                 item.getMetaClass().getCanonicalName(),
                 item.getItemId(),
                 updates
-              ).then(function (record) {
-                resolve([item]);
+              ).then(function () {
+                resolve(item);
               }).catch(reject);
             });
           } else {
-            return new Promise(function (resolve, reject) {
-              resolve([item]);
+            return new Promise(function (resolve) {
+              resolve(item);
             });
           }
-        }).then(function (items) {
-          return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+        }).then(function (item) {
+          return loadFiles(item);
+        }).then(function (item) {
+          return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);
@@ -787,10 +882,33 @@ function IonDataRepository(options) {
       try {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id));
+
         var updates = formUpdatedData(cm, data);
+
+        /**
+         * @var {{}}
+         */
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
+
         if (conditions) {
-          _this.ds.update(tn(rcm), conditions, updates).then(function (data) {
+          var updates = formUpdatedData(cm, data);
+          var properties = cm.getPropertyMetas();
+          var pm;
+
+          var fileSavers = [];
+
+          for (var i = 0;  i < properties.length; i++) {
+            pm = properties[i];
+            if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+              if (updates.hasOwnProperty(pm.name) && updates[pm.name]) {
+                fileSavers.push(fileSaver(updates, pm.name));
+              }
+            }
+          }
+
+          Promise.all(fileSavers).then(function () {
+            return _this.ds.update(tn(rcm), conditions, updates);
+          }).then(function (data) {
             var item = _this._wrap(data._class, data, data._classVer);
             if (changeLogger) {
               return new Promise(function (resolve, reject) {
@@ -799,17 +917,19 @@ function IonDataRepository(options) {
                   item.getMetaClass().getCanonicalName(),
                   item.getItemId(),
                   updates
-                ).then(function (record) {
+                ).then(function () {
                   resolve(item);
                 }).catch(reject);
               });
             } else {
-              return new Promise(function (resolve, reject) {
+              return new Promise(function (resolve) {
                 resolve(item);
               });
             }
           }).then(function (item) {
             return updateCollections(data, item, id);
+          }).then(function (item) {
+            return loadFiles(item);
           }).then(function (item) {
             return enrich([item], nestingDepth !== null ? nestingDepth : 1);
           }).then(function (items) {
@@ -851,18 +971,33 @@ function IonDataRepository(options) {
         }
 
         var conditions = formUpdatedData(rcm, conditionsData);
-        updates._class = cm.getName();
-        updates._classVer = cm.getVersion();
 
         var event = EventType.UPDATE;
-        if (conditions) {
-          worker = function () {return _this.ds.upsert(tn(rcm), conditions, updates);};
-        } else {
-          event = EventType.CREATE;
-          worker = function () {return _this.ds.insert(tn(rcm), updates);};
+
+        var properties = cm.getPropertyMetas();
+        var pm;
+
+        var fileSavers = [];
+
+        for (var i = 0;  i < properties.length; i++) {
+          pm = properties[i];
+          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+            if (updates.hasOwnProperty(pm.name) && updates[pm.name]) {
+              fileSavers.push(fileSaver(updates, pm.name));
+            }
+          }
         }
 
-        worker().then(function (data) {
+        Promise.all(fileSavers).then(function () {
+          updates._class = cm.getCanonicalName();
+          updates._classVer = cm.getVersion();
+          if (conditions) {
+            return _this.ds.upsert(tn(rcm), conditions, updates);
+          } else {
+            event = EventType.CREATE;
+            return _this.ds.insert(tn(rcm), updates);
+          }
+        }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           if (changeLogger) {
             return new Promise(function (resolve, reject) {
@@ -872,16 +1007,18 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                resolve([item]);
+                resolve(item);
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              resolve([item]);
+              resolve(item);
             });
           }
-        }).then(function (items) {
-          return enrich(items, nestingDepth !== null ? nestingDepth : 1);
+        }).then(function (item) {
+          return loadFiles(item);
+        }).then(function (item) {
+          return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);
