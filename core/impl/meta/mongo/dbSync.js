@@ -296,7 +296,7 @@ function MongoDbSync(options) {
           getAutoIncColl().then(function (autoinc) {
             autoinc.find({type: cn}).limit(1).next(function (err, c) {
               if (err) {
-                reject(err);
+                return reject(err);
               }
 
               if (c && c.counters) {
@@ -309,7 +309,7 @@ function MongoDbSync(options) {
 
               autoinc.updateOne({type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
                 if (err) {
-                  reject(err);
+                  return reject(err);
                 }
                 resolve(collection);
               });
@@ -349,7 +349,7 @@ function MongoDbSync(options) {
             {upsert: true},
             function (err, result) {
               if (err) {
-                reject(err);
+                return reject(err);
               }
               resolve(result);
             });
@@ -386,7 +386,6 @@ function MongoDbSync(options) {
       viewMeta.className = className;
       viewMeta.namespace = namespace;
       viewMeta.path = path || '';
-
       getMetaTable('view').then(function (collection) {
         collection.update(
           {
@@ -429,7 +428,7 @@ function MongoDbSync(options) {
 
         collection.remove(query, function (err,vm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(vm);
         });
@@ -452,7 +451,7 @@ function MongoDbSync(options) {
           {upsert: true},
           function (err, ns) {
             if (err) {
-              reject(err);
+              return reject(err);
             }
             resolve(ns);
           });
@@ -472,7 +471,7 @@ function MongoDbSync(options) {
 
         collection.remove(query, function (err,nsm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(nsm);
         });
@@ -493,7 +492,7 @@ function MongoDbSync(options) {
             namespace: navNode.namespace
           }, navNode, {upsert: true}, function (err, ns) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(ns);
         });
@@ -512,7 +511,7 @@ function MongoDbSync(options) {
         }
         collection.remove(query, function (err,nnm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(nnm);
         });

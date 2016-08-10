@@ -50,8 +50,7 @@ function run(path, command, args, resolve, reject) {
 
     child.on('close', function (code) {
       if (code !== 0) {
-        reject('install failed with code ' + code);
-        return;
+        return reject('install failed with code ' + code);
       }
       resolve();
     });
@@ -153,8 +152,7 @@ function bower(p) {
               return;
             }
           } catch (error) {
-            reject(error);
-            return;
+            return reject(error);
           }
           resolve();
         }, reject);
@@ -391,6 +389,15 @@ gulp.task('setup', function (done) {
 
   var scope = null;
 
+  function finish(err) {
+    scope.dataSources.disconnect().then(function () {
+      done(err);
+    }).catch(function (dcer) {
+      console.error(dcer);
+      done(err);
+    });
+  }
+
   di('app', config.di,
     {
       sysLog: sysLog
@@ -417,8 +424,7 @@ gulp.task('setup', function (done) {
           }
         }
       } catch (err) {
-        rj(err);
-        return;
+        return rj(err);
       }
 
       if (stage) {
@@ -464,28 +470,17 @@ gulp.task('setup', function (done) {
               }
             }
           }
-          return scope.dataSources.disconnect();
-        }).then(function () {
           console.log('Установка приложений завершена.');
           rs();
         }).catch(rj);
       } else {
         console.log('Нет приложений для установки.');
-        scope.dataSources.disconnect().then(function () {
-          rs();
-        }).catch(rj);
+        rs();
       }
     });
   }).
-  then(done).
-  catch(function (err) {
-    console.error(err);
-    scope.dataSources.disconnect().then(function () {
-      done(err);
-    }).catch(function () {
-      done(err);
-    });
-  });
+  then(finish).
+  catch(finish);
 });
 
 gulp.task('install', function (done) {
