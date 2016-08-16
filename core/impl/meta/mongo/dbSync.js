@@ -230,15 +230,17 @@ function MongoDbSync(options) {
               indexDef = props;
             } else if (Array.isArray(props)) {
               for (i = 0; i < props.length; i++) {
-                indexDef[props[i]] = 1;
+                if (props[i]) {
+                  indexDef[props[i]] = 1;
+                }
               }
             }
+
+            if (Object.getOwnPropertyNames(indexDef).length === 0) {
+              return resolve();
+            }
+
             collection.createIndex(indexDef, opts, function (err, iname) {
-              /*
-               If (err) {
-               return reject(err);
-               }
-               */
               resolve(iname);
             });
           }
