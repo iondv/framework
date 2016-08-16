@@ -78,6 +78,16 @@ function Property(item, propertyMeta) {
     return v !== null ? v : '';
   };
 
+  this.evaluate = function () {
+    if (this.getType() === PropertyTypes.REFERENCE) {
+      return this.item.getAggregate(this.getName());
+    } else if (this.getType() === PropertyTypes.COLLECTION) {
+      return this.item.getAggregates(this.getName());
+    } else {
+      return this.getValue();
+    }
+  };
+
   this.getSelection = function () {
     if (this.selectList) {
       return this.selectList;
