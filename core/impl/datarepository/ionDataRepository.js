@@ -228,72 +228,77 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src, depth) {
-    var i, nm, attrs, item, props, promises, filter, cn;
-
-    attrs = {};
-    promises = [];
     if (depth <= 0) {
       return new Promise(function (resolve) {
         resolve(src);
       });
     }
 
-    for (i = 0; i < src.length; i++) {
-      item = src[i];
-      props = item.getProperties();
-      for (nm in props) {
-        if (props.hasOwnProperty(nm)) {
-          if (props[nm].getType() === PropertyTypes.REFERENCE) {
-            prepareRefEnrichment(item, props[nm], attrs);
-          } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].meta.eager_loading) {
-            prepareColEnrichment(item, props[nm], attrs);
+    return new Promise(function (resolve, reject) {
+      var i, nm, attrs, item, props, promises, filter, cn;
+
+      attrs = {};
+      promises = [];
+
+      try {
+        for (i = 0; i < src.length; i++) {
+          item = src[i];
+          props = item.getProperties();
+          for (nm in props) {
+            if (props.hasOwnProperty(nm)) {
+              if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                prepareRefEnrichment(item, props[nm], attrs);
+              } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].meta.eager_loading) {
+                prepareColEnrichment(item, props[nm], attrs);
+              }
+            }
           }
         }
-      }
-    }
 
-    promises = [];
+        promises = [];
 
-    i = 0;
-    for (nm in attrs) {
-      if (attrs.hasOwnProperty(nm)) {
-        attrs[nm].pIndex = i;
-        i++;
+        i = 0;
+        for (nm in attrs) {
+          if (attrs.hasOwnProperty(nm)) {
+            attrs[nm].pIndex = i;
+            i++;
 
-        if (
-          attrs[nm].type  === PropertyTypes.REFERENCE &&
-          Array.isArray(attrs[nm].filter) &&
-          attrs[nm].filter.length
-        ) {
-          filter = {};
-          filter[attrs[nm].key] = {$in: attrs[nm].filter};
-          cn = attrs[nm].refClassName;
-        } else if (
-          attrs[nm].type  === PropertyTypes.COLLECTION &&
-          Array.isArray(attrs[nm].colItems) &&
-          attrs[nm].colItems.length
-        ) {
-          filter = {};
-          filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
-          cn = attrs[nm].colClassName;
+            if (
+              attrs[nm].type  === PropertyTypes.REFERENCE &&
+              Array.isArray(attrs[nm].filter) &&
+              attrs[nm].filter.length
+            ) {
+              filter = {};
+              filter[attrs[nm].key] = {$in: attrs[nm].filter};
+              cn = attrs[nm].refClassName;
+            } else if (
+              attrs[nm].type  === PropertyTypes.COLLECTION &&
+              Array.isArray(attrs[nm].colItems) &&
+              attrs[nm].colItems.length
+            ) {
+              filter = {};
+              filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
+              cn = attrs[nm].colClassName;
+            }
+
+            if (filter) {
+              promises.push(_this.getList(cn, {
+                filter: filter,
+                nestingDepth: depth - 1
+              }));
+            }
+          }
         }
-
-        if (filter) {
-          promises.push(_this.getList(cn, {
-            filter: filter,
-            nestingDepth: depth - 1
-          }));
-        }
+      } catch (err) {
+        reject(err);
       }
-    }
 
-    if (promises.length === 0) {
-      return new Promise(function (resolve) {
-        resolve(src);
-      });
-    }
+      if (promises.length === 0) {
+        return new Promise(function (resolve) {
+          resolve(src);
+        });
+      }
 
-    return new Promise(function (resolve, reject) {
       Promise.all(promises).then(
         function (results) {
           var nm, items, itemsByKey, srcByKey, ids, i, j;
@@ -564,7 +569,7 @@ function IonDataRepository(options) {
       var refkey = refcm.getPropertyMeta(refcm.getKeyProperties()[0]);
 
       if (refkey) {
-        return castValue(value, refkey);
+        return castValue(value, refkey, ns);
       }
       return value;
     }
@@ -786,7 +791,7 @@ function IonDataRepository(options) {
         pm = cm.getPropertyMeta(nm);
         if (pm) {
           if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(data[nm], pm);
+            data[nm] = castValue(data[nm], pm, cm.namespace);
             updates[nm] = data[nm];
           }
         }
@@ -989,6 +994,7 @@ function IonDataRepository(options) {
    */
   this._saveItem = function (classname, id, data, version, changeLogger, nestingDepth) {
     return new Promise(function (resolve, reject) {
+      var fileSavers = [];
       try {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
@@ -1009,8 +1015,6 @@ function IonDataRepository(options) {
         var properties = cm.getPropertyMetas();
         var pm;
 
-        var fileSavers = [];
-
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
           if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -1019,8 +1023,12 @@ function IonDataRepository(options) {
             }
           }
         }
+      } catch (err) {
+        return reject(err);
+      }
 
-        Promise.all(fileSavers).then(function () {
+      Promise.all(fileSavers).then(function () {
+        try {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (conditions) {
@@ -1029,34 +1037,34 @@ function IonDataRepository(options) {
             event = EventType.CREATE;
             return _this.ds.insert(tn(rcm), updates);
           }
-        }).then(function (data) {
-          var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                event,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function () {
-                resolve(item);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve) {
-              resolve(item);
-            });
-          }
-        }).then(function (item) {
-          return loadFiles(item);
-        }).then(function (item) {
-          return enrich([item], nestingDepth !== null ? nestingDepth : 1);
-        }).then(function (items) {
-          resolve(items[0]);
-        }).catch(reject);
-      } catch (err) {
-        reject(err);
-      }
+        } catch (err) {
+          reject(err);
+        }
+      }).then(function (data) {
+        var item = _this._wrap(data._class, data, data._classVer);
+        if (changeLogger) {
+          return new Promise(function (resolve, reject) {
+            changeLogger.LogChange(
+              event,
+              item.getMetaClass().getCanonicalName(),
+              item.getItemId(),
+              updates
+            ).then(function () {
+              resolve([item]);
+            }).catch(reject);
+          });
+        } else {
+          return new Promise(function (resolve) {
+            resolve([item]);
+          });
+        }
+      }).then(function (item) {
+        return loadFiles(item);
+      }).then(function (item) {
+        return enrich([item], nestingDepth !== null ? nestingDepth : 1);
+      }).then(function (items) {
+        resolve(items[0]);
+      }).catch(reject);
     });
   };
 

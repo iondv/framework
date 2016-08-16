@@ -217,14 +217,12 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          log.info('Запиcь в коллекцию ' + type + ' по условию ', conditions);
           if (Object.keys(data).length < 1) {
             _this._get(type, conditions).then(resolve).catch(reject);
           } else if (!multi) {
             c.updateOne(conditions, {$set: data}, {upsert: upsert},
               function (err, result) {
                 if (err) {
-                  log.error(err);
                   reject(err);
                 } else if (result.result && result.result.n > 0) {
                   _this._get(type, conditions).then(resolve).catch(reject);
@@ -236,7 +234,6 @@ function MongoDs(config) {
             c.updateMany(conditions, {$set: data},
               function (err, result) {
                 if (err) {
-                  log.error(err);
                   reject(err);
                 } else if (result.result && result.result.n > 0) {
                   _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
