@@ -10,6 +10,10 @@ Compile:
     type: compile
     tags:
         - dev-docker
+    only:
+        - master
+        - develop
+        - raw
     script:
     - sudo docker exec local_mongo mongo ion --eval "db.dropDatabase()"
     - npm install
@@ -24,6 +28,10 @@ Testing:
   type: test
   tags:
     - dev-selenium
+  only:
+        - master
+        - develop
+        - raw
   script:
     - C:\MongoDB\bin\mongo ion --eval "db.dropDatabase()"
     - $env:NODE_ENV = "development"
@@ -36,6 +44,10 @@ Testing:
   type: deploy
   tags:
     - dev-docker
+  only:
+        - master
+        - develop
+        - raw
   script:
     - sudo docker stop $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
     - sudo docker rm $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
