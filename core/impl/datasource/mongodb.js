@@ -255,6 +255,7 @@ function MongoDs(config) {
   };
 
   this._fetch = function (type, options) {
+    options = options || {};
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
