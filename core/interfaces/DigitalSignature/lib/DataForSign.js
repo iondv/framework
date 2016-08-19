@@ -4,13 +4,15 @@
 
 'use strict';
 
+var DataPart = require('./DataPart');
+
 /** *
  * @param {(DataPart[],DataPart)} p - parts
  * @param {Object} a - attributes
  * @constructor
  */
 function DataForSign(p, a) {
-  var parts = Array.isArray(p) ? p : p instanceof 'DataPart' ? [p] : [];
+  var parts = Array.isArray(p) ? p : p instanceof DataPart ? [p] : [];
   var attributes = typeof a === 'object' ? a : {};
 
   /**
@@ -64,6 +66,22 @@ function DataForSign(p, a) {
    */
   this.getAttributes = function () {
     return attributes;
+  };
+
+  /**
+   * @return {{Objects}}
+     */
+  this.getSerializable = function () {
+    var result = {};
+    result.parts = [];
+    result.attributes = this.getAttributes();
+
+    var prts = this.getParts();
+    for (var i = 0; i < prts.length; i++) {
+      result.parts[result.parts.length] = {mimeType: prts[i].getMimeType(), contents: prts[i].getContents()};
+    }
+
+    return result;
   };
 }
 

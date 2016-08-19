@@ -32,7 +32,7 @@ function JsonDigiSignDataProvider() {
     var props = item.getProperties();
     for (var p in props) {
       if (props.hasOwnProperty(p)) {
-        data[p] = props[p].getString();
+        data[p] = props[p].getValue();
       }
     }
     return new DataForSign(new DataPart(base64.fromByteArray(conv(JSON.stringify(data), {out: 'bytes'}))), {});
