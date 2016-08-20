@@ -138,7 +138,7 @@ function IonDataRepository(options) {
    */
   this._wrap = function (className, data, version) {
     var acm = this.meta.getMeta(className, version);
-    return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm, this);
+    return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
   };
 
   /**

@@ -107,15 +107,13 @@ function buildSemanticGetter(prop,start,count) {
   };
 }
 
-function ClassMeta(metaObject, metaRepository) {
+function ClassMeta(metaObject) {
 
   var _this = this;
 
   this.namespace = '';
 
   this.plain = metaObject;
-
-  this.metaRepository = metaRepository;
 
   this.ancestor = null;
 

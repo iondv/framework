@@ -359,7 +359,7 @@ function DsMetaRepository(options) {
           byOrder: []
         };
       }
-      cm = new ClassMeta(metas[i],_this);
+      cm = new ClassMeta(metas[i]);
       cm.namespace = metas[i].namespace;
       _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
       _this.classMeta[ns][metas[i].name].byOrder.push(cm);
