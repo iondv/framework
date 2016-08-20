@@ -32,13 +32,15 @@ function SignedDataHandler(dsModel, authCallback) {
     this.processDataItem(className, objId);
 
     if (Array.isArray(signatures) && Array.isArray(data)) {
+      var res = [];
       for (var i = 0; i < signatures.length; i++) {
-        this.saveSignature(user, className, objId, i, action, attributes,
+        res[res.length] = this.saveSignature(user, className, objId, i, action, attributes,
           this.processSignature(attributes, data[i].getString(), signatures[i]),
           this.processSignedData(attributes, data[i].getString(), signatures[i]));
       }
+      return Promise.all(res);
     } else if (typeof signatures === 'string' && typeof data === 'string') {
-      this.saveSignature(user, className, objId, 0, action, attributes,
+      return this.saveSignature(user, className, objId, 0, action, attributes,
         this.processSignature(attributes, data, signatures),
         this.processSignedData(attributes, data, signatures));
     } else {
@@ -78,13 +80,14 @@ function SignedDataHandler(dsModel, authCallback) {
    * @param {Object} attributes
    * @param {String} signature
    * @param {String} data
+   * @return {Promise}
    */
   this.saveSignature = function (uid, className, objId, index, action, attributes, signature, data) {
-    dsModel.addSign(action, uid, className, objId, index, JSON.stringify(attributes),
+    return dsModel.addSign(action, uid, className, objId, index, JSON.stringify(attributes),
       conv(signature, {in: 'utf8', out: 'bytes'}),
       conv(data, {in: 'utf8', out: 'bytes'}));
   };
 }
 
 SignedDataHandler.prototype = new ISignedDataHandler();
-module.export = SignedDataHandler;
+module.exports = SignedDataHandler;

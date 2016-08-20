@@ -78,7 +78,7 @@ function DataForSign(p, a) {
 
     var prts = this.getParts();
     for (var i = 0; i < prts.length; i++) {
-      result.parts[result.parts.length] = {mimeType: prts[i].getMimeType(), contents: prts[i].getContents()};
+      result.parts[result.parts.length] = {mimeType: prts[i].getMimeType(), contents: prts[i].getString()};
     }
 
     return result;

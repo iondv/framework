@@ -11,12 +11,12 @@ var IDigiSignModel = DigiSignCoreModule.IDigiSignModel;
  * @param {DataSource} ds
  * @constructor
  */
-function DigiSignModel(ds) {
+function DigiSignModel(options) {
   var _this = this;
   /**
    * @type {DataSource}
    */
-  this.ds = ds;
+  this.ds = options.dataSource;
 
   this._addSign = function (action, actor, className, objId, attributes, sign, data, part) {
     return new Promise(function (resolve, reject) {
