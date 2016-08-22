@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const runSequence = require('run-sequence');
 const importer = require('lib/import');
-const appDeployer = require('lib/appSetup');
+const deployer = require('lib/deploy');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -333,45 +333,18 @@ gulp.task('minify:js', function (done) {
 function setup(appDir, scope) {
   return function () {
     return new Promise(function (resolve, reject) {
-      console.log('Установка приложения по пути ' + appDir);
-      var dep = null;
-      try {
-        fs.accessSync(path.join(appDir, 'deploy.json'));
-        dep = JSON.parse(fs.readFileSync(path.join(appDir, 'deploy.json')));
-      } catch (err) {
-        console.warn('Не удалось прочитать конфигурацию развертывания.');
-      }
-
-      var ns = dep ? dep.namespace || '' : '';
-
-      console.log('Импорт выполняется в ' + (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
-      importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
-        namespace: ns
-      }).then(
-       function () {
-        var worker;
+      deployer(appDir).then(function (dep) {
+        console.log('Выполнена настройка приложения.');
+        var ns = dep ? dep.namespace || '' : '';
+        console.log('Импорт выполняется в ' +
+          (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
+        return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
+          namespace: ns
+        });
+      }).then(function () {
         console.log('Мета и данные импортированы в БД');
-        if (dep) {
-          if (dep.deployer) {
-            if (dep.deployer === 'built-in') {
-              if (typeof dep.modules === 'object') {
-                worker = function () {
-                  return appDeployer(dep.modules);
-                };
-              }
-            } else {
-              worker = require(dep.deployer);
-            }
-            if (typeof worker === 'function') {
-              console.log('Выполняется скрипт развертывания приложения');
-              worker().then(resolve).catch(reject);
-              return;
-            }
-          }
-        }
         resolve();
-      }
-      ).catch(reject);
+      }).catch(reject);
     });
   };
 }
