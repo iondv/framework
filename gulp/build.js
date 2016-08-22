@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const runSequence = require('run-sequence');
 const importer = require('lib/import');
+const appDeployer = require('lib/appSetup');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -50,8 +51,7 @@ function run(path, command, args, resolve, reject) {
 
     child.on('close', function (code) {
       if (code !== 0) {
-        reject('install failed with code ' + code);
-        return;
+        return reject('install failed with code ' + code);
       }
       resolve();
     });
@@ -153,8 +153,7 @@ function bower(p) {
               return;
             }
           } catch (error) {
-            reject(error);
-            return;
+            return reject(error);
           }
           resolve();
         }, reject);
@@ -331,50 +330,47 @@ gulp.task('minify:js', function (done) {
   });
 });
 
-function setup(appDir, scope, navSetup) {
+function setup(appDir, scope) {
   return function () {
     return new Promise(function (resolve, reject) {
       console.log('Установка приложения по пути ' + appDir);
-      var nav = null;
+      var dep = null;
       try {
-        fs.accessSync(path.join(appDir, 'navigation.json'));
-        nav = JSON.parse(fs.readFileSync(path.join(appDir, 'navigation.json')));
+        fs.accessSync(path.join(appDir, 'deploy.json'));
+        dep = JSON.parse(fs.readFileSync(path.join(appDir, 'deploy.json')));
       } catch (err) {
-        console.warn('Не удалось прочитать конфигурацию навигации.');
+        console.warn('Не удалось прочитать конфигурацию развертывания.');
       }
 
-      var ns = nav ? nav.namespace || '' : '';
+      var ns = dep ? dep.namespace || '' : '';
 
       console.log('Импорт выполняется в ' + (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
       importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
         namespace: ns
       }).then(
-        function () {
-          console.log('Мета и данные импортированы в БД');
-          if (nav) {
-            for (var module in nav.modules) {
-              if (nav.modules.hasOwnProperty(module)) {
-                if (!navSetup.hasOwnProperty(module)) {
-                  navSetup[module] = {namespaces: {}, menus: {}};
-                }
-
-                if (nav.namespace) {
-                  navSetup[module].namespaces[nav.namespace] = nav.namespaceCaption || '';
-                }
-
-                for (var nm in nav.modules[module]) {
-                  if (nav.modules[module].hasOwnProperty(nm)) {
-                    if (!navSetup[module].hasOwnProperty(nm)) {
-                      navSetup[module].menus[nm] = [];
-                    }
-                    Array.prototype.push.apply(navSetup[module].menus[nm], nav.modules[module][nm]);
-                  }
-                }
+       function () {
+        var worker;
+        console.log('Мета и данные импортированы в БД');
+        if (dep) {
+          if (dep.deployer) {
+            if (dep.deployer === 'built-in') {
+              if (typeof dep.modules === 'object') {
+                worker = function () {
+                  return appDeployer(dep.modules);
+                };
               }
+            } else {
+              worker = require(dep.deployer);
+            }
+            if (typeof worker === 'function') {
+              console.log('Выполняется скрипт развертывания приложения');
+              worker().then(resolve).catch(reject);
+              return;
             }
           }
-          resolve();
         }
+        resolve();
+      }
       ).catch(reject);
     });
   };
@@ -391,6 +387,15 @@ gulp.task('setup', function (done) {
 
   var scope = null;
 
+  function finish(err) {
+    scope.dataSources.disconnect().then(function () {
+      done(err);
+    }).catch(function (dcer) {
+      console.error(dcer);
+      done(err);
+    });
+  }
+
   di('app', config.di,
     {
       sysLog: sysLog
@@ -402,7 +407,6 @@ gulp.task('setup', function (done) {
     return new Promise(function (rs, rj) {
       var appDir =  path.join(platformPath, 'applications');
       var stage, stat;
-      var navSetup = {};
 
       try {
         var applications = fs.readdirSync(appDir);
@@ -410,82 +414,29 @@ gulp.task('setup', function (done) {
           stat = fs.statSync(path.join(appDir, applications[i]));
           if (stat.isDirectory()) {
             if (!stage) {
-              stage = setup(path.join(appDir, applications[i]), scope, navSetup)();
+              stage = setup(path.join(appDir, applications[i]), scope)();
             } else {
-              stage = stage.then(setup(path.join(appDir, applications[i]), scope, navSetup));
+              stage = stage.then(setup(path.join(appDir, applications[i]), scope));
             }
           }
         }
       } catch (err) {
-        rj(err);
-        return;
+        return rj(err);
       }
 
       if (stage) {
         stage.then(function () {
-          var dir, fn, old, nm;
-          for (var module in navSetup) {
-            if (navSetup.hasOwnProperty(module)) {
-              dir = path.join(platformPath, 'modules', module);
-              fn = path.join(dir, 'config', 'navigation.json');
-              try {
-                fs.accessSync(dir);
-                console.log('Запись конфигурации навигации модуля ' + module);
-                try {
-                  fs.accessSync(fn);
-                  old = JSON.parse(fs.readFileSync(fn));
-                  for (nm in navSetup[module].namespaces) {
-                    if (navSetup[module].namespaces.hasOwnProperty(nm)) {
-                      if (!old.namespaces) {
-                        old.namespaces = {};
-                      }
-                      old.namespaces[nm] = navSetup[module].namespaces[nm];
-                    }
-                  }
-
-                  for (nm in navSetup[module].menus) {
-                    if (navSetup[module].menus.hasOwnProperty(nm)) {
-                      if (!old.menus) {
-                        old.menus = {};
-                      }
-                      if (old.menus.hasOwnProperty(nm)) {
-                        Array.prototype.push.apply(old.menus[nm], navSetup[module].menus[nm]);
-                      } else {
-                        old.menus[nm] = navSetup[module].menus[nm];
-                      }
-                    }
-                  }
-                  fs.writeFileSync(fn, JSON.stringify(old));
-                } catch (err) {
-                  fs.writeFileSync(fn, JSON.stringify(navSetup[module]));
-                }
-              } catch (err) {
-                console.warn(err);
-              }
-            }
-          }
-          return scope.dataSources.disconnect();
-        }).then(function () {
           console.log('Установка приложений завершена.');
           rs();
         }).catch(rj);
       } else {
         console.log('Нет приложений для установки.');
-        scope.dataSources.disconnect().then(function () {
-          rs();
-        }).catch(rj);
+        rs();
       }
     });
   }).
-  then(done).
-  catch(function (err) {
-    console.error(err);
-    scope.dataSources.disconnect().then(function () {
-      done(err);
-    }).catch(function () {
-      done(err);
-    });
-  });
+  then(finish).
+  catch(finish);
 });
 
 gulp.task('install', function (done) {

@@ -125,24 +125,27 @@ function DsMetaRepository(options) {
    * @returns {ClassMeta}
    */
   function getFromMeta(name, version, namespace) {
-    var parts = name.split('@');
-    if (parts.length > 1) {
-      name = parts[0];
-      namespace = parts[1];
-    }
-    var ns = formNS(namespace);
-    if (_this.classMeta[ns].hasOwnProperty(name)) {
-      if (version) {
-        if (_this.classMeta[ns][name].hasOwnProperty(version)) {
-          return _this.classMeta[ns][name].byVersion[version];
-        } else {
-          var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
-          if (cm) {
-            return cm;
+    try {
+      var parts = name.split('@');
+      if (parts.length > 1) {
+        name = parts[0];
+        namespace = parts[1];
+      }
+      var ns = formNS(namespace);
+      if (_this.classMeta[ns].hasOwnProperty(name)) {
+        if (version) {
+          if (_this.classMeta[ns][name].hasOwnProperty(version)) {
+            return _this.classMeta[ns][name].byVersion[version];
+          } else {
+            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            if (cm) {
+              return cm;
+            }
           }
         }
+        return _this.classMeta[ns][name][defaultVersion];
       }
-      return _this.classMeta[ns][name][defaultVersion];
+    } catch (err) {
     }
     throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
@@ -356,7 +359,7 @@ function DsMetaRepository(options) {
           byOrder: []
         };
       }
-      cm = new ClassMeta(metas[i],_this);
+      cm = new ClassMeta(metas[i]);
       cm.namespace = metas[i].namespace;
       _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
       _this.classMeta[ns][metas[i].name].byOrder.push(cm);
