@@ -56,4 +56,5 @@ Testing:
     - sudo docker cp ../platform $PJ_DOCKER_NAME$CI_BUILD_REF_NAME:/var/www
     - sudo docker exec $PJ_DOCKER_NAME$CI_BUILD_REF_NAME bash -c 'sleep 3 && node /var/www/bin/import.js'
     - sudo docker restart $PJ_DOCKER_NAME$CI_BUILD_REF_NAME
+    - "curl -X POST -F token=$DevAndTestToken -F ref=$CI_BUILD_REF_NAME https://git.iondv.ru/api/v3/projects/34/trigger/builds"
     - sudo docker port $PJ_DOCKER_NAME$CI_BUILD_REF_NAME 8888 | sed -r 's/'0.0.0.0'+/http:\/\/192.168.0.228/g'
