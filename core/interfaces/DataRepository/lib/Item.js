@@ -10,10 +10,9 @@ var PropertyTypes = require('core/PropertyTypes');
  * @param {String} id
  * @param {{}} base
  * @param {ClassMeta} classMeta
- * @param {DataRepository} repository
  * @constructor
  */
-function Item(id, base, classMeta, repository) {
+function Item(id, base, classMeta) {
 
   var _this = this;
 
@@ -32,21 +31,18 @@ function Item(id, base, classMeta, repository) {
    */
   this.classMeta = classMeta;
 
-  /**
-   * @type {DataRepository}
-   */
-  this.repository = repository;
-
   this.properties = null;
 
   this.references = {};
+
+  this.files = {};
 
   this.getItemId = function () {
     return this.id;
   };
 
   this.getClassName = function () {
-    return this.classMeta.getName();
+    return this.classMeta.getCanonicalName();
   };
 
   /**
@@ -58,22 +54,39 @@ function Item(id, base, classMeta, repository) {
 
   /**
    * @param {String} name
-   * @returns {Item}
+   * @returns {Item | null}
    */
   this.getAggregate = function (name) {
-    var props = me.getProperties();
+    var props = this.getProperties();
     var p = props[name];
-    var i = null;
-    if (p && p.getType() === PropertyTypes.STRUCT) {
-      i = _this.repository.wrap(_this.item.get(name));
-    } else if (p && p.getType() === PropertyTypes.REFERENCE) {
-      return _this.references[name];
+    if (p && (p.getType() === PropertyTypes.STRUCT || p.getType() === PropertyTypes.REFERENCE)) {
+      return this.references[name];
     }
-    return i;
+    return null;
+  };
+
+  /**
+   * @param {String} name
+   * @returns {Array}
+   */
+  this.getAggregates = function (name) {
+    var props = this.getProperties();
+    var p = props[name];
+    if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
+      return this.collections[name];
+    }
+    return [];
   };
 
   function getFromBase(name) {
     if (_this.base.hasOwnProperty(name)) {
+      var props = _this.getProperties();
+      var p = props[name];
+      if (p && (p.getType() === PropertyTypes.FILE || p.getType === PropertyTypes.IMAGE)) {
+        if (_this.files.hasOwnProperty(name)) {
+          return _this.files[name];
+        }
+      }
       return _this.base[name];
     }
     return null;

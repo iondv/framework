@@ -9,8 +9,8 @@ function KeyProvider() {
    * @param {{}} data
    * @returns {String}
    */
-  this.formKey = function (classname, data) {
-    return this._formKey(classname, data);
+  this.formKey = function (classname, data, namespace) {
+    return this._formKey(classname, data, namespace);
   };
 
   /**
@@ -18,8 +18,8 @@ function KeyProvider() {
    * @param {String} id
    * @returns {{}}
    */
-  this.keyToData = function (classname, id) {
-    return this._keyToData(classname, id);
+  this.keyToData = function (classname, id, namespace) {
+    return this._keyToData(classname, id, namespace);
   };
 
   /**
@@ -27,8 +27,8 @@ function KeyProvider() {
    * @param {{}} data
    * @returns {{}}
    */
-  this.keyData = function (classname, data) {
-    return this._keyData(classname, data);
+  this.keyData = function (classname, data, namespace) {
+    return this._keyData(classname, data, namespace);
   };
 }
 

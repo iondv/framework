@@ -1,5 +1,6 @@
 {
-  "directory": "./view/static/vendor",
+  "directory": "./view/vendor",
+  "vendorDir": "./view/static/vendor",
   "json": "bower.json",
   "ignore": [
     "**/.*",

@@ -2,48 +2,124 @@
     "log_level": "notice",
     "parametrised": true,
     "port": [
-        8888,
-        8889
+        "[[server.port1]]",
+        "[[server.port2]]",
+        "[[server.port3]]"
     ],
-    "defaultModule":"registry",
-    "datasources":[
-      {
-        "name":"Db",
-        "module":"core/impl/datasource/mongodb",
-        "config": {
-          "uri": "[[db.uri]]",
-          "options": {
-            "server": {
-              "socketOptions":{
-                "keepAlive": 1
+    "defaultModule":"[[module.default]]",
+    "log": {
+      "logDestinations": ["console", "./log"]
+    },
+    "di" : {
+      "rtEvents": {
+        "module": "core/RuntimeEvents",
+        "options": {
+          "target": "ion://server",
+          "stopEvent": "close"
+        }
+      },
+      "dataSources": {
+        "module": "core/datasources",
+        "initMethod": "connect",
+        "initLevel": 0,
+        "options": {
+          "logger": "ion://sysLog",
+          "runtimeEvents": "ion://rtEvents",
+          "sources": [
+            {
+              "name":"Db",
+              "module":"core/impl/datasource/mongodb",
+              "options": {
+                "logger": "ion://sysLog",
+                "uri": "[[db.uri]]",
+                "options": {
+                  "server": {
+                    "socketOptions":{
+                      "keepAlive": 1
+                    }
+                  }
+                },
+                "connectionLimit": 10,
+                "user": "[[db.user]]",
+                "password": "[[db.pwd]]"
               }
             }
-          },
-          "connectionLimit": 10,
-          "schema": "[[db.name]]",
-          "user": "[[db.user]]",
-          "password": "[[db.pwd]]"
+          ]
+        }
+      },
+      "sessionHandler": {
+        "module": "lib/session",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
+          "dataSource": "ion://Db",
+          "session": {
+            "secret": "ion:demo:secret",
+            "resave": false,
+            "saveUninitialized": true
+          }
+        }
+      },
+      "settings": {
+        "module": "core/impl/SettingsRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
+      "auth": {
+        "module": "lib/auth",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
+          "logger": "ion://sysLog",
+          "dataSource": "ion://Db",
+          "denyTopLevel": "[[auth.denyTop]]",
+          "authCallbacks": ["[[auth.callback]]"]
+        }
+      },
+      "metaRepo": {
+        "module": "core/impl/meta/DsMetaRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "sync": {
+            "name": "dbSync",
+            "module": "core/impl/meta/mongo/dbSync",
+            "options": {
+              "dataSource": "ion://Db"
+            }
+          }
+        }
+      },
+      "fileStorage": {
+        "module": "core/impl/resource/FsStorage",
+        "initMethod":"_init",
+        "initLevel": 1,
+        "options": {
+          "storageBase": "[[fs.storageRoot]]",
+          "urlBase": "[[fs.urlBase]]",
+          "dataSource": "ion://Db"
+        }
+      },
+      "dataRepo": {
+        "module": "core/impl/datarepository/ionDataRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepository": "ion://metaRepo",
+          "fileStorage": "ion://fileStorage",
+          "keyProvider": {
+            "name": "keyProvider",
+            "module": "core/impl/meta/keyProvider",
+            "options": {
+              "metaRepo": "ion://metaRepo"
+            }
+          }
         }
       }
-    ],
-    "metaDs": "Db",
-    "dataDs": "Db",
-    "sessionDs": "Db",
-    "auth": {
-      "authCallbacks": ["modules/offline-sync.addCredentials"],
-      "localAuthDS": "Db"
-    },
-    "policy": [
-        {
-            "module": "core/impl/access/aclmongo",
-            "config": {
-                "accessDs": "Db"
-            }
-        }
-    ],
-    "session": {
-      "secret": "ion:demo:secret",
-      "resave": false,
-      "saveUninitialized": true
     }
 }

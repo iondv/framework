@@ -23,6 +23,7 @@
 # Игнорирование конкретного файла ТОЛЬКО в указанной директории
 # Например НЕ БУДЕТ проигнорирован файл /prod/params/config.php
 #/params/config.php
+/config/*.ini
 
 # ---- ДИРЕКТОРИИ ----
 # Игнорирование всех файлов и папок ТОЛЬКО в конкретной директории(включая поддиректории и файлы в них)
@@ -32,21 +33,20 @@
 /.idea/*
 /.git/*
 /.tmp/*
-/app/init/init-data/mongodb/modules/*
-/app/init/init-data/mysql/modules/*
-/app/init/init-data/mongodb/meta/*
-/app/init/init-data/mysql/meta/*
-/app/config/meta/*
-/app/config/meta.json
 /distr/*
 /docker/*
 /log/*
 
 /modules/*
+/applications/*
 /node_modules/*
 
-/public/*
-/src/vendor/*
+/view/vendor/*
+/view/static/vendor/*
+/view/static/css/*.less.css
+/view/static/**/*.min.css
+/view/static/**/*.min.js
+/files
 
 # Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
 # Например /images/user.jpg, /core/images/user.jpg
@@ -70,10 +70,7 @@
 ##!/node_modules/chai-json-schema-ext/*
 
 !/modules/readme.md
-!/modules/gulpmodules.js
-!/modules/node_modules/*/**
-!/meta/readme.md
-!/test/.report/E2E/readme.md
+##!/test/.report/E2E/readme.md
 
 # Игнорирование файла с именем, содержащим спецсимволы
 # Например !readme!.txt
@@ -83,4 +80,4 @@
 # которые начинаются на "h" и МОГУТ содержать ещё один символ после
 # Например /images/h4/user.jpg, /images/h/company.jpeg
 #/images/h?/*.jp?g
-npm-debug.log
+
