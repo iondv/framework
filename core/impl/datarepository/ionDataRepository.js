@@ -252,7 +252,7 @@ function IonDataRepository(options) {
             if (props.hasOwnProperty(nm)) {
               if (props[nm].getType() === PropertyTypes.REFERENCE) {
                 prepareRefEnrichment(item, props[nm], attrs);
-              } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].meta.eager_loading) {
+              } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
                 prepareColEnrichment(item, props[nm], attrs);
               }
             }
@@ -298,9 +298,7 @@ function IonDataRepository(options) {
       }
 
       if (promises.length === 0) {
-        return new Promise(function (resolve) {
-          resolve(src);
-        });
+        resolve(src);
       }
 
       Promise.all(promises).then(
@@ -480,17 +478,28 @@ function IonDataRepository(options) {
           var result = [];
           var item = null;
           if (data) {
-            item = _this._wrap(data._class, data, data._classVer);
-            result.push(item);
-            return loadFiles(item);
+            try {
+              item = _this._wrap(data._class, data, data._classVer);
+              result.push(item);
+              loadFiles(item).
+              then(
+                function (item) {
+                  return enrich([item], nestingDepth ? nestingDepth : 0);
+                }
+              ).
+              then(
+                function (items) {
+                  resolve(items[0]);
+                }
+              ).
+              catch(reject);
+              return;
+            } catch (err) {
+              return reject(err);
+            }
           }
           resolve(null);
-        }).
-        then(function (item) {
-          return enrich([item], nestingDepth ? nestingDepth : 0);
-        }).
-        then(function (items) { resolve(items[0]); }).
-        catch(reject);
+        }).catch(reject);
       });
     } else {
       var options = {};
