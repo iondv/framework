@@ -53,6 +53,10 @@ function Property(item, propertyMeta) {
     return this.meta.nullable;
   };
 
+  this.eagerLoading = function () {
+    return this.meta.eager_loading;
+  };
+
   this.getValue = function () {
     return this.item.get(this.getName());
   };
