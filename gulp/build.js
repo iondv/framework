@@ -142,11 +142,15 @@ function bower(p) {
             var vendorModules = fs.readdirSync(srcDir);
             var copyers, copyer;
             copyers = [];
-            for (var i = 0; i < vendorModules.length; i++) {
-              copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
-              if (copyer) {
-                copyers.push(copyer);
+            if (bc.vendorDir) {
+              for (var i = 0; i < vendorModules.length; i++) {
+                copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
+                if (copyer) {
+                  copyers.push(copyer);
+                }
               }
+            } else {
+              console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
             }
             if (copyers.length) {
               Promise.all(copyers).then(resolve).catch(reject);
