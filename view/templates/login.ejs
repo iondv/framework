@@ -26,7 +26,7 @@
                 <button type="submit">Войти</button>
             </div>
             <div class="forgot-password pull-left">
-              <a href="/register"><b>Зарегистрироваться</b></a>
+              <% if (canRegister) { %><a href="/register"><b>Зарегистрироваться</b></a><% } %>
             </div>
         </form>
     </div>

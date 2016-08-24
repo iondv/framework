@@ -78,7 +78,8 @@
           "logger": "ion://sysLog",
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
-          "authCallbacks": ["[[auth.callback]]"]
+          "authCallbacks": ["[[auth.callback]]"],
+          "noPublicRegistration": "[[auth.noRegistration]]"
         }
       },
       "metaRepo": {
