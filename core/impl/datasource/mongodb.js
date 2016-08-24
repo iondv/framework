@@ -142,76 +142,129 @@ function MongoDs(config) {
     );
   };
 
+  function getAutoInc(type){
+    return new Promise(function (resolve, reject) {
+      _this.getCollection(AUTOINC_COLLECTION).then(
+        /**
+         * @param {Collection} autoinc
+         * @returns {Promise}
+         */
+        function (autoinc) {
+          return new Promise(function (resolve, reject) {
+            autoinc.find({type: type}).limit(1).next(function (err, counters) {
+              if (err) {
+                return reject(err);
+              }
+              resolve({ai: autoinc, c: counters});
+            });
+          });
+        }
+      ).catch(reject);
+    });
+  }
+
+  function autoInc(type, data) {
+    return new Promise(function (resolve, reject) {
+      getAutoInc(type).then(
+        /**
+         * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
+         */
+        function (result) {
+          if (result.c && result.c.counters && Object.keys(result.c.counters).length > 0) {
+            var inc = {};
+            var counters = result.c.counters;
+            for (var nm in counters) {
+              if (counters.hasOwnProperty(nm)) {
+                inc['counters.' + nm] =
+                  result.c.steps && result.c.steps.hasOwnProperty(nm) ? result.c.steps[nm] : 1;
+              }
+            }
+
+            result.ai.findOneAndUpdate(
+              {type: type},
+              {$inc: inc},
+              {returnOriginal: false, upsert: false},
+              function (err, result) {
+                if (err) {
+                  return reject(err);
+                }
+
+                for (var nm in result.value.counters) {
+                  if (result.value.counters.hasOwnProperty(nm)) {
+                    data[nm] = result.value.counters[nm];
+                  }
+                }
+                resolve(data);
+              }
+            );
+            return;
+          }
+          resolve(data);
+        }
+      ).catch(reject);
+    });
+  }
+
   this._insert = function (type, data) {
     return this.getCollection(type).then(
       function (c) {
-        return new Promise(function (mainResolve, mainReject) {
+        return new Promise(function (resolve, reject) {
           var f = function (data) {
             c.insertOne(data, function (err, result) {
               if (err) {
-                mainReject(err);
+                reject(err);
               } else if (result.insertedId) {
-                _this._get(type, {_id: result.insertedId}).then(mainResolve).catch(mainReject);
+                _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
               }
             });
           };
 
-          _this.getCollection(AUTOINC_COLLECTION).then(
-            /**
-             * @param {Collection} autoinc
-             * @returns {Promise}
-             */
-            function (autoinc) {
-              return new Promise(function (resolve, reject) {
-                autoinc.find({type: type}).limit(1).next(function (err, counters) {
-                  if (err) {
-                    return reject(err);
-                  }
-                  resolve({ai: autoinc, c: counters});
-                });
-              });
-            }
-          ).then(
-            /**
-             * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
-             */
-            function (result) {
-              if (result.c && result.c.counters && Object.keys(result.c.counters).length > 0) {
-                var inc = {};
-                var counters = result.c.counters;
-                for (var nm in counters) {
-                  if (counters.hasOwnProperty(nm)) {
-                    inc['counters.' + nm] =
-                      result.c.steps && result.c.steps.hasOwnProperty(nm) ? result.c.steps[nm] : 1;
-                  }
-                }
-
-                result.ai.findOneAndUpdate(
-                  {type: type},
-                  {$inc: inc},
-                  {returnOriginal: false, upsert: false},
-                  function (err, result) {
-                    if (err) {
-                      return mainReject(err);
-                    }
-
-                    for (var nm in result.value.counters) {
-                      if (result.value.counters.hasOwnProperty(nm)) {
-                        data[nm] = result.value.counters[nm];
-                      }
-                    }
-                    f(data);
-                  }
-                );
-                return;
-              }
-              f(data);
-            }
-          ).catch(mainReject);
+          autoInc(type, data).then(f).catch(reject);          
         });
       }
     );
   };
+
+  function adjustAutoInc(type, data){
+    return new Promise(function (resolve, reject) {
+      getAutoInc(type).then(
+        /**
+         * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
+         */
+        function (result) {
+          if (result.c && result.c.counters && Object.keys(result.c.counters).length > 0) {
+            var up = {};
+            var counters = result.c.counters;
+            for (var nm in counters) {
+              if (counters.hasOwnProperty(nm)) {
+                if (counters[nm] < data[nm]) {
+                  up['counters.' + nm] = data[nm];
+                }
+              }
+            }
+
+            if (Object.keys(up).length < 1) {
+              return resolve(data);
+            }
+
+            result.ai.findOneAndUpdate(
+              {type: type},
+              {$set: up},
+              {returnOriginal: false, upsert: false},
+              function (err, result) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(data);
+              }
+            );
+            return;
+          }
+          resolve(data);
+        }
+      ).catch(reject);
+    });
+  }
 
   this.doUpdate = function (type, conditions, data, upsert, multi) {
     return this.getCollection(type).then(
@@ -225,7 +278,13 @@ function MongoDs(config) {
                 if (err) {
                   reject(err);
                 } else if (result.result && result.result.n > 0) {
-                  _this._get(type, conditions).then(resolve).catch(reject);
+                  if (upsert) {
+                    _this._get(type, conditions).then(function (r) {
+                      return adjustAutoInc(type, r);
+                    }).then(resolve).catch(reject);
+                  } else {
+                    _this._get(type, conditions).then(resolve).catch(reject);
+                  }
                 } else {
                   resolve();
                 }
