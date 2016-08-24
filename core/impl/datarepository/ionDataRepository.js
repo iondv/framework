@@ -844,6 +844,14 @@ function IonDataRepository(options) {
 
         var fileSavers = [];
 
+        if (cm.getCreationTracker()) {
+          updates[cm.getCreationTracker()] = new Date();
+        }
+
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
+
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
           if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -949,6 +957,10 @@ function IonDataRepository(options) {
 
           var fileSavers = [];
 
+          if (cm.getChangeTracker()) {
+            updates[cm.getChangeTracker()] = new Date();
+          }
+
           for (var i = 0;  i < properties.length; i++) {
             pm = properties[i];
             if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -1029,6 +1041,10 @@ function IonDataRepository(options) {
         var properties = cm.getPropertyMetas();
         var pm;
 
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
+
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
           if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -1046,8 +1062,12 @@ function IonDataRepository(options) {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (conditions) {
+            // TODO Отлавливать создание объекта, отрабатывать соответствующую логику, например автоприсваивание
             return _this.ds.upsert(tn(rcm), conditions, updates);
           } else {
+            if (cm.getCreationTracker()) {
+              updates[cm.getCreationTracker()] = new Date();
+            }
             event = EventType.CREATE;
             return _this.ds.insert(tn(rcm), updates);
           }
