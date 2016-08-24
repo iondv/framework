@@ -142,21 +142,18 @@ function MongoDs(config) {
     );
   };
 
-  function getAutoInc(type){
+  function getAutoInc(type) {
     return new Promise(function (resolve, reject) {
       _this.getCollection(AUTOINC_COLLECTION).then(
         /**
          * @param {Collection} autoinc
-         * @returns {Promise}
          */
         function (autoinc) {
-          return new Promise(function (resolve, reject) {
-            autoinc.find({type: type}).limit(1).next(function (err, counters) {
-              if (err) {
-                return reject(err);
-              }
-              resolve({ai: autoinc, c: counters});
-            });
+          autoinc.find({type: type}).limit(1).next(function (err, counters) {
+            if (err) {
+              return reject(err);
+            }
+            resolve({ai: autoinc, c: counters});
           });
         }
       ).catch(reject);
@@ -209,23 +206,25 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          var f = function (data) {
-            c.insertOne(data, function (err, result) {
-              if (err) {
-                reject(err);
-              } else if (result.insertedId) {
-                _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
-              }
-            });
-          };
-
-          autoInc(type, data).then(f).catch(reject);          
+          autoInc(type, data).then(
+            function (data) {
+              c.insertOne(data, function (err, result) {
+                if (err) {
+                  reject(err);
+                } else if (result.insertedId) {
+                  _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                } else {
+                  reject(new Error('Inser failed'));
+                }
+              });
+            }
+          ).catch(reject);
         });
       }
     );
   };
 
-  function adjustAutoInc(type, data){
+  function adjustAutoInc(type, data) {
     return new Promise(function (resolve, reject) {
       getAutoInc(type).then(
         /**
@@ -278,13 +277,12 @@ function MongoDs(config) {
                 if (err) {
                   reject(err);
                 } else if (result.result && result.result.n > 0) {
-                  if (upsert) {
-                    _this._get(type, conditions).then(function (r) {
+                  _this._get(type, conditions).then(function (r) {
+                    if (upsert) {
                       return adjustAutoInc(type, r);
-                    }).then(resolve).catch(reject);
-                  } else {
-                    _this._get(type, conditions).then(resolve).catch(reject);
-                  }
+                    }
+                    return new Promise(function (resolve) { resolve(r); });
+                  }).then(resolve).catch(reject);
                 } else {
                   resolve();
                 }
