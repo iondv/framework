@@ -833,7 +833,7 @@ function IonDataRepository(options) {
     for (var i = 0; i < props.length; i++) {
       if (!props[i].nullable && (
           lazy && data.hasOwnProperty(props[i].name) && data[props[i].name] === null ||
-          !lazy && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
+          !lazy && !props.autoassigned && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
         )) {
         invalidAttrs.push(props[i].caption);
       }
