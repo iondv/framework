@@ -225,7 +225,11 @@ function ClassMeta(metaObject) {
 
   this.getPropertyMetas = function () {
     var result = [];
-    result = result.concat(this.plain.properties);
+    for (var nm in this.propertyMetas) {
+      if (this.propertyMetas.hasOwnProperty(nm)) {
+        result.push(this.propertyMetas[nm]);
+      }
+    }
     if (this.getAncestor()) {
       result = result.concat(this.getAncestor().getPropertyMetas());
     }

@@ -59,7 +59,7 @@ function Item(id, base, classMeta) {
   this.getAggregate = function (name) {
     var props = this.getProperties();
     var p = props[name];
-    if (p && (p.getType() === PropertyTypes.STRUCT || p.getType() === PropertyTypes.REFERENCE)) {
+    if (p && p.getType() === PropertyTypes.REFERENCE) {
       return this.references[name];
     }
     return null;
@@ -143,26 +143,9 @@ function Item(id, base, classMeta) {
 
   function initClassProps(cm) {
     var pm = cm.getPropertyMetas();
-    for (var p in pm) {
-      if (pm.hasOwnProperty(p)) {
-        /*
-        TODO
-        if (pm[p].getType() === PropertyTypes.STRUCT) {
-          var structProperty = new Property(pm[p].name, me, pm[p]);
-          var sm = structProperty.asItem().getMetaClass();
-          while (sm !== null) {
-            var spm = sm.getPropertyMetas();
-            for (var prop in spm) {
-              if (spm.hasOwnProperty(prop)) {
-                var propName = pm[p].name+"$"+spm[prop];
-                _this.properties[propName] = new Property(propName, me, spm[prop]);
-              }
-            }
-            sm = sm.getAncestor();
-          }
-        } else {*/
-        _this.properties[pm[p].name] = new Property(_this, pm[p]);
-        // }
+    for (var i = 0; i < pm.length; i++) {
+      if (pm[i].type !== PropertyTypes.STRUCT) {
+        _this.properties[pm[i].name] = new Property(_this, pm[i]);
       }
     }
     if (cm.getAncestor()) {
