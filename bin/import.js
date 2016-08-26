@@ -10,7 +10,7 @@ var IonLogger = require('core/impl/log/IonLogger');
 var sysLog = new IonLogger({});
 
 var src = '../in';
-var ns = '';
+var ns = null;
 
 var setSrc = false;
 var setNamespace = false;
