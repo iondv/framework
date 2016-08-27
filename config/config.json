@@ -61,6 +61,14 @@
           }
         }
       },
+      "settings": {
+        "module": "core/impl/SettingsRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",

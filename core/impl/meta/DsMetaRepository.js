@@ -1,3 +1,4 @@
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 // jscs:disable requireCapitalizedComments
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 08.04.16.
@@ -125,24 +126,27 @@ function DsMetaRepository(options) {
    * @returns {ClassMeta}
    */
   function getFromMeta(name, version, namespace) {
-    var parts = name.split('@');
-    if (parts.length > 1) {
-      name = parts[0];
-      namespace = parts[1];
-    }
-    var ns = formNS(namespace);
-    if (_this.classMeta[ns].hasOwnProperty(name)) {
-      if (version) {
-        if (_this.classMeta[ns][name].hasOwnProperty(version)) {
-          return _this.classMeta[ns][name].byVersion[version];
-        } else {
-          var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
-          if (cm) {
-            return cm;
+    try {
+      var parts = name.split('@');
+      if (parts.length > 1) {
+        name = parts[0];
+        namespace = parts[1];
+      }
+      var ns = formNS(namespace);
+      if (_this.classMeta[ns].hasOwnProperty(name)) {
+        if (version) {
+          if (_this.classMeta[ns][name].hasOwnProperty(version)) {
+            return _this.classMeta[ns][name].byVersion[version];
+          } else {
+            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            if (cm) {
+              return cm;
+            }
           }
         }
+        return _this.classMeta[ns][name][defaultVersion];
       }
-      return _this.classMeta[ns][name][defaultVersion];
+    } catch (err) {
     }
     throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
@@ -245,6 +249,9 @@ function DsMetaRepository(options) {
         result.push(src[code]);
       }
     }
+    result.sort(function (a, b) {
+      return a.orderNumber - b.orderNumber;
+    });
     return result;
   };
 
@@ -356,7 +363,7 @@ function DsMetaRepository(options) {
           byOrder: []
         };
       }
-      cm = new ClassMeta(metas[i],_this);
+      cm = new ClassMeta(metas[i]);
       cm.namespace = metas[i].namespace;
       _this.classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
       _this.classMeta[ns][metas[i].name].byOrder.push(cm);
@@ -382,6 +389,44 @@ function DsMetaRepository(options) {
     }
   }
 
+  function sortViewElements(src) {
+    var i;
+    if (typeof src.columns !== 'undefined' && src.columns.length) {
+      src.columns.sort(function (a, b) {return a.order_number - b.order_number;});
+      for (i = 0; i < src.columns.length; i++) {
+        sortViewElements(src.columns[i]);
+      }
+    }
+
+    if (typeof src.tabs !== 'undefined' && src.tabs.length) {
+      for (i = 0; i < src.tabs.length; i++) {
+        sortViewElements(src.tabs[i]);
+      }
+    }
+
+    if (typeof src.fullFields !== 'undefined' && src.fullFields.length) {
+      src.fullFields.sort(function (a, b) {return a.order_number - b.order_number;});
+      for (i = 0; i < src.fullFields.length; i++) {
+        sortViewElements(src.fullFields[i]);
+      }
+    }
+
+    if (typeof src.shortFields !== 'undefined' && src.shortFields.length) {
+      src.shortFields.sort(function (a, b) {return a.order_number - b.order_number;});
+      for (i = 0; i < src.shortFields.length; i++) {
+        sortViewElements(src.shortFields[i]);
+      }
+    }
+
+    if (typeof src.fields !== 'undefined' && src.fields.length) {
+      src.fields.sort(function (a, b) {return a.order_number - b.order_number;});
+      for (i = 0; i < src.fields.length; i++) {
+        sortViewElements(src.fields[i]);
+      }
+    }
+    return src;
+  }
+
   function acceptViews(views) {
     _this.viewMeta = {
       listModels: {},
@@ -395,11 +440,11 @@ function DsMetaRepository(options) {
 
     for (var i = 0; i < views.length; i++) {
       switch (views[i].type){
-        case 'list': assignVm(_this.viewMeta.listModels, views[i]); break;
-        case 'collection': assignVm(_this.viewMeta.collectionModels, views[i]); break;
-        case 'item': assignVm(_this.viewMeta.itemModels, views[i]); break;
-        case 'create': assignVm(_this.viewMeta.createModels, views[i]); break;
-        case 'detail': assignVm(_this.viewMeta.detailModels, views[i]); break;
+        case 'list': assignVm(_this.viewMeta.listModels, sortViewElements(views[i])); break;
+        case 'collection': assignVm(_this.viewMeta.collectionModels, sortViewElements(views[i])); break;
+        case 'item': assignVm(_this.viewMeta.itemModels, sortViewElements(views[i])); break;
+        case 'create': assignVm(_this.viewMeta.createModels, sortViewElements(views[i])); break;
+        case 'detail': assignVm(_this.viewMeta.detailModels, sortViewElements(views[i])); break;
         case 'masks': _this.viewMeta.masks[views[i].name] = views[i]; break;
         case 'validators': _this.viewMeta.validators[views[i].name] = views[i]; break;
         default: break;
@@ -462,6 +507,14 @@ function DsMetaRepository(options) {
                 _this.navMeta.nodes[ns][p].children.push(n);
               }
             }
+          }
+        }
+
+        for (name in _this.navMeta.nodes[ns]) {
+          if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
+            _this.navMeta.nodes[ns][name].children.sort(function (a, b) {
+              return a.orderNumber - b.orderNumber;
+            });
           }
         }
       }

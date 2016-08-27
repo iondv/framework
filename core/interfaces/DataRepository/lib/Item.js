@@ -10,10 +10,9 @@ var PropertyTypes = require('core/PropertyTypes');
  * @param {String} id
  * @param {{}} base
  * @param {ClassMeta} classMeta
- * @param {DataRepository} repository
  * @constructor
  */
-function Item(id, base, classMeta, repository) {
+function Item(id, base, classMeta) {
 
   var _this = this;
 
@@ -31,11 +30,6 @@ function Item(id, base, classMeta, repository) {
    * @type {ClassMeta}
    */
   this.classMeta = classMeta;
-
-  /**
-   * @type {DataRepository}
-   */
-  this.repository = repository;
 
   this.properties = null;
 
@@ -60,18 +54,28 @@ function Item(id, base, classMeta, repository) {
 
   /**
    * @param {String} name
-   * @returns {Item}
+   * @returns {Item | null}
    */
   this.getAggregate = function (name) {
     var props = this.getProperties();
     var p = props[name];
-    var i = null;
-    if (p && p.getType() === PropertyTypes.STRUCT) {
-      i = this.repository.wrap(this.item.get(name));
-    } else if (p && p.getType() === PropertyTypes.REFERENCE) {
+    if (p && (p.getType() === PropertyTypes.STRUCT || p.getType() === PropertyTypes.REFERENCE)) {
       return this.references[name];
     }
-    return i;
+    return null;
+  };
+
+  /**
+   * @param {String} name
+   * @returns {Array}
+   */
+  this.getAggregates = function (name) {
+    var props = this.getProperties();
+    var p = props[name];
+    if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
+      return this.collections[name];
+    }
+    return [];
   };
 
   function getFromBase(name) {
