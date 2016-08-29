@@ -824,6 +824,27 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {ClassMeta} cm
+   * @param {{}} data
+   */
+  function checkRequired(cm, data, lazy) {
+    var props = cm.getPropertyMetas();
+    var invalidAttrs = [];
+    for (var i = 0; i < props.length; i++) {
+      if (!props[i].nullable && (
+          lazy && data.hasOwnProperty(props[i].name) && data[props[i].name] === null ||
+          !lazy && !props[i].autoassigned && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
+        )) {
+        invalidAttrs.push(props[i].caption);
+      }
+    }
+    if (invalidAttrs.length) {
+      return new Error('Не заполнены обязательные атрибуты: ' + invalidAttrs.join(', '));
+    }
+    return true;
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
@@ -843,6 +864,14 @@ function IonDataRepository(options) {
         var pm;
 
         var fileSavers = [];
+
+        if (cm.getCreationTracker()) {
+          updates[cm.getCreationTracker()] = new Date();
+        }
+
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
@@ -869,7 +898,7 @@ function IonDataRepository(options) {
             try {
               switch (pm.type) {
                 case PropertyTypes.DATETIME: {
-                  updates[pm.name] = new Date(pm.defaultValue);
+                  updates[pm.name] = new Date(pm.defaultValue); // TODO Использовать moment
                 }break;
                 case PropertyTypes.INT: {
                   updates[pm.name] = parseInt(pm.defaultValue);
@@ -885,6 +914,11 @@ function IonDataRepository(options) {
             } catch (err) {
             }
           }
+        }
+
+        var chr = checkRequired(cm, updates, false);
+        if (chr !== true) {
+          return reject(chr);
         }
 
         Promise.all(fileSavers).then(function () {
@@ -949,6 +983,10 @@ function IonDataRepository(options) {
 
           var fileSavers = [];
 
+          if (cm.getChangeTracker()) {
+            updates[cm.getChangeTracker()] = new Date();
+          }
+
           for (var i = 0;  i < properties.length; i++) {
             pm = properties[i];
             if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -956,6 +994,11 @@ function IonDataRepository(options) {
                 fileSavers.push(fileSaver(updates, pm.name));
               }
             }
+          }
+
+          var chr = checkRequired(cm, updates, true);
+          if (chr !== true) {
+            return reject(chr);
           }
 
           Promise.all(fileSavers).then(function () {
@@ -978,7 +1021,7 @@ function IonDataRepository(options) {
                 resolve(item);
               });
             }
-          // }).then(function (item) { - Пока отключено редактирование коллекций при EditItem
+            // }).then(function (item) { - Пока отключено редактирование коллекций при EditItem
             // return updateCollections(data, item, id);
           }).then(function (item) {
             return loadFiles(item);
@@ -1029,6 +1072,10 @@ function IonDataRepository(options) {
         var properties = cm.getPropertyMetas();
         var pm;
 
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
+
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
           if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
@@ -1037,48 +1084,57 @@ function IonDataRepository(options) {
             }
           }
         }
+
+        var chr = checkRequired(cm, updates, false);
+        if (chr !== true) {
+          return reject(chr);
+        }
+
+        Promise.all(fileSavers).then(function () {
+          try {
+            updates._class = cm.getCanonicalName();
+            updates._classVer = cm.getVersion();
+            if (conditions) {
+              // TODO Отлавливать создание объекта, отрабатывать соответствующую логику, например автоприсваивание
+              return _this.ds.upsert(tn(rcm), conditions, updates);
+            } else {
+              if (cm.getCreationTracker()) {
+                updates[cm.getCreationTracker()] = new Date();
+              }
+              event = EventType.CREATE;
+              return _this.ds.insert(tn(rcm), updates);
+            }
+          } catch (err) {
+            reject(err);
+          }
+        }).then(function (data) {
+          var item = _this._wrap(data._class, data, data._classVer);
+          if (changeLogger) {
+            return new Promise(function (resolve, reject) {
+              changeLogger.LogChange(
+                event,
+                item.getMetaClass().getCanonicalName(),
+                item.getItemId(),
+                updates
+              ).then(function () {
+                resolve([item]);
+              }).catch(reject);
+            });
+          } else {
+            return new Promise(function (resolve) {
+              resolve([item]);
+            });
+          }
+        }).then(function (item) {
+          return loadFiles(item);
+        }).then(function (item) {
+          return enrich([item], nestingDepth !== null ? nestingDepth : 1);
+        }).then(function (items) {
+          resolve(items[0]);
+        }).catch(reject);
       } catch (err) {
         return reject(err);
       }
-
-      Promise.all(fileSavers).then(function () {
-        try {
-          updates._class = cm.getCanonicalName();
-          updates._classVer = cm.getVersion();
-          if (conditions) {
-            return _this.ds.upsert(tn(rcm), conditions, updates);
-          } else {
-            event = EventType.CREATE;
-            return _this.ds.insert(tn(rcm), updates);
-          }
-        } catch (err) {
-          reject(err);
-        }
-      }).then(function (data) {
-        var item = _this._wrap(data._class, data, data._classVer);
-        if (changeLogger) {
-          return new Promise(function (resolve, reject) {
-            changeLogger.LogChange(
-              event,
-              item.getMetaClass().getCanonicalName(),
-              item.getItemId(),
-              updates
-            ).then(function () {
-              resolve([item]);
-            }).catch(reject);
-          });
-        } else {
-          return new Promise(function (resolve) {
-            resolve([item]);
-          });
-        }
-      }).then(function (item) {
-        return loadFiles(item);
-      }).then(function (item) {
-        return enrich([item], nestingDepth !== null ? nestingDepth : 1);
-      }).then(function (items) {
-        resolve(items[0]);
-      }).catch(reject);
     });
   };
 

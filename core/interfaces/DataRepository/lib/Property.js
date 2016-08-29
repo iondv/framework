@@ -57,6 +57,10 @@ function Property(item, propertyMeta) {
     return this.meta.eagerLoading;
   };
 
+  this.hint = function () {
+    return this.meta.hint;
+  };
+
   this.getValue = function () {
     return this.item.get(this.getName());
   };
