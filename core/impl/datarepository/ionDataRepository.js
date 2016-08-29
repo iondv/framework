@@ -164,7 +164,7 @@ function IonDataRepository(options) {
    * @param {{}} attrs
    */
   function prepareRefEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.ref_class, null, item.classMeta.getNamespace());
+    var refc = _this.meta.getMeta(property.meta.refClass, null, item.classMeta.getNamespace());
     if (refc) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
@@ -193,7 +193,7 @@ function IonDataRepository(options) {
    * @param {{}} attrs
    */
   function prepareColEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.items_class, null, item.classMeta.getNamespace());
+    var refc = _this.meta.getMeta(property.meta.itemsClass, null, item.classMeta.getNamespace());
     if (refc) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
@@ -201,13 +201,13 @@ function IonDataRepository(options) {
           colClassName: refc.getCanonicalName(),
           attrName: property.getName(),
           key: refc.getKeyProperties()[0],
-          backRef: property.meta.back_ref,
+          backRef: property.meta.backRef,
           pIndex: 0,
           colItems: []
         };
       }
 
-      if (property.meta.back_ref && !property.meta.back_coll) {
+      if (property.meta.backRef && !property.meta.backColl) {
         if (property.meta.binding) {
           attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.get(property.meta.binding));
         } else {
@@ -551,7 +551,7 @@ function IonDataRepository(options) {
         var p = item.property(refProperty);
         if (p && p.getType() === PropertyTypes.REFERENCE) {
           var v = p.getValue();
-          var refc = _this.meta.getMeta(rp.ref_class, null, item.classMeta.getNamespace());
+          var refc = _this.meta.getMeta(rp.refClass, null, item.classMeta.getNamespace());
           var rp = p.getMeta();
           if (v) {
             _this.editItem(cn(refc), v, updates[refProperty], logger);
@@ -569,7 +569,7 @@ function IonDataRepository(options) {
   /* jshint maxcomplexity: 20 */
   /**
    * @param {*} value
-   * @param {{ type: Number, ref_class: String }} pm
+   * @param {{ type: Number, refClass: String }} pm
    * @param {String} ns
    * @returns {*}
    */
@@ -578,7 +578,7 @@ function IonDataRepository(options) {
       return value;
     }
     if (pm.type === PropertyTypes.REFERENCE) {
-      var refcm = _this.meta.getMeta(pm.ref_class, null, ns);
+      var refcm = _this.meta.getMeta(pm.refClass, null, ns);
       var refkey = refcm.getPropertyMeta(refcm.getKeyProperties()[0]);
 
       if (refkey) {
@@ -683,13 +683,13 @@ function IonDataRepository(options) {
 
     function processCollection(cm, pm, collection, newId, oldId) {
       return new Promise(function (resolve, reject) {
-        var ccm = _this.meta.getMeta(pm.items_class);
+        var ccm = _this.meta.getMeta(pm.itemsClass);
         var filter;
         if (ccm) {
-          if (pm.back_ref) {
+          if (pm.backRef) {
             filter = {};
-            filter[pm.back_ref] = {$eq: oldId};
-            _this.getList(pm.items_class, {
+            filter[pm.backRef] = {$eq: oldId};
+            _this.getList(pm.itemsClass, {
               filter: filter
             }).then(function (results) {
               var edits, promises;
@@ -698,11 +698,11 @@ function IonDataRepository(options) {
                 var arrIndex = collection.indexOf(results[i].getItemId());
                 if (arrIndex < 0) {
                   edits = {};
-                  edits[pm.back_ref] = null;
+                  edits[pm.backRef] = null;
                   promises.push(
                     _this.ds.update(
                       tn(ccm),
-                      _this.keyProvider.keyToData(pm.items_class, results[i].getItemId()),
+                      _this.keyProvider.keyToData(pm.itemsClass, results[i].getItemId()),
                       edits
                     )
                   );
@@ -712,11 +712,11 @@ function IonDataRepository(options) {
               }
               for (var j = 0; j < collection.length; j++) {
                 edits = {};
-                edits[pm.back_ref] = newId;
+                edits[pm.backRef] = newId;
                 promises.push(
                   _this.ds.update(
                     tn(ccm),
-                    _this.keyProvider.keyToData(pm.items_class, collection[j]),
+                    _this.keyProvider.keyToData(pm.itemsClass, collection[j]),
                     edits
                   )
                 );
@@ -725,8 +725,8 @@ function IonDataRepository(options) {
                 resolve({property: pm.name, value: null});
               }).catch(reject);
             }).catch(reject);
-          } else if (pm.back_coll) {
-            processManyToManyCollection(ccm, pm.back_coll, collection, newId, oldId)
+          } else if (pm.backColl) {
+            processManyToManyCollection(ccm, pm.backColl, collection, newId, oldId)
               .then(function (value) {
                 resolve({property: pm.name, value: value});
               }).catch(reject);
@@ -735,8 +735,8 @@ function IonDataRepository(options) {
             var backColProperty = null;
             for (var i = 0; i < ccmPropertyMetas.length; i++) {
               if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION &&
-                ccmPropertyMetas[i].items_class === cm.getName() &&
-                ccmPropertyMetas[i].back_coll === pm.name) {
+                ccmPropertyMetas[i].itemsClass === cm.getName() &&
+                ccmPropertyMetas[i].backColl === pm.name) {
                 backColProperty = ccmPropertyMetas[i];
               }
             }
@@ -768,7 +768,7 @@ function IonDataRepository(options) {
         if (data.hasOwnProperty(nm)) {
           pm = cm.getPropertyMeta(nm);
           if (pm) {
-            if (pm.type === PropertyTypes.COLLECTION && pm.items_class) {
+            if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
               promises.push(processCollection(cm, pm, data[nm], item.getItemId(), oldId));
             }
           }
@@ -894,21 +894,21 @@ function IonDataRepository(options) {
                 delete updates[pm.name];
               }break;
             }
-          } else if (pm.default_value) {
+          } else if (pm.defaultValue) {
             try {
               switch (pm.type) {
                 case PropertyTypes.DATETIME: {
-                  updates[pm.name] = new Date(pm.default_value); // TODO Использовать moment
+                  updates[pm.name] = new Date(pm.defaultValue); // TODO Использовать moment
                 }break;
                 case PropertyTypes.INT: {
-                  updates[pm.name] = parseInt(pm.default_value);
+                  updates[pm.name] = parseInt(pm.defaultValue);
                 }break;
                 case PropertyTypes.REAL:
                 case PropertyTypes.DECIMAL: {
-                  updates[pm.name] = parseFloat(pm.default_value);
+                  updates[pm.name] = parseFloat(pm.defaultValue);
                 }break;
                 default: {
-                  updates[pm.name] = pm.default_value;
+                  updates[pm.name] = pm.defaultValue;
                 }break;
               }
             } catch (err) {
@@ -1223,9 +1223,9 @@ function IonDataRepository(options) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
 
-      if (pm.back_ref) {
+      if (pm.backRef) {
         var update = {};
-        update[pm.back_ref] = pm.binding ? master.get(pm.binding) : master.getItemId();
+        update[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
         _this._editItem(detail.getMetaClass().getCanonicalName(), detail.getItemId(), update).then(
           function (d) {
             resolve();
@@ -1237,7 +1237,7 @@ function IonDataRepository(options) {
           var props = detail.getMetaClass().getPropertyMetas();
           var backColls = [];
           for (var i = 0; i < props.length; i++) {
-            if (props[i].type === PropertyTypes.COLLECTION && props[i].back_coll === collection) {
+            if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
               backColls.push(props[i].name);
             }
           }
@@ -1280,9 +1280,9 @@ function IonDataRepository(options) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
 
-      if (pm.back_ref) {
+      if (pm.backRef) {
         var update = {};
-        update[pm.back_ref] = null;
+        update[pm.backRef] = null;
         _this._editItem(detail.getMetaClass().getCanonicalName(), detail.getItemId(), update).then(
           function (d) {
             resolve();
@@ -1294,7 +1294,7 @@ function IonDataRepository(options) {
           var props = detail.getMetaClass().getPropertyMetas();
           var backColls = [];
           for (var i = 0; i < props.length; i++) {
-            if (props[i].type === PropertyTypes.COLLECTION && props[i].back_coll === collection) {
+            if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
               backColls.push(props[i].name);
             }
           }
@@ -1345,14 +1345,14 @@ function IonDataRepository(options) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
 
-      var detailCm = _this.meta.getMeta(pm.items_class, null, master.getMetaClass().getNamespace());
+      var detailCm = _this.meta.getMeta(pm.itemsClass, null, master.getMetaClass().getNamespace());
       if (!detailCm) {
         return reject(new Error('Не найден класс элементов коллекции!'));
       }
 
-      if (pm.back_ref) {
+      if (pm.backRef) {
         var filter = {};
-        filter[pm.back_ref] = pm.binding ? master.get(pm.binding) : master.getItemId();
+        filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
         options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
         _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
       } else {
@@ -1396,14 +1396,14 @@ function IonDataRepository(options) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
 
-      var detailCm = _this.meta.getMeta(pm.items_class, null, master.getMetaClass().getNamespace());
+      var detailCm = _this.meta.getMeta(pm.itemsClass, null, master.getMetaClass().getNamespace());
       if (!detailCm) {
         return reject(new Error('Не найден класс элементов коллекции!'));
       }
 
-      if (pm.back_ref) {
+      if (pm.backRef) {
         var filter = {};
-        filter[pm.back_ref] = pm.binding ? master.get(pm.binding) : master.getItemId();
+        filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
         options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
         _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
       } else {

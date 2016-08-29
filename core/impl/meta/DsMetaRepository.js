@@ -392,7 +392,7 @@ function DsMetaRepository(options) {
   function sortViewElements(src) {
     var i;
     if (typeof src.columns !== 'undefined' && src.columns.length) {
-      src.columns.sort(function (a, b) {return a.order_number - b.order_number;});
+      src.columns.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
       for (i = 0; i < src.columns.length; i++) {
         sortViewElements(src.columns[i]);
       }
@@ -405,21 +405,21 @@ function DsMetaRepository(options) {
     }
 
     if (typeof src.fullFields !== 'undefined' && src.fullFields.length) {
-      src.fullFields.sort(function (a, b) {return a.order_number - b.order_number;});
+      src.fullFields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
       for (i = 0; i < src.fullFields.length; i++) {
         sortViewElements(src.fullFields[i]);
       }
     }
 
     if (typeof src.shortFields !== 'undefined' && src.shortFields.length) {
-      src.shortFields.sort(function (a, b) {return a.order_number - b.order_number;});
+      src.shortFields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
       for (i = 0; i < src.shortFields.length; i++) {
         sortViewElements(src.shortFields[i]);
       }
     }
 
     if (typeof src.fields !== 'undefined' && src.fields.length) {
-      src.fields.sort(function (a, b) {return a.order_number - b.order_number;});
+      src.fields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
       for (i = 0; i < src.fields.length; i++) {
         sortViewElements(src.fields[i]);
       }

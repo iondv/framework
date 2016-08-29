@@ -7,7 +7,7 @@
 function loadPropertyMetas(cm, plain) {
   var i,j,k,properties, key, v;
   properties = plain.properties.sort(function (a,b) {
-    return a.order_number - b.order_number;
+    return a.orderNumber - b.orderNumber;
   });
 
   function selectionConstructor1() {
@@ -55,24 +55,24 @@ function loadPropertyMetas(cm, plain) {
 
   for (i = 0; i < properties.length; i++) {
     cm.propertyMetas[properties[i].name] = properties[i];
-    if (properties[i].selection_provider) {
-      if (properties[i].selection_provider.type === 'SIMPLE') {
-        properties[i].selection_provider.selection = {};
-        for (j = 0; j < properties[i].selection_provider.list.length; j++) {
-          key = properties[i].selection_provider.list[j].key;
-          properties[i].selection_provider.selection[key] = properties[i].selection_provider.list[j].value;
+    if (properties[i].selectionProvider) {
+      if (properties[i].selectionProvider.type === 'SIMPLE') {
+        properties[i].selectionProvider.selection = {};
+        for (j = 0; j < properties[i].selectionProvider.list.length; j++) {
+          key = properties[i].selectionProvider.list[j].key;
+          properties[i].selectionProvider.selection[key] = properties[i].selectionProvider.list[j].value;
         }
-        properties[i].selection_provider.getSelection = selectionConstructor1();
-      } else if (properties[i].selection_provider.type === 'MATRIX') {
-        for (j = 0; j < properties[i].selection_provider.matrix.length; j++) {
-          properties[i].selection_provider.matrix[j].selection = {};
-          for (k = 0; k < properties[i].selection_provider.matrix[j].result.length; k++) {
-            key = properties[i].selection_provider.matrix[j].result[k].key;
-            v = properties[i].selection_provider.matrix[j].result[k].value;
-            properties[i].selection_provider.matrix[j].selection[key] = v;
+        properties[i].selectionProvider.getSelection = selectionConstructor1();
+      } else if (properties[i].selectionProvider.type === 'MATRIX') {
+        for (j = 0; j < properties[i].selectionProvider.matrix.length; j++) {
+          properties[i].selectionProvider.matrix[j].selection = {};
+          for (k = 0; k < properties[i].selectionProvider.matrix[j].result.length; k++) {
+            key = properties[i].selectionProvider.matrix[j].result[k].key;
+            v = properties[i].selectionProvider.matrix[j].result[k].value;
+            properties[i].selectionProvider.matrix[j].selection[key] = v;
           }
         }
-        properties[i].selection_provider.getSelection = selectionConstructor2();
+        properties[i].selectionProvider.getSelection = selectionConstructor2();
       }
     }
   }
