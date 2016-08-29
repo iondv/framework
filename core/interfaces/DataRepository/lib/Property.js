@@ -54,7 +54,11 @@ function Property(item, propertyMeta) {
   };
 
   this.eagerLoading = function () {
-    return this.meta.eager_loading;
+    return this.meta.eagerLoading;
+  };
+
+  this.hint = function () {
+    return this.meta.hint;
   };
 
   this.getValue = function () {
@@ -63,7 +67,7 @@ function Property(item, propertyMeta) {
 
   this.getDisplayValue = function () {
     var v = this.getValue();
-    if (this.meta.selection_provider) {
+    if (this.meta.selectionProvider) {
       var selection = this.getSelection();
       if (selection && selection.hasOwnProperty(v)) {
         return selection[v];
@@ -96,8 +100,8 @@ function Property(item, propertyMeta) {
     if (this.selectList) {
       return this.selectList;
     }
-    if (this.meta.selection_provider) {
-      this.selectList = this.meta.selection_provider.getSelection(this.item);
+    if (this.meta.selectionProvider) {
+      this.selectList = this.meta.selectionProvider.getSelection(this.item);
       return this.selectList;
     }
     return null;
