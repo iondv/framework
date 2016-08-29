@@ -357,9 +357,12 @@ function DsMetaRepository(options) {
     var pm, i, j;
     for (i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
-        var structClass = getFromMeta(cm.plain.properties[i].refСlass, cm.plain.version, cm.getNamespace());
-        if (!structClass) {
-          throw new Error('Не найден класс структуры ' + cm.caption + '.' + cm.plain.properties[i].caption);
+        var structClass;
+        try {
+          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
+        } catch (err) {
+          throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
+            '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
         }
         if (!structClass.___structs_expanded) {
           expandStructs(structClass);
