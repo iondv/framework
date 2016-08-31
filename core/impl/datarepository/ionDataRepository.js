@@ -247,13 +247,15 @@ function IonDataRepository(options) {
       try {
         for (i = 0; i < src.length; i++) {
           item = src[i];
-          props = item.getProperties();
-          for (nm in props) {
-            if (props.hasOwnProperty(nm)) {
-              if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                prepareRefEnrichment(item, props[nm], attrs);
-              } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
-                prepareColEnrichment(item, props[nm], attrs);
+          if (item && item.constructor.name === 'Item') {
+            props = item.getProperties();
+            for (nm in props) {
+              if (props.hasOwnProperty(nm)) {
+                if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                  prepareRefEnrichment(item, props[nm], attrs);
+                } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
+                  prepareColEnrichment(item, props[nm], attrs);
+                }
               }
             }
           }
