@@ -65,12 +65,31 @@ function Property(item, propertyMeta) {
     return this.item.get(this.getName());
   };
 
+  // jshint eqeqeq: false
+  this.selectionKeyMatch = function (key) {
+    var v = this.getValue();
+    if (v instanceof Date) {
+      return v == key ||
+        v.getTime() == key ||
+        v.toString() == key ||
+        v.toDateString() === key ||
+        v.toJSON() === key ||
+        v.toISOString() === key;
+    }
+    if (typeof v === 'boolean') {
+      return v ? key && key != 'false' : key == 'false' || !key;
+    }
+    return v == key;
+  };
+
   this.getDisplayValue = function () {
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      if (selection && selection.hasOwnProperty(v)) {
-        return selection[v];
+      for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        if (this.selectionKeyMatch(selection[i].key)) {
+          return selection[i].value;
+        }
       }
     }
 
