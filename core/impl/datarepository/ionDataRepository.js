@@ -410,7 +410,42 @@ function IonDataRepository(options) {
   }
 
   /**
-   *
+   * @param {ClassMeta} cm
+   * @param {*} filter
+   * @returns {*}
+   */
+  function prepareFilter(cm, filter) {
+    var result, i, nm, keys, knm;
+    if (filter && Array.isArray(filter)) {
+      result = [];
+      for (i = 0; i < filter.length; i++) {
+        result.push(prepareFilter(cm, filter[i]));
+      }
+      return result;
+    } else if (filter && typeof filter === 'object') {
+      result = {};
+      for (nm in filter) {
+        if (filter.hasOwnProperty(nm)) {
+          if (nm === '$ItemId') {
+            if (typeof filter[nm] === 'string') {
+              keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+              for (knm in keys) {
+                if (keys.hasOwnProperty(knm)) {
+                  result[knm] = keys[knm];
+                }
+              }
+            }
+          } else {
+            result[nm] = prepareFilter(cm, filter[nm]);
+          }
+        }
+      }
+      return result;
+    }
+    return filter;
+  }
+
+  /**
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
@@ -429,6 +464,7 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = prepareFilter(rcm, options.filter);
     return new Promise(function (resolve, reject) {
       var result = [];
       _this.ds.fetch(tn(rcm), options)
@@ -1224,7 +1260,7 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
-   * @param operation
+   * @param {String} operation
    * @returns {*}
    * @private
    */
