@@ -434,6 +434,8 @@ function IonDataRepository(options) {
                   result[knm] = keys[knm];
                 }
               }
+            } else {
+              result[cm.getKeyProperties()[0]] = filter[nm];
             }
           } else {
             result[nm] = prepareFilter(cm, filter[nm]);
