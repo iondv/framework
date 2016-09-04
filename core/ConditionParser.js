@@ -5,8 +5,10 @@
 
 var ConditionTypes = require('core/ConditionTypes');
 var OperationTypes = require('core/OperationTypes');
+var equal = require('core/equal');
+var cast = require('core/cast');
 
-// jshint maxcomplexity: 40
+// jshint maxcomplexity: 40, eqeqeq: false
 function contains(container, content) {
   if (container && content !== null) {
     if (typeof container === 'string') {
@@ -20,16 +22,25 @@ function contains(container, content) {
   return false;
 }
 
+/**
+ * @param {Item} item
+ * @param {{}} condition
+ * @returns {Boolean}
+ */
 function checkCondition(item, condition) {
-  var pn, v;
+  var pn, p, v;
   if (condition.property) {
     pn = condition.property;
-    v = condition.value;
+    p = item.property(pn);
+    if (!p) {
+      throw new Error('Не найден указанный в условии атрибут ' + item.getClassName() + '.' + pn);
+    }
+    v = cast(condition.value, p.getType());
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return String(item.get(pn)) === v ? true : false;
+        return equal(item.get(pn), v);
       case ConditionTypes.NOT_EQUAL:
-        return String(item.get(pn)) !== v ? true : false;
+        return !equal(item.get(pn), v);
       case ConditionTypes.EMPTY:
         return !item.get(pn);
       case ConditionTypes.NOT_EMPTY:

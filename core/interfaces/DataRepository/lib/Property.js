@@ -5,6 +5,7 @@
 'use strict';
 
 var PropertyTypes = require('core/PropertyTypes');
+var equal = require('core/equal');
 
 /**
  * @param {Item} item
@@ -65,21 +66,8 @@ function Property(item, propertyMeta) {
     return this.item.get(this.getName());
   };
 
-  // jshint eqeqeq: false
   this.selectionKeyMatch = function (key) {
-    var v = this.getValue();
-    if (v instanceof Date) {
-      return v == key ||
-        v.getTime() == key ||
-        v.toString() == key ||
-        v.toDateString() === key ||
-        v.toJSON() === key ||
-        v.toISOString() === key;
-    }
-    if (typeof v === 'boolean') {
-      return v ? key && key != 'false' : key == 'false' || !key;
-    }
-    return v == key;
+    return equal(this.getValue(), key);
   };
 
   this.getDisplayValue = function () {
