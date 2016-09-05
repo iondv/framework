@@ -2,54 +2,33 @@
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
-'use strict';
+
+var checkConditions = require('core/ConditionParser');
+
 /* jshint maxstatements: 30 */
 function loadPropertyMetas(cm, plain) {
-  var i,j,k,properties, key, v;
+  var i, properties;
   properties = plain.properties.sort(function (a,b) {
     return a.orderNumber - b.orderNumber;
   });
 
   function selectionConstructor1() {
-    return function (item) {
-      return this.selection;
+    return function () {
+      return this.list || [];
     };
   }
 
   function selectionConstructor2() {
-    /* jshint maxcomplexity: 30 */
     /**
      * @param {Item} item
      */
     return function (item) {
-      var found, pn, v, j, k;
-      for (j = 0; j < this.matrix.length; j++) {
-        found = true;
-        for (k = 0; k < this.matrix[j].conditions.length; k++) {
-          pn = this.matrix[j].conditions[k].property;
-          v = this.matrix[j].conditions[k].value;
-          switch (this.matrix[j].conditions[k].operation) {
-            case 0:found = String(item.get(pn)) === v ? true : false;break;
-            case 1:found = String(item.get(pn)) !== v ? true : false;break;
-            case 2:found = !item.get(pn) ? true : false;break;
-            case 3:found = item.get(pn) ? true : false;break;
-            case 4:found = String(item.get(pn)).match(new RegExp(v)) ? true : false;break;
-            case 5:found = item.get(pn) < v ? true : false;break;
-            case 6:found = item.get(pn) > v ? true : false;break;
-            case 7:found = item.get(pn) <= v ? true : false;break;
-            case 8:found = item.get(pn) >= v ? true : false;break;
-            case 9:
-            case 10:found = item.get(pn).indexOf(v) !== -1 ? true : false;break;
-          }
-          if (!found) {
-            break;
-          }
-        }
-
-        if (found) {
-          return this.matrix[j].selection;
+      for (var j = 0; j < this.matrix.length; j++) {
+        if (checkConditions(item, this.matrix[j].conditions)) {
+          return this.matrix[j].result || [];
         }
       }
+      return [];
     };
   }
 
@@ -57,21 +36,8 @@ function loadPropertyMetas(cm, plain) {
     cm.propertyMetas[properties[i].name] = properties[i];
     if (properties[i].selectionProvider) {
       if (properties[i].selectionProvider.type === 'SIMPLE') {
-        properties[i].selectionProvider.selection = {};
-        for (j = 0; j < properties[i].selectionProvider.list.length; j++) {
-          key = properties[i].selectionProvider.list[j].key;
-          properties[i].selectionProvider.selection[key] = properties[i].selectionProvider.list[j].value;
-        }
         properties[i].selectionProvider.getSelection = selectionConstructor1();
       } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        for (j = 0; j < properties[i].selectionProvider.matrix.length; j++) {
-          properties[i].selectionProvider.matrix[j].selection = {};
-          for (k = 0; k < properties[i].selectionProvider.matrix[j].result.length; k++) {
-            key = properties[i].selectionProvider.matrix[j].result[k].key;
-            v = properties[i].selectionProvider.matrix[j].result[k].value;
-            properties[i].selectionProvider.matrix[j].selection[key] = v;
-          }
-        }
         properties[i].selectionProvider.getSelection = selectionConstructor2();
       }
     }
