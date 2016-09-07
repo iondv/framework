@@ -43,6 +43,11 @@ function IonDataRepository(options) {
    */
   this.fs = options.fileStorage;
 
+  /**
+   * @type {ImageStorage}
+   */
+  this.ims = options.imageStorage;
+
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
   /**
@@ -803,6 +808,15 @@ function IonDataRepository(options) {
     });
   }
 
+  function imageSaver(updates, nm) {
+    return new Promise(function (rs, rj) {
+      _this.ims.accept(updates[nm]).then(function (id) {
+        updates[nm] = id;
+        rs();
+      }).catch(rj);
+    });
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {{}} data
@@ -855,9 +869,11 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+          if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+            if (pm.type === PropertyTypes.FILE) {
               fileSavers.push(fileSaver(updates, pm.name));
+            } else if (pm.type === PropertyTypes.IMAGE) {
+              fileSavers.push(imageSaver(updates, pm.name));
             }
           }
 
@@ -969,9 +985,11 @@ function IonDataRepository(options) {
 
           for (var i = 0;  i < properties.length; i++) {
             pm = properties[i];
-            if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-              if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+              if (pm.type === PropertyTypes.FILE) {
                 fileSavers.push(fileSaver(updates, pm.name));
+              } else if (pm.type === PropertyTypes.IMAGE) {
+                fileSavers.push(imageSaver(updates, pm.name));
               }
             }
           }
@@ -1058,9 +1076,11 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+          if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
+            if (pm.type === PropertyTypes.FILE) {
               fileSavers.push(fileSaver(updates, pm.name));
+            } else if (pm.type === PropertyTypes.IMAGE) {
+              fileSavers.push(imageSaver(updates, pm.name));
             }
           }
         }

@@ -107,6 +107,13 @@
           "dataSource": "ion://Db"
         }
       },
+      "imageStorage": {
+        "module": "core/impl/image/ImStorage",
+        "initLevel": 1,
+        "options": {
+          "fileStorage": "ion://fileStorage"
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {

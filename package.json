@@ -69,7 +69,8 @@
     "gulp-less": "*",
     "rmdir": "*",
     "gulp-clean-css": "*",
-    "gulp-jsmin": "*"
+    "gulp-jsmin": "*",
+    "gm": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
