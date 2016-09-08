@@ -5,10 +5,19 @@
 
 var PropertyTypes = require('./PropertyTypes');
 
-module.exports = function (value, type) {
+var cast = module.exports = function (value, type) {
   if (value === null) {
     return value;
   }
+
+  if (Array.isArray(value)) {
+    var result = [];
+    for (var i = 0; i < value.length; i++) {
+      result.push(cast(value[i], type));
+    }
+    return result;
+  }
+
   if (type === PropertyTypes.STRING && value !== null) {
     return value;
   }
