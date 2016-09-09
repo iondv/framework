@@ -82,7 +82,12 @@ function Item(id, base, classMeta) {
     if (_this.base.hasOwnProperty(name)) {
       var props = _this.getProperties();
       var p = props[name];
-      if (p && (p.getType() === PropertyTypes.FILE || p.getType === PropertyTypes.IMAGE)) {
+      if (p && (
+        p.getType() === PropertyTypes.FILE ||
+        p.getType === PropertyTypes.IMAGE ||
+        p.getType === PropertyTypes.FILE_LIST
+        )
+      ) {
         if (_this.files.hasOwnProperty(name)) {
           return _this.files[name];
         }
