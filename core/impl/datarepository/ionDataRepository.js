@@ -414,7 +414,7 @@ function IonDataRepository(options) {
                 for (var j = 0; j < attrs['f_' + files[i].id].length; j++) {
                   tmp = attrs['f_' + files[i].id][j];
                   if (typeof tmp === 'object') {
-                    if (!Array.isArray()) {
+                    if (!Array.isArray(item.files[tmp.attr])) {
                       item.files[tmp.attr] = [];
                     }
                     item.files[tmp.attr][tmp.index] = files[i];
@@ -680,18 +680,22 @@ function IonDataRepository(options) {
         for (var i = 0; i < updates[nm].length; i++) {
           if (typeof updates[nm][i] !== 'string') {
             savers.push(_this.fs.accept(updates[nm][i]));
+          } else {
+            savers.push(new Promise(function(r) { r(updates[nm][i]); }));
           }
         }
-        Promise.all(savers).then(
-          function (ids) {
-            if (Array.isArray(ids)) {
-              updates[nm] = ids;
-            } else {
-              updates[nm] = [];
+        if (savers.length) {
+          Promise.all(savers).then(
+            function (ids) {
+              if (Array.isArray(ids)) {
+                updates[nm] = ids;
+              }
+              rs();
             }
-            rs();
-          }
-        ).catch(rj);
+          ).catch(rj);
+        } else {
+          rs();
+        }
       } else {
         _this.fs.accept(updates[nm]).then(function (id) {
           updates[nm] = id;
