@@ -432,7 +432,44 @@ function IonDataRepository(options) {
   }
 
   /**
-   *
+   * @param {ClassMeta} cm
+   * @param {*} filter
+   * @returns {*}
+   */
+  function prepareFilter(cm, filter) {
+    var result, i, nm, keys, knm;
+    if (filter && Array.isArray(filter)) {
+      result = [];
+      for (i = 0; i < filter.length; i++) {
+        result.push(prepareFilter(cm, filter[i]));
+      }
+      return result;
+    } else if (filter && typeof filter === 'object') {
+      result = {};
+      for (nm in filter) {
+        if (filter.hasOwnProperty(nm)) {
+          if (nm === '$ItemId') {
+            if (typeof filter[nm] === 'string') {
+              keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+              for (knm in keys) {
+                if (keys.hasOwnProperty(knm)) {
+                  result[knm] = keys[knm];
+                }
+              }
+            } else {
+              result[cm.getKeyProperties()[0]] = filter[nm];
+            }
+          } else {
+            result[nm] = prepareFilter(cm, filter[nm]);
+          }
+        }
+      }
+      return result;
+    }
+    return filter;
+  }
+
+  /**
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
@@ -451,6 +488,7 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = prepareFilter(rcm, options.filter);
     return new Promise(function (resolve, reject) {
       var result = [];
       _this.ds.fetch(tn(rcm), options)
@@ -614,186 +652,6 @@ function IonDataRepository(options) {
     return cast(value, pm.type);
   }
 
-  /* Пока функционал заблокирован - вопрос нужно ли вообще редактирование коллекций через EditItem
-    function processManyToManyCollection(backColCm,backColPropertyName,value,newId,oldId) {
-      return new Promise(function (resolve, reject) {
-        var filter = {};
-        filter[backColPropertyName] = {$elemMatch: {$eq: oldId}};
-        _this.getList(backColCm.getName(), {
-          filter: filter
-        }).then(function (results) {
-          var edits, promises, newElements;
-          promises = [];
-          newElements = value.slice(0);
-          for (var i = 0; i < results.length; i++) {
-            var arrIndex = newElements.indexOf(results[i].getItemId());
-            if (arrIndex < 0) {
-              var backCol = results[i].get(backColPropertyName);
-              if (backCol) {
-                backCol.splice(backCol.indexOf(oldId), 1);
-                edits = {};
-                edits[backColPropertyName] = backCol;
-                promises.push(
-                  _this.ds.update(
-                    tn(backColCm),
-                    _this.keyProvider.keyToData(backColCm.getName(), results[i].getItemId()),
-                    edits
-                  )
-                );
-              }
-            } else if (newId === oldId) {
-              newElements.splice(arrIndex, 1);
-            }
-          }
-          if (newElements.length) {
-            filter = {};
-            filter[backColCm.getKeyProperties()[0]] = {$in: newElements};
-            _this.getList(backColCm.getName(), {
-              filter: filter
-            }).then(function (newResults) {
-              for (var i = 0; i < newResults.length; i++) {
-                var backCol = newResults[i].get(backColPropertyName);
-                if (!backCol) {
-                  backCol = [];
-                } else if (newId !== oldId) {
-                  backCol.splice(backCol.indexOf(oldId), 1);
-                }
-                backCol.push(newId);
-                edits = {};
-                edits[backColPropertyName] = backCol;
-                promises.push(
-                  _this.ds.update(
-                    tn(backColCm),
-                    _this.keyProvider.keyToData(backColCm.getName(), newResults[i].getItemId()),
-                    edits
-                  )
-                );
-              }
-              Promise.all(promises).then(function (promiseResults) {
-                resolve(value);
-              }).catch(reject);
-            }).catch(reject);
-          } else {
-            Promise.all(promises).then(function (promiseResults) {
-              resolve(value);
-            }).catch(reject);
-          }
-        }).catch(reject);
-      });
-    }
-
-    function processCollection(cm, pm, collection, newId, oldId) {
-      return new Promise(function (resolve, reject) {
-        var ccm = _this.meta.getMeta(pm.itemsClass);
-        var filter;
-        if (ccm) {
-          if (pm.backRef) {
-            filter = {};
-            filter[pm.backRef] = {$eq: oldId};
-            _this.getList(pm.itemsClass, {
-              filter: filter
-            }).then(function (results) {
-              var edits, promises;
-              promises = [];
-              for (var i = 0; i < results.length; i++) {
-                var arrIndex = collection.indexOf(results[i].getItemId());
-                if (arrIndex < 0) {
-                  edits = {};
-                  edits[pm.backRef] = null;
-                  promises.push(
-                    _this.ds.update(
-                      tn(ccm),
-                      _this.keyProvider.keyToData(pm.itemsClass, results[i].getItemId()),
-                      edits
-                    )
-                  );
-                } else if (newId === oldId) {
-                  collection.splice(arrIndex, 1);
-                }
-              }
-              for (var j = 0; j < collection.length; j++) {
-                edits = {};
-                edits[pm.backRef] = newId;
-                promises.push(
-                  _this.ds.update(
-                    tn(ccm),
-                    _this.keyProvider.keyToData(pm.itemsClass, collection[j]),
-                    edits
-                  )
-                );
-              }
-              Promise.all(promises).then(function (rs) {
-                resolve({property: pm.name, value: null});
-              }).catch(reject);
-            }).catch(reject);
-          } else if (pm.backColl) {
-            processManyToManyCollection(ccm, pm.backColl, collection, newId, oldId)
-              .then(function (value) {
-                resolve({property: pm.name, value: value});
-              }).catch(reject);
-          } else {
-            var ccmPropertyMetas = ccm.getPropertyMetas();
-            var backColProperty = null;
-            for (var i = 0; i < ccmPropertyMetas.length; i++) {
-              if (ccmPropertyMetas[i].type === PropertyTypes.COLLECTION &&
-                ccmPropertyMetas[i].itemsClass === cm.getName() &&
-                ccmPropertyMetas[i].backColl === pm.name) {
-                backColProperty = ccmPropertyMetas[i];
-              }
-            }
-            if (backColProperty) {
-              processManyToManyCollection(ccm, backColProperty.name, collection, newId, oldId)
-                .then(function (value) {
-                  resolve({property: pm.name, value: value});
-                }).catch(reject);
-            } else {
-              resolve({property: pm.name, value: collection});
-            }
-          }
-        } else {
-          resolve({property: pm.name, value: collection});
-        }
-      });
-    }
-
-    /**
-     * @param {{}} data
-     * @param {Item} item
-     * @param {String} oldId
-     *
-    function updateCollections(data, item, oldId) {
-      var cm, pm, nm, promises;
-      cm = item.getMetaClass();
-      promises = [];
-      for (nm in data) {
-        if (data.hasOwnProperty(nm)) {
-          pm = cm.getPropertyMeta(nm);
-          if (pm) {
-            if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
-              promises.push(processCollection(cm, pm, data[nm], item.getItemId(), oldId));
-            }
-          }
-        }
-      }
-      return new Promise(function (resolve, reject) {
-        Promise.all(promises).then(
-          function (results) {
-            var updates = {};
-            for (var i = 0; i < results.length; i++) {
-              updates[results[i].property] = results[i].value;
-            }
-            _this.ds.update(
-              tn(item.getMetaClass()),
-              _this.keyProvider.keyToData(item.getClassName(), item.getItemId()),
-              updates
-            ).then(function (newItemData) {
-              var item = _this._wrap(newItemData._class, newItemData, newItemData._classVer);
-              resolve(item);
-            });
-          }).catch(reject);
-      });
-    }
-  */
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
@@ -991,6 +849,9 @@ function IonDataRepository(options) {
    */
   this._editItem = function (classname, id, data, changeLogger, nestingDepth) {
     return new Promise(function (resolve, reject) {
+      if (!id) {
+        return reject(new Error('Не передан идентификатор объекта!'));
+      }
       try {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
@@ -1195,44 +1056,125 @@ function IonDataRepository(options) {
   };
 
   /**
-   * @param {Item} item
+   * @param {Item[]} masters
    * @param {String[]} collections
-   * @param {Item} detail
-   * @param {String} action
+   * @param {Item[]} details
+   * @param {String} action - 'put' или 'eject' - вставка или извлечение
    * @returns {Promise}
    */
-  function editCollections(item, collections, detail, action) {
+  function editCollections(masters, collections, details, action) {
     return new Promise(function (resolve, reject) {
-      _this._getItem(item.getMetaClass().getCanonicalName(), item.getItemId(), 0).
+      var getters = [];
+      for (var i = 0; i < masters.length; i++) {
+        getters.push(_this._getItem(masters[i].getMetaClass().getCanonicalName(), masters[i].getItemId(), 0));
+      }
+
+      Promise.all(getters).
       then(function (m) {
-        if (m) {
-          var cond = formUpdatedData(
-            m.getMetaClass(),
-            _this.keyProvider.keyToData(
-              m.getMetaClass().getName(),
-              m.getItemId(),
-              m.getMetaClass().getNamespace())
-          );
-          var updates = {};
-          var src;
-          for (var i = 0; i < collections.length; i++) {
-            src = m.base[collections[i]] || [];
-            if (action === 'eject') {
-              src.splice(src.indexOf(detail.getItemId()), 1);
-            } else if (src.indexOf(detail.getItemId()) < 0) {
-              src.push(detail.getItemId());
+        var writers = [];
+        var i, j, k;
+        for (i = 0; i < m.length; i++) {
+          if (m[i]) {
+            var cond = formUpdatedData(
+              m[i].getMetaClass(),
+              _this.keyProvider.keyToData(
+                m[i].getMetaClass().getName(),
+                m[i].getItemId(),
+                m[i].getMetaClass().getNamespace())
+            );
+            var updates = {};
+            var src;
+            for (j = 0; j < details.length; j++) {
+              for (k = 0; k < collections.length; k++) {
+                src = m.base[collections[k]] || [];
+                if (action === 'eject') {
+                  src.splice(src.indexOf(details[j].getItemId()), 1);
+                } else if (src.indexOf(details[j].getItemId()) < 0) {
+                  src.push(details[j].getItemId());
+                }
+                updates[collections[k]] = src;
+              }
             }
-            updates[collections[i]] = src;
+            var mrcm = this._getRootType(m[i].getMetaClass());
+            writers.push(_this.ds.update(tn(mrcm), cond, updates));
           }
-          var mrcm = this._getRootType(m.getMetaClass());
-          _this.ds.update(tn(mrcm), cond, updates).then(function () {
-            resolve();
-          }).catch(reject);
-        } else {
-          reject(new Error('Не найден контейнер коллекции!'));
         }
+        return Promise.all(writers);
       }).
+      then(resolve).
       catch(reject);
+    });
+  }
+
+  /**
+   * @param {Item} master
+   * @param {String} collection
+   * @param {Item[]} details
+   * @param {ChangeLogger} [changeLogger]
+   * @param {String} operation
+   * @returns {*}
+   * @private
+   */
+  function _editCollection(master, collection, details, changeLogger, operation) {
+    return new Promise(function (resolve, reject) {
+      var pm = master.getMetaClass().getPropertyMeta(collection);
+      if (!pm) {
+        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+      }
+
+      if (pm.backRef) {
+        var update = {};
+        update[pm.backRef] = operation ? pm.binding ? master.get(pm.binding) : master.getItemId() : null;
+
+        var writers = [];
+        for (var i = 0; i < details.length; i++) {
+          writers.push(_this._editItem(details[i].getMetaClass().getCanonicalName(), details[i].getItemId(), update));
+        }
+
+        Promise.all(writers).then(function () {
+          resolve();
+        }).catch(reject);
+      } else {
+        editCollections([master], [collection], details, operation ? 'put' : 'eject').
+        then(function () {
+          var props;
+          var backColls = [];
+          var parsed = {};
+          for (var i = 0; i < details.length; i++) {
+            if (!parsed.hasOwnProperty(details[i].getClassName())) {
+              props = details[i].getMetaClass().getPropertyMetas();
+              for (var j = 0; j < props.length; i++) {
+                if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
+                  backColls.push(props[i].name);
+                }
+              }
+              parsed[details[i].getClassName()] = true;
+            }
+          }
+          if (backColls.length === 0) {
+            return new Promise(function (r) {r();});
+          }
+          return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
+        }).then(function () {
+          if (changeLogger) {
+            var updates = {};
+            updates[collection] = [];
+            for (var i = 0; i < details.length; i++) {
+              updates[collection].push({
+                className: details[i].getMetaClass().getCanonicalName(),
+                id: details[i].getItemId()
+              });
+            }
+            changeLogger.LogChange(
+              operation ? EventType.PUT : EventType.EJECT,
+              master.getMetaClass().getCanonicalName(),
+              master.getItemId(),
+              updates);
+          } else {
+            resolve();
+          }
+        }).catch(reject);
+      }
     });
   }
 
@@ -1240,129 +1182,34 @@ function IonDataRepository(options) {
    *
    * @param {Item} master
    * @param {String} collection
-   * @param {Item} detail
+   * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this._put = function (master, collection, detail, changeLogger) {
-    return new Promise(function (resolve, reject) {
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
-      }
-
-      if (pm.backRef) {
-        var update = {};
-        update[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        _this._editItem(detail.getMetaClass().getCanonicalName(), detail.getItemId(), update).then(
-          function (d) {
-            resolve();
-          }
-        ).catch(reject);
-      } else {
-        editCollections(master, [collection], detail, 'put').
-        then(function () {
-          var props = detail.getMetaClass().getPropertyMetas();
-          var backColls = [];
-          for (var i = 0; i < props.length; i++) {
-            if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
-              backColls.push(props[i].name);
-            }
-          }
-          if (backColls.length === 0) {
-            return new Promise(function (r) {r();});
-          }
-          return editCollections(detail, backColls, master, 'put');
-        }).then(function () {
-          if (changeLogger) {
-            var updates = {};
-            updates[collection] = {
-              className: detail.getMetaClass().getCanonicalName(),
-              id: detail.getItemId()
-            };
-            changeLogger.LogChange(
-              EventType.PUT,
-              master.getMetaClass().getCanonicalName(),
-              master.getItemId(),
-              updates);
-          } else {
-            resolve();
-          }
-        }).catch(reject);
-      }
-    });
+  this._put = function (master, collection, details, changeLogger) {
+    return _editCollection(master, collection, details, changeLogger, true);
   };
 
   /**
    *
    * @param {Item} master
    * @param {String} collection
-   * @param {Item} detail
+   * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this._eject = function (master, collection, detail, changeLogger) {
-    return new Promise(function (resolve, reject) {
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
-      }
-
-      if (pm.backRef) {
-        var update = {};
-        update[pm.backRef] = null;
-        _this._editItem(detail.getMetaClass().getCanonicalName(), detail.getItemId(), update).then(
-          function (d) {
-            resolve();
-          }
-        ).catch(reject);
-      } else {
-        editCollections(master, [collection], detail, 'eject').
-        then(function () {
-          var props = detail.getMetaClass().getPropertyMetas();
-          var backColls = [];
-          for (var i = 0; i < props.length; i++) {
-            if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
-              backColls.push(props[i].name);
-            }
-          }
-          if (backColls.length === 0) {
-            return new Promise(function (r) {r();});
-          }
-          return editCollections(detail, backColls, master, 'eject');
-        }).then(function () {
-          if (changeLogger) {
-            var updates = {};
-            updates[collection] = {
-              className: detail.getMetaClass().getCanonicalName(),
-              id: detail.getItemId()
-            };
-            changeLogger.LogChange(
-              EventType.EJECT,
-              master.getMetaClass().getCanonicalName(),
-              master.getItemId(),
-              updates);
-          } else {
-            resolve();
-          }
-        }).catch(reject);
-      }
-    });
+  this._eject = function (master, collection, details, changeLogger) {
+    return _editCollection(master, collection, details, changeLogger, false);
   };
 
   /**
    * @param {Item} master
    * @param {String} collection
-   * @param {Object} [options]
-   * @param {Object} [options.filter]
-   * @param {Number} [options.offset]
-   * @param {Number} [options.count]
-   * @param {Object} [options.sort]
-   * @param {Boolean} [options.countTotal]
-   * @param {Number} [options.nestingDepth]
-   * @returns {Promise}
+   * @param {{}} options
+   * @param {Boolean} onlyCount - определяте получаемы результат, если true то только считаем количество
+   * @returns {*}
    */
-  this._getAssociationsList = function (master, collection, options) {
+  function getCollection(master, collection, options, onlyCount) {
     return new Promise(function (resolve, reject) {
       if (!options) {
         options = {};
@@ -1397,13 +1244,33 @@ function IonDataRepository(options) {
             var filter = {};
             filter[key] = {$in: m.base[collection] || []};
             options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-            _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+            if (onlyCount) {
+              _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+            } else {
+              _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+            }
           } else {
             reject(new Error('Не найден контейнер коллекции!'));
           }
         }).catch(reject);
       }
     });
+  }
+
+  /**
+   * @param {Item} master
+   * @param {String} collection
+   * @param {Object} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {Number} [options.nestingDepth]
+   * @returns {Promise}
+   */
+  this._getAssociationsList = function (master, collection, options) {
+    return getCollection(master, collection, options, false);
   };
 
   /**
@@ -1414,47 +1281,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getAssociationsCount = function (master, collection, options) {
-    return new Promise(function (resolve, reject) {
-      if (!options) {
-        options = {};
-      }
-
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
-      }
-
-      var detailCm = _this.meta.getMeta(pm.itemsClass, null, master.getMetaClass().getNamespace());
-      if (!detailCm) {
-        return reject(new Error('Не найден класс элементов коллекции!'));
-      }
-
-      if (pm.backRef) {
-        var filter = {};
-        filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-        _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-      } else {
-        var key = null;
-        var kp = detailCm.getKeyProperties();
-        if (kp.length > 1) {
-          reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
-        }
-
-        key = kp[0];
-
-        _this._getItem(master.getClassName(), master.getItemId(), 0).then(function (m) {
-          if (m) {
-            var filter = {};
-            filter[key] = {$in: m.base[collection] || []};
-            options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-            _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-          } else {
-            reject(new Error('Не найден контейнер коллекции!'));
-          }
-        }).catch(reject);
-      }
-    });
+    return getCollection(master, collection, options, true);
   };
 }
 
