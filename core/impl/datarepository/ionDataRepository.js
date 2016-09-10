@@ -971,10 +971,14 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
-              fileSavers.push(fileSaver(updates, pm.name));
-            }
+          if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
+            (
+              (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) &&
+              typeof updates[pm.name] === 'object' ||
+              pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
+            )
+          ) {
+            fileSavers.push(fileSaver(updates, pm.name));
           }
         }
 
