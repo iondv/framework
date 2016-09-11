@@ -70,7 +70,7 @@
     "rmdir": "*",
     "gulp-clean-css": "*",
     "gulp-jsmin": "*",
-    "gm": "*"
+    "stream-buffers": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",

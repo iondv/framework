@@ -657,18 +657,9 @@ function IonDataRepository(options) {
     return updates;
   }
 
-  function fileSaver(updates, nm) {
+  function saver(updates, nm, storage) {
     return new Promise(function (rs, rj) {
-      _this.fs.accept(updates[nm]).then(function (id) {
-        updates[nm] = id;
-        rs();
-      }).catch(rj);
-    });
-  }
-
-  function imageSaver(updates, nm) {
-    return new Promise(function (rs, rj) {
-      _this.ims.accept(updates[nm]).then(function (id) {
+      _this.storage.accept(updates[nm]).then(function (id) {
         updates[nm] = id;
         rs();
       }).catch(rj);
@@ -729,9 +720,9 @@ function IonDataRepository(options) {
           pm = properties[i];
           if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
             if (pm.type === PropertyTypes.FILE) {
-              fileSavers.push(fileSaver(updates, pm.name));
+              fileSavers.push(saver(updates, pm.name, _this.fs));
             } else if (pm.type === PropertyTypes.IMAGE) {
-              fileSavers.push(imageSaver(updates, pm.name));
+              fileSavers.push(saver(updates, pm.name, _this.ims));
             }
           }
 
@@ -848,9 +839,9 @@ function IonDataRepository(options) {
             pm = properties[i];
             if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
               if (pm.type === PropertyTypes.FILE) {
-                fileSavers.push(fileSaver(updates, pm.name));
+                fileSavers.push(saver(updates, pm.name, _this.fs));
               } else if (pm.type === PropertyTypes.IMAGE) {
-                fileSavers.push(imageSaver(updates, pm.name));
+                fileSavers.push(saver(updates, pm.name, _this.ims));
               }
             }
           }
@@ -939,9 +930,9 @@ function IonDataRepository(options) {
           pm = properties[i];
           if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
             if (pm.type === PropertyTypes.FILE) {
-              fileSavers.push(fileSaver(updates, pm.name));
+              fileSavers.push(saver(updates, pm.name, _this.fs));
             } else if (pm.type === PropertyTypes.IMAGE) {
-              fileSavers.push(imageSaver(updates, pm.name));
+              fileSavers.push(saver(updates, pm.name, _this.ims));
             }
           }
         }

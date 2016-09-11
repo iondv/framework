@@ -111,7 +111,17 @@
         "module": "core/impl/image/ImStorage",
         "initLevel": 1,
         "options": {
-          "fileStorage": "ion://fileStorage"
+          "fileStorage": "ion://fileStorage",
+          "dimensionsSet": {
+            "small": {
+              "width": 500,
+              "height": 500
+            },
+            "medium": {
+            "width": 300,
+            "height": 300
+            }
+          }
         }
       },
       "dataRepo": {
