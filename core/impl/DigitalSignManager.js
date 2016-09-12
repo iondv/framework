@@ -38,7 +38,12 @@ function DigitalSignManager(options) {
       }
 
       if (options.defaultResult) {
-        return resolve(JSON.stringify(src));
+        return resolve(
+          {
+            mimeType: 'application/json',
+            content: Buffer.from(JSON.stringify(src), 'utf-8')
+          }
+        );
       }
 
       resolve(null);
