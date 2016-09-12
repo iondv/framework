@@ -111,23 +111,23 @@ function DataRepository() {
   /**
    * @param {Item} master
    * @param {String} collection
-   * @param {Item} detail
+   * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this.put = function (master, collection, detail, changeLogger) {
-    return this._put(master, collection, detail, changeLogger);
+  this.put = function (master, collection, details, changeLogger) {
+    return this._put(master, collection, details, changeLogger);
   };
 
   /**
    * @param {Item} master
    * @param {String} collection
-   * @param {Item} detail
+   * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this.eject = function (master, collection, detail, changeLogger) {
-    return this._eject(master, collection, detail, changeLogger);
+  this.eject = function (master, collection, details, changeLogger) {
+    return this._eject(master, collection, details, changeLogger);
   };
 
   /**

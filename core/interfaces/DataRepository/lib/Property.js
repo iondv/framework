@@ -5,6 +5,7 @@
 'use strict';
 
 var PropertyTypes = require('core/PropertyTypes');
+var equal = require('core/equal');
 
 /**
  * @param {Item} item
@@ -65,12 +66,18 @@ function Property(item, propertyMeta) {
     return this.item.get(this.getName());
   };
 
+  this.selectionKeyMatch = function (key) {
+    return equal(this.getValue(), key);
+  };
+
   this.getDisplayValue = function () {
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      if (selection && selection.hasOwnProperty(v)) {
-        return selection[v];
+      for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        if (this.selectionKeyMatch(selection[i].key)) {
+          return selection[i].value;
+        }
       }
     }
 

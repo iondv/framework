@@ -8,6 +8,8 @@
 var MetaRepositoryModule = require('core/interfaces/MetaRepository');
 var MetaRepository = MetaRepositoryModule.MetaRepository;
 var ClassMeta = MetaRepositoryModule.ClassMeta;
+var PropertyTypes = require('core/PropertyTypes');
+var clone = require('clone');
 
 const defaultVersion = '___default';
 
@@ -348,6 +350,34 @@ function DsMetaRepository(options) {
     return this.viewMeta.validators;
   };
 
+  /**
+   * @param {ClassMeta} cm
+   */
+  function expandStructs(cm) {
+    var pm, i, j;
+    for (i = 0; i < cm.plain.properties.length; i++) {
+      if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
+        var structClass;
+        try {
+          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
+        } catch (err) {
+          throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
+            '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
+        }
+        if (!structClass.___structs_expanded) {
+          expandStructs(structClass);
+        }
+        var spms = structClass.getPropertyMetas();
+        for (j = 0; j < spms.length; j++) {
+          pm = clone(spms[j]);
+          pm.name = cm.plain.properties[i].name + '$' + pm.name;
+          cm.propertyMetas[pm.name] = pm;
+        }
+      }
+    }
+    cm.___structs_expanded = true;
+  }
+
   function acceptClassMeta(metas) {
     var i, name, ns, cm;
     _this.classMeta = {};
@@ -382,6 +412,15 @@ function DsMetaRepository(options) {
                   cm.ancestor.descendants.push(cm);
                 }
               }
+            }
+          }
+        }
+
+        for (name in _this.classMeta[ns]) {
+          if (_this.classMeta[ns].hasOwnProperty(name)) {
+            for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
+              cm = _this.classMeta[ns][name].byOrder[i];
+              expandStructs(cm);
             }
           }
         }
