@@ -901,7 +901,7 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, true);
         var conditionsData;
 
         if (id) {
@@ -910,7 +910,7 @@ function IonDataRepository(options) {
           conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
         }
 
-        var conditions = formUpdatedData(rcm, conditionsData, true);
+        var conditions = formUpdatedData(rcm, conditionsData);
 
         var event = EventType.UPDATE;
 
