@@ -1,3 +1,4 @@
+
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Схема проверки файла узла навигации (complit)",
@@ -55,9 +56,9 @@
     "id": "#pathChains",
     "title": "Схема проверки хлебных крошек для узлов навигации",
     "type": "object",
-    "required": ["class_name", "path"],
+    "required": ["className", "path"],
     "properties": {
-      "class_name": {
+      "className": {
         "description": "Класс",
         "type": "string"
       },
@@ -189,6 +190,10 @@
         "type": "number",
         "minimum": 0,
         "maximum": 3
+      },
+      "title": {
+        "description": "Заголовок - позволяет задать уникальный заголовое страницы открываемой данным пунктом меню",
+        "type": "string"
       },
       "caption": {
         "description": "Логическое имя",

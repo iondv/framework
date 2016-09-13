@@ -23,7 +23,7 @@ module.exports = {
     test: './test/',
     gulp: './gulp/',
     coverage: './test/.coverage',
-    schema: './test/',
+    schema: './test/meta-schema',
     testBE: './test/backend/',
     testFE: './test/frontend/',
     testME: './test/middleware/',

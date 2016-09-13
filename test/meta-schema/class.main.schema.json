@@ -1,3 +1,4 @@
+
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Схема проверки файла класса (complit)",
@@ -152,12 +153,12 @@
     "id": "#main",
     "title": "Общая схема проверки атрибута",
     "type": "object",
-    "required": ["order_number", "name", "caption", "type", "size", "decimals", "allowedFileTypes",
-      "maxFileCount", "nullable", "readonly", "indexed", "unique", "autoassigned", "hint", "default_value",
-      "ref_class", "items_class", "back_ref", "back_coll", "binding", "semantic", "sel_conditions",
-      "sel_sorting", "selection_provider", "index_search", "eager_loading", "formula"],
+    "required": ["orderNumber", "name", "caption", "type", "size", "decimals", "allowedFileTypes",
+      "maxFileCount", "nullable", "readonly", "indexed", "unique", "autoassigned", "hint", "defaultValue",
+      "refClass", "itemsClass", "backRef", "backColl", "binding", "semantic", "selConditions",
+      "selSorting", "selectionProvider", "indexSearch", "eagerLoading", "formula"],
     "properties": {
-      "order_number": {
+      "orderNumber": {
         "description": "Порядковый номер",
         "type": "number"
       },
@@ -217,23 +218,23 @@
           "description": "Подсказка",
           "type": ["null", "string"]
         },
-      "default_value": {
+      "defaultValue": {
           "description": "Значение по умолчанию",
           "type": ["null", "string"]
         },
-      "ref_class": {
+      "refClass": {
           "description": "Класс ссылки, типозависимое поле",
           "type": ["null","string"]
         },
-      "items_class": {
+      "itemsClass": {
           "description": "Класс коллекции, типозависимое поле",
           "type": ["null","string"]
         },
-      "back_ref": {
+      "backRef": {
           "description": "Атрибут обратной ссылки, типозависимое поле",
           "type": ["null","string"]
         },
-      "back_coll": {
+      "backColl": {
           "description": "Атрибут обратной коллекции, типозависимое поле",
           "type": ["null","string"]
         },
@@ -245,25 +246,25 @@
           "description": "Семантика",
           "type": ["null", "string"]
         },
-      "sel_conditions": {
+      "selConditions": {
           "description": "Условия отбора допустимых значений",
           "type": ["null","array"],
           "items": {"$ref": "#/selconditions"}
         },
-      "sel_sorting": {
+      "selSorting": {
           "description": "Сортировка выборки допустимых значений",
           "type": ["null","array"],
           "items": {"$ref": "#/selsorting"}
         },
-      "selection_provider": {
+      "selectionProvider": {
           "description": "Список выбора допустимых значений",
           "oneOf": [{"$ref": "#/selectionprovider"}, {"type": "null"}]
         },
-      "index_search": {
+      "indexSearch": {
           "description": "Полнотекстовый поиск",
           "type": "boolean"
         },
-      "eager_loading": {
+      "eagerLoading": {
           "description": "Жадная загрузка",
           "type": "boolean"
         },
@@ -276,17 +277,16 @@
   },
 
   "type": "object",
-  "required": ["is_struct", "caption", "name", "version", "ancestor", "key", "semantic", "container", "creationTracker", "changeTracker", "history", "journaling", "properties", "compositeIndexes"],
+  "required": ["isStruct", "caption", "name", "version", "ancestor", "key", "semantic", "container", "creationTracker", "changeTracker", "history", "journaling", "properties", "compositeIndexes"],
   "properties": {
-    "is_struct": {
-      "description": "Является структурой, пока выставляю enum, что бы запретить true, которого не встречалось в проектах, на первом вхождении - поправлю",
-      "type": "boolean",
-      "enum": [false]
+    "isStruct": {
+      "description": "Является структурой",
+      "type": "boolean"
     },
     "caption": {
       "description": "Логическое имя, строка, не может быть пустым",
       "type": "string",
-      "minLength": "1"
+      "minLength": 1
     },
     "name": {
       "description": "Системное имя",
@@ -303,12 +303,12 @@
     "key": {
       "description": "Ключевые атрибуты, обязательно должно быть хоть одно ключевое поле, непустая строка или массив с минимум 1 элементом",
       "type": ["string", "array"],
-      "minLength": "1",
+      "minLength": 1,
       "minItems": 1
     },
     "semantic": {
       "description": "Семантический атрибут",
-      "type": "string"
+      "type": ["null","string"]
     },
     "container": {
       "description": "Атрибут ссылки на контейнер",

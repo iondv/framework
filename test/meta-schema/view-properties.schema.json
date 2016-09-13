@@ -1,11 +1,12 @@
+
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Схема проверки атрибутов в представлениях",
   "id": "view-properties.schema.json#",
   "type": "object",
   "required": ["caption", "type", "property", "size", "maskName", "mask", "mode", "fields",
-    "hierarchyAttributes", "columns", "actions", "commands", "order_number", "required",
-    "visibility", "enablement", "obligation", "readonly", "selection_paginated", "validators",
+    "hierarchyAttributes", "columns", "actions", "commands", "orderNumber", "required",
+    "visibility", "enablement", "obligation", "readonly", "selectionPaginated", "validators",
     "hint", "historyDisplayMode", "tags"],
   "properties": {
     "sorted": {
@@ -42,9 +43,9 @@
       "type": ["null", "number"]
     },
     "fields": {
-      "description": "Поля? оставляю дефолтное значение студии до первого вхождения",
+      "description": "Поля - повторяют атрибутивный состав атрибутивной части меты представления",
       "type": "array",
-      "maxItems": 0
+      "items": {"$ref": "view-properties.schema.json#"}
     },
     "hierarchyAttributes": {
       "description": "Иерархия по, не поняла как задать в студии, блокирую дефолтным значением",
@@ -61,10 +62,10 @@
     },
     "commands": {
       "description": "Действия",
-      "type": "array",
+      "type": ["null","array"],
       "items": {"$ref": "command.schema.json#"}
     },
-    "order_number": {
+    "orderNumber": {
       "description": "Порядковый номер",
       "type": "number"
     },
@@ -88,7 +89,7 @@
       "description": "Только чтение",
       "type": "boolean"
     },
-    "selection_paginated": {
+    "selectionPaginated": {
       "description": "Постраничный список выбора",
       "type": "boolean"
     },
