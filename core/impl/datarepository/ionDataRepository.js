@@ -655,8 +655,10 @@ function IonDataRepository(options) {
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
+   * @param {Boolean} setCollections
+   * @return {Object}
    */
-  function formUpdatedData(cm, data) {
+  function formUpdatedData(cm, data, setCollections) {
     var updates, pm, nm;
     updates = {};
     for (nm in data) {
@@ -665,6 +667,8 @@ function IonDataRepository(options) {
         if (pm) {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
+            updates[nm] = data[nm];
+          } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];
           }
         }
@@ -741,7 +745,7 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, true);
         var properties = cm.getPropertyMetas();
         var pm;
 
@@ -866,7 +870,7 @@ function IonDataRepository(options) {
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
 
         if (conditions) {
-          var updates = formUpdatedData(cm, data);
+          var updates = formUpdatedData(cm, data, false);
           var properties = cm.getPropertyMetas();
           var pm;
 
@@ -949,7 +953,7 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, true);
         var conditionsData;
 
         if (id) {
