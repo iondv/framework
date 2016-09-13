@@ -510,7 +510,7 @@ function IonDataRepository(options) {
 
             return new Promise(function (rs, rj) {
               Promise.all(fl).then(function () {
-                resolve(result);
+                rs(result);
               }).catch(rj);
             });
           }
