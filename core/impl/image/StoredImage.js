@@ -5,12 +5,21 @@
 
 var StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 
-function StoredImage(id, link, options, streamGetter, thumbnails) {
+/**
+ * @param {StoredFile} sf
+ * @constructor
+ */
+function StoredImage(sf, thumbnails) {
   var _this = this;
 
-  _this.thumbnails = [];
+  _this.thumbnails = thumbnails;
+  _this.id = sf.id;
+  _this.link = sf.link;
+  _this.options = sf.options;
+  _this.name = sf.name;
 
-  _this.prototype = new StoredFile(id, link, options, streamGetter);
+  _this.protptype = sf;
+
 }
 
 module.exports = StoredImage;

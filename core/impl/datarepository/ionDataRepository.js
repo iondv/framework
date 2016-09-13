@@ -380,6 +380,7 @@ function IonDataRepository(options) {
     var pm;
     var fids = [];
     var attrs = {};
+    var s;
     for (var nm in item.base) {
       if (item.base.hasOwnProperty(nm) && item.base[nm]) {
         pm = item.classMeta.getPropertyMeta(nm);
@@ -389,6 +390,11 @@ function IonDataRepository(options) {
             attrs['f_' + item.base[nm]] = [];
           }
           attrs['f_' + item.base[nm]].push(nm);
+          if (pm.type === PropertyTypes.FILE) {
+            s = _this.fs;
+          } else if (pm.type === PropertyTypes.IMAGE) {
+            s = _this.ims;
+          }
         }
       }
     }
@@ -397,8 +403,7 @@ function IonDataRepository(options) {
         resolve(item);
         return;
       }
-
-      _this.fs.fetch(fids)
+      s.fetch(fids)
         .then(
           function (files) {
             for (var i = 0; i < files.length; i++) {

@@ -4,11 +4,10 @@
 'use strict';
 
 var ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
-var gm = require('gm').subClass({imageMagick: true});
-var cuid = require('cuid');
+var StoredImage = require('./StoredImage');
+var gm = require('gm');
 var clone = require('clone');
-var fs = require('fs');
-var streamBuffers = require('stream-buffers');
+var cuid = require('cuid');
 
 function ImStorage(options) {
   var _this = this;
@@ -23,6 +22,20 @@ function ImStorage(options) {
     throw new Error('Не указаны размеры миниатюр!');
   }
 
+  function createThumbnails(source, name, options) {
+    var result = [];
+    for (var i in _this.ds) {
+      if (_this.ds.hasOwnProperty(i)) {
+        options.size = i;
+        options.name = name.replace('.', '_' + i + '.');
+        result[result.length] = _this.fs.accept(
+          gm(source).resize(_this.ds[i].width, _this.ds[i].height).stream(),
+          options);
+      }
+    }
+    return result;
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {{}} [options]
@@ -30,52 +43,30 @@ function ImStorage(options) {
    */
   this._accept = function (data, options) {
     var opts = clone(options) || {};
-    var orig;
-    var fn = null;
+    var o = clone(options) || {};
     var thumbs = [];
+    var name;
 
     if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
-      fn = opts.name || data.originalname || data.name;
+      name = opts.name || data.originalname || data.name || cuid();
       if (typeof data.buffer !== 'undefined') {
-        orig = new streamBuffers.ReadableStreamBuffer();
-        orig.put(data.buffer);
+        thumbs = createThumbnails(data.buffer, name, o);
       } else if (typeof data.path !== 'undefined') {
-        orig = fs.createReadStream(data.path);
+        thumbs = createThumbnails(data.path, name, o);
       }
     } else {
-      fn = opts.name;
-      if (typeof data === 'string') {
-        orig = fs.createReadStream(data);
-      } else if (Buffer.isBuffer(data)) {
-        orig = new streamBuffers.ReadableStreamBuffer();
-        orig.put(data);
-      } else if (typeof data.pipe === 'function') {
-        orig = data;
-      }
-    }
-    if (typeof orig.pipe !== 'function') {
-      throw new Error('Не удалось преобразовать переданные данные в поток!');
-    }
-    if (!fn) {
-      fn = cuid();
-      opts.name = fn;
-    }
-    fn = fn.split('.');
-
-    for (var i in _this.ds) {
-      if (_this.ds.hasOwnProperty(i)) {
-        var thumbOpts = clone(opts);
-        thumbOpts.name = fn[0] + '_' + i + (fn.length > 1 ? '.' + fn[1] : '');
-        // TODO: Файлы пустые!
-        var thumbnailStream = gm(orig).resize(_this.ds[i].width, _this.ds[i].height).stream();
-        thumbs[thumbs.length] = _this.fs.accept(thumbnailStream, thumbOpts);
-      }
+      name = opts.name || cuid();
+      thumbs = createThumbnails(data, name, o);
     }
 
     return Promise.all(thumbs).then(function (thumbnails) {
-      // TODO: В миниатюры объекта нужно както их раскидать по форматам
-      opts.thumbnails = thumbnails;
-      return _this.fs.accept(data, opts);
+      opts.thumbnails = {};
+      for (var i = 0; i < thumbnails.length; i++) {
+        opts.thumbnails[thumbnails[i].options.size] = thumbnails[i].id;
+      }
+      return _this.fs.accept(data, opts).then(function (r) {
+        return new StoredImage(r, thumbnails);
+      });
     });
   };
 
@@ -92,7 +83,33 @@ function ImStorage(options) {
    * @returns {Promise}
    */
   this._fetch = function (ids) {
-    return _this.fs.fetch(ids);
+    return _this.fs.fetch(ids).then(function (files) {
+      var thumbIds = [];
+      for (var i = 0; i < files.length; i++) {
+        for (var j in files[i].options.thumbnails) {
+          if (files[i].options.thumbnails.hasOwnProperty(j)) {
+            thumbIds[thumbIds.length] = files[i].options.thumbnails[j];
+          }
+        }
+      }
+      return _this.fs.fetch(thumbIds).then(function (thumbs) {
+        var result = [];
+        for (var i = 0; i < files.length; i++) {
+          var t = [];
+          for (var j in files[i].options.thumbnails) {
+            if (files[i].options.thumbnails.hasOwnProperty(j)) {
+              for (var q = 0; q < thumbs.length; q++) {
+                if (thumbs[q].id === files[i].options.thumbnails[j]) {
+                  t[t.length] = thumbs[q];
+                }
+              }
+            }
+          }
+          result[result.length] = new StoredImage(files[i], t);
+        }
+        return result;
+      });
+    });
   };
 
   /**
