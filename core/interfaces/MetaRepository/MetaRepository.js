@@ -14,9 +14,10 @@ function MetaRepository() {
    *
    * @param {String} name
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  this.getMeta = function (name,version, namespace) {
+  this.getMeta = function (name, version, namespace) {
     return this._getMeta(name, version, namespace);
   };
 
@@ -25,6 +26,7 @@ function MetaRepository() {
    * @param {String} ancestor
    * @param {String} [version]
    * @param {Boolean} [direct]
+   * @param {String} [namespace]
    * @returns {ClassMeta[]}
    */
   this.listMeta = function (ancestor, version, direct, namespace) {
@@ -34,6 +36,7 @@ function MetaRepository() {
   /**
    * @param {String} classname
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
   this.ancestor = function (classname, version, namespace) {
@@ -43,6 +46,7 @@ function MetaRepository() {
   /**
    * @param {String} classname
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
   this.propertyMetas = function (classname, version, namespace) {
@@ -52,6 +56,7 @@ function MetaRepository() {
   // NavigationRepository
 
   /**
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
   this.getNavigationSections = function (namespace) {
@@ -60,6 +65,7 @@ function MetaRepository() {
 
   /**
    * @param {String} code
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getNavigationSection = function (code, namespace) {
@@ -68,22 +74,26 @@ function MetaRepository() {
 
   /**
    * @param {String} code
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getNode = function (code, namespace) {
-    return this._getNode(code);
+    return this._getNode(code, namespace);
   };
 
   /**
    * @param {String} sections
+   * @param {String} [parent]
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
   this.getNodes = function (sections, parent, namespace) {
-    return this._getNodes(sections, parent);
+    return this._getNodes(sections, parent, namespace);
   };
 
   /**
    * @param {String} className
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getNodeForClassname = function (className, namespace) {
@@ -95,6 +105,7 @@ function MetaRepository() {
   /**
    * @param {String} className
    * @param {String} node
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getListViewModel = function (className, node, namespace) {
@@ -105,6 +116,7 @@ function MetaRepository() {
    * @param {String} className
    * @param {String} collection
    * @param {String} node
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getCollectionViewModel = function (className, collection, node, namespace) {
@@ -114,6 +126,7 @@ function MetaRepository() {
   /**
    * @param {String} className
    * @param {String} node
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getItemViewModel = function (className, node, namespace) {
@@ -123,6 +136,7 @@ function MetaRepository() {
   /**
    * @param {String} className
    * @param {String} node
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getCreationViewModel = function (className, node, namespace) {
@@ -132,6 +146,7 @@ function MetaRepository() {
   /**
    * @param {String} className
    * @param {String} node
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
   this.getDetailViewModel = function (className, node, namespace) {
@@ -154,10 +169,11 @@ function MetaRepository() {
   };
 
   /**
+   * @param {DbSync} sync
    * @returns {Promise}
    */
-  this.init = function () {
-    return this._init();
+  this.init = function (sync) {
+    return this._init(sync);
   };
 }
 

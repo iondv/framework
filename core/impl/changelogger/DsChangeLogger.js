@@ -64,22 +64,22 @@ function DsChangeLogger(ds, authCallback) {
    */
   this._getChanges = function (since, till) {
     return new Promise(function (resolve, reject) {
-      var opts = {timestamp: {$gte: new Date(since).toISOString()}};
+      var opts = {timestamp: {$gte: since.toISOString()}};
       if (till) {
-        opts = {$and: [opts, {timestamp: {$lt: new Date(till).toISOString()}}]};
+        opts = {$and: [opts, {timestamp: {$lt: till.toISOString()}}]};
       }
       _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
         function (changes) {
           var result = [];
           for (var i = 0; i < changes.length; i++) {
-            result = new ChangeLogger.Change(
+            result.push(new ChangeLogger.Change(
               Date.parse(changes[i].timestamp),
               changes[i].type,
               changes[i].className,
               changes[i].id,
               changes[i].author,
-              changes[i].updates
-            );
+              changes[i].data
+            ));
           }
           resolve(result);
         }

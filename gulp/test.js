@@ -24,7 +24,7 @@ gulp.task('test', function (done) {
  */
 gulp.task('test:jshint', function () {
   return gulp.src(jsTestList)
-    .pipe(jshint()) // Используется конфигурационный файлв в корне поекта .jshintrc
+    .pipe(jshint()) // Используется конфигурационный файл в корне поекта .jshintrc
     .pipe(jshint.reporter())
     .pipe(jshint.reporter('fail'));
 });
