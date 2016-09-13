@@ -27,9 +27,11 @@ function MetaKeyProvider(options) {
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
-      result = result + (result ? '_' : '') + data[keyProps[i]];
+      if (data.hasOwnProperty(keyProps[i])) {
+        result = result + (result ? '_' : '') + data[keyProps[i]];
+      }
     }
-    return result;
+    return result || null;
   };
 
   this._keyToData = function (classname, id, namespace) {
