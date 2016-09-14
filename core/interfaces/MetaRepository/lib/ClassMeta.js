@@ -60,11 +60,12 @@ function parseSemantics(semantics) {
 
   var getter = 'if(v&&v.trim()){var p=item.property(v);if(p) {return p.getDisplayValue();}}return v;';
 
-  var body = semantics.
-  replace(/([^\[\s\|]+)\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2, $3)').
-  replace(/([^\[\s\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
-  replace(/([^\s\|]+)\s*/g, 'getter(this,\'$1\')').
+  var body = semantics.replace(/\'/g, '\\\'').
+  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2, $3)').
+  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
+  replace(/([^\|]+)\s*/g, 'getter(this,\'$1\')').
   replace(/\|/g, ' + ');
+  console.log(body);
   return new Function('', 'function getter(item, v) {' + getter + '} return ' + body);
 }
 
