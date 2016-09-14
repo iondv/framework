@@ -65,7 +65,6 @@ function parseSemantics(semantics) {
   replace(/([^\[\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
   replace(/([^\|]+)\s*/g, 'getter(this,\'$1\')').
   replace(/\|/g, ' + ');
-  console.log(body);
   return new Function('', 'function getter(item, v) {' + getter + '} return ' + body);
 }
 
