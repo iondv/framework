@@ -677,6 +677,12 @@ function IonDataRepository(options) {
     return updates;
   }
 
+  function proxy(result) {
+    return new Promise(function (r) {
+      r(result);
+    });
+  }
+
   function fileSaver(updates, nm) {
     return new Promise(function (rs, rj) {
       if (Array.isArray(updates[nm])) {
@@ -685,7 +691,7 @@ function IonDataRepository(options) {
           if (typeof updates[nm][i] !== 'string') {
             savers.push(_this.fs.accept(updates[nm][i]));
           } else {
-            savers.push(new Promise(function(r) { r(updates[nm][i]); }));
+            savers.push(proxy(updates[nm][i]));
           }
         }
         if (savers.length) {
@@ -1098,7 +1104,7 @@ function IonDataRepository(options) {
             var src;
             for (j = 0; j < details.length; j++) {
               for (k = 0; k < collections.length; k++) {
-                src = m.base[collections[k]] || [];
+                src = m[i].base[collections[k]] || [];
                 if (action === 'eject') {
                   src.splice(src.indexOf(details[j].getItemId()), 1);
                 } else if (src.indexOf(details[j].getItemId()) < 0) {
@@ -1107,7 +1113,7 @@ function IonDataRepository(options) {
                 updates[collections[k]] = src;
               }
             }
-            var mrcm = this._getRootType(m[i].getMetaClass());
+            var mrcm = _this._getRootType(m[i].getMetaClass());
             writers.push(_this.ds.update(tn(mrcm), cond, updates));
           }
         }
@@ -1155,9 +1161,9 @@ function IonDataRepository(options) {
           for (var i = 0; i < details.length; i++) {
             if (!parsed.hasOwnProperty(details[i].getClassName())) {
               props = details[i].getMetaClass().getPropertyMetas();
-              for (var j = 0; j < props.length; i++) {
-                if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
-                  backColls.push(props[i].name);
+              for (var j = 0; j < props.length; j++) {
+                if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
+                  backColls.push(props[j].name);
                 }
               }
               parsed[details[i].getClassName()] = true;
@@ -1181,7 +1187,7 @@ function IonDataRepository(options) {
               operation ? EventType.PUT : EventType.EJECT,
               master.getMetaClass().getCanonicalName(),
               master.getItemId(),
-              updates);
+              updates).then(resolve).catch(reject);
           } else {
             resolve();
           }
