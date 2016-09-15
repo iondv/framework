@@ -10,7 +10,7 @@ var IonLogger = require('core/impl/log/IonLogger');
 var sysLog = new IonLogger({});
 
 var src = '../in';
-var ns = '';
+var ns = null;
 
 var setSrc = false;
 var setNamespace = false;
@@ -57,5 +57,6 @@ di('app', config.di,
   }
 ).catch(function (err) {
   console.error(err);
-  process.exit(130);
+  var exit = function () { process.exit(130); };
+  scope.dataSources.disconnect().then(exit).catch(exit);
 });

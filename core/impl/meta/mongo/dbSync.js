@@ -112,7 +112,6 @@ function MongoDbSync(options) {
       if (!tn) {
         return reject('Unsupported meta type specified!');
       }
-
       db().collection(tn, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
@@ -149,30 +148,25 @@ function MongoDbSync(options) {
    * @param {String} namespace
    * @returns {Promise}
    */
-  function findClassRoot(cm, namespace) {
+  function findClassRoot(cm, namespace, metaCollection, done) {
     if (!cm.ancestor) {
-      return new Promise(function (resolve) {
-        resolve(cm);
-      });
+      return done(null, cm);
     }
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').then(function (collection) {
-        var query = {name: cm.ancestor};
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: null}];
-        }
-        collection.findOne(query, function (err, anc) {
-          if (err) {
-            return reject(err);
-          }
-          if (anc) {
-            return findClassRoot(anc).then(resolve).catch(reject);
-          }
-          reject(new Error('Класс ' + cm.ancestor + ' не найден!'));
-        });
-      }).catch(reject);
+    var query = {name: cm.ancestor};
+    if (namespace) {
+      query.namespace = namespace;
+    } else {
+      query.$or = [{namespace: {$exists: false}}, {namespace: null}];
+    }
+    metaCollection.find(query).limit(1).next(function (err, anc) {
+      if (err) {
+        return done(err);
+      }
+      if (anc) {
+        findClassRoot(anc, namespace, metaCollection, done);
+      } else {
+        done(new Error('Класс ' + cm.ancestor + ' не найден!'));
+      }
     });
   }
 
@@ -236,15 +230,17 @@ function MongoDbSync(options) {
               indexDef = props;
             } else if (Array.isArray(props)) {
               for (i = 0; i < props.length; i++) {
-                indexDef[props[i]] = 1;
+                if (props[i]) {
+                  indexDef[props[i]] = 1;
+                }
               }
             }
+
+            if (Object.getOwnPropertyNames(indexDef).length === 0) {
+              return resolve();
+            }
+
             collection.createIndex(indexDef, opts, function (err, iname) {
-              /*
-               If (err) {
-               return reject(err);
-               }
-               */
               resolve(iname);
             });
           }
@@ -296,7 +292,7 @@ function MongoDbSync(options) {
           getAutoIncColl().then(function (autoinc) {
             autoinc.find({type: cn}).limit(1).next(function (err, c) {
               if (err) {
-                reject(err);
+                return reject(err);
               }
 
               if (c && c.counters) {
@@ -309,7 +305,7 @@ function MongoDbSync(options) {
 
               autoinc.updateOne({type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
                 if (err) {
-                  reject(err);
+                  return reject(err);
                 }
                 resolve(collection);
               });
@@ -329,31 +325,35 @@ function MongoDbSync(options) {
    * @private
    */
   this._defineClass = function (classMeta, namespace) {
-    classMeta.namespace = namespace;
+    classMeta.namespace = namespace || null;
     return new Promise(function (resolve, reject) {
-      findClassRoot(classMeta, namespace).
-      then(function (cm) {
-        return _this._createCollection(cm, namespace);
-      }).
-      then(_this._addAutoInc(classMeta)).
-      then(_this._addIndexes(classMeta)).
-      then(function () {
-        getMetaTable('meta').then(function (collection) {
-          collection.update(
-            {
-              name: classMeta.name,
-              version: classMeta.version,
-              namespace: namespace
-            },
-            classMeta,
-            {upsert: true},
-            function (err, result) {
-              if (err) {
-                reject(err);
+      getMetaTable('meta').then(function (metaCollection) {
+        findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
+          if (err) {
+            reject(err);
+          }
+          _this._createCollection(cm, namespace).
+          then(_this._addAutoInc(classMeta)).
+          then(_this._addIndexes(classMeta)).
+          then(function () {
+            console.log('Регистрируем класс ' + classMeta.name);
+            metaCollection.updateOne(
+              {
+                name: classMeta.name,
+                version: classMeta.version,
+                namespace: namespace
+              },
+              classMeta,
+              {upsert: true},
+              function (err, result) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(result);
               }
-              resolve(result);
-            });
-        }).catch(reject);
+            );
+          }).catch(reject);
+        });
       }).catch(reject);
     });
   };
@@ -384,9 +384,8 @@ function MongoDbSync(options) {
     return new Promise(function (resolve, reject) {
       viewMeta.type = type;
       viewMeta.className = className;
-      viewMeta.namespace = namespace;
+      viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
-
       getMetaTable('view').then(function (collection) {
         collection.update(
           {
@@ -429,7 +428,7 @@ function MongoDbSync(options) {
 
         collection.remove(query, function (err,vm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(vm);
         });
@@ -441,7 +440,7 @@ function MongoDbSync(options) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
-        navSection.namespace = namespace;
+        navSection.namespace = namespace || null;
         collection.updateOne(
           {
             name: navSection.name,
@@ -452,7 +451,7 @@ function MongoDbSync(options) {
           {upsert: true},
           function (err, ns) {
             if (err) {
-              reject(err);
+              return reject(err);
             }
             resolve(ns);
           });
@@ -472,7 +471,7 @@ function MongoDbSync(options) {
 
         collection.remove(query, function (err,nsm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(nsm);
         });
@@ -485,7 +484,7 @@ function MongoDbSync(options) {
       getMetaTable('nav').then(function (collection) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
-        navNode.namespace = namespace;
+        navNode.namespace = namespace || null;
         collection.updateOne(
           {
             code: navNode.code,
@@ -493,7 +492,7 @@ function MongoDbSync(options) {
             namespace: navNode.namespace
           }, navNode, {upsert: true}, function (err, ns) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(ns);
         });
@@ -512,7 +511,7 @@ function MongoDbSync(options) {
         }
         collection.remove(query, function (err,nnm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           resolve(nnm);
         });

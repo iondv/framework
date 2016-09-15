@@ -10,10 +10,9 @@ var PropertyTypes = require('core/PropertyTypes');
  * @param {String} id
  * @param {{}} base
  * @param {ClassMeta} classMeta
- * @param {DataRepository} repository
  * @constructor
  */
-function Item(id, base, classMeta, repository) {
+function Item(id, base, classMeta) {
 
   var _this = this;
 
@@ -31,11 +30,6 @@ function Item(id, base, classMeta, repository) {
    * @type {ClassMeta}
    */
   this.classMeta = classMeta;
-
-  /**
-   * @type {DataRepository}
-   */
-  this.repository = repository;
 
   this.properties = null;
 
@@ -60,25 +54,40 @@ function Item(id, base, classMeta, repository) {
 
   /**
    * @param {String} name
-   * @returns {Item}
+   * @returns {Item | null}
    */
   this.getAggregate = function (name) {
     var props = this.getProperties();
     var p = props[name];
-    var i = null;
-    if (p && p.getType() === PropertyTypes.STRUCT) {
-      i = this.repository.wrap(this.item.get(name));
-    } else if (p && p.getType() === PropertyTypes.REFERENCE) {
+    if (p && p.getType() === PropertyTypes.REFERENCE) {
       return this.references[name];
     }
-    return i;
+    return null;
+  };
+
+  /**
+   * @param {String} name
+   * @returns {Array}
+   */
+  this.getAggregates = function (name) {
+    var props = this.getProperties();
+    var p = props[name];
+    if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
+      return this.collections[name];
+    }
+    return [];
   };
 
   function getFromBase(name) {
     if (_this.base.hasOwnProperty(name)) {
       var props = _this.getProperties();
       var p = props[name];
-      if (p && (p.getType() === PropertyTypes.FILE || p.getType === PropertyTypes.IMAGE)) {
+      if (p && (
+        p.getType() === PropertyTypes.FILE ||
+        p.getType() === PropertyTypes.IMAGE ||
+        p.getType() === PropertyTypes.FILE_LIST
+        )
+      ) {
         if (_this.files.hasOwnProperty(name)) {
           return _this.files[name];
         }
@@ -139,26 +148,9 @@ function Item(id, base, classMeta, repository) {
 
   function initClassProps(cm) {
     var pm = cm.getPropertyMetas();
-    for (var p in pm) {
-      if (pm.hasOwnProperty(p)) {
-        /*
-        TODO
-        if (pm[p].getType() === PropertyTypes.STRUCT) {
-          var structProperty = new Property(pm[p].name, me, pm[p]);
-          var sm = structProperty.asItem().getMetaClass();
-          while (sm !== null) {
-            var spm = sm.getPropertyMetas();
-            for (var prop in spm) {
-              if (spm.hasOwnProperty(prop)) {
-                var propName = pm[p].name+"$"+spm[prop];
-                _this.properties[propName] = new Property(propName, me, spm[prop]);
-              }
-            }
-            sm = sm.getAncestor();
-          }
-        } else {*/
-        _this.properties[pm[p].name] = new Property(_this, pm[p]);
-        // }
+    for (var i = 0; i < pm.length; i++) {
+      if (pm[i].type !== PropertyTypes.STRUCT) {
+        _this.properties[pm[i].name] = new Property(_this, pm[i]);
       }
     }
     if (cm.getAncestor()) {

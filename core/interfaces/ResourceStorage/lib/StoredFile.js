@@ -5,7 +5,7 @@
 
 function StoredFile(id, link, options, streamGetter) {
   var _this = this;
-  
+
   this.id = id;
 
   this.link = link;

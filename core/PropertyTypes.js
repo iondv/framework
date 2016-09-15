@@ -22,5 +22,8 @@ module.exports = {
   SET: 15,
   STRUCT: 16,
   CUSTOM: 17,
-  USER: 18
+  USER: 18,
+  PERIOD: 60,
+  GEO: 100,
+  FILE_LIST: 110
 };

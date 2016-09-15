@@ -18,6 +18,7 @@ var config = require('../config');
 var di = require('core/di');
 
 var IonLogger = require('core/impl/log/IonLogger');
+var SettingsRepository = require('core/impl/SettingsRepository');
 
 var sysLog = new IonLogger(config.log || {});
 
@@ -73,13 +74,6 @@ app.use(methodOverride('X-Method-Override'));      // IBM
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-// Редирект на дефолтный модуль
-if (config.defaultModule) {
-  app.get('/', function (req, res) {
-    res.redirect('/' + config.defaultModule);
-  });
-}
-
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
@@ -117,11 +111,39 @@ di('app', config.di,
   }).
 then(
   // Подключаем модули
+  /**
+   * @param {{}} scope
+   * @param {SettingsRepository} [scope.settings]
+   * @returns {Promise}
+     */
   function (scope) {
-    if (scope.fileStorage) {
-      app.use(scope.fileStorage.middle());
-    }
     return new Promise(function (resolve, reject) {
+      try {
+        // Редирект на дефолтный модуль
+        var defaultModule = null;
+        if (scope.settings && scope.settings instanceof SettingsRepository) {
+          defaultModule = scope.settings.get('defaultModule');
+        }
+
+        if (!defaultModule && config.defaultModule) {
+          defaultModule = config.defaultModule;
+        }
+
+        if (defaultModule) {
+          app.get('/', function (req, res) {
+            res.redirect('/' + defaultModule);
+          });
+        } else {
+          throw new Error('Не указан модуль по умолчанию!');
+        }
+
+        if (scope.fileStorage) {
+          app.use(scope.fileStorage.middle());
+        }
+      } catch (err) {
+        return reject(err);
+      }
+
       var i, moduleInitiators;
       sysLog.info('Загрузка веб-модулей.');
       app.locals.sysMenu = [];

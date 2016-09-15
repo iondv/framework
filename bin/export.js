@@ -12,6 +12,7 @@ var sysLog = new IonLogger({});
 var dst = '../out';
 var version = '';
 var ns = '';
+var skipData = false;
 
 var setDst = false;
 var setVer = false;
@@ -33,6 +34,8 @@ process.argv.forEach(function (val) {
     setVer = true;
     setNamespace = false;
     return;
+  } else if (val === '--nodata') {
+    skipData = true;
   } else if (setDst) {
     dst = val;
   } else if (setVer) {
@@ -63,7 +66,8 @@ di('app', config.di,
       scope.dataRepo,
       {
         namespace: ns,
-        version: version
+        version: version,
+        skipData: skipData
       });
   }
 ).then(
@@ -75,5 +79,6 @@ di('app', config.di,
   process.exit(0);
 }).catch(function (err) {
   console.error(err);
-  process.exit(130);
+  var exit = function () { process.exit(130); };
+  scope.dataSources.disconnect().then(exit).catch(exit);
 });

@@ -1,7 +1,8 @@
 {
   "fileExtensions": [".js", ".jscs"],
   "excludeFiles": [
-    "test/data/**"
+    "test/data/**",
+    "**/view/**"
   ],
   "safeContextKeyword": "_this",
 
