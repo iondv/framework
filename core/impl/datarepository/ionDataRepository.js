@@ -352,7 +352,7 @@ function IonDataRepository(options) {
                     ids = src[i].get(attrs[nm].attrName) || [];
                     src[i].collections[attrs[nm].attrName] = [];
                     for (j = 0; j < ids.length; j++) {
-                      if (itemsByKey.hasOwnProperty(ids[i])) {
+                      if (itemsByKey.hasOwnProperty(ids[j])) {
                         src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[j]]);
                       }
                     }
@@ -767,6 +767,11 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
+
+          if (pm.type === PropertyTypes.COLLECTION && !pm.backRef && !updates.hasOwnProperty(pm.name)) {
+            updates[pm.name] = [];
+          }
+
           if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
             (
               (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) &&
@@ -1102,16 +1107,16 @@ function IonDataRepository(options) {
             );
             var updates = {};
             var src;
-            for (j = 0; j < details.length; j++) {
-              for (k = 0; k < collections.length; k++) {
-                src = m[i].base[collections[k]] || [];
+            for (k = 0; k < collections.length; k++) {
+              src = m[i].base[collections[k]] || [];
+              for (j = 0; j < details.length; j++) {
                 if (action === 'eject') {
                   src.splice(src.indexOf(details[j].getItemId()), 1);
                 } else if (src.indexOf(details[j].getItemId()) < 0) {
                   src.push(details[j].getItemId());
                 }
-                updates[collections[k]] = src;
               }
+              updates[collections[k]] = src;
             }
             var mrcm = _this._getRootType(m[i].getMetaClass());
             writers.push(_this.ds.update(tn(mrcm), cond, updates));
