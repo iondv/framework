@@ -10,6 +10,7 @@ if (process.env.NODE_ENV === 'development') {
 /* Paths */
 module.exports = {
   path: {
+    applications: './applications/',
     distr: './distr/',
     docker: './docker/',
     tmp: './.tmp',
@@ -22,12 +23,13 @@ module.exports = {
     test: './test/',
     gulp: './gulp/',
     coverage: './test/.coverage',
+    schema: './test/meta-schema',
     testBE: './test/backend/',
     testFE: './test/frontend/',
     testME: './test/middleware/',
     testSlow: './test/slow/',
     testE2E: './test/e2e/',
-    testCore:'./test/core/',
+    testCore: './test/core/',
     root: './'
   },
   folder: {
