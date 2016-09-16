@@ -65,6 +65,8 @@ function processOptions(options, scope, components, init, skip) {
         }
         if (skip && skip.indexOf(nm) === -1) {
           throw new Error('Не найден компонент с именем ' + nm + '.');
+        } else {
+          return null;
         }
       }
       return options;

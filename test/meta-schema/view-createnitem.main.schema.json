@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Схема проверки файла представлений создания и изменения",
+
+  "type": "object",
+  "required": [ "tabs", "actions", "commands", "siblingFixBy", "siblingNavigateBy", "historyDisplayMode",
+    "collectionFilters", "version", "overrideMode"],
+  "properties": {
+    "tabs": {
+      "description": "Вкладки, запрещаю представления без вкладок",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["caption", "fullFields", "shortFields"],
+        "properties": {
+          "caption": {
+            "description": "Имя вкладки",
+            "type": "string"
+          },
+          "fullFields": {
+            "description": "Поле в полном виде",
+            "type": "array",
+            "items": {"$ref": "view-properties.schema.json#"}
+          },
+          "shortFields": {
+            "description": "Поле в кратком виде",
+            "type": "array",
+            "items": {"$ref": "view-properties.schema.json#"}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "actions": {
+      "description": "Поведение? оставляю дефолтное значение студии до первого вхождения",
+      "type": "null"
+    },
+    "commands": {
+      "description": "Действия",
+      "type": "array",
+      "items": {"$ref": "command.schema.json#"}
+    },
+    "siblingFixBy": {
+      "desctription": "Отбор смежных объектов по",
+      "type": ["null", "array"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "siblingNavigateBy": {
+      "desctription": "Переход к смежным объектам по",
+      "type": ["null", "array"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "historyDisplayMode": {
+      "description": "Отображение истории? не поняла как задать в студии, блокирую дефолтным значением",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 0
+    },
+    "collectionFilters": {
+      "description": "Фильтрация коллекций",
+      "type": ["null", "array"],
+      "items": {
+        "type": "object",
+        "required": ["name", "options"],
+        "properties": {
+          "name": {
+            "description": "Имя",
+            "type": ["null", "string"]
+          },
+          "options": {
+            "description": "Опции? не поняла как задать в студии, блокирую дефолтным значением",
+            "type": "null"
+          }
+        }
+      }
+    },
+    "version": {
+      "description": "Версия",
+      "type": ["null", "string"]
+    },
+    "overrideMode": {
+      "description": "Режим наложения, 0 - Перекрыть, 1 - Переопределить",
+      "type": ["null", "number"],
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": false
+}

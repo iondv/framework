@@ -36,6 +36,7 @@ if (process.argv.length > 2) {
     }
   ).catch(function (err) {
     console.error(err);
-    process.exit(130);
+    var exit = function () { process.exit(130); };
+    scope.dataSources.disconnect().then(exit).catch(exit);
   });
 }

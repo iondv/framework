@@ -213,7 +213,9 @@ function FsStorage(options) {
           function (file) {
             if (file && file.stream) {
               res.status(200);
-              res.set('Content-Disposition', 'inline; filename="' + file.name + '"');
+              res.set('Content-Disposition',
+                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+                '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
               res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
               if (file.options.size) {
                 res.set('Content-Length', file.options.size);

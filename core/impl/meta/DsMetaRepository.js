@@ -1,3 +1,4 @@
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 // jscs:disable requireCapitalizedComments
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 08.04.16.
@@ -7,6 +8,8 @@
 var MetaRepositoryModule = require('core/interfaces/MetaRepository');
 var MetaRepository = MetaRepositoryModule.MetaRepository;
 var ClassMeta = MetaRepositoryModule.ClassMeta;
+var PropertyTypes = require('core/PropertyTypes');
+var clone = require('clone');
 
 const defaultVersion = '___default';
 
@@ -248,6 +251,9 @@ function DsMetaRepository(options) {
         result.push(src[code]);
       }
     }
+    result.sort(function (a, b) {
+      return a.orderNumber - b.orderNumber;
+    });
     return result;
   };
 
@@ -344,6 +350,34 @@ function DsMetaRepository(options) {
     return this.viewMeta.validators;
   };
 
+  /**
+   * @param {ClassMeta} cm
+   */
+  function expandStructs(cm) {
+    var pm, i, j;
+    for (i = 0; i < cm.plain.properties.length; i++) {
+      if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
+        var structClass;
+        try {
+          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
+        } catch (err) {
+          throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
+            '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
+        }
+        if (!structClass.___structs_expanded) {
+          expandStructs(structClass);
+        }
+        var spms = structClass.getPropertyMetas();
+        for (j = 0; j < spms.length; j++) {
+          pm = clone(spms[j]);
+          pm.name = cm.plain.properties[i].name + '$' + pm.name;
+          cm.propertyMetas[pm.name] = pm;
+        }
+      }
+    }
+    cm.___structs_expanded = true;
+  }
+
   function acceptClassMeta(metas) {
     var i, name, ns, cm;
     _this.classMeta = {};
@@ -381,8 +415,55 @@ function DsMetaRepository(options) {
             }
           }
         }
+
+        for (name in _this.classMeta[ns]) {
+          if (_this.classMeta[ns].hasOwnProperty(name)) {
+            for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
+              cm = _this.classMeta[ns][name].byOrder[i];
+              expandStructs(cm);
+            }
+          }
+        }
       }
     }
+  }
+
+  function sortViewElements(src) {
+    var i;
+    if (typeof src.columns !== 'undefined' && src.columns.length) {
+      src.columns.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
+      for (i = 0; i < src.columns.length; i++) {
+        sortViewElements(src.columns[i]);
+      }
+    }
+
+    if (typeof src.tabs !== 'undefined' && src.tabs.length) {
+      for (i = 0; i < src.tabs.length; i++) {
+        sortViewElements(src.tabs[i]);
+      }
+    }
+
+    if (typeof src.fullFields !== 'undefined' && src.fullFields.length) {
+      src.fullFields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
+      for (i = 0; i < src.fullFields.length; i++) {
+        sortViewElements(src.fullFields[i]);
+      }
+    }
+
+    if (typeof src.shortFields !== 'undefined' && src.shortFields.length) {
+      src.shortFields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
+      for (i = 0; i < src.shortFields.length; i++) {
+        sortViewElements(src.shortFields[i]);
+      }
+    }
+
+    if (typeof src.fields !== 'undefined' && src.fields.length) {
+      src.fields.sort(function (a, b) {return a.orderNumber - b.orderNumber;});
+      for (i = 0; i < src.fields.length; i++) {
+        sortViewElements(src.fields[i]);
+      }
+    }
+    return src;
   }
 
   function acceptViews(views) {
@@ -398,11 +479,11 @@ function DsMetaRepository(options) {
 
     for (var i = 0; i < views.length; i++) {
       switch (views[i].type){
-        case 'list': assignVm(_this.viewMeta.listModels, views[i]); break;
-        case 'collection': assignVm(_this.viewMeta.collectionModels, views[i]); break;
-        case 'item': assignVm(_this.viewMeta.itemModels, views[i]); break;
-        case 'create': assignVm(_this.viewMeta.createModels, views[i]); break;
-        case 'detail': assignVm(_this.viewMeta.detailModels, views[i]); break;
+        case 'list': assignVm(_this.viewMeta.listModels, sortViewElements(views[i])); break;
+        case 'collection': assignVm(_this.viewMeta.collectionModels, sortViewElements(views[i])); break;
+        case 'item': assignVm(_this.viewMeta.itemModels, sortViewElements(views[i])); break;
+        case 'create': assignVm(_this.viewMeta.createModels, sortViewElements(views[i])); break;
+        case 'detail': assignVm(_this.viewMeta.detailModels, sortViewElements(views[i])); break;
         case 'masks': _this.viewMeta.masks[views[i].name] = views[i]; break;
         case 'validators': _this.viewMeta.validators[views[i].name] = views[i]; break;
         default: break;
@@ -465,6 +546,14 @@ function DsMetaRepository(options) {
                 _this.navMeta.nodes[ns][p].children.push(n);
               }
             }
+          }
+        }
+
+        for (name in _this.navMeta.nodes[ns]) {
+          if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
+            _this.navMeta.nodes[ns][name].children.sort(function (a, b) {
+              return a.orderNumber - b.orderNumber;
+            });
           }
         }
       }

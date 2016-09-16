@@ -5,6 +5,7 @@
 'use strict';
 
 var PropertyTypes = require('core/PropertyTypes');
+var equal = require('core/equal');
 
 /**
  * @param {Item} item
@@ -53,22 +54,39 @@ function Property(item, propertyMeta) {
     return this.meta.nullable;
   };
 
+  this.eagerLoading = function () {
+    return this.meta.eagerLoading;
+  };
+
+  this.hint = function () {
+    return this.meta.hint;
+  };
+
   this.getValue = function () {
     return this.item.get(this.getName());
   };
 
+  this.selectionKeyMatch = function (key) {
+    return equal(this.getValue(), key);
+  };
+
   this.getDisplayValue = function () {
     var v = this.getValue();
-    if (this.meta.selection_provider) {
+    if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      if (selection && selection.hasOwnProperty(v)) {
-        return selection[v];
+      for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        if (this.selectionKeyMatch(selection[i].key)) {
+          return selection[i].value;
+        }
       }
     }
 
     if (this.getType() === PropertyTypes.REFERENCE) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
+        if (typeof this.meta.semanticGetter === 'function') {
+          return this.meta.semanticGetter.call(agr);
+        }
         return agr.toString();
       } else {
         return '';
@@ -92,8 +110,8 @@ function Property(item, propertyMeta) {
     if (this.selectList) {
       return this.selectList;
     }
-    if (this.meta.selection_provider) {
-      this.selectList = this.meta.selection_provider.getSelection(this.item);
+    if (this.meta.selectionProvider) {
+      this.selectList = this.meta.selectionProvider.getSelection(this.item);
       return this.selectList;
     }
     return null;

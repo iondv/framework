@@ -325,7 +325,7 @@ function MongoDbSync(options) {
    * @private
    */
   this._defineClass = function (classMeta, namespace) {
-    classMeta.namespace = namespace;
+    classMeta.namespace = namespace || null;
     return new Promise(function (resolve, reject) {
       getMetaTable('meta').then(function (metaCollection) {
         findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
@@ -384,7 +384,7 @@ function MongoDbSync(options) {
     return new Promise(function (resolve, reject) {
       viewMeta.type = type;
       viewMeta.className = className;
-      viewMeta.namespace = namespace;
+      viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
       getMetaTable('view').then(function (collection) {
         collection.update(
@@ -440,7 +440,7 @@ function MongoDbSync(options) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
-        navSection.namespace = namespace;
+        navSection.namespace = namespace || null;
         collection.updateOne(
           {
             name: navSection.name,
@@ -484,7 +484,7 @@ function MongoDbSync(options) {
       getMetaTable('nav').then(function (collection) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
-        navNode.namespace = namespace;
+        navNode.namespace = namespace || null;
         collection.updateOne(
           {
             code: navNode.code,
