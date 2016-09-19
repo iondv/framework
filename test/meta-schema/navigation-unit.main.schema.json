@@ -1,0 +1,244 @@
+
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Схема проверки файла узла навигации (complit)",
+
+  "conditions": {
+    "id": "#conditions",
+    "title": "Схема проверки условий выборки для узлов навигации",
+    "type": "object",
+    "required": ["property", "operation", "value", "nestedConditions"],
+    "properties": {
+      "property": {
+        "description": "Атрибут",
+        "type": ["null", "string"]
+      },
+      "operation": {
+        "description": "Операция, вроде бы коды до 10",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 10
+      },
+      "value": {
+        "description": "Значение",
+        "type": ["null", "string"]
+      },
+      "nestedConditions": {
+        "description": "Вложенные условия, ожидаю тот же формат",
+        "type": "array",
+        "items": {"ref": "#/conditions"}
+      }
+    },
+    "additionalProperties": false
+  },
+
+  "sorting": {
+    "id": "#sorting",
+    "title": "Схема проверки сортировки для узлов навигации",
+    "type": "object",
+    "required": ["property", "mode"],
+    "properties": {
+      "property": {
+        "description": "Атрибут",
+        "type": ["null", "string"]
+      },
+      "mode": {
+        "description": "Порядок сортировки: 0 - по возрастанию, 1 - по убыванию",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "additionalProperties": false
+  },
+
+  "pathChains": {
+    "id": "#pathChains",
+    "title": "Схема проверки хлебных крошек для узлов навигации",
+    "type": "object",
+    "required": ["className", "path"],
+    "properties": {
+      "className": {
+        "description": "Класс",
+        "type": "string"
+      },
+      "path": {
+        "description": "Путь",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "additionalProperties": false
+  },
+
+  "typegroup": {
+    "id": "#typegroup",
+    "title": "Накладываем дополнительные ограничения на поля, для типа путка меню Группа [0]",
+    "properties": {
+      "type": {
+        "description": "Тип пункта меню, накладываем ограничения, что бы под данную схему попадали только узлы типа Группа (0)",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 0
+      },
+      "classname": {
+        "description": "Класс, ограничеваем 'null', так как поле не используется для типа Группа (0)",
+        "type": "null"
+      },
+      "url": {
+        "description": "URL, ограничеваем 'null' или пустой строкой, так как поле не используется для типа Группа (0)",
+        "type": ["null", "string"],
+        "maxLength": 0
+      }
+    },
+    "additionalProperties": true
+  },
+
+  "typeclass": {
+    "id": "#typeclass",
+    "title": "Накладываем дополнительные ограничения на поля, для типа путка меню Страница класса [1]",
+    "properties": {
+      "type": {
+        "description": "Тип пункта меню, накладываем ограничения, что бы под данную схему попадали только узлы типа Страница класса (1)",
+        "type": "number",
+        "minimum": 1,
+        "maximum": 1
+      },
+      "classname": {
+        "description": "Класс, для данного типа поле обязательно к заполнению, потому только строки, не короче 1 символа",
+        "type": "string",
+        "minLength": 1
+      },
+      "url": {
+        "description": "URL, ограничеваем 'null' или пустой строкой, так как поле не используется для типа Страница класса [1]",
+        "type": ["null", "string"],
+        "maxLength": 0
+      }
+    },
+    "additionalProperties": true
+  },
+
+  "typecontainer": {
+    "id": "#typecontainer",
+    "title": "Накладываем дополнительные ограничения на поля, для типа путка меню Страница контейнера [2]",
+    "properties": {
+      "type": {
+        "description": "Тип пункта меню, накладываем ограничения, что бы под данную схему попадали только узлы типа Страница контейнера (2)",
+        "type": "number",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "classname": {
+        "description": "Класс, ограничеваем 'null', так как поле не используется для типа Страница контейнера (2)",
+        "type": "null"
+      },
+      "container": {
+        "description": "ID контейнера (оставляем 'null', так как нет данных по этому типу)",
+        "type": "null"
+      },
+      "url": {
+        "description": "URL, ограничеваем 'null' или пустой строкой, так как поле не используется для типа Страница контейнера (2)",
+        "type": ["null", "string"],
+        "maxLength": 0
+      }
+    },
+    "additionalProperties": true
+  },
+
+  "typeurl": {
+    "id": "#typeurl",
+    "title": "Накладываем дополнительные ограничения на поля, для типа путка меню URL [3]",
+    "properties": {
+      "type": {
+        "description": "Тип пункта меню, накладываем ограничения, что бы под данную схему попадали только узлы типа URL (3)",
+        "type": "number",
+        "minimum": 3,
+        "maximum": 3
+      },
+      "classname": {
+        "description": "Класс, ограничеваем 'null', так как поле не используется для типа URL (3) и не должно быть заполнено",
+        "type": "null"
+      },
+      "url": {
+        "description": "URL, данный тип меню требует указанного URL, запрещаем пустые строки",
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "additionalProperties": true
+  },
+
+  "main": {
+    "id": "#main",
+    "title": "Основная схема проверки узла навигации",
+    "type": "object",
+    "required": ["code", "type", "caption", "classname", "container", "collection", "url", "hint", "conditions", "sorting", "pathChains"],
+    "properties": {
+      "code": {
+        "description": "Системное имя, не может быть пустой строкой",
+        "type": "string",
+        "minLength": 1
+      },
+      "orderNumber": {
+        "description": "Порядок сортировки в студии",
+        "type": "number"
+      },
+      "type": {
+        "description": "Тип пункта меню: Группа: 0, Страница класса: 1, Страница контейнера: 2, Гиперссылка: 3",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 3
+      },
+      "title": {
+        "description": "Заголовок - позволяет задать уникальный заголовое страницы открываемой данным пунктом меню",
+        "type": "string"
+      },
+      "caption": {
+        "description": "Логическое имя",
+        "type": "string"
+      },
+      "classname": {
+        "description": "Класс",
+        "type": ["null", "string"]
+      },
+      "container": {
+        "description": "ID контейнера",
+        "type": "null"
+      },
+      "collection": {
+        "description": "Атрибут коллекции",
+        "type": "null"
+      },
+      "url": {
+        "description": "URL",
+        "type": ["null", "string"]
+      },
+      "hint": {
+        "description": "Подсказка",
+        "type": ["null", "string"]
+      },
+      "conditions": {
+        "description": "Условия выборки",
+        "type": "array",
+        "items": {"$ref": "#/conditions"}
+      },
+      "sorting": {
+        "description": "Сортировка",
+        "type": "array",
+        "items": {"$ref": "#/sorting"}
+      },
+      "pathChains": {
+        "description": "Хлебные крошки",
+        "type": "array",
+        "items": {"$ref": "#/pathChains"}
+      }
+    },
+    "additionalProperties": false
+  },
+  "allOf": [{"$ref": "#/main"}, {"oneOf": [{"$ref": "#/typegroup"},
+                                           {"$ref": "#/typeclass"},
+                                           {"$ref": "#/typecontainer"},
+                                           {"$ref": "#/typeurl"}]}]
+}

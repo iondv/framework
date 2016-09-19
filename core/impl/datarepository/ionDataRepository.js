@@ -352,7 +352,7 @@ function IonDataRepository(options) {
                     ids = src[i].get(attrs[nm].attrName) || [];
                     src[i].collections[attrs[nm].attrName] = [];
                     for (j = 0; j < ids.length; j++) {
-                      if (itemsByKey.hasOwnProperty(ids[i])) {
+                      if (itemsByKey.hasOwnProperty(ids[j])) {
                         src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[j]]);
                       }
                     }
@@ -378,12 +378,24 @@ function IonDataRepository(options) {
     for (var nm in item.base) {
       if (item.base.hasOwnProperty(nm) && item.base[nm]) {
         pm = item.classMeta.getPropertyMeta(nm);
-        if (pm && (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE)) {
-          fids.push(item.base[nm]);
-          if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
-            attrs['f_' + item.base[nm]] = [];
+        if (pm) {
+          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+            fids.push(item.base[nm]);
+            if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
+              attrs['f_' + item.base[nm]] = [];
+            }
+            attrs['f_' + item.base[nm]].push(nm);
+          } else if (pm.type === PropertyTypes.FILE_LIST) {
+            if (Array.isArray(item.base[nm])) {
+              for (var i = 0; i < item.base[nm].length; i++) {
+                fids.push(item.base[nm][i]);
+                if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
+                  attrs['f_' + item.base[nm][i]] = [];
+                }
+                attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+              }
+            }
           }
-          attrs['f_' + item.base[nm]].push(nm);
         }
       }
     }
@@ -396,10 +408,19 @@ function IonDataRepository(options) {
       _this.fs.fetch(fids)
         .then(
           function (files) {
+            var tmp;
             for (var i = 0; i < files.length; i++) {
               if (attrs.hasOwnProperty('f_' + files[i].id)) {
                 for (var j = 0; j < attrs['f_' + files[i].id].length; j++) {
-                  item.files[attrs['f_' + files[i].id][j]] = files[i];
+                  tmp = attrs['f_' + files[i].id][j];
+                  if (typeof tmp === 'object') {
+                    if (!Array.isArray(item.files[tmp.attr])) {
+                      item.files[tmp.attr] = [];
+                    }
+                    item.files[tmp.attr][tmp.index] = files[i];
+                  } else if (typeof tmp === 'string') {
+                    item.files[tmp] = files[i];
+                  }
                 }
               }
             }
@@ -489,7 +510,7 @@ function IonDataRepository(options) {
 
             return new Promise(function (rs, rj) {
               Promise.all(fl).then(function () {
-                resolve(result);
+                rs(result);
               }).catch(rj);
             });
           }
@@ -634,8 +655,10 @@ function IonDataRepository(options) {
   /**
    * @param {ClassMeta} cm
    * @param {Object} data
+   * @param {Boolean} setCollections
+   * @return {Object}
    */
-  function formUpdatedData(cm, data) {
+  function formUpdatedData(cm, data, setCollections) {
     var updates, pm, nm;
     updates = {};
     for (nm in data) {
@@ -645,6 +668,8 @@ function IonDataRepository(options) {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             updates[nm] = data[nm];
+          } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
+            updates[nm] = data[nm];
           }
         }
       }
@@ -652,12 +677,41 @@ function IonDataRepository(options) {
     return updates;
   }
 
+  function proxy(result) {
+    return new Promise(function (r) {
+      r(result);
+    });
+  }
+
   function fileSaver(updates, nm) {
     return new Promise(function (rs, rj) {
-      _this.fs.accept(updates[nm]).then(function (id) {
-        updates[nm] = id;
-        rs();
-      }).catch(rj);
+      if (Array.isArray(updates[nm])) {
+        var savers = [];
+        for (var i = 0; i < updates[nm].length; i++) {
+          if (typeof updates[nm][i] !== 'string') {
+            savers.push(_this.fs.accept(updates[nm][i]));
+          } else {
+            savers.push(proxy(updates[nm][i]));
+          }
+        }
+        if (savers.length) {
+          Promise.all(savers).then(
+            function (ids) {
+              if (Array.isArray(ids)) {
+                updates[nm] = ids;
+              }
+              rs();
+            }
+          ).catch(rj);
+        } else {
+          rs();
+        }
+      } else {
+        _this.fs.accept(updates[nm]).then(function (id) {
+          updates[nm] = id;
+          rs();
+        }).catch(rj);
+      }
     });
   }
 
@@ -697,7 +751,7 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, true);
         var properties = cm.getPropertyMetas();
         var pm;
 
@@ -713,10 +767,19 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
-              fileSavers.push(fileSaver(updates, pm.name));
-            }
+
+          if (pm.type === PropertyTypes.COLLECTION && !pm.backRef && !updates.hasOwnProperty(pm.name)) {
+            updates[pm.name] = [];
+          }
+
+          if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
+            (
+              (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) &&
+              typeof updates[pm.name] !== 'string' && !Array.isArray(updates[pm.name]) ||
+              pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
+            )
+          ) {
+            fileSavers.push(fileSaver(updates, pm.name));
           }
 
           if (pm.autoassigned) {
@@ -818,7 +881,7 @@ function IonDataRepository(options) {
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
 
         if (conditions) {
-          var updates = formUpdatedData(cm, data);
+          var updates = formUpdatedData(cm, data, false);
           var properties = cm.getPropertyMetas();
           var pm;
 
@@ -830,10 +893,14 @@ function IonDataRepository(options) {
 
           for (var i = 0;  i < properties.length; i++) {
             pm = properties[i];
-            if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-              if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
-                fileSavers.push(fileSaver(updates, pm.name));
-              }
+            if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
+              (
+                (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) &&
+                typeof updates[pm.name] === 'object' ||
+                pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
+              )
+            ) {
+              fileSavers.push(fileSaver(updates, pm.name));
             }
           }
 
@@ -897,7 +964,7 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data);
+        var updates = formUpdatedData(cm, data, true);
         var conditionsData;
 
         if (id) {
@@ -919,10 +986,14 @@ function IonDataRepository(options) {
 
         for (var i = 0;  i < properties.length; i++) {
           pm = properties[i];
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            if (updates.hasOwnProperty(pm.name) && updates[pm.name] && typeof updates[pm.name] === 'object') {
-              fileSavers.push(fileSaver(updates, pm.name));
-            }
+          if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
+            (
+              (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) &&
+              typeof updates[pm.name] === 'object' ||
+              pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
+            )
+          ) {
+            fileSavers.push(fileSaver(updates, pm.name));
           }
         }
 
@@ -1036,18 +1107,18 @@ function IonDataRepository(options) {
             );
             var updates = {};
             var src;
-            for (j = 0; j < details.length; j++) {
-              for (k = 0; k < collections.length; k++) {
-                src = m.base[collections[k]] || [];
+            for (k = 0; k < collections.length; k++) {
+              src = m[i].base[collections[k]] || [];
+              for (j = 0; j < details.length; j++) {
                 if (action === 'eject') {
                   src.splice(src.indexOf(details[j].getItemId()), 1);
                 } else if (src.indexOf(details[j].getItemId()) < 0) {
                   src.push(details[j].getItemId());
                 }
-                updates[collections[k]] = src;
               }
+              updates[collections[k]] = src;
             }
-            var mrcm = this._getRootType(m[i].getMetaClass());
+            var mrcm = _this._getRootType(m[i].getMetaClass());
             writers.push(_this.ds.update(tn(mrcm), cond, updates));
           }
         }
@@ -1095,9 +1166,9 @@ function IonDataRepository(options) {
           for (var i = 0; i < details.length; i++) {
             if (!parsed.hasOwnProperty(details[i].getClassName())) {
               props = details[i].getMetaClass().getPropertyMetas();
-              for (var j = 0; j < props.length; i++) {
-                if (props[i].type === PropertyTypes.COLLECTION && props[i].backColl === collection) {
-                  backColls.push(props[i].name);
+              for (var j = 0; j < props.length; j++) {
+                if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
+                  backColls.push(props[j].name);
                 }
               }
               parsed[details[i].getClassName()] = true;
@@ -1121,7 +1192,7 @@ function IonDataRepository(options) {
               operation ? EventType.PUT : EventType.EJECT,
               master.getMetaClass().getCanonicalName(),
               master.getItemId(),
-              updates);
+              updates).then(resolve).catch(reject);
           } else {
             resolve();
           }

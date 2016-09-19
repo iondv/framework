@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Схема проверки файла секции навигации (complit)",
+  "type": "object",
+  "required": ["caption", "name", "mode", "tags"],
+  "properties": {
+    "caption": {
+      "description": "Логическое имя",
+      "type": "string"
+    },
+    "name": {
+      "description": "Системное имя",
+      "type": "string"
+    },
+    "mode": {
+      "description": "Режим отображения: 0 - Меню, 1 - Содержание, 2 - ниспадающий список, 3 - Иерархия",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "tags": {
+      "description": "Теги",
+      "type": ["null", "array"],
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

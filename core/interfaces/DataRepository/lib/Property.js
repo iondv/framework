@@ -84,6 +84,9 @@ function Property(item, propertyMeta) {
     if (this.getType() === PropertyTypes.REFERENCE) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
+        if (typeof this.meta.semanticGetter === 'function') {
+          return this.meta.semanticGetter.call(agr);
+        }
         return agr.toString();
       } else {
         return '';
