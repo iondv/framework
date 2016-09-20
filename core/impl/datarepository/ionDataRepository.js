@@ -310,7 +310,7 @@ function IonDataRepository(options) {
           for (nm in attrs) {
             if (attrs.hasOwnProperty(nm)) {
               items = results[attrs[nm].pIndex];
-              if (items.length === 0) {
+              if (!items || items.length === 0) {
                 continue;
               }
               if (attrs[nm].type === PropertyTypes.REFERENCE) {
