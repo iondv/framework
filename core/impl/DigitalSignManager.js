@@ -52,8 +52,8 @@ function DigitalSignManager(options) {
 
   /**
    * @param {String} id
-   * @param {{mimeType: String, content: Buffer} | {mimeType: String, content: Buffer}[]} data
-   * @param {Buffer | Buffer[]} signature
+   * @param {{mimeType: String, content: Buffer | String} | {mimeType: String, content: Buffer | String}[]} data
+   * @param {Buffer | Buffer[] | String | String[] } signature
    * @param {{}} [attributes]
    * @returns {Promise}
    */
@@ -66,18 +66,26 @@ function DigitalSignManager(options) {
 
       if (Array.isArray(signature)) {
         for (i = 0; i < signature.length; i++) {
-          signature[i] = base64.fromByteArray(signature[i]);
+          if (typeof signature[i] !== 'string') {
+            signature[i] = base64.fromByteArray(signature[i]);
+          }
         }
       } else {
-        signature = base64.fromByteArray(signature);
+        if (typeof signature[i] !== 'string') {
+          signature = base64.fromByteArray(signature);
+        }
       }
 
       if (Array.isArray(data)) {
         for (i = 0; i < data.length; i++) {
-          data[i].content = base64.fromByteArray(data[i].content);
+          if (typeof data[i].content !== 'string') {
+            data[i].content = base64.fromByteArray(data[i].content);
+          }
         }
       } else {
-        data.content = base64.fromByteArray(data.content);
+        if (typeof data.content !== 'string') {
+          data.content = base64.fromByteArray(data.content);
+        }
       }
 
       options.dataSource.insert('ion_signatures',
