@@ -79,7 +79,8 @@
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
-          "noPublicRegistration": "[[auth.noRegistration]]"
+          "noPublicRegistration": "[[auth.noRegistration]]",
+          "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
         }
       },
       "metaRepo": {
