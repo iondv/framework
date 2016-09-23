@@ -60,7 +60,7 @@ function IonLogger(options) {
     var m = message instanceof Error ? message.message : message;
     for (var i = 0; i < dest.length; i++) {
       if (dest[i] === 'console') {
-        if (consoleMethod.name === console.error && message instanceof Error) {
+        if (consoleMethod === console.error && message instanceof Error) {
           console.error(message);
         } else {
           consoleMethod.call(console, d + ' ' + prefix + ' ' + m);
