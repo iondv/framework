@@ -69,7 +69,9 @@
     "gulp-less": "*",
     "rmdir": "*",
     "gulp-clean-css": "*",
-    "gulp-jsmin": "*"
+    "gulp-jsmin": "*",
+    "binstring": "*",
+    "base64-js": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
