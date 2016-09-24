@@ -82,7 +82,9 @@ function ClassMeta(metaObject) {
 
   this.propertyMetas = {};
 
-  var semanticFunc = parseSemantics(this.plain.semantic);
+  this._semanticDepth = 0;
+
+  this._semanticFunc = null;
 
   loadPropertyMetas(_this, metaObject);
 
@@ -107,7 +109,7 @@ function ClassMeta(metaObject) {
   };
 
   this.getSemantic = function () {
-    return semanticFunc;
+    return this._semanticFunc;
   };
 
   this.getKeyProperties = function () {
