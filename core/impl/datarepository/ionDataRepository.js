@@ -912,6 +912,11 @@ function IonDataRepository(options) {
           Promise.all(fileSavers).then(function () {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
+            if (!data) {
+              return new Promise(function (resolve, reject) {
+                reject(new Error('Не найден объект для редактирования.'));
+              });
+            }
             var item = _this._wrap(data._class, data, data._classVer);
             if (changeLogger) {
               return new Promise(function (resolve, reject) {
