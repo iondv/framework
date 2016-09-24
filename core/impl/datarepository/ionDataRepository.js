@@ -727,7 +727,7 @@ function IonDataRepository(options) {
           lazy && data.hasOwnProperty(props[i].name) && data[props[i].name] === null ||
           !lazy && !props[i].autoassigned && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
         )) {
-        invalidAttrs.push(props[i].caption);
+        invalidAttrs.push(cm.getCaption() + '.' +props[i].caption);
       }
     }
     if (invalidAttrs.length) {
