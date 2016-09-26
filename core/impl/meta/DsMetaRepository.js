@@ -39,17 +39,20 @@ function findByVersion(arr, version, i1, i2) {
   if (!i1) { i1 = 0; }
   if (!i2) { i2 = arr.length - 1; }
 
-  if (arr[i1].version === version) {
+  var arr1 = arr[i1].plain || arr[i1];
+  var arr2 = arr[i2].plain || arr[i2];
+
+  if (arr1.version === version) {
     return arr[i1];
   }
 
-  if (arr[i2].version === version) {
+  if (arr2.version === version) {
     return arr[i2];
   }
 
   if (i1 < i2 - 1) {
     var middle = Math.floor((i1 + i2) / 2);
-    if (arr[middle].version < version) {
+    if (arr[middle].plain.version < version) {
       return findByVersion(arr, version, middle, i2);
     } else {
       return findByVersion(arr, version, i1, middle);
@@ -137,7 +140,7 @@ function DsMetaRepository(options) {
       var ns = formNS(namespace);
       if (_this.classMeta[ns].hasOwnProperty(name)) {
         if (version) {
-          if (_this.classMeta[ns][name].hasOwnProperty(version)) {
+          if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
           } else {
             var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
