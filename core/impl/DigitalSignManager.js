@@ -19,12 +19,12 @@ const base64 = require('base64-js');
  */
 function DigitalSignManager(options) {
   /**
-   * @param {String} id
-   * @param {{}} src
+   * @param {Item} item
+   * @param {String} [action]
    * @param {String} [preprocessor]
    * @returns {Promise}
    */
-  this._getDataForSigning = function (id, src, preprocessor) {
+  this._getDataForSigning = function (item, action, preprocessor) {
     return new Promise(function (resolve, reject) {
       if (preprocessor && options.preprocessors &&
         typeof options.preprocessors[preprocessor] instanceof Preprocessor) {
