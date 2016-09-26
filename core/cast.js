@@ -4,7 +4,7 @@
 'use strict';
 
 var PropertyTypes = require('./PropertyTypes');
-
+// jshint maxcomplexity: 30
 var cast = module.exports = function (value, type) {
   if (value === null) {
     return value;
@@ -42,4 +42,4 @@ var cast = module.exports = function (value, type) {
     }break;
   }
   return value;
-}
+};

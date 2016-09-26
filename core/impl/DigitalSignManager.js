@@ -7,6 +7,8 @@ const IDigitalSignManager = require('core/interfaces/DigitalSignManager');
 const Preprocessor = require('core/interfaces/Preprocessor');
 const base64 = require('base64-js');
 
+// jshint maxcomplexity: 20
+
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource

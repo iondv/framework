@@ -835,8 +835,6 @@ function IonDataRepository(options) {
         var rcm = _this._getRootType(cm);
 
         var updates = formUpdatedData(cm, data, true);
-        var properties = cm.getPropertyMetas();
-        var pm;
 
         var fileSavers = [];
 
@@ -907,8 +905,6 @@ function IonDataRepository(options) {
 
         if (conditions) {
           var updates = formUpdatedData(cm, data, false);
-          var properties = cm.getPropertyMetas();
-          var pm;
 
           var fileSavers = [];
 
