@@ -46,6 +46,7 @@ function IonLogger(options) {
               result.push(fs.createWriteStream(dest[i], {encoding: 'utf-8'}));
             }
           } catch (err) {
+            console.warn(err);
           }
         } else {
           result.push(streams[dest[i]]);
