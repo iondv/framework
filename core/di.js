@@ -117,6 +117,10 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   }
 
   var modulePath = component.module;
+  if (!modulePath) {
+    return null;
+  }
+
   if (modulePath.indexOf('./') === 0) {
     modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
   }
