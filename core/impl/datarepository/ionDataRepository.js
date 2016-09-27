@@ -164,7 +164,7 @@ function IonDataRepository(options) {
    * @param {Property} property
    * @param {{}} attrs
    */
-  function prepareRefEnrichment(item, property, attrs) {
+  function prepareRefEnrichment(item, property, attrs, depth) {
     var refc = _this.meta.getMeta(property.meta.refClass, null, item.classMeta.getNamespace());
     if (refc) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
@@ -174,7 +174,8 @@ function IonDataRepository(options) {
           attrName: property.getName(),
           key: refc.getKeyProperties()[0],
           pIndex: 0,
-          filter: []
+          filter: [],
+          depth: refc.semanticDepth > depth ? refc.semanticDepth : depth
         };
       }
 
@@ -240,7 +241,7 @@ function IonDataRepository(options) {
     }
 
     return new Promise(function (resolve, reject) {
-      var i, nm, attrs, item, props, promises, filter, cn;
+      var i, nm, attrs, item, props, promises, filter, cn, cm, actualDepth;
 
       attrs = {};
       promises = [];
@@ -248,12 +249,14 @@ function IonDataRepository(options) {
       try {
         for (i = 0; i < src.length; i++) {
           item = src[i];
+          cm = item.getMetaClass();
+          actualDepth = cm.semanticDepth > depth ? cm.semanticDepth : depth;
           if (item && item.constructor.name === 'Item') {
             props = item.getProperties();
             for (nm in props) {
               if (props.hasOwnProperty(nm)) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs);
+                  prepareRefEnrichment(item, props[nm], attrs, actualDepth);
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
                   prepareColEnrichment(item, props[nm], attrs);
                 }
@@ -291,7 +294,7 @@ function IonDataRepository(options) {
             if (filter) {
               promises.push(_this.getList(cn, {
                 filter: filter,
-                nestingDepth: depth - 1
+                nestingDepth: attrs[nm].depth ? attrs[nm].depth - 1 : depth - 1
               }));
             }
           }

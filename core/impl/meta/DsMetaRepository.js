@@ -400,6 +400,44 @@ function DsMetaRepository(options) {
     return depth;
   }
 
+  function semanticFunctionCreator(propertyName) {
+    return function(item) {
+      var p = item.property(propertyName);
+      if(p) {
+        return p.getDisplayValue();
+      }
+      return propertyName;
+    }
+  }
+
+  function semanticGetter(body) {
+    return function(item){
+      var result = "";
+      for (var i = 0; i < body.length; i++) {
+        if (typeof body[i] === 'function') {
+          result = result + body[i].call(this,item);
+        } else {
+          result = result + body[i];
+        }
+      }
+      return result;
+    }
+  }
+
+  function getSemanticBody(semantic, cm) {
+    var semanticBody = [];
+    var parts = semantic.split("|");
+    for (var i=0; i < parts.length; i++) {
+      var pm = cm.getPropertyMeta(parts[i].trim());
+      if(pm) {
+        semanticBody.push(semanticFunctionCreator(pm.name));
+      } else {
+        semanticBody.push(parts[i]);
+      }
+    }
+    return semanticBody;
+  }
+
   /**
    * @param {ClassMeta} cm
    */
@@ -410,50 +448,22 @@ function DsMetaRepository(options) {
     if (cm) {
       if (cm.plain.semantic && cm.plain.semantic.trim()) {
         curDepth = countDepth(cm.plain.semantic, cm, curDepth);
-
-        var semanticBody = [];
-        var semanticFunctionCreator = function(propertyName) {
-          return function(item) {
-            var p = item.property(propertyName);
-            if(p) {
-              return p.getDisplayValue();
-            }
-            return propertyName;
-          }
-        };
-
-        var semanticGetter = function(body){
-          return function(item){
-            var result = "";
-            for (var i = 0; i <= body.length; i++) {
-              if (typeof body[i] === 'function') {
-                result = result + body[i].call(this,item);
-              } else {
-                result = result + body[i];
-              }
-            }
-            return result;
-          }
-        };
-
-        var parts = cm.plain.semantic.split("|");
-        for (i=0; i < parts.length; i++) {
-          var pm = cm.getPropertyMeta(parts[i].trim());
-          if(pm) {
-            semanticBody.push(semanticFunctionCreator(pm.name));
-          } else {
-            semanticBody.push(parts[i]);
-          }
-        }
-        cm._semanticFunc = semanticGetter(semanticBody);
+        cm._semanticFunc = semanticGetter(getSemanticBody(cm.plain.semantic,cm));
       }
       for (i = 0; i < propertyMetas.length; i++) {
+        if (propertyMetas[i].type === PropertyTypes.REFERENCE && propertyMetas[i].semantic) {
+          var refcm = getFromMeta(propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
+          if (refcm) {
+            propertyMetas[i].semanticGetter = semanticGetter(getSemanticBody(propertyMetas[i].semantic, refcm));
+          }
+        }
+
         if (propertyMetas[i].semantic && propertyMetas[i].semantic.trim()) {
           curDepth = countDepth(propertyMetas[i].semantic, cm, curDepth);
         }
       }
     }
-    cm._semanticDepth = curDepth;
+    cm.semanticDepth = curDepth;
   }
 
   function acceptClassMeta(metas) {

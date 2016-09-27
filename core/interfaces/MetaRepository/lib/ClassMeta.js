@@ -42,30 +42,7 @@ function loadPropertyMetas(cm, plain) {
         properties[i].selectionProvider.getSelection = selectionConstructor2();
       }
     }
-
-    if (properties[i].type === PropertyTypes.REFERENCE && properties[i].semantic) {
-      properties[i].semanticGetter = parseSemantics(properties[i].semantic.trim());
-    }
   }
-}
-
-/**
- * @param {String} semantics
- * @returns {Function}
- */
-function parseSemantics(semantics) {
-  if (!semantics) {
-    return new Function('', 'return this.getItemId();');
-  }
-
-  var getter = 'if(v&&v.trim()){var p=item.property(v);if(p) {return p.getDisplayValue();}}return v;';
-
-  var body = semantics.replace(/\'/g, '\\\'').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2, $3)').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
-  replace(/([^\|]+)\s*/g, 'getter(this,\'$1\')').
-  replace(/\|/g, ' + ');
-  return new Function('', 'function getter(item, v) {' + getter + '} return ' + body);
 }
 
 function ClassMeta(metaObject) {
@@ -82,7 +59,7 @@ function ClassMeta(metaObject) {
 
   this.propertyMetas = {};
 
-  this._semanticDepth = 0;
+  this.semanticDepth = 0;
 
   this._semanticFunc = null;
 
