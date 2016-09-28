@@ -78,6 +78,11 @@ function DsMetaRepository(options) {
   /**
    * @type {String}
    */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
+
+  /**
+   * @type {String}
+   */
   this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
@@ -117,6 +122,8 @@ function DsMetaRepository(options) {
     nodes: {},
     classnames: {}
   };
+
+  this.userTypes = {};
 
   this.ds = options.dataSource;
 
@@ -381,6 +388,12 @@ function DsMetaRepository(options) {
     cm.___structs_expanded = true;
   }
 
+  function acceptUserTypes(types) {
+    for (var i = 0; i < types.length; i++) {
+      _this.userTypes[types[i].name] = types[i];
+    }
+  }
+
   function acceptClassMeta(metas) {
     var i, name, ns, cm;
     _this.classMeta = {};
@@ -415,6 +428,7 @@ function DsMetaRepository(options) {
                   cm.ancestor.descendants.push(cm);
                 }
               }
+
             }
           }
         }
@@ -424,6 +438,7 @@ function DsMetaRepository(options) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
               cm = _this.classMeta[ns][name].byOrder[i];
               expandStructs(cm);
+              expandUserTypes(cm);
             }
           }
         }
@@ -567,15 +582,17 @@ function DsMetaRepository(options) {
     return new Promise(function (resolve, reject) {
       Promise.all(
         [
+          _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
           _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
           _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
         ]
       ).then(
         function (results) {
-          acceptClassMeta(results[0]);
-          acceptViews(results[1]);
-          acceptNavigation(results[2]);
+          acceptUserTypes(results[0]);
+          acceptClassMeta(results[1]);
+          acceptViews(results[2]);
+          acceptNavigation(results[3]);
           resolve();
         }
       ).catch(reject);
