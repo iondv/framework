@@ -6,6 +6,16 @@
 function DigitalSignManager() {
   /**
    * @param {Item} item
+   * @param {String} action
+   * @param {String} preprocessor
+   * @returns {Promise}
+   */
+  this.signingAvailable = function (item, action, preprocessor) {
+    return this._signingAvailable(item, action, preprocessor);
+  };
+
+  /**
+   * @param {Item} item
    * @param {String} [action]
    * @param {String} [preprocessor]
    * @returns {Promise}
