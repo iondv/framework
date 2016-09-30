@@ -177,8 +177,14 @@ function IonDataRepository(options) {
           filter: []
         };
       }
+      var v;
+      if (property.meta.backRef) {
+        v = item.getItemId();
+        attrs[item.classMeta.getName() + '.' + property.getName()].key = property.meta.backRef;
+      } else {
+        v = item.get(property.getName());
+      }
 
-      var v = item.get(property.getName());
       if (v) {
         attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
         if (typeof item.references === 'undefined') {
@@ -667,7 +673,9 @@ function IonDataRepository(options) {
         if (pm) {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
-            updates[nm] = data[nm];
+            if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+              updates[nm] = data[nm];
+            }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];
           }
@@ -819,6 +827,63 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {String} itemId
+   * @param {{}} pm
+   * @param {{}} updates
+   * @param {ClassMeta} cm
+   * @returns {Promise}
+   */
+  function backRefUpdater(itemId, pm, updates, cm) {
+    return new Promise(function (resolve, reject) {
+      var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+      var conds = {};
+      var ups = {};
+      var clr = {};
+
+      conds[cm.getKeyProperties()[0]] = updates[pm.name];
+      ups[pm.backRef] = itemId;
+      clr[pm.backRef] = null;
+
+      options.dataSource.update(rcm.getCanonicalName(), ups, clr).
+      then(function () {
+        return options.dataSource.update(rcm.getCanonicalName(), conds, ups);
+      }).
+      catch(reject);
+    });
+  }
+
+  /**
+   * @param {Item} item
+   * @param {ClassMeta} cm
+   * @param {{}} updates
+   */
+  function updateBackRefs(item, cm, updates) {
+    return new Promise(function (resolve, reject) {
+      var properties = cm.getPropertyMetas();
+      var workers = [];
+      var pm;
+      for (var i = 0;  i < properties.length; i++) {
+        pm = properties[i];
+
+        if (
+          updates.hasOwnProperty(pm.name) &&
+          updates[pm.name] &&
+          pm.type === PropertyTypes.REFERENCE &&
+          pm.backRef
+        ) {
+          workers.push(backRefUpdater(item.getItemId(), pm, updates, cm));
+        }
+      }
+      Promise.all(workers).
+      then(
+        function () {
+          resolve(item);
+        }
+      ).catch(reject);
+    });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
@@ -867,6 +932,8 @@ function IonDataRepository(options) {
               resolve(item);
             });
           }
+        }).then(function (item) {
+          return updateBackRefs(item, cm, data);
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
@@ -943,8 +1010,8 @@ function IonDataRepository(options) {
                 resolve(item);
               });
             }
-            // }).then(function (item) { - Пока отключено редактирование коллекций при EditItem
-            // return updateCollections(data, item, id);
+          }).then(function (item) {
+            return updateBackRefs(item, cm, data);
           }).then(function (item) {
             return loadFiles(item);
           }).then(function (item) {
@@ -1038,6 +1105,8 @@ function IonDataRepository(options) {
               resolve([item]);
             });
           }
+        }).then(function (item) {
+          return updateBackRefs(item, cm, data);
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
