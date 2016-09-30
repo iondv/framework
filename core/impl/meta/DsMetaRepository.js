@@ -363,7 +363,7 @@ function DsMetaRepository(options) {
   /**
    * @param {ClassMeta} cm
    */
-  function expandStructs(cm) {
+  function expandProperty(cm) {
     var pm, i, j;
     for (i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
@@ -375,13 +375,27 @@ function DsMetaRepository(options) {
             '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
         }
         if (!structClass.___structs_expanded) {
-          expandStructs(structClass);
+          expandProperty(structClass);
         }
         var spms = structClass.getPropertyMetas();
         for (j = 0; j < spms.length; j++) {
           pm = clone(spms[j]);
           pm.name = cm.plain.properties[i].name + '$' + pm.name;
           cm.propertyMetas[pm.name] = pm;
+        }
+      }
+
+      if (cm.plain.properties[i].type === PropertyTypes.USER) {
+        if (cm.plain.properties[i].refClass) {
+          var ut = _this.userTypes[cm.plain.properties[i].refClass];
+          if (ut) {
+            if (ut.type) cm.plain.properties[i].type = ut.type;
+            if (ut.mask) cm.plain.properties[i].mask = ut.mask;
+            if (ut.maskName) cm.plain.properties[i].maskName = ut.maskName;
+            if (ut.size) cm.plain.properties[i].size = ut.size;
+            if (ut.decimals) cm.plain.properties[i].decimals = ut.decimals;
+            if (ut.validators) cm.plain.properties[i].validators = ut.validators;
+          }
         }
       }
     }
@@ -437,8 +451,7 @@ function DsMetaRepository(options) {
           if (_this.classMeta[ns].hasOwnProperty(name)) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
               cm = _this.classMeta[ns][name].byOrder[i];
-              expandStructs(cm);
-              expandUserTypes(cm);
+              expandProperty(cm);
             }
           }
         }
