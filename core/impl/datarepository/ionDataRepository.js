@@ -181,6 +181,7 @@ function IonDataRepository(options) {
       if (property.meta.backRef) {
         v = item.getItemId();
         attrs[item.classMeta.getName() + '.' + property.getName()].key = property.meta.backRef;
+        attrs[item.classMeta.getName() + '.' + property.getName()].backRef = true;
       } else {
         v = item.get(property.getName());
       }
@@ -321,13 +322,26 @@ function IonDataRepository(options) {
               }
               if (attrs[nm].type === PropertyTypes.REFERENCE) {
                 itemsByKey = {};
-                for (i = 0; i < items.length; i++) {
-                  itemsByKey[items[i].getItemId()] = items[i];
-                }
+                if (attrs[nm].backRef) {
+                  for (i = 0; i < items.length; i++) {
+                    itemsByKey[items[i].get(attrs[nm].key)] = items[i];
+                  }
 
-                for (i = 0; i < src.length; i++) {
-                  if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
-                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
+                  for (i = 0; i < src.length; i++) {
+                    if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
+                      src[i].base[attrs[nm].attrName] = itemsByKey[src[i].getItemId()].getItemId();
+                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].getItemId()];
+                    }
+                  }
+                } else {
+                  for (i = 0; i < items.length; i++) {
+                    itemsByKey[items[i].getItemId()] = items[i];
+                  }
+
+                  for (i = 0; i < src.length; i++) {
+                    if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
+                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
+                    }
                   }
                 }
               } else if (attrs[nm].type === PropertyTypes.COLLECTION) {
