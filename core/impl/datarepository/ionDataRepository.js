@@ -273,9 +273,7 @@ function IonDataRepository(options) {
         i = 0;
         for (nm in attrs) {
           if (attrs.hasOwnProperty(nm)) {
-            attrs[nm].pIndex = i;
-            i++;
-
+            filter = null;
             if (
               attrs[nm].type  === PropertyTypes.REFERENCE &&
               Array.isArray(attrs[nm].filter) &&
@@ -295,6 +293,8 @@ function IonDataRepository(options) {
             }
 
             if (filter) {
+              attrs[nm].pIndex = i;
+              i++;
               promises.push(_this.getList(cn, {
                 filter: filter,
                 nestingDepth: depth - 1
@@ -543,12 +543,10 @@ function IonDataRepository(options) {
         var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
         _this.ds.get(tn(rcm), updates).
         then(function (data) {
-          var result = [];
           var item = null;
           if (data) {
             try {
               item = _this._wrap(data._class, data, data._classVer);
-              result.push(item);
               loadFiles(item).
               then(
                 function (item) {

@@ -98,7 +98,6 @@ function Property(item, propertyMeta) {
         return '';
       }
     }
-
     return v !== null ? v : '';
   };
 
