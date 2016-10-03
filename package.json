@@ -57,7 +57,8 @@
     "gulp-less": "*",
     "gulp-clean-css": "*",
     "gulp-jsmin": "*",
-    "binstring": "*"
+    "binstring": "*",
+    "memcached": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
