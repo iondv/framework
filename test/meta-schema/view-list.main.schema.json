@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Схема проверки файла представления списка",
+
+  "type": "object",
+  "required": ["columns", "actions", "commands", "allowSearch", "pageSize", "useEditModels", "version", "overrideMode"],
+  "properties": {
+    "columns": {
+      "description": "Колонки, запрещаю представления списка без колонок",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          {"$ref": "view-properties.schema.json#"},
+          {
+            "description": "Дополнительное ограничение на структуру поля атрибута, для представлений списка",
+            "type": "object",
+            "required": ["sorted"],
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "actions": {
+      "description": "Поведение? оставляю дефолтное значение студии до первого вхождения",
+      "type": "null"
+    },
+    "commands": {
+      "description": "Действия",
+      "type": "array",
+      "items": {"$ref": "command.schema.json#"}
+    },
+    "allowSearch": {
+      "description": "Доступен поиск",
+      "type": "boolean"
+    },
+    "pageSize": {
+      "description": "Количество записей на странице",
+      "type": ["null", "number"]
+    },
+    "useEditModels": {
+      "description": "Использовать формы редактирования для детализации",
+      "type": "boolean"
+    },
+    "version": {
+      "description": "Версия",
+      "type": ["null", "string"]
+    },
+    "overrideMode": {
+      "description": "Режим наложения, 0 - Перекрыть, 1 - Переопределить",
+      "type": ["null", "number"],
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": false
+  }

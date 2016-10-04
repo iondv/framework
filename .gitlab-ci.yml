@@ -40,7 +40,7 @@ Testing:
     - npm install
     - gulp setup
     - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_DEV
-"http://docker.local:Random platforma":
+."http://docker.local:Random platforma":
   type: deploy
   tags:
     - dev-docker

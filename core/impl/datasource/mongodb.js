@@ -12,6 +12,8 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
+// jshint maxstatements: 30
+
 /**
  * @param {{ uri: String, options: Object }} config
  * @constructor

@@ -4,7 +4,7 @@
 'use strict';
 var contexts = {};
 
-// jshint maxstatements: 35, maxcomplexity: 30
+// jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
 /**
  * @param {{}} options
@@ -50,8 +50,10 @@ function normalizeOptions(options, components) {
  * @param {{}} scope
  * @param {{}} components
  * @param {Array} init
+ * @param {Array} skip
+ * @param {String} cwd
  */
-function processOptions(options, scope, components, init, skip) {
+function processOptions(options, scope, components, init, skip, cwd) {
   if (options) {
     var nm, i, result;
     if (typeof options === 'string') {
@@ -61,7 +63,7 @@ function processOptions(options, scope, components, init, skip) {
           return scope[nm];
         }
         if (components.hasOwnProperty(nm)) {
-          return loadComponent(nm, components[nm], scope, components, init, skip);
+          return loadComponent(nm, components[nm], scope, components, init, skip, cwd);
         }
         if (skip && skip.indexOf(nm) === -1) {
           throw new Error('Не найден компонент с именем ' + nm + '.');
@@ -73,17 +75,17 @@ function processOptions(options, scope, components, init, skip) {
     } else if (options instanceof Array) {
       result = [];
       for (i = 0; i < options.length; i++) {
-        result.push(processOptions(options[i], scope, components, init, skip));
+        result.push(processOptions(options[i], scope, components, init, skip, cwd));
       }
       return result;
     } else if (options instanceof Object) {
       if (typeof options.name !== 'undefined' && typeof options.module !== 'undefined') {
-        return loadComponent(options.name, options, scope, components, init, skip);
+        return loadComponent(options.name, options, scope, components, init, skip, cwd);
       } else {
         result = {};
         for (nm in options) {
           if (options.hasOwnProperty(nm)) {
-            result[nm] = processOptions(options[nm], scope, components, init, skip);
+            result[nm] = processOptions(options[nm], scope, components, init, skip, cwd);
           }
         }
         return result;
@@ -99,9 +101,11 @@ function processOptions(options, scope, components, init, skip) {
  * @param {{}} scope
  * @param {{}} components
  * @param {Array} init
+ * @param {Array} skip
+ * @param {String} cwd
  * @returns {*}
  */
-function loadComponent(name, component, scope, components, init, skip) {
+function loadComponent(name, component, scope, components, init, skip, cwd) {
   if (skip && skip.indexOf(name) !== -1) {
     return null;
   }
@@ -111,8 +115,18 @@ function loadComponent(name, component, scope, components, init, skip) {
       return scope[name];
     }
   }
-  var constructor = require(component.module);
-  var result = new constructor(processOptions(component.options, scope, components, init, skip));
+
+  var modulePath = component.module;
+  if (!modulePath) {
+    return null;
+  }
+
+  if (modulePath.indexOf('./') === 0) {
+    modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
+  }
+
+  var constructor = require(modulePath);
+  var result = new constructor(processOptions(component.options, scope, components, init, skip, cwd));
   scope[name] = result;
   component.name = name;
   component.loaded = true;
@@ -158,9 +172,11 @@ function diInit(levels, level) {
  * @param {{}} components
  * @param {{}} [presets]
  * @param {String} [parentContext]
+ * @param {Array} [skip]
+ * @param {String} cwd
  * @returns {Promise}
  */
-function di(context, components, presets, parentContext, skip) {
+function di(context, components, presets, parentContext, skip, cwd) {
   var nm, pc, src;
   var scope = presets || {};
   if (parentContext && contexts.hasOwnProperty(parentContext)) {
@@ -196,7 +212,7 @@ function di(context, components, presets, parentContext, skip) {
 
   for (nm in src) {
     if (src.hasOwnProperty(nm)) {
-      loadComponent(nm, src[nm], scope, src, init, skip);
+      loadComponent(nm, src[nm], scope, src, init, skip, cwd);
     }
   }
 

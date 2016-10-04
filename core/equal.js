@@ -15,4 +15,4 @@ module.exports = function (checkedValue, metaValue) {
     return checkedValue ? metaValue && metaValue != 'false' : metaValue == 'false' || !metaValue;
   }
   return checkedValue == metaValue;
-}
+};
