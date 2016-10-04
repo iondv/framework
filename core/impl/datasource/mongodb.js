@@ -33,6 +33,8 @@ function MongoDs(config) {
 
   var log = config.logger || new LoggerProxy();
 
+  var cache = config.cache;
+
   /**
    * @returns {Promise}
    */
@@ -204,6 +206,16 @@ function MongoDs(config) {
     });
   }
 
+  function checkCache() {
+    return new Promise(resolve, reject){
+      if (cache){
+
+      } else {
+
+      }
+    }
+  }
+
   this._insert = function (type, data) {
     return this.getCollection(type).then(
       function (c) {
@@ -214,7 +226,18 @@ function MongoDs(config) {
                 if (err) {
                   reject(err);
                 } else if (result.insertedId) {
-                  _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                  _this._get(type, {_id: result.insertedId})
+                    .then(function(result){
+                      return new Promise(resolve, reject){
+                        if (cache){
+                          cache.set(result.insertedId,data).then(function(){
+                            resolve(result);
+                          });
+                        } else {
+                          resolve(result);
+                        }
+                      }
+                    }).then(resolve).catch(reject);
                 } else {
                   reject(new Error('Inser failed'));
                 }
@@ -385,19 +408,42 @@ function MongoDs(config) {
     );
   };
 
-  this._get = function (type, conditions) {
+  function getFromDb(type, conditions) {
     return _this.getCollection(type).then(
-      function (c) {
-        return new Promise(function (resolve, reject) {
-          c.find(conditions).limit(1).next(function (err, result) {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(result);
-            }
+        function (c) {
+          return new Promise(function (resolve, reject) {
+            c.find(conditions).limit(1).next(function (err, result) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(result);
+              }
+            });
           });
         });
+  }
+
+  this._get = function (type, conditions) {
+    if (cache && conditions._id) {
+      return new Promise(function(resolve, reject){
+        cache.get(conditions._id).then(function(data){
+          if (data) {
+            resolve(data);
+          } else {
+           getFromDb(type, conditions).then(function(result){
+            cache.set(conditions._id, result).then(function(){
+              resolve(result);
+            }).catch(function(){
+              resolve(result);
+            }); 
+           }).catch(reject); 
+          }
+        }).catch(reject);
       });
+    } else {
+      return getFromDb(type, conditions); 
+    }
+
   };
 
   /**

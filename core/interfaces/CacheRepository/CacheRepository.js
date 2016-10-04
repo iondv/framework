@@ -8,14 +8,6 @@
  * @constructor
  */
 function CacheRepository() {
-  
-  /**
-   * 
-   * @returns {*}
-   */
-  this.init = function() {
-    return this._init();
-  };
 
   /**
    *
