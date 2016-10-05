@@ -109,18 +109,26 @@
         }
       },
       "imageStorage": {
-        "module": "core/impl/image/ImStorage",
+        "module": "core/impl/resource/ImageStorage",
         "initLevel": 1,
         "options": {
           "fileStorage": "ion://fileStorage",
-          "dimensionsSet": {
+          "thumbnails": {
+            "tiny": {
+              "width": 50,
+              "height": 50
+            },
             "small": {
               "width": 100,
               "height": 100
             },
             "medium": {
-            "width": 300,
-            "height": 300
+              "width": 300,
+              "height": 300
+            },
+            "preview": {
+              "width": 500,
+              "height": 500
             }
           }
         }

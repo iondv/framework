@@ -3,10 +3,13 @@
  */
 'use strict';
 
-const ResourceStorage = require('core/interfaces/ResourceStorage');
+const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
+const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const gm = require('gm');
 const cuid = require('cuid');
 const clone = require('clone');
+
+// jshint maxcomplexity: 20
 
 /**
  * @param {String} id
@@ -17,20 +20,21 @@ const clone = require('clone');
  * @constructor
  */
 function StoredImage(id, link, thumbnails, options, streamGetter) {
-  ResourceStorage.StoredFile.call(this, id, link, options, streamGetter);
+  StoredFile.apply(this, [id, link, options, streamGetter]);
   this.thumbnails = thumbnails;
 }
 
 /**
  * @param {{}} options
  * @param {ResourceStorage} options.fileStorage
+ * @param {{}} options.thumbnails
  * @constructor
  */
 function ImageStorage(options) {
 
   function createThumbnails(source, name, opts) {
     var result = [];
-    var ds = options.thumbOptions;
+    var ds = options.thumbnails;
     var format;
     for (var thumb in ds) {
       if (ds.hasOwnProperty(thumb)) {
@@ -58,29 +62,30 @@ function ImageStorage(options) {
    */
   this._accept = function (data, opts) {
     return new Promise(function (resolve, reject) {
-      var o = clone(opts) || {};
+      var ops = opts || {};
+      var o = clone(ops);
       var thumbs, name, thumbnails;
 
       if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
-        name = opts.name || data.originalname || data.name || cuid();
+        name = ops.name || data.originalname || data.name || cuid();
         if (typeof data.buffer !== 'undefined') {
           thumbs = createThumbnails(data.buffer, name, o);
         } else if (typeof data.path !== 'undefined') {
           thumbs = createThumbnails(data.path, name, o);
         }
       } else {
-        name = opts.name || cuid();
+        name = ops.name || cuid();
         thumbs = createThumbnails(data, name, o);
       }
 
       thumbs.then(function (files) {
         thumbnails = {};
-        opts.thumbnails = {};
+        ops.thumbnails = {};
         for (var i = 0; i < files.length; i++) {
           thumbnails[files[i].options.thumbType] = files[i];
-          opts.thumbnails[files[i].options.thumbType] = files[i].id;
+          ops.thumbnails[files[i].options.thumbType] = files[i].id;
         }
-        return options.fileStorage.accept(data, opts);
+        return options.fileStorage.accept(data, ops);
       }).then(
         /**
          * @param {StoredFile} file

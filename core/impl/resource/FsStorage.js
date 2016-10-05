@@ -108,7 +108,7 @@ function FsStorage(options) {
                 }
                 writer.on('error', rj);
                 writer.on('finish', function () {
-                  rs(dest);
+                  rs(path.join(check.path, check.filename));
                 });
                 reader.pipe(writer);
               } else {

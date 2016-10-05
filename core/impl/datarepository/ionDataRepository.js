@@ -690,12 +690,6 @@ function IonDataRepository(options) {
     return updates;
   }
 
-  function proxy(result) {
-    return new Promise(function (r) {
-      r(result);
-    });
-  }
-
   function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
       if (Array.isArray(updates[pm.name])) {
@@ -703,15 +697,16 @@ function IonDataRepository(options) {
         for (var i = 0; i < updates[pm.name].length; i++) {
           if (typeof updates[pm.name][i] !== 'string') {
             savers.push(_this.fileStorage.accept(updates[pm.name][i]));
-          } else {
-            savers.push(proxy(updates[pm.name][i]));
           }
         }
         if (savers.length) {
           Promise.all(savers).then(
-            function (ids) {
-              if (Array.isArray(ids)) {
-                updates[pm.name] = ids;
+            function (files) {
+              if (Array.isArray(files)) {
+                updates[pm.name] = [];
+                for (var i = 0; i < files.length; i++) {
+                  updates[pm.name].push(files[i].id);
+                }
               }
               rs();
             }
@@ -724,8 +719,8 @@ function IonDataRepository(options) {
         if (pm.type === PropertyTypes.IMAGE) {
           storage = this.imageStorage;
         }
-        storage.accept(updates[pm.name]).then(function (id) {
-          updates[pm.name] = id;
+        storage.accept(updates[pm.name]).then(function (f) {
+          updates[pm.name] = f.id;
           rs();
         }).catch(rj);
       }
