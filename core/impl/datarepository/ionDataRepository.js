@@ -880,7 +880,6 @@ function IonDataRepository(options) {
 
         if (
           updates.hasOwnProperty(pm.name) &&
-          updates[pm.name] &&
           pm.type === PropertyTypes.REFERENCE &&
           pm.backRef
         ) {
