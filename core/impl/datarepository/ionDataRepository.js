@@ -852,14 +852,15 @@ function IonDataRepository(options) {
       var ups = {};
       var clr = {};
 
-      conds[cm.getKeyProperties()[0]] = updates[pm.name];
+      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
       ups[pm.backRef] = itemId;
       clr[pm.backRef] = null;
 
-      options.dataSource.update(rcm.getCanonicalName(), ups, clr).
+      options.dataSource.update(tn(rcm), ups, clr).
       then(function () {
-        return options.dataSource.update(rcm.getCanonicalName(), conds, ups);
+        return options.dataSource.update(tn(rcm), conds, ups);
       }).
+      then(resolve).
       catch(reject);
     });
   }
