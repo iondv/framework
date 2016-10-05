@@ -104,10 +104,16 @@ function ClassMeta(metaObject) {
   };
 
   this.getCreationTracker = function () {
+    if (!this.plain.creationTracker && this.ancestor) {
+      return this.ancestor.getCreationTracker();
+    }
     return this.plain.creationTracker;
   };
 
   this.getChangeTracker = function () {
+    if (!this.plain.changeTracker && this.ancestor) {
+      return this.ancestor.getChangeTracker();
+    }
     return this.plain.changeTracker;
   };
 
