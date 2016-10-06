@@ -45,6 +45,8 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
+  this.maxEagerDepth = -(options.maxEagerDepth || 5);
+
   /**
    * @param {ClassMeta} cm
    * @returns {String}
@@ -250,10 +252,6 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
 
-      if (depth < 0) {
-        resolve(src);
-      }
-
       forced2 = {};
       formForced(forced, forced2);
       attrs = {};
@@ -272,10 +270,15 @@ function IonDataRepository(options) {
             props = item.getProperties();
             for (nm in props) {
               if (props.hasOwnProperty(nm)) {
-                if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs);
-                } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
-                  prepareColEnrichment(item, props[nm], attrs);
+                if (
+                  depth > 0 ||
+                  (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
+                ) {
+                  if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                    prepareRefEnrichment(item, props[nm], attrs);
+                  } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
+                    prepareColEnrichment(item, props[nm], attrs);
+                  }
                 }
               }
             }
@@ -307,19 +310,17 @@ function IonDataRepository(options) {
             }
 
             if (filter) {
-              if (depth > 0 || forced2.hasOwnProperty(attrs[nm].attrName)) {
-                attrs[nm].pIndex = i;
-                i++;
-                promises.push(
-                  _this._getList(cn,
-                    {
-                      filter: filter,
-                      nestingDepth: depth - 1,
-                      forceEnrichment: forced2[attrs[nm].attrName]
-                    }
-                  )
-                );
-              }
+              attrs[nm].pIndex = i;
+              i++;
+              promises.push(
+                _this._getList(cn,
+                  {
+                    filter: filter,
+                    nestingDepth: depth - 1,
+                    forceEnrichment: forced2[attrs[nm].attrName]
+                  }
+                )
+              );
             }
           }
         }
