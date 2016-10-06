@@ -4,7 +4,6 @@
  */
 
 var checkConditions = require('core/ConditionParser');
-var PropertyTypes = require('core/PropertyTypes');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -59,7 +58,7 @@ function ClassMeta(metaObject) {
 
   this.propertyMetas = {};
 
-  this.semanticDepth = 0;
+  this._forcedEnrichment = [];
 
   this._semanticFunc = null;
 
@@ -85,8 +84,15 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantic = function () {
-    return this._semanticFunc;
+  this.getSemantics = function (item) {
+    if (typeof this._semanticFunc === 'function') {
+      return this._semanticFunc.apply(item);
+    }
+    return item.getItemId();
+  };
+
+  this.getForcedEnrichment = function () {
+    return this._forcedEnrichment;
   };
 
   this.getKeyProperties = function () {

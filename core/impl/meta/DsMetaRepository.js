@@ -381,92 +381,114 @@ function DsMetaRepository(options) {
     cm.___structs_expanded = true;
   }
 
-  function countDepth(semantic, cm, depth) {
-    var i,expr, tmpExpr, pm;
+  function propertyGetter(prev, propertyName, start, length) {
+    return function () {
+      var tmp = this.property(propertyName).getDisplayValue();
+      if (start) {
+        tmp = tmp.substr(start, length || null);
+      }
+
+      if (typeof prev === 'function') {
+        return prev.call(this) + tmp;
+      }
+
+      return tmp;
+    };
+  }
+
+  function constGetter(prev, v) {
+    return function () {
+      if (typeof prev === 'function') {
+        return prev.call(this) + v;
+      }
+      return v;
+    };
+  }
+
+  /**
+   * @param {String[]} path
+   * @param {ClassMeta} cm
+   */
+  function locatePropertyMeta(path, cm) {
+    var pm = cm.getPropertyMeta(path[0]);
+    if (pm) {
+      if (path.length === 1) {
+        return pm;
+      }
+
+      if (pm.type === PropertyTypes.REFERENCE) {
+        var rcm = _this._getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+        if (rcm) {
+          return locatePropertyMeta(path.slice(1), rcm);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @param {String} semantic
+   * @param {ClassMeta} cm
+   * @returns {*}
+   */
+  function createSemanticFunc(semantic, cm, forceEnrichment, prefix) {
+    var tmp, pm, result, ppath;
     var parts = semantic.split('|');
-    for (i = 0; i < parts.length; i++) {
-      if (parts[i].trim()) {
-        expr = parts[i].trim().match(/([^\[\s]*)(\s*\[\s*(\d+)\s*,\s*(\d+)\s*\])?/g);
-        if (expr) {
-          tmpExpr = expr[0].split('.');
-          if (tmpExpr.length) {
-            pm = cm.getPropertyMeta(tmpExpr[0]);
-            if (pm && pm.type === PropertyTypes.REFERENCE) {
-              if ((tmpExpr.length - 1) > depth) {
-                return (tmpExpr.length - 1);
-              }
+    for (var i = 0; i < parts.length; i++) {
+      tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
+      if (tmp) {
+        ppath = tmp[1].split('.');
+        pm = locatePropertyMeta(ppath, cm);
+        if (pm) {
+          if (forceEnrichment) {
+            if (prefix) {
+              ppath.unshift(prefix);
+            }
+            if (pm.type !== PropertyTypes.REFERENCE) {
+              ppath.pop();
+            }
+            if (ppath.length) {
+              forceEnrichment.push(ppath);
             }
           }
-        }
-      }
-    }
-    return depth;
-  }
-
-  function semanticFunctionCreator(propertyName) {
-    return function(item) {
-      var p = item.property(propertyName);
-      if(p) {
-        return p.getDisplayValue();
-      }
-      return propertyName;
-    }
-  }
-
-  function semanticGetter(body) {
-    return function(item){
-      var result = "";
-      for (var i = 0; i < body.length; i++) {
-        if (typeof body[i] === 'function') {
-          result = result + body[i].call(this,item);
+          result = propertyGetter(result, tmp[1], tmp[3], tmp[5]);
         } else {
-          result = result + body[i];
+          result = constGetter(result, parts[i]);
         }
-      }
-      return result;
-    }
-  }
-
-  function getSemanticBody(semantic, cm) {
-    var semanticBody = [];
-    var parts = semantic.split("|");
-    for (var i=0; i < parts.length; i++) {
-      var pm = cm.getPropertyMeta(parts[i].trim());
-      if(pm) {
-        semanticBody.push(semanticFunctionCreator(pm.name));
       } else {
-        semanticBody.push(parts[i]);
+        result = constGetter(result, parts[i]);
       }
     }
-    return semanticBody;
+    return result;
   }
 
   /**
    * @param {ClassMeta} cm
    */
-  function produceSemantics(cm){
-    var curDepth, i, propertyMetas;
-    curDepth = cm._semanticDepth;
-    propertyMetas = cm.getPropertyMetas();
+  function produceSemantics(cm) {
+    var i, propertyMetas;
+
     if (cm) {
-      if (cm.plain.semantic && cm.plain.semantic.trim()) {
-        curDepth = countDepth(cm.plain.semantic, cm, curDepth);
-        cm._semanticFunc = semanticGetter(getSemanticBody(cm.plain.semantic,cm));
-      }
+      propertyMetas = cm.getPropertyMetas();
+
       for (i = 0; i < propertyMetas.length; i++) {
         if (propertyMetas[i].type === PropertyTypes.REFERENCE && propertyMetas[i].semantic) {
           var refcm = getFromMeta(propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
           if (refcm) {
-            propertyMetas[i].semanticGetter = semanticGetter(getSemanticBody(propertyMetas[i].semantic, refcm));
+            propertyMetas[i].semanticGetter = createSemanticFunc(
+              propertyMetas[i].semantic,
+              refcm,
+              cm._forcedEnrichment,
+              propertyMetas[i].name
+            );
           }
         }
+      }
 
-        if (propertyMetas[i].semantic && propertyMetas[i].semantic.trim()) {
-          curDepth = countDepth(propertyMetas[i].semantic, cm, curDepth);
-        }
+      if (cm.plain.semantic) {
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment);
       }
     }
-    cm.semanticDepth = curDepth;
   }
 
   function acceptClassMeta(metas) {
