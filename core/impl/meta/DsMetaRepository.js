@@ -381,6 +381,116 @@ function DsMetaRepository(options) {
     cm.___structs_expanded = true;
   }
 
+  function propertyGetter(prev, propertyName, start, length) {
+    return function () {
+      var tmp = this.property(propertyName).getDisplayValue();
+      if (start) {
+        tmp = tmp.substr(start, length || null);
+      }
+
+      if (typeof prev === 'function') {
+        return prev.call(this) + tmp;
+      }
+
+      return tmp;
+    };
+  }
+
+  function constGetter(prev, v) {
+    return function () {
+      if (typeof prev === 'function') {
+        return prev.call(this) + v;
+      }
+      return v;
+    };
+  }
+
+  /**
+   * @param {String[]} path
+   * @param {ClassMeta} cm
+   */
+  function locatePropertyMeta(path, cm) {
+    var pm = cm.getPropertyMeta(path[0]);
+    if (pm) {
+      if (path.length === 1) {
+        return pm;
+      }
+
+      if (pm.type === PropertyTypes.REFERENCE) {
+        var rcm = _this._getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+        if (rcm) {
+          return locatePropertyMeta(path.slice(1), rcm);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @param {String} semantic
+   * @param {ClassMeta} cm
+   * @returns {*}
+   */
+  function createSemanticFunc(semantic, cm, forceEnrichment, prefix) {
+    var tmp, pm, result, ppath;
+    var parts = semantic.split('|');
+    for (var i = 0; i < parts.length; i++) {
+      tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
+      if (tmp) {
+        ppath = tmp[1].split('.');
+        pm = locatePropertyMeta(ppath, cm);
+        if (pm) {
+          if (forceEnrichment) {
+            if (prefix) {
+              ppath.unshift(prefix);
+            }
+            if (pm.type !== PropertyTypes.REFERENCE) {
+              ppath.pop();
+            }
+            if (ppath.length) {
+              forceEnrichment.push(ppath);
+            }
+          }
+          result = propertyGetter(result, tmp[1], tmp[3], tmp[5]);
+        } else {
+          result = constGetter(result, parts[i]);
+        }
+      } else {
+        result = constGetter(result, parts[i]);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   */
+  function produceSemantics(cm) {
+    var i, propertyMetas;
+
+    if (cm) {
+      propertyMetas = cm.getPropertyMetas();
+
+      for (i = 0; i < propertyMetas.length; i++) {
+        if (propertyMetas[i].type === PropertyTypes.REFERENCE && propertyMetas[i].semantic) {
+          var refcm = getFromMeta(propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
+          if (refcm) {
+            propertyMetas[i].semanticGetter = createSemanticFunc(
+              propertyMetas[i].semantic,
+              refcm,
+              cm._forcedEnrichment,
+              propertyMetas[i].name
+            );
+          }
+        }
+      }
+
+      if (cm.plain.semantic) {
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment);
+      }
+    }
+  }
+
   function acceptClassMeta(metas) {
     var i, name, ns, cm;
     _this.classMeta = {};
@@ -424,6 +534,7 @@ function DsMetaRepository(options) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
               cm = _this.classMeta[ns][name].byOrder[i];
               expandStructs(cm);
+              produceSemantics(cm);
             }
           }
         }
