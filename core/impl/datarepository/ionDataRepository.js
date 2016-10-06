@@ -12,7 +12,7 @@ var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
-/* jshint maxstatements: 50, maxcomplexity: 50 */
+/* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
