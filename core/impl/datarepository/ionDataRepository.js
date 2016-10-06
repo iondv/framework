@@ -311,7 +311,7 @@ function IonDataRepository(options) {
                 attrs[nm].pIndex = i;
                 i++;
                 promises.push(
-                  _this.getList(cn,
+                  _this._getList(cn,
                     {
                       filter: filter,
                       nestingDepth: depth - 1,
