@@ -29,6 +29,11 @@ function IonDataRepository(options) {
   this.ds = options.dataSource;
 
   /**
+   * @type {CacheRepository}
+   */
+  this.cache = options.cacheRepository;
+
+  /**
    * @type {MetaRepository}
    */
   this.meta = options.metaRepository;
