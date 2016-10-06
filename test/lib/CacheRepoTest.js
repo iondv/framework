@@ -17,7 +17,6 @@ describe('testing CacheRepository', function(){
     return cache.set(1,"hello world");
   });
 
-
   it('testing GET method',function(){
     cache.get(1).then(function(data){
       assert.isDefined(data);
