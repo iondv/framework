@@ -11,6 +11,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
+var CacheProxy = require('core/impl/cache/CacheProxy');
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -31,7 +32,7 @@ function IonDataRepository(options) {
   /**
    * @type {CacheRepository}
    */
-  this.cache = options.cacheRepository;
+  this.cache = options.cacheRepository || new CacheProxy();
 
   /**
    * @type {MetaRepository}
@@ -557,6 +558,28 @@ function IonDataRepository(options) {
     });
   };
 
+  function createItem(data, nestingDepth){
+    return new Promise(function(resolve, reject){
+      var item = null;
+      try {
+        item = _this._wrap(data._class, data, data._classVer);
+        loadFiles(item).
+        then(
+          function (item) {
+            return enrich([item], nestingDepth ? nestingDepth : 0);
+          }
+        ).then(
+          function (items) {
+            resolve(items[0]);
+          }
+        ).catch(reject);
+        return;
+      } catch (err) {
+        return reject(err);
+      }
+    });
+  }
+
   /**
    *
    * @param {String | Item} obj
@@ -568,32 +591,31 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     if (id) {
       return new Promise(function (resolve, reject) {
-        var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        _this.ds.get(tn(rcm), updates).
-        then(function (data) {
-          var item = null;
-          if (data) {
-            try {
-              item = _this._wrap(data._class, data, data._classVer);
-              loadFiles(item).
-              then(
-                function (item) {
-                  return enrich([item], nestingDepth ? nestingDepth : 0);
+        _this.cache.get(id).then(function(value){
+          if (value) {
+            createItem(value, nestingDepth)
+              .then(function(item){
+                resolve(item);
+              }).catch(function(err){
+                reject(err);
+              });
+          } else {
+              var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+              _this.ds.get(tn(rcm), updates)
+                .then(function (data) {
+                if (data) {
+                  _this.cache.set(id,data).then(function(){
+                    return createItem(data, nestingDepth);
+                  }).then(function(item){
+                    resolve(item);
+                  }).catch(function(err){
+                    reject(err);
+                  });
                 }
-              ).
-              then(
-                function (items) {
-                  resolve(items[0]);
-                }
-              ).
-              catch(reject);
-              return;
-            } catch (err) {
-              return reject(err);
+                resolve(null);
+              }).catch(reject);
             }
-          }
-          resolve(null);
-        }).catch(reject);
+          });
       });
     } else {
       var options = {};

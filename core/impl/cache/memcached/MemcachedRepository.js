@@ -18,7 +18,13 @@ function MemcachedRepository(config) {
   memcached.on('reconnecting',function(details){ console.log('Memcahced reconnecting:'+details.server+":"+details.messages.join(" ")); });
   memcached.on('reconnect',function(details){ console.log('Memcahced reconnect:'+details.server+":"+details.messages.join(" ")); });
   memcached.on('remove',function(details){ console.log('Memcahced remove:'+details.server+":"+details.messages.join(" ")); });
- 
+
+  /**
+   * 
+   * @param key
+   * @returns {Promise}
+   * @private
+   */
   this._get = function(key) {
     return new Promise(function(resolve, reject){
       if (memcached) {
@@ -35,6 +41,13 @@ function MemcachedRepository(config) {
     });
   };
 
+  /**
+   * 
+   * @param key
+   * @param value
+   * @returns {Promise}
+   * @private
+   */
   this._set = function(key, value) {
     return new Promise(function(resolve, reject){
       if (memcached) {
