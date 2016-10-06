@@ -11,6 +11,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
+var CacheProxy = require('core/impl/cache/CacheProxy');
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -27,6 +28,11 @@ function IonDataRepository(options) {
    * @type {DataSource}
    */
   this.ds = options.dataSource;
+
+  /**
+   * @type {CacheRepository}
+   */
+  this.cache = options.cacheRepository || new CacheProxy();
 
   /**
    * @type {MetaRepository}
@@ -552,6 +558,74 @@ function IonDataRepository(options) {
     });
   };
 
+  function getItemIdsAsArray(items){
+    var result = [];
+    for (var item in items){
+      if (items.hasOwnProperty(item)) {
+        result.push(items[item].getItemId());
+      }
+    }
+    return result;
+  }
+
+  function getItemIdsAsObject(items){
+    var result = {};
+    for (var item in items){
+      if (items.hasOwnProperty(item)) {
+        if (Array.isArray(items[item])) {
+          result[item] = getItemIdsAsArray(items[item]);
+        } else {
+          result[item] = items[item].getItemId();
+        }
+      }
+    }
+    return result;
+  }
+
+  function cachingKey(classname, id) {
+   return classname+"@"+id;
+  }
+
+  function enrichCachedItem(item, cols, refs){
+    var props = item.getProperties();
+    for (var propName in props) {
+      if (props.hasOwnProperty(propName)) {
+        var property = props[propName];
+        if (property.getType() === PropertyTypes.REFERENCE) {
+          var refId = refs[property.getName()];
+          if (refId) {
+            var refc = _this.meta.getMeta(property.meta.refClass, null, item.classMeta.getNamespace());
+            if (refc) {
+              _this.cache.get(cachingKey(tn(_this._getRootType(refc)),refId)).then(function(value){
+                if(value){
+                  wrapCachedItem(value).then(function(refItem){
+                    item.references[property.getName()] = refItem;
+                  });
+                } else {
+                  
+                }
+              });
+            }
+          }
+        } else if (props[propName].getType() === PropertyTypes.COLLECTION && cols[props[propName].getName()]) {
+
+        }
+      }
+    }
+  }
+
+  function wrapCachedItem(value){
+    return new Promise(function(resolve, reject){
+      var item = _this._wrap(value.base._class, value.base, value.base._classVer);
+      item.files = value.files;
+      enrichCachedItem(item, value.collections, value.references).then(function(item){
+        resolve(item);
+      }).catch(function(err){
+        reject(err);
+      });
+    });
+  }
+
   /**
    *
    * @param {String | Item} obj
@@ -563,32 +637,54 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     if (id) {
       return new Promise(function (resolve, reject) {
-        var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        _this.ds.get(tn(rcm), updates).
-        then(function (data) {
-          var item = null;
-          if (data) {
-            try {
-              item = _this._wrap(data._class, data, data._classVer);
-              loadFiles(item).
-              then(
-                function (item) {
-                  return enrich([item], nestingDepth ? nestingDepth : 0);
+        var classname = tn(rcm);
+        var item = null;
+        _this.cache.get(cachingKey(classname,id)).then(function(value){
+          if (value) {
+            wrapCachedItem(value).then(function(item){
+              resolve(item);
+            }).catch(function(err){
+              reject(err);
+            });
+          } else {
+            var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+            _this.ds.get(classname , updates).
+            then(function (data) {
+              if (data) {
+                try {
+                  item = _this._wrap(data._class, data, data._classVer);
+                  loadFiles(item).
+                  then(
+                    function (item) {
+                      return enrich([item], nestingDepth ? nestingDepth : 0);
+                    }
+                  ).
+                  then(
+                    function (items) {
+                      _this.cache.set(cachingKey(classname, id),
+                        {
+                          base: items[0].base,
+                          collections: getItemIdsAsObject(items[0].collections),
+                          references: getItemIdsAsObject(items[0].references),
+                          files: items[0].files,
+                          lists: []
+                        }
+                      ).then(function(){
+                        resolve(items[0]);
+                      });
+                    }
+                  ).
+                  catch(reject);
+                  return;
+                } catch (err) {
+                  return reject(err);
                 }
-              ).
-              then(
-                function (items) {
-                  resolve(items[0]);
-                }
-              ).
-              catch(reject);
-              return;
-            } catch (err) {
-              return reject(err);
-            }
+              }
+              resolve(null);
+            }).catch(reject);
           }
-          resolve(null);
-        }).catch(reject);
+        });
+
       });
     } else {
       var options = {};

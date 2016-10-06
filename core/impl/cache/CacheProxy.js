@@ -32,6 +32,7 @@ function CacheProxy(config) {
    * @private
    */
   this._set = function(key, value) {
+    console.log("CACHE:",key,":",value);
     return new Promise(function(resolve, reject){
       resolve();
     });
