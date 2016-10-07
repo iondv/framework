@@ -79,7 +79,7 @@
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
-          "noPublicRegistration": "[[auth.noRegistration]]",
+          "publicRegistration": "[[auth.registration]]",
           "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
         }
       },
