@@ -4,6 +4,9 @@
  */
 'use strict';
 
+var bson = require('bson');
+var BSON = new bson.BSONPure.BSON();
+
 var DataRepositoryModule = require('core/interfaces/DataRepository');
 var DataRepository = DataRepositoryModule.DataRepository;
 var Item = DataRepositoryModule.Item;
@@ -503,6 +506,65 @@ function IonDataRepository(options) {
     return filter;
   }
 
+  function objectToBsonToBase64(object){
+    var bsonValue = BSON.serialize(object, false, true, false);
+    return bsonValue.toString('base64');
+  }
+
+  function cachingListKey(classname) {
+   return "__"+classname;
+  }
+
+  function retrieveList(data,options) {
+    if (data) {
+      var filterSortKey = objectToBsonToBase64({"filter":options.filter,"sort":options.sort});
+     if (data[filterSortKey]) {
+       return data[filterSortKey][options.offset+"_"+options.count];
+     } else {
+       return null;
+     }
+    } else {
+      return null;
+    }
+  }
+
+  function downloadList(classname,options) {
+    return new Promise(function(resolve, reject){
+      _this.cache.get(cachingListKey(classname))
+        .then(function(value){
+          var list = retrieveList(value, options);
+          if (list) {
+            var promises = [];
+            for (var i = 0; i < list.length; i++) {
+              var key = cachingKeyDecode(list[i]);
+              promises.push(downloadItem(key.classname,key.id));
+            }
+            Promise.all(promises).then(resolve).catch(reject);
+          } else {
+            _this.ds.fetch(classname, options)
+              .then(function(data){
+                var items = [];
+                var itemIds = [];
+                var promises = [];
+                for (var i = 0; i < data.length; i++){
+                  var item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+                  itemIds.push(cachingKey(data[i]._class,item.getItemId()));
+                  promises.push(updateCachedItem(data[i]._class,item.getItemId(),data[i],cachingListKey(classname)));
+                }
+                Promise.all(promises).then(function(){
+                  _this.cache.set(cachingListKey(classname),itemIds)
+                    .then(function(){
+                      resolve(items);
+                    }).catch(function(){
+                      resolve(items);
+                    });
+                }).catch(reject);
+              }).catch(reject);
+          }
+        })
+    });
+  }
+
   /**
    * @param {String | Item} obj
    * @param {Object} [options]
@@ -559,24 +621,28 @@ function IonDataRepository(options) {
   };
 
   function cachingKey(classname, id) {
-    return classname+"@"+id;
+    return classname+"@@"+id;
+  }
+
+  function cachingKeyDecode(key) {
+    var parts =  key.split("@@");
+    return {"classname":parts[0],"id":parts[1]};
   }
 
   function downloadItem(obj, id) {
     return new Promise(function(resolve, reject) {
       var cm = _this._getMeta(obj);
       var rcm = _this._getRootType(cm);
-      var classname = tn(rcm);
-      _this.cache.get(cachingKey(classname,id))
+      _this.cache.get(cachingKey(obj,id))
         .then(function(value){
           if (value) {
-            resolve(value);
+            resolve(value.base);
           } else {
             var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-            _this.ds.get(classname, updates)
+            _this.ds.get(tn(rcm), updates)
               .then(function(data){
                 if (data) {
-                  _this.cache.set(cachingKey(classname,id),{"base":data,"lists":[]})
+                  _this.cache.set(cachingKey(obj,id),{"base":data,"lists":[]})
                     .then(function(){
                       resolve(data);
                     }).catch(function(){
@@ -894,7 +960,6 @@ function IonDataRepository(options) {
       try {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
-        var classname = tn(rcm);
 
         var updates = formUpdatedData(cm, data, true);
 
@@ -910,7 +975,7 @@ function IonDataRepository(options) {
         Promise.all(fileSavers).then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
-          return _this.ds.insert(classname , updates);
+          return _this.ds.insert(tn(rcm) , updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           if (changeLogger) {
@@ -952,7 +1017,7 @@ function IonDataRepository(options) {
     });
   };
 
-  function updateCachedItem(classname, id, data) {
+  function updateCachedItem(classname, id, data, list) {
     return new Promise(function(resolve, reject){
       _this.cache
         .get(cachingKey(classname, id))
@@ -963,6 +1028,9 @@ function IonDataRepository(options) {
           };
           if (value) {
             result.lists = value.lists;
+          }
+          if (list) {
+            result.lists.push(list);
           }
           _this.cache.set(cachingKey(classname, id), result)
             .then(function(){
@@ -991,7 +1059,6 @@ function IonDataRepository(options) {
       try {
         var cm = _this.meta.getMeta(classname);
         var rcm = _this._getRootType(cm);
-        var classname = tn(rcm);
 
         /**
          * @var {{}}
@@ -1014,7 +1081,7 @@ function IonDataRepository(options) {
           }
 
           Promise.all(fileSavers).then(function () {
-            return _this.ds.update(classname, conditions, updates);
+            return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
               return new Promise(function (resolve, reject) {
@@ -1129,14 +1196,14 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                updateCachedItem(tn(rcm), id, data).then(function(){
+                updateCachedItem(classname, id, data).then(function(){
                   resolve([item]);
                 });
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              updateCachedItem(tn(rcm), id, data).then(function(){
+              updateCachedItem(classname, id, data).then(function(){
                 resolve([item]);
               });
             });
