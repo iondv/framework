@@ -1138,12 +1138,12 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                resolve([item]);
+                resolve(item);
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              resolve([item]);
+              resolve(item);
             });
           }
         }).then(function (item) {
