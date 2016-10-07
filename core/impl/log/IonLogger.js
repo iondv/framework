@@ -102,7 +102,11 @@ function IonLogger(options) {
       } else if (typeof dest[i].info === 'function') {
         dest[i].info(prefix + ' ' + m);
       } else if (typeof dest[i].write === 'function') {
-        dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
+        if (type === 'ERROR') {
+          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n' + (message.stack || ''));
+        } else {
+          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
+        }
       }
     }
   }
