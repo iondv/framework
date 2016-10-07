@@ -20,6 +20,7 @@ function CacheProxy(config) {
    */
   this._get = function(key) {
     return new Promise(function(resolve, reject){
+      console.log("CACHE GET:",key);
       resolve(null);
     });
   };
@@ -32,7 +33,7 @@ function CacheProxy(config) {
    * @private
    */
   this._set = function(key, value) {
-    console.log("CACHE:",key,":",value);
+    console.log("CACHE SET:",key,":",value);
     return new Promise(function(resolve, reject){
       resolve();
     });
