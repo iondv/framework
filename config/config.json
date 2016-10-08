@@ -114,6 +114,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
+          "cacheRepository": "ion://innerCache",
           "keyProvider": {
             "name": "keyProvider",
             "module": "core/impl/meta/keyProvider",
@@ -122,6 +123,10 @@
             }
           }
         }
+      },
+      "innerCache": {
+        "module": "core/impl/cache/InnerCacheRepository",
+        "options": {}
       }
     }
 }

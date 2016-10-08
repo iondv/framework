@@ -4,9 +4,7 @@
  */
 'use strict';
 
-var bson = require('bson');
-var BSON = new bson.BSONPure.BSON();
-
+var crypto = require('crypto');
 var DataRepositoryModule = require('core/interfaces/DataRepository');
 var DataRepository = DataRepositoryModule.DataRepository;
 var Item = DataRepositoryModule.Item;
@@ -506,20 +504,19 @@ function IonDataRepository(options) {
     return filter;
   }
 
-  function objectToBsonToBase64(object){
-    var bsonValue = BSON.serialize(object, false, true, false);
-    return bsonValue.toString('base64');
+  function objectToMD5(object){
+    return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
   }
 
   function cachingListKey(classname) {
    return "__"+classname;
   }
 
-  function retrieveList(data,options) {
-    if (data) {
-      var filterSortKey = objectToBsonToBase64({"filter":options.filter,"sort":options.sort});
-     if (data[filterSortKey]) {
-       return data[filterSortKey][options.offset+"_"+options.count];
+  function retrieveCachedList(listsObject,options) {
+    if (listsObject) {
+      var filterSortKey = objectToMD5({"filter":options.filter,"sort":options.sort});
+     if (listsObject[filterSortKey]) {
+       return listsObject[filterSortKey][options.offset+"_"+options.count];
      } else {
        return null;
      }
@@ -528,31 +525,58 @@ function IonDataRepository(options) {
     }
   }
 
-  function downloadList(classname,options) {
+  function loadCachedList(listsObject,options,list){
+    if (!listsObject) {
+      listsObject = {};
+    }
+    var filterSortKey = objectToMD5({"filter":options.filter,"sort":options.sort});
+    if (!listsObject[filterSortKey]) {
+      listsObject[filterSortKey] = {};
+    }
+    listsObject[filterSortKey][options.offset+"_"+options.count] = list;
+    return listsObject;
+  }
+
+  function uncacheList(classname,options) {
     return new Promise(function(resolve, reject){
       _this.cache.get(cachingListKey(classname))
         .then(function(value){
-          var list = retrieveList(value, options);
-          if (list) {
+          var listObject = retrieveCachedList(value, options);
+          var items = [];
+          if (listObject) {
             var promises = [];
-            for (var i = 0; i < list.length; i++) {
-              var key = cachingKeyDecode(list[i]);
+            for (var i = 0; i < listObject.itemIds.length; i++) {
+              var key = cachingKeyDecode(listObject.itemIds[i]);
               promises.push(downloadItem(key.classname,key.id));
             }
-            Promise.all(promises).then(resolve).catch(reject);
+            Promise.all(promises)
+              .then(function(data){
+                for (var i = 0; i < data.length; i++){
+                  items.push(_this._wrap(data[i]._class, data[i], data[i]._classVer));
+                }
+                items.total = listObject.total;
+                resolve(items);
+              }).catch(reject);
           } else {
             _this.ds.fetch(classname, options)
               .then(function(data){
-                var items = [];
-                var itemIds = [];
+                var cacheObject = {
+                  itemIds: [],
+                  total: null
+                };
                 var promises = [];
                 for (var i = 0; i < data.length; i++){
                   var item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-                  itemIds.push(cachingKey(data[i]._class,item.getItemId()));
+                  items.push(item);
+                  cacheObject.itemIds.push(cachingKey(data[i]._class,item.getItemId()));
                   promises.push(updateCachedItem(data[i]._class,item.getItemId(),data[i],cachingListKey(classname)));
                 }
+                if (typeof data.total !== 'undefined' && data.total !== null) {
+                  items.total = data.total;
+                  cacheObject.total = data.total;
+                }
                 Promise.all(promises).then(function(){
-                  _this.cache.set(cachingListKey(classname),itemIds)
+                  _this.cache.set(cachingListKey(classname),loadCachedList(value,options,cacheObject))
                     .then(function(){
                       resolve(items);
                     }).catch(function(){
@@ -587,24 +611,17 @@ function IonDataRepository(options) {
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     options.filter = prepareFilter(rcm, options.filter);
     return new Promise(function (resolve, reject) {
-      var result = [];
-      _this.ds.fetch(tn(rcm), options)
+      uncacheList(tn(rcm),options)
         .then(
-          function (data) {
+          function (result) {
             var fl = [];
             try {
-              for (var i = 0; i < data.length; i++) {
-                result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+              for (var i = 0; i < result.length; i++) {
                 fl.push(loadFiles(result[i]));
               }
             } catch (err) {
               return reject(err);
             }
-
-            if (typeof data.total !== 'undefined' && data.total !== null) {
-              result.total = data.total;
-            }
-
             return new Promise(function (rs, rj) {
               Promise.all(fl).then(function () {
                 rs(result);
