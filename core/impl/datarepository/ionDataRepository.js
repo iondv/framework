@@ -512,36 +512,74 @@ function IonDataRepository(options) {
    return "__"+classname;
   }
 
-  function retrieveCachedList(listsObject,options) {
-    if (listsObject) {
-      var filterSortKey = objectToMD5({"filter":options.filter,"sort":options.sort});
-     if (listsObject[filterSortKey]) {
-       return listsObject[filterSortKey][options.offset+"_"+options.count];
-     } else {
-       return null;
-     }
-    } else {
-      return null;
-    }
+  function retrieveCachedList(classname,options) {
+    return new Promise(function(resolve,reject){
+      _this.cache.get(classname)
+        .then(function(classLevel){
+          if (classLevel) {
+            var objectHash = objectToMD5({"filter":options.filter,"sort":options.sort,"offset":options.offset,"count":options.count});
+            if (classLevel.indexOf(objectHash) > -1) {
+              var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
+              _this.cache.get(classname+"@"+filterSortHash)
+                .then(function(filterLevel){
+                   if (filterLevel) {
+                     var offsetCountHash = objectToMD5({"offset":options.offset,"count":options.count});
+                     if (filterLevel.indexOf(offsetCountHash) > -1) {
+                       _this.cache.get(classname+"@"+filterSortHash+"@"+offsetCountHash)
+                         .then(resolve).catch(reject);
+                     } else {
+                       resolve(null);
+                     }
+                   } else {
+                     resolve(null);
+                   }
+                }).catch(reject);
+            } else {
+              resolve(null);
+            }
+          } else {
+            resolve(null);
+          }
+        }).catch(reject);
+    });
   }
 
-  function loadCachedList(listsObject,options,list){
-    if (!listsObject) {
-      listsObject = {};
-    }
-    var filterSortKey = objectToMD5({"filter":options.filter,"sort":options.sort});
-    if (!listsObject[filterSortKey]) {
-      listsObject[filterSortKey] = {};
-    }
-    listsObject[filterSortKey][options.offset+"_"+options.count] = list;
-    return listsObject;
+  function updateListObjectInCache(key,payload) {
+    return new Promise(function(resolve, reject){
+        _this.cache.get(key)
+          .then(function(data){
+            if (!data) {
+              data = [];
+            }
+            if (typeof payload !== 'string') {
+              data = payload;
+            } else {
+              if (data.indexOf(payload) < 0) {
+                data.push(payload);
+              }
+            }
+            _this.cache.set(key,data).then(resolve).catch(reject);
+          }).catch(reject);
+    });
+  }
+
+  function putListToCache(classname,options,list) {
+    return new Promise(function(resolve, reject){
+      var objectHash = objectToMD5({"filter":options.filter,"sort":options.sort,"offset":options.offset,"count":options.count});
+      var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
+      var offsetCountHash = objectToMD5({"offset":options.offset,"count":options.count});
+      var promises = [];
+      promises.push(updateListObjectInCache(classname,objectHash));
+      promises.push(updateListObjectInCache(classname+"@"+filterSortHash,offsetCountHash));
+      promises.push(updateListObjectInCache(classname+"@"+filterSortHash+"@"+offsetCountHash,list));
+      Promise.all(promises).then(resolve).catch(reject);
+    });
   }
 
   function uncacheList(classname,options) {
     return new Promise(function(resolve, reject){
-      _this.cache.get(cachingListKey(classname))
-        .then(function(value){
-          var listObject = retrieveCachedList(value, options);
+      retrieveCachedList(cachingListKey(classname), options)
+        .then(function(listObject){
           var items = [];
           if (listObject) {
             var promises = [];
@@ -576,7 +614,7 @@ function IonDataRepository(options) {
                   cacheObject.total = data.total;
                 }
                 Promise.all(promises).then(function(){
-                  _this.cache.set(cachingListKey(classname),loadCachedList(value,options,cacheObject))
+                  putListToCache(cachingListKey(classname),options,cacheObject)
                     .then(function(){
                       resolve(items);
                     }).catch(function(){
