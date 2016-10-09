@@ -504,34 +504,34 @@ function IonDataRepository(options) {
     return filter;
   }
 
-  function objectToMD5(object){
+  function objectToMD5(object) {
     return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
   }
 
   function cachingListKey(classname) {
-   return "__"+classname;
+    return '__' + classname;
   }
 
   function retrieveCachedList(classname,options) {
-    return new Promise(function(resolve,reject){
+    return new Promise(function (resolve,reject) {
       _this.cache.get(classname)
-        .then(function(classLevel){
+        .then(function (classLevel) {
           if (classLevel) {
-            var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
-            var offsetCount = (options.offset ? options.offset : "") + "_" + (options.count ? options.count : "");
-            if (classLevel.indexOf(filterSortHash+"@"+offsetCount) > -1) {
-              _this.cache.get(classname+"@"+filterSortHash)
-                .then(function(filterLevel){
-                   if (filterLevel) {
-                     if (filterLevel.indexOf(offsetCount) > -1) {
-                       _this.cache.get(classname+"@"+filterSortHash+"@"+offsetCount)
-                         .then(resolve).catch(reject);
-                     } else {
-                       resolve(null);
-                     }
-                   } else {
-                     resolve(null);
-                   }
+            var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
+            var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
+            if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
+              _this.cache.get(classname + '@' + filterSortHash)
+                .then(function (filterLevel) {
+                  if (filterLevel) {
+                    if (filterLevel.indexOf(offsetCount) > -1) {
+                      _this.cache.get(classname + '@' + filterSortHash + '@' + offsetCount)
+                        .then(resolve).catch(reject);
+                    } else {
+                      resolve(null);
+                    }
+                  } else {
+                    resolve(null);
+                  }
                 }).catch(reject);
             } else {
               resolve(null);
@@ -544,9 +544,9 @@ function IonDataRepository(options) {
   }
 
   function updateListObjectInCache(key,payload) {
-    return new Promise(function(resolve, reject){
+    return new Promise(function (resolve, reject) {
         _this.cache.get(key)
-          .then(function(data){
+          .then(function (data) {
             if (!data) {
               data = [];
             }
@@ -557,37 +557,37 @@ function IonDataRepository(options) {
                 data.push(payload);
               }
             }
-            _this.cache.set(key,data).then(resolve).catch(reject);
+            _this.cache.set(key, data).then(resolve).catch(reject);
           }).catch(reject);
-    });
+      });
   }
 
   function putListToCache(classname,options,list) {
-    return new Promise(function(resolve, reject){
-      var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
-      var offsetCount = (options.offset ? options.offset : "") + "_" + (options.count ? options.count : "");
+    return new Promise(function (resolve, reject) {
+      var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
+      var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
       var promises = [];
-      promises.push(updateListObjectInCache(classname,filterSortHash+"@"+offsetCount));
-      promises.push(updateListObjectInCache(classname+"@"+filterSortHash,offsetCount));
-      promises.push(updateListObjectInCache(classname+"@"+filterSortHash+"@"+offsetCount,list));
+      promises.push(updateListObjectInCache(classname, filterSortHash + '@' + offsetCount));
+      promises.push(updateListObjectInCache(classname + '@' + filterSortHash, offsetCount));
+      promises.push(updateListObjectInCache(classname + '@' + filterSortHash + '@' + offsetCount, list));
       Promise.all(promises).then(resolve).catch(reject);
     });
   }
 
   function uncacheList(classname,options) {
-    return new Promise(function(resolve, reject){
+    return new Promise(function (resolve, reject) {
       retrieveCachedList(cachingListKey(classname), options)
-        .then(function(listObject){
+        .then(function (listObject) {
           var items = [];
           if (listObject) {
             var promises = [];
             for (var i = 0; i < listObject.itemIds.length; i++) {
               var key = cachingKeyDecode(listObject.itemIds[i]);
-              promises.push(uncacheItem(key.classname,key.id));
+              promises.push(uncacheItem(key.classname, key.id));
             }
             Promise.all(promises)
-              .then(function(data){
-                for (var i = 0; i < data.length; i++){
+              .then(function (data) {
+                for (var i = 0; i < data.length; i++) {
                   items.push(_this._wrap(data[i]._class, data[i], data[i]._classVer));
                 }
                 items.total = listObject.total;
@@ -595,37 +595,37 @@ function IonDataRepository(options) {
               }).catch(reject);
           } else {
             _this.ds.fetch(classname, options)
-              .then(function(data){
+              .then(function (data) {
                 var cacheObject = {
                   itemIds: [],
                   total: null
                 };
                 var promises = [];
-                for (var i = 0; i < data.length; i++){
+                for (var i = 0; i < data.length; i++) {
                   var item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
                   items.push(item);
-                  cacheObject.itemIds.push(cachingKey(data[i]._class,item.getItemId()));
+                  cacheObject.itemIds.push(cachingKey(data[i]._class, item.getItemId()));
                   var listId = {
-                    "classname": cachingListKey(classname),
-                    "options": options
+                    classname: cachingListKey(classname),
+                    options: options
                   };
-                  promises.push(updateCachedItem(data[i]._class,item.getItemId(),data[i],listId));
+                  promises.push(updateCachedItem(data[i]._class, item.getItemId(), data[i], listId));
                 }
                 if (typeof data.total !== 'undefined' && data.total !== null) {
                   items.total = data.total;
                   cacheObject.total = data.total;
                 }
-                Promise.all(promises).then(function(){
-                  putListToCache(cachingListKey(classname),options,cacheObject)
-                    .then(function(){
+                Promise.all(promises).then(function () {
+                  putListToCache(cachingListKey(classname), options, cacheObject)
+                    .then(function () {
                       resolve(items);
-                    }).catch(function(){
+                    }).catch(function () {
                       resolve(items);
                     });
                 }).catch(reject);
               }).catch(reject);
           }
-        })
+        });
     });
   }
 
@@ -651,7 +651,7 @@ function IonDataRepository(options) {
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     options.filter = prepareFilter(rcm, options.filter);
     return new Promise(function (resolve, reject) {
-      uncacheList(tn(rcm),options)
+      uncacheList(tn(rcm), options)
         .then(
           function (result) {
             var fl = [];
@@ -678,33 +678,33 @@ function IonDataRepository(options) {
   };
 
   function cachingKey(classname, id) {
-    return classname+"@@"+id;
+    return classname + '@@' + id;
   }
 
   function cachingKeyDecode(key) {
-    var parts =  key.split("@@");
-    return {"classname":parts[0],"id":parts[1]};
+    var parts =  key.split('@@');
+    return {classname: parts[0],id: parts[1]};
   }
 
   function uncacheItem(obj, id) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       var cm = _this._getMeta(obj);
       var rcm = _this._getRootType(cm);
-      _this.cache.get(cachingKey(obj,id))
-        .then(function(value){
+      _this.cache.get(cachingKey(obj, id))
+        .then(function (value) {
           if (value) {
             resolve(value.base);
           } else {
             var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
             _this.ds.get(tn(rcm), updates)
-              .then(function(data){
+              .then(function (data) {
                 if (data) {
-                  _this.cache.set(cachingKey(obj,id),{"base":data,"lists":[]})
-                    .then(function(){
+                  _this.cache.set(cachingKey(obj, id), {base: data,lists: []})
+                    .then(function () {
                       resolve(data);
-                    }).catch(function(){
+                    }).catch(function () {
                       resolve(data);
-                  });
+                    });
                 } else {
                   resolve(null);
                 }
@@ -723,7 +723,7 @@ function IonDataRepository(options) {
   this._getItem = function (obj, id, nestingDepth) {
     if (id) {
       return new Promise(function (resolve, reject) {
-        uncacheItem(obj, id).then(function(data){
+        uncacheItem(obj, id).then(function (data) {
           var item = null;
           if (data) {
             try {
@@ -1032,7 +1032,7 @@ function IonDataRepository(options) {
         Promise.all(fileSavers).then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
-          return _this.ds.insert(tn(rcm) , updates);
+          return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           if (changeLogger) {
@@ -1043,30 +1043,30 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                _this.cache.set(cachingKey(classname,item.getItemId()),{"base":data,"lists":[]})
-                  .then(function(){
+                _this.cache.set(cachingKey(classname, item.getItemId()), {base: data,lists: []})
+                  .then(function () {
                     removeCachedLists_afterCreate(cachingListKey(tn(rcm)))
-                      .then(function(){
+                      .then(function () {
                         resolve(item);
-                      }).catch(function(){
+                      }).catch(function () {
                         resolve(item);
                       });
-                  }).catch(function(){
+                  }).catch(function () {
                     resolve(item);
                   });
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              _this.cache.set(cachingKey(classname,item.getItemId()),{"base":data,"lists":[]})
-                  .then(function(){
+              _this.cache.set(cachingKey(classname, item.getItemId()), {base: data,lists: []})
+                  .then(function () {
                     removeCachedLists_afterCreate(tn(rcm))
-                      .then(function(){
+                      .then(function () {
                         resolve(item);
-                      }).catch(function(){
+                      }).catch(function () {
                         resolve(item);
                       });
-                  }).catch(function(){
+                  }).catch(function () {
                     resolve(item);
                   });
             });
@@ -1085,13 +1085,13 @@ function IonDataRepository(options) {
   };
 
   function updateCachedItem(classname, id, data, list) {
-    return new Promise(function(resolve, reject){
+    return new Promise(function (resolve, reject) {
       _this.cache
         .get(cachingKey(classname, id))
-        .then(function(value){
+        .then(function (value) {
           var result = {
-            "base": data,
-            "lists": []
+            base: data,
+            lists: []
           };
           if (value) {
             result.lists = value.lists;
@@ -1112,13 +1112,13 @@ function IonDataRepository(options) {
             }
           }
           _this.cache.set(cachingKey(classname, id), result)
-            .then(function(){
+            .then(function () {
               resolve();
-            }).catch(function(err){
+            }).catch(function (err) {
               console.log(err);
               resolve();
             });
-        }).catch(function(err){
+        }).catch(function (err) {
           console.log(err);
           resolve();
         });
@@ -1180,11 +1180,11 @@ function IonDataRepository(options) {
                   item.getItemId(),
                   updates
                 ).then(function () {
-                  updateCachedItem(classname, id, data).then(function(){
-                    removeCachedLists_afterUpdate(classname,id)
-                      .then(function(){
+                  updateCachedItem(classname, id, data).then(function () {
+                    removeCachedLists_afterUpdate(classname, id)
+                      .then(function () {
                         resolve(item);
-                      }).catch(function(){
+                      }).catch(function () {
                         resolve(item);
                       });
                   });
@@ -1192,11 +1192,11 @@ function IonDataRepository(options) {
               });
             } else {
               return new Promise(function (resolve) {
-                updateCachedItem(classname, id, data).then(function(){
-                  removeCachedLists_afterUpdate(classname,id)
-                      .then(function(){
+                updateCachedItem(classname, id, data).then(function () {
+                  removeCachedLists_afterUpdate(classname, id)
+                      .then(function () {
                         resolve(item);
-                      }).catch(function(){
+                      }).catch(function () {
                         resolve(item);
                       });
                 });
@@ -1289,11 +1289,11 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                updateCachedItem(classname, id, data).then(function(){
-                  removeCachedLists_afterUpdate(classname,id)
-                      .then(function(){
+                updateCachedItem(classname, id, data).then(function () {
+                  removeCachedLists_afterUpdate(classname, id)
+                      .then(function () {
                         resolve(item);
-                      }).catch(function(){
+                      }).catch(function () {
                         resolve(item);
                       });
                 });
@@ -1301,11 +1301,11 @@ function IonDataRepository(options) {
             });
           } else {
             return new Promise(function (resolve) {
-              updateCachedItem(classname, id, data).then(function(){
-                removeCachedLists_afterUpdate(classname,id)
-                  .then(function(){
+              updateCachedItem(classname, id, data).then(function () {
+                removeCachedLists_afterUpdate(classname, id)
+                  .then(function () {
                     resolve(item);
-                  }).catch(function(){
+                  }).catch(function () {
                     resolve(item);
                   });
               });
@@ -1325,20 +1325,20 @@ function IonDataRepository(options) {
   };
 
   function removeCachedLists_afterCreate(classname) {
-    return new Promise(function(resolve, reject){
+    return new Promise(function (resolve, reject) {
       _this.cache.get(classname)
-        .then(function(classLevel){
+        .then(function (classLevel) {
           if (classLevel) {
             var promises1 = [];
             for (var i = 0; i < classLevel.length; i++) {
-              promises1.push((function(filterSortHash){
-                return new Promise(function(resolve, reject){
-                  _this.cache.get(classname+"@"+filterSortHash)
-                    .then(function(filterLevel){
+              promises1.push((function (filterSortHash) {
+                return new Promise(function (resolve, reject) {
+                  _this.cache.get(classname + '@' + filterSortHash)
+                    .then(function (filterLevel) {
                       if (filterLevel) {
                         var promises2 = [];
                         for (var i = 0; i < filterLevel.length; i++) {
-                          promises2.push(_this.cache.set(classname+"@"+filterSortHash+"@"+filterLevel[i],null));
+                          promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
                         }
                         Promise.all(promises2).then(resolve).catch(reject);
                       } else {
@@ -1346,7 +1346,7 @@ function IonDataRepository(options) {
                       }
                     }).catch(reject);
                 });
-              })(classLevel[i].split("@")[0]));
+              })(classLevel[i].split('@')[0]));
             }
             Promise.all(promises1).then(resolve).catch(reject);
           } else {
@@ -1356,27 +1356,27 @@ function IonDataRepository(options) {
     });
   }
 
- function removeCachedLists_afterUpdate(classname, id) {
-    return new Promise(function(resolve, reject){
-      _this.cache.get(cachingKey(classname,id))
-        .then(function(value){
-          if(value) {
+  function removeCachedLists_afterUpdate(classname, id) {
+    return new Promise(function (resolve, reject) {
+      _this.cache.get(cachingKey(classname, id))
+        .then(function (value) {
+          if (value) {
             var promises1 = [];
             for (var i = 0; i < value.lists.length; i++) {
-              promises1.push((function(classname, options) {
-                return new Promise(function(resolve,reject){
+              promises1.push((function (classname, options) {
+                return new Promise(function (resolve,reject) {
                   _this.cache.get(classname)
-                    .then(function(classLevel){
+                    .then(function (classLevel) {
                       if (classLevel) {
-                        var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
-                        var offsetCount = (options.offset ? options.offset : "") + "_" + (options.count ? options.count : "");
-                        if (classLevel.indexOf(filterSortHash+"@"+offsetCount) > -1) {
-                          _this.cache.get(classname+"@"+filterSortHash)
-                            .then(function(filterLevel){
+                        var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
+                        var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
+                        if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
+                          _this.cache.get(classname + '@' + filterSortHash)
+                            .then(function (filterLevel) {
                               if (filterLevel) {
                                 var promises2 = [];
                                 for (var i = 0; i < filterLevel.length; i++) {
-                                  promises2.push(_this.cache.set(classname+"@"+filterSortHash+"@"+filterLevel[i],null));
+                                  promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
                                 }
                                 Promise.all(promises2).then(resolve).catch(reject);
                               } else {
@@ -1402,30 +1402,30 @@ function IonDataRepository(options) {
   }
 
   function removeCachedLists_afterDelete(classname, id) {
-    return new Promise(function(resolve, reject){
-      _this.cache.get(cachingKey(classname,id))
-        .then(function(value){
-          if(value) {
+    return new Promise(function (resolve, reject) {
+      _this.cache.get(cachingKey(classname, id))
+        .then(function (value) {
+          if (value) {
             var promises1 = [];
             for (var i = 0; i < value.lists.length; i++) {
-              promises1.push((function(classname, options) {
-                return new Promise(function(resolve,reject){
+              promises1.push((function (classname, options) {
+                return new Promise(function (resolve,reject) {
                   _this.cache.get(classname)
-                    .then(function(classLevel){
+                    .then(function (classLevel) {
                       if (classLevel) {
-                        var filterSortHash = objectToMD5({"filter":options.filter,"sort":options.sort});
-                        var offsetCount = (options.offset ? options.offset : "") + "_" + (options.count ? options.count : "");
-                        if (classLevel.indexOf(filterSortHash+"@"+offsetCount) > -1) {
-                          _this.cache.get(classname+"@"+filterSortHash)
-                            .then(function(filterLevel){
+                        var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
+                        var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
+                        if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
+                          _this.cache.get(classname + '@' + filterSortHash)
+                            .then(function (filterLevel) {
                               if (filterLevel) {
-                                var rx = new RegExp((options.offset ? options.offset : "") + "_" + "(\\d+)","g");
+                                var rx = new RegExp((options.offset ? options.offset : '') + '_' + '(\\d+)','g');
                                 var promises2 = [];
                                 for (var i = 0; i < filterLevel.length; i++) {
                                   if (filterLevel[i] === offsetCount) {
-                                    promises2.push(_this.cache.set(classname+"@"+filterSortHash+"@"+offsetCount,null));
-                                  } else if (options.count && rx.test(filterLevel[i]) && filterLevel[i].split("_")[1] > options.count) {
-                                    promises2.push(_this.cache.set(classname+"@"+filterSortHash+"@"+filterLevel[i],null));
+                                    promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + offsetCount, null));
+                                  } else if (options.count && rx.test(filterLevel[i]) && filterLevel[i].split('_')[1] > options.count) {
+                                    promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
                                   }
                                 }
                                 Promise.all(promises2).then(resolve).catch(reject);
@@ -1443,8 +1443,8 @@ function IonDataRepository(options) {
                 });
               })(value.lists[i].classname, value.lists[i].options));
             }
-            Promise.all(promises1).then(function(){
-                _this.cache.set(cachingKey(classname,id),null).then(resolve).catch(reject);
+            Promise.all(promises1).then(function () {
+                _this.cache.set(cachingKey(classname, id), null).then(resolve).catch(reject);
               }).catch(reject);
           } else {
             resolve();
@@ -1472,12 +1472,12 @@ function IonDataRepository(options) {
             cm.getCanonicalName(),
             id,
             {}).
-          then(function(){
-            removeCachedLists_afterDelete(classname,id).then(resolve).catch(reject);
+          then(function () {
+            removeCachedLists_afterDelete(classname, id).then(resolve).catch(reject);
           }).
           catch(reject);
         } else {
-          removeCachedLists_afterDelete(classname,id).then(resolve).catch(reject);
+          removeCachedLists_afterDelete(classname, id).then(resolve).catch(reject);
         }
       }).catch(reject);
     });
