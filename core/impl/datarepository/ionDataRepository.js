@@ -1045,7 +1045,7 @@ function IonDataRepository(options) {
               ).then(function () {
                 _this.cache.set(cachingKey(classname,item.getItemId()),{"base":data,"lists":[]})
                   .then(function(){
-                    removeCachedLists_afterCreate(tn(rcm))
+                    removeCachedLists_afterCreate(cachingListKey(tn(rcm)))
                       .then(function(){
                         resolve(item);
                       }).catch(function(){
@@ -1097,7 +1097,17 @@ function IonDataRepository(options) {
             result.lists = value.lists;
           }
           if (list) {
-            if (result.lists.indexOf(list) < 0) {
+            var push = true;
+            for (var i = 0; i < result.lists.length; i++) {
+              if (result.lists[i].classname === list.classname
+                && JSON.stringify(result.lists[i].options.filter) === JSON.stringify(list.options.filter)
+                && JSON.stringify(result.lists[i].options.sort) === JSON.stringify(list.options.sort)
+                && result.lists[i].options.offset === list.options.offset
+                && result.lists[i].options.count === list.options.count) {
+                push = false;
+              }
+            }
+            if (push) {
               result.lists.push(list);
             }
           }
@@ -1321,7 +1331,7 @@ function IonDataRepository(options) {
           if (classLevel) {
             var promises1 = [];
             for (var i = 0; i < classLevel.length; i++) {
-              promises1.push((function(filterSortHash ){
+              promises1.push((function(filterSortHash){
                 return new Promise(function(resolve, reject){
                   _this.cache.get(classname+"@"+filterSortHash)
                     .then(function(filterLevel){
@@ -1336,7 +1346,7 @@ function IonDataRepository(options) {
                       }
                     }).catch(reject);
                 });
-              })(classLevel[i]));
+              })(classLevel[i].split("@")[0]));
             }
             Promise.all(promises1).then(resolve).catch(reject);
           } else {
@@ -1382,8 +1392,8 @@ function IonDataRepository(options) {
                     }).catch(reject);
                 });
               })(value.lists[i].classname, value.lists[i].options));
-              Promise.all(promises1).then(resolve).catch(reject);
             }
+            Promise.all(promises1).then(resolve).catch(reject);
           } else {
             resolve();
           }
@@ -1432,8 +1442,10 @@ function IonDataRepository(options) {
                     }).catch(reject);
                 });
               })(value.lists[i].classname, value.lists[i].options));
-              Promise.all(promises1).then(resolve).catch(reject);
             }
+            Promise.all(promises1).then(function(){
+                _this.cache.set(cachingKey(classname,id),null).then(resolve).catch(reject);
+              }).catch(reject);
           } else {
             resolve();
           }
