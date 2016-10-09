@@ -58,7 +58,8 @@
     "gulp-clean-css": "*",
     "gulp-jsmin": "*",
     "binstring": "*",
-    "memcached": "*"
+    "memcached": "*",
+    "redis": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",

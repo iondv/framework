@@ -22,7 +22,6 @@ function InnerCacheRepository(config){
      */
   this._get = function(key) {
     return new Promise(function(resolve, reject){
-      console.log("CACHE GET:",key,":",cache[key]);
       resolve(cache[key]);
     });
   };
@@ -36,7 +35,6 @@ function InnerCacheRepository(config){
      */
   this._set = function(key, value) {
     return new Promise(function(resolve, reject){
-      console.log("CACHE SET:",key,":",value);
       cache[key] = value;
       resolve();
     });
