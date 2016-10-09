@@ -7,34 +7,34 @@ var CacheRepository = require('core/interfaces/CacheRepository');
 
 /**
  *
- * @param config
+ * @param {Object} config
  * @constructor
  */
-function InnerCacheRepository(config){
+function InnerCacheRepository(config) {
 
   var cache = {};
 
   /**
    *
-   * @param key
+   * @param {String} key
    * @returns {Promise}
    * @private
      */
-  this._get = function(key) {
-    return new Promise(function(resolve, reject){
+  this._get = function (key) {
+    return new Promise(function (resolve, reject) {
       resolve(cache[key]);
     });
   };
 
   /**
    *
-   * @param key
-   * @param value
+   * @param {String} key
+   * @param {*} value
    * @returns {Promise}
      * @private
      */
-  this._set = function(key, value) {
-    return new Promise(function(resolve, reject){
+  this._set = function (key, value) {
+    return new Promise(function (resolve, reject) {
       cache[key] = value;
       resolve();
     });

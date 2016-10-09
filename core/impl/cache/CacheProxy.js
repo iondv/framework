@@ -6,36 +6,36 @@
 var CacheRepository = require('core/interfaces/CacheRepository');
 
 /**
- * 
- * @param config
+ *
+ * @param {Object} config
  * @constructor
  */
 function CacheProxy(config) {
 
   /**
-   * 
-   * @param key
+   *
+   * @param {String} key
    * @returns {Promise}
    * @private
    */
-  this._get = function(key) {
-    return new Promise(function(resolve, reject){
+  this._get = function (key) {
+    return new Promise(function (resolve, reject) {
       resolve(null);
     });
   };
 
   /**
-   * 
-   * @param key
-   * @param value
+   *
+   * @param {String} key
+   * @param {*} value
    * @returns {Promise}
    * @private
    */
-  this._set = function(key, value) {
-    return new Promise(function(resolve, reject){
+  this._set = function (key, value) {
+    return new Promise(function (resolve, reject) {
       resolve();
     });
-  }
+  };
 }
 
 CacheProxy.prototype = new CacheRepository();

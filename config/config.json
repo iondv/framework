@@ -114,7 +114,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "ion://memcahed",
+          "cacheRepository": "ion://redis",
           "keyProvider": {
             "name": "keyProvider",
             "module": "core/impl/meta/keyProvider",
@@ -130,6 +130,10 @@
       },
       "memcahed": {
         "module": "core/impl/cache/memcached/MemcachedRepository",
+        "options": {}
+      },
+      "redis": {
+        "module": "core/impl/cache/redis/RedisRepository",
         "options": {}
       }
     }

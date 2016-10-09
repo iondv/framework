@@ -12,13 +12,14 @@ var redis = require('redis');
  * @constructor
  */
 function RedisRepository(config) {
+  console.log('this is redis');
 
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
   var client = redis.createClient({host: rHost,port: rPort});
 
   client.on('error', function (err) {
-    console.log('Error ' + err);
+    console.log('Redis Error ' + err);
   });
 
   /**
