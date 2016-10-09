@@ -748,6 +748,8 @@ function IonDataRepository(options) {
         }).catch(reject);
       });
     } else {
+      var cm = _this._getMeta(obj);
+      var rcm = _this._getRootType(cm);
       var options = {};
       options.filter = this._addFilterByItem({}, obj);
       options.filter = this._addDiscriminatorFilter(options.filter, cm);
