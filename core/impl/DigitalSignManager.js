@@ -20,24 +20,50 @@ const buf = require('core/buffer');
  */
 function DigitalSignManager(options) {
   /**
-   * @param {String} id
-   * @param {{}} src
+   * @param {String} nm
+   * @returns {Preprocessor | null}
+   */
+  function getPreprocessor(nm) {
+    if (nm && options.preprocessors &&
+      typeof options.preprocessors[nm] instanceof Preprocessor) {
+      return options.preprocessors[nm];
+    }
+
+    if (options.Preprocessor instanceof Preprocessor) {
+      return options.Preprocessor;
+    }
+
+    return null;
+  }
+
+  /**
+   * @param {Item} item
+   * @param {String} action
+   * @param {String} preprocessor
+   * @returns {Promise}
+   */
+  this._signingAvailable = function (item, action, preprocessor) {
+    return new Promise(function (resolve, reject) {
+      var p = getPreprocessor(preprocessor);
+      if (p) {
+        return p.applicable(item, {action: action}).then(resolve).catch(reject);
+      }
+
+      resolve(options.defaultResult);
+    });
+  };
+
+  /**
+   * @param {Item} item
+   * @param {String} [action]
    * @param {String} [preprocessor]
    * @returns {Promise}
    */
-  this._getDataForSigning = function (id, src, preprocessor) {
+  this._getDataForSigning = function (item, action, preprocessor) {
     return new Promise(function (resolve, reject) {
-      if (preprocessor && options.preprocessors &&
-        typeof options.preprocessors[preprocessor] instanceof Preprocessor) {
-        return options.preprocessors[preprocessor].process(src, {id: id}).
-        then(resolve).
-        catch(reject);
-      }
-
-      if (options.Preprocessor instanceof Preprocessor) {
-        return options.Preprocessor.process(src, {id: id}).
-        then(resolve).
-        catch(reject);
+      var p = getPreprocessor(preprocessor);
+      if (p) {
+        return p.process(item, {action: action}).then(resolve).catch(reject);
       }
 
       if (options.defaultResult) {

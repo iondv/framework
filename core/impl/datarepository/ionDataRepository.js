@@ -12,7 +12,7 @@ var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
-/* jshint maxstatements: 50, maxcomplexity: 50 */
+/* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -45,6 +45,8 @@ function IonDataRepository(options) {
   this.fs = options.fileStorage;
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
+
+  this.maxEagerDepth = -(options.maxEagerDepth || 5);
 
   /**
    * @param {ClassMeta} cm
@@ -235,35 +237,56 @@ function IonDataRepository(options) {
     }
   }
 
+  function formForced(param, forced) {
+    if (param && Array.isArray(param)) {
+      for (var i = 0; i < param.length; i++) {
+        if (!forced.hasOwnProperty(param[i][0])) {
+          forced[param[i][0]] = [];
+        }
+        if (param[i].length > 1) {
+          forced[param[i][0]].push(param[i].slice(1));
+        }
+      }
+    }
+  }
+
   /**
    * @param {Item[]} src
    * @param {Number} depth
+   * @param {String[][]} forced
    * @returns {Promise}
    */
-  function enrich(src, depth) {
-    if (depth <= 0) {
-      return new Promise(function (resolve) {
-        resolve(src);
-      });
-    }
-
+  function enrich(src, depth, forced) {
     return new Promise(function (resolve, reject) {
-      var i, nm, attrs, item, props, promises, filter, cn;
+      var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
 
+      forced2 = {};
+      formForced(forced, forced2);
       attrs = {};
       promises = [];
 
       try {
+        pcl = {};
         for (i = 0; i < src.length; i++) {
           item = src[i];
           if (item && item.constructor.name === 'Item') {
+            cm = item.getMetaClass();
+            if (!pcl.hasOwnProperty(cm.getName())) {
+              pcl[cm.getName()] = true;
+              formForced(cm.getForcedEnrichment(), forced2);
+            }
             props = item.getProperties();
             for (nm in props) {
               if (props.hasOwnProperty(nm)) {
-                if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs);
-                } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
-                  prepareColEnrichment(item, props[nm], attrs);
+                if (
+                  depth > 0 ||
+                  (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
+                ) {
+                  if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                    prepareRefEnrichment(item, props[nm], attrs);
+                  } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
+                    prepareColEnrichment(item, props[nm], attrs);
+                  }
                 }
               }
             }
@@ -297,10 +320,15 @@ function IonDataRepository(options) {
             if (filter) {
               attrs[nm].pIndex = i;
               i++;
-              promises.push(_this.getList(cn, {
-                filter: filter,
-                nestingDepth: depth - 1
-              }));
+              promises.push(
+                _this._getList(cn,
+                  {
+                    filter: filter,
+                    nestingDepth: depth - 1,
+                    forceEnrichment: forced2[attrs[nm].attrName]
+                  }
+                )
+              );
             }
           }
         }
@@ -509,6 +537,7 @@ function IonDataRepository(options) {
    * @param {Object} [options.sort]
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
@@ -547,7 +576,7 @@ function IonDataRepository(options) {
           }
         ).
         then(function (result) {
-          return enrich(result, options.nestingDepth ? options.nestingDepth : 0);
+          return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
         }).
         then(resolve).
         catch(reject);
@@ -861,6 +890,12 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
       var rpm = rcm.getPropertyMeta(pm.backRef);
+
+      if (!rpm) {
+        return reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
+          ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
+      }
+
       var clr = {};
       var clrf = {};
       var ups = {};

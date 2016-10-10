@@ -31,7 +31,7 @@ function FsStorage(options) {
 
   delete options.dataSource;
   var _options = clone(options) || {};
-  _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase);
+  _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
    * @param {Buffer | String | {} | stream.Readable} data

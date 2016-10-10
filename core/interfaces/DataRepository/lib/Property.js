@@ -91,7 +91,7 @@ function Property(item, propertyMeta) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.call(agr);
+          return this.meta.semanticGetter.apply(agr);
         }
         return agr.toString();
       } else {
