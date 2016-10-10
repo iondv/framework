@@ -6,6 +6,7 @@
 const IDigitalSignManager = require('core/interfaces/DigitalSignManager');
 const Preprocessor = require('core/interfaces/Preprocessor');
 const base64 = require('base64-js');
+const buf = require('core/buffer');
 
 // jshint maxcomplexity: 20
 
@@ -69,7 +70,7 @@ function DigitalSignManager(options) {
         return resolve(
           {
             mimeType: 'application/json',
-            content: Buffer.from(JSON.stringify(item), 'utf-8')
+            content: buf(JSON.stringify(src), 'utf-8')
           }
         );
       }
