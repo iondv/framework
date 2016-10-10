@@ -364,7 +364,7 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    */
   function expandProperty(cm) {
-    var pm, i, j;
+    var pm, i, j, ut;
     for (i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
         var structClass;
@@ -385,16 +385,19 @@ function DsMetaRepository(options) {
         }
       }
 
-      if (cm.plain.properties[i].type === PropertyTypes.USER) {
+      pm = cm.plain.properties[i];
+      if (cm.plain.properties[i].type === PropertyTypes.CUSTOM) {
         if (cm.plain.properties[i].refClass) {
-          var ut = _this.userTypes[cm.plain.properties[i].refClass];
-          if (ut) {
-            if (ut.type) cm.plain.properties[i].type = ut.type;
-            if (ut.mask) cm.plain.properties[i].mask = ut.mask;
-            if (ut.maskName) cm.plain.properties[i].maskName = ut.maskName;
-            if (ut.size) cm.plain.properties[i].size = ut.size;
-            if (ut.decimals) cm.plain.properties[i].decimals = ut.decimals;
-            if (ut.validators) cm.plain.properties[i].validators = ut.validators;
+          if (_this.userTypes.hasOwnProperty(cm.plain.properties[i].refClass)) {
+            ut = _this.userTypes[cm.plain.properties[i].refClass];
+            if (ut) {
+              pm.type = ut.type || PropertyTypes.STRING;
+              pm.mask = ut.mask || pm.mask;
+              pm.maskName = ut.maskName || pm.maskName;
+              pm.size = ut.size || pm.size;
+              pm.decimals = ut.decimals || pm.decimals;
+              pm.validators = ut.validators || pm.validators || [];
+            }
           }
         }
       }
