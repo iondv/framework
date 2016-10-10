@@ -48,6 +48,55 @@ function ResourceStorage() {
     }
     return new Promise(function (resolve) {resolve();});
   };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.getDir = function (id) {
+    return this._getDir(id);
+  };
+
+  /**
+   *
+   * @param {String} dirName
+   * @param {{}}options
+   * @param {Array} files
+   * @returns {Promise}
+   */
+  this.createDir = function (dirName, options, files) {
+    return this._createDir(dirName, options, files);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+     */
+  this.removeDir = function (id) {
+    return this._removeDir(id);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this.putFile = function (dirId, fileId) {
+    return this._putFile(dirId, fileId);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this.ejectFile = function (dirId, fileId) {
+    return this._ejectFile(dirId, fileId);
+  };
 }
 
 module.exports.ResourceStorage = ResourceStorage;
