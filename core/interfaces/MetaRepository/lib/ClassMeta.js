@@ -4,7 +4,6 @@
  */
 
 var checkConditions = require('core/ConditionParser');
-var PropertyTypes = require('core/PropertyTypes');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -42,30 +41,7 @@ function loadPropertyMetas(cm, plain) {
         properties[i].selectionProvider.getSelection = selectionConstructor2();
       }
     }
-
-    if (properties[i].type === PropertyTypes.REFERENCE && properties[i].semantic) {
-      properties[i].semanticGetter = parseSemantics(properties[i].semantic.trim());
-    }
   }
-}
-
-/**
- * @param {String} semantics
- * @returns {Function}
- */
-function parseSemantics(semantics) {
-  if (!semantics) {
-    return new Function('', 'return this.getItemId();');
-  }
-
-  var getter = 'if(v&&v.trim()){var p=item.property(v);if(p) {return p.getDisplayValue();}}return v;';
-
-  var body = semantics.replace(/\'/g, '\\\'').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2, $3)').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
-  replace(/([^\|]+)\s*/g, 'getter(this,\'$1\')').
-  replace(/\|/g, ' + ');
-  return new Function('', 'function getter(item, v) {' + getter + '} return ' + body);
 }
 
 function ClassMeta(metaObject) {
@@ -82,7 +58,9 @@ function ClassMeta(metaObject) {
 
   this.propertyMetas = {};
 
-  var semanticFunc = parseSemantics(this.plain.semantic);
+  this._forcedEnrichment = [];
+
+  this._semanticFunc = null;
 
   loadPropertyMetas(_this, metaObject);
 
@@ -106,8 +84,15 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantic = function () {
-    return semanticFunc;
+  this.getSemantics = function (item) {
+    if (typeof this._semanticFunc === 'function') {
+      return this._semanticFunc.apply(item);
+    }
+    return item.getItemId();
+  };
+
+  this.getForcedEnrichment = function () {
+    return this._forcedEnrichment;
   };
 
   this.getKeyProperties = function () {
