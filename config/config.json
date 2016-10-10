@@ -114,6 +114,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
+          "log": "ion://sysLog",
           "keyProvider": {
             "name": "keyProvider",
             "module": "core/impl/meta/keyProvider",
