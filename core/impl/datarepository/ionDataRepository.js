@@ -861,6 +861,12 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
       var rpm = rcm.getPropertyMeta(pm.backRef);
+
+      if (!rpm) {
+        return reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
+          ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
+      }
+
       var clr = {};
       var clrf = {};
       var ups = {};
