@@ -18,6 +18,7 @@ var uuid = require('node-uuid');
  * @param {DataSource} options.dataSource
  * @param {MetaRepository} options.metaRepository
  * @param {KeyProvider} options.keyProvider
+ * @param {Logger} [options.log]
  * @param {String} [options.namespaceSeparator]
  * @constructor
  */
@@ -179,8 +180,15 @@ function IonDataRepository(options) {
           filter: []
         };
       }
+      var v;
+      if (property.meta.backRef) {
+        v = item.getItemId();
+        attrs[item.classMeta.getName() + '.' + property.getName()].key = property.meta.backRef;
+        attrs[item.classMeta.getName() + '.' + property.getName()].backRef = true;
+      } else {
+        v = item.get(property.getName());
+      }
 
-      var v = item.get(property.getName());
       if (v) {
         attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
         if (typeof item.references === 'undefined') {
@@ -243,7 +251,7 @@ function IonDataRepository(options) {
   }
 
   /**
-   * @param {Array} src
+   * @param {Item[]} src
    * @param {Number} depth
    * @param {String[][]} forced
    * @returns {Promise}
@@ -334,7 +342,7 @@ function IonDataRepository(options) {
 
       Promise.all(promises).then(
         function (results) {
-          var nm, items, itemsByKey, srcByKey, ids, i, j;
+          var nm, items, itemsByKey, srcByKey, ids, i, j, v;
           for (nm in attrs) {
             if (attrs.hasOwnProperty(nm)) {
               items = results[attrs[nm].pIndex];
@@ -343,13 +351,36 @@ function IonDataRepository(options) {
               }
               if (attrs[nm].type === PropertyTypes.REFERENCE) {
                 itemsByKey = {};
-                for (i = 0; i < items.length; i++) {
-                  itemsByKey[items[i].getItemId()] = items[i];
-                }
+                if (attrs[nm].backRef) {
+                  for (i = 0; i < items.length; i++) {
+                    v = items[i].get(attrs[nm].key);
+                    if (!itemsByKey.hasOwnProperty(v)) {
+                      itemsByKey[v] = [];
+                    }
+                    itemsByKey[v].push(items[i]);
+                  }
 
-                for (i = 0; i < src.length; i++) {
-                  if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
-                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
+                  for (i = 0; i < src.length; i++) {
+                    if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
+                      if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
+                        options.log.warn('Обратной ссылке "' +
+                          src[i].property(attrs[nm].attrName).getCaption() +
+                          '" соответствует несколько объектов '
+                        );
+                      }
+                      src[i].base[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
+                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0];
+                    }
+                  }
+                } else {
+                  for (i = 0; i < items.length; i++) {
+                    itemsByKey[items[i].getItemId()] = items[i];
+                  }
+
+                  for (i = 0; i < src.length; i++) {
+                    if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
+                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
+                    }
                   }
                 }
               } else if (attrs[nm].type === PropertyTypes.COLLECTION) {
@@ -694,7 +725,9 @@ function IonDataRepository(options) {
         if (pm) {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
-            updates[nm] = data[nm];
+            if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+              updates[nm] = data[nm];
+            }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];
           }
@@ -846,6 +879,81 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {String} itemId
+   * @param {{}} pm
+   * @param {{}} updates
+   * @param {ClassMeta} cm
+   * @param {String} oldId
+   * @returns {Promise}
+   */
+  function backRefUpdater(itemId, pm, updates, cm, oldId) {
+    return new Promise(function (resolve, reject) {
+      var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+      var rpm = rcm.getPropertyMeta(pm.backRef);
+      var clr = {};
+      var clrf = {};
+      var ups = {};
+      clrf[pm.backRef] = oldId || itemId;
+      clr[pm.backRef] = null;
+      ups[pm.backRef] = itemId;
+
+      if (oldId && !rpm.nullable) {
+        if (options.log) {
+          options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
+        }
+        if (itemId !== oldId) {
+          return options.dataSource.update(tn(rcm), clrf, ups).then(resolve).catch(reject);
+        } else {
+          return resolve();
+        }
+      }
+
+      var conds = {};
+
+      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+
+      if (oldId) {
+        options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
+          console.log(r);
+          return options.dataSource.update(tn(rcm), conds, ups);
+        }).then(resolve).catch(reject);
+      } else {
+        options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
+      }
+    });
+  }
+
+  /**
+   * @param {Item} item
+   * @param {ClassMeta} cm
+   * @param {{}} updates
+   * @param {String} oldId
+   */
+  function updateBackRefs(item, cm, updates, oldId) {
+    return new Promise(function (resolve, reject) {
+      var properties = cm.getPropertyMetas();
+      var workers = [];
+      var pm, i;
+      for (i = 0;  i < properties.length; i++) {
+        pm = properties[i];
+        if (
+          updates.hasOwnProperty(pm.name) &&
+          pm.type === PropertyTypes.REFERENCE &&
+          pm.backRef
+        ) {
+          workers.push(backRefUpdater(item.getItemId(), pm, updates, cm, oldId));
+        }
+      }
+      Promise.all(workers).
+      then(
+        function () {
+          resolve(item);
+        }
+      ).catch(reject);
+    });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
@@ -894,6 +1002,8 @@ function IonDataRepository(options) {
               resolve(item);
             });
           }
+        }).then(function (item) {
+          return updateBackRefs(item, cm, data);
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
@@ -970,8 +1080,8 @@ function IonDataRepository(options) {
                 resolve(item);
               });
             }
-            // }).then(function (item) { - Пока отключено редактирование коллекций при EditItem
-            // return updateCollections(data, item, id);
+          }).then(function (item) {
+            return updateBackRefs(item, cm, data, id);
           }).then(function (item) {
             return loadFiles(item);
           }).then(function (item) {
@@ -1057,14 +1167,16 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                resolve([item]);
+                resolve(item);
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              resolve([item]);
+              resolve(item);
             });
           }
+        }).then(function (item) {
+          return updateBackRefs(item, cm, data, id || item.getItemId());
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {

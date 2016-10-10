@@ -63,6 +63,12 @@ function Property(item, propertyMeta) {
   };
 
   this.getValue = function () {
+    if (this.getType() === PropertyTypes.REFERENCE && this.meta.backRef) {
+      var agr = this.item.getAggregate(this.getName());
+      if (agr) {
+        return agr.getItemId();
+      }
+    }
     return this.item.get(this.getName());
   };
 
