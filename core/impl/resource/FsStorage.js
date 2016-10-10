@@ -249,6 +249,94 @@ function FsStorage(options) {
         .catch(reject);
     });
   };
+
+  /**
+  *
+  * @param {String} id
+  * @returns {Promise}
+  */
+  this._getDir = function (id) {
+      return dataSource.get('ion_files', {id: id});
+    };
+
+  /**
+   *
+   * @param {String} name
+   * @param {{}}options
+   * @param {Array} files
+   * @returns {Promise}
+   */
+  this._createDir = function (name, options, files) {
+    return new Promise(function (resolve, reject) {
+      var id = cuid();
+      var dirObject = {
+        id: id,
+        name: name,
+        files: files || []
+      };
+      dataSource.insert('ion_files', dirObject).then(resolve).catch(reject);
+    });
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+     */
+  this._removeDir = function (id) {
+    return dataSource.delete('ion_files', {id: id});
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this._putFile = function (dirId, fileId) {
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: dirId})
+        .then(function (dir) {
+          if (dir) {
+            try {
+              dir.files.push(fileId);
+              dataSource.update('ion_files', {id: dirId}, dir).then(resolve).catch(reject);
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            reject('нет тайкой директории');
+          }
+        }).catch(reject);
+    });
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this._ejectFile = function (dirId, fileId) {
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: dirId})
+        .then(function (dir) {
+          if (dir) {
+            try {
+              var fileIndex = dir.files.indexOf(fileId);
+              if (fileIndex > -1) {
+                dir.files.splice(fileIndex, 1);
+              }
+              dataSource.update('ion_files', {id: dirId}, dir).then(resolve).catch(reject);
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            reject('нет такой директории');
+          }
+        }).catch(reject);
+    });
+  };
 }
 
 FsStorage.prototype = new ResourceStorage();
