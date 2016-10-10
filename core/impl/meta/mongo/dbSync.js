@@ -254,7 +254,7 @@ function MongoDbSync(options) {
         promises.push(createIndexPromise('_class', false));
 
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
+          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true || cm.properties[i].unique === true) {
             promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
           }
         }
