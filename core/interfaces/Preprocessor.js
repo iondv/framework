@@ -5,12 +5,20 @@
 
 function Preprocessor() {
   /**
-   * @param {{}} data
+   * @param {Item} item
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this.process = function (data, options) {
-    return this._process(data, options);
+  this.applicable = function (item, options) {
+    return this._applicable(item, options);
+  };
+  /**
+   * @param {Item} item
+   * @param {{}} [options]
+   * @returns {Promise}
+   */
+  this.process = function (item, options) {
+    return this._process(item, options);
   };
 }
 
