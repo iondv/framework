@@ -12,6 +12,7 @@ var cuid = require('cuid');
 var merge = require('merge');
 var clone = require('clone');
 var mkdirp = require('mkdirp');
+var xss = require('xss');
 
 /* jshint maxcomplexity: 20, maxstatements: 30 */
 /**
@@ -208,34 +209,82 @@ function FsStorage(options) {
         return next();
       }
 
-      _this._fetch([fileId])
-        .then(
-          function (data) {
-            if (data.length > 0) {
-              return data[0].getContents();
-            }
-            return null;
+      var responseFile =  function (file) {
+        if (file && file.stream) {
+          res.status(200);
+          res.set('Content-Disposition',
+            (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+            '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+          res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
+          if (file.options.size) {
+            res.set('Content-Length', file.options.size);
           }
-        ).then(
-          function (file) {
-            if (file && file.stream) {
-              res.status(200);
-              res.set('Content-Disposition',
-                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
-                '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
-              res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
-              if (file.options.size) {
-                res.set('Content-Length', file.options.size);
-              }
-              if (file.options.encoding) {
-                res.set('Content-Encoding', file.options.encoding);
-              }
-              file.stream.pipe(res);
-            } else {
-              res.status(404).send('File not found!');
-            }
+          if (file.options.encoding) {
+            res.set('Content-Encoding', file.options.encoding);
           }
-        )
+          file.stream.pipe(res);
+        } else {
+          res.status(404).send('File not found!');
+        }
+      };
+
+      var responseDirectory = function (dirName,dirLinks,fileLinks) {
+        var i;
+        var html = '<html>' +
+          '<head><title>' + xss(dirName) + '</title></head>' +
+          '<body><div><h3>' + xss(dirName) + '</h3></div>' +
+          '<div>';
+        for (i = 0; i < dirLinks.length; i++) {
+          html += '<p><a href="' + dirLinks[i].link + '"><strong>' + xss(dirLinks[i].name) + '&sol;</strong></a></p>';
+        }
+        html += '</div><div>';
+        for (i = 0; i < fileLinks.length; i++) {
+          html += '<p><a href="' + fileLinks[i].link + '">' + xss(fileLinks[i].name) + '</a></p>';
+        }
+        html += '</div></body></html>';
+        res.status(404).send(html);
+      };
+
+      dataSource.get('ion_files', {id: fileId})
+        .then(function (data) {
+          if (data && data.type === resourceType.FILE) {
+            var f = new StoredFile(
+              data.id,
+              _options.urlBase + '/' + data.id,
+              data.options,
+              streamGetter(data)
+            );
+            responseFile(f.getContents());
+          } else if (data && data.type === resourceType.DIR) {
+            if (data && (data.files.length || data.dirs.length)) {
+              var ids = data.files.concat(data.dirs);
+              dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
+                .then(function (files) {
+                  var dirLinks = [];
+                  var fileLinks = [];
+                  for (var i = 0; i < files.length; i++) {
+                    if (files[i].type === resourceType.FILE) {
+                      fileLinks.push({
+                        link: _options.urlBase + '/' + files[i].id,
+                        name: files[i].options.name || files[i].id
+                      });
+                    }
+                    if (files[i].type === resourceType.DIR) {
+                      dirLinks.push({
+                        link: _options.urlBase + '/' + files[i].id,
+                        name: files[i].options.name || files[i].id
+                      });
+                    }
+                  }
+                  responseDirectory(data.name, dirLinks, fileLinks);
+                }).catch(function () {
+                  res.status(404).send('File (or directory) not found!');
+                });
+            }
+          } else {
+            res.status(404).send('File not found!');
+          }
+        })
         .catch(
           function (err) {
             res.status(500).send(err.message);

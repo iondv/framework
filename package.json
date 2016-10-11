@@ -57,7 +57,8 @@
     "gulp-less": "*",
     "gulp-clean-css": "*",
     "gulp-jsmin": "*",
-    "binstring": "*"
+    "binstring": "*",
+    "xss": "*"
   },
   "devDependencies": {
     "del": "^1.2.0",
