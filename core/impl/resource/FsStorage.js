@@ -21,6 +21,11 @@ var mkdirp = require('mkdirp');
 function FsStorage(options) {
   var _this = this;
 
+  var resourceType = {
+    FILE: 'file',
+    DIR: 'dir'
+  };
+
   /**
    * @type {DataSource}
    */
@@ -31,6 +36,7 @@ function FsStorage(options) {
 
   delete options.dataSource;
   var _options = clone(options) || {};
+  _options.urlBase = _options.urlBase  || '';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
@@ -123,7 +129,7 @@ function FsStorage(options) {
             });
           });
         }).then(function (pth) { // TODO ОПределять mime-type и content-type
-          return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
+          return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
         }).then(function (r) {
           resolve(r.id);
         }).catch(reject);
@@ -282,6 +288,7 @@ function FsStorage(options) {
       var id = cuid();
       var dirObject = {
         id: id,
+        type: resourceType.DIR,
         name: name || id,
         files: [],
         dirs: []
@@ -335,7 +342,7 @@ function FsStorage(options) {
             try {
               dir.files.push(fileId);
               dataSource.update('ion_files', {id: dirId}, dir)
-                .then(function(){
+                .then(function () {
                   resolve(fileId);
                 }).catch(reject);
             } catch (err) {
@@ -375,6 +382,12 @@ function FsStorage(options) {
             reject('нет такой директории');
           }
         }).catch(reject);
+    });
+  };
+
+  this._share = function (id) {
+    return new Promise(function (resolve) {
+      resolve(_options.urlBase + '/' + id);
     });
   };
 }

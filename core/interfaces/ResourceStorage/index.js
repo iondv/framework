@@ -73,7 +73,7 @@ function ResourceStorage() {
    *
    * @param {String} id
    * @returns {Promise}
-     */
+   */
   this.removeDir = function (id) {
     return this._removeDir(id);
   };
@@ -83,7 +83,7 @@ function ResourceStorage() {
    * @param {String} dirId
    * @param {String} fileId
    * @returns {Promise}
-     */
+   */
   this.putFile = function (dirId, fileId) {
     return this._putFile(dirId, fileId);
   };
@@ -93,9 +93,18 @@ function ResourceStorage() {
    * @param {String} dirId
    * @param {String} fileId
    * @returns {Promise}
-     */
+   */
   this.ejectFile = function (dirId, fileId) {
     return this._ejectFile(dirId, fileId);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.share = function (id) {
+    return this._share(id);
   };
 }
 
