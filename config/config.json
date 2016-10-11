@@ -94,7 +94,7 @@
             "module": "core/impl/meta/mongo/dbSync",
             "options": {
               "dataSource": "ion://Db",
-              "log": "ion/sysLog"
+              "log": "ion://sysLog"
             }
           }
         }

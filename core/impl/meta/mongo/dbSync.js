@@ -12,7 +12,7 @@ function MongoDbSync(options) {
 
   var _this = this;
 
- /**
+  /**
    * @type {String}
    */
   this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
