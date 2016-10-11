@@ -254,7 +254,10 @@ function FsStorage(options) {
               data.options,
               streamGetter(data)
             );
-            responseFile(f.getContents());
+            f.getContents()
+              .then(responseFile).catch(function () {
+                res.status(404).send('File not found!');
+              });
           } else if (data && data.type === resourceType.DIR) {
             if (data && (data.files.length || data.dirs.length)) {
               var ids = data.files.concat(data.dirs);
@@ -280,6 +283,8 @@ function FsStorage(options) {
                 }).catch(function () {
                   res.status(404).send('File (or directory) not found!');
                 });
+            } else {
+              res.status(200).send('Folder is empty!');
             }
           } else {
             res.status(404).send('File not found!');
@@ -330,6 +335,7 @@ function FsStorage(options) {
   /**
    *
    * @param {String} name
+   * @param {String} parentDirId
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId) {
