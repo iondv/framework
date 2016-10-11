@@ -12,6 +12,11 @@ function MongoDbSync(options) {
 
   var _this = this;
 
+ /**
+   * @type {String}
+   */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
+
   /**
    * @type {String}
    */
@@ -91,6 +96,11 @@ function MongoDbSync(options) {
               });
           });
         }break;
+        case 'user_type': {
+          return new Promise(function (resolve, reject) {
+            resolve(collection);
+          });
+        }break;
       }
       throw new Error('Unsupported table type specified!');
     };
@@ -109,6 +119,8 @@ function MongoDbSync(options) {
         case 'nav':
           tn = _this.navTableName;
           break;
+        case 'user_type':
+          tn = _this.userTypeTableName;
       }
 
       if (!tn) {
@@ -177,6 +189,7 @@ function MongoDbSync(options) {
       getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
+        then(function () {return getMetaTable('user_type');}).
         then(function () {return getAutoIncColl();}).
         then(resolve).
         catch(reject);
@@ -523,6 +536,22 @@ function MongoDbSync(options) {
             return reject(err);
           }
           resolve(nnm);
+        });
+      }).catch(reject);
+    });
+  };
+
+   this._defineUserType = function (userType) {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('user_type').then(function (collection) {
+        collection.updateOne(
+          {
+            name: userType.name
+          }, userType, {upsert: true}, function (err, ns) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(ns);
         });
       }).catch(reject);
     });
