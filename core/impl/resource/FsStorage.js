@@ -256,25 +256,59 @@ function FsStorage(options) {
   * @returns {Promise}
   */
   this._getDir = function (id) {
-      return dataSource.get('ion_files', {id: id});
-    };
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: id}).
+       then(function (dir) {
+        if (dir && dir.files.length) {
+          _this._fetch(dir.files)
+            .then(function (files) {
+              dir.files = files;
+              resolve(dir);
+            }).catch(reject);
+        } else {
+          resolve(dir);
+        }
+      }).catch(reject);
+    });
+  };
 
   /**
    *
    * @param {String} name
-   * @param {{}}options
-   * @param {Array} files
    * @returns {Promise}
    */
-  this._createDir = function (name, options, files) {
+  this._createDir = function (name, parentDirId) {
     return new Promise(function (resolve, reject) {
       var id = cuid();
       var dirObject = {
         id: id,
-        name: name,
-        files: files || []
+        name: name || id,
+        files: [],
+        dirs: []
       };
-      dataSource.insert('ion_files', dirObject).then(resolve).catch(reject);
+      dataSource.insert('ion_files', dirObject)
+        .then(function (dir) {
+          if (parentDirId) {
+            dataSource.get('ion_files', {id: parentDirId})
+              .then(function (parentDir) {
+                if (parentDir && dir.id) {
+                  try {
+                    parentDir.dirs.push(dir.id);
+                    dataSource.update('ion_files', {id: parentDir.id}, parentDir)
+                      .then(function () {
+                        resolve(dir.id);
+                      }).catch(reject);
+                  } catch (err) {
+                    reject(err);
+                  }
+                } else {
+                  reject('нет тайкой директории');
+                }
+              }).catch(reject);
+          } else {
+            resolve(dir.id);
+          }
+        }).catch(reject);
     });
   };
 
@@ -300,7 +334,10 @@ function FsStorage(options) {
           if (dir) {
             try {
               dir.files.push(fileId);
-              dataSource.update('ion_files', {id: dirId}, dir).then(resolve).catch(reject);
+              dataSource.update('ion_files', {id: dirId}, dir)
+                .then(function(){
+                  resolve(fileId);
+                }).catch(reject);
             } catch (err) {
               reject(err);
             }
@@ -327,7 +364,10 @@ function FsStorage(options) {
               if (fileIndex > -1) {
                 dir.files.splice(fileIndex, 1);
               }
-              dataSource.update('ion_files', {id: dirId}, dir).then(resolve).catch(reject);
+              dataSource.update('ion_files', {id: dirId}, dir)
+                .then(function () {
+                  resolve(fileId);
+                }).catch(reject);
             } catch (err) {
               reject(err);
             }
