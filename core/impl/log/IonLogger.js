@@ -23,6 +23,31 @@ function IonLogger(options) {
   warnDestinations = parseDest(warnDestinations, 'warn');
   errDestinations = parseDest(errDestinations, 'err');
 
+  /**
+   * @param {Logger} logger
+   * @param {String[]} types
+   */
+  this.addDestination = function (logger, types) {
+    if (logger instanceof Logger) {
+      if (!types.length) {
+        infoDestinations.push(logger);
+      } else {
+        if (types.indexOf('log') >= 0) {
+          logDestinations.push(logger);
+        }
+        if (types.indexOf('info') >= 0) {
+          infoDestinations.push(logger);
+        }
+        if (types.indexOf('warn') >= 0) {
+          warnDestinations.push(logger);
+        }
+        if (types.indexOf('err') >= 0) {
+          errDestinations.push(logger);
+        }
+      }
+    }
+  };
+
   function parseDest(dest, type) {
     var stat;
     var result = [];
@@ -46,6 +71,7 @@ function IonLogger(options) {
               result.push(fs.createWriteStream(dest[i], {encoding: 'utf-8'}));
             }
           } catch (err) {
+            console.warn(err);
           }
         } else {
           result.push(streams[dest[i]]);
@@ -55,6 +81,12 @@ function IonLogger(options) {
     return result;
   }
 
+  /**
+   * @param {*} dest
+   * @param {Error | String} message
+   * @param {String} type
+   * @param {Function} consoleMethod
+     */
   function writeToDest(dest, message, type, consoleMethod) {
     var d = moment().format('DD.MM HH:mm');
     var m = message instanceof Error ? message.message : message;
@@ -63,12 +95,18 @@ function IonLogger(options) {
         if (consoleMethod === console.error && message instanceof Error) {
           console.error(message);
         } else {
-          consoleMethod.call(console, d + ' ' + prefix + ' ' + m);
+          consoleMethod.call(console, d + ' ' + type + ' ' + prefix + ' ' + m);
         }
+      } else if (dest[i] instanceof Logger) {
+        dest[i][type.toLowerCase()](message);
       } else if (typeof dest[i].info === 'function') {
         dest[i].info(prefix + ' ' + m);
       } else if (typeof dest[i].write === 'function') {
-        dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
+        if (type === 'ERROR') {
+          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n' + (message.stack || ''));
+        } else {
+          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
+        }
       }
     }
   }
