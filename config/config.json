@@ -108,6 +108,31 @@
           "dataSource": "ion://Db"
         }
       },
+      "imageStorage": {
+        "module": "core/impl/resource/ImageStorage",
+        "initLevel": 1,
+        "options": {
+          "fileStorage": "ion://fileStorage",
+          "thumbnails": {
+            "tiny": {
+              "width": 50,
+              "height": 50
+            },
+            "small": {
+              "width": 100,
+              "height": 100
+            },
+            "medium": {
+              "width": 300,
+              "height": 300
+            },
+            "preview": {
+              "width": 500,
+              "height": 500
+            }
+          }
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {
@@ -115,6 +140,7 @@
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
           "log": "ion://sysLog",
+          "imageStorage": "ion://imageStorage",
           "keyProvider": {
             "name": "keyProvider",
             "module": "core/impl/meta/keyProvider",

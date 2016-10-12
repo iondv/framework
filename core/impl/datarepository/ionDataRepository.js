@@ -12,7 +12,7 @@ var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
-/* jshint maxstatements: 50, maxcomplexity: 60 */
+/* jshint maxstatements: 40, maxcomplexity: 60 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -42,7 +42,12 @@ function IonDataRepository(options) {
   /**
    * @type {ResourceStorage}
    */
-  this.fs = options.fileStorage;
+  this.fileStorage = options.fileStorage;
+
+  /**
+   * @type {ImageStorage}
+   */
+  this.imageStorage = options.imageStorage || options.fileStorage;
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
@@ -433,6 +438,7 @@ function IonDataRepository(options) {
   function loadFiles(item) {
     var pm;
     var fids = [];
+    var iids = [];
     var attrs = {};
     for (var nm in item.base) {
       if (item.base.hasOwnProperty(nm) && item.base[nm]) {
@@ -444,6 +450,11 @@ function IonDataRepository(options) {
               attrs['f_' + item.base[nm]] = [];
             }
             attrs['f_' + item.base[nm]].push(nm);
+            if (pm.type === PropertyTypes.FILE) {
+              fids.push(item.base[nm]);
+            } else if (pm.type === PropertyTypes.IMAGE) {
+              iids.push(item.base[nm]);
+            }
           } else if (pm.type === PropertyTypes.FILE_LIST) {
             if (Array.isArray(item.base[nm])) {
               for (var i = 0; i < item.base[nm].length; i++) {
@@ -459,34 +470,36 @@ function IonDataRepository(options) {
       }
     }
     return new Promise(function (resolve, reject) {
-      if (fids.length === 0) {
+      if (fids.length === 0 && iids.length === 0) {
         resolve(item);
         return;
       }
 
-      _this.fs.fetch(fids)
-        .then(
-          function (files) {
-            var tmp;
-            for (var i = 0; i < files.length; i++) {
-              if (attrs.hasOwnProperty('f_' + files[i].id)) {
-                for (var j = 0; j < attrs['f_' + files[i].id].length; j++) {
-                  tmp = attrs['f_' + files[i].id][j];
-                  if (typeof tmp === 'object') {
-                    if (!Array.isArray(item.files[tmp.attr])) {
-                      item.files[tmp.attr] = [];
-                    }
-                    item.files[tmp.attr][tmp.index] = files[i];
-                  } else if (typeof tmp === 'string') {
-                    item.files[tmp] = files[i];
+      var loaders = [];
+      loaders.push(_this.fileStorage.fetch(fids));
+      loaders.push(_this.imageStorage.fetch(iids));
+
+      Promise.all(loaders).then(function (files) {
+        var tmp, i, j, k;
+        for (k = 0; k < files.length; k++) {
+          for (i = 0; i < files[k].length; i++) {
+            if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
+              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
+                tmp = attrs['f_' + files[k][i].id][j];
+                if (typeof tmp === 'object') {
+                  if (!Array.isArray(item.files[tmp.attr])) {
+                    item.files[tmp.attr] = [];
                   }
+                  item.files[tmp.attr][tmp.index] = files[k][i];
+                } else if (typeof tmp === 'string') {
+                  item.files[tmp] = files[k][i];
                 }
               }
             }
-            resolve(item);
           }
-        )
-        .catch(reject);
+        }
+        resolve(item);
+      }).catch(reject);
     });
   }
 
@@ -737,28 +750,23 @@ function IonDataRepository(options) {
     return updates;
   }
 
-  function proxy(result) {
-    return new Promise(function (r) {
-      r(result);
-    });
-  }
-
-  function fileSaver(updates, nm) {
+  function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
-      if (Array.isArray(updates[nm])) {
+      if (Array.isArray(updates[pm.name])) {
         var savers = [];
-        for (var i = 0; i < updates[nm].length; i++) {
-          if (typeof updates[nm][i] !== 'string') {
-            savers.push(_this.fs.accept(updates[nm][i]));
-          } else {
-            savers.push(proxy(updates[nm][i]));
+        for (var i = 0; i < updates[pm.name].length; i++) {
+          if (typeof updates[pm.name][i] !== 'string') {
+            savers.push(_this.fileStorage.accept(updates[pm.name][i]));
           }
         }
         if (savers.length) {
           Promise.all(savers).then(
-            function (ids) {
-              if (Array.isArray(ids)) {
-                updates[nm] = ids;
+            function (files) {
+              if (Array.isArray(files)) {
+                updates[pm.name] = [];
+                for (var i = 0; i < files.length; i++) {
+                  updates[pm.name].push(files[i].id);
+                }
               }
               rs();
             }
@@ -767,8 +775,12 @@ function IonDataRepository(options) {
           rs();
         }
       } else {
-        _this.fs.accept(updates[nm]).then(function (id) {
-          updates[nm] = id;
+        var storage = _this.fileStorage;
+        if (pm.type === PropertyTypes.IMAGE) {
+          storage = this.imageStorage;
+        }
+        storage.accept(updates[pm.name]).then(function (f) {
+          updates[pm.name] = f.id;
           rs();
         }).catch(rj);
       }
@@ -873,7 +885,7 @@ function IonDataRepository(options) {
           pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
         )
       ) {
-        fileSavers.push(fileSaver(updates, pm.name));
+        fileSavers.push(fileSaver(updates, pm));
       }
     }
   }
