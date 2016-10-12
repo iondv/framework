@@ -3,16 +3,74 @@
  */
 'use strict';
 
+var request = require('request');
+var fs = require('fs');
+var cuid = require('cuid');
 var ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 
-function OwnCloudStorage(options) {
+function OwnCloudStorage(config) {
+
+  if (!config.url || !config.login || !config.password) {
+    throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
+  }
+
+  var _this = this;
+  var urlTypes = {
+    WEBDAV: 'remote.php/webdav/',
+    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
+  };
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} directory
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this._accept = function (data, options) {
-    return new Promise(function (resolve,reject) {});
+  this._accept = function (data, directory, options) {
+    return new Promise(function (resolve,reject) {
+
+      var d,fn,reader;
+      var id = cuid();
+
+      if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+        fn = options.name || data.originalname || data.name || id;
+        if (typeof data.buffer !== 'undefined') {
+          d = data.buffer;
+        } else if (typeof data.path !== 'undefined') {
+          d = data.path;
+        }
+      } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+        d = data;
+        fn = options.name || id;
+      }
+
+      if (!d) {
+        throw new Error('Переданы данные недопустимого типа!');
+      }
+
+      if (typeof d.pipe === 'function') {
+        reader = d;
+      } else {
+        reader = fs.createReadStream(d);
+      }
+
+      var reqParams = {
+        uri: config.url + urlTypes.WEBDAV + (directory ? directory : '') + fn,
+        auth: {
+          user: config.login,
+          password: config.password
+        }
+      };
+
+      reader.pipe(request.put(reqParams, function (err, res, body) {
+        if (!err && res.statusCode === 200) {
+            
+        } else {
+          reject(err);
+        }
+      }));
+
+    });
   };
 
   /**

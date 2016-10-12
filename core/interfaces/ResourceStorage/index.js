@@ -6,11 +6,12 @@
 function ResourceStorage() {
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} directory
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this.accept = function (data, options) {
-    return this._accept(data, options);
+  this.accept = function (data, directory, options) {
+    return this._accept(data, directory, options);
   };
 
   /**
