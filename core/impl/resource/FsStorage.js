@@ -169,8 +169,13 @@ function FsStorage(options) {
   };
 
   function streamGetter(file) {
-    return function () {
-      return fs.createReadStream(path.join(_options.storageBase, file.path));
+    return function (callback) {
+      try {
+        var s = fs.createReadStream(path.join(_options.storageBase, file.path));
+        return callback(null, s);
+      } catch (err) {
+        return callback(err, null);
+      }
     };
   }
 
