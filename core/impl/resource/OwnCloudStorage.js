@@ -19,6 +19,8 @@ function OwnCloudStorage(config) {
     throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
   }
 
+  var _this = this;
+
   var urlTypes = {
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
@@ -38,6 +40,13 @@ function OwnCloudStorage(config) {
       return result;
     }
     return url;
+  }
+
+  function slashChecker(path) {
+    if (path && path.slice(-1) !== '/') {
+      path  = path   + '/';
+    }
+    return path;
   }
 
   function streamGetter(filePath) {
@@ -68,9 +77,6 @@ function OwnCloudStorage(config) {
     return new Promise(function (resolve,reject) {
 
       var d,fn,reader;
-      if (directory && directory.slice(-1) !== '/') {
-        directory = directory + '/';
-      }
 
       if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
         fn = options.name || data.originalname || data.name || cuid();
@@ -94,7 +100,7 @@ function OwnCloudStorage(config) {
         reader = fs.createReadStream(d);
       }
 
-      var id = urlResolver(directory || '', fn);
+      var id = urlResolver(slashChecker(directory) || '', fn);
       var reqParams = {
         uri: urlResolver(config.url, urlTypes.WEBDAV, id),
         auth: {
@@ -201,27 +207,31 @@ function OwnCloudStorage(config) {
             files: [],
             dirs: []
           };
-          var dom = new Dom();
-          var doc = dom.parseFromString(body);
-          var dResponse = xpath.select('/d:response[position()>1]', doc);
-          for (var i = 0; i < dResponse.length; i++) {
-            var href = xpath.select('/d:href', dResponse[i]).toString();
-            href = href.replace(urlTypes.WEBDAV, '');
-            var collection = xpath.select('/d:propstat/d:prop/d:resourcetype/d:collection', dResponse[i]);
-            if (collection) {
-              dirObject.dirs.push(href);
-            } else {
-              dirObject.files.push(new StoredFile(
-                href,
-                urlResolver(config.url, urlTypes.WEBDAV, href),
-                {name: path.basename(href)},
-                streamGetter(href)
-              ));
+          try {
+            var dom = new Dom();
+            var doc = dom.parseFromString(body);
+            var dResponse = xpath.select('/d:response[position()>1]', doc);
+            for (var i = 0; i < dResponse.length; i++) {
+              var href = xpath.select('/d:href', dResponse[i]).toString();
+              href = href.replace(urlTypes.WEBDAV, '');
+              var collection = xpath.select('/d:propstat/d:prop/d:resourcetype/d:collection', dResponse[i]);
+              if (collection) {
+                dirObject.dirs.push(href);
+              } else {
+                dirObject.files.push(new StoredFile(
+                  href,
+                  urlResolver(config.url, urlTypes.WEBDAV, href),
+                  {name: path.basename(href)},
+                  streamGetter(href)
+                ));
+              }
             }
+            return resolve(dirObject);
+          } catch (err) {
+            return reject(err);
           }
-          resolve(dirObject);
         } else {
-          reject(err || res.statusCode + ' Status code.');
+          return reject(err || res.statusCode + ' Status code.');
         }
       });
     });
@@ -230,12 +240,27 @@ function OwnCloudStorage(config) {
   /**
    *
    * @param {String} name
-   * @param {{}}options
-   * @param {Array} files
+   * @param {String} parentDirId
    * @returns {Promise}
    */
-  this._createDir = function (name, options, files) {
-    return new Promise(function (resolve,reject) {});
+  this._createDir = function (name, parentDirId) {
+    return new Promise(function (resolve,reject) {
+      var reqParams = {
+        uri: urlResolver(config.url, urlTypes.WEBDAV, slashChecker(parentDirId) || '', name),
+        auth: {
+          user: config.login,
+          password: config.password
+        },
+        method: 'MKCOL'
+      };
+      request(reqParams, function (err, res, body) {
+        if (!err && res.statusCode === 200) {
+          resolve(name);
+        } else {
+          return reject(err || res.statusCode + ' Status code.');
+        }
+      });
+    });
   };
 
   /**
@@ -244,7 +269,22 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._removeDir = function (id) {
-    return new Promise(function (resolve,reject) {});
+    return new Promise(function (resolve,reject) {
+      var reqParams = {
+        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
+        auth: {
+          user: config.login,
+          password: config.password
+        }
+      };
+      request.delete(reqParams, function (err, res, body) {
+        if (!err && res.statusCode === 200) {
+          resolve(id);
+        } else {
+          return reject(err || res.statusCode + ' Status code.');
+        }
+      });
+    });
   };
 
   /**
@@ -254,7 +294,27 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._putFile = function (dirId, fileId) {
-    return new Promise(function (resolve,reject) {});
+    return new Promise(function (resolve,reject) {
+      var fileName = path.basename(fileId);
+      var reqParams = {
+        uri: urlResolver(config.url, urlTypes.WEBDAV, fileId),
+        auth: {
+          user: config.login,
+          password: config.password
+        },
+        headers: {
+          Destination: urlResolver(config.url, urlTypes.WEBDAV, slashChecker(dirId), fileName)
+        },
+        method: 'MOVE'
+      };
+      request(reqParams, function (err, res, body) {
+        if (!err && res.statusCode === 200) {
+          resolve(urlResolver(slashChecker(dirId, fileName)));
+        } else {
+          return reject(err || res.statusCode + ' Status code.');
+        }
+      });
+    });
   };
 
   /**
@@ -264,7 +324,7 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._ejectFile = function (dirId, fileId) {
-    return new Promise(function (resolve,reject) {});
+    return _this._remove(urlResolver(slashChecker(dirId), fileId));
   };
 
   /**

@@ -62,12 +62,11 @@ function ResourceStorage() {
   /**
    *
    * @param {String} name
-   * @param {{}}options
-   * @param {Array} files
+   * @param {String} parentDirId
    * @returns {Promise}
    */
-  this.createDir = function (name, options, files) {
-    return this._createDir(dirName, options, files);
+  this.createDir = function (name, parentDirId) {
+    return this._createDir(name, parentDirId);
   };
 
   /**
