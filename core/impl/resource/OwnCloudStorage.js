@@ -333,7 +333,28 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._share = function (id) {
-    return new Promise(function (resolve,reject) {});
+    return new Promise(function (resolve,reject) {
+      var reqObject = {
+        uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
+        auth: {
+          user: config.login,
+          password: config.password
+        },
+        form: {
+          path: id,
+          shareType: '3',
+          publicUpload: 'true',
+          permissions: '8'
+        }
+      };
+      request.post(reqObject, function(err, res, body){
+        if (!err && res.statusCode === 200) {
+          resolve(body.ocs && body.ocs.data.url);
+        } else {
+          return reject(err || res.statusCode + ' Status code.');
+        }
+      });
+    });
   };
 }
 
