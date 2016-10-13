@@ -3,12 +3,15 @@
  */
 'use strict';
 
-var request = require('request');
-var fs = require('fs');
-var url = require('url');
-var cuid = require('cuid');
-var ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
-var StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
+const request = require('request');
+const  fs = require('fs');
+const url = require('url');
+const path = require('path');
+const cuid = require('cuid');
+const xpath = require('xpath');
+const Dom = require('xmldom').DOMParser;
+const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
+const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 
 function OwnCloudStorage(config) {
 
@@ -16,10 +19,14 @@ function OwnCloudStorage(config) {
     throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
   }
 
-  var _this = this;
   var urlTypes = {
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
+  };
+
+  var resourceType = {
+    FILE: 'file',
+    DIR: 'dir'
   };
 
   function urlResolver(uri, part) {
@@ -176,7 +183,48 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._getDir = function (id) {
-    return new Promise(function (resolve,reject) {});
+    return new Promise(function (resolve,reject) {
+      var reqParams = {
+        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
+        auth: {
+          user: config.login,
+          password: config.password
+        },
+        method: 'PROPFIND'
+      };
+      request(reqParams, function (err, res, body) {
+        if (!err && res.statusCode === 200) {
+          var dirObject = {
+            id: id,
+            type: resourceType.DIR,
+            name: id,
+            files: [],
+            dirs: []
+          };
+          var dom = new Dom();
+          var doc = dom.parseFromString(body);
+          var dResponse = xpath.select('/d:response[position()>1]', doc);
+          for (var i = 0; i < dResponse.length; i++) {
+            var href = xpath.select('/d:href', dResponse[i]).toString();
+            href = href.replace(urlTypes.WEBDAV, '');
+            var collection = xpath.select('/d:propstat/d:prop/d:resourcetype/d:collection', dResponse[i]);
+            if (collection) {
+              dirObject.dirs.push(href);
+            } else {
+              dirObject.files.push(new StoredFile(
+                href,
+                urlResolver(config.url, urlTypes.WEBDAV, href),
+                {name: path.basename(href)},
+                streamGetter(href)
+              ));
+            }
+          }
+          resolve(dirObject);
+        } else {
+          reject(err || res.statusCode + ' Status code.');
+        }
+      });
+    });
   };
 
   /**
