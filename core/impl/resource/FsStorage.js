@@ -109,7 +109,7 @@ function FsStorage(options) {
                 }
                 writer.on('error', rj);
                 writer.on('finish', function () {
-                  rs(dest);
+                  rs(path.join(check.path, check.filename));
                 });
                 reader.pipe(writer);
               } else {
@@ -125,7 +125,12 @@ function FsStorage(options) {
         }).then(function (pth) { // TODO ОПределять mime-type и content-type
           return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
         }).then(function (r) {
-          resolve(r.id);
+          resolve(new StoredFile(
+            r.id,
+            _options.urlBase + '/' + r.id,
+            r.options,
+            streamGetter(r)
+          ));
         }).catch(reject);
       });
   };

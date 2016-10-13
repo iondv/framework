@@ -156,7 +156,9 @@ function DsMetaRepository(options) {
             }
           }
         }
-        return _this.classMeta[ns][name][defaultVersion];
+        if (_this.classMeta[ns][name][defaultVersion]) {
+          return _this.classMeta[ns][name][defaultVersion];
+        }
       }
     } catch (err) {
     }

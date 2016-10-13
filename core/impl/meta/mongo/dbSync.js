@@ -12,7 +12,7 @@ function MongoDbSync(options) {
 
   var _this = this;
 
- /**
+  /**
    * @type {String}
    */
   this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
@@ -31,6 +31,8 @@ function MongoDbSync(options) {
    * @type {String}
    */
   this.navTableName = options.NavTableName || 'ion_nav';
+
+  var log = options.log || console;
 
   /**
    * @returns {Db}
@@ -349,7 +351,8 @@ function MongoDbSync(options) {
           then(_this._addAutoInc(classMeta)).
           then(_this._addIndexes(classMeta)).
           then(function () {
-            console.log('Регистрируем класс ' + classMeta.name);
+            delete classMeta._id;
+            log.log('Регистрируем класс ' + classMeta.name);
             metaCollection.updateOne(
               {
                 name: classMeta.name,
@@ -399,6 +402,8 @@ function MongoDbSync(options) {
       viewMeta.className = className;
       viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
+      delete viewMeta._id;
+
       getMetaTable('view').then(function (collection) {
         collection.update(
           {
@@ -454,6 +459,8 @@ function MongoDbSync(options) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
         navSection.namespace = namespace || null;
+        delete navSection._id;
+
         collection.updateOne(
           {
             name: navSection.name,
@@ -498,6 +505,8 @@ function MongoDbSync(options) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace || null;
+        delete navNode._id;
+
         collection.updateOne(
           {
             code: navNode.code,
