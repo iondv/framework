@@ -171,12 +171,7 @@ function Item(id, base, classMeta) {
 }
 
 Item.prototype.toString = function () {
-  var semantic = this.classMeta.getSemantic();
-  if (typeof semantic === 'function') {
-    return semantic.call(this);
-  } else {
-    return this.classMeta.getCaption() + '@' + this.getItemId();
-  }
+  return this.classMeta.getSemantics(this);
 };
 
 module.exports = Item;

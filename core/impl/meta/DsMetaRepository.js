@@ -78,6 +78,11 @@ function DsMetaRepository(options) {
   /**
    * @type {String}
    */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
+
+  /**
+   * @type {String}
+   */
   this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
@@ -118,6 +123,8 @@ function DsMetaRepository(options) {
     classnames: {}
   };
 
+  this.userTypes = {};
+
   this.ds = options.dataSource;
 
   if (!this.ds) {
@@ -149,7 +156,9 @@ function DsMetaRepository(options) {
             }
           }
         }
-        return _this.classMeta[ns][name][defaultVersion];
+        if (_this.classMeta[ns][name][defaultVersion]) {
+          return _this.classMeta[ns][name][defaultVersion];
+        }
       }
     } catch (err) {
     }
@@ -356,8 +365,8 @@ function DsMetaRepository(options) {
   /**
    * @param {ClassMeta} cm
    */
-  function expandStructs(cm) {
-    var pm, i, j;
+  function expandProperty(cm) {
+    var pm, i, j, ut;
     for (i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
         var structClass;
@@ -368,7 +377,7 @@ function DsMetaRepository(options) {
             '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
         }
         if (!structClass.___structs_expanded) {
-          expandStructs(structClass);
+          expandProperty(structClass);
         }
         var spms = structClass.getPropertyMetas();
         for (j = 0; j < spms.length; j++) {
@@ -377,8 +386,141 @@ function DsMetaRepository(options) {
           cm.propertyMetas[pm.name] = pm;
         }
       }
+
+      pm = cm.plain.properties[i];
+      if (cm.plain.properties[i].type === PropertyTypes.CUSTOM) {
+        if (cm.plain.properties[i].refClass) {
+          if (_this.userTypes.hasOwnProperty(cm.plain.properties[i].refClass)) {
+            ut = _this.userTypes[cm.plain.properties[i].refClass];
+            if (ut) {
+              pm.type = ut.type || PropertyTypes.STRING;
+              pm.mask = ut.mask || pm.mask;
+              pm.maskName = ut.maskName || pm.maskName;
+              pm.size = ut.size || pm.size;
+              pm.decimals = ut.decimals || pm.decimals;
+              pm.validators = ut.validators || pm.validators || [];
+            }
+          }
+        }
+      }
     }
     cm.___structs_expanded = true;
+  }
+
+  function acceptUserTypes(types) {
+    for (var i = 0; i < types.length; i++) {
+      _this.userTypes[types[i].name] = types[i];
+    }
+  }
+
+  function propertyGetter(prev, propertyName, start, length) {
+    return function () {
+      var tmp = this.property(propertyName).getDisplayValue();
+      if (start) {
+        tmp = tmp.substr(start, length || null);
+      }
+
+      if (typeof prev === 'function') {
+        return prev.call(this) + tmp;
+      }
+
+      return tmp;
+    };
+  }
+
+  function constGetter(prev, v) {
+    return function () {
+      if (typeof prev === 'function') {
+        return prev.call(this) + v;
+      }
+      return v;
+    };
+  }
+
+  /**
+   * @param {String[]} path
+   * @param {ClassMeta} cm
+   */
+  function locatePropertyMeta(path, cm) {
+    var pm = cm.getPropertyMeta(path[0]);
+    if (pm) {
+      if (path.length === 1) {
+        return pm;
+      }
+
+      if (pm.type === PropertyTypes.REFERENCE) {
+        var rcm = _this._getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+        if (rcm) {
+          return locatePropertyMeta(path.slice(1), rcm);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @param {String} semantic
+   * @param {ClassMeta} cm
+   * @returns {*}
+   */
+  function createSemanticFunc(semantic, cm, forceEnrichment, prefix) {
+    var tmp, pm, result, ppath;
+    var parts = semantic.split('|');
+    for (var i = 0; i < parts.length; i++) {
+      tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
+      if (tmp) {
+        ppath = tmp[1].split('.');
+        pm = locatePropertyMeta(ppath, cm);
+        if (pm) {
+          if (forceEnrichment) {
+            if (prefix) {
+              ppath.unshift(prefix);
+            }
+            if (pm.type !== PropertyTypes.REFERENCE) {
+              ppath.pop();
+            }
+            if (ppath.length) {
+              forceEnrichment.push(ppath);
+            }
+          }
+          result = propertyGetter(result, tmp[1], tmp[3], tmp[5]);
+        } else {
+          result = constGetter(result, parts[i]);
+        }
+      } else {
+        result = constGetter(result, parts[i]);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   */
+  function produceSemantics(cm) {
+    var i, propertyMetas;
+
+    if (cm) {
+      propertyMetas = cm.getPropertyMetas();
+
+      for (i = 0; i < propertyMetas.length; i++) {
+        if (propertyMetas[i].type === PropertyTypes.REFERENCE && propertyMetas[i].semantic) {
+          var refcm = getFromMeta(propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
+          if (refcm) {
+            propertyMetas[i].semanticGetter = createSemanticFunc(
+              propertyMetas[i].semantic,
+              refcm,
+              cm._forcedEnrichment,
+              propertyMetas[i].name
+            );
+          }
+        }
+      }
+
+      if (cm.plain.semantic) {
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment);
+      }
+    }
   }
 
   function acceptClassMeta(metas) {
@@ -415,6 +557,7 @@ function DsMetaRepository(options) {
                   cm.ancestor.descendants.push(cm);
                 }
               }
+
             }
           }
         }
@@ -423,7 +566,8 @@ function DsMetaRepository(options) {
           if (_this.classMeta[ns].hasOwnProperty(name)) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
               cm = _this.classMeta[ns][name].byOrder[i];
-              expandStructs(cm);
+              expandProperty(cm);
+              produceSemantics(cm);
             }
           }
         }
@@ -567,15 +711,17 @@ function DsMetaRepository(options) {
     return new Promise(function (resolve, reject) {
       Promise.all(
         [
+          _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
           _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
           _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
         ]
       ).then(
         function (results) {
-          acceptClassMeta(results[0]);
-          acceptViews(results[1]);
-          acceptNavigation(results[2]);
+          acceptUserTypes(results[0]);
+          acceptClassMeta(results[1]);
+          acceptViews(results[2]);
+          acceptNavigation(results[3]);
           resolve();
         }
       ).catch(reject);

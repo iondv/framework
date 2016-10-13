@@ -79,7 +79,7 @@
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
-          "noPublicRegistration": "[[auth.noRegistration]]",
+          "publicRegistration": "[[auth.registration]]",
           "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
         }
       },
@@ -93,7 +93,8 @@
             "name": "dbSync",
             "module": "core/impl/meta/mongo/dbSync",
             "options": {
-              "dataSource": "ion://Db"
+              "dataSource": "ion://Db",
+              "log": "ion://sysLog"
             }
           }
         }
@@ -140,6 +141,7 @@
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
+          "log": "ion://sysLog",
           "keyProvider": {
             "name": "keyProvider",
             "module": "core/impl/meta/keyProvider",

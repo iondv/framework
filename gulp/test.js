@@ -7,7 +7,10 @@ var join = require('path').join;
 var jshint = require('gulp-jshint');
 var jscs = require('gulp-jscs');
 
-var jsTestList = [join(config.path.core, '**/*.js'), join(config.path.lib, '**/*.js')]; // Список файлов для тестирования
+var jsTestList = [
+  join(config.path.core, '**/*.js'),
+  join(config.path.lib, '**/*.js')
+]; // Список файлов для тестирования
 
 /**
  * Базовый таск на тестирование всего и вся
