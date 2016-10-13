@@ -6,6 +6,13 @@
 var ConditionTypes = require('core/ConditionTypes');
 var OperationTypes = require('core/OperationTypes');
 
+function toScalar(v) {
+  if (Array.isArray(v) && v.length) {
+    return v.length ? v[0] : null;
+  }
+  return v;
+}
+
 /**
  * @param {StoredCondition} condition
  * @returns {}
@@ -14,8 +21,8 @@ function ConditionParser(condition) {
   var result = {};
   if(condition.property !== null) {
     switch(condition.operation) {
-      case ConditionTypes.EQUAL: result[condition.property] = {$eq: condition.value}; break;
-      case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: condition.value}; break;
+      case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
+      case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.EMPTY: {
         result.$or = [{}, {}];
         result.$or[0][condition.property] = {$eq: null};
@@ -26,11 +33,11 @@ function ConditionParser(condition) {
         result.$and[0][condition.property] = {$ne: null};
         result.$and[1][condition.property] = {$ne: ''};
       } break;
-      case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(condition.value)}; break;
-      case ConditionTypes.LESS: result[condition.property] = {$lt: condition.value}; break;
-      case ConditionTypes.MORE: result[condition.property] = {$gt: condition.value}; break;
-      case ConditionTypes.LESS_OR_EQUAL: result[condition.property] = {$lte: condition.value}; break;
-      case ConditionTypes.MORE_OR_EQUAL: result[condition.property] = {$gte: condition.value}; break;
+      case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
+      case ConditionTypes.LESS: result[condition.property] = {$lt: toScalar(condition.value)}; break;
+      case ConditionTypes.MORE: result[condition.property] = {$gt: toScalar(condition.value)}; break;
+      case ConditionTypes.LESS_OR_EQUAL: result[condition.property] = {$lte: toScalar(condition.value)}; break;
+      case ConditionTypes.MORE_OR_EQUAL: result[condition.property] = {$gte: toScalar(condition.value)}; break;
       case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
     }
   } else {
