@@ -4,7 +4,7 @@
 'use strict';
 
 const request = require('request');
-const  fs = require('fs');
+const fs = require('fs');
 const url = require('url');
 const path = require('path');
 const cuid = require('cuid');
@@ -12,6 +12,8 @@ const xpath = require('xpath');
 const Dom = require('xmldom').DOMParser;
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
+
+const utf8 = require('utf8');
 
 function OwnCloudStorage(config) {
 
@@ -246,7 +248,11 @@ function OwnCloudStorage(config) {
   this._createDir = function (name, parentDirId) {
     return new Promise(function (resolve,reject) {
       var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, slashChecker(parentDirId) || '', name),
+        uri: urlResolver(
+          config.url,
+          urlTypes.WEBDAV,
+          utf8.encode(urlResolver(slashChecker(parentDirId) || '', name))
+        ),
         auth: {
           user: config.login,
           password: config.password
@@ -254,10 +260,10 @@ function OwnCloudStorage(config) {
         method: 'MKCOL'
       };
       request(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
+        if (!err && res.statusCode === 201) {
           resolve(name);
         } else {
-          return reject(err || res.statusCode + ' Status code.');
+          return reject(err || 'createDir:' + res.statusCode + ' Status code.');
         }
       });
     });
@@ -347,8 +353,11 @@ function OwnCloudStorage(config) {
           permissions: '8'
         }
       };
-      request.post(reqObject, function(err, res, body){
+      request.post(reqObject, function (err, res, body) {
         if (!err && res.statusCode === 200) {
+          if (typeof body === 'string') {
+            body = JSON.parse(body);
+          }
           resolve(body.ocs && body.ocs.data.url);
         } else {
           return reject(err || res.statusCode + ' Status code.');
