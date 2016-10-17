@@ -65,6 +65,11 @@ function ImageStorage(options) {
       var ops = opts || {};
       var o = clone(ops);
       var thumbs, name, thumbnails;
+      var mime = ops.mimetype || ops.mimeType || data.mimetype || data.mimeType;
+
+      if (mime && mime.indexOf('image/') !== 0) {
+        return reject(new Error('Переданные данные не являются изображением!'));
+      }
 
       if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
         name = ops.name || data.originalname || data.name || cuid();
