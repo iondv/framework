@@ -504,8 +504,8 @@ function DsMetaRepository(options) {
       propertyMetas = cm.getPropertyMetas();
 
       for (i = 0; i < propertyMetas.length; i++) {
-        if (propertyMetas[i].type === PropertyTypes.REFERENCE && propertyMetas[i].semantic) {
-          var refcm = getFromMeta(propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
+        if ((propertyMetas[i].type === PropertyTypes.REFERENCE || propertyMetas[i].type === PropertyTypes.COLLECTION) && propertyMetas[i].semantic) {
+          var refcm = getFromMeta(propertyMetas[i].type === PropertyTypes.COLLECTION?propertyMetas[i].itemsClass:propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
           if (refcm) {
             propertyMetas[i].semanticGetter = createSemanticFunc(
               propertyMetas[i].semantic,

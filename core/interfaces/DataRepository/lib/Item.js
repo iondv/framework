@@ -170,7 +170,10 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function () {
+Item.prototype.toString = function (semanticGetter) {
+  if(typeof semanticGetter === 'function'){
+    return semanticGetter.apply(this);
+  }
   return this.classMeta.getSemantics(this);
 };
 
