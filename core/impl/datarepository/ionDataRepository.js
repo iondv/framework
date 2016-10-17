@@ -4,13 +4,15 @@
  */
 'use strict';
 
-var DataRepositoryModule = require('core/interfaces/DataRepository');
-var DataRepository = DataRepositoryModule.DataRepository;
-var Item = DataRepositoryModule.Item;
-var PropertyTypes = require('core/PropertyTypes');
-var cast = require('core/cast');
-var EventType = require('core/interfaces/ChangeLogger').EventType;
-var uuid = require('node-uuid');
+const DataRepositoryModule = require('core/interfaces/DataRepository');
+const DataRepository = DataRepositoryModule.DataRepository;
+const Item = DataRepositoryModule.Item;
+const PropertyTypes = require('core/PropertyTypes');
+const cast = require('core/cast');
+const EventType = require('core/interfaces/ChangeLogger').EventType;
+const uuid = require('node-uuid');
+const util = require('util');
+const EventEmitter = require('events').EventEmitter;
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -24,6 +26,8 @@ var uuid = require('node-uuid');
  */
 function IonDataRepository(options) {
   var _this = this;
+  EventEmitter.call(this);
+
   /**
    * @type {DataSource}
    */
@@ -1012,11 +1016,13 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
+                _this.emit('ionItemCreated', item);
                 resolve(item);
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
+              _this.emit('ionItemCreated', item);
               resolve(item);
             });
           }
@@ -1027,6 +1033,7 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
+          _this.emit('ionItemCreated', items[0]);
           resolve(items[0]);
         }).catch(reject);
       } catch (err) {
@@ -1467,4 +1474,5 @@ function IonDataRepository(options) {
 }
 
 IonDataRepository.prototype = new DataRepository();
+util.inherits(IonDataRepository, EventEmitter);
 module.exports = IonDataRepository;
