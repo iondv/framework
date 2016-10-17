@@ -125,7 +125,7 @@ function OwnCloudStorage(config) {
             streamGetter(id)
           ));
         } else {
-          reject(err || new Error('Status code:' + res.statusCode));
+          reject(err || new Error('Status code: ' + res.statusCode));
         }
       }));
     });
@@ -145,10 +145,10 @@ function OwnCloudStorage(config) {
         }
       };
       request.delete(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
+        if (!err && res.statusCode === 204) {
           return resolve(id);
         } else {
-          return reject(err || 'ошибка удаления');
+          return reject(err || new Error('Status code: ' + res.statusCode));
         }
       });
     });
@@ -206,7 +206,7 @@ function OwnCloudStorage(config) {
         method: 'PROPFIND'
       };
       request(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
+        if (!err && res.statusCode === 207) {
           var dirObject = {
             id: id,
             type: resourceType.DIR,
@@ -217,12 +217,18 @@ function OwnCloudStorage(config) {
           try {
             var dom = new Dom();
             var doc = dom.parseFromString(body);
-            var dResponse = xpath.select('/d:response[position()>1]', doc);
+            var dResponse = xpath.select(
+              '/*[local-name()="multistatus"]/*[local-name()="response"][position()>1]',
+              doc
+            );
             for (var i = 0; i < dResponse.length; i++) {
-              var href = xpath.select('/d:href', dResponse[i]).toString();
-              href = href.replace(urlTypes.WEBDAV, '');
-              var collection = xpath.select('/d:propstat/d:prop/d:resourcetype/d:collection', dResponse[i]);
-              if (collection) {
+              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.data;
+              href = href.replace('/' + urlTypes.WEBDAV, '');
+              var collection = xpath.select(
+                '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]/*[local-name()="collection"]',
+                dResponse[i]
+              );
+              if (collection.length) {
                 dirObject.dirs.push(href);
               } else {
                 dirObject.files.push(new StoredFile(
@@ -238,7 +244,7 @@ function OwnCloudStorage(config) {
             return reject(err);
           }
         } else {
-          return reject(err || res.statusCode + ' Status code.');
+          return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
     });
@@ -268,7 +274,7 @@ function OwnCloudStorage(config) {
         if (!err && res.statusCode === 201) {
           resolve(name);
         } else {
-          return reject(err || 'createDir:' + res.statusCode + ' Status code.');
+          return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
     });
@@ -280,22 +286,7 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._removeDir = function (id) {
-    return new Promise(function (resolve,reject) {
-      var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
-        auth: {
-          user: config.login,
-          password: config.password
-        }
-      };
-      request.delete(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
-          resolve(id);
-        } else {
-          return reject(err || res.statusCode + ' Status code.');
-        }
-      });
-    });
+    return _this.remove(id);
   };
 
   /**
@@ -319,10 +310,10 @@ function OwnCloudStorage(config) {
         method: 'MOVE'
       };
       request(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
+        if (!err && res.statusCode === 201) {
           resolve(urlResolver(slashChecker(dirId, fileName)));
         } else {
-          return reject(err || res.statusCode + ' Status code.');
+          return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
     });
@@ -335,7 +326,7 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._ejectFile = function (dirId, fileId) {
-    return _this._remove(urlResolver(slashChecker(dirId), fileId));
+    return _this.remove(urlResolver(slashChecker(dirId), fileId));
   };
 
   /**
@@ -365,7 +356,7 @@ function OwnCloudStorage(config) {
           }
           resolve(body.ocs && body.ocs.data.url);
         } else {
-          return reject(err || res.statusCode + ' Status code.');
+          return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
     });
