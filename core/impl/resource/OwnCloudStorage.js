@@ -7,6 +7,7 @@ const request = require('request');
 const fs = require('fs');
 const url = require('url');
 const path = require('path');
+const stream = require('stream');
 const cuid = require('cuid');
 const xpath = require('xpath');
 const Dom = require('xmldom').DOMParser;
@@ -78,6 +79,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     return new Promise(function (resolve,reject) {
 
+      options = options || {};
       var d,fn,reader;
 
       if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
@@ -98,6 +100,9 @@ function OwnCloudStorage(config) {
 
       if (typeof d.pipe === 'function') {
         reader = d;
+      } else if (Buffer.isBuffer(d)) {
+        reader = new stream.PassThrough();
+        reader.end(d);
       } else {
         reader = fs.createReadStream(d);
       }
@@ -112,7 +117,7 @@ function OwnCloudStorage(config) {
       };
 
       reader.pipe(request.put(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 200) {
+        if (!err && res.statusCode === 201) {
           resolve(new StoredFile(
             id,
             reqParams.uri,
@@ -120,7 +125,7 @@ function OwnCloudStorage(config) {
             streamGetter(id)
           ));
         } else {
-          reject(err);
+          reject(err || new Error('Status code:' + res.statusCode));
         }
       }));
     });
