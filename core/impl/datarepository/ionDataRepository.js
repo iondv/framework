@@ -11,8 +11,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
-const util = require('util');
-const EventEmitter = require('events').EventEmitter;
+const EventManager = require('core/impl/EventManager');
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -26,7 +25,7 @@ const EventEmitter = require('events').EventEmitter;
  */
 function IonDataRepository(options) {
   var _this = this;
-  EventEmitter.call(this);
+  EventManager.apply(this);
 
   /**
    * @type {DataSource}
@@ -1016,13 +1015,11 @@ function IonDataRepository(options) {
                 item.getItemId(),
                 updates
               ).then(function () {
-                _this.emit('ionItemCreated', item);
                 resolve(item);
               }).catch(reject);
             });
           } else {
             return new Promise(function (resolve) {
-              _this.emit('ionItemCreated', item);
               resolve(item);
             });
           }
@@ -1033,8 +1030,10 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
-          _this.emit('ionItemCreated', items[0]);
-          resolve(items[0]);
+          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0])
+          .then(function () {
+            resolve(items[0]);
+          }).catch(reject);
         }).catch(reject);
       } catch (err) {
         reject(err);
@@ -1474,5 +1473,4 @@ function IonDataRepository(options) {
 }
 
 IonDataRepository.prototype = new DataRepository();
-util.inherits(IonDataRepository, EventEmitter);
 module.exports = IonDataRepository;
