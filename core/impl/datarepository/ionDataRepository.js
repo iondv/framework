@@ -1305,6 +1305,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
@@ -1319,7 +1320,10 @@ function IonDataRepository(options) {
         }
 
         Promise.all(writers).then(function () {
-          resolve();
+          _this.trigger(event, {master: master, details: details})
+            .then(function () {
+              resolve();
+            }).catch(reject);
         }).catch(reject);
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
@@ -1356,9 +1360,17 @@ function IonDataRepository(options) {
               operation ? EventType.PUT : EventType.EJECT,
               master.getMetaClass().getCanonicalName(),
               master.getItemId(),
-              updates).then(resolve).catch(reject);
+              updates).then(function () {
+                  _this.trigger(event, {master: master, details: details})
+                    .then(function () {
+                      resolve();
+                    }).catch(reject);
+                }).catch(reject);
           } else {
-            resolve();
+            _this.trigger(event, {master: master, details: details})
+              .then(function () {
+                resolve();
+              }).catch(reject);
           }
         }).catch(reject);
       }
