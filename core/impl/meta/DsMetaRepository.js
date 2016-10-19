@@ -386,19 +386,22 @@ function DsMetaRepository(options) {
           cm.propertyMetas[pm.name] = pm;
         }
       }
-
-      pm = cm.plain.properties[i];
-      if (cm.plain.properties[i].type === PropertyTypes.CUSTOM) {
-        if (cm.plain.properties[i].refClass) {
-          if (_this.userTypes.hasOwnProperty(cm.plain.properties[i].refClass)) {
-            ut = _this.userTypes[cm.plain.properties[i].refClass];
-            if (ut) {
-              pm.type = ut.type || PropertyTypes.STRING;
-              pm.mask = ut.mask || pm.mask;
-              pm.maskName = ut.maskName || pm.maskName;
-              pm.size = ut.size || pm.size;
-              pm.decimals = ut.decimals || pm.decimals;
-              pm.validators = ut.validators || pm.validators || [];
+    }
+    for (var nm in cm.propertyMetas) {
+      if (cm.propertyMetas.hasOwnProperty(nm)) {
+        pm = cm.propertyMetas[nm];
+        if (pm.type === PropertyTypes.CUSTOM) {
+          if (pm.refClass) {
+            if (_this.userTypes.hasOwnProperty(pm.refClass)) {
+              ut = _this.userTypes[pm.refClass];
+              if (ut) {
+                pm.type = ut.type || PropertyTypes.STRING;
+                pm.mask = ut.mask || pm.mask;
+                pm.maskName = ut.maskName || pm.maskName;
+                pm.size = ut.size || pm.size;
+                pm.decimals = ut.decimals || pm.decimals;
+                pm.validators = ut.validators || pm.validators || [];
+              }
             }
           }
         }
