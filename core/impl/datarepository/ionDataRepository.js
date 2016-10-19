@@ -752,6 +752,10 @@ function IonDataRepository(options) {
 
   function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
+      var rej = function(reason){
+        reason.message = 'При попытке сохранения значения атрибута ' + pm.name + ' возникла ошибка: ' + reason.message;
+        rj(reason);
+      };
       if (Array.isArray(updates[pm.name])) {
         var savers = [];
         for (var i = 0; i < updates[pm.name].length; i++) {
@@ -770,19 +774,19 @@ function IonDataRepository(options) {
               }
               rs();
             }
-          ).catch(rj);
+          ).catch(rej);
         } else {
           rs();
         }
       } else {
         var storage = _this.fileStorage;
         if (pm.type === PropertyTypes.IMAGE) {
-          storage = this.imageStorage;
+          storage = _this.imageStorage;
         }
         storage.accept(updates[pm.name]).then(function (f) {
           updates[pm.name] = f.id;
           rs();
-        }).catch(rj);
+        }).catch(rej);
       }
     });
   }
