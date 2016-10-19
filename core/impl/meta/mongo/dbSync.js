@@ -420,9 +420,9 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
+            log.log('Создано представление ' + type + ' для класса ' + className);
             resolve(vm);
           });
-
       }).catch(reject);
     });
   };
@@ -517,6 +517,7 @@ function MongoDbSync(options) {
           if (err) {
             return reject(err);
           }
+          log.log('Создан узел навигации ' + navNode.code);
           resolve(ns);
         });
       }).catch(reject);
@@ -542,18 +543,22 @@ function MongoDbSync(options) {
     });
   };
 
-   this._defineUserType = function (userType) {
+  this._defineUserType = function (userType) {
     return new Promise(function (resolve, reject) {
       getMetaTable('user_type').then(function (collection) {
         collection.updateOne(
           {
             name: userType.name
-          }, userType, {upsert: true}, function (err, ns) {
-          if (err) {
-            return reject(err);
+          },
+          userType,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(ns);
           }
-          resolve(ns);
-        });
+        );
       }).catch(reject);
     });
   };
