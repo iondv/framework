@@ -15,12 +15,13 @@ function toScalar(v) {
 
 /**
  * @param {StoredCondition} condition
- * @returns {}
+ * @returns {{}}
  */
 function ConditionParser(condition) {
   var result = {};
-  if(condition.property !== null) {
-    switch(condition.operation) {
+
+  if (condition.property) {
+    switch (condition.operation) {
       case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
       case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.EMPTY: {
@@ -29,9 +30,10 @@ function ConditionParser(condition) {
         result.$or[1][condition.property] = {$eq: ''};
       } break;
       case ConditionTypes.NOT_EMPTY: {
-        result.$and = [{}, {}];
+        result.$and = [{}, {}, {}];
         result.$and[0][condition.property] = {$ne: null};
         result.$and[1][condition.property] = {$ne: ''};
+        result.$and[2][condition.property] = {$exists: true};
       } break;
       case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
       case ConditionTypes.LESS: result[condition.property] = {$lt: toScalar(condition.value)}; break;
@@ -42,10 +44,10 @@ function ConditionParser(condition) {
     }
   } else {
     var value = [];
-    for(var i = 0; i < condition.nestedConditions.length; i++) {
+    for (var i = 0; i < condition.nestedConditions.length; i++) {
       value[value.length] = ConditionParser(condition.nestedConditions[i]);
     }
-    switch(condition.operation) {
+    switch (condition.operation) {
       case OperationTypes.AND: result.$and = value; break;
       case OperationTypes.OR: result.$or = value; break;
       case OperationTypes.NOT: result.$not = {$and: value}; break;
