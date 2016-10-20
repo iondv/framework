@@ -15,6 +15,11 @@ function MongoDbSync(options) {
   /**
    * @type {String}
    */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
+
+  /**
+   * @type {String}
+   */
   this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
@@ -26,6 +31,8 @@ function MongoDbSync(options) {
    * @type {String}
    */
   this.navTableName = options.NavTableName || 'ion_nav';
+
+  var log = options.log || console;
 
   /**
    * @returns {Db}
@@ -89,6 +96,11 @@ function MongoDbSync(options) {
               });
           });
         }break;
+        case 'user_type': {
+          return new Promise(function (resolve, reject) {
+            resolve(collection);
+          });
+        }break;
       }
       throw new Error('Unsupported table type specified!');
     };
@@ -107,6 +119,8 @@ function MongoDbSync(options) {
         case 'nav':
           tn = _this.navTableName;
           break;
+        case 'user_type':
+          tn = _this.userTypeTableName;
       }
 
       if (!tn) {
@@ -132,7 +146,7 @@ function MongoDbSync(options) {
             return new Promise(function (rs, rj) {
               autoinc.createIndex({type: 1}, {unique: true}, function (err) {
                 if (err) {
-                  rj(err);
+                  return rj(err);
                 }
                 rs(autoinc);
               });
@@ -175,6 +189,7 @@ function MongoDbSync(options) {
       getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
+        then(function () {return getMetaTable('user_type');}).
         then(function () {return getAutoIncColl();}).
         then(resolve).
         catch(reject);
@@ -330,13 +345,14 @@ function MongoDbSync(options) {
       getMetaTable('meta').then(function (metaCollection) {
         findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           _this._createCollection(cm, namespace).
           then(_this._addAutoInc(classMeta)).
           then(_this._addIndexes(classMeta)).
           then(function () {
-            console.log('Регистрируем класс ' + classMeta.name);
+            delete classMeta._id;
+            log.log('Регистрируем класс ' + classMeta.name);
             metaCollection.updateOne(
               {
                 name: classMeta.name,
@@ -349,6 +365,7 @@ function MongoDbSync(options) {
                 if (err) {
                   return reject(err);
                 }
+                log.log('Класс ' + classMeta.name + ' зарегистрирован.');
                 resolve(result);
               }
             );
@@ -386,6 +403,8 @@ function MongoDbSync(options) {
       viewMeta.className = className;
       viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
+      delete viewMeta._id;
+
       getMetaTable('view').then(function (collection) {
         collection.update(
           {
@@ -401,9 +420,9 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
+            log.log('Создано представление ' + type + ' для класса ' + className);
             resolve(vm);
           });
-
       }).catch(reject);
     });
   };
@@ -441,6 +460,8 @@ function MongoDbSync(options) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
         navSection.namespace = namespace || null;
+        delete navSection._id;
+
         collection.updateOne(
           {
             name: navSection.name,
@@ -485,6 +506,8 @@ function MongoDbSync(options) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace || null;
+        delete navNode._id;
+
         collection.updateOne(
           {
             code: navNode.code,
@@ -494,6 +517,7 @@ function MongoDbSync(options) {
           if (err) {
             return reject(err);
           }
+          log.log('Создан узел навигации ' + navNode.code);
           resolve(ns);
         });
       }).catch(reject);
@@ -515,6 +539,26 @@ function MongoDbSync(options) {
           }
           resolve(nnm);
         });
+      }).catch(reject);
+    });
+  };
+
+  this._defineUserType = function (userType) {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('user_type').then(function (collection) {
+        collection.updateOne(
+          {
+            name: userType.name
+          },
+          userType,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(ns);
+          }
+        );
       }).catch(reject);
     });
   };

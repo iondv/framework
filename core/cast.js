@@ -18,9 +18,10 @@ var cast = module.exports = function (value, type) {
     return result;
   }
 
-  if (type === PropertyTypes.STRING && value !== null) {
-    return value;
+  if (type === PropertyTypes.STRING) {
+    return value.toString();
   }
+
   switch (type){
     case PropertyTypes.BOOLEAN: {
       if (value === 'false') {

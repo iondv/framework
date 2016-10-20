@@ -78,6 +78,11 @@ function DsMetaRepository(options) {
   /**
    * @type {String}
    */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
+
+  /**
+   * @type {String}
+   */
   this.metaTableName = options.MetaTableName || 'ion_meta';
 
   /**
@@ -118,6 +123,8 @@ function DsMetaRepository(options) {
     classnames: {}
   };
 
+  this.userTypes = {};
+
   this.ds = options.dataSource;
 
   if (!this.ds) {
@@ -149,7 +156,9 @@ function DsMetaRepository(options) {
             }
           }
         }
-        return _this.classMeta[ns][name][defaultVersion];
+        if (_this.classMeta[ns][name][defaultVersion]) {
+          return _this.classMeta[ns][name][defaultVersion];
+        }
       }
     } catch (err) {
     }
@@ -356,8 +365,8 @@ function DsMetaRepository(options) {
   /**
    * @param {ClassMeta} cm
    */
-  function expandStructs(cm) {
-    var pm, i, j;
+  function expandProperty(cm) {
+    var pm, i, j, ut;
     for (i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
         var structClass;
@@ -368,7 +377,7 @@ function DsMetaRepository(options) {
             '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
         }
         if (!structClass.___structs_expanded) {
-          expandStructs(structClass);
+          expandProperty(structClass);
         }
         var spms = structClass.getPropertyMetas();
         for (j = 0; j < spms.length; j++) {
@@ -378,7 +387,33 @@ function DsMetaRepository(options) {
         }
       }
     }
+    for (var nm in cm.propertyMetas) {
+      if (cm.propertyMetas.hasOwnProperty(nm)) {
+        pm = cm.propertyMetas[nm];
+        if (pm.type === PropertyTypes.CUSTOM) {
+          if (pm.refClass) {
+            if (_this.userTypes.hasOwnProperty(pm.refClass)) {
+              ut = _this.userTypes[pm.refClass];
+              if (ut) {
+                pm.type = ut.type || PropertyTypes.STRING;
+                pm.mask = ut.mask || pm.mask;
+                pm.maskName = ut.maskName || pm.maskName;
+                pm.size = ut.size || pm.size;
+                pm.decimals = ut.decimals || pm.decimals;
+                pm.validators = ut.validators || pm.validators || [];
+              }
+            }
+          }
+        }
+      }
+    }
     cm.___structs_expanded = true;
+  }
+
+  function acceptUserTypes(types) {
+    for (var i = 0; i < types.length; i++) {
+      _this.userTypes[types[i].name] = types[i];
+    }
   }
 
   function propertyGetter(prev, propertyName, start, length) {
@@ -525,6 +560,7 @@ function DsMetaRepository(options) {
                   cm.ancestor.descendants.push(cm);
                 }
               }
+
             }
           }
         }
@@ -533,7 +569,7 @@ function DsMetaRepository(options) {
           if (_this.classMeta[ns].hasOwnProperty(name)) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
               cm = _this.classMeta[ns][name].byOrder[i];
-              expandStructs(cm);
+              expandProperty(cm);
               produceSemantics(cm);
             }
           }
@@ -678,15 +714,17 @@ function DsMetaRepository(options) {
     return new Promise(function (resolve, reject) {
       Promise.all(
         [
+          _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
           _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
           _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
         ]
       ).then(
         function (results) {
-          acceptClassMeta(results[0]);
-          acceptViews(results[1]);
-          acceptNavigation(results[2]);
+          acceptUserTypes(results[0]);
+          acceptClassMeta(results[1]);
+          acceptViews(results[2]);
+          acceptNavigation(results[3]);
           resolve();
         }
       ).catch(reject);
