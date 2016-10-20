@@ -58,26 +58,36 @@ function FsStorage(options) {
     var fn;
     var id = cuid();
 
-    if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+    if (
+      typeof data === 'object' &&
+      (
+        typeof data.buffer !== 'undefined' ||
+        typeof data.path !== 'undefined' ||
+        typeof data.stream !== 'undefined'
+      )
+    ) {
       fn = opts.name || data.originalname || data.name || id;
       if (typeof data.buffer !== 'undefined') {
         d = data.buffer;
       } else if (typeof data.path !== 'undefined') {
         d = data.path;
+      } else if (typeof data.stream !== 'undefined') {
+        d = data.stream;
       }
 
       var dt = clone(data);
       delete dt.buffer;
       delete dt.path;
+      delete dt.stream;
 
       opts = merge(opts, dt);
-    } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+    } else {
       d = data;
       fn = opts.name || id;
     }
 
-    if (!d) {
-      throw new Error('Переданы данные недопустимого типа!');
+    if (!(typeof d === 'string' || Buffer.isBuffer(d) || typeof d.pipe === 'function')) {
+      throw new Error('Переданы данные недопустимого типа:!');
     }
 
     function checkDest(filename, prompt) {
@@ -102,7 +112,7 @@ function FsStorage(options) {
           return new Promise(function (rs, rj) {
             mkdirp(path.join(_options.storageBase, check.path), function (err) {
               if (err) {
-                rj(err);
+                return rj(err);
               }
 
               var dest = path.join(_options.storageBase, check.path, check.filename);

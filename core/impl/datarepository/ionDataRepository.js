@@ -752,6 +752,10 @@ function IonDataRepository(options) {
 
   function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
+      var rej = function(reason){
+        reason.message = 'При попытке сохранения значения атрибута ' + pm.name + ' возникла ошибка: ' + reason.message;
+        rj(reason);
+      };
       if (Array.isArray(updates[pm.name])) {
         var savers = [];
         for (var i = 0; i < updates[pm.name].length; i++) {
@@ -770,19 +774,19 @@ function IonDataRepository(options) {
               }
               rs();
             }
-          ).catch(rj);
+          ).catch(rej);
         } else {
           rs();
         }
       } else {
         var storage = _this.fileStorage;
         if (pm.type === PropertyTypes.IMAGE) {
-          storage = this.imageStorage;
+          storage = _this.imageStorage;
         }
         storage.accept(updates[pm.name]).then(function (f) {
           updates[pm.name] = f.id;
           rs();
-        }).catch(rj);
+        }).catch(rej);
       }
     });
   }
@@ -932,7 +936,6 @@ function IonDataRepository(options) {
 
       if (oldId) {
         options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
-          console.log(r);
           return options.dataSource.update(tn(rcm), conds, ups);
         }).then(resolve).catch(reject);
       } else {
@@ -1253,18 +1256,18 @@ function IonDataRepository(options) {
       Promise.all(getters).
       then(function (m) {
         var writers = [];
-        var i, j, k;
+        var i, j, k, cond, updates, act, src, mrcm;
         for (i = 0; i < m.length; i++) {
           if (m[i]) {
-            var cond = formUpdatedData(
+            cond = formUpdatedData(
               m[i].getMetaClass(),
               _this.keyProvider.keyToData(
                 m[i].getMetaClass().getName(),
                 m[i].getItemId(),
                 m[i].getMetaClass().getNamespace())
             );
-            var updates = {};
-            var src;
+            updates = {};
+            act = false;
             for (k = 0; k < collections.length; k++) {
               src = m[i].base[collections[k]] || [];
               for (j = 0; j < details.length; j++) {
@@ -1275,9 +1278,12 @@ function IonDataRepository(options) {
                 }
               }
               updates[collections[k]] = src;
+              act = true;
             }
-            var mrcm = _this._getRootType(m[i].getMetaClass());
-            writers.push(_this.ds.update(tn(mrcm), cond, updates));
+            if (act) {
+              mrcm = _this._getRootType(m[i].getMetaClass());
+              writers.push(_this.ds.update(tn(mrcm), cond, updates));
+            }
           }
         }
         return Promise.all(writers);
@@ -1305,7 +1311,7 @@ function IonDataRepository(options) {
 
       if (pm.backRef) {
         var update = {};
-        update[pm.backRef] = operation ? pm.binding ? master.get(pm.binding) : master.getItemId() : null;
+        update[pm.backRef] = operation ? (pm.binding ? master.get(pm.binding) : master.getItemId()) : null;
 
         var writers = [];
         for (var i = 0; i < details.length; i++) {

@@ -146,7 +146,7 @@ function MongoDbSync(options) {
             return new Promise(function (rs, rj) {
               autoinc.createIndex({type: 1}, {unique: true}, function (err) {
                 if (err) {
-                  rj(err);
+                  return rj(err);
                 }
                 rs(autoinc);
               });
@@ -345,7 +345,7 @@ function MongoDbSync(options) {
       getMetaTable('meta').then(function (metaCollection) {
         findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           _this._createCollection(cm, namespace).
           then(_this._addAutoInc(classMeta)).
@@ -365,6 +365,7 @@ function MongoDbSync(options) {
                 if (err) {
                   return reject(err);
                 }
+                log.log('Класс ' + classMeta.name + ' зарегистрирован.');
                 resolve(result);
               }
             );
@@ -419,9 +420,9 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
+            log.log('Создано представление ' + type + ' для класса ' + className);
             resolve(vm);
           });
-
       }).catch(reject);
     });
   };
@@ -516,6 +517,7 @@ function MongoDbSync(options) {
           if (err) {
             return reject(err);
           }
+          log.log('Создан узел навигации ' + navNode.code);
           resolve(ns);
         });
       }).catch(reject);
@@ -541,18 +543,22 @@ function MongoDbSync(options) {
     });
   };
 
-   this._defineUserType = function (userType) {
+  this._defineUserType = function (userType) {
     return new Promise(function (resolve, reject) {
       getMetaTable('user_type').then(function (collection) {
         collection.updateOne(
           {
             name: userType.name
-          }, userType, {upsert: true}, function (err, ns) {
-          if (err) {
-            return reject(err);
+          },
+          userType,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(ns);
           }
-          resolve(ns);
-        });
+        );
       }).catch(reject);
     });
   };
