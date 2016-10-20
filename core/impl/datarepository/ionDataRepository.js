@@ -4,13 +4,14 @@
  */
 'use strict';
 
-var DataRepositoryModule = require('core/interfaces/DataRepository');
-var DataRepository = DataRepositoryModule.DataRepository;
-var Item = DataRepositoryModule.Item;
-var PropertyTypes = require('core/PropertyTypes');
-var cast = require('core/cast');
-var EventType = require('core/interfaces/ChangeLogger').EventType;
-var uuid = require('node-uuid');
+const DataRepositoryModule = require('core/interfaces/DataRepository');
+const DataRepository = DataRepositoryModule.DataRepository;
+const Item = DataRepositoryModule.Item;
+const PropertyTypes = require('core/PropertyTypes');
+const cast = require('core/cast');
+const EventType = require('core/interfaces/ChangeLogger').EventType;
+const uuid = require('node-uuid');
+const EventManager = require('core/impl/EventManager');
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -24,6 +25,8 @@ var uuid = require('node-uuid');
  */
 function IonDataRepository(options) {
   var _this = this;
+  EventManager.apply(this);
+
   /**
    * @type {DataSource}
    */
@@ -1030,7 +1033,10 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
-          resolve(items[0]);
+          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0])
+          .then(function () {
+            resolve(items[0]);
+          }).catch(reject);
         }).catch(reject);
       } catch (err) {
         reject(err);
@@ -1305,6 +1311,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
@@ -1319,7 +1326,10 @@ function IonDataRepository(options) {
         }
 
         Promise.all(writers).then(function () {
-          resolve();
+          _this.trigger(event, {master: master, details: details})
+            .then(function () {
+              resolve();
+            }).catch(reject);
         }).catch(reject);
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
@@ -1356,9 +1366,17 @@ function IonDataRepository(options) {
               operation ? EventType.PUT : EventType.EJECT,
               master.getMetaClass().getCanonicalName(),
               master.getItemId(),
-              updates).then(resolve).catch(reject);
+              updates).then(function () {
+                  _this.trigger(event, {master: master, details: details})
+                    .then(function () {
+                      resolve();
+                    }).catch(reject);
+                }).catch(reject);
           } else {
-            resolve();
+            _this.trigger(event, {master: master, details: details})
+              .then(function () {
+                resolve();
+              }).catch(reject);
           }
         }).catch(reject);
       }
