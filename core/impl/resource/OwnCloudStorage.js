@@ -195,7 +195,6 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._getDir = function (id) {
-    console.log('Getting dir:', urlResolver(config.url, urlTypes.WEBDAV, id));
     return new Promise(function (resolve,reject) {
       var reqParams = {
         uri: urlResolver(config.url, urlTypes.WEBDAV, utf8.encode(decodeURI(id))),
