@@ -8,6 +8,7 @@ var DataRepositoryModule = require('core/interfaces/DataRepository');
 var DataRepository = DataRepositoryModule.DataRepository;
 var Item = DataRepositoryModule.Item;
 var PropertyTypes = require('core/PropertyTypes');
+var ChangeLogger = require('core/interfaces/ChangeLogger');
 var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
@@ -972,11 +973,45 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {ChangeLogger | Function} changeLogger
+   * @param {{}} record
+   * @param {String} record.type
+   * @param {Item} [record.item]
+   * @param {ClassMeta} [record.cm]
+   * @param {{}} [record.updates]
+   * @returns {Promise}
+   */
+  function logChanges(changeLogger, record) {
+    return new Promise(function (resolve, reject) {
+      var p;
+      if (changeLogger instanceof ChangeLogger) {
+        p = changeLogger.LogChange(
+          record.type,
+          record.item.getMetaClass().getCanonicalName(),
+          record.item.getItemId(),
+          record.updates
+        );
+      } else if (typeof changeLogger === 'function') {
+        p = changeLogger(record);
+      }
+
+      if (p instanceof Promise) {
+        p.then(function () {
+          resolve(record.item);
+        }).catch(reject);
+        return;
+      }
+
+      resolve(record.item);
+    });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
    * @param {String} [version]
-   * @param {ChangeLogger} [changeLogger]
+   * @param {ChangeLogger | Function} [changeLogger]
    * @param {Number} [nestingDepth]
    * @returns {Promise}
    */
@@ -1004,22 +1039,7 @@ function IonDataRepository(options) {
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                EventType.CREATE,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function () {
-                resolve(item);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve) {
-              resolve(item);
-            });
-          }
+          return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
         }).then(function (item) {
@@ -1082,22 +1102,7 @@ function IonDataRepository(options) {
               });
             }
             var item = _this._wrap(data._class, data, data._classVer);
-            if (changeLogger) {
-              return new Promise(function (resolve, reject) {
-                changeLogger.LogChange(
-                  EventType.UPDATE,
-                  item.getMetaClass().getCanonicalName(),
-                  item.getItemId(),
-                  updates
-                ).then(function () {
-                  resolve(item);
-                }).catch(reject);
-              });
-            } else {
-              return new Promise(function (resolve) {
-                resolve(item);
-              });
-            }
+            return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);
           }).then(function (item) {
@@ -1177,22 +1182,7 @@ function IonDataRepository(options) {
           }
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                event,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function () {
-                resolve(item);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve) {
-              resolve(item);
-            });
-          }
+          return logChanges(changeLogger, {type: event, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data, id || item.getItemId());
         }).then(function (item) {
@@ -1221,18 +1211,10 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       _this.ds.delete(tn(rcm), updates).then(function () {
-        if (changeLogger) {
-          changeLogger.LogChange(
-            EventType.DELETE,
-            cm.getCanonicalName(),
-            id,
-            {}).
-          then(resolve).
-          catch(reject);
-        } else {
-          resolve();
-        }
-      }).catch(reject);
+        return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
+      }).
+      then(resolve).
+      catch(reject);
     });
   };
 
@@ -1337,24 +1319,25 @@ function IonDataRepository(options) {
           }
           return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
         }).then(function () {
-          if (changeLogger) {
-            var updates = {};
-            updates[collection] = [];
-            for (var i = 0; i < details.length; i++) {
-              updates[collection].push({
-                className: details[i].getMetaClass().getCanonicalName(),
-                id: details[i].getItemId()
-              });
-            }
-            changeLogger.LogChange(
-              operation ? EventType.PUT : EventType.EJECT,
-              master.getMetaClass().getCanonicalName(),
-              master.getItemId(),
-              updates).then(resolve).catch(reject);
-          } else {
-            resolve();
+          var updates = {};
+          updates[collection] = [];
+          for (var i = 0; i < details.length; i++) {
+            updates[collection].push({
+              className: details[i].getMetaClass().getCanonicalName(),
+              id: details[i].getItemId()
+            });
           }
-        }).catch(reject);
+          return logChanges(
+            changeLogger,
+            {
+              type: operation ? EventType.PUT : EventType.EJECT,
+              item: master,
+              updates: updates
+            }
+          );
+        }).
+        then(resolve).
+        catch(reject);
       }
     });
   }
