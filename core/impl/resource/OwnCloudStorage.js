@@ -211,6 +211,7 @@ function OwnCloudStorage(config) {
             id: id,
             type: resourceType.DIR,
             name: id,
+            link: urlResolver(config.url, urlTypes.WEBDAV, id),
             files: [],
             dirs: []
           };
@@ -230,7 +231,7 @@ function OwnCloudStorage(config) {
                 dResponse[i]
               );
               if (collection.length) {
-                dirObject.dirs.push(href);
+                dirObject.dirs.push({id: href, link: urlResolver(config.url, urlTypes.WEBDAV, href)});
               } else {
                 dirObject.files.push(new StoredFile(
                   href,
@@ -245,7 +246,7 @@ function OwnCloudStorage(config) {
             return reject(err);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode +" at "+ urlResolver(config.url, urlTypes.WEBDAV, encodeURI(decodeURI(id)))));
+          return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
     });
