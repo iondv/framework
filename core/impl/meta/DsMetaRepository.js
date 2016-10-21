@@ -417,14 +417,17 @@ function DsMetaRepository(options) {
   }
 
   function propertyGetter(prev, propertyName, start, length) {
-    return function () {
-      var tmp = this.property(propertyName).getDisplayValue();
-      if (start) {
+    return function (dateCallback) {
+      var p = this.property(propertyName);
+      var tmp = p.getDisplayValue(dateCallback);
+      if(p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
+        tmp = dateCallback.call(null, p.getValue());
+      } else if (start) {
         tmp = tmp.substr(start, length || null);
       }
 
       if (typeof prev === 'function') {
-        return prev.call(this) + tmp;
+        return prev.call(this, dateCallback) + tmp;
       }
 
       return tmp;
@@ -432,9 +435,9 @@ function DsMetaRepository(options) {
   }
 
   function constGetter(prev, v) {
-    return function () {
+    return function (dateCallback) {
       if (typeof prev === 'function') {
-        return prev.call(this) + v;
+        return prev.call(this, dateCallback) + v;
       }
       return v;
     };
