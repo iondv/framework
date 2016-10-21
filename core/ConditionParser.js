@@ -3,8 +3,9 @@
  */
 'use strict';
 
-var ConditionTypes = require('core/ConditionTypes');
-var OperationTypes = require('core/OperationTypes');
+const PropertyTypes = require('core/PropertyTypes');
+const ConditionTypes = require('core/ConditionTypes');
+const OperationTypes = require('core/OperationTypes');
 
 function toScalar(v) {
   if (Array.isArray(v) && v.length) {
@@ -13,21 +14,77 @@ function toScalar(v) {
   return v;
 }
 
+
 /**
- * @param {StoredCondition} condition
+ * @param {ClassMeta} cm
+ * @param {{}} condition
  * @returns {{}}
  */
-function ConditionParser(condition) {
+function ConditionParser(cm, condition) {
+
   var result = {};
+
+  function produceContainsFilter() {
+    var pm = cm.getPropertyMeta(condition.property);
+    if (pm) {
+      if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+        if (condition.value && condition.value.length) {
+          if (pm.backRef) {
+            var aggr = [];
+            aggr.push({$lookup: {
+              from: pm.itemsClass,
+              localField: cm.getKeyProperties()[0],
+              foreignField: pm.backRef,
+              as: '__lookup'
+            }});
+
+            var match = {$match: {}};
+            match.$match['__lookup.' + ''] = {$all: contition.value};
+            aggr.push(match);
+
+          } else if (pm.backColl) {
+            
+          } else {
+            result[condition.property] = {$all: condition.value};
+          }
+        } else if (condition.nestedConditions && condition.nestedConditions.length) {
+          var aggr = [];
+            aggr.push({$lookup: {
+              from: pm.itemsClass,
+              localField: cm.getKeyProperties()[0],
+              foreignField: pm.backRef,
+              as: '__lookup'
+            }});
+
+            var match = {$match: {}};
+            match.$match['__lookup.' + ''] = {$all: contition.value};
+            aggr.push(match);
+
+          } else if (pm.backColl) {
+            
+          } else {
+            result[condition.property] = {$all: condition.value};
+          }
+        } else {
+          throw new Error('неправильное условие');
+        }
+      } else if (pm.type === PropertyTypes.STRING && condition.value) {
+        result[condition.property] = {$regex: toScalar(condition.value)};
+      } else {
+        throw new Error('неправильное условие');
+      }
+    } else {
+      throw new Error('неправильное условие, не найдено property');
+    }
+  }
 
   if (condition.property) {
     switch (condition.operation) {
-      case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
-      case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.EMPTY: {
-        result.$or = [{}, {}];
+        result.$or = [{}, {}, {}];
         result.$or[0][condition.property] = {$eq: null};
         result.$or[1][condition.property] = {$eq: ''};
+        result.$or[2][condition.property] = {$exists: false};
       } break;
       case ConditionTypes.NOT_EMPTY: {
         result.$and = [{}, {}, {}];
@@ -35,6 +92,9 @@ function ConditionParser(condition) {
         result.$and[1][condition.property] = {$ne: ''};
         result.$and[2][condition.property] = {$exists: true};
       } break;
+      case ConditionTypes.CONTAINS: produceContainsFilter(); break;
+      case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
+      case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
       case ConditionTypes.LESS: result[condition.property] = {$lt: toScalar(condition.value)}; break;
       case ConditionTypes.MORE: result[condition.property] = {$gt: toScalar(condition.value)}; break;

@@ -338,7 +338,12 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          var r = c.find(options.filter || {});
+          var r;
+          if (options.aggregate) {
+            r = c.aggregate(options.filter || {});
+          } else {
+            r = c.find(options.filter || {});
+          }
 
           if (options.sort) {
             r = r.sort(options.sort);
