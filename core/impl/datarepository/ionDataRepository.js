@@ -830,7 +830,7 @@ function IonDataRepository(options) {
     for (var i = 0;  i < properties.length; i++) {
       pm = properties[i];
 
-      if (!updates[pm.name]) {
+      if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
         }
@@ -851,7 +851,7 @@ function IonDataRepository(options) {
             }
               break;
           }
-        } else if (pm.defaultValue) {
+        } else if (typeof pm.defaultValue !== 'undefinned') {
           try {
             switch (pm.type) {
               case PropertyTypes.DATETIME: {
