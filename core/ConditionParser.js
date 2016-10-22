@@ -20,7 +20,7 @@ function toScalar(v) {
  * @param {{}} condition
  * @returns {{}}
  */
-function ConditionParser(cm, condition) {
+function ConditionParser(cm, condition, metaRepo) {
 
   var result = {};
 
@@ -29,21 +29,38 @@ function ConditionParser(cm, condition) {
     if (pm) {
       if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
         if (condition.value && condition.value.length) {
+          var ccm, aggr, match;
           if (pm.backRef) {
-            var aggr = [];
-            aggr.push({$lookup: {
-              from: pm.itemsClass,
-              localField: cm.getKeyProperties()[0],
-              foreignField: pm.backRef,
-              as: '__lookup'
-            }});
+            ccm = metaRepo.getMeta(pm.itemsClass, cm.getVersion(), cm.getNamespace());
+            if (ccm) {
+              aggr = [];
+              aggr.push({$lookup: {
+                from: ccm.getCanonicalName(),
+                localField: cm.getKeyProperties()[0],
+                foreignField: pm.backRef,
+                as: '__lookup'
+              }});
 
-            var match = {$match: {}};
-            match.$match['__lookup.' + ''] = {$all: contition.value};
-            aggr.push(match);
-
+              match = {$match: {}};
+              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: contition.value};
+              aggr.push(match);
+            }
           } else if (pm.backColl) {
-            
+            ccm = metaRepo.getMeta(pm.itemsClass, cm.getVersion(), cm.getNamespace());
+            if (ccm) {
+              aggr = [];
+              aggr.push({$unwind: "$"+pm.getName()});
+              aggr.push({$lookup: {
+                from: ccm.getCanonicalName(),
+                localField: pm.getName(),
+                foreignField: ccm.getKeyProperties()[0],
+                as: '__lookup'
+              }});
+
+              match = {$match: {}};
+              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: contition.value};
+              aggr.push(match);
+            }
           } else {
             result[condition.property] = {$all: condition.value};
           }
@@ -61,7 +78,7 @@ function ConditionParser(cm, condition) {
             aggr.push(match);
 
           } else if (pm.backColl) {
-            
+
           } else {
             result[condition.property] = {$all: condition.value};
           }
