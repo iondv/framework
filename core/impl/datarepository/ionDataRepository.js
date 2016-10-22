@@ -851,7 +851,7 @@ function IonDataRepository(options) {
             }
               break;
           }
-        } else if (typeof pm.defaultValue !== 'undefinned') {
+        } else if (typeof pm.defaultValue !== 'undefined') {
           try {
             switch (pm.type) {
               case PropertyTypes.DATETIME: {
