@@ -333,14 +333,58 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
+  function checkAggregate(filter) {
+    if (Array.isArray(filter)) {
+      for (var i = 0; i < filter.length; i++) {
+        if (checkAggregate(filter[i])) {
+          return true;
+        }
+      }
+    } else if (typeof filter === 'object') {
+      for (var name in filter) {
+        if (filter.hasOwnProperty(name)) {
+          if (name === 'JOIN' || checkAggregate(filter[name])) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  function produceMatchObject(obj) {
+    if (Array.isArray(obj)) {
+      var array = [];
+      for (var i = 0; i < obj.length; i++) {
+        array.push(produceMatchObject(obj[i]));
+      }
+    } else if (typeof obj === 'object') {
+      var match = {};
+      for (var name in obj) {
+        if (obj.hasOwnProperty(name)) {
+          if (name !== 'JOIN') {
+            match[name] = produceMatchObject(obj[name]);
+          }
+        }
+      }
+      return match;
+    }
+    return obj;
+  }
+
+  function produceAggregation(filter) {
+    var match = produceMatchObject(filter);
+  }
+
   this._fetch = function (type, options) {
     options = options || {};
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           var r;
-          if (options.aggregate) {
-            r = c.aggregate(options.filter || {});
+          if (options.filter && checkAggregate(options.filter)) {
+            console.log('aggregate', options.filter);
+            r = c.aggregate(produceAggregation(options.filter));
           } else {
             r = c.find(options.filter || {});
           }

@@ -16,27 +16,27 @@ function toScalar(v) {
 
 
 /**
- * @param {ClassMeta} cm
+ * @param {ClassMeta} rcm
  * @param {{}} condition
  * @returns {{}}
  */
-function ConditionParser(cm, condition, metaRepo) {
+function ConditionParser(rcm, condition, metaRepo) {
 
   var result = {};
 
   function produceContainsFilter() {
-    var pm = cm.getPropertyMeta(condition.property);
+    var pm = rcm.getPropertyMeta(condition.property);
     if (pm) {
       if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+        var ccm, aggr, match;
         if (condition.value && condition.value.length) {
-          var ccm, aggr, match;
           if (pm.backRef) {
-            ccm = metaRepo.getMeta(pm.itemsClass, cm.getVersion(), cm.getNamespace());
+            ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
             if (ccm) {
               aggr = [];
               aggr.push({$lookup: {
                 from: ccm.getCanonicalName(),
-                localField: cm.getKeyProperties()[0],
+                localField: rcm.getKeyProperties()[0],
                 foreignField: pm.backRef,
                 as: '__lookup'
               }});
@@ -46,34 +46,38 @@ function ConditionParser(cm, condition, metaRepo) {
               aggr.push(match);
             }
           } else if (pm.backColl) {
-            ccm = metaRepo.getMeta(pm.itemsClass, cm.getVersion(), cm.getNamespace());
+            ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
             if (ccm) {
               aggr = [];
-              aggr.push({$unwind: "$"+pm.getName()});
+              aggr.push({$unwind: '$' + pm.name});
               aggr.push({$lookup: {
                 from: ccm.getCanonicalName(),
-                localField: pm.getName(),
+                localField: pm.name,
                 foreignField: ccm.getKeyProperties()[0],
                 as: '__lookup'
               }});
 
               match = {$match: {}};
-              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: contition.value};
+              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: condition.value};
               aggr.push(match);
+              result[condition.property] = {
+                JOIN: aggr
+              };
             }
           } else {
             result[condition.property] = {$all: condition.value};
           }
         } else if (condition.nestedConditions && condition.nestedConditions.length) {
-          var aggr = [];
+          if (pm.backRef) {
+            aggr = [];
             aggr.push({$lookup: {
               from: pm.itemsClass,
-              localField: cm.getKeyProperties()[0],
+              localField: rcm.getKeyProperties()[0],
               foreignField: pm.backRef,
               as: '__lookup'
             }});
 
-            var match = {$match: {}};
+            match = {$match: {}};
             match.$match['__lookup.' + ''] = {$all: contition.value};
             aggr.push(match);
 
