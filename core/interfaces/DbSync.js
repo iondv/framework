@@ -99,6 +99,26 @@ function DbSync() {
     return this._undefineNavNode(path, namespace);
   };
 
+  /**
+   * @param {String} wfMeta
+   * @param {String} [namespace]
+   * @returns {Promise}
+   */
+  this.defineWorkflow = function (wfMeta, namespace) {
+    return this._defineWorkflow(wfMeta, namespace);
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Promise}
+   */
+  this.undefineWorkflow = function (className, name, namespace, version) {
+    return this._undefineWorkflow(className, name, namespace, version);
+  };
+
   this.defineUserType = function (userType) {
     return this._defineUserType(userType);
   };

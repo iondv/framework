@@ -32,6 +32,11 @@ function MongoDbSync(options) {
    */
   this.navTableName = options.NavTableName || 'ion_nav';
 
+  /**
+   * @type {String}
+   */
+  this.workflowTableName = options.WorkflowTableName || 'ion_workflow';
+
   var log = options.log || console;
 
   /**
@@ -121,6 +126,10 @@ function MongoDbSync(options) {
           break;
         case 'user_type':
           tn = _this.userTypeTableName;
+          break;
+        case 'workflow':
+          tn = _this.workflowTableName;
+          break;
       }
 
       if (!tn) {
@@ -538,6 +547,73 @@ function MongoDbSync(options) {
             return reject(err);
           }
           resolve(nnm);
+        });
+      }).catch(reject);
+    });
+  };
+
+  /**
+   * @param {{}} wfMeta
+   * @param {String} [namespace]
+   * @returns {Promise}
+   * @private
+   */
+  this._defineWorkflow = function (wfMeta, namespace) {
+    return new Promise(function (resolve, reject) {
+      wfMeta.namespace = namespace || null;
+      delete wfMeta._id;
+
+      getMetaTable('workflow').then(function (collection) {
+        collection.update(
+          {
+            className: wfMeta.className,
+            name: wfMeta.path,
+            namespace: wfMeta.namespace,
+            version: wfMeta.version
+          },
+          wfMeta,
+          {upsert: true},
+          function (err, wf) {
+            if (err) {
+              return reject(err);
+            }
+            log.log('Создан бизнес-процесс ' + wf.name + ' для класса ' + wf.className);
+            resolve(wf);
+          });
+      }).catch(reject);
+    });
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Promise}
+   * @private
+   */
+  this._undefineWorkflow = function (className, name, namespace, version) {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('view').then(function (collection) {
+        var query = {
+          className: className,
+          name: name
+        };
+        if (version) {
+          query.version = version;
+        }
+
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+
+        collection.remove(query, function (err, wf) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(wf);
         });
       }).catch(reject);
     });
