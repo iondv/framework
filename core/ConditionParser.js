@@ -14,7 +14,6 @@ function toScalar(v) {
   return v;
 }
 
-
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
@@ -60,9 +59,9 @@ function ConditionParser(rcm, condition, metaRepo) {
               match = {$match: {}};
               match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: condition.value};
               aggr.push(match);
-              result[condition.property] = {
-                JOIN: aggr
-              };
+              var r = {};
+              r[condition.property] = aggr;
+              result.__join = r;
             }
           } else {
             result[condition.property] = {$all: condition.value};
