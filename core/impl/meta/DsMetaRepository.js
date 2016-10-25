@@ -361,28 +361,38 @@ function DsMetaRepository(options) {
   };
 
   /**
-  * @param {ClassMeta} meta
+   * @param {ClassMeta} meta
+   * @param {String} name
    * @returns {*}
    */
-  function getWorkflows(meta) {
+  function getWorkflows(meta, name) {
     var tmp, nm;
     var ns = formNS(meta.getNamespace());
     var result = [];
 
     if (_this.workflowMeta.hasOwnProperty(ns)) {
       if (_this.workflowMeta[ns].hasOwnProperty(meta.getName())) {
-        for (nm in _this.workflowMeta[ns][meta.getName()]) {
-          if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(nm)) {
-            tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][nm], meta.getVersion());
+        if (name) {
+          if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(name)) {
+            tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][name], meta.getVersion());
             if (tmp) {
               result.push(tmp);
+            }
+          }
+        } else {
+          for (nm in _this.workflowMeta[ns][meta.getName()]) {
+            if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(nm)) {
+              tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][nm], meta.getVersion());
+              if (tmp) {
+                result.push(tmp);
+              }
             }
           }
         }
       }
 
       if (meta.getAncestor()) {
-        Array.prototype.push.apply(result, getWorkflows(meta.getAncestor()));
+        Array.prototype.push.apply(result, getWorkflows(meta.getAncestor(), name));
       }
     }
     return result;
@@ -397,6 +407,22 @@ function DsMetaRepository(options) {
   this._getWorkflows = function (className, namespace, version) {
     var meta = this._getMeta(className, version, namespace);
     return getWorkflows(meta);
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this._getWorkflow = function (className, name, namespace, version) {
+    var meta = this._getMeta(className, version, namespace);
+    var wfs = getWorkflows(meta, name);
+    if (wfs.length > 0) {
+      return wfs[0];
+    }
+    return null;
   };
 
   this._getMask = function (name) {
@@ -699,7 +725,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptWorkflows(workflows) {
-    var i, ns, wf;
+    var i, j, ns, wf;
     _this.workflowMeta = {};
 
     for (i = 0; i < workflows.length; i++) {
@@ -708,13 +734,34 @@ function DsMetaRepository(options) {
       if (!_this.workflowMeta.hasOwnProperty(ns)) {
         _this.workflowMeta[ns] = {};
       }
-      if (!_this.workflowMeta[ns].hasOwnProperty(wf.className)) {
-        _this.workflowMeta[ns][wf.className] = {};
+      if (!_this.workflowMeta[ns].hasOwnProperty(wf.wfClass)) {
+        _this.workflowMeta[ns][wf.wfClass] = {};
       }
-      if (!_this.workflowMeta[ns][wf.className].hasOwnProperty(wf.name)) {
-        _this.workflowMeta[ns][wf.className][wf.name] = [];
+      if (!_this.workflowMeta[ns][wf.wfClass].hasOwnProperty(wf.name)) {
+        _this.workflowMeta[ns][wf.wfClass][wf.name] = [];
       }
-      _this.workflowMeta[ns][wf.className][wf.name].push(wf);
+
+      wf.statesByName = {};
+      for (j = 0; j < wf.states.length; j++) {
+        wf.statesByName[wf.states[j].name] = wf.states[j];
+      }
+
+      wf.transitionsByName = {};
+      wf.transitionsBySrc = {};
+      wf.transitionsByDest = {};
+      for (j = 0; j < wf.transitions.length; j++) {
+        wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
+        if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
+          wf.transitionsBySrc[wf.transitions[j].startState] = [];
+        }
+        wf.transitionsBySrc[wf.transitions[j].startState].push(wf.transitions[j]);
+        if (!wf.transitionsByDest.hasOwnProperty(wf.transitions[j].finishState)) {
+          wf.transitionsByDest[wf.transitions[j].startState] = [];
+        }
+        wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
+      }
+
+      _this.workflowMeta[ns][wf.wfClass][wf.name].push(wf);
     }
   }
 
@@ -795,7 +842,7 @@ function DsMetaRepository(options) {
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
           _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
           _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
-          _this.ds.fetch(_this.workflowTableName, {sort: {className: 1, name: 1, version: 1}})
+          _this.ds.fetch(_this.workflowTableName, {sort: {wfClass: 1, name: 1, version: 1}})
         ]
       ).then(
         function (results) {
@@ -803,7 +850,7 @@ function DsMetaRepository(options) {
           acceptClassMeta(results[1]);
           acceptViews(results[2]);
           acceptNavigation(results[3]);
-          acceptWorkflows(results[4])
+          acceptWorkflows(results[4]);
           resolve();
         }
       ).catch(reject);

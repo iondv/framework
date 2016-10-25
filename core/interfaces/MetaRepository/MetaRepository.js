@@ -169,6 +169,17 @@ function MetaRepository() {
   };
 
   /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this.getWorkflow = function (className, name, namespace, version) {
+    return this._getWorkflow(className, name, namespace, version);
+  };
+
+  /**
    * @param {String} name
    * @returns {Object | null}
    */

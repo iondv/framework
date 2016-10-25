@@ -553,7 +553,7 @@ function MongoDbSync(options) {
   };
 
   /**
-   * @param {{}} wfMeta
+   * @param {{wfClass: String, name: String, version: String}} wfMeta
    * @param {String} [namespace]
    * @returns {Promise}
    * @private
@@ -566,8 +566,8 @@ function MongoDbSync(options) {
       getMetaTable('workflow').then(function (collection) {
         collection.update(
           {
-            className: wfMeta.className,
-            name: wfMeta.path,
+            wfClass: wfMeta.wfClass,
+            name: wfMeta.name,
             namespace: wfMeta.namespace,
             version: wfMeta.version
           },
@@ -577,7 +577,7 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
-            log.log('Создан бизнес-процесс ' + wf.name + ' для класса ' + wf.className);
+            log.log('Создан бизнес-процесс ' + wf.name + ' для класса ' + wf.wfClass);
             resolve(wf);
           });
       }).catch(reject);
@@ -596,7 +596,7 @@ function MongoDbSync(options) {
     return new Promise(function (resolve, reject) {
       getMetaTable('view').then(function (collection) {
         var query = {
-          className: className,
+          wfClass: className,
           name: name
         };
         if (version) {
