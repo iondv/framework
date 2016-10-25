@@ -23,6 +23,8 @@ function OwnCloudStorage(config) {
 
   var _this = this;
 
+  var ownCloudUrl = url.parse(config.url, true);
+
   var urlTypes = {
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
@@ -189,12 +191,36 @@ function OwnCloudStorage(config) {
     });
   };
 
+  function parseDirId(id) {
+    var result = null;
+    var urlObj = url.parse(id, true);
+    if (urlObj.host === ownCloudUrl.host) {
+      if (urlObj.query && urlObj.query.dir) {
+        result = urlObj.query.dir;
+        if (result.slice(0, 1) === '/') {
+          result = result.slice(1);
+        }
+      } else if (urlObj.path.indexOf(urlTypes.WEBDAV) > -1) {
+        result = urlObj.path.replace('/' + urlTypes.WEBDAV, '');
+      }
+    } else if (!urlObj.host) {
+      result = id;
+    }
+
+    if (result) {
+      return result;
+    } else {
+      throw new Error('передан не правильный путь до директории');
+    }
+  }
+
   /**
    *
    * @param {String} id
    * @returns {Promise}
    */
   this._getDir = function (id) {
+    id = parseDirId(id);
     return new Promise(function (resolve,reject) {
       var reqParams = {
         uri: urlResolver(config.url, urlTypes.WEBDAV, utf8.encode(decodeURI(id))),
