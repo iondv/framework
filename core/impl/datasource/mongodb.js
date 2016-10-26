@@ -10,6 +10,8 @@ var mongo = require('mongodb');
 var client = mongo.MongoClient;
 var LoggerProxy = require('core/impl/log/LoggerProxy');
 
+const util = require('util');
+
 const AUTOINC_COLLECTION = '__autoinc';
 
 // jshint maxstatements: 30
@@ -333,47 +335,53 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
-  function checkAggregate(filter) {
-    if (Array.isArray(filter)) {
-      for (var i = 0; i < filter.length; i++) {
-        if (checkAggregate(filter[i])) {
-          return true;
+  function produceMatchObject(find, contains) {
+    var matchObj;
+    if (Array.isArray(find)) {
+      var array = null;
+      for (var i = 0; i < find.length; i++) {
+        matchObj = produceMatchObject(find[i], contains);
+        contains = matchObj.contains;
+        if (matchObj.find) {
+          if (!array) {
+            array = [];
+          }
+          array.push(matchObj.find);
         }
       }
-    } else if (typeof filter === 'object') {
-      for (var name in filter) {
-        if (filter.hasOwnProperty(name)) {
-          if (name === 'JOIN' || checkAggregate(filter[name])) {
-            return true;
+      return {find: array, contains: contains};
+    } else if (typeof find === 'object') {
+      var match = null;
+      for (var name in find) {
+        if (find.hasOwnProperty(name)) {
+          if (name === '_contains') {
+            contains.push(find[name]);
+          } else {
+            matchObj = produceMatchObject(find[name], contains);
+            contains = matchObj.contains;
+            if (matchObj.find) {
+              if (!match) {
+                match = {};
+              }
+              match[name] = matchObj.find;
+            }
           }
         }
+      }
+      return {find: match, contains: contains};
+    }
+    return {find: find, contains: contains};
+  }
+
+  function checkAggregation(filter) {
+    if (filter) {
+      var contains = [];
+      var result = produceMatchObject(filter, contains);
+      if (result.contains.length) {
+        return result;
       }
     }
     return false;
-  }
-
-  function produceMatchObject(obj) {
-    if (Array.isArray(obj)) {
-      var array = [];
-      for (var i = 0; i < obj.length; i++) {
-        array.push(produceMatchObject(obj[i]));
-      }
-    } else if (typeof obj === 'object') {
-      var match = {};
-      for (var name in obj) {
-        if (obj.hasOwnProperty(name)) {
-          if (name !== 'JOIN') {
-            match[name] = produceMatchObject(obj[name]);
-          }
-        }
-      }
-      return match;
-    }
-    return obj;
-  }
-
-  function produceAggregation(filter) {
-    var match = produceMatchObject(filter);
   }
 
   this._fetch = function (type, options) {
@@ -382,9 +390,10 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           var r;
-          if (options.filter && checkAggregate(options.filter)) {
-            console.log('aggregate', options.filter);
-            r = c.aggregate(produceAggregation(options.filter));
+          var aggregate = checkAggregation(options.filter);
+          if (options.filter && aggregate) {
+            console.log('aggregate', util.inspect(aggregate, false, null));
+            r = c.aggregate(aggregate);
           } else {
             r = c.find(options.filter || {});
           }

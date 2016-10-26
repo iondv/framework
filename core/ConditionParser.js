@@ -47,9 +47,13 @@ function ConditionParser(rcm, condition, metaRepo) {
           } else if (pm.backColl) {
             ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
             if (ccm) {
-              aggr = [];
-              aggr.push({$unwind: '$' + pm.name});
-              aggr.push({$lookup: {
+              aggr = {
+                property: condition.property,
+                classname: rcm.getCanonicalName(),
+                stages: []
+              };
+              aggr.stages.push({$unwind: '$' + pm.name});
+              aggr.stages.push({$lookup: {
                 from: ccm.getCanonicalName(),
                 localField: pm.name,
                 foreignField: ccm.getKeyProperties()[0],
@@ -58,10 +62,8 @@ function ConditionParser(rcm, condition, metaRepo) {
 
               match = {$match: {}};
               match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: condition.value};
-              aggr.push(match);
-              var r = {};
-              r[condition.property] = aggr;
-              result.__join = r;
+              aggr.stages.push(match);
+              result[condition.property] = {_contains: aggr};
             }
           } else {
             result[condition.property] = {$all: condition.value};
