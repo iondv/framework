@@ -376,8 +376,13 @@ function MongoDs(config) {
   function checkAggregation(filter) {
     if (filter) {
       var contains = [];
-      var result = produceMatchObject(filter, contains);
-      if (result.contains.length) {
+      var obj = produceMatchObject(filter, contains);
+      if (obj.contains.length) {
+        var result = [];
+        for (var i = 0; i < obj.contains.length; i++) {
+          result = result.concat(obj.contains[i].stages);
+        }
+        result.push({$match: obj.find});
         return result;
       }
     }
@@ -392,47 +397,48 @@ function MongoDs(config) {
           var r;
           var aggregate = checkAggregation(options.filter);
           if (options.filter && aggregate) {
+            console.log('type', type);
             console.log('aggregate', util.inspect(aggregate, false, null));
             r = c.aggregate(aggregate);
           } else {
             r = c.find(options.filter || {});
-          }
 
-          if (options.sort) {
-            r = r.sort(options.sort);
-          }
+            if (options.sort) {
+              r = r.sort(options.sort);
+            }
 
-          if (options.offset) {
-            r = r.skip(options.offset);
-          }
+            if (options.offset) {
+              r = r.skip(options.offset);
+            }
 
-          if (options.count) {
-            r = r.limit(options.count);
-          }
+            if (options.count) {
+              r = r.limit(options.count);
+            }
 
-          function work(amount) {
-            r.toArray(function (err, docs) {
-              r.close();
-              if (err) {
-                return reject(err);
-              }
-              if (amount !== null) {
-                docs.total = amount;
-              }
-              resolve(docs);
-            });
-          }
-
-          if (options.countTotal) {
-            r.count(false, function (err, amount) {
-              if (err) {
+            function work(amount) {
+              r.toArray(function (err, docs) {
                 r.close();
-                return reject(err);
-              }
-              work(amount);
-            });
-          } else {
-            work(null);
+                if (err) {
+                  return reject(err);
+                }
+                if (amount !== null) {
+                  docs.total = amount;
+                }
+                resolve(docs);
+              });
+            }
+
+            if (options.countTotal) {
+              r.count(false, function (err, amount) {
+                if (err) {
+                  r.close();
+                  return reject(err);
+                }
+                work(amount);
+              });
+            } else {
+              work(null);
+            }
           }
         });
       }

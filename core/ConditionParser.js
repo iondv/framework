@@ -14,6 +14,14 @@ function toScalar(v) {
   return v;
 }
 
+  /**
+   * @param {ClassMeta} cm
+   * @returns {String}
+   */
+  function tn(cm) {
+    return (cm.getNamespace() ? cm.getNamespace() + '_' : '') + cm.getName();
+  }
+
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
@@ -34,7 +42,7 @@ function ConditionParser(rcm, condition, metaRepo) {
             if (ccm) {
               aggr = [];
               aggr.push({$lookup: {
-                from: ccm.getCanonicalName(),
+                from: tn(ccm),
                 localField: rcm.getKeyProperties()[0],
                 foreignField: pm.backRef,
                 as: '__lookup'
@@ -49,7 +57,6 @@ function ConditionParser(rcm, condition, metaRepo) {
             if (ccm) {
               aggr = {
                 property: condition.property,
-                classname: rcm.getCanonicalName(),
                 stages: []
               };
               aggr.stages.push({$unwind: '$' + pm.name});
@@ -61,7 +68,7 @@ function ConditionParser(rcm, condition, metaRepo) {
               }});
 
               match = {$match: {}};
-              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: condition.value};
+              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$in: condition.value};
               aggr.stages.push(match);
               result[condition.property] = {_contains: aggr};
             }
