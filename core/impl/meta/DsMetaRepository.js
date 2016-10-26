@@ -527,7 +527,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptClassMeta(metas) {
-    var i, name, ns, cm;
+    var i, j, name, ns, cm, pm;
     _this.classMeta = {};
     for (i = 0; i < metas.length; i++) {
       ns = formNS(metas[i].namespace);
@@ -560,7 +560,12 @@ function DsMetaRepository(options) {
                   cm.ancestor.descendants.push(cm);
                 }
               }
-
+              for(j = 0; j < cm.plain.properties.length; j++){
+                pm = cm.plain.properties[j];
+                if(pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined'){
+                  pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                }
+              }
             }
           }
         }

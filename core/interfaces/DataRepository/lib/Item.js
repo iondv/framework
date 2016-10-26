@@ -132,29 +132,33 @@ function Item(id, base, classMeta) {
    * @returns {Property | null}
    */
   this.property = function (name) {
-    var dot = name.indexOf('.');
-    if (dot > -1) {
-      var i = this.getAggregate(name.substring(0, dot));
-      if (i) {
-        return i.property(name.substring(dot + 1));
-      }
-    }
+    var dot;
     var props = this.getProperties();
     if (props.hasOwnProperty(name)) {
       return props[name];
+    } else if ((dot = name.lastIndexOf('.')) > -1) {
+      var cont = name.substring(0, dot);
+      var prop = this.property(cont);
+      if (prop.getType() === PropertyTypes.REFERENCE) {
+        initClassProps(prop.meta._refClass, cont);
+        if (this.properties.hasOwnProperty(name)) {
+          return this.properties[name];
+        }
+      }
     }
     return null;
   };
 
-  function initClassProps(cm) {
+  function initClassProps(cm, container) {
     var pm = cm.getPropertyMetas();
     for (var i = 0; i < pm.length; i++) {
       if (pm[i].type !== PropertyTypes.STRUCT) {
-        _this.properties[pm[i].name] = new Property(_this, pm[i]);
+        var name = (container?container+'.':'') + pm[i].name;
+        _this.properties[name] = new Property(_this, pm[i]);
       }
     }
     if (cm.getAncestor()) {
-      initClassProps(cm.getAncestor());
+      initClassProps(cm.getAncestor(), container);
     }
   }
 

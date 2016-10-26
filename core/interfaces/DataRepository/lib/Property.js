@@ -124,9 +124,6 @@ function Property(item, propertyMeta) {
 
   this.setValue = function (value) {
     this.item.set(this.getName(), value);
-    if(this.getType() === PropertyTypes.REFERENCE) {
-      this.item.references[this.getName()] = value;
-    }
     this.selectList = null;
   };
 
