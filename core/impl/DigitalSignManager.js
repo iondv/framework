@@ -70,7 +70,7 @@ function DigitalSignManager(options) {
         return resolve(
           {
             mimeType: 'application/json',
-            content: buf(JSON.stringify(src), 'utf-8')
+            content: buf(JSON.stringify(item.base), 'utf-8')
           }
         );
       }
