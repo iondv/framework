@@ -373,16 +373,31 @@ function MongoDs(config) {
     return {find: find, exists: exists};
   }
 
-  function checkAggregation(filter) {
-    if (filter) {
+  function checkAggregation(options) {
+    if (options.filter) {
       var exists = [];
-      var obj = produceMatchObject(filter, exists);
+      var obj = produceMatchObject(options.filter, exists);
       if (obj.exists.length) {
         var result = [];
         for (var i = 0; i < obj.exists.length; i++) {
           result = result.concat(obj.exists[i].stages);
         }
         result.push({$match: obj.find});
+        if (options.sort) {
+          result.push({$sort: options.sort});
+        }
+
+        result.push({$project: {tmp: '$$ROOT'}});
+        result.push({$group: {_id: null, count: {$sum: 1}, data: {$addToSet: '$tmp'}}});
+        result.push({$unwind: '$data'});
+
+        if (options.offset) {
+          result.push({$skip: options.offset});
+        }
+
+        if (options.count) {
+          result.push({$limit: options.count});
+        }
         return result;
       }
     }
@@ -395,7 +410,7 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           var r;
-          var aggregate = checkAggregation(options.filter);
+          var aggregate = checkAggregation(options);
 
           function work(amount) {
             r.toArray(function (err, docs) {
@@ -413,8 +428,21 @@ function MongoDs(config) {
           if (options.filter && aggregate) {
             console.log('type', type);
             console.log('aggregate', util.inspect(aggregate, false, null));
-            r = c.aggregate(aggregate);
-            work(null);
+            r = c.aggregate(aggregate, {}, function (err,data) {
+              if (err) {
+                return reject(err);
+              }
+              var results = [];
+              if (data.length) {
+                for (var i = 0; i < data.length; i++) {
+                  results.push(data[i].data);
+                }
+              }
+              if (options.countTotal) {
+                results.total = data.length ? data[0].count : 0;
+              }
+              resolve(results);
+            });
           } else {
             r = c.find(options.filter || {});
 

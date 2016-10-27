@@ -14,6 +14,76 @@ function toScalar(v) {
   return v;
 }
 
+function createLookupMatch(keyProperty, condition) {
+  var match = {$match: {}};
+  if (condition.value && condition.value.length) {
+    match.$match['__lookup.' + keyProperty] = {$in: condition.value};
+  } else if (condition.nestedConditions && condition.nestedConditions.length) {
+    var and = [];
+    for (var i = 0; i < condition.nestedConditions.length; i++) {
+      if (condition.nestedConditions[i].operation !== ConditionTypes.CONTAINS) {
+        condition.nestedConditions[i].property = '__lookup.' + condition.nestedConditions[i].property;
+        and.push(ConditionParser(condition.nestedConditions[i]));
+      }
+    }
+    match.$match.$and = and;
+  } else {
+    throw new Error('неправильное условие');
+  }
+  return match;
+}
+
+function produceContainsFilter(rcm, condition, metaRepo, result) {
+  var pm = rcm.getPropertyMeta(condition.property);
+  if (pm) {
+    if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+      var ccm, aggr;
+      if (pm.backRef) {
+        ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
+        if (ccm) {
+          aggr = {
+            property: condition.property,
+            stages: []
+          };
+          aggr.stages.push({$lookup: {
+            from: ccm.getCanonicalName(),
+            localField: rcm.getKeyProperties()[0],
+            foreignField: pm.backRef,
+            as: '__lookup'
+          }});
+          aggr.stages.push(createLookupMatch(ccm.getKeyProperties()[0], condition));
+          result[condition.property] = {_exists: aggr};
+        }
+      } else if (pm.backColl) {
+        ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
+        if (ccm) {
+          aggr = {
+            property: condition.property,
+            stages: []
+          };
+          aggr.stages.push({$unwind: '$' + pm.name});
+          aggr.stages.push({$lookup: {
+            from: ccm.getCanonicalName(),
+            localField: pm.name,
+            foreignField: ccm.getKeyProperties()[0],
+            as: '__lookup'
+          }});
+          aggr.stages.push(createLookupMatch(ccm.getKeyProperties()[0], condition));
+          result[condition.property] = {_exists: aggr};
+        }
+      } else {
+        result[condition.property] = {$all: condition.value};
+      }
+    } else if (pm.type === PropertyTypes.STRING && condition.value) {
+      result[condition.property] = {$regex: toScalar(condition.value)};
+    } else {
+      throw new Error('неправильное условие');
+    }
+  } else {
+    throw new Error('неправильное условие, не найдено property');
+  }
+}
+
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
@@ -22,82 +92,6 @@ function toScalar(v) {
 function ConditionParser(rcm, condition, metaRepo) {
 
   var result = {};
-
-  function produceContainsFilter() {
-    var pm = rcm.getPropertyMeta(condition.property);
-    if (pm) {
-      if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
-        var ccm, aggr, match;
-        if (condition.value && condition.value.length) {
-          if (pm.backRef) {
-            ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
-            if (ccm) {
-              aggr = [];
-              aggr.push({$lookup: {
-                from: tn(ccm),
-                localField: rcm.getKeyProperties()[0],
-                foreignField: pm.backRef,
-                as: '__lookup'
-              }});
-
-              match = {$match: {}};
-              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$all: contition.value};
-              aggr.push(match);
-            }
-          } else if (pm.backColl) {
-            ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
-            if (ccm) {
-              aggr = {
-                property: condition.property,
-                stages: []
-              };
-              aggr.stages.push({$unwind: '$' + pm.name});
-              aggr.stages.push({$lookup: {
-                from: ccm.getCanonicalName(),
-                localField: pm.name,
-                foreignField: ccm.getKeyProperties()[0],
-                as: '__lookup'
-              }});
-
-              match = {$match: {}};
-              match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$in: condition.value};
-              aggr.stages.push(match);
-              result[condition.property] = {_exists: aggr};
-            }
-          } else {
-            result[condition.property] = {$all: condition.value};
-          }
-        } else if (condition.nestedConditions && condition.nestedConditions.length) {
-          if (pm.backRef) {
-            aggr = [];
-            aggr.push({$lookup: {
-              from: pm.itemsClass,
-              localField: rcm.getKeyProperties()[0],
-              foreignField: pm.backRef,
-              as: '__lookup'
-            }});
-
-            match = {$match: {}};
-            match.$match['__lookup.' + ''] = {$all: contition.value};
-            aggr.push(match);
-
-          } else if (pm.backColl) {
-
-          } else {
-            result[condition.property] = {$all: condition.value};
-          }
-        } else {
-          throw new Error('неправильное условие');
-        }
-      } else if (pm.type === PropertyTypes.STRING && condition.value) {
-        result[condition.property] = {$regex: toScalar(condition.value)};
-      } else {
-        throw new Error('неправильное условие');
-      }
-    } else {
-      throw new Error('неправильное условие, не найдено property');
-    }
-  }
 
   if (condition.property) {
     switch (condition.operation) {
@@ -113,7 +107,7 @@ function ConditionParser(rcm, condition, metaRepo) {
         result.$and[1][condition.property] = {$ne: ''};
         result.$and[2][condition.property] = {$exists: true};
       } break;
-      case ConditionTypes.CONTAINS: produceContainsFilter(); break;
+      case ConditionTypes.CONTAINS: produceContainsFilter(rcm, condition, metaRepo, result); break;
       case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
       case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;

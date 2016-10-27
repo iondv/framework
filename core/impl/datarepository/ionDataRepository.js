@@ -531,7 +531,7 @@ function IonDataRepository(options) {
             } else {
               result[cm.getKeyProperties()[0]] = filter[nm];
             }
-          } else if (nm === '$lookup'){
+          } else if (nm === '$lookup') {
             var fcm = _this._getMeta(filter[nm].from);
             if (fcm) {
               filter[nm].from = tn(fcm);
@@ -758,7 +758,7 @@ function IonDataRepository(options) {
 
   function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
-      var rej = function(reason){
+      var rej = function (reason) {
         reason.message = 'При попытке сохранения значения атрибута ' + pm.name + ' возникла ошибка: ' + reason.message;
         rj(reason);
       };
