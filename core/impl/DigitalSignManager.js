@@ -16,6 +16,7 @@ const buf = require('core/buffer');
  * @param {Preprocessor} [options.Preprocessor]
  * @param {{}} [options.preprocessors]
  * @param {Boolean} [options.defaultResult]
+ * @param {{processSignature: Function}} [options.signaturePreprocessor]
  * @constructor
  */
 function DigitalSignManager(options) {
@@ -70,7 +71,7 @@ function DigitalSignManager(options) {
         return resolve(
           {
             mimeType: 'application/json',
-            content: buf(JSON.stringify(src), 'utf-8')
+            content: buf(JSON.stringify(item.base), 'utf-8')
           }
         );
       }
@@ -117,13 +118,26 @@ function DigitalSignManager(options) {
         }
       }
 
-      options.dataSource.insert('ion_signatures',
-        {
-          id: id,
-          timeStamp: new Date(),
-          signature: signature,
-          data: data,
-          attributes: attributes || {}
+      var pp;
+
+      if (options.signaturePreprocessor &&
+        typeof options.signaturePreprocessor.processSignature === 'function') {
+        pp = options.signaturePreprocessor.processSignature(attributes, signature, data);
+      } else {
+        pp = new Promise(function (r) {r(signature);});
+      }
+
+      pp.then(
+        function (signature) {
+          return options.dataSource.insert('ion_signatures',
+            {
+              id: id,
+              timeStamp: new Date(),
+              signature: signature,
+              data: data,
+              attributes: attributes || {}
+            }
+          );
         }
       ).then(function (result) {
         resolve({
