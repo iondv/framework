@@ -917,34 +917,38 @@ function IonDataRepository(options) {
       }
 
       var clr = {};
-      var clrf = {};
+      var clrf = {$and: []};
       var ups = {};
+      var conds = {};
+      var tmp;
+
+      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+
+      tmp = {};
+      tmp[pm.backRef] = oldId || itemId;
+      clrf.$and.push(tmp);
+
+      tmp = {};
+      tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
+      clrf.$and.push(tmp);
+
       clrf[pm.backRef] = oldId || itemId;
       clr[pm.backRef] = null;
       ups[pm.backRef] = itemId;
 
-      if (oldId && !rpm.nullable) {
-        if (options.log) {
-          options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
-        }
-        if (itemId !== oldId) {
-          return options.dataSource.update(tn(rcm), clrf, ups).then(resolve).catch(reject);
-        } else {
-          return resolve();
-        }
-      }
-
-      var conds = {};
-
-      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
-
       if (oldId) {
-        options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
-          return options.dataSource.update(tn(rcm), conds, ups);
-        }).then(resolve).catch(reject);
-      } else {
-        options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
+        if (!rpm.nullable) {
+          if (options.log) {
+            options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
+          }
+        } else {
+          return options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
+            return options.dataSource.update(tn(rcm), conds, ups);
+          }).then(resolve).catch(reject);
+        }
       }
+
+      options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
     });
   }
 
