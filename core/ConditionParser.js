@@ -14,14 +14,6 @@ function toScalar(v) {
   return v;
 }
 
-  /**
-   * @param {ClassMeta} cm
-   * @returns {String}
-   */
-  function tn(cm) {
-    return (cm.getNamespace() ? cm.getNamespace() + '_' : '') + cm.getName();
-  }
-
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
@@ -70,7 +62,7 @@ function ConditionParser(rcm, condition, metaRepo) {
               match = {$match: {}};
               match.$match['__lookup.' + ccm.getKeyProperties()[0]] = {$in: condition.value};
               aggr.stages.push(match);
-              result[condition.property] = {_contains: aggr};
+              result[condition.property] = {_exists: aggr};
             }
           } else {
             result[condition.property] = {$all: condition.value};

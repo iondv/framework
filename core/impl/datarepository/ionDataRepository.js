@@ -531,6 +531,12 @@ function IonDataRepository(options) {
             } else {
               result[cm.getKeyProperties()[0]] = filter[nm];
             }
+          } else if (nm === '$lookup'){
+            var fcm = _this._getMeta(filter[nm].from);
+            if (fcm) {
+              filter[nm].from = tn(fcm);
+            }
+            result[nm] = filter[nm];
           } else {
             result[nm] = prepareFilter(cm, filter[nm]);
           }

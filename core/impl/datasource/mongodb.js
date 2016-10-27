@@ -335,13 +335,13 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
-  function produceMatchObject(find, contains) {
+  function produceMatchObject(find, exists) {
     var matchObj;
     if (Array.isArray(find)) {
       var array = null;
       for (var i = 0; i < find.length; i++) {
-        matchObj = produceMatchObject(find[i], contains);
-        contains = matchObj.contains;
+        matchObj = produceMatchObject(find[i], exists);
+        exists = matchObj.exists;
         if (matchObj.find) {
           if (!array) {
             array = [];
@@ -349,16 +349,16 @@ function MongoDs(config) {
           array.push(matchObj.find);
         }
       }
-      return {find: array, contains: contains};
+      return {find: array, exists: exists};
     } else if (typeof find === 'object') {
       var match = null;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '_contains') {
-            contains.push(find[name]);
+          if (name === '_exists') {
+            exists.push(find[name]);
           } else {
-            matchObj = produceMatchObject(find[name], contains);
-            contains = matchObj.contains;
+            matchObj = produceMatchObject(find[name], exists);
+            exists = matchObj.exists;
             if (matchObj.find) {
               if (!match) {
                 match = {};
@@ -368,19 +368,19 @@ function MongoDs(config) {
           }
         }
       }
-      return {find: match, contains: contains};
+      return {find: match, exists: exists};
     }
-    return {find: find, contains: contains};
+    return {find: find, exists: exists};
   }
 
   function checkAggregation(filter) {
     if (filter) {
-      var contains = [];
-      var obj = produceMatchObject(filter, contains);
-      if (obj.contains.length) {
+      var exists = [];
+      var obj = produceMatchObject(filter, exists);
+      if (obj.exists.length) {
         var result = [];
-        for (var i = 0; i < obj.contains.length; i++) {
-          result = result.concat(obj.contains[i].stages);
+        for (var i = 0; i < obj.exists.length; i++) {
+          result = result.concat(obj.exists[i].stages);
         }
         result.push({$match: obj.find});
         return result;
@@ -396,10 +396,25 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           var r;
           var aggregate = checkAggregation(options.filter);
+
+          function work(amount) {
+            r.toArray(function (err, docs) {
+              r.close();
+              if (err) {
+                return reject(err);
+              }
+              if (amount !== null) {
+                docs.total = amount;
+              }
+              resolve(docs);
+            });
+          }
+
           if (options.filter && aggregate) {
             console.log('type', type);
             console.log('aggregate', util.inspect(aggregate, false, null));
             r = c.aggregate(aggregate);
+            work(null);
           } else {
             r = c.find(options.filter || {});
 
@@ -413,19 +428,6 @@ function MongoDs(config) {
 
             if (options.count) {
               r = r.limit(options.count);
-            }
-
-            function work(amount) {
-              r.toArray(function (err, docs) {
-                r.close();
-                if (err) {
-                  return reject(err);
-                }
-                if (amount !== null) {
-                  docs.total = amount;
-                }
-                resolve(docs);
-              });
             }
 
             if (options.countTotal) {
