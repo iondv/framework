@@ -311,7 +311,7 @@ function DsMetaRepository(options) {
     var meta = this._getMeta(classname, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getName(), node, namespace);
+      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
     }
     return vm;
   };
@@ -325,7 +325,7 @@ function DsMetaRepository(options) {
     var meta = this._getMeta(classname, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getName(), node, namespace);
+      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
     }
     return vm;
   };
