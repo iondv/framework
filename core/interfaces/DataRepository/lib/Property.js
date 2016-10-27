@@ -76,7 +76,7 @@ function Property(item, propertyMeta) {
     return equal(this.getValue(), key);
   };
 
-  this.getDisplayValue = function () {
+  this.getDisplayValue = function (dateCallback) {
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
@@ -90,10 +90,10 @@ function Property(item, propertyMeta) {
     if (this.getType() === PropertyTypes.REFERENCE) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
-        /*if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.apply(agr);
-        }*/
-        return agr.toString();
+        if (typeof this.meta.semanticGetter === 'function') {
+          return this.meta.semanticGetter.call(agr, dateCallback);
+        }
+        return agr.toString(null, dateCallback);
       } else {
         return '';
       }

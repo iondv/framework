@@ -174,11 +174,11 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function (semanticGetter) {
+Item.prototype.toString = function (semanticGetter, dateCallback) {
   if(typeof semanticGetter === 'function'){
-    return semanticGetter.apply(this);
+    return semanticGetter.call(this, dateCallback);
   }
-  return this.classMeta.getSemantics(this);
+  return this.classMeta.getSemantics(this, dateCallback);
 };
 
 module.exports = Item;
