@@ -39,7 +39,7 @@ function DigitalSignManager(options) {
   /**
    * @param {Item} item
    * @param {String} action
-   * @param {String} preprocessor
+   * @param {String} [preprocessor]
    * @returns {Promise}
    */
   this._signingAvailable = function (item, action, preprocessor) {
