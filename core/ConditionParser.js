@@ -14,16 +14,16 @@ function toScalar(v) {
   return v;
 }
 
-function createLookupMatch(keyProperty, condition) {
+function createLookupMatch(lookupProperty, condition) {
   var match = {$match: {}};
   if (condition.value && condition.value.length) {
-    match.$match['__lookup.' + keyProperty] = {$in: condition.value};
+    match.$match['__lookup.' + lookupProperty] = {$all: condition.value};
   } else if (condition.nestedConditions && condition.nestedConditions.length) {
     var and = [];
     for (var i = 0; i < condition.nestedConditions.length; i++) {
       if (condition.nestedConditions[i].operation !== ConditionTypes.CONTAINS) {
         condition.nestedConditions[i].property = '__lookup.' + condition.nestedConditions[i].property;
-        and.push(ConditionParser(condition.nestedConditions[i]));
+        and.push(ConditionParser(null, condition.nestedConditions[i]));
       }
     }
     match.$match.$and = and;
