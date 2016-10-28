@@ -4,6 +4,7 @@
  */
 
 var checkConditions = require('core/ConditionParser');
+var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -33,7 +34,7 @@ function loadPropertyMetas(cm, plain) {
   }
 
   for (i = 0; i < properties.length; i++) {
-    cm.propertyMetas[properties[i].name] = properties[i];
+    cm.propertyMetas[properties[i].name] = clone(properties[i]);
     if (properties[i].selectionProvider) {
       if (properties[i].selectionProvider.type === 'SIMPLE') {
         properties[i].selectionProvider.getSelection = selectionConstructor1();
