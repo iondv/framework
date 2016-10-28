@@ -176,7 +176,7 @@ function DigitalSignManager(options) {
           ]
         });
       } else if (since) {
-        and.push({timeStamp: since});
+        and.push({timeStamp: {$gte: since}});
       }
 
       if (!and.length) {
