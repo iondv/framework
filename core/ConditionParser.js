@@ -33,6 +33,21 @@ function createLookupMatch(lookupProperty, condition) {
   return match;
 }
 
+function createGroupObject(cm) {
+  var group = {$group: {}};
+  group.$group._id = '$_id';
+  group.$group._class = {$first: '$_class'};
+  group.$group._classVer = {$first: '$_classVer'};
+  group.$group.__lookup = {$push: '$__lookup'};
+
+  var properties = cm.getPropertyMetas();
+  for (var i = 0; i < properties.length; i++) {
+    group.$group[properties[i].name] = {$first: '$' + properties[i].name};
+  }
+
+  return group;
+}
+
 function produceContainsFilter(rcm, condition, metaRepo, result) {
   var pm = rcm.getPropertyMeta(condition.property);
   if (pm) {
@@ -68,6 +83,8 @@ function produceContainsFilter(rcm, condition, metaRepo, result) {
             foreignField: ccm.getKeyProperties()[0],
             as: '__lookup'
           }});
+          aggr.stages.push({$unwind: '$__lookup'});
+          aggr.stages.push(createGroupObject(rcm));
           aggr.stages.push(createLookupMatch(ccm.getKeyProperties()[0], condition));
           result[condition.property] = {_exists: aggr};
         }

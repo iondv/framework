@@ -379,10 +379,10 @@ function MongoDs(config) {
       var obj = produceMatchObject(options.filter, exists);
       if (obj.exists.length) {
         var result = [];
+        result.push({$match: obj.find});
         for (var i = 0; i < obj.exists.length; i++) {
           result = result.concat(obj.exists[i].stages);
         }
-        result.push({$match: obj.find});
         if (options.sort) {
           result.push({$sort: options.sort});
         }
