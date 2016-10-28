@@ -7,6 +7,8 @@
 // maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
 // jshint maxcomplexity: 12, maxstatements: 25
 
+// TODO перед конвертацией связи, СУПа прогнать генерацию представлений из утилиты Сергея Клепикова???
+
 'use strict';
 
 var util = require('util');
@@ -196,6 +198,38 @@ function readMetaFiles(metaApp) {
   });
 }
 
+/**
+ * Функция сортировки версий на основе пузырькового алгоритма
+ * @param {Array} arr - массив с объектом семвер
+ * @param {Object} arr.ver - строкове значение версии
+ * @param {Array} arr.semVer = массив с элементами сем.вер
+ * @returns {*}
+ */
+function bubbleSortSemVer(arr) {
+  var n = arr.length;
+  for (var i = 0; i < n - 1; i++) {
+    for (var j = 0; j < n - 1 - i; j++) {
+      if (arr[j + 1].semVer[0] < arr[j].semVer[0]) {
+        let t = arr[j + 1];
+        arr[j + 1] = arr[j];
+        arr[j] = t;
+      } else if (arr[j + 1].semVer[0] === arr[j].semVer[0] &&
+                 arr[j + 1].semVer[1] < arr[j].semVer[1]) {
+        let t = arr[j + 1];
+        arr[j + 1] = arr[j];
+        arr[j] = t;
+      } else if (arr[j + 1].semVer[0] === arr[j].semVer[0] &&
+                 arr[j + 1].semVer[1] === arr[j].semVer[1] &&
+                 arr[j + 1].semVer[2] < arr[j].semVer[2]) {
+        let t = arr[j + 1];
+        arr[j + 1] = arr[j];
+        arr[j] = t;
+      }
+    }
+  }
+  return arr;    // На выходе сортированный по возрастанию массив A.
+}
+
 /*
  * Функция запуска конвертаций меты по версиям
  * @param {Object} metaApp - объект метаданных приложения
@@ -207,15 +241,19 @@ function convertMetaVersion(metaApp) {
     try {
       metaVersion.forEach((metaItem) => {
         if (metaItem.version) {
-          let semVer = metaItem.version.split('.');
-          console.log('semVer', semVer);
           versionOrder.push({ver: metaItem.version,
-                              semVer: metaItem.version.split('.'),
-                              functionName: metaItem.transformateMetaDataFunctionName,
-                              tranformateObj: metaItem});
+            semVer: metaItem.version.split('.'),
+            functionName: metaItem.transformateMetaDataFunctionName,
+            tranformateObj: metaItem});
         }
       });
-      // TODO реализовать сортировку версий
+      versionOrder = bubbleSortSemVer(versionOrder);
+      let versionList = [];
+      versionOrder.forEach((item) => {
+        versionList.push(item.ver);
+      });
+      console.info('Порядок обновления версий', versionList.toString());
+
       versionOrder.forEach((item) => {
         // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
         if (transfMD[item.functionName]) {
