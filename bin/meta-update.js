@@ -5,14 +5,14 @@
 
 // Уточняем параметры jsHint.
 // maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
-// jshint maxcomplexity: 12
+// jshint maxcomplexity: 12, maxstatements: 25
 
 'use strict';
 
 var util = require('util');
 
 const metaVersion = require('lib/meta-update/meta-version');
-var TransfMD = require('lib/meta-update/transformation');
+var transfMD = require('lib/meta-update/transformation');
 
 var fs = require('fs');
 var path = require('path');
@@ -22,15 +22,15 @@ const pathToApp = path.join(__dirname, '..', 'applications'); // При запу
 
 console.log('Путь к приложениям', pathToApp);
 
-TransfMD.verR2F0P0({});
-
+console.time('metaConv');
 getListOfAppliactionsMetaFiles(pathToApp)
   .then(createMetaAppWithMetaFilesList)
   .then(readMetaFiles)
-//  .then(convertToCamelCase)
-//  .then(saveConvertFiles)
-  .then((res) => {
-    // console.log('Кол-во сконвертированных файлов', res);
+  .then(convertMetaVersion)
+  // .then(writeMetaFiles)
+  .then((metaApp) => {
+    console.timeEnd('metaConv');
+    console.log('Конвертация закончена');
   })
   .catch((err)=> {
     throw err;
@@ -62,7 +62,7 @@ function getListOfAppliactionsMetaFiles(folderOfApp) {
  * @param {Array} listFilesInMetadataFolders.files  - массивом со списком файлов с полным путем
  * @returns {Promise} с объектом metaApp
  * {Object} metaApp - объект метаданных приложения
- * {Object} metaApp.meta - именованный массив объектов с метой и представлениями классов, имя - класс //TODO возможно все же не массив, а объект с именем класса или секций и тд.
+ * {Object} metaApp.meta - именованный массив объектов с метой и представлениями классов, имя - класс
  * {Object} metaApp.meta[].cls - класс меты
  * {Object} metaApp.meta[].cls.text - текстовое значение файла класса
  * {Object} metaApp.meta[].cls.obj - распарсенное значение файла класса
@@ -104,12 +104,14 @@ function createMetaAppWithMetaFilesList(listFilesInMetadataFolders) {
         switch (metaFolders[2]){
           case 'meta':
             className += path.basename(listFilesInMetadataFolders.files[i], '.class.json');
-            metaApp.meta[className] = metaApp.meta[className] ? metaApp.meta[className] : {cls: {}, vwCreate: {}, vwItem: {}, vwList: {}};
+            metaApp.meta[className] = metaApp.meta[className] ? metaApp.meta[className] :
+                                                                {cls: {}, vwCreate: {}, vwItem: {}, vwList: {}};
             metaApp.meta[className].cls.fileName = listFilesInMetadataFolders.files[i];
             break;
           case 'views':
             className += metaFolders[3];
-            metaApp.meta[className] = metaApp.meta[className] ? metaApp.meta[className] : {cls: {}, vwCreate: {}, vwItem: {}, vwList: {}};
+            metaApp.meta[className] = metaApp.meta[className] ? metaApp.meta[className] :
+                                                                {cls: {}, vwCreate: {}, vwItem: {}, vwList: {}};
             switch (path.basename(listFilesInMetadataFolders.files[i], '.json')) {
               case 'create':
                 metaApp.meta[className].vwCreate.fileName = listFilesInMetadataFolders.files[i];
@@ -129,13 +131,16 @@ function createMetaAppWithMetaFilesList(listFilesInMetadataFolders) {
             let sectionName = metaFolders[1] + '@'; // Задайем префикс неймспейса у секции
             if (!metaFolders[3]) { // Анализ - секция или папка с меню
               sectionName += path.basename(listFilesInMetadataFolders.files[i], '.section.json');
-              metaApp.navigation[sectionName] = metaApp.navigation[sectionName] ? metaApp.navigation[sectionName] : {section: {}, menu: {}};
+              metaApp.navigation[sectionName] = metaApp.navigation[sectionName] ? metaApp.navigation[sectionName] :
+                                                                                  {section: {}, menu: {}};
               metaApp.navigation[sectionName].section.fileName = listFilesInMetadataFolders.files[i];
             } else {
               sectionName += metaFolders[3];
-              metaApp.navigation[sectionName] = metaApp.navigation[sectionName] ? metaApp.navigation[sectionName] : {section: {}, menu: {}};
+              metaApp.navigation[sectionName] = metaApp.navigation[sectionName] ? metaApp.navigation[sectionName] :
+                                                                                  {section: {}, menu: {}};
               let menuCode = path.basename(listFilesInMetadataFolders.files[i], '.json');
-              metaApp.navigation[sectionName].menu[menuCode] = metaApp.navigation[sectionName].menu[menuCode] ? metaApp.navigation[sectionName].menu[menuCode] : {};
+              metaApp.navigation[sectionName].menu[menuCode] = metaApp.navigation[sectionName].menu[menuCode] ?
+                                                                  metaApp.navigation[sectionName].menu[menuCode] : {};
               metaApp.navigation[sectionName].menu[menuCode].fileName = listFilesInMetadataFolders.files[i];
             }
 
@@ -153,25 +158,6 @@ function createMetaAppWithMetaFilesList(listFilesInMetadataFolders) {
   });
 }
 
-/**
- * Считывание содержимого файлов
- * @param {Object} metaApp - объект метаданных приложения
- * @returns {Promise}
- */
-function readMetaFiles(metaApp) {
-  return new Promise(function (resolve, reject) {
-    try {
-      searchFileNameAndRead(metaApp);
-    } catch (e) {
-      console.error('Ошибка считывания файла', structureOfMeta.fileName + '\n' + e);
-      reject(e);
-    }
-
-    console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
-    resolve(metaApp);
-  });
-}
-
 /*
  * Функция поиска атрибута filename, счтиывания файла и присваивания его атрибуту text
  * в соответствии со структурой metaApp
@@ -182,11 +168,11 @@ function searchFileNameAndRead(structureOfMeta) {
     if (structureOfMeta.hasOwnProperty (key)) {
       if (key === 'fileName') {
         try {
-          structureOfMeta.text = fs.readFileSync(structureOfMeta.fileName);// Если сразу парсить require(convertFilesList[i]);
+          structureOfMeta.text = fs.readFileSync(structureOfMeta.fileName, 'utf8');// Если сразу парсить require(convertFilesList[i]);
         } catch (e) {
           throw e;
         }
-      } else {
+      } else if (key !== 'text' && key !== 'obj') {
         searchFileNameAndRead(structureOfMeta[key]);
       }
     }
@@ -194,54 +180,101 @@ function searchFileNameAndRead(structureOfMeta) {
 }
 
 /**
- * Функция фильтрации файлов находящихся только в папках метаданных
- * @param {Array} metaData - массивом с объектами меты
- * @param {String} metaData.fileName  - имя файла меты
- * @param {Object} metaData.data  - данные меты
+ * Считывание содержимого файлов
+ * @param {Object} metaApp - объект метаданных приложения
  * @returns {Promise}
  */
-/*function saveConvertFiles(metaData) {
+function readMetaFiles(metaApp) {
   return new Promise(function (resolve, reject) {
-    let qntSavedObject = 0;
-    for (var i = 0; i < metaData.length; i++) {
-      try {
-        fs.writeFileSync(metaData[i].fileName, metaData[i].data, 'utf8'); // Если JSON JSON.stringify(metaData[i].data, null, 2)
-        console.log('Сконвертирован и записан файл', metaData[i].fileName);
-        qntSavedObject++;
-      } catch (e) {
-        console.error('Ошибка записи меты', metaData[i].fileName + '\n' + e);
-        reject(e);
+    try {
+      searchFileNameAndRead(metaApp);
+    } catch (e) {
+      console.error('Ошибка считывания файла\n' + e);
+      reject(e);
+    }
+    resolve(metaApp);
+  });
+}
+
+/*
+ * Функция запуска конвертаций меты по версиям
+ * @param {Object} metaApp - объект метаданных приложения
+ * @returns {Promise}
+ **/
+function convertMetaVersion(metaApp) {
+  return new Promise(function (resolve, reject) {
+    let versionOrder = [];
+    try {
+      metaVersion.forEach((metaItem) => {
+        if (metaItem.version) {
+          let semVer = metaItem.version.split('.');
+          console.log('semVer', semVer);
+          versionOrder.push({ver: metaItem.version,
+                              semVer: metaItem.version.split('.'),
+                              functionName: metaItem.transformateMetaDataFunctionName,
+                              tranformateObj: metaItem});
+        }
+      });
+      // TODO реализовать сортировку версий
+      versionOrder.forEach((item) => {
+        // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
+        if (transfMD[item.functionName]) {
+          transfMD[item.functionName]({metaApp});
+        }
+      });
+
+    } catch (e) {
+      console.error('Ошибка конвертации меты\n' + e);
+      reject(e);
+    }
+    // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
+    console.log('Версии меты', versionOrder);
+    resolve(metaApp);
+  });
+}
+
+/*
+ * Функция поиска атрибута filename, и сохранения значения файла из атрибута атрибута text
+ * в соответствии со структурой metaApp
+ * @param structureOfMeta
+ **/
+function searchFileNameAndWrite(structureOfMeta) {
+  for (let key in structureOfMeta) {
+    if (structureOfMeta.hasOwnProperty (key)) {
+      if (key === 'fileName') {
+        try {
+          if (structureOfMeta.text) {
+            let pathParsing = path.parse(structureOfMeta.fileName); // Вытаскиваем дирректорию в пути
+            let metaPathFolder = pathParsing.dir.slice(pathToApp.length); // Обрезаем общие пути в метаданных
+            let name = path.join('c:\\temp\\test', metaPathFolder, pathParsing.base + '.0');
+            fs.writeFileSync(name, structureOfMeta.text, 'utf8');
+          }
+        } catch (e) {
+          throw e;
+        }
+      } else if (key !== 'text' && key !== 'obj') {
+        searchFileNameAndWrite(structureOfMeta[key]);
       }
     }
-    resolve(qntSavedObject);
-  });
-}*/
+  }
+}
 
 /**
- * Функция конвертации файлов метаданных в которых содержатся JSON объекты со свойствами в формате order_number в формат orderNumber
- * @param {Array} metaData - массивом с объектами меты
- * @param {String} metaData.fileName  - имя файла меты
- * @param {Object} metaData.data  - данные меты
+ * Сохранение содержимого файлов
+ * @param {Object} metaApp - объект метаданных приложения
  * @returns {Promise}
  */
-/*function convertToCamelCase(metaData) {
+function writeMetaFiles(metaApp) {
   return new Promise(function (resolve, reject) {
-
-    // TODO сделать считывание файла, парсинг его, перебор всех свойств, если свойство содержит символ '_' склеивать, первые буквы после символа '_' делать заглавными
-    // TODO Альтернатива - иметь набор текстовых строк для замены через regexp - тогда считывание файлов, строковые замены, запись файла
-    for (var i = 0; i < metaData.length; i++) {
-      try {
-        metaStringsTooReplace.forEach((replaceItem) => {
-          metaData[i].data = metaData[i].data.replace(replaceItem[0], replaceItem[1]);
-        });
-      } catch (e) {
-        console.error('Ошибка конвертации данных меты', metaData[i].fileName + '\n' + e);
-        reject(e);
-      }
+    try {
+      searchFileNameAndWrite(metaApp);
+    } catch (e) {
+      console.error('Ошибка записи файла\n' + e);
+      reject(e);
     }
-    resolve(metaData);
+    resolve(metaApp);
   });
-}*/
+}
 
 /*
  * Функция получения списка файлов и дирректорий, по параметрам
