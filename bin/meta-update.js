@@ -247,7 +247,6 @@ function compareSemVer(semver1, semver2) {
  * @returns {String} - минимальное значение версии, если в каком-то объекте версий не было найдено, то вернет '0.0.0'
  */
 function searchMinVersion(metaApp) {
-  // Поиск минимальной версии в метаданных - стартовый для конвертации
   let minMetaVersion;
   for (let key in metaApp) {
     if (metaApp.hasOwnProperty(key)) {
@@ -258,20 +257,19 @@ function searchMinVersion(metaApp) {
           console.info('В файле %s, нет версии меты. Принимаем за мин. версию %s', metaApp.fileName, minMetaVersion);
           break;
         }
-        console.log('result',result);
         let version = result[0].match(/\d*\.\d*\.\d*/)[0];
-        console.log('version', version);
         if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
-          console.log('Меняем мин версию с %s на %s', minMetaVersion, version);
           minMetaVersion = version;
         }
       } else if (key !== 'fileName' && key !== 'obj') {
         let version = searchMinVersion(metaApp[key]);
-        if (version === '0.0.0') {
-          minMetaVersion = version;
-          break;
-        } else if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
-          minMetaVersion = version;
+        if (version) { // Если версия не определена - в ветке metaApp не было никаких ключей
+          if (version === '0.0.0') {
+            minMetaVersion = version;
+            break;
+          } else if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
+            minMetaVersion = version;
+          }
         }
       }
     }
@@ -288,6 +286,10 @@ function convertMetaVersion(metaApp) {
   return new Promise(function (resolve, reject) {
     let versionOrder = [];
     try {
+      // Поиск минимальной версии в метаданных - стартовый для конвертации
+      let minMetaVersion = searchMinVersion(metaApp.meta);
+      console.info('Минимальная версия меты', minMetaVersion);
+
       // Формирования порядка версий
       metaVersion.forEach((metaItem) => {
         if (metaItem.version) {
@@ -296,16 +298,21 @@ function convertMetaVersion(metaApp) {
             tranformateObj: metaItem});
         }
       });
-
       versionOrder = bubbleSortSemVer(versionOrder);
       let versionList = [];
+      let skipedVersionList = [];
       versionOrder.forEach((item) => {
-        versionList.push(item.ver);
+        if (compareSemVer(minMetaVersion, item.ver) === -1) {
+          versionList.push(item.ver);
+        } else {
+          skipedVersionList.push(item.ver);
+        }
       });
+      for (let i = 0; i < skipedVersionList.length; i++) {
+        versionOrder.shift();
+      }
       console.info('Порядок обновления версий', versionList.toString());
-      // console.log('metaApp', util.inspect(metaApp.meta, {depth: 4}));
-      let minMetaVersion = searchMinVersion(metaApp.meta);
-      console.log('Минимальная версия меты', minMetaVersion);
+      console.info('Пропущенная версии', skipedVersionList.toString());
       // Конвертация
       versionOrder.forEach((item) => {
         // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
@@ -319,7 +326,7 @@ function convertMetaVersion(metaApp) {
       reject(e);
     }
     // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
-    console.log('Версии меты', versionOrder);
+    // console.log('Версии меты', versionOrder);
     resolve(metaApp);
   });
 }
