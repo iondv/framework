@@ -320,7 +320,7 @@ function DsMetaRepository(options) {
     var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getName(), node, namespace);
+      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
     }
     return vm;
   };
@@ -334,7 +334,7 @@ function DsMetaRepository(options) {
     var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getName(), node, namespace, version);
+      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, namespace, version);
     }
     return vm;
   };
@@ -491,14 +491,17 @@ function DsMetaRepository(options) {
   }
 
   function propertyGetter(prev, propertyName, start, length) {
-    return function () {
-      var tmp = this.property(propertyName).getDisplayValue();
-      if (start) {
+    return function (dateCallback) {
+      var p = this.property(propertyName);
+      var tmp = p.getDisplayValue(dateCallback);
+      if(p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
+        tmp = dateCallback.call(null, p.getValue());
+      } else if (start) {
         tmp = tmp.substr(start, length || null);
       }
 
       if (typeof prev === 'function') {
-        return prev.call(this) + tmp;
+        return prev.call(this, dateCallback) + tmp;
       }
 
       return tmp;
@@ -506,9 +509,9 @@ function DsMetaRepository(options) {
   }
 
   function constGetter(prev, v) {
-    return function () {
+    return function (dateCallback) {
       if (typeof prev === 'function') {
-        return prev.call(this) + v;
+        return prev.call(this, dateCallback) + v;
       }
       return v;
     };
