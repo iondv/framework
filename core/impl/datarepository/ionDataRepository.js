@@ -748,7 +748,7 @@ function IonDataRepository(options) {
                 if (!refUpdates.hasOwnProperty(tmp)) {
                   refUpdates[tmp] = {};
                 }
-                refUpdates[tmp][nm.substring(dot + 1)] = updates[nm];
+                refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
               }
             }
           }
@@ -832,6 +832,10 @@ function IonDataRepository(options) {
     return true;
   }
 
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} updates
+   */
   function autoAssign(cm, updates) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
@@ -842,6 +846,7 @@ function IonDataRepository(options) {
     }
 
     var properties = cm.getPropertyMetas();
+    var keys = cm.getKeyProperties();
     var pm;
 
     for (var i = 0;  i < properties.length; i++) {
@@ -850,6 +855,7 @@ function IonDataRepository(options) {
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
+          continue;
         }
 
         if (pm.autoassigned) {
@@ -868,7 +874,7 @@ function IonDataRepository(options) {
             }
               break;
           }
-        } else if (typeof pm.defaultValue !== 'undefined') {
+        } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           try {
             switch (pm.type) {
               case PropertyTypes.DATETIME: {
@@ -891,6 +897,8 @@ function IonDataRepository(options) {
             }
           } catch (err) {
           }
+        } else if (keys.indexOf(pm.name) >= 0) {
+          throw new Error('Не указано значение ключевого атрибута ' + cm.getCaption() + '.' + pm.caption);
         }
       }
     }
@@ -1246,8 +1254,6 @@ function IonDataRepository(options) {
           conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
         }
 
-        var conditions = formUpdatedData(rcm, conditionsData);
-
         var event = EventType.UPDATE;
 
         prepareFileSavers(cm, fileSavers, updates);
@@ -1260,8 +1266,9 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions) {
-              if (options.autoAssign) {
+            if (conditionsData) {
+              var conditions = formUpdatedData(rcm, conditionsData);
+              if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
                 if (cm.getChangeTracker()) {
@@ -1287,7 +1294,7 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], options.nestingDepth !== null ? options.nestingDepth : 1);
+          return enrich([item], options && options.nestingDepth !== null ? options.nestingDepth : 1);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);

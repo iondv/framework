@@ -156,7 +156,7 @@ function Item(id, base, classMeta) {
     } else {
       pm = findPropertyMeta(name, this.classMeta);
       if (pm) {
-        return new Property(this, pm);
+        return new Property(this, pm, name);
       }
     }
     return null;
