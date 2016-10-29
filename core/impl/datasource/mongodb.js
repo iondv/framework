@@ -10,8 +10,6 @@ var mongo = require('mongodb');
 var client = mongo.MongoClient;
 var LoggerProxy = require('core/impl/log/LoggerProxy');
 
-const util = require('util');
-
 const AUTOINC_COLLECTION = '__autoinc';
 
 // jshint maxstatements: 30
@@ -426,8 +424,6 @@ function MongoDs(config) {
           }
 
           if (options.filter && aggregate) {
-            console.log('type', type);
-            console.log('aggregate', util.inspect(aggregate, false, null));
             r = c.aggregate(aggregate, {}, function (err,data) {
               if (err) {
                 return reject(err);
@@ -584,6 +580,26 @@ function MongoDs(config) {
       }
     }
     return new Promise(function (resolve) { resolve(); });
+  };
+
+  /**
+   * @param {String} type
+   * @param {Array} stages
+   * @returns {Promise}
+   */
+  this._aggregate = function (type, stages) {
+    return this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          c.aggregate(stages, {}, function (err,data) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(data);
+          });
+        });
+      }
+    );
   };
 }
 

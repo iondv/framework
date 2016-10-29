@@ -111,6 +111,15 @@ function DataSource() {
   this.ensureAutoincrement = function (type, properties) {
     return this._ensureAutoincrement(type, properties);
   };
+
+  /**
+   * @param {String} type
+   * @param {Array} stages
+   * @returns {Promise}
+   */
+  this.aggregate = function (type, stages) {
+    return this._aggregate(type, stages);
+  };
 }
 
 module.exports = DataSource;

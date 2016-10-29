@@ -12,6 +12,8 @@ var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
+const util = require('util');
+
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
  * @param {{}} options
@@ -537,7 +539,13 @@ function IonDataRepository(options) {
               filter[nm].from = tn(fcm);
             }
             result[nm] = filter[nm];
-          } else {
+          }
+          /*else if (nm === '_min' || nm === '_max') {
+           if (Array.isArray(filter[nm]) && filter[nm].length) {
+
+           }
+          } */
+          else {
             result[nm] = prepareFilter(cm, filter[nm]);
           }
         }
@@ -568,6 +576,7 @@ function IonDataRepository(options) {
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     options.filter = prepareFilter(rcm, options.filter);
+    console.log('filter:', util.inspect(options.filter, false, null));
     return new Promise(function (resolve, reject) {
       var result = [];
       _this.ds.fetch(tn(rcm), options)

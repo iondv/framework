@@ -104,6 +104,7 @@ function produceContainsFilter(rcm, condition, metaRepo, result) {
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
+ * @param {MetaRepository} metaRepo
  * @returns {{}}
  */
 function ConditionParser(rcm, condition, metaRepo) {
@@ -125,7 +126,13 @@ function ConditionParser(rcm, condition, metaRepo) {
         result.$and[2][condition.property] = {$exists: true};
       } break;
       case ConditionTypes.CONTAINS: produceContainsFilter(rcm, condition, metaRepo, result); break;
-      case ConditionTypes.EQUAL: result[condition.property] = {$eq: toScalar(condition.value)}; break;
+      case ConditionTypes.EQUAL: {
+        if (condition.value) {
+          result[condition.property] = {$eq: toScalar(condition.value)};
+        } else if (condition.nestedConditions && condition.nestedConditions.length) {
+          result[condition.property] = {$eq: ConditionParser(condition.nestedConditions[0])};
+        }
+      } break;
       case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
       case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
       case ConditionTypes.LESS: result[condition.property] = {$lt: toScalar(condition.value)}; break;
@@ -143,6 +150,20 @@ function ConditionParser(rcm, condition, metaRepo) {
       case OperationTypes.AND: result.$and = value; break;
       case OperationTypes.OR: result.$or = value; break;
       case OperationTypes.NOT: result.$not = {$and: value}; break;
+      case OperationTypes.MIN: {
+        if (condition.value) {
+          result._min = condition.value;
+        } else {
+          throw new Error('не правильное условие MIN');
+        }
+      } break;
+      case OperationTypes.MAX: {
+        if (condition.value) {
+          result._max = condition.value;
+        } else {
+          throw new Error('не правильное условие MAX');
+        }
+      } break;
     }
   }
   return result;
