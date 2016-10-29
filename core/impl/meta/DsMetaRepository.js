@@ -752,14 +752,16 @@ function DsMetaRepository(options) {
       wf.transitionsByName = {};
       wf.transitionsBySrc = {};
       wf.transitionsByDest = {};
+
       for (j = 0; j < wf.transitions.length; j++) {
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
         if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
           wf.transitionsBySrc[wf.transitions[j].startState] = [];
         }
         wf.transitionsBySrc[wf.transitions[j].startState].push(wf.transitions[j]);
+
         if (!wf.transitionsByDest.hasOwnProperty(wf.transitions[j].finishState)) {
-          wf.transitionsByDest[wf.transitions[j].startState] = [];
+          wf.transitionsByDest[wf.transitions[j].finishState] = [];
         }
         wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
       }
@@ -849,12 +851,16 @@ function DsMetaRepository(options) {
         ]
       ).then(
         function (results) {
-          acceptUserTypes(results[0]);
-          acceptClassMeta(results[1]);
-          acceptViews(results[2]);
-          acceptNavigation(results[3]);
-          acceptWorkflows(results[4]);
-          resolve();
+          try {
+            acceptUserTypes(results[0]);
+            acceptClassMeta(results[1]);
+            acceptViews(results[2]);
+            acceptNavigation(results[3]);
+            acceptWorkflows(results[4]);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
         }
       ).catch(reject);
     });

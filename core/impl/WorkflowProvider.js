@@ -179,6 +179,7 @@ function WorkflowProvider(options) {
 
                 var updates = null;
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
+                  updates = {};
                   for (var i = 0; i < transition.assignments.length; i++) {
                     item.set(transition.assignments[i].key, transition.assignments[i].value);
                     updates[transition.assignments[i].key] = transition.assignments[i].value;
@@ -200,6 +201,7 @@ function WorkflowProvider(options) {
                 } else {
                   move(item, workflow, nextState, resolve, reject);
                 }
+                return;
               }
             }
           }
@@ -207,6 +209,18 @@ function WorkflowProvider(options) {
         }
         return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
       });
+    });
+  };
+
+  /**
+   * @returns {Promise}
+   */
+  this.init = function () {
+    return new Promise(function (resolve, reject) {
+      options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
+        .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); })
+        .then(function () {resolve();})
+        .catch(reject);
     });
   };
 }

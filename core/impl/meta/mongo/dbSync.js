@@ -577,7 +577,7 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
-            log.log('Создан бизнес-процесс ' + wf.name + ' для класса ' + wf.wfClass);
+            log.log('Создан бизнес-процесс ' + wfMeta.name + ' для класса ' + wfMeta.wfClass);
             resolve(wf);
           });
       }).catch(reject);
