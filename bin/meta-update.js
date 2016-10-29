@@ -24,15 +24,14 @@ const pathToApp = path.join(__dirname, '..', 'applications'); // При запу
 
 console.log('Путь к приложениям', pathToApp);
 
-console.time('metaConv');
+console.time('Конвертация меты закончена за');
 getListOfAppliactionsMetaFiles(pathToApp)
   .then(createMetaAppWithMetaFilesList)
   .then(readMetaFiles)
   .then(convertMetaVersion)
   // .then(writeMetaFiles)
   .then((metaApp) => {
-    console.timeEnd('metaConv');
-    console.log('Конвертация закончена');
+    console.timeEnd('Конвертация меты закончена за');
   })
   .catch((err)=> {
     throw err;
@@ -206,32 +205,82 @@ function readMetaFiles(metaApp) {
  * @returns {*}
  */
 function bubbleSortSemVer(arr) {
-  var n = arr.length;
-  for (var i = 0; i < n - 1; i++) {
-    for (var j = 0; j < n - 1 - i; j++) {
-      if (arr[j + 1].semVer[0] < arr[j].semVer[0]) {
-        let t = arr[j + 1];
+  var arrLen = arr.length;
+  for (var i = 0; i < arrLen - 1; i++) {
+    for (var j = 0; j < arrLen - 1 - i; j++) {
+      let verCompare = compareSemVer(arr[j + 1].ver, arr[j].ver);
+      if (verCompare === -1) {
+        let temp = arr[j + 1];
         arr[j + 1] = arr[j];
-        arr[j] = t;
-      } else if (arr[j + 1].semVer[0] === arr[j].semVer[0] &&
-                 arr[j + 1].semVer[1] < arr[j].semVer[1]) {
-        let t = arr[j + 1];
-        arr[j + 1] = arr[j];
-        arr[j] = t;
-      } else if (arr[j + 1].semVer[0] === arr[j].semVer[0] &&
-                 arr[j + 1].semVer[1] === arr[j].semVer[1] &&
-                 arr[j + 1].semVer[2] < arr[j].semVer[2]) {
-        let t = arr[j + 1];
-        arr[j + 1] = arr[j];
-        arr[j] = t;
+        arr[j] = temp;
       }
     }
   }
   return arr;    // На выходе сортированный по возрастанию массив A.
 }
 
+/**
+ * Функция сравнения версий в формате semVer
+ * @param {String} semver1 - версия в формате semver
+ * @param {String} semver2 - версия в формате semver
+ * @return {Number} - 0 равны; -1 semver1 меньше semver2; 1 semver1 больше semver2
+ */
+function compareSemVer(semver1, semver2) {
+  if (semver1 === semver2) {
+    return 0;
+  } else {
+    const arrSemVer1 = semver1.split('.');
+    const arrSemVer2 = semver2.split('.');
+    if (arrSemVer1[0] < arrSemVer2[0] ||
+        arrSemVer1[0] === arrSemVer2[0] && arrSemVer1[1] < arrSemVer2[1] ||
+        arrSemVer1[0] === arrSemVer2[0] && arrSemVer1[1] === arrSemVer2[1] && arrSemVer1[2] < arrSemVer2[2]) {
+      return -1;
+    } else {
+      return 1;
+    }
+  }
+}
+
+/**
+ * Функция поиска минимального значения версии
+ * @param {Object} metaApp -
+ * @returns {String} - минимальное значение версии, если в каком-то объекте версий не было найдено, то вернет '0.0.0'
+ */
+function searchMinVersion(metaApp) {
+  // Поиск минимальной версии в метаданных - стартовый для конвертации
+  let minMetaVersion;
+  for (let key in metaApp) {
+    if (metaApp.hasOwnProperty(key)) {
+      if (key === 'text') {
+        let result = metaApp.text.match(/\"metaVersion\"(|\s):(|\s)\"\d*\.\d*\.\d*\"/);
+        if (result === null) {
+          minMetaVersion = '0.0.0'; // Нет версии, прекращаем поиск
+          console.info('В файле %s, нет версии меты. Принимаем за мин. версию %s', metaApp.fileName, minMetaVersion);
+          break;
+        }
+        console.log('result',result);
+        let version = result[0].match(/\d*\.\d*\.\d*/)[0];
+        console.log('version', version);
+        if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
+          console.log('Меняем мин версию с %s на %s', minMetaVersion, version);
+          minMetaVersion = version;
+        }
+      } else if (key !== 'fileName' && key !== 'obj') {
+        let version = searchMinVersion(metaApp[key]);
+        if (version === '0.0.0') {
+          minMetaVersion = version;
+          break;
+        } else if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
+          minMetaVersion = version;
+        }
+      }
+    }
+  }
+  return minMetaVersion;
+}
+
 /*
- * Функция запуска конвертаций меты по версиям
+ * Функция подготовки структуры конвезапуска конвертаций меты по версиям
  * @param {Object} metaApp - объект метаданных приложения
  * @returns {Promise}
  **/
@@ -239,21 +288,25 @@ function convertMetaVersion(metaApp) {
   return new Promise(function (resolve, reject) {
     let versionOrder = [];
     try {
+      // Формирования порядка версий
       metaVersion.forEach((metaItem) => {
         if (metaItem.version) {
           versionOrder.push({ver: metaItem.version,
-            semVer: metaItem.version.split('.'),
             functionName: metaItem.transformateMetaDataFunctionName,
             tranformateObj: metaItem});
         }
       });
+
       versionOrder = bubbleSortSemVer(versionOrder);
       let versionList = [];
       versionOrder.forEach((item) => {
         versionList.push(item.ver);
       });
       console.info('Порядок обновления версий', versionList.toString());
-
+      // console.log('metaApp', util.inspect(metaApp.meta, {depth: 4}));
+      let minMetaVersion = searchMinVersion(metaApp.meta);
+      console.log('Минимальная версия меты', minMetaVersion);
+      // Конвертация
       versionOrder.forEach((item) => {
         // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
         if (transfMD[item.functionName]) {
