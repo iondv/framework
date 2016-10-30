@@ -29,8 +29,10 @@ getListOfAppliactionsMetaFiles(pathToApp)
   .then(createMetaAppWithMetaFilesList)
   .then(readMetaFiles)
   .then(convertMetaVersion)
-  .then(writeMetaFiles)
+  //.then(writeMetaFiles)
   .then((metaApp) => {
+    // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
+    console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
     console.timeEnd('Конвертация меты закончена за');
   })
   .catch((err)=> {
@@ -321,6 +323,7 @@ function convertMetaVersion(metaApp) {
         // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
 
         metaApp = metaTextUpdate(metaApp, item.ver, item.tranformateObj.textUpdate);
+        metaApp = metaObjectUpdate(metaApp, item.ver, item.tranformateObj.objectUpdate);
         if (transfMD[item.functionName]) {
           metaApp = transfMD[item.functionName](metaApp);
         }
@@ -330,14 +333,12 @@ function convertMetaVersion(metaApp) {
       console.error('Ошибка конвертации меты\n' + e);
       reject(e);
     }
-    // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
     // console.log('Версии меты', versionOrder);
-    // console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
     resolve(metaApp);
   });
 }
 
-/*
+/**
  * Функция выполнения обработки текста метаданных
  * @param {Object} structureOfMeta - структура объекта метаданных приложения
  * @param {Object} metaVer - версия обновления меты
@@ -358,15 +359,58 @@ function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
           if (compareSemVer(textMetaVersion, metaVer) === -1) {
             try {
               // 4debug console.info('Обновлеяем', structureOfMeta.fileName, textMetaVersion, '=>', metaVer);
-              textUpdate.replaceRegexp.forEach((replaceItem) => {
-                structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
-              });
+              if (textUpdate.replaceRegexp) {
+                textUpdate.replaceRegexp.forEach((replaceItem) => {
+                  structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
+                });
+              }
             } catch (e) {
               console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
             }
           }
         } else if (key !== 'fileName' && key !== 'obj') {
           structureOfMeta[key] = metaTextUpdate(structureOfMeta[key], metaVer, textUpdate);
+        }
+      }
+    }
+  }
+  return structureOfMeta;
+}
+
+/**
+ * Функция выполнения обработки текста метаданных
+ * @param {Object} structureOfMeta - структура объекта метаданных приложения
+ * @param {Object} metaVer - версия обновления меты
+ * @param {Object} objectUpdate - операции над объектами
+ * @param {Array} textUpdate.replaceRegexp - массив с парой на замену. Значения: массив массивов из двух элементов -
+ *                                           в первом regexp в виде строки, выполняемый глобально для поиска текста на
+ *                                           замену, второй элемент - строка на замену.
+ * @returns {Promise} metaApp
+ **/
+function metaObjectUpdate(structureOfMeta, metaVer, objectUpdate) {
+  if (!objectUpdate) {
+    console.info('В версии меты %s, нет данных для обновления объектов. Пропускаем.', metaVer);
+  } else {
+    for (let key in structureOfMeta) {
+      if (structureOfMeta.hasOwnProperty(key)) {
+        if (key === 'text') {
+          // TODO конвертируем в объект
+          // прходим по всем свойствам класса
+          // проходим по всем атрибутам и их свойствам
+          // конвертируем в текст
+          /*let textMetaVersion = searchMinVersion(structureOfMeta);
+          if (compareSemVer(textMetaVersion, metaVer) === -1) {
+            try {
+              // 4debug console.info('Обновлеяем', structureOfMeta.fileName, textMetaVersion, '=>', metaVer);
+              objectUpdate.replaceRegexp.forEach((replaceItem) => {
+                structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
+              });
+            } catch (e) {
+              console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
+            }
+          }*/
+        } else if (key !== 'fileName' && key !== 'obj') {
+          structureOfMeta[key] = metaObjectUpdate(structureOfMeta[key], metaVer, objectUpdate);
         }
       }
     }
