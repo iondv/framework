@@ -382,9 +382,11 @@ function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
  * @param {Object} structureOfMeta - структура объекта метаданных приложения
  * @param {Object} metaVer - версия обновления меты
  * @param {Object} objectUpdate - операции над объектами
- * @param {Array} textUpdate.replaceRegexp - массив с парой на замену. Значения: массив массивов из двух элементов -
- *                                           в первом regexp в виде строки, выполняемый глобально для поиска текста на
- *                                           замену, второй элемент - строка на замену.
+ * @param {Object} objectUpdate.class - набор операций над свойствами класса
+ * @param {Array} objectUpdate.class.delete - Свойства класса к удалению. Значения: массив строк с именем свойств объекта
+ * @param {Array} objectUpdate.class.new - Свойства класса к удалению. Значения: массив строк с именем свойств объекта
+ * @param {Array} objectUpdate.class.convertType - Список свойств класса к конвертации типов значений, конвертация типов осуществляется на основе параметров для пар конвертации и типовых преобразования JS
+ * @param {Array} objectUpdate.class.depricatedValue - массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны
  * @returns {Promise} metaApp
  **/
 function metaObjectUpdate(structureOfMeta, metaVer, objectUpdate) {
@@ -393,23 +395,46 @@ function metaObjectUpdate(structureOfMeta, metaVer, objectUpdate) {
   } else {
     for (let key in structureOfMeta) {
       if (structureOfMeta.hasOwnProperty(key)) {
-        if (key === 'text') {
-          // TODO конвертируем в объект
-          // прходим по всем свойствам класса
-          // проходим по всем атрибутам и их свойствам
-          // конвертируем в текст
-          /*let textMetaVersion = searchMinVersion(structureOfMeta);
-          if (compareSemVer(textMetaVersion, metaVer) === -1) {
-            try {
-              // 4debug console.info('Обновлеяем', structureOfMeta.fileName, textMetaVersion, '=>', metaVer);
-              objectUpdate.replaceRegexp.forEach((replaceItem) => {
-                structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
-              });
-            } catch (e) {
-              console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
-            }
-          }*/
-        } else if (key !== 'fileName' && key !== 'obj') {
+        if ((structureOfMeta[key].cls && structureOfMeta[key].vwCreate && structureOfMeta[key].vwItem && structureOfMeta[key].vwList) ||
+          (structureOfMeta[key].section && structureOfMeta[key].menu)) { // не работает так как cls[develop-and-test@collCatalog].text
+          console.log('#name', key);
+              if (structureOfMeta[key].cls && objectUpdate.class) { // Конвертора для объектов класса
+                let textMetaVersion = searchMinVersion(structureOfMeta[key]);
+                if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                  try {
+                    console.log('# del', structureOfMeta[key].filename);
+                    let metaObject = JSON.parse(structureOfMeta[key].text);
+                    for (let classParam in metaObject) {
+                      if (metaObject.hasOwnProperty(classParam)) {
+                        if (objectUpdate.class.delete) {
+                          objectUpdate.class.delete.forEach((item) => {
+                            if (classParam === item) {
+                              delete metaObject[classParam];
+                            }
+                          });
+                        }
+                      }
+                    }
+
+
+                    // прходим по всем свойствам класса
+                    // проходим по всем атрибутам и их свойствам
+                    // конвертируем в текст
+                    // 4debug console.info('Обновлеяем', structureOfMeta.fileName, textMetaVersion, '=>', metaVer);
+                    /* objectUpdate.replaceRegexp.forEach((replaceItem) => {
+                     structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
+                     });*/
+                    structureOfMeta[key] = JSON.stringify(metaObject, null, 2);
+                  } catch (e) {
+                    console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
+                  }
+                }
+              }
+
+/*            default:
+              console.log('Не известный тип %s структуры данных меты, обработка пропущена', key);*/
+
+        } else if (key !== 'fileName' && key !== 'text') {
           structureOfMeta[key] = metaObjectUpdate(structureOfMeta[key], metaVer, objectUpdate);
         }
       }
