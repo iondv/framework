@@ -51,7 +51,9 @@
         "convertTypeDescr11": "пример конвретации строки в объект {'propertyName': 'compositeIndexes', 'valNewType': 'object', ",
         "convertTypeDescr12": "'param': [[{\"properties\": [\"###\"],\"unique\": true}],\"###\"]} - где ### кодирует строку для замены черезе regexp на текущее значение этого свойства",
         "convertTypeDescr13": "object -> number, string, boolean, null, array осуществляется указанием строки, содержащей через точку путь к свойсту, которое преобразуется,",
-        "convertTypeDescr14": "пример param: [\"index.key\"], если массив пустой, преобразуется весь объект по правилам преобразования типов. Если новый тип тоже объект значения свойства присваивается"
+        "convertTypeDescr14": "пример param: [\"index.key\"], если массив пустой, преобразуется весь объект по правилам преобразования типов. Если новый тип тоже объект значения свойства присваивается",
+        "depricatedValue": [],
+        "depricatedueValTypeDescr": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны"
       },
       "properties": {
         "descripton": "Набор операций над свойствами атрибутов. Все действия аналогичны классу",
@@ -60,7 +62,9 @@
         "new": [{"version": null}],
         "newDescr": "Аналогично классу",
         "convertType": [],
-        "convertTypeDescr": "Аналогично классу"
+        "convertTypeDescr": "Аналогично классу",
+        "depricatedValue": [{"type": 53}],
+        "depricatedueValTypeDescr": "Аналогично классу"
       }
     }
   },

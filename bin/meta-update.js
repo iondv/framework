@@ -29,7 +29,7 @@ getListOfAppliactionsMetaFiles(pathToApp)
   .then(createMetaAppWithMetaFilesList)
   .then(readMetaFiles)
   .then(convertMetaVersion)
-  // .then(writeMetaFiles)
+  .then(writeMetaFiles)
   .then((metaApp) => {
     console.timeEnd('Конвертация меты закончена за');
   })
@@ -243,18 +243,18 @@ function compareSemVer(semver1, semver2) {
 
 /**
  * Функция поиска минимального значения версии
- * @param {Object} metaApp -
+ * @param {Object} structureOfMeta - структура данных в формате metaApp
  * @returns {String} - минимальное значение версии, если в каком-то объекте версий не было найдено, то вернет '0.0.0'
  */
-function searchMinVersion(metaApp) {
+function searchMinVersion(structureOfMeta) {
   let minMetaVersion;
-  for (let key in metaApp) {
-    if (metaApp.hasOwnProperty(key)) {
+  for (let key in structureOfMeta) {
+    if (structureOfMeta.hasOwnProperty(key)) {
       if (key === 'text') {
-        let result = metaApp.text.match(/\"metaVersion\"(|\s):(|\s)\"\d*\.\d*\.\d*\"/);
+        let result = structureOfMeta.text.match(/\"metaVersion\"(|\s):(|\s)\"\d*\.\d*\.\d*\"/);
         if (result === null) {
           minMetaVersion = '0.0.0'; // Нет версии, прекращаем поиск
-          console.info('В файле %s, нет версии меты. Принимаем за мин. версию %s', metaApp.fileName, minMetaVersion);
+          // 4debug console.info('В файле %s, нет версии меты. Принимаем за мин. версию %s', structureOfMeta.fileName, minMetaVersion);
           break;
         }
         let version = result[0].match(/\d*\.\d*\.\d*/)[0];
@@ -262,7 +262,7 @@ function searchMinVersion(metaApp) {
           minMetaVersion = version;
         }
       } else if (key !== 'fileName' && key !== 'obj') {
-        let version = searchMinVersion(metaApp[key]);
+        let version = searchMinVersion(structureOfMeta[key]);
         if (version) { // Если версия не определена - в ветке metaApp не было никаких ключей
           if (version === '0.0.0') {
             minMetaVersion = version;
@@ -308,16 +308,21 @@ function convertMetaVersion(metaApp) {
           skipedVersionList.push(item.ver);
         }
       });
+
+      // Убираем версии, которые ниже самой маленькой в мете. Но это может не очень хорошо работать, когда конвертируем
+      // несколько приложений сразу. Т.к. ищется минимальная для всех.
       for (let i = 0; i < skipedVersionList.length; i++) {
         versionOrder.shift();
       }
-      console.info('Порядок обновления версий', versionList.toString());
-      console.info('Пропущенная версии', skipedVersionList.toString());
+      console.info('Пропущены версии:', skipedVersionList.toString(), '\nПорядок обновления:', versionList.toString());
+
       // Конвертация
       versionOrder.forEach((item) => {
         // TODO все компоненты текст замена, конвертация и замена объектов, обратная конвертация в текст
+
+        metaApp = metaTextUpdate(metaApp, item.ver, item.tranformateObj.textUpdate);
         if (transfMD[item.functionName]) {
-          transfMD[item.functionName]({metaApp});
+          metaApp = transfMD[item.functionName](metaApp);
         }
       });
 
@@ -327,8 +332,46 @@ function convertMetaVersion(metaApp) {
     }
     // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
     // console.log('Версии меты', versionOrder);
+    // console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
     resolve(metaApp);
   });
+}
+
+/*
+ * Функция выполнения обработки текста метаданных
+ * @param {Object} structureOfMeta - структура объекта метаданных приложения
+ * @param {Object} metaVer - версия обновления меты
+ * @param {Object} textUpdate - операции над текстом
+ * @param {Array} textUpdate.replaceRegexp - массив с парой на замену. Значения: массив массивов из двух элементов -
+ *                                           в первом regexp в виде строки, выполняемый глобально для поиска текста на
+ *                                           замену, второй элемент - строка на замену.
+ * @returns {Promise} metaApp
+ **/
+function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
+  if (!textUpdate) {
+    console.info('В версии меты %s, нет данных для обновления текста. Пропускаем.', metaVer);
+  } else {
+    for (let key in structureOfMeta) {
+      if (structureOfMeta.hasOwnProperty(key)) {
+        if (key === 'text') {
+          let textMetaVersion = searchMinVersion(structureOfMeta);
+          if (compareSemVer(textMetaVersion, metaVer) === -1) {
+            try {
+              // 4debug console.info('Обновлеяем', structureOfMeta.fileName, textMetaVersion, '=>', metaVer);
+              textUpdate.replaceRegexp.forEach((replaceItem) => {
+                structureOfMeta[key] = structureOfMeta[key].replace(new RegExp(replaceItem[0], 'g'), replaceItem[1]);
+              });
+            } catch (e) {
+              console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
+            }
+          }
+        } else if (key !== 'fileName' && key !== 'obj') {
+          structureOfMeta[key] = metaTextUpdate(structureOfMeta[key], metaVer, textUpdate);
+        }
+      }
+    }
+  }
+  return structureOfMeta;
 }
 
 /*
