@@ -130,7 +130,7 @@ function ConditionParser(rcm, condition, metaRepo) {
         if (condition.value) {
           result[condition.property] = {$eq: toScalar(condition.value)};
         } else if (condition.nestedConditions && condition.nestedConditions.length) {
-          result[condition.property] = {$eq: ConditionParser(condition.nestedConditions[0])};
+          result[condition.property] = {$eq: ConditionParser(rcm, condition.nestedConditions[0], metaRepo)};
         }
       } break;
       case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
@@ -143,9 +143,13 @@ function ConditionParser(rcm, condition, metaRepo) {
     }
   } else {
     var value = [];
-    for (var i = 0; i < condition.nestedConditions.length; i++) {
-      value[value.length] = ConditionParser(condition.nestedConditions[i]);
+
+    if (condition.nestedConditions) {
+      for (var i = 0; i < condition.nestedConditions.length; i++) {
+        value[value.length] = ConditionParser(rcm, condition.nestedConditions[i], metaRepo);
+      }
     }
+
     switch (condition.operation) {
       case OperationTypes.AND: result.$and = value; break;
       case OperationTypes.OR: result.$or = value; break;

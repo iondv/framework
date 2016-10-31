@@ -505,54 +505,111 @@ function IonDataRepository(options) {
     });
   }
 
+  function preAggregate(aggregations, filter) {
+    return new Promise(function (resolve, reject) {
+      var promises = [];
+      for (var tn in aggregations) {
+        if (aggregations.hasOwnProperty(tn)) {
+          _this.ds.aggregate(tn, {$group: aggregations[tn]});
+        }
+      }
+      Promise.all(promises).then(function (result) {
+
+      }).catch(reject);
+    });
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {*} filter
    * @returns {*}
    */
   function prepareFilter(cm, filter) {
-    var result, i, nm, keys, knm;
-    if (filter && Array.isArray(filter)) {
-      result = [];
-      for (i = 0; i < filter.length; i++) {
-        result.push(prepareFilter(cm, filter[i]));
-      }
-      return result;
-    } else if (filter && typeof filter === 'object') {
-      result = {};
-      for (nm in filter) {
-        if (filter.hasOwnProperty(nm)) {
-          if (nm === '$ItemId') {
-            if (typeof filter[nm] === 'string') {
-              keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
-              for (knm in keys) {
-                if (keys.hasOwnProperty(knm)) {
-                  result[knm] = keys[knm];
+    return new Promise(function (resolve, reject) {
+      var result, i, nm, keys, knm, preAggregations, tmp;
+      var promises = [];
+      if (filter && Array.isArray(filter)) {
+        result = [];
+        for (i = 0; i < filter.length; i++) {
+          result.push(prepareFilter(cm, filter[i]));
+        }
+        Promise.all(result)
+          .then(function (filters) {
+            return resolve(filters);
+          }).catch(reject);
+      } else if (filter && typeof filter === 'object') {
+        result = {};
+        for (nm in filter) {
+          if (filter.hasOwnProperty(nm)) {
+            if (nm === '$ItemId') {
+              if (typeof filter[nm] === 'string') {
+                keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+                for (knm in keys) {
+                  if (keys.hasOwnProperty(knm)) {
+                    result[knm] = keys[knm];
+                  }
+                }
+              } else {
+                result[cm.getKeyProperties()[0]] = filter[nm];
+              }
+            } else if (nm === '$lookup') {
+              var fcm = _this._getMeta(filter[nm].from);
+              if (fcm) {
+                filter[nm].from = tn(fcm);
+              }
+              result[nm] = filter[nm];
+            } else if (nm === '_min' || nm === '_max') {
+              if (Array.isArray(filter[nm]) && filter[nm].length) {
+                var operation = '$' + nm.slice(1);
+                if (!preAggregations) {
+                  preAggregations = {};
+                }
+                if (filter[nm].length === 1) {
+                  if (!preAggregations[tn(cm)]) {
+                    preAggregations[tn(cm)] = {_id: null};
+                  }
+                  tmp = {};
+                  tmp[operation] = '$' + filter[nm][0];
+                  preAggregations[tn(cm)][filter[nm][0] + nm] = tmp;
+                } else {
+                  var ccm = _this.meta.getMeta(filter[nm][1], null, cm.getNamespace());
+                  if (ccm) {
+                    if (!preAggregations[tn(ccm)]) {
+                      preAggregations[tn(ccm)] = {_id: null};
+                    }
+                    tmp = {};
+                    tmp[operation] = '$' + filter[nm][0];
+                    preAggregations[tn(ccm)][filter[nm][0] + nm] = tmp;
+                  }
                 }
               }
             } else {
-              result[cm.getKeyProperties()[0]] = filter[nm];
+              promises.push((function (propertyName) {
+                  return new Promise(function (rs,rj) {
+                      prepareFilter(cm, filter[propertyName])
+                        .then(function (value) {
+                          result[propertyName] = value;
+                          rs();
+                        }).catch(rj);
+                    });
+                })(nm));
             }
-          } else if (nm === '$lookup') {
-            var fcm = _this._getMeta(filter[nm].from);
-            if (fcm) {
-              filter[nm].from = tn(fcm);
-            }
-            result[nm] = filter[nm];
-          }
-          /*else if (nm === '_min' || nm === '_max') {
-           if (Array.isArray(filter[nm]) && filter[nm].length) {
-
-           }
-          } */
-          else {
-            result[nm] = prepareFilter(cm, filter[nm]);
           }
         }
+
+        Promise.all(promises).then(function () {
+          if (preAggregations) {
+            preAggregate(preAggregations, result)
+              .then(function (modifiedResult) {
+                return resolve(modifiedResult);
+              }).catch(reject);
+          } else {
+            return resolve(result);
+          }
+        }).catch(reject);
       }
-      return result;
-    }
-    return filter;
+      return resolve(filter);
+    });
   }
 
   /**
@@ -575,39 +632,44 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    options.filter = prepareFilter(rcm, options.filter);
-    console.log('filter:', util.inspect(options.filter, false, null));
     return new Promise(function (resolve, reject) {
-      var result = [];
-      _this.ds.fetch(tn(rcm), options)
-        .then(
-          function (data) {
-            var fl = [];
-            try {
-              for (var i = 0; i < data.length; i++) {
-                result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-                fl.push(loadFiles(result[i]));
-              }
-            } catch (err) {
-              return reject(err);
-            }
-
-            if (typeof data.total !== 'undefined' && data.total !== null) {
-              result.total = data.total;
-            }
-
-            return new Promise(function (rs, rj) {
-              Promise.all(fl).then(function () {
-                rs(result);
-              }).catch(rj);
-            });
+      prepareFilter(rcm, options.filter)
+        .then(function (filter) {
+          if (filter) {
+            console.log('filter:', util.inspect(filter, false, null));
+            options.filter = filter;
           }
-        ).
-        then(function (result) {
-          return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
-        }).
-        then(resolve).
-        catch(reject);
+          var result = [];
+          _this.ds.fetch(tn(rcm), options)
+            .then(
+              function (data) {
+                var fl = [];
+                try {
+                  for (var i = 0; i < data.length; i++) {
+                    result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+                    fl.push(loadFiles(result[i]));
+                  }
+                } catch (err) {
+                  return reject(err);
+                }
+
+                if (typeof data.total !== 'undefined' && data.total !== null) {
+                  result.total = data.total;
+                }
+
+                return new Promise(function (rs, rj) {
+                  Promise.all(fl).then(function () {
+                    rs(result);
+                  }).catch(rj);
+                });
+              }
+            ).
+            then(function (result) {
+              return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
+            }).
+            then(resolve).
+            catch(reject);
+        }).catch(reject);
     });
   };
 
