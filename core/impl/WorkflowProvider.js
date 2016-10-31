@@ -4,7 +4,7 @@
 'use strict';
 
 const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
-const checker = require('core/ConditionParser');
+const checker = require('core/ConditionChecker');
 const period = require('core/period');
 
 // jshint maxcomplexity: 20, maxstatements: 50
