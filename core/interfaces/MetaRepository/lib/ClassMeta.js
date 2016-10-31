@@ -4,6 +4,7 @@
  */
 
 var checkConditions = require('core/ConditionParser');
+var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -31,14 +32,15 @@ function loadPropertyMetas(cm, plain) {
       return [];
     };
   }
-
+  var pm;
   for (i = 0; i < properties.length; i++) {
-    cm.propertyMetas[properties[i].name] = properties[i];
-    if (properties[i].selectionProvider) {
-      if (properties[i].selectionProvider.type === 'SIMPLE') {
-        properties[i].selectionProvider.getSelection = selectionConstructor1();
+    pm = clone(properties[i]);
+    cm.propertyMetas[properties[i].name] = pm;
+    if (pm.selectionProvider) {
+      if (pm.selectionProvider.type === 'SIMPLE') {
+        pm.selectionProvider.getSelection = selectionConstructor1();
       } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        properties[i].selectionProvider.getSelection = selectionConstructor2();
+        pm.selectionProvider.getSelection = selectionConstructor2();
       }
     }
   }

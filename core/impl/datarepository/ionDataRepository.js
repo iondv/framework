@@ -731,22 +731,38 @@ function IonDataRepository(options) {
    * @param {ClassMeta} cm
    * @param {Object} data
    * @param {Boolean} setCollections
+   * @param {{}} refUpdates
    * @return {Object}
    */
-  function formUpdatedData(cm, data, setCollections) {
-    var updates, pm, nm;
+  function formUpdatedData(cm, data, setCollections, refUpdates) {
+    var updates, pm, nm, dot, tmp;
     updates = {};
     for (nm in data) {
       if (data.hasOwnProperty(nm)) {
-        pm = cm.getPropertyMeta(nm);
-        if (pm) {
-          if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(data[nm], pm, cm.namespace);
-            if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+        if ((dot = nm.indexOf('.')) >= 0) {
+          if (refUpdates) {
+            tmp = nm.substring(0, dot);
+            pm = cm.getPropertyMeta(tmp);
+            if (pm) {
+              if (pm.type === PropertyTypes.REFERENCE) {
+                if (!refUpdates.hasOwnProperty(tmp)) {
+                  refUpdates[tmp] = {};
+                }
+                refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
+              }
+            }
+          }
+        } else {
+          pm = cm.getPropertyMeta(nm);
+          if (pm) {
+            if (pm.type !== PropertyTypes.COLLECTION) {
+              data[nm] = castValue(data[nm], pm, cm.namespace);
+              if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+                updates[nm] = data[nm];
+              }
+            } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
               updates[nm] = data[nm];
             }
-          } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
-            updates[nm] = data[nm];
           }
         }
       }
@@ -815,6 +831,10 @@ function IonDataRepository(options) {
     return true;
   }
 
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} updates
+   */
   function autoAssign(cm, updates) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
@@ -825,6 +845,7 @@ function IonDataRepository(options) {
     }
 
     var properties = cm.getPropertyMetas();
+    var keys = cm.getKeyProperties();
     var pm;
 
     for (var i = 0;  i < properties.length; i++) {
@@ -833,6 +854,7 @@ function IonDataRepository(options) {
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
+          continue;
         }
 
         if (pm.autoassigned) {
@@ -851,7 +873,7 @@ function IonDataRepository(options) {
             }
               break;
           }
-        } else if (typeof pm.defaultValue !== 'undefined') {
+        } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           try {
             switch (pm.type) {
               case PropertyTypes.DATETIME: {
@@ -874,6 +896,8 @@ function IonDataRepository(options) {
             }
           } catch (err) {
           }
+        } else if (keys.indexOf(pm.name) >= 0) {
+          throw new Error('Не указано значение ключевого атрибута ' + cm.getCaption() + '.' + pm.caption);
         }
       }
     }
@@ -1016,6 +1040,67 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {Item} item
+   * @param {{}} refUpdates
+   */
+  function refUpdator(item, refUpdates, changeLogger) {
+    return new Promise(function (resolve, reject) {
+      var savers = [];
+      var p, rm, id;
+      var needSetRef = {};
+      for (var nm in refUpdates) {
+        if (refUpdates.hasOwnProperty(nm)) {
+          p = item.property(nm);
+          if (p) {
+            rm = _this.meta.getMeta(
+              p.meta.refClass,
+              item.getMetaClass().getVersion(),
+              item.getMetaClass().getNamespace()
+            );
+            id = item.get(nm);
+            if (!id) {
+              needSetRef[nm] = savers.length;
+            }
+            savers.push(
+              _this._saveItem(
+                rm.getCanonicalName(),
+                id,
+                refUpdates[nm],
+                rm.getVersion(),
+                changeLogger
+              )
+            );
+          }
+        }
+      }
+      if (savers.length === 0) {
+        return resolve(item);
+      }
+
+      Promise.all(savers).then(function (savedRefs) {
+        var setRefs = false;
+        for (var nm in needSetRef) {
+          if (needSetRef.hasOwnProperty(nm)) {
+            needSetRef[nm] = savedRefs[needSetRef[nm]].getItemId();
+            setRefs = true;
+          }
+        }
+        if (setRefs) {
+          _this._editItem(
+            item.getMetaClass().getCanonicalName(),
+            item.getItemId(),
+            needSetRef,
+            changeLogger
+          ).then(resolve).catch(reject);
+          return;
+        }
+        resolve(item);
+      }).
+      catch(reject);
+    });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
@@ -1031,7 +1116,8 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data, true);
+        var refUpdates = {};
+        var updates = formUpdatedData(cm, data, true, refUpdates);
 
         var fileSavers = [];
 
@@ -1051,6 +1137,8 @@ function IonDataRepository(options) {
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
+        }).then(function (item) {
+          return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
@@ -1091,7 +1179,8 @@ function IonDataRepository(options) {
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
 
         if (conditions) {
-          var updates = formUpdatedData(cm, data, false);
+          var refUpdates = {};
+          var updates = formUpdatedData(cm, data, false, refUpdates);
 
           var fileSavers = [];
 
@@ -1117,6 +1206,8 @@ function IonDataRepository(options) {
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);
+          }).then(function (item) {
+            return refUpdator(item, refUpdates, changeLogger);
           }).then(function (item) {
             return loadFiles(item);
           }).then(function (item) {
@@ -1152,7 +1243,8 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data, true);
+        var refUpdates = {};
+        var updates = formUpdatedData(cm, data, true, refUpdates);
         var conditionsData;
 
         if (id) {
@@ -1160,8 +1252,6 @@ function IonDataRepository(options) {
         } else {
           conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
         }
-
-        var conditions = formUpdatedData(rcm, conditionsData);
 
         var event = EventType.UPDATE;
 
@@ -1175,8 +1265,9 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions) {
-              if (options.autoAssign) {
+            if (conditionsData) {
+              var conditions = formUpdatedData(rcm, conditionsData);
+              if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
                 if (cm.getChangeTracker()) {
@@ -1198,9 +1289,11 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return updateBackRefs(item, cm, data, id || item.getItemId());
         }).then(function (item) {
+          return refUpdator(item, refUpdates, changeLogger);
+        }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], options.nestingDepth !== null ? options.nestingDepth : 1);
+          return enrich([item], options && options.nestingDepth !== null ? options.nestingDepth : 1);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);
