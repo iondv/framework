@@ -505,16 +505,62 @@ function IonDataRepository(options) {
     });
   }
 
+  function postAggregateFilter(aggr, filter, parentFilter, filterName) {
+    var i,nm;
+    if (filter && Array.isArray(filter)) {
+      for (i = 0; i < filter.length; i++) {
+        postAggregateFilter(aggr, filter[i]);
+      }
+    } else if (filter && typeof filter === 'object') {
+      for (nm in filter) {
+        if (filter.hasOwnProperty(nm)) {
+          if (nm === '_min' || nm === '_max') {
+            try {
+              var value = aggr[filter[nm].tn][filter[nm].property];
+              if (parentFilter) {
+                parentFilter[filterName] = value;
+              } else {
+                filter[nm] = value;
+              }
+            } catch (err) {
+              throw new Error('неправильный condition');
+            }
+          } else {
+            postAggregateFilter(aggr, filter[nm], filter, nm);
+          }
+        }
+      }
+    }
+  }
+
   function preAggregate(aggregations, filter) {
     return new Promise(function (resolve, reject) {
       var promises = [];
+      var agResults = {};
       for (var tn in aggregations) {
         if (aggregations.hasOwnProperty(tn)) {
-          _this.ds.aggregate(tn, {$group: aggregations[tn]});
+          promises.push((function (type) {
+            return new Promise(function (rs,rj) {
+              _this.ds.aggregate(type, {$group: aggregations[type]})
+                .then(function (data) {
+                  try {
+                    agResults[type] = {};
+                    for (var name in data) {
+                      if (data.hasOwnProperty(name) && name !== '_id') {
+                        agResults[type][name] = data[name];
+                      }
+                    }
+                    rs();
+                  } catch (err) {
+                    rj(err);
+                  }
+                }).catch(reject);
+            });
+          })(tn));
         }
       }
       Promise.all(promises).then(function (result) {
-
+        resolve(postAggregateFilter(agResults, filter));
       }).catch(reject);
     });
   }
@@ -571,6 +617,7 @@ function IonDataRepository(options) {
                   tmp = {};
                   tmp[operation] = '$' + filter[nm][0];
                   preAggregations[tn(cm)][filter[nm][0] + nm] = tmp;
+                  result[nm] = {tn: tn(cm), property: filter[nm][0] + nm};
                 } else {
                   var ccm = _this.meta.getMeta(filter[nm][1], null, cm.getNamespace());
                   if (ccm) {
@@ -580,6 +627,7 @@ function IonDataRepository(options) {
                     tmp = {};
                     tmp[operation] = '$' + filter[nm][0];
                     preAggregations[tn(ccm)][filter[nm][0] + nm] = tmp;
+                    result[nm] = {tn: tn(cm), property: filter[nm][0] + nm};
                   }
                 }
               }
