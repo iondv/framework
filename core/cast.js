@@ -6,7 +6,7 @@
 var PropertyTypes = require('./PropertyTypes');
 // jshint maxcomplexity: 30
 var cast = module.exports = function (value, type) {
-  if (value === null) {
+  if (value === null || typeof value === 'undefined') {
     return value;
   }
 

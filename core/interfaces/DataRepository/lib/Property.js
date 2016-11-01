@@ -10,10 +10,12 @@ var equal = require('core/equal');
 /**
  * @param {Item} item
  * @param {Object} propertyMeta
+ * @param {String} [name]
  * @constructor
  */
-function Property(item, propertyMeta) {
+function Property(item, propertyMeta, name) {
 
+  this.name = name;
   /**
    * @type {Item}
    */
@@ -27,7 +29,7 @@ function Property(item, propertyMeta) {
   this.selectList = null;
 
   this.getName = function () {
-    return this.meta.name;
+    return this.name || this.meta.name;
   };
 
   this.getType = function () {

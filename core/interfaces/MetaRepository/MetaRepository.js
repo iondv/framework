@@ -106,10 +106,11 @@ function MetaRepository() {
    * @param {String} className
    * @param {String} node
    * @param {String} [namespace]
+   * @param {String} [version]
    * @returns {Object | null}
    */
-  this.getListViewModel = function (className, node, namespace) {
-    return this._getListViewModel(className, node, namespace);
+  this.getListViewModel = function (className, node, namespace, version) {
+    return this._getListViewModel(className, node, namespace, version);
   };
 
   /**
@@ -117,40 +118,65 @@ function MetaRepository() {
    * @param {String} collection
    * @param {String} node
    * @param {String} [namespace]
+   * @param {String} [version]
    * @returns {Object | null}
    */
-  this.getCollectionViewModel = function (className, collection, node, namespace) {
-    return this._getCollectionViewModel(className, collection, node, namespace);
+  this.getCollectionViewModel = function (className, collection, node, namespace, version) {
+    return this._getCollectionViewModel(className, collection, node, namespace, version);
   };
 
   /**
    * @param {String} className
    * @param {String} node
    * @param {String} [namespace]
+   * @param {String} [version]
    * @returns {Object | null}
    */
-  this.getItemViewModel = function (className, node, namespace) {
-    return this._getItemViewModel(className, node, namespace);
+  this.getItemViewModel = function (className, node, namespace, version) {
+    return this._getItemViewModel(className, node, namespace, version);
   };
 
   /**
    * @param {String} className
    * @param {String} node
    * @param {String} [namespace]
+   * @param {String} [version]
    * @returns {Object | null}
    */
-  this.getCreationViewModel = function (className, node, namespace) {
-    return this._getCreationViewModel(className, node, namespace);
+  this.getCreationViewModel = function (className, node, namespace, version) {
+    return this._getCreationViewModel(className, node, namespace, version);
   };
 
   /**
    * @param {String} className
    * @param {String} node
    * @param {String} [namespace]
+   * @param {String} [version]
    * @returns {Object | null}
    */
-  this.getDetailViewModel = function (className, node, namespace) {
-    return this._getDetailViewModel(className, node, namespace);
+  this.getDetailViewModel = function (className, node, namespace, version) {
+    return this._getDetailViewModel(className, node, namespace, version);
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this.getWorkflows = function (className, namespace, version) {
+    return this._getWorkflows(className, namespace, version);
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this.getWorkflow = function (className, name, namespace, version) {
+    return this._getWorkflow(className, name, namespace, version);
   };
 
   /**

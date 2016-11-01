@@ -52,7 +52,8 @@ function findByVersion(arr, version, i1, i2) {
 
   if (i1 < i2 - 1) {
     var middle = Math.floor((i1 + i2) / 2);
-    if (arr[middle].plain.version < version) {
+    var arrm = arr[middle].plain || arr[middle];
+    if (arrm.version < version) {
       return findByVersion(arr, version, middle, i2);
     } else {
       return findByVersion(arr, version, i1, middle);
@@ -68,6 +69,7 @@ function findByVersion(arr, version, i1, i2) {
  * @param {String} [options.MetaTableName]
  * @param {String} [options.ViewTableName]
  * @param {String} [options.NavTableName]
+ * @param {String} [options.WorkflowTableName]
  * @param {DbSync} [options.sync]
  * @constructor
  */
@@ -96,6 +98,11 @@ function DsMetaRepository(options) {
   this.navTableName = options.NavTableName || 'ion_nav';
 
   /**
+   * @type {String}
+   */
+  this.workflowTableName = options.WorkflowTableName || 'ion_workflow';
+
+  /**
    * @type {DataSource}
    */
   this.ds = null;
@@ -106,6 +113,8 @@ function DsMetaRepository(options) {
   this.sync = options.sync;
 
   this.classMeta = {};
+
+  this.workflowMeta = {};
 
   this.viewMeta = {
     listModels: {},
@@ -307,25 +316,25 @@ function DsMetaRepository(options) {
     return null;
   }
 
-  this._getListViewModel = function (classname, node, namespace) {
-    var meta = this._getMeta(classname, namespace);
+  this._getListViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getName(), node, namespace);
+      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
     }
     return vm;
   };
 
-  this._getCollectionViewModel = function (classname, collection, node, namespace) {
-    var meta = this._getMeta(classname, namespace);
+  this._getCollectionViewModel = function (classname, collection, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getViewModel(node, meta, this.viewMeta.collectionModels);
   };
 
-  this._getItemViewModel = function (classname, node, namespace) {
-    var meta = this._getMeta(classname, namespace);
+  this._getItemViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getName(), node, namespace);
+      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, namespace, version);
     }
     return vm;
   };
@@ -341,14 +350,79 @@ function DsMetaRepository(options) {
     return vm;
   }
 
-  this._getCreationViewModel = function (classname, node, namespace) {
-    var meta = this._getMeta(classname, namespace);
+  this._getCreationViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getCVM(node, meta);
   };
 
-  this._getDetailViewModel = function (classname, node, namespace) {
-    var meta = this._getMeta(classname, namespace);
+  this._getDetailViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getViewModel(node, meta, this.viewMeta.detailModels);
+  };
+
+  /**
+   * @param {ClassMeta} meta
+   * @param {String} name
+   * @returns {*}
+   */
+  function getWorkflows(meta, name) {
+    var tmp, nm;
+    var ns = formNS(meta.getNamespace());
+    var result = [];
+
+    if (_this.workflowMeta.hasOwnProperty(ns)) {
+      if (_this.workflowMeta[ns].hasOwnProperty(meta.getName())) {
+        if (name) {
+          if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(name)) {
+            tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][name], meta.getVersion());
+            if (tmp) {
+              result.push(tmp);
+            }
+          }
+        } else {
+          for (nm in _this.workflowMeta[ns][meta.getName()]) {
+            if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(nm)) {
+              tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][nm], meta.getVersion());
+              if (tmp) {
+                result.push(tmp);
+              }
+            }
+          }
+        }
+      }
+
+      if (meta.getAncestor()) {
+        Array.prototype.push.apply(result, getWorkflows(meta.getAncestor(), name));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {String} className
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this._getWorkflows = function (className, namespace, version) {
+    var meta = this._getMeta(className, version, namespace);
+    return getWorkflows(meta);
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this._getWorkflow = function (className, name, namespace, version) {
+    var meta = this._getMeta(className, version, namespace);
+    var wfs = getWorkflows(meta, name);
+    if (wfs.length > 0) {
+      return wfs[0];
+    }
+    return null;
   };
 
   this._getMask = function (name) {
@@ -510,8 +584,17 @@ function DsMetaRepository(options) {
       propertyMetas = cm.getPropertyMetas();
 
       for (i = 0; i < propertyMetas.length; i++) {
-        if ((propertyMetas[i].type === PropertyTypes.REFERENCE || propertyMetas[i].type === PropertyTypes.COLLECTION) && propertyMetas[i].semantic) {
-          var refcm = getFromMeta(propertyMetas[i].type === PropertyTypes.COLLECTION?propertyMetas[i].itemsClass:propertyMetas[i].refClass, cm.getVersion(), cm.getNamespace());
+        if (
+          (
+            propertyMetas[i].type === PropertyTypes.REFERENCE ||
+            propertyMetas[i].type === PropertyTypes.COLLECTION
+          ) && propertyMetas[i].semantic) {
+          var refcm = getFromMeta(
+            propertyMetas[i].type === PropertyTypes.COLLECTION ?
+              propertyMetas[i].itemsClass : propertyMetas[i].refClass,
+            cm.getVersion(),
+            cm.getNamespace()
+          );
           if (refcm) {
             propertyMetas[i].semanticGetter = createSemanticFunc(
               propertyMetas[i].semantic,
@@ -530,7 +613,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptClassMeta(metas) {
-    var i, name, ns, cm;
+    var i, j, name, ns, cm, pms, pm;
     _this.classMeta = {};
     for (i = 0; i < metas.length; i++) {
       ns = formNS(metas[i].namespace);
@@ -556,6 +639,9 @@ function DsMetaRepository(options) {
         for (name in _this.classMeta[ns]) {
           if (_this.classMeta[ns].hasOwnProperty(name)) {
             for (i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
+              /**
+               * @type {ClassMeta}
+               */
               cm = _this.classMeta[ns][name].byOrder[i];
               if (cm.plain.ancestor) {
                 cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
@@ -564,6 +650,13 @@ function DsMetaRepository(options) {
                 }
               }
 
+              pms = cm.getPropertyMetas();
+              for (j = 0; j < pms.length; j++) {
+                pm = pms[j];
+                if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                  pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                }
+              }
             }
           }
         }
@@ -644,6 +737,49 @@ function DsMetaRepository(options) {
     }
   }
 
+  function acceptWorkflows(workflows) {
+    var i, j, ns, wf;
+    _this.workflowMeta = {};
+
+    for (i = 0; i < workflows.length; i++) {
+      wf = workflows[i];
+      ns = formNS(wf.namespace);
+      if (!_this.workflowMeta.hasOwnProperty(ns)) {
+        _this.workflowMeta[ns] = {};
+      }
+      if (!_this.workflowMeta[ns].hasOwnProperty(wf.wfClass)) {
+        _this.workflowMeta[ns][wf.wfClass] = {};
+      }
+      if (!_this.workflowMeta[ns][wf.wfClass].hasOwnProperty(wf.name)) {
+        _this.workflowMeta[ns][wf.wfClass][wf.name] = [];
+      }
+
+      wf.statesByName = {};
+      for (j = 0; j < wf.states.length; j++) {
+        wf.statesByName[wf.states[j].name] = wf.states[j];
+      }
+
+      wf.transitionsByName = {};
+      wf.transitionsBySrc = {};
+      wf.transitionsByDest = {};
+
+      for (j = 0; j < wf.transitions.length; j++) {
+        wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
+        if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
+          wf.transitionsBySrc[wf.transitions[j].startState] = [];
+        }
+        wf.transitionsBySrc[wf.transitions[j].startState].push(wf.transitions[j]);
+
+        if (!wf.transitionsByDest.hasOwnProperty(wf.transitions[j].finishState)) {
+          wf.transitionsByDest[wf.transitions[j].finishState] = [];
+        }
+        wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
+      }
+
+      _this.workflowMeta[ns][wf.wfClass][wf.name].push(wf);
+    }
+  }
+
   function acceptNavigation(navs) {
     var i, ns, name;
     _this.navMeta = {
@@ -720,15 +856,21 @@ function DsMetaRepository(options) {
           _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
           _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
-          _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}})
+          _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
+          _this.ds.fetch(_this.workflowTableName, {sort: {wfClass: 1, name: 1, version: 1}})
         ]
       ).then(
         function (results) {
-          acceptUserTypes(results[0]);
-          acceptClassMeta(results[1]);
-          acceptViews(results[2]);
-          acceptNavigation(results[3]);
-          resolve();
+          try {
+            acceptUserTypes(results[0]);
+            acceptClassMeta(results[1]);
+            acceptViews(results[2]);
+            acceptNavigation(results[3]);
+            acceptWorkflows(results[4]);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
         }
       ).catch(reject);
     });
