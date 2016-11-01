@@ -12,8 +12,6 @@ var cast = require('core/cast');
 var EventType = require('core/interfaces/ChangeLogger').EventType;
 var uuid = require('node-uuid');
 
-const util = require('util');
-
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
  * @param {{}} options
@@ -689,7 +687,6 @@ function IonDataRepository(options) {
       prepareFilter(rcm, options.filter)
         .then(function (filter) {
           if (filter) {
-            console.log('filter:', util.inspect(filter, false, null));
             options.filter = filter;
           }
           var result = [];

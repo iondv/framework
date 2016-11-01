@@ -333,7 +333,7 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
-  function produceMatchObject(find, exists) {
+  function produceMatchObject(find, exists) { // jshint -W074
     var matchObj;
     if (Array.isArray(find)) {
       var array = null;

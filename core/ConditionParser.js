@@ -2,6 +2,7 @@
  * Created by Данил on 10.10.2016.
  */
 'use strict';
+// jshint maxstatements: 30
 
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
@@ -23,7 +24,7 @@ function createLookupMatch(lookupProperty, condition) {
     for (var i = 0; i < condition.nestedConditions.length; i++) {
       if (condition.nestedConditions[i].operation !== ConditionTypes.CONTAINS) {
         condition.nestedConditions[i].property = '__lookup.' + condition.nestedConditions[i].property;
-        and.push(ConditionParser(null, condition.nestedConditions[i]));
+        and.push(ConditionParser(condition.nestedConditions[i]));
       }
     }
     match.$match.$and = and;
@@ -101,73 +102,89 @@ function produceContainsFilter(rcm, condition, metaRepo, result) {
   }
 }
 
+function produceFilter(condition, type, result, rcm, metaRepo) {
+  result = {};
+  if (condition.value) {
+    result[type] = toScalar(condition.value);
+  } else if (condition.nestedConditions && condition.nestedConditions.length) {
+    result[type] = ConditionParser(condition.nestedConditions[0], rcm, metaRepo);
+  }
+  return result;
+}
+
 /**
- * @param {ClassMeta} rcm
  * @param {{}} condition
+ * @param {ClassMeta} rcm
  * @param {MetaRepository} metaRepo
  * @returns {{}}
  */
-function ConditionParser(rcm, condition, metaRepo) {
-
-  var result = {};
-
-  if (condition.property) {
-    switch (condition.operation) {
-      case ConditionTypes.EMPTY: {
-        result.$or = [{}, {}, {}];
-        result.$or[0][condition.property] = {$eq: null};
-        result.$or[1][condition.property] = {$eq: ''};
-        result.$or[2][condition.property] = {$exists: false};
-      } break;
-      case ConditionTypes.NOT_EMPTY: {
-        result.$and = [{}, {}, {}];
-        result.$and[0][condition.property] = {$ne: null};
-        result.$and[1][condition.property] = {$ne: ''};
-        result.$and[2][condition.property] = {$exists: true};
-      } break;
-      case ConditionTypes.CONTAINS: produceContainsFilter(rcm, condition, metaRepo, result); break;
-      case ConditionTypes.EQUAL: {
-        if (condition.value) {
-          result[condition.property] = {$eq: toScalar(condition.value)};
-        } else if (condition.nestedConditions && condition.nestedConditions.length) {
-          result[condition.property] = {$eq: ConditionParser(rcm, condition.nestedConditions[0], metaRepo)};
-        }
-      } break;
-      case ConditionTypes.NOT_EQUAL: result[condition.property] = {$ne: toScalar(condition.value)}; break;
-      case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
-      case ConditionTypes.LESS: result[condition.property] = {$lt: toScalar(condition.value)}; break;
-      case ConditionTypes.MORE: result[condition.property] = {$gt: toScalar(condition.value)}; break;
-      case ConditionTypes.LESS_OR_EQUAL: result[condition.property] = {$lte: toScalar(condition.value)}; break;
-      case ConditionTypes.MORE_OR_EQUAL: result[condition.property] = {$gte: toScalar(condition.value)}; break;
-      case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
+function ConditionParser(condition, rcm, metaRepo) { // jshint -W074
+  var result, value, i;
+  if (Array.isArray(condition)) {
+    result = [];
+    for (i = 0; i < condition.length; i++) {
+      result.push(ConditionParser(condition[i], rcm, metaRepo));
     }
   } else {
-    var value = [];
-
-    if (condition.nestedConditions) {
-      for (var i = 0; i < condition.nestedConditions.length; i++) {
-        value[value.length] = ConditionParser(rcm, condition.nestedConditions[i], metaRepo);
+    result = {};
+    if (condition.property) {
+      switch (condition.operation) {
+        case ConditionTypes.EMPTY: {
+          result.$or = [{}, {}, {}];
+          result.$or[0][condition.property] = {$eq: null};
+          result.$or[1][condition.property] = {$eq: ''};
+          result.$or[2][condition.property] = {$exists: false};
+        } break;
+        case ConditionTypes.NOT_EMPTY: {
+          result.$and = [{}, {}, {}];
+          result.$and[0][condition.property] = {$ne: null};
+          result.$and[1][condition.property] = {$ne: ''};
+          result.$and[2][condition.property] = {$exists: true};
+        } break;
+        case ConditionTypes.CONTAINS: produceContainsFilter(rcm, condition, metaRepo, result); break;
+        case ConditionTypes.EQUAL:
+          result[condition.property] = produceFilter(condition, '$eq', result, rcm, metaRepo); break;
+        case ConditionTypes.NOT_EQUAL:
+          result[condition.property] = produceFilter(condition, '$ne', result, rcm, metaRepo); break;
+        case ConditionTypes.LESS:
+          result[condition.property] = produceFilter(condition, '$lt', result, rcm, metaRepo); break;
+        case ConditionTypes.MORE:
+          result[condition.property] = produceFilter(condition, '$gt', result, rcm, metaRepo); break;
+        case ConditionTypes.LESS_OR_EQUAL:
+          result[condition.property] = produceFilter(condition, '$lte', result, rcm, metaRepo); break;
+        case ConditionTypes.MORE_OR_EQUAL:
+          result[condition.property] = produceFilter(condition, '$gte', result, rcm, metaRepo); break;
+        case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
+        case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
-    }
+    } else {
+      value = [];
 
-    switch (condition.operation) {
-      case OperationTypes.AND: result.$and = value; break;
-      case OperationTypes.OR: result.$or = value; break;
-      case OperationTypes.NOT: result.$not = {$and: value}; break;
-      case OperationTypes.MIN: {
-        if (condition.value) {
-          result._min = condition.value;
-        } else {
-          throw new Error('не правильное условие MIN');
+      if (condition.nestedConditions) {
+        for (i = 0; i < condition.nestedConditions.length; i++) {
+          value[value.length] = ConditionParser(condition.nestedConditions[i], rcm, metaRepo);
         }
-      } break;
-      case OperationTypes.MAX: {
-        if (condition.value) {
-          result._max = condition.value;
-        } else {
-          throw new Error('не правильное условие MAX');
-        }
-      } break;
+      }
+
+      switch (condition.operation) {
+        case OperationTypes.AND: result.$and = value; break;
+        case OperationTypes.OR: result.$or = value; break;
+        case OperationTypes.NOT: result.$not = {$and: value}; break;
+        case OperationTypes.MIN: {
+          if (condition.value) {
+            result._min = condition.value;
+          } else {
+            throw new Error('не правильное условие MIN');
+          }
+        } break;
+        case OperationTypes.MAX: {
+          if (condition.value) {
+            result._max = condition.value;
+          } else {
+            throw new Error('не правильное условие MAX');
+          }
+        } break;
+      }
     }
   }
   return result;
