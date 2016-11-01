@@ -10,10 +10,12 @@ var equal = require('core/equal');
 /**
  * @param {Item} item
  * @param {Object} propertyMeta
+ * @param {String} [name]
  * @constructor
  */
-function Property(item, propertyMeta) {
+function Property(item, propertyMeta, name) {
 
+  this.name = name;
   /**
    * @type {Item}
    */
@@ -27,7 +29,7 @@ function Property(item, propertyMeta) {
   this.selectList = null;
 
   this.getName = function () {
-    return this.meta.name;
+    return this.name || this.meta.name;
   };
 
   this.getType = function () {
@@ -76,7 +78,7 @@ function Property(item, propertyMeta) {
     return equal(this.getValue(), key);
   };
 
-  this.getDisplayValue = function () {
+  this.getDisplayValue = function (dateCallback) {
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
@@ -91,9 +93,9 @@ function Property(item, propertyMeta) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.apply(agr);
+          return this.meta.semanticGetter.call(agr, dateCallback);
         }
-        return agr.toString();
+        return agr.toString(null, dateCallback);
       } else {
         return '';
       }

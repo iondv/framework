@@ -4,13 +4,15 @@
  */
 'use strict';
 
-var DataRepositoryModule = require('core/interfaces/DataRepository');
-var DataRepository = DataRepositoryModule.DataRepository;
-var Item = DataRepositoryModule.Item;
-var PropertyTypes = require('core/PropertyTypes');
-var cast = require('core/cast');
-var EventType = require('core/interfaces/ChangeLogger').EventType;
-var uuid = require('node-uuid');
+const DataRepositoryModule = require('core/interfaces/DataRepository');
+const DataRepository = DataRepositoryModule.DataRepository;
+const Item = DataRepositoryModule.Item;
+const PropertyTypes = require('core/PropertyTypes');
+const ChangeLogger = require('core/interfaces/ChangeLogger');
+const cast = require('core/cast');
+const EventType = require('core/interfaces/ChangeLogger').EventType;
+const uuid = require('node-uuid');
+const EventManager = require('core/impl/EventManager');
 
 /* jshint maxstatements: 50, maxcomplexity: 60 */
 /**
@@ -24,6 +26,8 @@ var uuid = require('node-uuid');
  */
 function IonDataRepository(options) {
   var _this = this;
+  EventManager.apply(this);
+
   /**
    * @type {DataSource}
    */
@@ -147,6 +151,7 @@ function IonDataRepository(options) {
    */
   this._wrap = function (className, data, version) {
     var acm = this.meta.getMeta(className, version);
+    delete data._id;
     return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
   };
 
@@ -854,22 +859,38 @@ function IonDataRepository(options) {
    * @param {ClassMeta} cm
    * @param {Object} data
    * @param {Boolean} setCollections
+   * @param {{}} refUpdates
    * @return {Object}
    */
-  function formUpdatedData(cm, data, setCollections) {
-    var updates, pm, nm;
+  function formUpdatedData(cm, data, setCollections, refUpdates) {
+    var updates, pm, nm, dot, tmp;
     updates = {};
     for (nm in data) {
       if (data.hasOwnProperty(nm)) {
-        pm = cm.getPropertyMeta(nm);
-        if (pm) {
-          if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(data[nm], pm, cm.namespace);
-            if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+        if ((dot = nm.indexOf('.')) >= 0) {
+          if (refUpdates) {
+            tmp = nm.substring(0, dot);
+            pm = cm.getPropertyMeta(tmp);
+            if (pm) {
+              if (pm.type === PropertyTypes.REFERENCE) {
+                if (!refUpdates.hasOwnProperty(tmp)) {
+                  refUpdates[tmp] = {};
+                }
+                refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
+              }
+            }
+          }
+        } else {
+          pm = cm.getPropertyMeta(nm);
+          if (pm) {
+            if (pm.type !== PropertyTypes.COLLECTION) {
+              data[nm] = castValue(data[nm], pm, cm.namespace);
+              if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
+                updates[nm] = data[nm];
+              }
+            } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
               updates[nm] = data[nm];
             }
-          } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
-            updates[nm] = data[nm];
           }
         }
       }
@@ -878,10 +899,9 @@ function IonDataRepository(options) {
   }
 
   function fileSaver(updates, pm) {
-    return new Promise(function (rs, rj) {
-      var rej = function (reason) {
-        reason.message = 'При попытке сохранения значения атрибута ' + pm.name + ' возникла ошибка: ' + reason.message;
-        rj(reason);
+    return new Promise(function (resolve, reject) {
+      var rej = function (err) {
+        reject(new Error('Ошибка присвоения файлового атрибута ' + pm.name + ': ' + err.message));
       };
       if (Array.isArray(updates[pm.name])) {
         var savers = [];
@@ -899,11 +919,11 @@ function IonDataRepository(options) {
                   updates[pm.name].push(files[i].id);
                 }
               }
-              rs();
+              resolve();
             }
           ).catch(rej);
         } else {
-          rs();
+          resolve();
         }
       } else {
         var storage = _this.fileStorage;
@@ -912,7 +932,7 @@ function IonDataRepository(options) {
         }
         storage.accept(updates[pm.name]).then(function (f) {
           updates[pm.name] = f.id;
-          rs();
+          resolve();
         }).catch(rej);
       }
     });
@@ -939,6 +959,10 @@ function IonDataRepository(options) {
     return true;
   }
 
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} updates
+   */
   function autoAssign(cm, updates) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
@@ -949,14 +973,16 @@ function IonDataRepository(options) {
     }
 
     var properties = cm.getPropertyMetas();
+    var keys = cm.getKeyProperties();
     var pm;
 
     for (var i = 0;  i < properties.length; i++) {
       pm = properties[i];
 
-      if (!updates[pm.name]) {
+      if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
+          continue;
         }
 
         if (pm.autoassigned) {
@@ -975,7 +1001,7 @@ function IonDataRepository(options) {
             }
               break;
           }
-        } else if (pm.defaultValue) {
+        } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           try {
             switch (pm.type) {
               case PropertyTypes.DATETIME: {
@@ -998,6 +1024,8 @@ function IonDataRepository(options) {
             }
           } catch (err) {
           }
+        } else if (keys.indexOf(pm.name) >= 0) {
+          throw new Error('Не указано значение ключевого атрибута ' + cm.getCaption() + '.' + pm.caption);
         }
       }
     }
@@ -1040,34 +1068,38 @@ function IonDataRepository(options) {
       }
 
       var clr = {};
-      var clrf = {};
+      var clrf = {$and: []};
       var ups = {};
+      var conds = {};
+      var tmp;
+
+      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+
+      tmp = {};
+      tmp[pm.backRef] = oldId || itemId;
+      clrf.$and.push(tmp);
+
+      tmp = {};
+      tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
+      clrf.$and.push(tmp);
+
       clrf[pm.backRef] = oldId || itemId;
       clr[pm.backRef] = null;
       ups[pm.backRef] = itemId;
 
-      if (oldId && !rpm.nullable) {
-        if (options.log) {
-          options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
-        }
-        if (itemId !== oldId) {
-          return options.dataSource.update(tn(rcm), clrf, ups).then(resolve).catch(reject);
-        } else {
-          return resolve();
-        }
-      }
-
-      var conds = {};
-
-      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
-
       if (oldId) {
-        options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
-          return options.dataSource.update(tn(rcm), conds, ups);
-        }).then(resolve).catch(reject);
-      } else {
-        options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
+        if (!rpm.nullable) {
+          if (options.log) {
+            options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
+          }
+        } else {
+          return options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
+            return options.dataSource.update(tn(rcm), conds, ups);
+          }).then(resolve).catch(reject);
+        }
       }
+
+      options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
     });
   }
 
@@ -1102,11 +1134,106 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {ChangeLogger | Function} changeLogger
+   * @param {{}} record
+   * @param {String} record.type
+   * @param {Item} [record.item]
+   * @param {ClassMeta} [record.cm]
+   * @param {{}} [record.updates]
+   * @returns {Promise}
+   */
+  function logChanges(changeLogger, record) {
+    return new Promise(function (resolve, reject) {
+      var p;
+      if (changeLogger instanceof ChangeLogger) {
+        p = changeLogger.LogChange(
+          record.type,
+          record.item.getMetaClass().getCanonicalName(),
+          record.item.getItemId(),
+          record.updates
+        );
+      } else if (typeof changeLogger === 'function') {
+        p = changeLogger(record);
+      }
+
+      if (p instanceof Promise) {
+        p.then(function () {
+          resolve(record.item);
+        }).catch(reject);
+        return;
+      }
+
+      resolve(record.item);
+    });
+  }
+
+  /**
+   * @param {Item} item
+   * @param {{}} refUpdates
+   */
+  function refUpdator(item, refUpdates, changeLogger) {
+    return new Promise(function (resolve, reject) {
+      var savers = [];
+      var p, rm, id;
+      var needSetRef = {};
+      for (var nm in refUpdates) {
+        if (refUpdates.hasOwnProperty(nm)) {
+          p = item.property(nm);
+          if (p) {
+            rm = _this.meta.getMeta(
+              p.meta.refClass,
+              item.getMetaClass().getVersion(),
+              item.getMetaClass().getNamespace()
+            );
+            id = item.get(nm);
+            if (!id) {
+              needSetRef[nm] = savers.length;
+            }
+            savers.push(
+              _this._saveItem(
+                rm.getCanonicalName(),
+                id,
+                refUpdates[nm],
+                rm.getVersion(),
+                changeLogger
+              )
+            );
+          }
+        }
+      }
+      if (savers.length === 0) {
+        return resolve(item);
+      }
+
+      Promise.all(savers).then(function (savedRefs) {
+        var setRefs = false;
+        for (var nm in needSetRef) {
+          if (needSetRef.hasOwnProperty(nm)) {
+            needSetRef[nm] = savedRefs[needSetRef[nm]].getItemId();
+            setRefs = true;
+          }
+        }
+        if (setRefs) {
+          _this._editItem(
+            item.getMetaClass().getCanonicalName(),
+            item.getItemId(),
+            needSetRef,
+            changeLogger
+          ).then(resolve).catch(reject);
+          return;
+        }
+        resolve(item);
+      }).
+      catch(reject);
+    });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
    * @param {String} [version]
-   * @param {ChangeLogger} [changeLogger]
+   * @param {ChangeLogger | Function} [changeLogger]
    * @param {Number} [nestingDepth]
    * @returns {Promise}
    */
@@ -1117,7 +1244,8 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data, true);
+        var refUpdates = {};
+        var updates = formUpdatedData(cm, data, true, refUpdates);
 
         var fileSavers = [];
 
@@ -1134,30 +1262,20 @@ function IonDataRepository(options) {
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                EventType.CREATE,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function () {
-                resolve(item);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve) {
-              resolve(item);
-            });
-          }
+          return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
+        }).then(function (item) {
+          return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
           return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
-          resolve(items[0]);
+          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0])
+          .then(function () {
+            resolve(items[0]);
+          }).catch(reject);
         }).catch(reject);
       } catch (err) {
         reject(err);
@@ -1189,7 +1307,8 @@ function IonDataRepository(options) {
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
 
         if (conditions) {
-          var updates = formUpdatedData(cm, data, false);
+          var refUpdates = {};
+          var updates = formUpdatedData(cm, data, false, refUpdates);
 
           var fileSavers = [];
 
@@ -1212,24 +1331,11 @@ function IonDataRepository(options) {
               });
             }
             var item = _this._wrap(data._class, data, data._classVer);
-            if (changeLogger) {
-              return new Promise(function (resolve, reject) {
-                changeLogger.LogChange(
-                  EventType.UPDATE,
-                  item.getMetaClass().getCanonicalName(),
-                  item.getItemId(),
-                  updates
-                ).then(function () {
-                  resolve(item);
-                }).catch(reject);
-              });
-            } else {
-              return new Promise(function (resolve) {
-                resolve(item);
-              });
-            }
+            return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);
+          }).then(function (item) {
+            return refUpdator(item, refUpdates, changeLogger);
           }).then(function (item) {
             return loadFiles(item);
           }).then(function (item) {
@@ -1265,7 +1371,8 @@ function IonDataRepository(options) {
         var cm = _this.meta.getMeta(classname, version);
         var rcm = _this._getRootType(cm);
 
-        var updates = formUpdatedData(cm, data, true);
+        var refUpdates = {};
+        var updates = formUpdatedData(cm, data, true, refUpdates);
         var conditionsData;
 
         if (id) {
@@ -1273,8 +1380,6 @@ function IonDataRepository(options) {
         } else {
           conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
         }
-
-        var conditions = formUpdatedData(rcm, conditionsData);
 
         var event = EventType.UPDATE;
 
@@ -1288,8 +1393,9 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions) {
-              if (options.autoAssign) {
+            if (conditionsData) {
+              var conditions = formUpdatedData(rcm, conditionsData);
+              if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
                 if (cm.getChangeTracker()) {
@@ -1307,28 +1413,15 @@ function IonDataRepository(options) {
           }
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
-          if (changeLogger) {
-            return new Promise(function (resolve, reject) {
-              changeLogger.LogChange(
-                event,
-                item.getMetaClass().getCanonicalName(),
-                item.getItemId(),
-                updates
-              ).then(function () {
-                resolve(item);
-              }).catch(reject);
-            });
-          } else {
-            return new Promise(function (resolve) {
-              resolve(item);
-            });
-          }
+          return logChanges(changeLogger, {type: event, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data, id || item.getItemId());
         }).then(function (item) {
+          return refUpdator(item, refUpdates, changeLogger);
+        }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], options.nestingDepth !== null ? options.nestingDepth : 1);
+          return enrich([item], options && options.nestingDepth !== null ? options.nestingDepth : 1);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);
@@ -1351,18 +1444,10 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       _this.ds.delete(tn(rcm), updates).then(function () {
-        if (changeLogger) {
-          changeLogger.LogChange(
-            EventType.DELETE,
-            cm.getCanonicalName(),
-            id,
-            {}).
-          then(resolve).
-          catch(reject);
-        } else {
-          resolve();
-        }
-      }).catch(reject);
+        return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
+      }).
+      then(resolve).
+      catch(reject);
     });
   };
 
@@ -1432,6 +1517,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
@@ -1446,7 +1532,10 @@ function IonDataRepository(options) {
         }
 
         Promise.all(writers).then(function () {
-          resolve();
+          _this.trigger(event, {master: master, details: details})
+            .then(function () {
+              resolve();
+            }).catch(reject);
         }).catch(reject);
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
@@ -1470,24 +1559,28 @@ function IonDataRepository(options) {
           }
           return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
         }).then(function () {
-          if (changeLogger) {
-            var updates = {};
-            updates[collection] = [];
-            for (var i = 0; i < details.length; i++) {
-              updates[collection].push({
-                className: details[i].getMetaClass().getCanonicalName(),
-                id: details[i].getItemId()
-              });
-            }
-            changeLogger.LogChange(
-              operation ? EventType.PUT : EventType.EJECT,
-              master.getMetaClass().getCanonicalName(),
-              master.getItemId(),
-              updates).then(resolve).catch(reject);
-          } else {
-            resolve();
+          var updates = {};
+          updates[collection] = [];
+          for (var i = 0; i < details.length; i++) {
+            updates[collection].push({
+              className: details[i].getMetaClass().getCanonicalName(),
+              id: details[i].getItemId()
+            });
           }
-        }).catch(reject);
+          return logChanges(
+            changeLogger,
+            {
+              type: operation ? EventType.PUT : EventType.EJECT,
+              item: master,
+              updates: updates
+            }
+          );
+        }).
+        then(function () {
+          return _this.trigger(event, {master: master, details: details});
+        }).
+        then(resolve).
+        catch(reject);
       }
     });
   }

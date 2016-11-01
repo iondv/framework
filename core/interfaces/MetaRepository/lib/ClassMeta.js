@@ -3,7 +3,8 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-var checkConditions = require('core/ConditionChecker');
+var checkConditions = require('core/ConditionParser');
+var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -31,14 +32,15 @@ function loadPropertyMetas(cm, plain) {
       return [];
     };
   }
-
+  var pm;
   for (i = 0; i < properties.length; i++) {
-    cm.propertyMetas[properties[i].name] = properties[i];
-    if (properties[i].selectionProvider) {
-      if (properties[i].selectionProvider.type === 'SIMPLE') {
-        properties[i].selectionProvider.getSelection = selectionConstructor1();
+    pm = clone(properties[i]);
+    cm.propertyMetas[properties[i].name] = pm;
+    if (pm.selectionProvider) {
+      if (pm.selectionProvider.type === 'SIMPLE') {
+        pm.selectionProvider.getSelection = selectionConstructor1();
       } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        properties[i].selectionProvider.getSelection = selectionConstructor2();
+        pm.selectionProvider.getSelection = selectionConstructor2();
       }
     }
   }
@@ -84,9 +86,9 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantics = function (item) {
+  this.getSemantics = function (item, dateCallback) {
     if (typeof this._semanticFunc === 'function') {
-      return this._semanticFunc.apply(item);
+      return this._semanticFunc.call(item, dateCallback);
     }
     return item.getItemId();
   };
