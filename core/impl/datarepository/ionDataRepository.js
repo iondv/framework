@@ -505,31 +505,33 @@ function IonDataRepository(options) {
     });
   }
 
-  function postAggregateFilter(aggr, filter, parentFilter, filterName) {
-    var i,nm;
+  function postAggregateFilter(aggr, filter) {
+    var result, i, nm, value;
     if (filter && Array.isArray(filter)) {
+      result = [];
       for (i = 0; i < filter.length; i++) {
-        postAggregateFilter(aggr, filter[i]);
+        result.push(postAggregateFilter(aggr, filter[i]));
       }
+      return result;
     } else if (filter && typeof filter === 'object') {
+      result = {};
       for (nm in filter) {
         if (filter.hasOwnProperty(nm)) {
           if (nm === '_min' || nm === '_max') {
             try {
-              var value = aggr[filter[nm].tn][filter[nm].property];
-              if (parentFilter) {
-                parentFilter[filterName] = value;
-              } else {
-                filter[nm] = value;
-              }
+              value = aggr[filter[nm].tn][filter[nm].property];
+              return value;
             } catch (err) {
               throw new Error('неправильный condition');
             }
           } else {
-            postAggregateFilter(aggr, filter[nm], filter, nm);
+            result[nm] = postAggregateFilter(aggr, filter[nm]);
           }
         }
       }
+      return result;
+    } else {
+      return filter;
     }
   }
 
@@ -543,17 +545,19 @@ function IonDataRepository(options) {
             return new Promise(function (rs,rj) {
               _this.ds.aggregate(type, {$group: aggregations[type]})
                 .then(function (data) {
-                  try {
-                    agResults[type] = {};
-                    for (var name in data) {
-                      if (data.hasOwnProperty(name) && name !== '_id') {
-                        agResults[type][name] = data[name];
+                  if (data && data.length) {
+                    try {
+                      agResults[type] = {};
+                      for (var name in data[0]) {
+                        if (data[0].hasOwnProperty(name) && name !== '_id') {
+                          agResults[type][name] = data[0][name];
+                        }
                       }
+                    } catch (err) {
+                      rj(err);
                     }
-                    rs();
-                  } catch (err) {
-                    rj(err);
                   }
+                  rs();
                 }).catch(reject);
             });
           })(tn));
@@ -627,7 +631,7 @@ function IonDataRepository(options) {
                     tmp = {};
                     tmp[operation] = '$' + filter[nm][0];
                     preAggregations[tn(ccm)][filter[nm][0] + nm] = tmp;
-                    result[nm] = {tn: tn(cm), property: filter[nm][0] + nm};
+                    result[nm] = {tn: tn(ccm), property: filter[nm][0] + nm};
                   }
                 }
               }
@@ -655,8 +659,9 @@ function IonDataRepository(options) {
             return resolve(result);
           }
         }).catch(reject);
+      } else {
+        return resolve(filter);
       }
-      return resolve(filter);
     });
   }
 

@@ -591,6 +591,9 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          if (!Array.isArray(stages)) {
+            stages = [stages];
+          }
           c.aggregate(stages, {}, function (err,data) {
             if (err) {
               return reject(err);
