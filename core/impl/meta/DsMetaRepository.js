@@ -5,11 +5,12 @@
  */
 'use strict';
 
-var MetaRepositoryModule = require('core/interfaces/MetaRepository');
-var MetaRepository = MetaRepositoryModule.MetaRepository;
-var ClassMeta = MetaRepositoryModule.ClassMeta;
-var PropertyTypes = require('core/PropertyTypes');
-var clone = require('clone');
+const MetaRepositoryModule = require('core/interfaces/MetaRepository');
+const MetaRepository = MetaRepositoryModule.MetaRepository;
+const ClassMeta = MetaRepositoryModule.ClassMeta;
+const formulaEval = require('core/formula');
+const PropertyTypes = require('core/PropertyTypes');
+const clone = require('clone');
 
 const defaultVersion = '___default';
 
@@ -655,6 +656,9 @@ function DsMetaRepository(options) {
                 pm = pms[j];
                 if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
                   pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                }
+                if (pm.formula) {
+                  pm._formula = formulaEval(pm.formula, cm);
                 }
               }
             }

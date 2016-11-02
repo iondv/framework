@@ -21,6 +21,8 @@ function Property(item, propertyMeta, name) {
    */
   this.item = item;
 
+  this.value = null;
+
   /**
    * @type {Object}
    */
@@ -65,6 +67,10 @@ function Property(item, propertyMeta, name) {
   };
 
   this.getValue = function () {
+    if (this.value !== null) {
+      return this.value;
+    }
+
     if (this.getType() === PropertyTypes.REFERENCE && this.meta.backRef) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {

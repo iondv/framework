@@ -42,7 +42,7 @@ function toScalar(v) {
  * @returns {Boolean}
  */
 function checkCondition(item, condition) {
-  var pn, p, v;
+  var pn, p, v, pv;
   if (condition.property) {
     pn = condition.property;
     p = item.property(pn);
@@ -50,29 +50,30 @@ function checkCondition(item, condition) {
       throw new Error('Не найден указанный в условии атрибут ' + item.getClassName() + '.' + pn);
     }
     v = cast(condition.value, p.getType());
+    pv = item.property(pn).getValue();
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return equal(item.get(pn), toScalar(v));
+        return equal(pv, toScalar(v));
       case ConditionTypes.NOT_EQUAL:
-        return !equal(item.get(pn), toScalar(v));
+        return !equal(pv, toScalar(v));
       case ConditionTypes.EMPTY:
-        return !item.get(pn);
+        return !pv;
       case ConditionTypes.NOT_EMPTY:
-        return item.get(pn) ? true : false;
+        return pv ? true : false;
       case ConditionTypes.LIKE:
-        return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
+        return String(pv).match(new RegExp(toScalar(v))) ? true : false;
       case ConditionTypes.LESS:
-        return item.get(pn) < toScalar(v) ? true : false;
+        return pv < toScalar(v) ? true : false;
       case ConditionTypes.MORE:
-        return item.get(pn) > toScalar(v) ? true : false;
+        return pv > toScalar(v) ? true : false;
       case ConditionTypes.LESS_OR_EQUAL:
-        return item.get(pn) <= toScalar(v) ? true : false;
+        return pv <= toScalar(v) ? true : false;
       case ConditionTypes.MORE_OR_EQUAL:
-        return item.get(pn) >= toScalar(v) ? true : false;
+        return pv >= toScalar(v) ? true : false;
       case ConditionTypes.IN:
-        return contains(toArray(v), item.get(pn));
+        return contains(toArray(v), pv);
       case ConditionTypes.CONTAINS:
-        return contains(item.get(pn), toScalar(v));
+        return contains(pv, toScalar(v));
     }
   } else if (condition.nestedConditions) {
     switch (condition.operation) {
