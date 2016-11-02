@@ -561,10 +561,17 @@ function IonDataRepository(options) {
           calcNames.push(props[i].name);
         }
       }
+
+      if (calculations.length === 0) {
+        return resolve(item);
+      }
+
       Promise.all(calculations).
       then(function (results) {
+        var p;
         for (var i = 0; i < results.length; i++) {
-          item.property(calcNames[i]).value = results[i];
+          p = item.property(calcNames[i]);
+          item.calculated[calcNames[i]] = results[i];
         }
         resolve(item);
       }).catch(reject);
@@ -665,9 +672,10 @@ function IonDataRepository(options) {
               ).
               then(
                 function (items) {
-                  resolve(items[0]);
+                  return calcProperties(items[0]);
                 }
               ).
+              then(resolve).
               catch(reject);
               return;
             } catch (err) {
