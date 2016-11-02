@@ -14,7 +14,9 @@ const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
 
-/* jshint maxstatements: 50, maxcomplexity: 60 */
+const util = require('util');
+
+/* jshint maxstatements: 100, maxcomplexity: 100 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -520,7 +522,7 @@ function IonDataRepository(options) {
       result = {};
       for (nm in filter) {
         if (filter.hasOwnProperty(nm)) {
-          if (nm === '_min' || nm === '_max') {
+          if (['_min','_max','_avg','_sum','_count'].indexOf(nm) > -1) {
             try {
               value = aggr[filter[nm].tn][filter[nm].property];
               return value;
@@ -611,9 +613,9 @@ function IonDataRepository(options) {
                 filter[nm].from = tn(fcm);
               }
               result[nm] = filter[nm];
-            } else if (nm === '_min' || nm === '_max') {
+            } else if (['_min','_max','_avg','_sum','_count'].indexOf(nm) > -1) {
               if (Array.isArray(filter[nm]) && filter[nm].length) {
-                var operation = '$' + nm.slice(1);
+                var operation = nm === '_count' ? '$sum' : '$' + nm.slice(1);
                 if (!preAggregations) {
                   preAggregations = {};
                 }
@@ -622,7 +624,7 @@ function IonDataRepository(options) {
                     preAggregations[tn(cm)] = {_id: null};
                   }
                   tmp = {};
-                  tmp[operation] = '$' + filter[nm][0];
+                  tmp[operation] = nm === '_count' ? 1 : '$' + filter[nm][0];
                   preAggregations[tn(cm)][filter[nm][0] + nm] = tmp;
                   result[nm] = {tn: tn(cm), property: filter[nm][0] + nm};
                 } else {
@@ -632,7 +634,7 @@ function IonDataRepository(options) {
                       preAggregations[tn(ccm)] = {_id: null};
                     }
                     tmp = {};
-                    tmp[operation] = '$' + filter[nm][0];
+                    tmp[operation] = nm === '_count' ? 1 : '$' + filter[nm][0];
                     preAggregations[tn(ccm)][filter[nm][0] + nm] = tmp;
                     result[nm] = {tn: tn(ccm), property: filter[nm][0] + nm};
                   }
@@ -654,6 +656,7 @@ function IonDataRepository(options) {
 
         Promise.all(promises).then(function () {
           if (preAggregations) {
+            console.log('aggregations:', util.inspect(preAggregations, false, null));
             preAggregate(preAggregations, result)
               .then(function (modifiedResult) {
                 return resolve(modifiedResult);
@@ -689,9 +692,11 @@ function IonDataRepository(options) {
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return new Promise(function (resolve, reject) {
+      console.log('preFilter:', util.inspect(options.filter, false, null));
       prepareFilter(rcm, options.filter)
         .then(function (filter) {
           if (filter) {
+            console.log('filter:', util.inspect(filter, false, null));
             options.filter = filter;
           }
           var result = [];

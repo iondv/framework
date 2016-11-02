@@ -184,6 +184,27 @@ function ConditionParser(condition, rcm, metaRepo) { // jshint -W074
             throw new Error('не правильное условие MAX');
           }
         } break;
+        case OperationTypes.AVG: {
+          if (condition.value) {
+            result._avg = condition.value;
+          } else {
+            throw new Error('не правильное условие AVG');
+          }
+        } break;
+        case OperationTypes.SUM: {
+          if (condition.value) {
+            result._sum = condition.value;
+          } else {
+            throw new Error('не правильное условие SUM');
+          }
+        } break;
+        case OperationTypes.COUNT: {
+          if (condition.value) {
+            result._count = condition.value;
+          } else {
+            throw new Error('не правильное условие COUNT');
+          }
+        } break;
       }
     }
   }
