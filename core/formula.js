@@ -224,10 +224,9 @@ function findComma(src, start) {
 
 /**
  * @param {String} argsSrc
- * @param {ClassMeta} [cm]
  * @returns {Array}
  */
-function parseArgs(argsSrc, cm) {
+function parseArgs(argsSrc) {
   if (!argsSrc) {
     return [];
   }
@@ -261,12 +260,12 @@ function parseArgs(argsSrc, cm) {
           throw new Error('syntax error in expression "' + argsSrc + '": bracket not closed');
         }
       }
-      result.push(evaluate(argsSrc.substring(start, closeBracketPos + 1).trim(), cm));
+      result.push(evaluate(argsSrc.substring(start, closeBracketPos + 1).trim()));
       commaPos = findComma(argsSrc, closeBracketPos + 1);
     } else if (commaPos > -1) {
-      result.push(evaluate(argsSrc.substring(start, commaPos).trim(), cm));
+      result.push(evaluate(argsSrc.substring(start, commaPos).trim()));
     } else {
-      result.push(evaluate(argsSrc.substring(start).trim(), cm));
+      result.push(evaluate(argsSrc.substring(start).trim()));
     }
     start = commaPos + 1;
     i++;
@@ -289,7 +288,7 @@ function propertyGetter(nm) {
  * @returns {*}
  */
 function evaluate(formula) {
-  var func, args, pos, pm;
+  var func, args, pos;
 
   if (!isNaN(formula)) {
     return Number(formula);
