@@ -548,22 +548,26 @@ function IonDataRepository(options) {
         if (aggregations.hasOwnProperty(tn)) {
           promises.push((function (type) {
             return new Promise(function (rs,rj) {
-              _this.ds.aggregate(type, {$group: aggregations[type]})
-                .then(function (data) {
-                  if (data && data.length) {
-                    try {
-                      agResults[type] = {};
-                      for (var name in data[0]) {
-                        if (data[0].hasOwnProperty(name) && name !== '_id') {
-                          agResults[type][name] = data[0][name];
+              if (aggregations[type].match) {
+
+              } else {
+                _this.ds.aggregate(type, {$group: aggregations[type].group})
+                  .then(function (data) {
+                    if (data && data.length) {
+                      try {
+                        agResults[type] = {};
+                        for (var name in data[0]) {
+                          if (data[0].hasOwnProperty(name) && name !== '_id') {
+                            agResults[type][name] = data[0][name];
+                          }
                         }
+                      } catch (err) {
+                        rj(err);
                       }
-                    } catch (err) {
-                      rj(err);
                     }
-                  }
-                  rs();
-                }).catch(reject);
+                    rs();
+                  }).catch(reject);
+              }
             });
           })(tn));
         }
@@ -581,7 +585,7 @@ function IonDataRepository(options) {
    */
   function prepareFilter(cm, filter) {
     return new Promise(function (resolve, reject) {
-      var result, i, nm, keys, knm, preAggregations, tmp;
+      var result, i, nm, keys, knm, preAggregations, tmp, match;
       var promises = [];
       if (filter && Array.isArray(filter)) {
         result = [];
@@ -614,29 +618,36 @@ function IonDataRepository(options) {
               }
               result[nm] = filter[nm];
             } else if (['_min','_max','_avg','_sum','_count'].indexOf(nm) > -1) {
-              if (Array.isArray(filter[nm]) && filter[nm].length) {
-                var operation = nm === '_count' ? '$sum' : '$' + nm.slice(1);
+              if (filter[nm] && Array.isArray(filter[nm].name) && filter[nm].name.length) {
+                var operationType = nm === '_count' ? '$sum' : '$' + nm.slice(1);
                 if (!preAggregations) {
                   preAggregations = {};
                 }
-                if (filter[nm].length === 1) {
+                if (filter[nm].name.length === 1) {
                   if (!preAggregations[tn(cm)]) {
-                    preAggregations[tn(cm)] = {_id: null};
+                    preAggregations[tn(cm)] = {
+                      group: {_id: null},
+                      match: null
+                    };
                   }
                   tmp = {};
-                  tmp[operation] = nm === '_count' ? 1 : '$' + filter[nm][0];
-                  preAggregations[tn(cm)][filter[nm][0] + nm] = tmp;
-                  result[nm] = {tn: tn(cm), property: filter[nm][0] + nm};
+                  tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
+                  preAggregations[tn(cm)].group[filter[nm].name[0] + nm] = tmp;
+                  if (filter[nm].match) {
+                    preAggregations[tn(cm)].match = {};
+                    preAggregations[tn(cm)].match[filter[nm].name[0] + nm] = filter[nm].match;
+                  }
+                  result[nm] = {tn: tn(cm), property: filter[nm].name[0] + nm};
                 } else {
-                  var ccm = _this.meta.getMeta(filter[nm][1], null, cm.getNamespace());
+                  var ccm = _this.meta.getMeta(filter[nm].name[1], null, cm.getNamespace());
                   if (ccm) {
                     if (!preAggregations[tn(ccm)]) {
                       preAggregations[tn(ccm)] = {_id: null};
                     }
                     tmp = {};
-                    tmp[operation] = nm === '_count' ? 1 : '$' + filter[nm][0];
-                    preAggregations[tn(ccm)][filter[nm][0] + nm] = tmp;
-                    result[nm] = {tn: tn(ccm), property: filter[nm][0] + nm};
+                    tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
+                    preAggregations[tn(ccm)][filter[nm].name[0] + nm] = {operation: tmp, match: filter[nm].match};
+                    result[nm] = {tn: tn(ccm), property: filter[nm].name[0] + nm};
                   }
                 }
               }

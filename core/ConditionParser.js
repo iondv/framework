@@ -172,35 +172,35 @@ function ConditionParser(condition, rcm, metaRepo) { // jshint -W074
         case OperationTypes.NOT: result.$not = {$and: value}; break;
         case OperationTypes.MIN: {
           if (condition.value) {
-            result._min = condition.value;
+            result._min = {name: condition.value, match: value};
           } else {
             throw new Error('не правильное условие MIN');
           }
         } break;
         case OperationTypes.MAX: {
           if (condition.value) {
-            result._max = condition.value;
+            result._max = {name: condition.value, match: value};
           } else {
             throw new Error('не правильное условие MAX');
           }
         } break;
         case OperationTypes.AVG: {
           if (condition.value) {
-            result._avg = condition.value;
+            result._avg = {name: condition.value, match: value};
           } else {
             throw new Error('не правильное условие AVG');
           }
         } break;
         case OperationTypes.SUM: {
           if (condition.value) {
-            result._sum = condition.value;
+            result._sum = {name: condition.value, match: value};
           } else {
             throw new Error('не правильное условие SUM');
           }
         } break;
         case OperationTypes.COUNT: {
           if (condition.value) {
-            result._count = condition.value;
+            result._count = {name: condition.value, match: value};
           } else {
             throw new Error('не правильное условие COUNT');
           }
