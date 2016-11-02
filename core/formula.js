@@ -275,21 +275,20 @@ function parseArgs(argsSrc, cm) {
 }
 
 /**
- * @param {{name: String}} pm
+ * @param {{name: String}} nm
  * @returns {Function}
  */
-function propertyGetter(pm) {
+function propertyGetter(nm) {
   return function () {
-    return this.get(pm.name);
+    return this.get(nm);
   };
 }
 
 /**
  * @param {String} formula
- * @param {ClassMeta} [cm]
  * @returns {*}
  */
-function evaluate(formula, cm) {
+function evaluate(formula) {
   var func, args, pos, pm;
 
   if (!isNaN(formula)) {
@@ -313,10 +312,8 @@ function evaluate(formula, cm) {
     }
   }
 
-  if (cm) {
-    if ((pm = cm.getPropertyMeta(formula.trim())) !== null) {
-      return propertyGetter(pm);
-    }
+  if (formula[0] === '$') {
+    return propertyGetter(formula.substring(1));
   }
 
   return formula;
