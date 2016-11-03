@@ -549,7 +549,42 @@ function IonDataRepository(options) {
           promises.push((function (type) {
             return new Promise(function (rs,rj) {
               if (aggregations[type].match) {
-
+                var promises2 = [];
+                for (var property in aggregations[type].match) {
+                  if (aggregations[type].match.hasOwnProperty(property)) {
+                    if (aggregations[type].group[property]) {
+                      promises2.push((function (match, group, prop) {
+                        var tmp = {_id:null};
+                        tmp[prop] = group;
+                        console.log('wow', util.inspect([{$match: {$and: match}},{$group: tmp}], false, null));
+                        return _this.ds.aggregate(type, [{$match: {$and: match}},{$group: tmp}]);
+                      })(aggregations[type].match[property], aggregations[type].group[property], property));
+                      delete aggregations[type].group[property];
+                    }
+                  }
+                }
+                if (Object.keys(aggregations[type].group).length) {
+                  promises2.push(_this.ds.aggregate(type, {$group: aggregations[type].group}));
+                }
+                Promise.all(promises2).then(function (results) {
+                  for (var i = 0; i < results.length; i++) {
+                    if (results[i] && results[i].length) {
+                      try {
+                        if (!agResults[type]) {
+                          agResults[type] = {};
+                        }
+                        for (var name in results[i][0]) {
+                          if (results[i][0].hasOwnProperty(name) && name !== '_id') {
+                            agResults[type][name] = results[i][0][name];
+                          }
+                        }
+                      } catch (err) {
+                        rj(err);
+                      }
+                    }
+                  }
+                  rs();
+                }).catch(rj);
               } else {
                 _this.ds.aggregate(type, {$group: aggregations[type].group})
                   .then(function (data) {
@@ -578,6 +613,40 @@ function IonDataRepository(options) {
     });
   }
 
+  function prepareFilterSync(cm, filter) {
+    var result, i, nm, keys, knm;
+    if (filter && Array.isArray(filter)) {
+      result = [];
+      for (i = 0; i < filter.length; i++) {
+        result.push(prepareFilterSync(cm, filter[i]));
+      }
+      return result;
+    } else if (filter && typeof filter === 'object') {
+      result = {};
+      for (nm in filter) {
+        if (filter.hasOwnProperty(nm)) {
+          if (nm === '$ItemId') {
+            if (typeof filter[nm] === 'string') {
+              keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+              for (knm in keys) {
+                if (keys.hasOwnProperty(knm)) {
+                  result[knm] = keys[knm];
+                }
+              }
+            } else {
+              result[cm.getKeyProperties()[0]] = filter[nm];
+            }
+          } else if (['_min','_max','_avg','_sum','_count','$lookup'].indexOf(nm) < 0) {
+            result[nm] = prepareFilterSync(cm, filter[nm]);
+          }
+        }
+      }
+      return result;
+    } else {
+      return filter;
+    }
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {*} filter
@@ -585,7 +654,7 @@ function IonDataRepository(options) {
    */
   function prepareFilter(cm, filter) {
     return new Promise(function (resolve, reject) {
-      var result, i, nm, keys, knm, preAggregations, tmp, match;
+      var result, i, nm, keys, knm, preAggregations, tmp;
       var promises = [];
       if (filter && Array.isArray(filter)) {
         result = [];
@@ -634,33 +703,44 @@ function IonDataRepository(options) {
                   tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
                   preAggregations[tn(cm)].group[filter[nm].name[0] + nm] = tmp;
                   if (filter[nm].match) {
-                    preAggregations[tn(cm)].match = {};
-                    preAggregations[tn(cm)].match[filter[nm].name[0] + nm] = filter[nm].match;
+                    if (!preAggregations[tn(cm)].match) {
+                      preAggregations[tn(cm)].match = {};
+                    }
+                    preAggregations[tn(cm)].match[filter[nm].name[0] + nm] = prepareFilterSync(cm, filter[nm].match);
                   }
                   result[nm] = {tn: tn(cm), property: filter[nm].name[0] + nm};
                 } else {
                   var ccm = _this.meta.getMeta(filter[nm].name[1], null, cm.getNamespace());
                   if (ccm) {
                     if (!preAggregations[tn(ccm)]) {
-                      preAggregations[tn(ccm)] = {_id: null};
+                      preAggregations[tn(ccm)] = {
+                        group: {_id: null},
+                        match: null
+                      };
                     }
                     tmp = {};
                     tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
-                    preAggregations[tn(ccm)][filter[nm].name[0] + nm] = {operation: tmp, match: filter[nm].match};
+                    preAggregations[tn(ccm)].group[filter[nm].name[0] + nm] = tmp;
+                    if (filter[nm].match) {
+                      if (!preAggregations[tn(ccm)].match) {
+                        preAggregations[tn(ccm)].match = {};
+                      }
+                      preAggregations[tn(ccm)].match[filter[nm].name[0] + nm] = prepareFilterSync(cm, filter[nm].match);
+                    }
                     result[nm] = {tn: tn(ccm), property: filter[nm].name[0] + nm};
                   }
                 }
               }
             } else {
               promises.push((function (propertyName) {
-                  return new Promise(function (rs,rj) {
-                      prepareFilter(cm, filter[propertyName])
-                        .then(function (value) {
-                          result[propertyName] = value;
-                          rs();
-                        }).catch(rj);
-                    });
-                })(nm));
+                return new Promise(function (rs,rj) {
+                    prepareFilter(cm, filter[propertyName])
+                      .then(function (value) {
+                        result[propertyName] = value;
+                        rs();
+                      }).catch(rj);
+                  });
+              })(nm));
             }
           }
         }
