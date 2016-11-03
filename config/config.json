@@ -85,8 +85,10 @@
       },
       "calculator": {
         "module": "core/impl/Calculator",
+        "initMethod": "init",
+        "initLevel": 2,
         "options": {
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "dataRepo"
         }
       },
       "metaRepo": {

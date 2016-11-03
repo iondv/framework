@@ -2,7 +2,7 @@
  * Created by kras on 03.11.16.
  */
 'use strict';
-const ac = require('../util').argCalcPromise;
+const ac = require('./util').argCalcPromise;
 
 module.exports = function (args) {
   return function () {

@@ -11,17 +11,22 @@ const aggreg = require('./func/aggreg');
 // jshint maxstatements: 50, maxcomplexity: 20
 /**
  * @param {{}} options
- * @param {DataRepository} options.dataRepo
+ * @param {DataRepository | String} options.dataRepo
  * @constructor
  */
 function Calculator(options) {
 
   var funcLib = clone(stdLib);
-  funcLib.sum = aggreg.sum(options.dataRepo);
-  funcLib.count = aggreg.count(options.dataRepo);
-  funcLib.avg = aggreg.avg(options.dataRepo);
-  funcLib.max = aggreg.max(options.dataRepo);
-  funcLib.min = aggreg.min(options.dataRepo);
+
+  this.init = function (scope) {
+    var dataRepo = typeof options.dataRepo === String ? scope[options.dataRepo] : options.dataRepo;
+
+    funcLib.sum = aggreg.sum(dataRepo);
+    funcLib.count = aggreg.count(dataRepo);
+    funcLib.avg = aggreg.avg(dataRepo);
+    funcLib.max = aggreg.max(dataRepo);
+    funcLib.min = aggreg.min(dataRepo);
+  };
 
   function findComma(src, start) {
     var pos = src.indexOf(',', start);
