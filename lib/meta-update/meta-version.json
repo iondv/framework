@@ -1,16 +1,16 @@
 [
-{
-  "version": "3.0.1"
-},
-{
-"version": "4.0.1"
-},
+  {
+    "version": "3.0.1"
+  },
+  {
+    "version": "4.0.1"
+  },
   {
     "version": "2.0.0",
     "versionDescr": "Кодирование номер версии студии",
-    "transformateMetaDataFunctionName": "verR2F0P0",
-    "transformateMetaDataFunctionNameDescr": "Наименование функции трансформации в файле transformation.js. Если значения нет или оно null - значит функции нет",
-    "transformateMetaDataFunctionNameDescr1": "Трансформация запускается только тогда, когда ВСЕ метаданные (meta,view) одного класса доведены до одной версии",
+    "transformateFunctionName": "verR2F0P0",
+    "transformateFunctionNameDescr": "Наименование функции трансформации в файле transformation.js. Если значения нет или оно null - значит функции нет",
+    "transformateFunctionNameDescr1": "Трансформация запускается только тогда, когда ВСЕ метаданные (meta,view) одного класса доведены до одной версии",
     "textUpdate": {
       "descripton": "Набор операций над текстом, выполняеся первым, до до парсинга JSON с метой ",
       "replaceRegexp": [["\"order_number\"(|\\s):", "\"orderNumber\":"],
@@ -32,13 +32,13 @@
       "descripton": "Набор операций над распарсенным JSON, выполняеся вторым, после textUpdate",
       "class": {
         "descripton": "Набор операций над свойствами класса.",
-        "delete": ["isStruct"],
+        "delete": [],
         "deleteDescr": "Свойства класса к удалению. Значения: массив строк с именем свойств объекта",
         "new": [{"version": ""}, {"metaVersion": "2.0.0"}],
         "newDescr": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
-        "convertType": [{"propertyName": "", "valNewType": "", "param": []}],
+        "convertType": [{"propertyName": "", "valueNewType": "", "param": []}],
         "convertTypeDescr": "Список свойств класса к конвертации типов значений, конвертация типов осуществляется на основе параметров для пар конвертации и типовых преобразования JS",
-        "convertTypeDescr1": "Значения: массив элементов, с обязательные свойства со строковыми значениями: propertyName - имя параметра, valNewType - новый тип объекта",
+        "convertTypeDescr1": "Значения: массив элементов, с обязательные свойства со строковыми значениями: propertyName - имя параметра, valueNewType - новый тип объекта",
         "convertTypeDescr2": "Исходный тип определяется автоматически через typeof, может быть number, string, boolean, null, array, object (формат JSON)",
         "convertTypeDescr3": "Свойство param содержит массив параметров для типов конвертации в новый тип. Сами в себя типы не конвертируются. Для конвертации следующих типов параметры не нужны:",
         "convertTypeDescr4": "любого свойства в null - будет null, null в любой тип - будет пустое значение данного типа: '', 0, false, [], {}",
@@ -53,17 +53,18 @@
         "convertTypeDescr13": "object -> number, string, boolean, null, array осуществляется указанием строки, содержащей через точку путь к свойсту, которое преобразуется,",
         "convertTypeDescr14": "пример param: [\"index.key\"], если массив пустой, преобразуется весь объект по правилам преобразования типов. Если новый тип тоже объект значения свойства присваивается",
         "depricatedValue": [],
-        "depricatedueValTypeDescr": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны"
+        "depricatedueValTypeDescr1": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны в виде объекта ",
+        "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение"
       },
       "properties": {
         "descripton": "Набор операций над свойствами атрибутов. Все действия аналогичны классу",
         "delete": [],
         "deleteDescr": "Аналогично классу",
-        "new": [{"version": null}],
+        "new": [],
         "newDescr": "Аналогично классу",
         "convertType": [],
         "convertTypeDescr": "Аналогично классу",
-        "depricatedValue": [{"type": 53}],
+        "depricatedValue": [{"name": "type", "value": 53}],
         "depricatedueValTypeDescr": "Аналогично классу"
       }
     }
@@ -95,8 +96,6 @@
   {
     "version": "1.4.1"
   }
-
-
 
 ]
 
