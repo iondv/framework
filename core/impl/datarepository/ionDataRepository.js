@@ -554,7 +554,7 @@ function IonDataRepository(options) {
                   if (aggregations[type].match.hasOwnProperty(property)) {
                     if (aggregations[type].group[property]) {
                       promises2.push((function (match, group, prop) {
-                        var tmp = {_id:null};
+                        var tmp = {_id: null};
                         tmp[prop] = group;
                         console.log('wow', util.inspect([{$match: {$and: match}},{$group: tmp}], false, null));
                         return _this.ds.aggregate(type, [{$match: {$and: match}},{$group: tmp}]);
@@ -654,7 +654,7 @@ function IonDataRepository(options) {
    */
   function prepareFilter(cm, filter) {
     return new Promise(function (resolve, reject) {
-      var result, i, nm, keys, knm, preAggregations, tmp;
+      var result, i, nm, keys, knm, preAggregations, tmp, tableName, currentCm;
       var promises = [];
       if (filter && Array.isArray(filter)) {
         result = [];
@@ -693,43 +693,33 @@ function IonDataRepository(options) {
                   preAggregations = {};
                 }
                 if (filter[nm].name.length === 1) {
-                  if (!preAggregations[tn(cm)]) {
-                    preAggregations[tn(cm)] = {
-                      group: {_id: null},
-                      match: null
-                    };
-                  }
-                  tmp = {};
-                  tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
-                  preAggregations[tn(cm)].group[filter[nm].name[0] + nm] = tmp;
-                  if (filter[nm].match) {
-                    if (!preAggregations[tn(cm)].match) {
-                      preAggregations[tn(cm)].match = {};
-                    }
-                    preAggregations[tn(cm)].match[filter[nm].name[0] + nm] = prepareFilterSync(cm, filter[nm].match);
-                  }
-                  result[nm] = {tn: tn(cm), property: filter[nm].name[0] + nm};
+                  currentCm = cm;
+                  tableName = tn(cm);
                 } else {
                   var ccm = _this.meta.getMeta(filter[nm].name[1], null, cm.getNamespace());
                   if (ccm) {
-                    if (!preAggregations[tn(ccm)]) {
-                      preAggregations[tn(ccm)] = {
-                        group: {_id: null},
-                        match: null
-                      };
-                    }
-                    tmp = {};
-                    tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
-                    preAggregations[tn(ccm)].group[filter[nm].name[0] + nm] = tmp;
-                    if (filter[nm].match) {
-                      if (!preAggregations[tn(ccm)].match) {
-                        preAggregations[tn(ccm)].match = {};
-                      }
-                      preAggregations[tn(ccm)].match[filter[nm].name[0] + nm] = prepareFilterSync(cm, filter[nm].match);
-                    }
-                    result[nm] = {tn: tn(ccm), property: filter[nm].name[0] + nm};
+                    currentCm = ccm;
+                    tableName = tn(ccm);
+                  } else {
+                    throw new Error('не найдена ClassMeta');
                   }
                 }
+                if (!preAggregations[tableName]) {
+                  preAggregations[tableName] = {
+                    group: {_id: null},
+                    match: null
+                  };
+                }
+                tmp = {};
+                tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
+                preAggregations[tableName].group[filter[nm].name[0] + nm] = tmp;
+                if (filter[nm].match) {
+                  if (!preAggregations[tableName].match) {
+                    preAggregations[tableName].match = {};
+                  }
+                  preAggregations[tableName].match[filter[nm].name[0] + nm] = prepareFilterSync(currentCm, filter[nm].match);
+                }
+                result[nm] = {tn: tableName, property: filter[nm].name[0] + nm};
               }
             } else {
               promises.push((function (propertyName) {
