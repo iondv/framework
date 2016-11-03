@@ -8,8 +8,8 @@
 const MetaRepositoryModule = require('core/interfaces/MetaRepository');
 const MetaRepository = MetaRepositoryModule.MetaRepository;
 const ClassMeta = MetaRepositoryModule.ClassMeta;
-const formulaEval = require('core/formula');
 const PropertyTypes = require('core/PropertyTypes');
+const Calculator = require('core/interfaces/Calculator');
 const clone = require('clone');
 
 const defaultVersion = '___default';
@@ -72,6 +72,7 @@ function findByVersion(arr, version, i1, i2) {
  * @param {String} [options.NavTableName]
  * @param {String} [options.WorkflowTableName]
  * @param {DbSync} [options.sync]
+ * @param {Calculator} [options.calc]
  * @constructor
  */
 function DsMetaRepository(options) {
@@ -495,7 +496,7 @@ function DsMetaRepository(options) {
     return function (dateCallback) {
       var p = this.property(propertyName);
       var tmp = p.getDisplayValue(dateCallback);
-      if(p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
+      if (p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
         tmp = dateCallback.call(null, p.getValue());
       } else if (start) {
         tmp = tmp.substr(start, length || null);
@@ -657,8 +658,8 @@ function DsMetaRepository(options) {
                 if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
                   pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
                 }
-                if (pm.formula) {
-                  pm._formula = formulaEval(pm.formula, cm);
+                if (pm.formula && options.calc instanceof Calculator) {
+                  pm._formula = options.calc.parseFormula(pm.formula);
                 }
               }
             }

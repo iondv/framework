@@ -77,11 +77,30 @@ function DataSource() {
 
   /**
    * @param {String} type
-   * @param {{}} options
+   * @param {{filter: {}}} options
    * @returns {Promise}
    */
   this.count = function (type, options) {
     return this._count(type, options);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{filter: {}, offset: Number, count: Number, batchSize: Number}} options
+   * @param {Function} cb
+   * @returns {Promise}
+   */
+  this.forEach = function (type, options, cb) {
+    return this._forEach(type, options, cb);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{expressions: {}, filter: {}, grouping: {}}} options
+   * @returns {Promise}
+   */
+  this.aggregate = function (type, options) {
+    return this._aggregate(type, options);
   };
 
   /**

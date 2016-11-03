@@ -647,6 +647,25 @@ function IonDataRepository(options) {
   };
 
   /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {{}} [options.expressions]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.groupBy]
+   * @returns {Promise}
+   */
+  this._aggregate = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = this._getMeta(className);
+    var rcm = this._getRootType(cm);
+    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = prepareFilter(rcm, options.filter);
+    return _this.ds.aggregate(tn(rcm), options);
+  };
+
+  /**
    *
    * @param {String | Item} obj
    * @param {String} [id]
