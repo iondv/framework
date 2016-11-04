@@ -556,7 +556,6 @@ function IonDataRepository(options) {
                       promises2.push((function (match, group, prop) {
                         var tmp = {_id: null};
                         tmp[prop] = group;
-                        console.log('wow', util.inspect([{$match: {$and: match}},{$group: tmp}], false, null));
                         return _this.ds.aggregate(type, [{$match: {$and: match}},{$group: tmp}]);
                       })(aggregations[type].match[property], aggregations[type].group[property], property));
                       delete aggregations[type].group[property];
@@ -737,7 +736,6 @@ function IonDataRepository(options) {
 
         Promise.all(promises).then(function () {
           if (preAggregations) {
-            console.log('aggregations:', util.inspect(preAggregations, false, null));
             preAggregate(preAggregations, result)
               .then(function (modifiedResult) {
                 return resolve(modifiedResult);
@@ -773,11 +771,9 @@ function IonDataRepository(options) {
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return new Promise(function (resolve, reject) {
-      console.log('preFilter:', util.inspect(options.filter, false, null));
       prepareFilter(rcm, options.filter)
         .then(function (filter) {
           if (filter) {
-            console.log('filter:', util.inspect(filter, false, null));
             options.filter = filter;
           }
           var result = [];
