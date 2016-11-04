@@ -14,8 +14,6 @@ const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
 
-const util = require('util');
-
 /* jshint maxstatements: 100, maxcomplexity: 100 */
 /**
  * @param {{}} options
@@ -546,14 +544,14 @@ function IonDataRepository(options) {
       var agResults = {};
       for (var tn in aggregations) {
         if (aggregations.hasOwnProperty(tn)) {
-          promises.push((function (type) {
+          promises.push((function (type) { // jshint ignore:line
             return new Promise(function (rs,rj) {
               if (aggregations[type].match) {
                 var promises2 = [];
                 for (var property in aggregations[type].match) {
                   if (aggregations[type].match.hasOwnProperty(property)) {
                     if (aggregations[type].group[property]) {
-                      promises2.push((function (match, group, prop) {
+                      promises2.push((function (match, group, prop) { // jshint ignore:line
                         var tmp = {_id: null};
                         tmp[prop] = group;
                         return _this.ds.aggregate(type, [{$match: {$and: match}},{$group: tmp}]);
@@ -721,7 +719,7 @@ function IonDataRepository(options) {
                 result[nm] = {tn: tableName, property: filter[nm].name[0] + nm};
               }
             } else {
-              promises.push((function (propertyName) {
+              promises.push((function (propertyName) { // jshint ignore:line
                 return new Promise(function (rs,rj) {
                     prepareFilter(cm, filter[propertyName])
                       .then(function (value) {

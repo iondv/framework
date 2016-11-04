@@ -118,7 +118,7 @@ function produceFilter(condition, type, result, rcm, metaRepo) {
  * @param {MetaRepository} metaRepo
  * @returns {{}}
  */
-function ConditionParser(condition, rcm, metaRepo) { // jshint -W074
+function ConditionParser(condition, rcm, metaRepo) { // jshint ignore:line
   var result, value, i;
   if (Array.isArray(condition)) {
     result = [];
