@@ -749,6 +749,50 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {Item} item
+   * @returns {Promise}
+     */
+  function calcProperties(item) {
+    return new Promise(function (resolve, reject) {
+      var calculations = [];
+      var calcNames = [];
+      var props = item.getMetaClass().getPropertyMetas();
+      for (var i = 0; i < props.length; i++) {
+        if (props[i]._formula) {
+          calculations.push(props[i]._formula.apply(item, [{}]));
+          calcNames.push(props[i].name);
+        }
+      }
+
+      if (calculations.length === 0) {
+        return resolve(item);
+      }
+
+      Promise.all(calculations).
+      then(function (results) {
+        var p;
+        for (var i = 0; i < results.length; i++) {
+          p = item.property(calcNames[i]);
+          item.calculated[calcNames[i]] = results[i];
+        }
+        resolve(item);
+      }).catch(reject);
+    });
+  }
+
+  function calcItemsProperties(items) {
+    return new Promise(function (resolve, reject) {
+      var calcs = [];
+      for (var i = 0; i < items.length; i++) {
+        calcs.push(calcProperties(items[i]));
+      }
+      Promise.all(calcs).then(function () {
+        resolve(items);
+      }).catch(reject);
+    });
+  }
+
+  /**
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
@@ -792,20 +836,40 @@ function IonDataRepository(options) {
                   result.total = data.total;
                 }
 
-                return new Promise(function (rs, rj) {
-                  Promise.all(fl).then(function () {
-                    rs(result);
-                  }).catch(rj);
-                });
-              }
-            ).
-            then(function (result) {
-              return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
-            }).
-            then(resolve).
-            catch(reject);
-        }).catch(reject);
+            return new Promise(function (rs, rj) {
+              Promise.all(fl).then(function () {
+                rs(result);
+              }).catch(rj);
+            });
+          }
+        ).
+        then(function (result) {
+          return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
+        }).
+        then(calcItemsProperties).
+        then(resolve).
+        catch(reject);
+      }).catch(reject);
     });
+  };
+
+  /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {{}} [options.expressions]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.groupBy]
+   * @returns {Promise}
+   */
+  this._aggregate = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = this._getMeta(className);
+    var rcm = this._getRootType(cm);
+    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = prepareFilter(rcm, options.filter);
+    return _this.ds.aggregate(tn(rcm), options);
   };
 
   /**
@@ -834,9 +898,10 @@ function IonDataRepository(options) {
               ).
               then(
                 function (items) {
-                  resolve(items[0]);
+                  return calcProperties(items[0]);
                 }
               ).
+              then(resolve).
               catch(reject);
               return;
             } catch (err) {
@@ -863,7 +928,10 @@ function IonDataRepository(options) {
         then(function (item) {
           return enrich([item]);
         }).
-        then(function (items) { resolve(items[0]); }).
+        then(function (items) {
+          return calcProperties(items[0]);
+        }).
+        then(resolve).
         catch(reject);
       });
     }
@@ -1352,10 +1420,10 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], nestingDepth !== null ? nestingDepth : 1);
         }).then(function (items) {
-          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0])
-          .then(function () {
-            resolve(items[0]);
-          }).catch(reject);
+          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0]).
+          then(function () {
+            return calcProperties(items[0]);
+          }).then(resolve).catch(reject);
         }).catch(reject);
       } catch (err) {
         reject(err);
@@ -1421,8 +1489,8 @@ function IonDataRepository(options) {
           }).then(function (item) {
             return enrich([item], nestingDepth !== null ? nestingDepth : 1);
           }).then(function (items) {
-            resolve(items[0]);
-          }).catch(reject);
+            return calcProperties(items[0]);
+          }).then(resolve).catch(reject);
         } else {
           reject({Error: 'Не указан идентификатор объекта!'});
         }
@@ -1503,8 +1571,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], options && options.nestingDepth !== null ? options.nestingDepth : 1);
         }).then(function (items) {
-          resolve(items[0]);
-        }).catch(reject);
+          return calcProperties(items[0]);
+        }).then(resolve).catch(reject);
       } catch (err) {
         return reject(err);
       }

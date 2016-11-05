@@ -12,7 +12,7 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 30
+// jshint maxstatements: 30, maxcomplexity: 20
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -466,6 +466,116 @@ function MongoDs(config) {
               work(null);
             }
           }
+        });
+      }
+    );
+  };
+
+  /**
+   * @param {String} type
+   * @param {{batchSize: Number}} options
+   * @param {Function} cb
+   * @returns {Promise}
+   */
+  this._forEach = function (type, options, cb) {
+    options = options || {};
+    return this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          try {
+            var r = c.find(options.filter || {});
+
+            if (options.sort) {
+              r = r.sort(options.sort);
+            }
+
+            if (options.offset) {
+              r = r.skip(options.offset);
+            }
+
+            if (options.count) {
+              r = r.limit(options.count);
+            }
+
+            r.batchSize(options.batchSize || 1);
+            r.forEach(
+              cb,
+              function (err) {
+                r.close();
+                if (err) {
+                  return reject(err);
+                }
+                resolve();
+              }
+            );
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+  };
+
+  /**
+   * @param {String} type
+   * @param {{expressions: {}, filter: {}, groupBy: String[]}} options
+   * @returns {Promise}
+   */
+  this._aggregate = function (type, options) {
+    options = options || {};
+    return this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          if (!options.expressions) {
+            return reject(new Error('Не указано выражение агрегации!'));
+          }
+          var i;
+          var plan = [];
+          if (options.filter) {
+            plan.push({
+              $match: options.filter
+            });
+          }
+
+          var groupings = null;
+          if (options.groupBy) {
+            groupings = {};
+            for (i = 0; i < options.groupBy.length; i++) {
+              groupings[options.groupBy[i]] = '$' + options.groupBy[i];
+            }
+          }
+
+          var expr = {
+            $group: {
+              _id: groupings
+            }
+          };
+
+          var alias, oper, attr;
+          for (alias in options.expressions) {
+            if (options.expressions.hasOwnProperty(alias)) {
+              for (oper in options.expressions[alias]) {
+                if (options.expressions[alias].hasOwnProperty(oper)) {
+                  attr = options.expressions[alias][oper];
+                  if (oper === 'count') {
+                    expr.$group[alias] = {$sum: 1};
+                  } else if (oper === 'sum' || oper === 'avg' || oper === 'min' || oper === 'max') {
+                    expr.$group[alias] = {};
+                    expr.$group[alias]['$' + oper] = '$' + attr;
+                  }
+                }
+              }
+            }
+          }
+
+          plan.push(expr);
+
+          c.aggregate(plan, function (err, result) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(result);
+          });
         });
       }
     );
