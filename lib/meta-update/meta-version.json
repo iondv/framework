@@ -108,6 +108,24 @@
             "depricatedValue": []
           }
         }
+      },
+      "section": {
+        "descripton": "Набор операций над секциями",
+        "delete": [],
+        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": [],
+        "compositeProperty": {}
+      },
+      "menu": {
+        "descripton": "Набор операций над пунктами меню",
+        "delete": [],
+        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": [],
+        "compositeProperty": {}
       }
     }
   },

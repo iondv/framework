@@ -33,6 +33,7 @@ getListOfAppliactionsMetaFiles(pathToApp)
   .then((metaApp) => {
     // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
     console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
+    console.log(util.inspect(metaApp.navigation['khv-svyaz-info@svyazHK'],  {showHidden: true, depth: 2}));
     console.timeEnd('Конвертация меты закончена за');
   })
   .catch((err)=> {
@@ -68,28 +69,22 @@ function getListOfAppliactionsMetaFiles(folderOfApp) {
  * {Object} metaApp.meta - именованный массив объектов с метой и представлениями классов, имя - класс
  * {Object} metaApp.meta[].cls - класс меты
  * {Object} metaApp.meta[].cls.text - текстовое значение файла класса
- * {Object} metaApp.meta[].cls.obj - распарсенное значение файла класса
  * {Object} metaApp.meta[].cls.fileName- путь к классу
  * {Object} metaApp.meta[].vwCreate - объект представления создания
  * {Object} metaApp.meta[].vwCreate.text - представление создания
- * {Object} metaApp.meta[].vwCreate.obj - представление создания
  * {Object} metaApp.meta[].vwCreate.fileName - представление создания
  * {Object} metaApp.meta[].vwItem - объект представление формы
  * {Object} metaApp.meta[].vwItem.text - представление формы
- * {Object} metaApp.meta[].vwItem.obj - представление формы
  * {Object} metaApp.meta[].vwItem.fileName. - представление формы
  * {Object} metaApp.meta[].vwList - представление списка
  * {Object} metaApp.meta[].vwList.text - представление списка текст
- * {Object} metaApp.meta[].vwList.obj - представление списка объект
  * {Object} metaApp.meta[].vwList.fileName - представление списка имя файла
  * {Object} metaApp.navigation - именованный массив объектос с навигацией, имя - секция
  * {Object} metaApp.navigation[].section - объект секции
  * {Object} metaApp.navigation[].section.text - текстовые файлы навигации
- * {Object} metaApp.navigation[].section.obj - распарсеныые JSON файлы навигации
  * {Object} metaApp.navigation[].section.fileName - путь к файлу секции
  * {Object} metaApp.navigation[].menu - именованный маасив значений меню секции, имя код меню
  * {Object} metaApp.navigation[].menu[].text - текстовое значение файла меню
- * {Object} metaApp.navigation[].menu[].obj - распарсернный файл меню
  * {Object} metaApp.navigation[].menu[].fileName - путь к файлу меню
  */
 function createMetaAppWithMetaFilesList(listFilesInMetadataFolders) {
@@ -396,7 +391,8 @@ function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
  */
 function metaTypeConvert(srcValue, valueNewType, typeParam) {
   let newValue;
-  if (typeof srcValue === valueNewType) {
+  if (typeof srcValue === valueNewType && valueNewType !== 'array' ||
+      Array.isArray(srcValue) && valueNewType === 'array') {
     newValue = srcValue;
   } else if (valueNewType === 'null') { // Для null упрощенная обработка
     newValue = null;
@@ -406,7 +402,7 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
     newValue = Number(valueNewType);
   } else {
     switch (valueNewType) {
-      case 'string': // Нужна или можно упрощенным способом
+      case 'string':
         switch (typeof srcValue) {
           case 'null':
             newValue = '';
@@ -421,33 +417,68 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
           case 'number':
             newValue = String(srcValue);
             break;
-          case 'object': // TODO
-            if (Array.isArray(typeof srcValue)) {
-              ;
+          case 'object':
+            if (typeParam && typeParam.length) { // В typeParam - содержатся индексы массива, которые конвертируются
+              let tempArray = [];
+              if (Array.isArray(srcValue)) {
+                for (let i = 0; i < typeParam.length; i++) {
+                  for (let j = 0; j < srcValue.length; j++) {
+                    if(typeParam[i] === srcValue[j]) {
+                      tempArray.push(srcValue[j]);
+                    }
+                  }
+                }
+              } else { // В параметрах хранятся индексы вложенных объектов
+                for (let i = 0; i < typeParam.length; i++) {
+                  let keyIndex = typeParam[i].split('.');
+                  let resultValue = keyIndex[0];
+                  for (let j = 1; j < keyIndex.length; j++) {
+                    resultValue = resultValue[keyIndex[j]];
+                  }
+                  tempArray.push(resultValue);
+                }
+              }
+              newValue = tempArray.toString();
             } else {
-              ;
+              newValue =  String(srcValue);
             }
             break;
           default:
-            console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
+            console.warn('Не поддерживаемая конвертация из %s в %s', typeof srcValue, valueNewType);
         }
         break;
-      case 'array': // Нужна или можно упрощенным способом
+      case 'array':
         switch (typeof srcValue) {
           case 'null':
             newValue = [];
             break;
-          case 'boolean':
-            newValue = [srcValue]; // TODO param
+          case 'string': // Параметр - разделитель. Возможно лучше перейти на регэксп
+            if (typeParam && typeParam.length) {
+              newValue = srcValue.split(typeParam[0]);
+            } else {
+              newValue = [srcValue];
+            }
             break;
-          case 'number': // TODO
-            newValue = [srcValue]; // TODO param
+          case 'boolean':
+            newValue = [srcValue];
+            break;
+          case 'number':
+            newValue = [srcValue];
             break;
           case 'object': // TODO
-            if (Array.isArray(typeof srcValue)) {
-              ;
+            if (typeParam && typeParam.length) { // В typeParam - содержатся индексы массива, которые конвертируются
+              let tempArray = [];
+              for (let i = 0; i < typeParam.length; i++) {
+                let keyIndex = typeParam[i].split('.');
+                let resultValue = keyIndex[0];
+                for (let j = 1; j < keyIndex.length; j++) {
+                  resultValue = resultValue[keyIndex[j]];
+                }
+                tempArray.push(resultValue);
+              }
+              newValue = tempArray;
             } else {
-              ;
+              newValue =  [srcValue];
             }
             break;
           default:
@@ -455,26 +486,12 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
         }
         break;
       case 'object': // Нужна или можно упрощенным способом
-        switch (typeof srcValue) {
-          case 'null':
-            newValue = {};
-            break;
-          case 'boolean':
-            newValue = {}; // TODO param
-            break;
-          case 'number': // TODO
-            newValue = {}; // TODO param
-            break;
-          case 'object': // TODO
-            if (Array.isArray(typeof srcValue)) {
-              ;
-            } else {
-              ;
-            }
-            break;
-          default:
-            console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
+        if (typeParam && typeParam.length) { // В параметре имя свойства, которому присваивается
+          newValue[typeParam[0]] = srcValue;
+        } else {
+          newValue = {};
         }
+        console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
         break;
       default:
         console.warn('Не поддерживаемый тип конвертации', valueNewType);
@@ -538,11 +555,11 @@ function objectPropertyAction(metaName, metaObject, objectUpdate) {
       // Запрещенные значения
       if (objectUpdate.depricatedValue && objectUpdate.depricatedValue.length) {
         objectUpdate.depricatedValue.forEach((item) => {
-          if (classParam === item.name && (typeof item.value === 'undefined' || item.value === null)) { // Вариант !item.value не работает, т.к. значение может быть 0 или false
-            console.warn('Запрещеноe свойство %s в мете %s. Необходимо обработать вручную', item.name, metaName);
-          } else if (classParam === item.name && metaObject[classParam] === item.value) {
+          if (classParam === item.propertyName && (typeof item.value === 'undefined' || item.value === null)) { // Вариант !item.value не работает, т.к. значение может быть 0 или false
+            console.warn('Запрещеноe свойство %s в мете %s. Необходимо обработать вручную', item.propertyName, metaName);
+          } else if (classParam === item.propertyName && metaObject[classParam] === item.value) {
             console.warn('Запрещеное значение %s свойства %s в мете %s. Необходимо обработать вручную', item.value,
-              item.name, metaName);
+              item.propertyName, metaName);
           }
         });
       }
@@ -601,21 +618,21 @@ function metaObjectUpdate(metaApp, metaVer, objectUpdate) {
     console.info('В версии меты %s, нет данных для обновления объектов. Пропускаем.', metaVer);
   } else {
     if (metaApp.meta) {
-      for (let key in metaApp.meta) {
+      for (let key in metaApp.meta) { // Обновляем мету
         if (metaApp.meta.hasOwnProperty(key)) {
           if (metaApp.meta[key].cls && metaApp.meta[key].vwCreate &&  // Избыточная проверка, т.к. всегда есть эти объекты.
               metaApp.meta[key].vwItem && metaApp.meta[key].vwList) { // Но может не быть текстовых, например есть представление, но нет класса
             if (metaApp.meta[key].cls.text && objectUpdate.class) { // Конвертора для объектов класса
               let textMetaVersion = searchMinVersion(metaApp.meta[key].cls);
               if (compareSemVer(textMetaVersion, metaVer) === -1) {
-                metaApp.meta[key].cls.text = objectUpdateProperty('Класс ' + key, metaApp.meta[key].cls.text, // TODO свойства(!) Переделать в мета-версион на вложенность атрибутов? и проходить их?
+                metaApp.meta[key].cls.text = objectUpdateProperty('Класс ' + key, metaApp.meta[key].cls.text,
                                                                                   objectUpdate.class);
               }
             }
             if (metaApp.meta[key].vwCreate.text && objectUpdate.views) { // Конвертор для объектов представления создания
               let textMetaVersion = searchMinVersion(metaApp.meta[key].vwCreate);
               if (compareSemVer(textMetaVersion, metaVer) === -1) {
-                metaApp.meta[key].vwCreate.text = objectUpdateProperty('Представление создания ' + key, // TODO fields и команды(!)
+                metaApp.meta[key].vwCreate.text = objectUpdateProperty('Представление создания ' + key,
                   metaApp.meta[key].vwCreate.text, objectUpdate.views);
               }
             }
@@ -638,16 +655,36 @@ function metaObjectUpdate(metaApp, metaVer, objectUpdate) {
           }
         }
       }
-    } else if (metaApp.navigation) { // TODO
-      for (let key in metaApp.navigation) {
+    }
+    if (metaApp.navigation) {
+      console.log('####навигация');
+      for (let key in metaApp.navigation) { // Обновляем навигацию
         if (metaApp.navigation.hasOwnProperty(key)) {
+          console.log('####навигация - секция',key);
           if (metaApp.navigation[key].section && metaApp.navigation[key].menu) {
-            ;
+            if (metaApp.navigation[key].section.text && objectUpdate.section) { // Конвертора секций
+              let textMetaVersion = searchMinVersion(metaApp.navigation[key].section);
+              if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                metaApp.navigation[key].section.text = objectUpdateProperty('Секция ' + key,
+                  metaApp.navigation[key].section.text, objectUpdate.section);
+              }
+            }
+            for (let keyMenu in metaApp.navigation[key].menu) { // Конвертора для пунктов меню
+              if (metaApp.navigation[key].menu.hasOwnProperty(keyMenu)) {
+                if (metaApp.navigation[key].menu[keyMenu].text && objectUpdate.menu) {
+                  let textMetaVersion = searchMinVersion(metaApp.navigation[key].menu[keyMenu]);
+                  if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                    metaApp.navigation[key].menu[keyMenu].text = objectUpdateProperty('Меню ' + key,
+                      metaApp.navigation[key].menu[keyMenu].text, objectUpdate.menu);
+
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
-
   }
   return metaApp;
 }
