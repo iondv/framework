@@ -34,8 +34,12 @@
         "descripton": "Набор операций над свойствами класса.",
         "delete": [],
         "deleteDescr": "Свойства класса к удалению. Значения: массив строк с именем свойств объекта",
-        "new": [{"version": ""}, {"metaVersion": "2.0.0"}],
-        "newDescr": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
+        "new": [{"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "newDescr1": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
+        "newDescr2": "по формату  {\"propertyName\": \"\", \"value\":\"\"}",
+        "rename": [{"propertyName": "is_struct", "propertyNewName":"isStruct"}],
+        "renameDescr1": "Свойства класса к переименованию. Значения: массив объектов с именем свойства и новым имененм объекта",
+        "renameDescr2": "по формату {\"propertyName\": \"\", \"propertyNewName\":\"\"}",
         "convertType": [{"propertyName": "", "valueNewType": "", "param": []}],
         "convertTypeDescr": "Список свойств класса к конвертации типов значений, конвертация типов осуществляется на основе параметров для пар конвертации и типовых преобразования JS",
         "convertTypeDescr1": "Значения: массив элементов, с обязательные свойства со строковыми значениями: propertyName - имя параметра, valueNewType - новый тип объекта",
@@ -56,16 +60,41 @@
         "depricatedueValTypeDescr1": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны в виде объекта ",
         "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение"
       },
-      "properties": {
+      "classProperties": {
         "descripton": "Набор операций над свойствами атрибутов. Все действия аналогичны классу",
         "delete": [],
         "deleteDescr": "Аналогично классу",
         "new": [],
         "newDescr": "Аналогично классу",
+        "rename": [],
         "convertType": [],
         "convertTypeDescr": "Аналогично классу",
         "depricatedValue": [{"name": "type", "value": 53}],
         "depricatedueValTypeDescr": "Аналогично классу"
+      },
+      "views": {
+        "descripton": "Набор операций над свойствами представлений",
+        "delete": [],
+        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": []
+      },
+      "viewsFields": {
+        "descripton": "Набор операций над свойствами полями представлений",
+        "delete": [],
+        "new": [],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": []
+      },
+      "viewsCommands": {
+        "descripton": "Набор операций над свойствами полями команд",
+        "delete": [],
+        "new": [],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": []
       }
     }
   },

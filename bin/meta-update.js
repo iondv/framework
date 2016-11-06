@@ -4,8 +4,8 @@
  */
 
 // Уточняем параметры jsHint.
-// maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
-// jshint maxcomplexity: 17, maxstatements: 25
+// maxcomplexity - цикломатическая сложность функций разбора по типам 25 (вложенные свитчи и кейсы), а не 10ть из-за архитектуры и упрощения чтения
+// jshint maxcomplexity: 25, maxstatements: 25
 
 // TODO перед конвертацией связи, СУПа прогнать генерацию представлений из утилиты Сергея Клепикова???
 
@@ -394,7 +394,7 @@ function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
  * @return newValue - сконверитрованное значение
 
  */
-function metaTypeConvert (srcValue, valueNewType, typeParam) {
+function metaTypeConvert(srcValue, valueNewType, typeParam) {
   let newValue;
   if (typeof srcValue === valueNewType) {
     newValue = srcValue;
@@ -405,79 +405,79 @@ function metaTypeConvert (srcValue, valueNewType, typeParam) {
   } else if (valueNewType === 'number') { // Для чисел упрощенная обработка
     newValue = Number(valueNewType);
   } else {
-    switch (typeof srcValue) {
-      case 'null':
-        switch (valueNewType) {
-          case 'string':
+    switch (valueNewType) {
+      case 'string': // Нужна или можно упрощенным способом
+        switch (typeof srcValue) {
+          case 'null':
             newValue = '';
             break;
-          case 'array':
-            newValue = [];
-            break;
-          case 'object':
-            newValue = {};
-            break;
-          default:
-            console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
-        }
-        break;
-      case 'boolean':
-        switch (valueNewType) {
-          case 'string':
+          case 'boolean':
             if (typeParam && typeParam.length !== 2) {
               newValue = srcValue ? typeParam[0] : typeParam[1];
             } else {
               newValue =  String(srcValue);
             }
             break;
-          case 'array':
-            newValue = [srcValue]; // TODO param
+          case 'number':
+            newValue = String(srcValue);
             break;
-          case 'object':
-            newValue = {}; // TODO param
-            break;
-          default:
-            console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
-        }
-        break;
-      case 'number':
-        switch (valueNewType) {
-          case 'string':
-            newValue =  String(srcValue);
-            break;
-          case 'array':
-            newValue = [srcValue]; // TODO param
-            break;
-          case 'object':
-            newValue = {}; // TODO param
+          case 'object': // TODO
+            if (Array.isArray(typeof srcValue)) {
+              ;
+            } else {
+              ;
+            }
             break;
           default:
             console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
         }
         break;
-      case 'string':
-        switch (valueNewType) {
-          case 'object':
-            newValue = {}; // TODO param
+      case 'array': // Нужна или можно упрощенным способом
+        switch (typeof srcValue) {
+          case 'null':
+            newValue = [];
             break;
-          case 'array':
+          case 'boolean':
             newValue = [srcValue]; // TODO param
+            break;
+          case 'number': // TODO
+            newValue = [srcValue]; // TODO param
+            break;
+          case 'object': // TODO
+            if (Array.isArray(typeof srcValue)) {
+              ;
+            } else {
+              ;
+            }
             break;
           default:
             console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
         }
         break;
-      case 'object':
-        if (Array.isArray(typeof srcValue)) {
-          ;
-
-        } else {
-          ;
+      case 'object': // Нужна или можно упрощенным способом
+        switch (typeof srcValue) {
+          case 'null':
+            newValue = {};
+            break;
+          case 'boolean':
+            newValue = {}; // TODO param
+            break;
+          case 'number': // TODO
+            newValue = {}; // TODO param
+            break;
+          case 'object': // TODO
+            if (Array.isArray(typeof srcValue)) {
+              ;
+            } else {
+              ;
+            }
+            break;
+          default:
+            console.warn('Не поддерживаемый конвертация из %s в %s', typeof srcValue, valueNewType);
         }
         break;
       default:
         console.warn('Не поддерживаемый тип конвертации', valueNewType);
-
     }
   }
   return newValue;
@@ -490,7 +490,7 @@ function metaTypeConvert (srcValue, valueNewType, typeParam) {
  * @param {Object} objectUpdate - свойства обновления
  * @return {String} textMetaObject - текстовое значение объекта
  */
-function objectUpdateProperty (metaName, textMetaObject, objectUpdate) {
+function objectUpdateProperty(metaName, textMetaObject, objectUpdate) {
   let metaObject;
   try {
     metaObject = JSON.parse(textMetaObject);
@@ -503,6 +503,15 @@ function objectUpdateProperty (metaName, textMetaObject, objectUpdate) {
       if (objectUpdate.delete && objectUpdate.delete.length) {
         objectUpdate.delete.forEach((item) => {
           if (classParam === item) {
+            delete metaObject[classParam];
+          }
+        });
+      }
+      // Переименование атрибутов
+      if (objectUpdate.rename && objectUpdate.rename.length) {
+        objectUpdate.rename.forEach((item) => {
+          if (classParam === item.propertyName && item.propertyNewName) {
+            metaObject[item.propertyNewName] = metaObject[classParam];
             delete metaObject[classParam];
           }
         });
@@ -531,10 +540,10 @@ function objectUpdateProperty (metaName, textMetaObject, objectUpdate) {
   // Добавление атрибутов
   if (objectUpdate.new && objectUpdate.new.length) {
     objectUpdate.new.forEach((item) => {
-      for (let newKey in item) {
-        if (item.hasOwnProperty(newKey)) {
-          metaObject[newKey] = item[newKey];
-        }
+      if (item.propertyName) {
+        metaObject[item.propertyName] = typeof item.value === 'undefined' ? null : item.value;
+      } else {
+        console.warn('Отсутствует имя нового свойства propertyName', item);
       }
     });
   }
@@ -571,10 +580,31 @@ function metaObjectUpdate(metaApp, metaVer, objectUpdate) {
             if (metaApp.meta[key].cls.text && objectUpdate.class) { // Конвертора для объектов класса
               let textMetaVersion = searchMinVersion(metaApp.meta[key].cls);
               if (compareSemVer(textMetaVersion, metaVer) === -1) {
-                metaApp.meta[key].cls.text = objectUpdateProperty('Класс ' + key, metaApp.meta[key].cls.text,
+                metaApp.meta[key].cls.text = objectUpdateProperty('Класс ' + key, metaApp.meta[key].cls.text, // TODO свойства(!) Переделать в мета-версион на вложенность атрибутов? и проходить их?
                                                                                   objectUpdate.class);
               }
-            } // TODO представления
+            }
+            if (metaApp.meta[key].vwCreate.text && objectUpdate.views) { // Конвертор для объектов представления создания
+              let textMetaVersion = searchMinVersion(metaApp.meta[key].vwCreate);
+              if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                metaApp.meta[key].vwCreate.text = objectUpdateProperty('Представление создания ' + key, // TODO fields и команды(!)
+                  metaApp.meta[key].vwCreate.text, objectUpdate.views);
+              }
+            }
+            if (metaApp.meta[key].vwItem.text && objectUpdate.views) { // Конвертор для объектов представления создания
+              let textMetaVersion = searchMinVersion(metaApp.meta[key].vwItem);
+              if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                metaApp.meta[key].vwItem.text = objectUpdateProperty('Представление редактирования ' + key,
+                  metaApp.meta[key].vwItem.text, objectUpdate.views);
+              }
+            }
+            if (metaApp.meta[key].vwList.text && objectUpdate.views) { // Конвертор для объектов представления создания
+              let textMetaVersion = searchMinVersion(metaApp.meta[key].vwList);
+              if (compareSemVer(textMetaVersion, metaVer) === -1) {
+                metaApp.meta[key].vwList.text = objectUpdateProperty('Представление списка ' + key,
+                  metaApp.meta[key].vwList.text, objectUpdate.views);
+              }
+            }
           } else {
             console.log('Некорректная структура в сформированной мете', key, '\n', metaApp.meta[key]);
           }
