@@ -58,19 +58,17 @@
         "convertTypeDescr14": "пример param: [\"index.key\"], если массив пустой, преобразуется весь объект по правилам преобразования типов. Если новый тип тоже объект значения свойства присваивается",
         "depricatedValue": [],
         "depricatedueValTypeDescr1": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны в виде объекта ",
-        "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение"
-      },
-      "classProperties": {
-        "descripton": "Набор операций над свойствами атрибутов. Все действия аналогичны классу",
-        "delete": [],
-        "deleteDescr": "Аналогично классу",
-        "new": [],
-        "newDescr": "Аналогично классу",
-        "rename": [],
-        "convertType": [],
-        "convertTypeDescr": "Аналогично классу",
-        "depricatedValue": [{"name": "type", "value": 53}],
-        "depricatedueValTypeDescr": "Аналогично классу"
+        "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение",
+        "compositeProperty": {
+          "properties": {
+            "delete": [],
+            "new": [],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": [{"name": "type", "value": 53}]
+          }},
+        "compositePropertyDescr1": "Составные свойства - для которых применимы те же действия, что и для свойств объекта",
+        "compositePropertyDescr2": "Автоматически определяется как массив объектов или как объект. Допустимов вложение композитных свойств"
       },
       "views": {
         "descripton": "Набор операций над свойствами представлений",
@@ -78,23 +76,29 @@
         "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
         "rename": [],
         "convertType": [],
-        "depricatedValue": []
-      },
-      "viewsFields": {
-        "descripton": "Набор операций над свойствами полями представлений",
-        "delete": [],
-        "new": [],
-        "rename": [],
-        "convertType": [],
-        "depricatedValue": []
-      },
-      "viewsCommands": {
-        "descripton": "Набор операций над свойствами полями команд",
-        "delete": [],
-        "new": [],
-        "rename": [],
-        "convertType": [],
-        "depricatedValue": []
+        "depricatedValue": [],
+        "compositeProperty": {
+          "tabs": {
+            "compositeProperty": {
+              "fullFields": {
+                "descripton": "Набор операций над свойствами полями представлений",
+                "delete": [],
+                "new": [],
+                "rename": [],
+                "convertType": [],
+                "depricatedValue": []
+              }
+            }
+          },
+          "commands": {
+            "descripton": "Набор операций над свойствами полями команд",
+            "delete": [],
+            "new": [],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": []
+          }
+        }
       }
     }
   },

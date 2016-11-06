@@ -484,7 +484,7 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
 }
 
 /**
- * Функционя обновления свойств объекта
+ * Функционя распарсивания и обновления свойств объекта
  * @param {String} metaName - имя класса и тип
  * @param {String} textMetaObject - обновляемый объект в текстовом формате
  * @param {Object} objectUpdate - свойства обновления
@@ -497,6 +497,25 @@ function objectUpdateProperty(metaName, textMetaObject, objectUpdate) {
   } catch (e) {
     console.error('Ошибка конвертации данных меты', textMetaObject + '\n' + e);
   }
+  metaObject = objectPropertyAction(metaName, metaObject, objectUpdate);
+
+  try {
+    textMetaObject = JSON.stringify(metaObject, null, 2);
+  } catch (e) {
+    console.error('Ошибка конвертации данных меты в текст', metaObject + '\n' + e);
+  }
+  return textMetaObject;
+}
+
+/**
+ * Функция обновления свойст объекта по заданным действиям
+ * @param {String} metaName - имя класса и тип
+ * @param {Object}metaObject - обновляемый фрагмент объекта
+ * @param {Object} objectUpdate - свойства обновления
+ * @returns {Object} metaObject - обновленный фрагмент объекта
+ */
+function objectPropertyAction(metaName, metaObject, objectUpdate) {
+  // Обновляем свойства самого объекта
   for (let classParam in metaObject) {
     if (metaObject.hasOwnProperty(classParam)) {
       // Удаление атрибутов
@@ -547,13 +566,25 @@ function objectUpdateProperty(metaName, textMetaObject, objectUpdate) {
       }
     });
   }
+  // CHECKME - реализовано, но не проверено - будет ли действовать на вложенные составные свойства
+  if (objectUpdate.compositeProperty && typeof objectUpdate.compositeProperty === 'object') {
+    console.log('## Обрабатываем композитные ключи');
+    for (let compositeKey in objectUpdate.compositeProperty) {
+      if (objectUpdate.compositeProperty.hasOwnProperty(compositeKey) && typeof metaObject[compositeKey] === 'object') {
+        if (Array.isArray(metaObject[compositeKey])) {
+          console.log('### Разбираем композитные свойства массива', compositeKey);
+          for (let i = 0; i < metaObject[compositeKey].length; i++) {
+            metaObject[compositeKey][i] = objectPropertyAction(metaName, metaObject[compositeKey][i],objectUpdate.compositeProperty) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
 
-  try {
-    textMetaObject = JSON.stringify(metaObject, null, 2);
-  } catch (e) {
-    console.error('Ошибка конвертации данных меты в текст', metaObject + '\n' + e);
+          }
+        } else {
+          console.log('### Разбираем композитные свойства', compositeKey);
+          metaObject[compositeKey] = objectPropertyAction(metaName, metaObject[compositeKey],objectUpdate.compositeProperty) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
+        }
+      }
+    }
   }
-  return textMetaObject;
+  return metaObject;
 }
 
 /**
