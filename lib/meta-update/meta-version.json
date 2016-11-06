@@ -37,7 +37,7 @@
         "new": [{"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
         "newDescr1": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
         "newDescr2": "по формату  {\"propertyName\": \"\", \"value\":\"\"}",
-        "rename": [{"propertyName": "is_struct", "propertyNewName":"isStruct"}],
+        "rename": [],
         "renameDescr1": "Свойства класса к переименованию. Значения: массив объектов с именем свойства и новым имененм объекта",
         "renameDescr2": "по формату {\"propertyName\": \"\", \"propertyNewName\":\"\"}",
         "convertType": [{"propertyName": "", "valueNewType": "", "param": []}],
@@ -65,7 +65,7 @@
             "new": [],
             "rename": [],
             "convertType": [],
-            "depricatedValue": [{"name": "type", "value": 53}]
+            "depricatedValue": [{"propertyName": "type", "value": 53}]
           }},
         "compositePropertyDescr1": "Составные свойства - для которых применимы те же действия, что и для свойств объекта",
         "compositePropertyDescr2": "Автоматически определяется как массив объектов или как объект. Допустимов вложение композитных свойств"
@@ -79,9 +79,10 @@
         "depricatedValue": [],
         "compositeProperty": {
           "tabs": {
+            "rename": [],
             "compositeProperty": {
               "fullFields": {
-                "descripton": "Набор операций над свойствами полями представлений",
+                "descripton": "Набор операций над свойствами полей представления",
                 "delete": [],
                 "new": [],
                 "rename": [],
@@ -89,6 +90,14 @@
                 "depricatedValue": []
               }
             }
+          },
+          "columns": {
+            "descripton": "Набор операций над свойствами представления столбцов",
+            "delete": [],
+            "new": [],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": []
           },
           "commands": {
             "descripton": "Набор операций над свойствами полями команд",

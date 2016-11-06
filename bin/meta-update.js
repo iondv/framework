@@ -566,20 +566,17 @@ function objectPropertyAction(metaName, metaObject, objectUpdate) {
       }
     });
   }
-  // CHECKME - реализовано, но не проверено - будет ли действовать на вложенные составные свойства
+  // Обновление составных свойст объекта метаданных
   if (objectUpdate.compositeProperty && typeof objectUpdate.compositeProperty === 'object') {
-    console.log('## Обрабатываем композитные ключи');
     for (let compositeKey in objectUpdate.compositeProperty) {
       if (objectUpdate.compositeProperty.hasOwnProperty(compositeKey) && typeof metaObject[compositeKey] === 'object') {
         if (Array.isArray(metaObject[compositeKey])) {
-          console.log('### Разбираем композитные свойства массива', compositeKey);
           for (let i = 0; i < metaObject[compositeKey].length; i++) {
-            metaObject[compositeKey][i] = objectPropertyAction(metaName, metaObject[compositeKey][i],objectUpdate.compositeProperty) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
+            metaObject[compositeKey][i] = objectPropertyAction(metaName, metaObject[compositeKey][i], objectUpdate.compositeProperty[compositeKey]) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
 
           }
         } else {
-          console.log('### Разбираем композитные свойства', compositeKey);
-          metaObject[compositeKey] = objectPropertyAction(metaName, metaObject[compositeKey],objectUpdate.compositeProperty) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
+          metaObject[compositeKey] = objectPropertyAction(metaName, metaObject[compositeKey], objectUpdate.compositeProperty[compositeKey]) // TODO Нужно вынести за конвертацию в JSON  в отдельную функцию
         }
       }
     }
