@@ -452,7 +452,7 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
           case 'null':
             newValue = [];
             break;
-          case 'string': // Параметр - разделитель. Возможно лучше перейти на регэксп
+          case 'string': // Параметр - разделитель. TODO Возможно лучше перейти на регэксп
             if (typeParam && typeParam.length) {
               newValue = srcValue.split(typeParam[0]);
             } else {
@@ -465,7 +465,7 @@ function metaTypeConvert(srcValue, valueNewType, typeParam) {
           case 'number':
             newValue = [srcValue];
             break;
-          case 'object': // TODO
+          case 'object':
             if (typeParam && typeParam.length) { // В typeParam - содержатся индексы массива, которые конвертируются
               let tempArray = [];
               for (let i = 0; i < typeParam.length; i++) {
@@ -657,10 +657,8 @@ function metaObjectUpdate(metaApp, metaVer, objectUpdate) {
       }
     }
     if (metaApp.navigation) {
-      console.log('####навигация');
       for (let key in metaApp.navigation) { // Обновляем навигацию
         if (metaApp.navigation.hasOwnProperty(key)) {
-          console.log('####навигация - секция',key);
           if (metaApp.navigation[key].section && metaApp.navigation[key].menu) {
             if (metaApp.navigation[key].section.text && objectUpdate.section) { // Конвертора секций
               let textMetaVersion = searchMinVersion(metaApp.navigation[key].section);
