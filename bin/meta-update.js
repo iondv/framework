@@ -20,6 +20,9 @@ var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
 
+let searchMinVersion = require('lib/meta-update/meta-utils').searchMinVersion;
+let compareSemVer = require('lib/meta-update/meta-utils').compareSemVer;
+
 const pathToApp = path.join(__dirname, '..', 'applications'); // При запуске из bin
 
 console.log('Путь к приложениям', pathToApp);
@@ -29,7 +32,7 @@ getListOfAppliactionsMetaFiles(pathToApp)
   .then(createMetaAppWithMetaFilesList)
   .then(readMetaFiles)
   .then(convertMetaVersion)
-  //.then(writeMetaFiles)
+  .then(writeMetaFiles)
   .then((metaApp) => {
     // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
     console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
@@ -150,7 +153,7 @@ function createMetaAppWithMetaFilesList(listFilesInMetadataFolders) {
 
       resolve(metaApp);
     } catch (e) {
-      console.error('Ошибка выделения списка файлов меты в прилжоениях ', e);
+      console.error('Ошибка выделения списка файлов меты в прилжоениях ', e, '\n' + e.stack);
       reject(e);
     }
   });
@@ -216,64 +219,6 @@ function bubbleSortSemVer(arr) {
   return arr;    // На выходе сортированный по возрастанию массив A.
 }
 
-/**
- * Функция сравнения версий в формате semVer
- * @param {String} semver1 - версия в формате semver
- * @param {String} semver2 - версия в формате semver
- * @return {Number} - 0 равны; -1 semver1 меньше semver2; 1 semver1 больше semver2
- */
-function compareSemVer(semver1, semver2) {
-  if (semver1 === semver2) {
-    return 0;
-  } else {
-    const arrSemVer1 = semver1.split('.');
-    const arrSemVer2 = semver2.split('.');
-    if (arrSemVer1[0] < arrSemVer2[0] ||
-        arrSemVer1[0] === arrSemVer2[0] && arrSemVer1[1] < arrSemVer2[1] ||
-        arrSemVer1[0] === arrSemVer2[0] && arrSemVer1[1] === arrSemVer2[1] && arrSemVer1[2] < arrSemVer2[2]) {
-      return -1;
-    } else {
-      return 1;
-    }
-  }
-}
-
-/**
- * Функция поиска минимального значения версии
- * @param {Object} structureOfMeta - структура данных в формате metaApp
- * @returns {String} - минимальное значение версии, если в каком-то объекте версий не было найдено, то вернет '0.0.0'
- */
-function searchMinVersion(structureOfMeta) {
-  let minMetaVersion;
-  for (let key in structureOfMeta) {
-    if (structureOfMeta.hasOwnProperty(key)) {
-      if (key === 'text') {
-        let result = structureOfMeta.text.match(/\"metaVersion\"(|\s):(|\s)\"\d*\.\d*\.\d*\"/);
-        if (result === null) {
-          minMetaVersion = '0.0.0'; // Нет версии, прекращаем поиск
-          // 4debug console.info('В файле %s, нет версии меты. Принимаем за мин. версию %s', structureOfMeta.fileName, minMetaVersion);
-          break;
-        }
-        let version = result[0].match(/\d*\.\d*\.\d*/)[0];
-        if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
-          minMetaVersion = version;
-        }
-      } else if (key !== 'fileName' && key !== 'obj') {
-        let version = searchMinVersion(structureOfMeta[key]);
-        if (version) { // Если версия не определена - в ветке metaApp не было никаких ключей
-          if (version === '0.0.0') {
-            minMetaVersion = version;
-            break;
-          } else if (!minMetaVersion || compareSemVer(minMetaVersion, version) === 1) {
-            minMetaVersion = version;
-          }
-        }
-      }
-    }
-  }
-  return minMetaVersion;
-}
-
 /*
  * Функция подготовки структуры конвезапуска конвертаций меты по версиям
  * @param {Object} metaApp - объект метаданных приложения
@@ -321,7 +266,7 @@ function convertMetaVersion(metaApp) {
       }
       console.info('Пропущены версии:', skipedVersionList.toString(), '\nПорядок обновления:', versionList.toString());
     } catch (e) {
-      console.error('Ошибка подготовки версий меты\n' + e);
+      console.error('Ошибка подготовки версий меты\n' + e + '\n' + e.stack);
       reject(e);
     }
     try {
@@ -334,7 +279,7 @@ function convertMetaVersion(metaApp) {
         }
       });
     } catch (e) {
-      console.error('Ошибка конвертации меты\n' + e);
+      console.error('Ошибка конвертации меты\n' + e + '\n' + e.stack);
       reject(e);
     }
     resolve(metaApp);
@@ -369,7 +314,7 @@ function metaTextUpdate(structureOfMeta, metaVer, textUpdate) {
                 });
               }
             } catch (e) {
-              console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e);
+              console.error('Ошибка конвертации данных меты', structureOfMeta.fileName + '\n' + e + '\n' + e.stack);
             }
           }
         } else if (key !== 'fileName' && key !== 'obj') {
@@ -512,14 +457,14 @@ function objectUpdateProperty(metaName, textMetaObject, objectUpdate) {
   try {
     metaObject = JSON.parse(textMetaObject);
   } catch (e) {
-    console.error('Ошибка конвертации данных меты', textMetaObject + '\n' + e);
+    console.error('Ошибка конвертации данных меты', textMetaObject + '\n' + e + '\n' + e.stack);
   }
   metaObject = objectPropertyAction(metaName, metaObject, objectUpdate);
 
   try {
     textMetaObject = JSON.stringify(metaObject, null, 2);
   } catch (e) {
-    console.error('Ошибка конвертации данных меты в текст', metaObject + '\n' + e);
+    console.error('Ошибка конвертации данных меты в текст', metaObject + '\n' + e + '\n' + e.stack);
   }
   return textMetaObject;
 }
@@ -698,10 +643,11 @@ function searchFileNameAndWrite(structureOfMeta) {
       if (key === 'fileName') {
         try {
           if (structureOfMeta.text) {
-            let pathParsing = path.parse(structureOfMeta.fileName); // Вытаскиваем дирректорию в пути
+/*            let pathParsing = path.parse(structureOfMeta.fileName); // Вытаскиваем дирректорию в пути
             let metaPathFolder = pathParsing.dir.slice(pathToApp.length); // Обрезаем общие пути в метаданных
             let name = path.join('c:\\temp\\test', metaPathFolder, pathParsing.base + '.0');
-            fs.writeFileSync(name, structureOfMeta.text, 'utf8');
+            fs.writeFileSync(name, structureOfMeta.text, 'utf8');*/
+            fs.writeFileSync(structureOfMeta.fileName, structureOfMeta.text, 'utf8');
           }
         } catch (e) {
           throw e;
@@ -723,7 +669,7 @@ function writeMetaFiles(metaApp) {
     try {
       searchFileNameAndWrite(metaApp);
     } catch (e) {
-      console.error('Ошибка записи файла\n' + e);
+      console.error('Ошибка записи файла\n' + e + '\n' + e.stack);
       reject(e);
     }
     resolve(metaApp);
