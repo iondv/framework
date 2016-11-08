@@ -333,53 +333,54 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
-  function produceMatchObject(find, exists) { // jshint -W074
-    var matchObj;
+  function produceMatchObject(find, exists) {
+    var result, tmp;
     if (Array.isArray(find)) {
-      var array = null;
+      result = [];
       for (var i = 0; i < find.length; i++) {
-        matchObj = produceMatchObject(find[i], exists);
-        exists = matchObj.exists;
-        if (matchObj.find) {
-          if (!array) {
-            array = [];
-          }
-          array.push(matchObj.find);
+        tmp = produceMatchObject(find[i], exists);
+        if (tmp) {
+          result.push(tmp);
         }
       }
-      return {find: array, exists: exists};
+      return result.length ? result : null;
     } else if (typeof find === 'object') {
-      var match = null;
+      result = null;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '_exists') {
-            exists.push(find[name]);
+          if (name === '$dataExist') {
+            tmp = {
+              from: find[name].table,
+              localField: '',
+              foreignField: ''
+            };
+            tmp.as = '_existance_check_' + exists.length;
+            exists.push({$lookup: tmp});
           } else {
-            matchObj = produceMatchObject(find[name], exists);
-            exists = matchObj.exists;
-            if (matchObj.find) {
-              if (!match) {
-                match = {};
+            tmp = produceMatchObject(find[name], exists);
+            if (tmp) {
+              if (!result) {
+                result = {};
               }
-              match[name] = matchObj.find;
+              result[name] = tmp;
             }
           }
         }
       }
-      return {find: match, exists: exists};
+      return result;
     }
-    return {find: find, exists: exists};
+    return find;
   }
 
   function checkAggregation(options) {
     if (options.filter) {
       var exists = [];
-      var obj = produceMatchObject(options.filter, exists);
-      if (obj.exists.length) {
+      var match = produceMatchObject(options.filter, exists);
+      if (exists.length) {
         var result = [];
-        result.push({$match: obj.find});
-        for (var i = 0; i < obj.exists.length; i++) {
-          result = result.concat(obj.exists[i].stages);
+        result.push({$match: match});
+        for (var i = 0; i < exists.length; i++) {
+          result = result.concat(exists[i].stages);
         }
         if (options.sort) {
           result.push({$sort: options.sort});
@@ -402,27 +403,52 @@ function MongoDs(config) {
     return false;
   }
 
-  /**
-   * @param {String} type
-   * @param {Array} stages
-   * @returns {Promise}
-   */
-  function Aggregate(type, stages) {
-    return this.getCollection(type).then(
-      function (c) {
-        return new Promise(function (resolve, reject) {
-          if (!Array.isArray(stages)) {
-            stages = [stages];
+  function fetch(c, options, aggregate, resolve, reject) {
+    var r;
+    if (aggregate) {
+      r = c.aggregate(aggregate, {}, function (err, data) {
+        if (err) {
+          return reject(err);
+        }
+        var results = [];
+        if (data.length) {
+          for (var i = 0; i < data.length; i++) {
+            results.push(data[i].data);
           }
-          c.aggregate(stages, {}, function (err,data) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(data);
-          });
-        });
+        }
+        if (options.countTotal) {
+          results.total = data.length ? data[0].count : 0;
+        }
+        resolve(results, options.countTotal ? (data.length ? data[0].count : 0) : null);
+      });
+    } else {
+      r = c.find(options.filter || {});
+
+      if (options.sort) {
+        r = r.sort(options.sort);
       }
-    );
+
+      if (options.offset) {
+        r = r.skip(options.offset);
+      }
+
+      if (options.count) {
+        r = r.limit(options.count);
+      }
+
+      if (options.countTotal) {
+        r.count(false, function (err, amount) {
+          if (err) {
+            r.close();
+            return reject(err);
+          }
+          resolve(r, amount);
+        });
+      } else {
+        resolve(r);
+      }
+    }
+
   }
 
   this._fetch = function (type, options) {
@@ -430,65 +456,28 @@ function MongoDs(config) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          var r;
-          var aggregate = checkAggregation(options);
-
-          function work(amount) {
-            r.toArray(function (err, docs) {
-              r.close();
-              if (err) {
-                return reject(err);
-              }
-              if (amount !== null) {
-                docs.total = amount;
-              }
-              resolve(docs);
-            });
-          }
-
-          if (options.filter && aggregate) {
-            r = c.aggregate(aggregate, {}, function (err,data) {
-              if (err) {
-                return reject(err);
-              }
-              var results = [];
-              if (data.length) {
-                for (var i = 0; i < data.length; i++) {
-                  results.push(data[i].data);
+          fetch(c, options, checkAggregation(options),
+            function (r, amount) {
+              if (Array.isArray(r)) {
+                if (amount !== null) {
+                  r.total = amount;
                 }
-              }
-              if (options.countTotal) {
-                results.total = data.length ? data[0].count : 0;
-              }
-              resolve(results);
-            });
-          } else {
-            r = c.find(options.filter || {});
-
-            if (options.sort) {
-              r = r.sort(options.sort);
-            }
-
-            if (options.offset) {
-              r = r.skip(options.offset);
-            }
-
-            if (options.count) {
-              r = r.limit(options.count);
-            }
-
-            if (options.countTotal) {
-              r.count(false, function (err, amount) {
-                if (err) {
+                resolve(r);
+              } else {
+                r.toArray(function (err, docs) {
                   r.close();
-                  return reject(err);
-                }
-                work(amount);
-              });
-            } else {
-              work(null);
-            }
-          }
+                  if (err) {
+                    return reject(err);
+                  }
+                  if (amount !== null) {
+                    docs.total = amount;
+                  }
+                  resolve(docs);
+                });
+              }
+            },
+            reject
+          );
         });
       }
     );
@@ -506,30 +495,24 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           try {
-            var r = c.find(options.filter || {});
-
-            if (options.sort) {
-              r = r.sort(options.sort);
-            }
-
-            if (options.offset) {
-              r = r.skip(options.offset);
-            }
-
-            if (options.count) {
-              r = r.limit(options.count);
-            }
-
-            r.batchSize(options.batchSize || 1);
-            r.forEach(
-              cb,
-              function (err) {
-                r.close();
-                if (err) {
-                  return reject(err);
+            fetch(c, options, checkAggregation(options),
+              function (r, amount) {
+                if (Array.isArray(r)) {
+                  r.forEach(cb);
+                } else {
+                  r.batchSize(options.batchSize || 1);
+                  r.forEach(
+                    cb,
+                    function (err) {
+                      r.close();
+                      if (err) {
+                        return reject(err);
+                      }
+                      resolve();
+                    }
+                  );
                 }
-                resolve();
-              }
+              }, reject
             );
           } catch (err) {
             reject(err);

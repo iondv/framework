@@ -366,7 +366,7 @@ gulp.task('setup', function (done) {
 
   function finish(err) {
     if (!scope) {
-     return done(err);
+      return done(err);
     }
     scope.dataSources.disconnect().then(function () {
       done(err);

@@ -555,6 +555,39 @@ function IonDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
+   * @param {{type: Number}} pm,
+   * @param {{}} filter
+   * @param {String} nm
+   * @param {Array} fetchers
+   * @param {Array} containCheckers
+   */
+  function prepareContains(cm, pm, filter, nm, fetchers, containCheckers) {
+    var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
+    var f, kp;
+    var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
+    if (pm.backRef) {
+      f = {};
+      f[pm.backRef] = '$' + (pm.binding ? pm.binding : cm.getKeyProperties()[0]);
+      tmp = {$and: [tmp, f]};
+    } else {
+      kp = colMeta.getKeyProperties();
+      if (kp.length > 1) {
+        throw new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!');
+      }
+      f = {};
+      f[kp[0]] = {$in: '$' + nm};
+      tmp = {$and: [tmp, f]};
+    }
+    containCheckers.push({
+      $dataExist: {
+        table: tn(colMeta),
+        filter: tmp
+      }
+    });
+  }
+
+  /**
+   * @param {ClassMeta} cm
    * @param {{}} filter
    * @param {Array} fetchers
    * @param {{}} [parent]
@@ -562,7 +595,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part) {
-    var i, knm, keys, pm, tmp, result, containCheckers, colMeta;
+    var i, knm, keys, pm, tmp, result, containCheckers, colMeta, f;
     if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
@@ -577,18 +610,9 @@ function IonDataRepository(options) {
           if ((pm = cm.getPropertyMeta(nm)) !== null) {
             if (pm.type === PropertyTypes.COLLECTION) {
               for (knm in filter[nm]) {
-                if (filter[nm].hasOwnProperty(knm)) {
-                  if (knm === '$contains') {
-                    colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
-                    tmp = prepareFilterOption(colMeta, filter[nm][knm], fetchers, filter, nm);
-                    containCheckers.push({
-                      $exists: {
-                        className: colMeta.getCanonicalName(),
-                        filter: tmp
-                      }
-                    });
-                    break;
-                  }
+                if (filter[nm].hasOwnProperty(knm) && knm === '$contains') {
+                  prepareContains(cm, pm, filter, nm, fetchers, containCheckers);
+                  break;
                 }
               }
             }
@@ -613,8 +637,10 @@ function IonDataRepository(options) {
 
       if (containCheckers.length) {
         tmp = clone(result);
-        result.$and = [tmp];
-
+        result = {
+          $and: [result]
+        };
+        Array.prototype.push.apply(result.$and, containCheckers);
       }
 
       return result;
