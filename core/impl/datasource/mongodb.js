@@ -402,6 +402,29 @@ function MongoDs(config) {
     return false;
   }
 
+  /**
+   * @param {String} type
+   * @param {Array} stages
+   * @returns {Promise}
+   */
+  function Aggregate(type, stages) {
+    return this.getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          if (!Array.isArray(stages)) {
+            stages = [stages];
+          }
+          c.aggregate(stages, {}, function (err,data) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(data);
+          });
+        });
+      }
+    );
+  }
+
   this._fetch = function (type, options) {
     options = options || {};
     return this.getCollection(type).then(
@@ -690,29 +713,6 @@ function MongoDs(config) {
       }
     }
     return new Promise(function (resolve) { resolve(); });
-  };
-
-  /**
-   * @param {String} type
-   * @param {Array} stages
-   * @returns {Promise}
-   */
-  this._aggregate = function (type, stages) {
-    return this.getCollection(type).then(
-      function (c) {
-        return new Promise(function (resolve, reject) {
-          if (!Array.isArray(stages)) {
-            stages = [stages];
-          }
-          c.aggregate(stages, {}, function (err,data) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(data);
-          });
-        });
-      }
-    );
   };
 }
 

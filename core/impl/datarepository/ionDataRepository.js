@@ -13,6 +13,7 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
+const clone = require('clone');
 
 /* jshint maxstatements: 100, maxcomplexity: 100 */
 /**
@@ -508,121 +509,90 @@ function IonDataRepository(options) {
     });
   }
 
-  function postAggregateFilter(aggr, filter) {
-    var result, i, nm, value;
-    if (filter && Array.isArray(filter)) {
-      result = [];
-      for (i = 0; i < filter.length; i++) {
-        result.push(postAggregateFilter(aggr, filter[i]));
-      }
-      return result;
-    } else if (filter && typeof filter === 'object') {
-      result = {};
-      for (nm in filter) {
-        if (filter.hasOwnProperty(nm)) {
-          if (['_min','_max','_avg','_sum','_count'].indexOf(nm) > -1) {
-            try {
-              value = aggr[filter[nm].tn][filter[nm].property];
-              return value;
-            } catch (err) {
-              throw new Error('неправильный condition');
-            }
-          } else {
-            result[nm] = postAggregateFilter(aggr, filter[nm]);
-          }
-        }
-      }
-      return result;
-    } else {
-      return filter;
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} context
+   * @param {String} attr
+   * @param {String} operation
+   * @param {{className: String, collectionName: String, property: String, filter: {}}} options
+   * @param {Array} fetchers
+   */
+  function prepareAgregOperation(cm, context, attr, operation, options, fetchers) {
+    var cn;
+    if (options.className) {
+      cn = options.className;
+    } else if (options.collectionName) {
+      cn = _this.meta.getMeta(cm.getPropertyMeta(options.collectionName), null, cm.getNamespace()).
+      getCanonicalName();
     }
-  }
 
-  function preAggregate(aggregations, filter) {
-    return new Promise(function (resolve, reject) {
-      var promises = [];
-      var agResults = {};
-      for (var tn in aggregations) {
-        if (aggregations.hasOwnProperty(tn)) {
-          promises.push((function (type) { // jshint ignore:line
-            return new Promise(function (rs,rj) {
-              if (aggregations[type].match) {
-                var promises2 = [];
-                for (var property in aggregations[type].match) {
-                  if (aggregations[type].match.hasOwnProperty(property)) {
-                    if (aggregations[type].group[property]) {
-                      promises2.push((function (match, group, prop) { // jshint ignore:line
-                        var tmp = {_id: null};
-                        tmp[prop] = group;
-                        return _this.ds.aggregate(type, [{$match: {$and: match}},{$group: tmp}]);
-                      })(aggregations[type].match[property], aggregations[type].group[property], property));
-                      delete aggregations[type].group[property];
-                    }
-                  }
-                }
-                if (Object.keys(aggregations[type].group).length) {
-                  promises2.push(_this.ds.aggregate(type, {$group: aggregations[type].group}));
-                }
-                Promise.all(promises2).then(function (results) {
-                  for (var i = 0; i < results.length; i++) {
-                    if (results[i] && results[i].length) {
-                      try {
-                        if (!agResults[type]) {
-                          agResults[type] = {};
-                        }
-                        for (var name in results[i][0]) {
-                          if (results[i][0].hasOwnProperty(name) && name !== '_id') {
-                            agResults[type][name] = results[i][0][name];
-                          }
-                        }
-                      } catch (err) {
-                        rj(err);
-                      }
-                    }
-                  }
-                  rs();
-                }).catch(rj);
-              } else {
-                _this.ds.aggregate(type, {$group: aggregations[type].group})
-                  .then(function (data) {
-                    if (data && data.length) {
-                      try {
-                        agResults[type] = {};
-                        for (var name in data[0]) {
-                          if (data[0].hasOwnProperty(name) && name !== '_id') {
-                            agResults[type][name] = data[0][name];
-                          }
-                        }
-                      } catch (err) {
-                        rj(err);
-                      }
-                    }
-                    rs();
-                  }).catch(reject);
-              }
-            });
-          })(tn));
-        }
+    var oper = {};
+    oper[operation.substring(1)] = options.property;
+
+    var result = new Promise(
+      function (resolve, reject) {
+        _this._aggregate(cn,
+          {
+            filter: options.filter,
+            expressions: {
+              val: oper
+            }
+          }
+        ).
+        then(
+          function (result) {
+            context[attr] = result.val;
+            resolve();
+          }
+        ).
+        catch(reject);
       }
-      Promise.all(promises).then(function (result) {
-        resolve(postAggregateFilter(agResults, filter));
-      }).catch(reject);
-    });
+    );
+
+    fetchers.push(result);
+    return result;
   }
 
-  function prepareFilterSync(cm, filter) {
-    var result, i, nm, keys, knm;
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} filter
+   * @param {Array} fetchers
+   * @param {{}} [parent]
+   * @param {String} [part]
+   * @returns {*}
+   */
+  function prepareFilterOption(cm, filter, fetchers, parent, part) {
+    var i, knm, keys, pm, tmp, result, containCheckers, colMeta;
     if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
-        result.push(prepareFilterSync(cm, filter[i]));
+        result.push(prepareFilterOption(cm, filter[i], fetchers, result, i));
       }
       return result;
     } else if (filter && typeof filter === 'object') {
       result = {};
-      for (nm in filter) {
+      containCheckers = [];
+      for (var nm in filter) {
         if (filter.hasOwnProperty(nm)) {
-          if (nm === '$ItemId') {
+          if ((pm = cm.getPropertyMeta(nm)) !== null) {
+            if (pm.type === PropertyTypes.COLLECTION) {
+              for (knm in filter[nm]) {
+                if (filter[nm].hasOwnProperty(knm)) {
+                  if (knm === '$contains') {
+                    colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
+                    tmp = prepareFilterOption(colMeta, filter[nm][knm], fetchers, filter, nm);
+                    containCheckers.push({
+                      $exists: {
+                        className: colMeta.getCanonicalName(),
+                        filter: tmp
+                      }
+                    });
+                    break;
+                  }
+                }
+              }
+            }
+          } else if (nm === '$ItemId') {
             if (typeof filter[nm] === 'string') {
               keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
               for (knm in keys) {
@@ -633,118 +603,36 @@ function IonDataRepository(options) {
             } else {
               result[cm.getKeyProperties()[0]] = filter[nm];
             }
-          } else if (['_min','_max','_avg','_sum','_count','$lookup'].indexOf(nm) < 0) {
-            result[nm] = prepareFilterSync(cm, filter[nm]);
+          } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
+            result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
+          } else {
+            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm);
           }
         }
       }
+
+      if (containCheckers.length) {
+        tmp = clone(result);
+        result.$and = [tmp];
+
+      }
+
       return result;
-    } else {
-      return filter;
     }
+    return filter;
   }
 
   /**
    * @param {ClassMeta} cm
-   * @param {*} filter
-   * @returns {*}
+   * @param {{}} filter
    */
-  function prepareFilter(cm, filter) {
+  function prepareFilterValues(cm, filter) {
     return new Promise(function (resolve, reject) {
-      var result, i, nm, keys, knm, preAggregations, tmp, tableName, currentCm;
-      var promises = [];
-      if (filter && Array.isArray(filter)) {
-        result = [];
-        for (i = 0; i < filter.length; i++) {
-          result.push(prepareFilter(cm, filter[i]));
-        }
-        Promise.all(result)
-          .then(function (filters) {
-            return resolve(filters);
-          }).catch(reject);
-      } else if (filter && typeof filter === 'object') {
-        result = {};
-        for (nm in filter) {
-          if (filter.hasOwnProperty(nm)) {
-            if (nm === '$ItemId') {
-              if (typeof filter[nm] === 'string') {
-                keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
-                for (knm in keys) {
-                  if (keys.hasOwnProperty(knm)) {
-                    result[knm] = keys[knm];
-                  }
-                }
-              } else {
-                result[cm.getKeyProperties()[0]] = filter[nm];
-              }
-            } else if (nm === '$lookup') {
-              var fcm = _this._getMeta(filter[nm].from);
-              if (fcm) {
-                filter[nm].from = tn(fcm);
-              }
-              result[nm] = filter[nm];
-            } else if (['_min','_max','_avg','_sum','_count'].indexOf(nm) > -1) {
-              if (filter[nm] && Array.isArray(filter[nm].name) && filter[nm].name.length) {
-                var operationType = nm === '_count' ? '$sum' : '$' + nm.slice(1);
-                if (!preAggregations) {
-                  preAggregations = {};
-                }
-                if (filter[nm].name.length === 1) {
-                  currentCm = cm;
-                  tableName = tn(cm);
-                } else {
-                  var ccm = _this.meta.getMeta(filter[nm].name[1], null, cm.getNamespace());
-                  if (ccm) {
-                    currentCm = ccm;
-                    tableName = tn(ccm);
-                  } else {
-                    throw new Error('не найдена ClassMeta');
-                  }
-                }
-                if (!preAggregations[tableName]) {
-                  preAggregations[tableName] = {
-                    group: {_id: null},
-                    match: null
-                  };
-                }
-                tmp = {};
-                tmp[operationType] = nm === '_count' ? 1 : '$' + filter[nm].name[0];
-                preAggregations[tableName].group[filter[nm].name[0] + nm] = tmp;
-                if (filter[nm].match) {
-                  if (!preAggregations[tableName].match) {
-                    preAggregations[tableName].match = {};
-                  }
-                  preAggregations[tableName].match[filter[nm].name[0] + nm] = prepareFilterSync(currentCm, filter[nm].match);
-                }
-                result[nm] = {tn: tableName, property: filter[nm].name[0] + nm};
-              }
-            } else {
-              promises.push((function (propertyName) { // jshint ignore:line
-                return new Promise(function (rs,rj) {
-                    prepareFilter(cm, filter[propertyName])
-                      .then(function (value) {
-                        result[propertyName] = value;
-                        rs();
-                      }).catch(rj);
-                  });
-              })(nm));
-            }
-          }
-        }
-
-        Promise.all(promises).then(function () {
-          if (preAggregations) {
-            preAggregate(preAggregations, result)
-              .then(function (modifiedResult) {
-                return resolve(modifiedResult);
-              }).catch(reject);
-          } else {
-            return resolve(result);
-          }
-        }).catch(reject);
-      } else {
-        return resolve(filter);
-      }
+      var fetchers = [];
+      var result = prepareFilterOption(cm, filter, fetchers);
+      Promise.all(fetchers).
+      resolve(function () {resolve(result);}).
+      catch(reject);
     });
   }
 
@@ -812,45 +700,37 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    return new Promise(function (resolve, reject) {
-      prepareFilter(rcm, options.filter)
-        .then(function (filter) {
-          if (filter) {
-            options.filter = filter;
+    return prepareFilterValues(cm, options.filter).
+    then(function () {
+      return _this.ds.fetch(tn(rcm), options);
+    }).
+    then(function (data) {
+      return new Promise(function (resolve, reject) {
+        var result = [];
+        var fl = [];
+        try {
+          for (var i = 0; i < data.length; i++) {
+            result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+            fl.push(loadFiles(result[i]));
           }
-          var result = [];
-          _this.ds.fetch(tn(rcm), options)
-            .then(
-              function (data) {
-                var fl = [];
-                try {
-                  for (var i = 0; i < data.length; i++) {
-                    result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-                    fl.push(loadFiles(result[i]));
-                  }
-                } catch (err) {
-                  return reject(err);
-                }
+        } catch (err) {
+          return reject(err);
+        }
 
-                if (typeof data.total !== 'undefined' && data.total !== null) {
-                  result.total = data.total;
-                }
-
-            return new Promise(function (rs, rj) {
-              Promise.all(fl).then(function () {
-                rs(result);
-              }).catch(rj);
-            });
-          }
-        ).
-        then(function (result) {
-          return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
-        }).
-        then(calcItemsProperties).
-        then(resolve).
-        catch(reject);
-      }).catch(reject);
-    });
+        if (typeof data.total !== 'undefined' && data.total !== null) {
+          result.total = data.total;
+        }
+        Promise.all(fl).then(function () {
+          resolve(result);
+        }).catch(reject);
+      });
+    }).
+    then(
+      function (result) {
+        return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
+      }
+    ).
+    then(calcItemsProperties);
   };
 
   /**
@@ -868,8 +748,12 @@ function IonDataRepository(options) {
     var cm = this._getMeta(className);
     var rcm = this._getRootType(cm);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    options.filter = prepareFilter(rcm, options.filter);
-    return _this.ds.aggregate(tn(rcm), options);
+    return prepareFilterValues(options.filter).
+    then(
+      function () {
+        return _this.ds.aggregate(tn(rcm), options);
+      }
+    );
   };
 
   /**
@@ -936,48 +820,6 @@ function IonDataRepository(options) {
       });
     }
   };
-
-  /*
-  Данный метод на будущее - если будет реализовываться редактирование вложенных объектов
-
-   * @param {Item} item
-   * @param {{}} values
-   * @param {ChangeLogger} [logger]
-
-  function processRefItems(item,values,logger) {
-    var updates = {};
-
-    for (var key in values) {
-      if (values.hasOwnProperty(key) && key.indexOf('.') > -1) {
-        var splittedKey = key.split('.');
-        var ref = splittedKey[0];
-        var nm = splittedKey[1];
-        if (!updates.hasOwnProperty(ref)) {
-          updates[ref] = {};
-        }
-        updates[ref][nm] = values[key];
-      }
-    }
-
-    for (var refProperty in updates) {
-      if (updates.hasOwnProperty(refProperty)) {
-        var p = item.property(refProperty);
-        if (p && p.getType() === PropertyTypes.REFERENCE) {
-          var v = p.getValue();
-          var refc = _this.meta.getMeta(rp.refClass, null, item.classMeta.getNamespace());
-          var rp = p.getMeta();
-          if (v) {
-            _this.editItem(cn(refc), v, updates[refProperty], logger);
-          } else {
-            var ri = _this.createItem(cn(refc), updates[refProperty], logger);
-            values[refProperty] = ri.getItemId();
-          }
-        }
-      }
-    }
-    return values;
-  }
-  */
 
   /* jshint maxcomplexity: 20 */
   /**
@@ -1665,7 +1507,8 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' +
+        master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
