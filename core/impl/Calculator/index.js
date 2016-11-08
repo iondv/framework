@@ -19,13 +19,17 @@ function Calculator(options) {
   var funcLib = clone(stdLib);
 
   this.init = function (scope) {
-    var dataRepo = typeof options.dataRepo === String ? scope[options.dataRepo] : options.dataRepo;
-
-    funcLib.sum = aggreg.sum(dataRepo);
-    funcLib.count = aggreg.count(dataRepo);
-    funcLib.avg = aggreg.avg(dataRepo);
-    funcLib.max = aggreg.max(dataRepo);
-    funcLib.min = aggreg.min(dataRepo);
+    return new Promise(function (resolve) {
+      var dataRepo = typeof options.dataRepo === String ? scope[options.dataRepo] : options.dataRepo;
+      if (dataRepo) {
+        funcLib.sum = aggreg.sum(dataRepo);
+        funcLib.count = aggreg.count(dataRepo);
+        funcLib.avg = aggreg.avg(dataRepo);
+        funcLib.max = aggreg.max(dataRepo);
+        funcLib.min = aggreg.min(dataRepo);
+      }
+      resolve();
+    });
   };
 
   function findComma(src, start) {
