@@ -555,7 +555,7 @@ function IonDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
-   * @param {{type: Number}} pm,
+   * @param {{type: Number}} pm
    * @param {{}} filter
    * @param {String} nm
    * @param {Array} fetchers
@@ -563,24 +563,16 @@ function IonDataRepository(options) {
    */
   function prepareContains(cm, pm, filter, nm, fetchers, containCheckers) {
     var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
-    var f, kp;
     var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
-    if (pm.backRef) {
-      f = {};
-      f[pm.backRef] = '$' + (pm.binding ? pm.binding : cm.getKeyProperties()[0]);
-      tmp = {$and: [tmp, f]};
-    } else {
-      kp = colMeta.getKeyProperties();
-      if (kp.length > 1) {
-        throw new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!');
-      }
-      f = {};
-      f[kp[0]] = {$in: '$' + nm};
-      tmp = {$and: [tmp, f]};
+    if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+      throw new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!');
     }
     containCheckers.push({
-      $dataExist: {
+      $joinExists: {
         table: tn(colMeta),
+        many: !pm.backRef,
+        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
         filter: tmp
       }
     });
@@ -595,7 +587,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part) {
-    var i, knm, keys, pm, tmp, result, containCheckers, colMeta, f;
+    var i, knm, keys, pm, tmp, result, containCheckers;
     if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {

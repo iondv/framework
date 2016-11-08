@@ -12,7 +12,7 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 30, maxcomplexity: 20
+// jshint maxstatements: 40, maxcomplexity: 20
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -346,16 +346,24 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
+      var arrFld;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$dataExist') {
+          if (name === '$joinExists') {
+            if (find[name].many) {
+              throw new Error('Операции объединения для связей многие-ко-многим не поддерживаются.');
+            }
             tmp = {
               from: find[name].table,
-              localField: '',
-              foreignField: ''
+              localField: '__doc.' + find[name].left,
+              foreignField: find[name].right
             };
-            tmp.as = '_existance_check_' + exists.length;
+            arrFld = '_existance_check_' + exists.length;
+            tmp.as = arrFld;
             exists.push({$lookup: tmp});
+            tmp = {};
+            tmp[arrFld] = {$elemMatch: find[name].filter};
+            exists.push({$match: tmp});
           } else {
             tmp = produceMatchObject(find[name], exists);
             if (tmp) {
@@ -379,16 +387,11 @@ function MongoDs(config) {
       if (exists.length) {
         var result = [];
         result.push({$match: match});
-        for (var i = 0; i < exists.length; i++) {
-          result = result.concat(exists[i].stages);
-        }
+        result = result.concat(exists);
+
         if (options.sort) {
           result.push({$sort: options.sort});
         }
-
-        result.push({$project: {tmp: '$$ROOT'}});
-        result.push({$group: {_id: null, count: {$sum: 1}, data: {$addToSet: '$tmp'}}});
-        result.push({$unwind: '$data'});
 
         if (options.offset) {
           result.push({$skip: options.offset});
