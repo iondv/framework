@@ -343,7 +343,7 @@ function MongoDs(config) {
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(find[i], exists);
+        tmp = produceMatchObject(attributes, find[i], exists);
         if (tmp) {
           result.push(tmp);
         }
@@ -385,7 +385,7 @@ function MongoDs(config) {
               exists.push({$group: tmp});
             }
           } else {
-            tmp = produceMatchObject(find[name], exists);
+            tmp = produceMatchObject(attributes, find[name], exists);
             if (tmp) {
               if (!result) {
                 result = {};
@@ -418,6 +418,23 @@ function MongoDs(config) {
         var result = [];
         result.push({$match: match});
         result = result.concat(exists);
+
+        if (options.countTotal) {
+          if (!options.attributes || !options.attributes.length) {
+            throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
+          }
+
+          var tmp = {};
+          for (var i = 0; i < options.attributes.length; i++) {
+            tmp[options.attributes[i]] = 1;
+          }
+
+          tmp.__total = {$sum: 1};
+
+          result.push({
+            $project: tmp
+          });
+        }
 
         if (options.sort) {
           result.push({$sort: options.sort});
@@ -459,13 +476,13 @@ function MongoDs(config) {
         var results = [];
         if (data.length) {
           for (i = 0; i < data.length; i++) {
-            results.push(data[i].data);
+            results.push(data[i]);
           }
         }
         if (options.countTotal) {
           results.total = data.length ? data[0].count : 0;
         }
-        resolve(results, options.countTotal ? (data.length ? data[0].count : 0) : null);
+        resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
       });
     } else {
       flds = null;

@@ -584,10 +584,11 @@ function IonDataRepository(options) {
    * @param {Array} fetchers
    * @param {{}} [parent]
    * @param {String} [part]
+   * @param {{}} [propertyMeta]
    * @returns {*}
    */
-  function prepareFilterOption(cm, filter, fetchers, parent, part) {
-    var i, knm, keys, pm, tmp, result, containCheckers;
+  function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
+    var i, knm, keys, pm, emptyResult, result, containCheckers;
     if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
@@ -597,6 +598,7 @@ function IonDataRepository(options) {
     } else if (filter && typeof filter === 'object') {
       result = {};
       containCheckers = [];
+      emptyResult = true;
       for (var nm in filter) {
         if (filter.hasOwnProperty(nm)) {
           if ((pm = cm.getPropertyMeta(nm)) !== null) {
@@ -607,6 +609,9 @@ function IonDataRepository(options) {
                   break;
                 }
               }
+            } else {
+              result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, pm);
+              emptyResult = false;
             }
           } else if (nm === '$ItemId') {
             if (typeof filter[nm] === 'string') {
@@ -614,29 +619,43 @@ function IonDataRepository(options) {
               for (knm in keys) {
                 if (keys.hasOwnProperty(knm)) {
                   result[knm] = keys[knm];
+                  emptyResult = false;
                 }
               }
             } else {
               result[cm.getKeyProperties()[0]] = filter[nm];
+              emptyResult = false;
             }
           } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
             result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
+            emptyResult = false;
           } else {
-            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm);
+            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, propertyMeta);
+            emptyResult = false;
           }
         }
       }
 
       if (containCheckers.length) {
-        tmp = clone(result);
-        result = {
-          $and: [result]
+        if (!emptyResult) {
+          containCheckers.push(result);
+        }
+        return {
+          $and: containCheckers
         };
-        Array.prototype.push.apply(result.$and, containCheckers);
+      }
+
+      if (emptyResult) {
+        return null;
       }
 
       return result;
     }
+
+    if (propertyMeta) {
+      return castValue(filter, propertyMeta, cm.getNamespace());
+    }
+
     return filter;
   }
 
@@ -716,7 +735,7 @@ function IonDataRepository(options) {
     }
     var cm = this._getMeta(obj);
     var rcm = this._getRootType(cm);
-    options.attributes = [];
+    options.attributes = ['_class', '_classVer'];
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
       options.attributes.push(props[i].name);
@@ -724,7 +743,8 @@ function IonDataRepository(options) {
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).
-    then(function () {
+    then(function (filter) {
+      options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
     then(function (data) {
@@ -856,8 +876,7 @@ function IonDataRepository(options) {
       return value;
     }
     if (pm.type === PropertyTypes.REFERENCE) {
-      var refcm = _this.meta.getMeta(pm.refClass, null, ns);
-      var refkey = refcm.getPropertyMeta(refcm.getKeyProperties()[0]);
+      var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
 
       if (refkey) {
         return castValue(value, refkey, ns);
