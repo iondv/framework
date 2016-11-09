@@ -4,7 +4,6 @@
  */
 'use strict';
 
-// var util = require('util'); //jscs:ignore requireSpaceAfterLineComments
 var DataSource = require('core/interfaces/DataSource');
 var mongo = require('mongodb');
 var client = mongo.MongoClient;
@@ -12,7 +11,7 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 40, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 20
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -333,11 +332,17 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
-  function produceMatchObject(find, exists) {
-    var result, tmp;
+  /**
+   * @param {String[]} attributes
+   * @param {{}} find
+   * @param {Object[]} exists
+   * @returns {*}
+     */
+  function produceMatchObject(attributes, find, exists) {
+    var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
-      for (var i = 0; i < find.length; i++) {
+      for (i = 0; i < find.length; i++) {
         tmp = produceMatchObject(find[i], exists);
         if (tmp) {
           result.push(tmp);
@@ -351,19 +356,34 @@ function MongoDs(config) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists') {
             if (find[name].many) {
-              throw new Error('Операции объединения для связей многие-ко-многим не поддерживаются.');
+              if (!attributes || !attributes.length) {
+                throw new Error('Не передан список атрибутов необходимый для выполнения объединения многие-ко-многим.');
+              }
+              exists.push({$unwind: '$' + find[name].left});
             }
             tmp = {
               from: find[name].table,
-              localField: '__doc.' + find[name].left,
+              localField: find[name].left,
               foreignField: find[name].right
             };
-            arrFld = '_existance_check_' + exists.length;
+            arrFld = '_join_check';
             tmp.as = arrFld;
             exists.push({$lookup: tmp});
             tmp = {};
             tmp[arrFld] = {$elemMatch: find[name].filter};
             exists.push({$match: tmp});
+
+            if (find[name].many) {
+              tmp = {};
+              for (i = 0; i < attributes.length; i++) {
+                if (attributes[i] !== find[name].left) {
+                  tmp[attributes[i]] = '$' + attributes[i];
+                }
+              }
+              tmp = {_id: tmp};
+              tmp[find[name].left] = {$addToSet: '$' + find[name].left};
+              exists.push({$group: tmp});
+            }
           } else {
             tmp = produceMatchObject(find[name], exists);
             if (tmp) {
@@ -380,10 +400,20 @@ function MongoDs(config) {
     return find;
   }
 
+  /**
+   * @param {{}} options
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.countTotal]
+   * @returns {*}
+   */
   function checkAggregation(options) {
     if (options.filter) {
       var exists = [];
-      var match = produceMatchObject(options.filter, exists);
+      var match = produceMatchObject(options.attributes, options.filter, exists);
       if (exists.length) {
         var result = [];
         result.push({$match: match});
@@ -406,8 +436,21 @@ function MongoDs(config) {
     return false;
   }
 
+  /**
+   * @param {Collection} c
+   * @param {{}} options
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.countTotal]
+   * @param {Object[]} aggregate
+   * @param {Function} resolve
+   * @param {Function} reject
+   */
   function fetch(c, options, aggregate, resolve, reject) {
-    var r;
+    var r, flds, i;
     if (aggregate) {
       r = c.aggregate(aggregate, {}, function (err, data) {
         if (err) {
@@ -415,7 +458,7 @@ function MongoDs(config) {
         }
         var results = [];
         if (data.length) {
-          for (var i = 0; i < data.length; i++) {
+          for (i = 0; i < data.length; i++) {
             results.push(data[i].data);
           }
         }
@@ -425,6 +468,7 @@ function MongoDs(config) {
         resolve(results, options.countTotal ? (data.length ? data[0].count : 0) : null);
       });
     } else {
+      flds = null;
       r = c.find(options.filter || {});
 
       if (options.sort) {

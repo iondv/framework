@@ -8,6 +8,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
 
+// jshint maxstatements: 40, maxcomplexity: 30
 function toScalar(v) {
   if (Array.isArray(v) && v.length) {
     return v.length ? v[0] : null;
@@ -15,99 +16,31 @@ function toScalar(v) {
   return v;
 }
 
-function createLookupMatch(lookupProperty, condition) {
-  var match = {$match: {}};
-  if (condition.value && condition.value.length) {
-    match.$match['__lookup.' + lookupProperty] = {$all: condition.value};
-  } else if (condition.nestedConditions && condition.nestedConditions.length) {
-    var and = [];
-    for (var i = 0; i < condition.nestedConditions.length; i++) {
-      if (condition.nestedConditions[i].operation !== ConditionTypes.CONTAINS) {
-        condition.nestedConditions[i].property = '__lookup.' + condition.nestedConditions[i].property;
-        and.push(ConditionParser(condition.nestedConditions[i]));
-      }
-    }
-    match.$match.$and = and;
-  } else {
-    throw new Error('неправильное условие');
-  }
-  return match;
-}
-
-function createGroupObject(cm) {
-  var group = {$group: {}};
-  group.$group._id = '$_id';
-  group.$group._class = {$first: '$_class'};
-  group.$group._classVer = {$first: '$_classVer'};
-  group.$group.__lookup = {$push: '$__lookup'};
-
-  var properties = cm.getPropertyMetas();
-  for (var i = 0; i < properties.length; i++) {
-    group.$group[properties[i].name] = {$first: '$' + properties[i].name};
-  }
-
-  return group;
-}
-
-function produceContainsFilter(rcm, condition, metaRepo, result) {
+/**
+ * @param {ClassMeta} rcm
+ * @param {{}} condition
+ */
+function produceContainsFilter(rcm, condition) {
   var pm = rcm.getPropertyMeta(condition.property);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
-      var ccm, aggr;
-      if (pm.backRef) {
-        ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
-        if (ccm) {
-          aggr = {
-            property: condition.property,
-            stages: []
-          };
-          aggr.stages.push({$lookup: {
-            from: ccm.getCanonicalName(),
-            localField: rcm.getKeyProperties()[0],
-            foreignField: pm.backRef,
-            as: '__lookup'
-          }});
-          aggr.stages.push(createLookupMatch(ccm.getKeyProperties()[0], condition));
-          result[condition.property] = {_exists: aggr};
-        }
-      } else if (pm.backColl) {
-        ccm = metaRepo.getMeta(pm.itemsClass, rcm.getVersion(), rcm.getNamespace());
-        if (ccm) {
-          aggr = {
-            property: condition.property,
-            stages: []
-          };
-          aggr.stages.push({$unwind: '$' + pm.name});
-          aggr.stages.push({$lookup: {
-            from: ccm.getCanonicalName(),
-            localField: pm.name,
-            foreignField: ccm.getKeyProperties()[0],
-            as: '__lookup'
-          }});
-          aggr.stages.push({$unwind: '$__lookup'});
-          aggr.stages.push(createGroupObject(rcm));
-          aggr.stages.push(createLookupMatch(ccm.getKeyProperties()[0], condition));
-          result[condition.property] = {_exists: aggr};
-        }
-      } else {
-        result[condition.property] = {$all: condition.value};
-      }
+      return {$contains: ConditionParser(condition.nestedConditions, pm._refClass)};
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
-      result[condition.property] = {$regex: toScalar(condition.value)};
+      return {$regex: toScalar(condition.value)};
     } else {
-      throw new Error('неправильное условие');
+      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
-    throw new Error('неправильное условие, не найдено property');
+    throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
   }
 }
 
-function produceFilter(condition, type, result, rcm, metaRepo) {
-  result = {};
+function produceFilter(condition, type, rcm) {
+  var result = {};
   if (condition.value) {
     result[type] = toScalar(condition.value);
   } else if (condition.nestedConditions && condition.nestedConditions.length) {
-    result[type] = ConditionParser(condition.nestedConditions[0], rcm, metaRepo);
+    result[type] = ConditionParser(condition.nestedConditions[0], rcm);
   }
   return result;
 }
@@ -115,16 +48,59 @@ function produceFilter(condition, type, result, rcm, metaRepo) {
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
- * @param {MetaRepository} metaRepo
+ * @returns {{className: String, collectionName: String, property: String, filter: {}}}
+ */
+function produceAggregationOperation(condition, rcm) {
+  var an, av, pn, pm;
+  if (!condition.value || !condition.value.length) {
+    throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
+  }
+
+  if (condition.value.length === 1) {
+    pn = condition.value[0];
+    an = 'className';
+    av = rcm.getCanonicalName();
+  } else {
+    pn = condition.value[1];
+    av = condition.value[0];
+    an = 'className';
+    if ((pm = rcm.getPropertyMeta(condition.value[0])) !== null) {
+      if (pm.type === PropertyTypes.COLLECTION) {
+        an = 'collectionName';
+      }
+    }
+  }
+
+  var filter = ConditionParser(condition.nestedConditions, rcm);
+  var result = {
+    property: pn,
+    filter: filter
+  };
+  result[an] = av;
+  return result;
+}
+
+/**
+ * @param {Object[]} conditions
+ * @param {ClassMeta} rcm
+ */
+function produceArray(conditions, rcm) {
+  var result = [];
+  for (var i = 0; i < conditions.length; i++) {
+    result.push(ConditionParser(conditions[i], rcm));
+  }
+  return result;
+}
+
+/**
+ * @param {{}} condition
+ * @param {ClassMeta} rcm
  * @returns {{}}
  */
-function ConditionParser(condition, rcm, metaRepo) { // jshint ignore:line
-  var result, value, i;
+function ConditionParser(condition, rcm) {
+  var result;
   if (Array.isArray(condition)) {
-    result = [];
-    for (i = 0; i < condition.length; i++) {
-      result.push(ConditionParser(condition[i], rcm, metaRepo));
-    }
+    result = {$and: produceArray(condition, rcm)};
   } else {
     result = {};
     if (condition.property) {
@@ -141,70 +117,33 @@ function ConditionParser(condition, rcm, metaRepo) { // jshint ignore:line
           result.$and[1][condition.property] = {$ne: ''};
           result.$and[2][condition.property] = {$exists: true};
         } break;
-        case ConditionTypes.CONTAINS: produceContainsFilter(rcm, condition, metaRepo, result); break;
+        case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition);
+          break;
         case ConditionTypes.EQUAL:
-          result[condition.property] = produceFilter(condition, '$eq', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$eq', rcm); break;
         case ConditionTypes.NOT_EQUAL:
-          result[condition.property] = produceFilter(condition, '$ne', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$ne', rcm); break;
         case ConditionTypes.LESS:
-          result[condition.property] = produceFilter(condition, '$lt', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$lt', rcm); break;
         case ConditionTypes.MORE:
-          result[condition.property] = produceFilter(condition, '$gt', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$gt', rcm); break;
         case ConditionTypes.LESS_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$lte', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$lte', rcm); break;
         case ConditionTypes.MORE_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$gte', result, rcm, metaRepo); break;
+          result[condition.property] = produceFilter(condition, '$gte', rcm); break;
         case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
     } else {
-      value = [];
-
-      if (condition.nestedConditions) {
-        for (i = 0; i < condition.nestedConditions.length; i++) {
-          value[value.length] = ConditionParser(condition.nestedConditions[i], rcm, metaRepo);
-        }
-      }
-
       switch (condition.operation) {
-        case OperationTypes.AND: result.$and = value; break;
-        case OperationTypes.OR: result.$or = value; break;
-        case OperationTypes.NOT: result.$not = {$and: value}; break;
-        case OperationTypes.MIN: {
-          if (condition.value) {
-            result._min = {name: condition.value, match: value};
-          } else {
-            throw new Error('не правильное условие MIN');
-          }
-        } break;
-        case OperationTypes.MAX: {
-          if (condition.value) {
-            result._max = {name: condition.value, match: value};
-          } else {
-            throw new Error('не правильное условие MAX');
-          }
-        } break;
-        case OperationTypes.AVG: {
-          if (condition.value) {
-            result._avg = {name: condition.value, match: value};
-          } else {
-            throw new Error('не правильное условие AVG');
-          }
-        } break;
-        case OperationTypes.SUM: {
-          if (condition.value) {
-            result._sum = {name: condition.value, match: value};
-          } else {
-            throw new Error('не правильное условие SUM');
-          }
-        } break;
-        case OperationTypes.COUNT: {
-          if (condition.value) {
-            result._count = {name: condition.value, match: value};
-          } else {
-            throw new Error('не правильное условие COUNT');
-          }
-        } break;
+        case OperationTypes.AND: result.$and = produceArray(condition.nestedConditions, rcm); break;
+        case OperationTypes.OR: result.$or = produceArray(condition.nestedConditions, rcm); break;
+        case OperationTypes.NOT: result.$not = {$and: produceArray(condition.nestedConditions, rcm)}; break;
+        case OperationTypes.MIN: result.$min = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.MAX: result.$max = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.AVG: result.$avg = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.SUM: result.$sum = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.COUNT: result.$count = produceAggregationOperation(condition, rcm); break;
       }
     }
   }
