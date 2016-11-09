@@ -13,7 +13,6 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
-const clone = require('clone');
 
 /* jshint maxstatements: 100, maxcomplexity: 100 */
 /**
