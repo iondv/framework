@@ -71,13 +71,15 @@ app.use(methodOverride('X-HTTP-Method'));       // Microsoft
 app.use(methodOverride('X-HTTP-Method-Override')); // Google/GData
 app.use(methodOverride('X-Method-Override'));      // IBM
 
-app.use(bodyParser.json());
+app.use(bodyParser.text({type: 'text/*'}));
+app.use(bodyParser.json({type: 'application/json'}));
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.raw());
 
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
-// jshint maxstatements: 30
+// jshint maxstatements: 40, maxcomplexity: 20
 var onError = function (error) {
   sysLog.error(error);
   server.close(function (err) {
@@ -118,11 +120,13 @@ then(
      */
   function (scope) {
     return new Promise(function (resolve, reject) {
+      var moduleTitles = {};
       try {
         // Редирект на дефолтный модуль
         var defaultModule = null;
         if (scope.settings && scope.settings instanceof SettingsRepository) {
           defaultModule = scope.settings.get('defaultModule');
+          moduleTitles = scope.settings.get('moduleTitles') || {};
         }
 
         if (!defaultModule && config.defaultModule) {
@@ -154,11 +158,13 @@ then(
           if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
             var module = require('modules/' + candidates[i] + '/web');
             if (typeof module === 'function') {
-              if (module.locals.sysTitle) {
+              var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+              if (title) {
                 app.locals.sysMenu.push({
                   name: candidates[i],
-                  description: module.locals.sysTitle
+                  description: title
                 });
+                module.locals.sysTitle = title;
               }
               module.locals.sysMenu = app.locals.sysMenu;
               app.use(module);

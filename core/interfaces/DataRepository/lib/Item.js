@@ -128,20 +128,36 @@ function Item(id, base, classMeta) {
   };
 
   /**
+   * @param {String} nm
+   * @param {ClassMeta} cm
+   */
+  function findPropertyMeta(nm, cm) {
+    var dot, pm;
+    if ((dot = nm.lastIndexOf('.')) > -1) {
+      pm = cm.getPropertyMeta(nm.substring(0, dot));
+      if (pm.type === PropertyTypes.REFERENCE) {
+        return findPropertyMeta(nm.substring(dot + 1), pm._refClass);
+      } else {
+        return null;
+      }
+    }
+    return cm.getPropertyMeta(nm);
+  }
+
+  /**
    * @param {String} name
    * @returns {Property | null}
    */
   this.property = function (name) {
-    var dot = name.indexOf('.');
-    if (dot > -1) {
-      var i = this.getAggregate(name.substring(0, dot));
-      if (i) {
-        return i.property(name.substring(dot + 1));
-      }
-    }
+    var pm;
     var props = this.getProperties();
     if (props.hasOwnProperty(name)) {
       return props[name];
+    } else {
+      pm = findPropertyMeta(name, this.classMeta);
+      if (pm) {
+        return new Property(this, pm, name);
+      }
     }
     return null;
   };
@@ -170,13 +186,11 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function () {
-  var semantic = this.classMeta.getSemantic();
-  if (typeof semantic === 'function') {
-    return semantic.call(this);
-  } else {
-    return this.classMeta.getCaption() + '@' + this.getItemId();
+Item.prototype.toString = function (semanticGetter, dateCallback) {
+  if (typeof semanticGetter === 'function') {
+    return semanticGetter.call(this, dateCallback);
   }
+  return this.classMeta.getSemantics(this, dateCallback);
 };
 
 module.exports = Item;

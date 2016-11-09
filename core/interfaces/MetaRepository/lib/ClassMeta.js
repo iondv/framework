@@ -4,7 +4,7 @@
  */
 
 var checkConditions = require('core/ConditionParser');
-var PropertyTypes = require('core/PropertyTypes');
+var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
@@ -32,40 +32,18 @@ function loadPropertyMetas(cm, plain) {
       return [];
     };
   }
-
+  var pm;
   for (i = 0; i < properties.length; i++) {
-    cm.propertyMetas[properties[i].name] = properties[i];
-    if (properties[i].selectionProvider) {
-      if (properties[i].selectionProvider.type === 'SIMPLE') {
-        properties[i].selectionProvider.getSelection = selectionConstructor1();
+    pm = clone(properties[i]);
+    cm.propertyMetas[properties[i].name] = pm;
+    if (pm.selectionProvider) {
+      if (pm.selectionProvider.type === 'SIMPLE') {
+        pm.selectionProvider.getSelection = selectionConstructor1();
       } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        properties[i].selectionProvider.getSelection = selectionConstructor2();
+        pm.selectionProvider.getSelection = selectionConstructor2();
       }
     }
-
-    if (properties[i].type === PropertyTypes.REFERENCE && properties[i].semantic) {
-      properties[i].semanticGetter = parseSemantics(properties[i].semantic.trim());
-    }
   }
-}
-
-/**
- * @param {String} semantics
- * @returns {Function}
- */
-function parseSemantics(semantics) {
-  if (!semantics) {
-    return new Function('', 'return this.getItemId();');
-  }
-
-  var getter = 'if(v&&v.trim()){var p=item.property(v);if(p) {return p.getDisplayValue();}}return v;';
-
-  var body = semantics.replace(/\'/g, '\\\'').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2, $3)').
-  replace(/([^\[\|]+)\s*\[\s*(\d+)\s*\]/g, 'getter(this,\'$1\').substr($2)').
-  replace(/([^\|]+)\s*/g, 'getter(this,\'$1\')').
-  replace(/\|/g, ' + ');
-  return new Function('', 'function getter(item, v) {' + getter + '} return ' + body);
 }
 
 function ClassMeta(metaObject) {
@@ -82,7 +60,9 @@ function ClassMeta(metaObject) {
 
   this.propertyMetas = {};
 
-  var semanticFunc = parseSemantics(this.plain.semantic);
+  this._forcedEnrichment = [];
+
+  this._semanticFunc = null;
 
   loadPropertyMetas(_this, metaObject);
 
@@ -106,8 +86,15 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantic = function () {
-    return semanticFunc;
+  this.getSemantics = function (item, dateCallback) {
+    if (typeof this._semanticFunc === 'function') {
+      return this._semanticFunc.call(item, dateCallback);
+    }
+    return item.getItemId();
+  };
+
+  this.getForcedEnrichment = function () {
+    return this._forcedEnrichment;
   };
 
   this.getKeyProperties = function () {
@@ -125,10 +112,16 @@ function ClassMeta(metaObject) {
   };
 
   this.getCreationTracker = function () {
+    if (!this.plain.creationTracker && this.ancestor) {
+      return this.ancestor.getCreationTracker();
+    }
     return this.plain.creationTracker;
   };
 
   this.getChangeTracker = function () {
+    if (!this.plain.changeTracker && this.ancestor) {
+      return this.ancestor.getChangeTracker();
+    }
     return this.plain.changeTracker;
   };
 

@@ -12,6 +12,8 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
+// jshint maxstatements: 30
+
 /**
  * @param {{ uri: String, options: Object }} config
  * @constructor
@@ -167,34 +169,38 @@ function MongoDs(config) {
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          if (result.c && result.c.counters && Object.keys(result.c.counters).length > 0) {
+          if (result.c && result.c.counters) {
             var inc = {};
+            var act = false;
             var counters = result.c.counters;
             for (var nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 inc['counters.' + nm] =
                   result.c.steps && result.c.steps.hasOwnProperty(nm) ? result.c.steps[nm] : 1;
+                act = true;
               }
             }
 
-            result.ai.findOneAndUpdate(
-              {type: type},
-              {$inc: inc},
-              {returnOriginal: false, upsert: false},
-              function (err, result) {
-                if (err) {
-                  return reject(err);
-                }
-
-                for (var nm in result.value.counters) {
-                  if (result.value.counters.hasOwnProperty(nm)) {
-                    data[nm] = result.value.counters[nm];
+            if (act) {
+              result.ai.findOneAndUpdate(
+                {type: type},
+                {$inc: inc},
+                {returnOriginal: false, upsert: false},
+                function (err, result) {
+                  if (err) {
+                    return reject(err);
                   }
+
+                  for (var nm in result.value.counters) {
+                    if (result.value.counters.hasOwnProperty(nm)) {
+                      data[nm] = result.value.counters[nm];
+                    }
+                  }
+                  resolve(data);
                 }
-                resolve(data);
-              }
-            );
-            return;
+              );
+              return;
+            }
           }
           resolve(data);
         }
@@ -231,47 +237,63 @@ function MongoDs(config) {
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          if (result.c && result.c.counters && Object.keys(result.c.counters).length > 0) {
-            var up = {};
+          var act = false;
+          var up = {};
+          if (result.c && result.c.counters) {
             var counters = result.c.counters;
             for (var nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 if (counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
+                  act = true;
                 }
               }
             }
-
-            if (Object.keys(up).length < 1) {
-              return resolve(data);
-            }
-
-            result.ai.findOneAndUpdate(
-              {type: type},
-              {$set: up},
-              {returnOriginal: false, upsert: false},
-              function (err, result) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(data);
-              }
-            );
-            return;
           }
-          resolve(data);
+
+          if (!act) {
+            return resolve(data);
+          }
+
+          result.ai.findOneAndUpdate(
+            {type: type},
+            {$set: up},
+            {returnOriginal: false, upsert: false},
+            function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              resolve(data);
+            }
+          );
+          return;
         }
       ).catch(reject);
     });
   }
 
   this.doUpdate = function (type, conditions, data, upsert, multi) {
+    var hasData = false;
+    if (data) {
+      for (var nm in data) {
+        if (data.hasOwnProperty(nm) &&
+          typeof data[nm] !== 'undefined' &&
+          typeof data[nm] !== 'function'
+        ) {
+          hasData = nm;
+          break;
+        }
+      }
+    }
+
+    if (!hasData) {
+      return _this._get(type, conditions);
+    }
+
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          if (Object.keys(data).length < 1) {
-            _this._get(type, conditions).then(resolve).catch(reject);
-          } else if (!multi) {
+          if (!multi) {
             c.updateOne(conditions, {$set: data}, {upsert: upsert},
               function (err, result) {
                 if (err) {
@@ -423,44 +445,49 @@ function MongoDs(config) {
   this._ensureAutoincrement = function (type, properties) {
     var data = {};
     var steps = {};
-    if (properties && Object.keys(properties).length > 0) {
+    var act = false;
+    if (properties) {
       for (var nm in properties) {
         if (properties.hasOwnProperty(nm)) {
           data[nm] = 0;
           steps[nm] = properties[nm];
+          act = true;
         }
       }
-      return new Promise(function (resolve, reject) {
-        _this.getCollection(AUTOINC_COLLECTION).then(
-          function (c) {
-            c.findOne({type: type}, function (err, r) {
-              if (err) {
-                return reject(err);
-              }
 
-              if (r && r.counters) {
-                for (var nm in r.counters) {
-                  if (r.counters.hasOwnProperty(nm) && data.hasOwnProperty(nm)) {
-                    data[nm] = r.counters[nm];
+      if (act) {
+        return new Promise(function (resolve, reject) {
+          _this.getCollection(AUTOINC_COLLECTION).then(
+            function (c) {
+              c.findOne({type: type}, function (err, r) {
+                if (err) {
+                  return reject(err);
+                }
+
+                if (r && r.counters) {
+                  for (var nm in r.counters) {
+                    if (r.counters.hasOwnProperty(nm) && data.hasOwnProperty(nm)) {
+                      data[nm] = r.counters[nm];
+                    }
                   }
                 }
-              }
 
-              c.updateOne(
-                {type: type},
-                {$set: {counters: data, steps: steps}},
-                {upsert: true},
-                function (err) {
+                c.updateOne(
+                  {type: type},
+                  {$set: {counters: data, steps: steps}},
+                  {upsert: true},
+                  function (err) {
                     if (err) {
                       return reject(err);
                     }
                     resolve();
                   }
-              );
-            });
-          }
-        ).catch(reject);
-      });
+                );
+              });
+            }
+          ).catch(reject);
+        });
+      }
     }
     return new Promise(function (resolve) { resolve(); });
   };

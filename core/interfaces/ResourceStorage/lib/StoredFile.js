@@ -21,10 +21,15 @@ function StoredFile(id, link, options, streamGetter) {
     return new Promise(function (resolve, reject) {
       if (typeof streamGetter === 'function') {
         try {
-          resolve({
-            name: _this.name,
-            options: _this.options,
-            stream: streamGetter()
+          streamGetter(function (err, stream) {
+            if (err) {
+              return reject(err);
+            }
+            return resolve({
+              name: _this.name,
+              options: _this.options,
+              stream: stream
+            });
           });
         } catch (err) {
           reject(err);

@@ -4,9 +4,9 @@
 'use strict';
 
 var PropertyTypes = require('./PropertyTypes');
-
+// jshint maxcomplexity: 30
 var cast = module.exports = function (value, type) {
-  if (value === null) {
+  if (value === null || typeof value === 'undefined') {
     return value;
   }
 
@@ -18,9 +18,10 @@ var cast = module.exports = function (value, type) {
     return result;
   }
 
-  if (type === PropertyTypes.STRING && value !== null) {
-    return value;
+  if (type === PropertyTypes.STRING) {
+    return value.toString();
   }
+
   switch (type){
     case PropertyTypes.BOOLEAN: {
       if (value === 'false') {
@@ -42,4 +43,4 @@ var cast = module.exports = function (value, type) {
     }break;
   }
   return value;
-}
+};

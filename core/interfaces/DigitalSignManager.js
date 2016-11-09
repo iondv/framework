@@ -5,13 +5,23 @@
 
 function DigitalSignManager() {
   /**
-   * @param {String} id
-   * @param {{}} src
+   * @param {Item} item
+   * @param {String} action
    * @param {String} [preprocessor]
    * @returns {Promise}
    */
-  this.getDataForSigning = function (id, src, preprocessor) {
-    return this._getDataForSigning(id, src, preprocessor);
+  this.signingAvailable = function (item, action, preprocessor) {
+    return this._signingAvailable(item, action, preprocessor);
+  };
+
+  /**
+   * @param {Item} item
+   * @param {String} [action]
+   * @param {String} [preprocessor]
+   * @returns {Promise}
+   */
+  this.getDataForSigning = function (item, action, preprocessor) {
+    return this._getDataForSigning(item, action, preprocessor);
   };
 
   /**
