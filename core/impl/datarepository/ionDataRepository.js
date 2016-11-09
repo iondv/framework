@@ -649,7 +649,7 @@ function IonDataRepository(options) {
       var fetchers = [];
       var result = prepareFilterOption(cm, filter, fetchers);
       Promise.all(fetchers).
-      resolve(function () {resolve(result);}).
+      then(function () {resolve(result);}).
       catch(reject);
     });
   }

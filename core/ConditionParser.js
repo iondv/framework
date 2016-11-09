@@ -24,6 +24,11 @@ function produceContainsFilter(rcm, condition) {
   var pm = rcm.getPropertyMeta(condition.property);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+      if (condition.value && condition.value.length) {
+        var tmp = {};
+        tmp[pm._refClass.getKeyProperties()[0]] = {$in: condition.value};
+        return {$contains: tmp};
+      }
       return {$contains: ConditionParser(condition.nestedConditions, pm._refClass)};
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
       return {$regex: toScalar(condition.value)};
