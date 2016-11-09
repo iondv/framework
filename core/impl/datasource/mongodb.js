@@ -544,7 +544,9 @@ function MongoDs(config) {
 
   /**
    * @param {String} type
-   * @param {{expressions: {}, filter: {}, groupBy: String[]}} options
+   * @param {{expressions: {}}} options
+   * @param {{}} [options.filter]
+   * @param {{}} [options.grouping]
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
