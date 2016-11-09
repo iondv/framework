@@ -454,6 +454,17 @@ function MongoDs(config) {
 
   }
 
+  /**
+   * @param {String} type
+   * @param {{}} [options]
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.countTotal]
+   * @returns {Promise}
+   */
   this._fetch = function (type, options) {
     options = options || {};
     return this.getCollection(type).then(
@@ -488,7 +499,13 @@ function MongoDs(config) {
 
   /**
    * @param {String} type
-   * @param {{batchSize: Number}} options
+   * @param {{}} [options]
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Number} [options.batchSize]
    * @param {Function} cb
    * @returns {Promise}
    */
