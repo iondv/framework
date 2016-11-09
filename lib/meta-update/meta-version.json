@@ -19,22 +19,25 @@
                             ["\"sel_conditions\"(|\\s):", "\"selConditions\":"],
                             ["\"sel_sorting\"(|\\s):", "\"selSorting\":"],
                             ["\"index_search\"(|\\s):", "\"indexSearch\":"],
-                            ["\"eager_loading\"(|\\s):", "\"eagerLoading\":"]],
+                            ["\"eager_loading\"(|\\s):", "\"eagerLoading\":"],
+                            ["\"nestedConditions\"(|\\s):", "\"valueConditions\":"],
+                            ["\"actions\"(|\\s): 0", "\"actions\": null"],
+                            ["\"columns\"(|\\s):(|\\s)null", "\"columns\": \"\""]],
       "replaceRegexpDescr": "Массив с парой на замену. Значения: массив массивов из двух элементов - в первом regexp в виде строки, выполняемый глобально для поиска текста на замены, второй элемент - строка на замену."
     },
     "objectUpdate": {
       "descripton": "Набор операций над распарсенным JSON, выполняеся вторым, после textUpdate",
       "class": {
         "descripton": "Набор операций над свойствами класса.",
-        "delete": [],
+        "delete": ["links"],
         "deleteDescr": "Свойства класса к удалению. Значения: массив строк с именем свойств объекта",
-        "new": [{"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "new": [{"propertyName": "history", "value": 0}, {"propertyName": "journaling", "value": false}, {"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
         "newDescr1": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
         "newDescr2": "по формату  {\"propertyName\": \"\", \"value\":\"\"}",
         "rename": [],
         "renameDescr1": "Свойства класса к переименованию. Значения: массив объектов с именем свойства и новым имененм объекта",
         "renameDescr2": "по формату {\"propertyName\": \"\", \"propertyNewName\":\"\"}",
-        "convertType": [{"propertyName": "", "valueNewType": "", "param": []}],
+        "convertType": [],
         "convertTypeDescr": "Список свойств класса к конвертации типов значений, конвертация типов осуществляется на основе параметров для пар конвертации и типовых преобразования JS",
         "convertTypeDescr1": "Значения: массив элементов, с обязательные свойства со строковыми значениями: propertyName - имя параметра, valueNewType - новый тип объекта",
         "convertTypeDescr2": "Исходный тип определяется автоматически через typeof, может быть number, string, boolean, null, array, object (формат JSON)",
@@ -56,7 +59,7 @@
         "compositeProperty": {
           "properties": {
             "delete": [],
-            "new": [],
+            "new": [{"propertyName": "allowedFileTypes", "value": null}, {"propertyName": "maxFileCount", "value": 0}],
             "rename": [],
             "convertType": [],
             "depricatedValue": [{"propertyName": "type", "value": 53}]
@@ -78,7 +81,8 @@
               "fullFields": {
                 "descripton": "Набор операций над свойствами полей представления",
                 "delete": [],
-                "new": [],
+                "new": [{"propertyName": "hierarchyAttributes", "value": null}, {"propertyName": "commands", "value": null},
+                         {"propertyName": "hint", "value": ""}, {"propertyName": "historyDisplayMode", "value": 0}, {"propertyName": "tags", "value": null0}],
                 "rename": [],
                 "convertType": [],
                 "depricatedValue": []
@@ -105,8 +109,8 @@
       },
       "section": {
         "descripton": "Набор операций над секциями",
-        "delete": [],
-        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "delete": ["modules", "type", "location"],
+        "new": [{"propertyName": "mode", "value": "0"}, {"propertyName": "tags", "value": "0"},{"propertyName": "metaVersion", "value": "2.0.0"}],
         "rename": [],
         "convertType": [],
         "depricatedValue": [],
@@ -115,7 +119,7 @@
       "menu": {
         "descripton": "Набор операций над пунктами меню",
         "delete": [],
-        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "new": [{"propertyName": "title", "value": ""}, {"propertyName": "metaVersion", "value": "2.0.0"}],
         "rename": [],
         "convertType": [],
         "depricatedValue": [],
@@ -124,33 +128,11 @@
     }
   },
   {
-    "version": "2.0.1"
-  },
-  {
-    "version": "2.0.3"
-  },
-  {
-    "version": "2.3.1"
-  },
-  {
-    "version": "5.0.1"
-  },
-  {
     "version": "6.2.1"
-  },
-  {
-    "version": "6.2.2"
-  },
-  {
-    "version": "6.3.1"
-  },
-  {
-    "version": "1.2.2"
   },
   {
     "version": "1.4.1"
   }
-
 ]
 
 

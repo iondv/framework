@@ -34,9 +34,9 @@ getListOfAppliactionsMetaFiles(pathToApp)
   .then(convertMetaVersion)
   .then(writeMetaFiles)
   .then((metaApp) => {
-    // console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
-    console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
-    console.log(util.inspect(metaApp.navigation['khv-svyaz-info@svyazHK'],  {showHidden: true, depth: 2}));
+    // 4debug console.log(util.inspect(metaApp,  {showHidden: true, depth: 3}));
+    // console.log(util.inspect(metaApp.meta['khv-svyaz-info@typeAms'],  {showHidden: true, depth: 3}));
+    // console.log(util.inspect(metaApp.navigation['khv-svyaz-info@svyazHK'],  {showHidden: true, depth: 2}));
     console.timeEnd('Конвертация меты закончена за');
   })
   .catch((err)=> {
@@ -521,7 +521,7 @@ function objectPropertyAction(metaName, metaObject, objectUpdate) {
   // Добавление атрибутов
   if (objectUpdate.new && objectUpdate.new.length) {
     objectUpdate.new.forEach((item) => {
-      if (item.propertyName) {
+      if (item.propertyName && !metaObject[item.propertyName]) {
         metaObject[item.propertyName] = typeof item.value === 'undefined' ? null : item.value;
       } else {
         console.warn('Отсутствует имя нового свойства propertyName', item);
