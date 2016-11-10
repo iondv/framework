@@ -7,25 +7,29 @@ const AccessChecker = require('core/interfaces/AccessChecker');
 
 function IonAccessChecker(config) {
 
-  var aclProvider = config.accessChecker;
+  var aclProvider = config.aclProvider;
 
   if (!aclProvider) {
     throw new Error('Не указан aclProvider!');
   }
 
-  this._checkNode = function (node) {
-    return new Promise(function(resolve, reject){
-      
+  this._checkNode = function (user, node) {
+    return new Promise(function (resolve, reject) {
+      if (user) {
+        aclProvider.checkAccess(user, 'n::' + node.id, 'read').then(resolve).catch(reject);
+      } else {
+        resolve(false);
+      }
     });
   };
 
-  this._checkClass = function (classObj) {
+  this._checkClass = function (user, classObj) {
   };
 
-  this._checkItem = function (item) {
+  this._checkItem = function (user, item) {
   };
 
-  this._checkAttribute = function (property) {
+  this._checkAttribute = function (user, property) {
   };
 
   this._accessFilter = function () {

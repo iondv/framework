@@ -8,16 +8,16 @@
  */
 function AccessChecker() {
 
-  this.checkNode = function (node) {
-    return this._checkNode(node);
+  this.checkNode = function (user, node) {
+    return this._checkNode(user, node);
   };
 
-  this.checkClass = function (classObj) {
-    return this._checkClass(classObj);
+  this.checkClass = function (user, classObj) {
+    return this._checkClass(user, classObj);
   };
 
-  this.checkItem = function (item) {
-    return this._checkItem(item);
+  this.checkItem = function (user, item) {
+    return this._checkItem(user, item);
   };
 
   this.checkAttribute = function (property) {
@@ -26,7 +26,7 @@ function AccessChecker() {
 
   this.accessFilter = function () {
     return this._accessFilter();
-  }
+  };
 
 }
 
