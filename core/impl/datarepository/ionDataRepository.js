@@ -720,8 +720,8 @@ function IonDataRepository(options) {
       }
       return value;
     } else if (pm.type === PropertyTypes.BOOLEAN) {
-      if(value === null) {
-        if(pm.nullable){
+      if (value === null) {
+        if (pm.nullable) {
           return null;
         } else {
           return false;
@@ -763,7 +763,7 @@ function IonDataRepository(options) {
 
   function fileSaver(updates, pm) {
     return new Promise(function (rs, rj) {
-      var rej = function(reason){
+      var rej = function (reason) {
         reason.message = 'При попытке сохранения значения атрибута ' + pm.name + ' возникла ошибка: ' + reason.message;
         rj(reason);
       };
@@ -1304,7 +1304,8 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' +
+        master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
