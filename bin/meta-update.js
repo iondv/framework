@@ -521,8 +521,12 @@ function objectPropertyAction(metaName, metaObject, objectUpdate) {
   // Добавление атрибутов
   if (objectUpdate.new && objectUpdate.new.length) {
     objectUpdate.new.forEach((item) => {
-      if (item.propertyName && !metaObject[item.propertyName]) {
-        metaObject[item.propertyName] = typeof item.value === 'undefined' ? null : item.value;
+      if (item.propertyName) {
+        if (!metaObject[item.propertyName]) {
+          metaObject[item.propertyName] = typeof item.value === 'undefined' ? null : item.value;
+        } else {
+          console.warn('Свойство %s уже есть в', item.propertyName, metaName);
+        }
       } else {
         console.warn('Отсутствует имя нового свойства propertyName', item);
       }

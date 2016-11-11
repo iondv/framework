@@ -29,7 +29,7 @@
       "descripton": "Набор операций над распарсенным JSON, выполняеся вторым, после textUpdate",
       "class": {
         "descripton": "Набор операций над свойствами класса.",
-        "delete": ["links"],
+        "delete": [],
         "deleteDescr": "Свойства класса к удалению. Значения: массив строк с именем свойств объекта",
         "new": [{"propertyName": "history", "value": 0}, {"propertyName": "journaling", "value": false}, {"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
         "newDescr1": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
@@ -58,7 +58,7 @@
         "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение",
         "compositeProperty": {
           "properties": {
-            "delete": [],
+            "delete": ["links"],
             "new": [{"propertyName": "allowedFileTypes", "value": null}, {"propertyName": "maxFileCount", "value": 0}],
             "rename": [],
             "convertType": [],
@@ -82,7 +82,7 @@
                 "descripton": "Набор операций над свойствами полей представления",
                 "delete": [],
                 "new": [{"propertyName": "hierarchyAttributes", "value": null}, {"propertyName": "commands", "value": null},
-                         {"propertyName": "hint", "value": ""}, {"propertyName": "historyDisplayMode", "value": 0}, {"propertyName": "tags", "value": null0}],
+                         {"propertyName": "hint", "value": ""}, {"propertyName": "historyDisplayMode", "value": 0}, {"propertyName": "tags", "value": null}],
                 "rename": [],
                 "convertType": [],
                 "depricatedValue": []
