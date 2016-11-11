@@ -8,28 +8,71 @@ const AccessChecker = require('core/interfaces/AccessChecker');
 function IonAccessChecker(config) {
 
   var aclProvider = config.aclProvider;
-
   if (!aclProvider) {
     throw new Error('Не указан aclProvider!');
   }
+  var nodePrefix = config.nodePrefix  || 'n::';
+  var classPrefix = config.classPrefix  || 'c::';
+  var itemPrefix = config.itemPrefix || 'i::';
+  var attributePrefix = config.attributePrefix || 'a::';
 
-  this._checkNode = function (user, node) {
+  function checker(user, subject, permissions) {
     return new Promise(function (resolve, reject) {
       if (user) {
-        aclProvider.checkAccess(user, 'n::' + node.id, 'read').then(resolve).catch(reject);
+        aclProvider.checkAccess(user, subject, permissions, function (err, res) {
+          if (err) {
+            return reject(err);
+          }
+          return resolve(res ? true : false);
+        });
       } else {
         resolve(false);
       }
     });
+  }
+
+  /**
+   *
+   * @param {String} user
+   * @param {{}} node
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this._checkNode = function (user, node, permissions) {
+    return checker(user, nodePrefix + node.id, permissions);
   };
 
-  this._checkClass = function (user, classObj) {
+  /**
+   *
+   * @param {String} user
+   * @param {String} className
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this._checkClass = function (user, className, permissions) {
+    return checker(user, classPrefix + className, permissions);
   };
 
-  this._checkItem = function (user, item) {
+  /**
+   *
+   * @param {String} user
+   * @param {Item} item
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this._checkItem = function (user, item, permissions) {
+    return checker(user, itemPrefix + item.getClassName() + '@' + item.getItemId(), permissions);
   };
 
-  this._checkAttribute = function (user, property) {
+  /**
+   *
+   * @param {String} user
+   * @param {Property} attribute
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this._checkAttribute = function (user, attribute, permissions) {
+    return checker(user, attributePrefix + attribute.item.getClassName + attribute.name, permissions);
   };
 
   this._accessFilter = function () {

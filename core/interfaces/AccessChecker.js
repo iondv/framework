@@ -8,22 +8,54 @@
  */
 function AccessChecker() {
 
-  this.checkNode = function (user, node) {
-    return this._checkNode(user, node);
+  /**
+   *
+   * @param {String} user
+   * @param {{}} node
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this.checkNode = function (user, node, permissions) {
+    return this._checkNode(user, node, permissions);
   };
 
-  this.checkClass = function (user, classObj) {
-    return this._checkClass(user, classObj);
+  /**
+   *
+   * @param {String} user
+   * @param {String} className
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this.checkClass = function (user, className, permissions) {
+    return this._checkClass(user, className, permissions);
   };
 
-  this.checkItem = function (user, item) {
-    return this._checkItem(user, item);
+  /**
+   *
+   * @param {String} user
+   * @param {Item} item
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this.checkItem = function (user, item, permissions) {
+    return this._checkItem(user, item, permissions);
   };
 
-  this.checkAttribute = function (property) {
-    return this._checkAttribute(property);
+  /**
+   *
+   * @param {String} user
+   * @param {Property} attribute
+   * @param {String | Array} permissions
+   * @returns {Promise}
+   */
+  this.checkAttribute = function (user, attribute, permissions) {
+    return this._checkAttribute(user, attribute, permissions);
   };
 
+  /**
+   *
+   * @returns {Promise}
+   */
   this.accessFilter = function () {
     return this._accessFilter();
   };
