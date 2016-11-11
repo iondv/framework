@@ -16,21 +16,6 @@ function IonAccessChecker(config) {
   var itemPrefix = config.itemPrefix || 'i::';
   var attributePrefix = config.attributePrefix || 'a::';
 
-  function checker(user, subject, permissions) {
-    return new Promise(function (resolve, reject) {
-      if (user) {
-        aclProvider.checkAccess(user, subject, permissions, function (err, res) {
-          if (err) {
-            return reject(err);
-          }
-          return resolve(res ? true : false);
-        });
-      } else {
-        resolve(false);
-      }
-    });
-  }
-
   /**
    *
    * @param {String} user
@@ -39,7 +24,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkNode = function (user, node, permissions) {
-    return checker(user, nodePrefix + node.id, permissions);
+    return aclProvider.checkAccess(user, nodePrefix + node.id, permissions);
   };
 
   /**
@@ -50,7 +35,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkClass = function (user, className, permissions) {
-    return checker(user, classPrefix + className, permissions);
+    return aclProvider.checkAccess(user, classPrefix + className, permissions);
   };
 
   /**
@@ -61,7 +46,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkItem = function (user, item, permissions) {
-    return checker(user, itemPrefix + item.getClassName() + '@' + item.getItemId(), permissions);
+    return aclProvider.checkAccess(user, itemPrefix + item.getClassName() + '@' + item.getItemId(), permissions);
   };
 
   /**
@@ -72,7 +57,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkAttribute = function (user, attribute, permissions) {
-    return checker(user, attributePrefix + attribute.item.getClassName + attribute.name, permissions);
+    return aclProvider.checkAccess(user, attributePrefix + attribute.item.getClassName + attribute.name, permissions);
   };
 
   this._accessFilter = function () {

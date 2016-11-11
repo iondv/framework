@@ -153,6 +153,8 @@
       },
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
         "options":{
           "dataSource": "ion://Db"
         }

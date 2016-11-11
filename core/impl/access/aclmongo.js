@@ -21,7 +21,7 @@ function MongoAcl(config) {
     throw 'Не указан источник данных для подсистемы контроля доступа!';
   }
 
-  this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+  this.acl = {};
 
   this.globalMarker = config.allAlias ? config.allAlias : '*';
 
@@ -31,6 +31,7 @@ function MongoAcl(config) {
    */
   this._init = function () {
     return new Promise(function (resolve, reject) {
+      _this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
       resolve();
     });
   };
@@ -57,7 +58,7 @@ function MongoAcl(config) {
         return false;
       };
 
-      this.acl.isAllowed(subject, resource, permissions, function (err, res) {
+      _this.acl.isAllowed(subject, resource, permissions, function (err, res) {
         if (!pr(err, res)) {
           _this.acl.isAllowed(subject, resource, _this.globalMarker, function (err, res) {
             if (!pr(err, res)) {
