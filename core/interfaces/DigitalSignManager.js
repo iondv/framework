@@ -7,7 +7,7 @@ function DigitalSignManager() {
   /**
    * @param {Item} item
    * @param {String} action
-   * @param {String} preprocessor
+   * @param {String} [preprocessor]
    * @returns {Promise}
    */
   this.signingAvailable = function (item, action, preprocessor) {
