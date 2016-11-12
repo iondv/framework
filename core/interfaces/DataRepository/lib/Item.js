@@ -35,6 +35,8 @@ function Item(id, base, classMeta) {
 
   this.references = {};
 
+  this.calculated = {};
+
   this.files = {};
 
   this.getItemId = function () {
@@ -79,6 +81,10 @@ function Item(id, base, classMeta) {
   };
 
   function getFromBase(name) {
+    if (_this.calculated.hasOwnProperty(name)) {
+      return _this.calculated[name];
+    }
+
     if (_this.base.hasOwnProperty(name)) {
       var props = _this.getProperties();
       var p = props[name];
