@@ -4,6 +4,8 @@
 var config = require('../config');
 var di = require('core/di');
 
+var IonLogger = require('core/impl/log/IonLogger');
+var sysLog = new IonLogger({});
 var Acl = require('acl');
 
 var name = 'admin';
@@ -33,16 +35,25 @@ process.argv.forEach(function (val) {
 var scope = null;
 // Связываем приложение
 di('app', config.di,
-  {},
+  {
+    sysLog: sysLog
+  },
   null,
   ['application', 'rtEvents', 'sessionHandler']
 ).then(
   function (scp) {
     scope = scp;
     return new Promise(function (rs, rj) {
-      var Acl = require('acl');
-
-      _this.acl = new Acl(new Acl.mongodbBackend(scope.dataSources.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+      var acl = new Acl(new Acl.mongodbBackend(scope.Db.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+      acl.allow('user',
+        [ 'n::develop-and-test',
+          'n::bugs',
+          'n::readonlyAttrAsString',
+          'n::readonlyAttrAsString.readonlyBoolean',
+          'n::readonlyAttrAsString.readonlyColl.catalog'
+        ], '*');
+      acl.addUserRoles('vasya', 'user');
+      rs();
     });
   }
 ).then(function () {
