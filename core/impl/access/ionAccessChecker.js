@@ -24,8 +24,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkNode = function (user, node, permissions) {
-    console.log('Node=', nodePrefix + node.id);
-    return aclProvider.checkAccess(user, nodePrefix + node.id, permissions);
+    return aclProvider.checkAccess(user, nodePrefix + node.code, permissions);
   };
 
   /**

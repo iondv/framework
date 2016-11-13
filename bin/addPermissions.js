@@ -46,14 +46,19 @@ di('app', config.di,
     return new Promise(function (rs, rj) {
       var acl = new Acl(new Acl.mongodbBackend(scope.Db.connection(), config.prefix ? config.prefix : 'ion_acl_'));
       acl.allow('user',
-        [ 'n::develop-and-test',
-          'n::bugs',
-          'n::readonlyAttrAsString',
-          'n::readonlyAttrAsString.readonlyBoolean',
-          'n::readonlyAttrAsString.readonlyColl.catalog'
-        ], '*');
-      acl.addUserRoles('vasya', 'user');
-      rs();
+        ['n::key_guid',
+          'n::oneToOne.refBackRef.ref',
+          'n::simple_workflow',
+          'n::schedule',
+          'n::class_string'
+        ], '*', function (err) {
+          acl.addUserRoles('vasya', 'user', function (err) {
+              acl.isAllowed('vasya', 'n::key_guid', '1', function (err,res) {
+                console.log('isAllowed=', res);
+                rs();
+              });
+            });
+        });
     });
   }
 ).then(function () {
