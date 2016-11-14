@@ -23,11 +23,12 @@ function AccessChecker() {
    *
    * @param {String} user
    * @param {String} className
-   * @param {String | Array} permissions
+   * @param {String} namespace
+   * @param {String} permission
    * @returns {Promise}
    */
-  this.checkClass = function (user, className, permissions) {
-    return this._checkClass(user, className, permissions);
+  this.checkClass = function (user, className, namespace, permission) {
+    return this._checkClass(user, className, namespace, permission);
   };
 
   /**

@@ -50,7 +50,8 @@ di('app', config.di,
           'n::develop-and-test@oneToOne.refBackRef.ref',
           'n::develop-and-test@simple_workflow',
           'n::develop-and-test@schedule',
-          'n::develop-and-test@class_string'
+          'n::develop-and-test@class_string',
+          'c::develop-and-test@class_string'
         ], '*', function (err) {
           acl.addUserRoles('vasya', 'user', function (err) {
               var promises = [];

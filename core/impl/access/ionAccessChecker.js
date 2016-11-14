@@ -51,9 +51,20 @@ function IonAccessChecker(config) {
     });
   }
 
-  function userPermissions(user) {
+  function checkPermission(user, code, permission) {
     return new Promise(function (resolve, reject) {
-      getRoles(user).then(getPermissions).then(resolve).catch(reject);
+      getRoles(user).then(getPermissions).then(function (permissions) {
+          for (var i = 0; i < permissions.length; i++) {
+            if (permissions[i][code]) {
+              if (permissions[i][code].indexOf('*') > -1 || permissions[i][code].indexOf(permission) > -1) {
+                console.log('code=', code, true);
+                return resolve(true);
+              }
+            }
+          }
+          console.log('code=', code, false);
+          return resolve(false);
+        }).catch(reject);
     });
   }
 
@@ -65,53 +76,46 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkNode = function (user, node, permission) {
-    return new Promise(function (resolve, reject) {
-      userPermissions(user)
-        .then(function (permissions) {
-          var nodeId = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
-          for (var i = 0; i < permissions.length; i++) {
-            if (permissions[i][nodeId]) {
-              if (permissions[i][nodeId].indexOf('*') > -1 || permissions[i][nodeId].indexOf(permission) > -1) {
-                return resolve(true);
-              }
-            }
-          }
-          return resolve(false);
-        }).catch(reject);
-    });
+    var code = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
+    return checkPermission(user, code, permission);
   };
 
   /**
    *
    * @param {String} user
    * @param {String} className
-   * @param {String | Array} permissions
+   * @param {String} namespace
+   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkClass = function (user, className, permissions) {
-    return aclProvider.checkAccess(user, classPrefix + className, permissions);
+  this._checkClass = function (user, className, namespace, permission) {
+    console.log('checkClass');
+    var code = classPrefix + (namespace ? namespace + '@' : '') + className;
+    return checkPermission(user, code, permission);
   };
 
   /**
    *
    * @param {String} user
    * @param {Item} item
-   * @param {String | Array} permissions
+   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkItem = function (user, item, permissions) {
-    return aclProvider.checkAccess(user, itemPrefix + item.getClassName() + '@' + item.getItemId(), permissions);
+  this._checkItem = function (user, item, permission) {
+    var code = itemPrefix + item.getClassName() + '@' + item.getItemId();
+    return checkPermission(user, code, permission);
   };
 
   /**
    *
    * @param {String} user
    * @param {Property} attribute
-   * @param {String | Array} permissions
+   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkAttribute = function (user, attribute, permissions) {
-    return aclProvider.checkAccess(user, attributePrefix + attribute.item.getClassName + attribute.name, permissions);
+  this._checkAttribute = function (user, attribute, permission) {
+    var code = attributePrefix + attribute.item.getClassName + attribute.name;
+    return checkPermission(user, code, permission);
   };
 
   this._accessFilter = function () {
