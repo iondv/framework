@@ -24,6 +24,15 @@ function AclProvider() {
   this.checkAccess = function (subject, resource, permissions) {
     return this._checkAccess(subject, resource, permissions);
   };
+
+  /**
+   *
+   * @param {String} subject
+   * @returns {Promise}
+   */
+  this.getResources = function (subject) {
+    return this._getResources(subject);
+  };
 }
 
 module.exports = AclProvider;

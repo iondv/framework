@@ -81,6 +81,27 @@ function MongoAcl(config) {
       });
     });
   };
+
+  /**
+   *
+   * @param {String} subject
+   * @returns {Promise}
+   */
+  this._getResources = function (subject) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.userRoles(subject, function (err, roles) {
+        if (err) {
+          return reject(err);
+        }
+        _this.acl.whatResources(roles, function (err, res) {
+          if (err) {
+            return reject(err);
+          }
+          return resolve(res);
+        });
+      });
+    });
+  };
 }
 
 MongoAcl.prototype = new AclProvider();

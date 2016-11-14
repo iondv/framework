@@ -46,17 +46,30 @@ di('app', config.di,
     return new Promise(function (rs, rj) {
       var acl = new Acl(new Acl.mongodbBackend(scope.Db.connection(), config.prefix ? config.prefix : 'ion_acl_'));
       acl.allow('user',
-        ['n::key_guid',
-          'n::oneToOne.refBackRef.ref',
-          'n::simple_workflow',
-          'n::schedule',
-          'n::class_string'
+        ['n::develop-and-test@key_guid',
+          'n::develop-and-test@oneToOne.refBackRef.ref',
+          'n::develop-and-test@simple_workflow',
+          'n::develop-and-test@schedule',
+          'n::develop-and-test@class_string'
         ], '*', function (err) {
           acl.addUserRoles('vasya', 'user', function (err) {
-              acl.isAllowed('vasya', 'n::key_guid', '1', function (err,res) {
-                console.log('isAllowed=', res);
-                rs();
-              });
+              var promises = [];
+              promises.push(new Promise(function (resolve, reject) {
+                acl.isAllowed('vasya', 'n::develop-and-test@key_guid', '1', function (err,res) {
+                  resolve('isAllowed=' + res);
+                });
+              }));
+              promises.push(new Promise(function (resolve, reject) {
+                acl.userRoles('vasya', function (err, roles) {
+                  resolve(roles);
+                });
+              }));
+              promises.push(new Promise(function (resolve, reject) {
+                acl.whatResources('user', function (err, data) {
+                  resolve(data);
+                });
+              }));
+              Promise.all(promises).then(function (results) {console.log(results); rs();}).catch(function (err) {console.log(err);});
             });
         });
     });

@@ -16,6 +16,9 @@ function IonAccessChecker(config) {
   var itemPrefix = config.itemPrefix || 'i::';
   var attributePrefix = config.attributePrefix || 'a::';
 
+  var nodesCache = {};
+  var nodesCacheLoaded = false;
+
   /**
    *
    * @param {String} user
@@ -24,7 +27,17 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkNode = function (user, node, permissions) {
-    return aclProvider.checkAccess(user, nodePrefix + node.code, permissions);
+    return new Promise(function(resolve, reject){
+      if (nodesCacheLoaded) {
+        
+      } else {
+        aclProvider.getResources(user).then(function(nodes){
+          
+        }).catch(reject);
+      }
+      var nodeId = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
+      return aclProvider.checkAccess(user, nodeId, permissions);  
+    });
   };
 
   /**
