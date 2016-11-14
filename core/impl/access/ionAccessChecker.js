@@ -16,27 +16,68 @@ function IonAccessChecker(config) {
   var itemPrefix = config.itemPrefix || 'i::';
   var attributePrefix = config.attributePrefix || 'a::';
 
-  var nodesCache = {};
-  var nodesCacheLoaded = false;
+  var permissions = {};
+  var userRoles = {};
+
+  function getRoles(user) {
+    return new Promise(function (resolve, reject) {
+      if (userRoles[user]) {
+        return resolve(userRoles[user]);
+      } else {
+        aclProvider.getRoles(user).then(function (roles) {
+          userRoles[user] = roles;
+          return resolve(roles);
+        }).catch(reject);
+      }
+    });
+  }
+
+  function getPermissions(roles) {
+    return new Promise(function (resolve, reject) {
+      var promises = [];
+      roles.forEach(function (role) {
+        promises.push(new Promise(function (resolve, reject) {
+          if (permissions[role]) {
+            return resolve(permissions[role]);
+          } else {
+            aclProvider.getResources(role).then(function (res) {
+              permissions[role] = res;
+              return resolve(res);
+            }).catch(reject);
+          }
+        }));
+      });
+      Promise.all(promises).then(resolve).catch(reject);
+    });
+  }
+
+  function userPermissions(user) {
+    return new Promise(function (resolve, reject) {
+      getRoles(user).then(getPermissions).then(resolve).catch(reject);
+    });
+  }
 
   /**
    *
    * @param {String} user
    * @param {{}} node
-   * @param {String | Array} permissions
+   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkNode = function (user, node, permissions) {
-    return new Promise(function(resolve, reject){
-      if (nodesCacheLoaded) {
-        
-      } else {
-        aclProvider.getResources(user).then(function(nodes){
-          
+  this._checkNode = function (user, node, permission) {
+    return new Promise(function (resolve, reject) {
+      userPermissions(user)
+        .then(function (permissions) {
+          var nodeId = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
+          for (var i = 0; i < permissions.length; i++) {
+            if (permissions[i][nodeId]) {
+              if (permissions[i][nodeId].indexOf('*') > -1 || permissions[i][nodeId].indexOf(permission) > -1) {
+                return resolve(true);
+              }
+            }
+          }
+          return resolve(false);
         }).catch(reject);
-      }
-      var nodeId = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
-      return aclProvider.checkAccess(user, nodeId, permissions);  
     });
   };
 

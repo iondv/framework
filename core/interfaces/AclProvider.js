@@ -28,10 +28,19 @@ function AclProvider() {
   /**
    *
    * @param {String} subject
+   * @returns {*}
+   */
+  this.getRoles = function (subject) {
+    return this._getRoles(subject);
+  };
+
+  /**
+   *
+   * @param {String | Array} roles
    * @returns {Promise}
    */
-  this.getResources = function (subject) {
-    return this._getResources(subject);
+  this.getResources = function (roles) {
+    return this._getResources(roles);
   };
 }
 
