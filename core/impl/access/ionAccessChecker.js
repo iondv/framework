@@ -57,12 +57,10 @@ function IonAccessChecker(config) {
           for (var i = 0; i < permissions.length; i++) {
             if (permissions[i][code]) {
               if (permissions[i][code].indexOf('*') > -1 || permissions[i][code].indexOf(permission) > -1) {
-                console.log('code=', code, true);
                 return resolve(true);
               }
             }
           }
-          console.log('code=', code, false);
           return resolve(false);
         }).catch(reject);
     });
@@ -89,7 +87,6 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkClass = function (user, className, namespace, permission) {
-    console.log('checkClass');
     var code = classPrefix + (namespace ? namespace + '@' : '') + className;
     return checkPermission(user, code, permission);
   };
