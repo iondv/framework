@@ -173,7 +173,7 @@ function DsMetaRepository(options) {
       }
     } catch (err) {
     }
-    throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -644,23 +644,29 @@ function DsMetaRepository(options) {
               /**
                * @type {ClassMeta}
                */
-              cm = _this.classMeta[ns][name].byOrder[i];
-              if (cm.plain.ancestor) {
-                cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
-                if (cm.ancestor) {
-                  cm.ancestor.descendants.push(cm);
+              try {
+                cm = _this.classMeta[ns][name].byOrder[i];
+                if (cm.plain.ancestor) {
+                  cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
+                  if (cm.ancestor) {
+                    cm.ancestor.descendants.push(cm);
+                  }
                 }
-              }
 
-              pms = cm.getPropertyMetas();
-              for (j = 0; j < pms.length; j++) {
-                pm = pms[j];
-                if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
-                  pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                pms = cm.getPropertyMetas();
+                for (j = 0; j < pms.length; j++) {
+                  pm = pms[j];
+                  if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                    pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
                 }
                 if (pm.formula && options.calc instanceof Calculator) {
                   pm._formula = options.calc.parseFormula(pm.formula);
+                  }
                 }
+              } catch (e) {
+                console.error('В неймспейсе %s классе %s, атрибуте %s, ошибка получения связанного класса %s',
+                  cm.namespace, name, pm.name, pm.refClass);
+                throw e;
               }
             }
           }

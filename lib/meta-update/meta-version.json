@@ -1,0 +1,132 @@
+[
+  {
+    "version": "2.0.0",
+    "versionDescr": "Кодирование номер версии студии",
+    "transformateFunctionName": "verR2F0P0",
+    "transformateFunctionNameDescr": "Наименование функции трансформации в файле transformation.js. Если значения нет или оно null - значит функции нет",
+    "transformateFunctionNameDescr1": "Трансформация запускается только тогда, когда ВСЕ метаданные (meta,view) одного класса доведены до одной версии",
+    "textUpdate": {
+      "descripton": "Набор операций над текстом, выполняеся первым, до до парсинга JSON с метой ",
+      "replaceRegexp": [["\"order_number\"(|\\s):", "\"orderNumber\":"],
+                            ["\"selection_provider\"(|\\s):", "\"selectionProvider\":"],
+                            ["\"selection_paginated\"(|\\s):", "\"selectionPaginated\":"],
+                            ["\"items_class\"(|\\s):", "\"itemsClass\":"],
+                            ["\"ref_class\"(|\\s):", "\"refClass\":"],
+                            ["\"is_struct\"(|\\s):", "\"isStruct\":"],
+                            ["\"default_value\"(|\\s):", "\"defaultValue\":"],
+                            ["\"back_ref\"(|\\s):", "\"backRef\":"],
+                            ["\"back_coll\"(|\\s):", "\"backColl\":"],
+                            ["\"sel_conditions\"(|\\s):", "\"selConditions\":"],
+                            ["\"sel_sorting\"(|\\s):", "\"selSorting\":"],
+                            ["\"index_search\"(|\\s):", "\"indexSearch\":"],
+                            ["\"eager_loading\"(|\\s):", "\"eagerLoading\":"],
+                            ["\"nestedConditions\"(|\\s):", "\"valueConditions\":"],
+                            ["\"actions\"(|\\s): 0", "\"actions\": null"],
+                            ["\"columns\"(|\\s):(|\\s)null", "\"columns\": \"\""]],
+      "replaceRegexpDescr": "Массив с парой на замену. Значения: массив массивов из двух элементов - в первом regexp в виде строки, выполняемый глобально для поиска текста на замены, второй элемент - строка на замену."
+    },
+    "objectUpdate": {
+      "descripton": "Набор операций над распарсенным JSON, выполняеся вторым, после textUpdate",
+      "class": {
+        "descripton": "Набор операций над свойствами класса.",
+        "delete": [],
+        "deleteDescr": "Свойства класса к удалению. Значения: массив строк с именем свойств объекта",
+        "new": [{"propertyName": "history", "value": 0}, {"propertyName": "journaling", "value": false}, {"propertyName": "version", "value": ""},{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "newDescr1": "Новый свойства класса к добавлению со значением по умолчанию. Значения: массив объектов",
+        "newDescr2": "по формату  {\"propertyName\": \"\", \"value\":\"\"}",
+        "rename": [],
+        "renameDescr1": "Свойства класса к переименованию. Значения: массив объектов с именем свойства и новым имененм объекта",
+        "renameDescr2": "по формату {\"propertyName\": \"\", \"propertyNewName\":\"\"}",
+        "convertType": [],
+        "convertTypeDescr": "Список свойств класса к конвертации типов значений, конвертация типов осуществляется на основе параметров для пар конвертации и типовых преобразования JS",
+        "convertTypeDescr1": "Значения: массив элементов, с обязательные свойства со строковыми значениями: propertyName - имя параметра, valueNewType - новый тип объекта",
+        "convertTypeDescr2": "Исходный тип определяется автоматически через typeof, может быть number, string, boolean, null, array, object (формат JSON)",
+        "convertTypeDescr3": "Свойство param содержит массив параметров для типов конвертации в новый тип. Сами в себя типы не конвертируются. Для конвертации следующих типов параметры не нужны:",
+        "convertTypeDescr4": "любого свойства в null - будет null, null в любой тип - будет пустое значение данного типа: '', 0, false, [], {}",
+        "convertTypeDescr5": "конвертация number в: -> string ('2'), -> boolean (0 -> false, остальное истина), -> array (один элемент в массиве)",
+        "convertTypeDescr6": "конвертация string в: -> number (2), boolean (''-> false, остальное истина), -> array (если нет параметров - один элемент в массиве, если есть параметр - то он как разделитель строки)",
+        "convertTypeDescr7": "конвертация boolean в: -> number (false-> 0, true -> 1), -> array (один элемент в массиве)",
+        "convertTypeDescr8": "С параметрами: boolean -> string - param в первом элементе строка замены false, второй элемент для true), пример param: [\"нет\",\"да\"]",
+        "convertTypeDescr9": "array в -> number, string, boolean - param содержит индекс элемента, который будет конвертироваться, сама конвертация осуществляется по общим правилам. При этом если для конвертации нужны параметры - они идут со второго элемента",
+        "convertTypeDescr10": "конвертация любых типов в object всегда осуществляется через объект параметры (при этом доп.конвертация типов или трансформация невозможна), первый эле.массива строковое значение объекта, второй эл.массива строкове выражение regexp замены на преобразуемое значение",
+        "convertTypeDescr11": "пример конвретации строки в объект {'propertyName': 'compositeIndexes', 'valNewType': 'object', ",
+        "convertTypeDescr12": "'param': [[{\"properties\": [\"###\"],\"unique\": true}],\"###\"]} - где ### кодирует строку для замены черезе regexp на текущее значение этого свойства",
+        "convertTypeDescr13": "object -> number, string, boolean, null, array осуществляется указанием строки, содержащей через точку путь к свойсту, которое преобразуется,",
+        "convertTypeDescr14": "пример param: [\"index.key\"], если массив пустой, преобразуется весь объект по правилам преобразования типов. Если новый тип тоже объект значения свойства присваивается",
+        "depricatedValue": [],
+        "depricatedueValTypeDescr1": "Массив свойств и их значений, которые запрещены к использованию и не могут быть сконвертированны в виде объекта ",
+        "depricatedueValTypeDescr2": "{\"propertyName\": \"\", \"value\":\"\"}, если value = null , то сообщение для свойства с любыми значениями, иначе только свойство и значение",
+        "compositeProperty": {
+          "properties": {
+            "delete": ["links"],
+            "new": [{"propertyName": "allowedFileTypes", "value": null}, {"propertyName": "maxFileCount", "value": 0}],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": [{"propertyName": "type", "value": 53}]
+          }},
+        "compositePropertyDescr1": "Составные свойства - для которых применимы те же действия, что и для свойств объекта",
+        "compositePropertyDescr2": "Автоматически определяется как массив объектов или как объект. Допустимов вложение композитных свойств"
+      },
+      "views": {
+        "descripton": "Набор операций над свойствами представлений",
+        "delete": [],
+        "new": [{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": [],
+        "compositeProperty": {
+          "tabs": {
+            "rename": [],
+            "compositeProperty": {
+              "fullFields": {
+                "descripton": "Набор операций над свойствами полей представления",
+                "delete": [],
+                "new": [{"propertyName": "hierarchyAttributes", "value": null}, {"propertyName": "commands", "value": null},
+                         {"propertyName": "hint", "value": ""}, {"propertyName": "historyDisplayMode", "value": 0}, {"propertyName": "tags", "value": null}],
+                "rename": [],
+                "convertType": [],
+                "depricatedValue": []
+              }
+            }
+          },
+          "columns": {
+            "descripton": "Набор операций над свойствами представления столбцов",
+            "delete": [],
+            "new": [],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": []
+          },
+          "commands": {
+            "descripton": "Набор операций над свойствами полями команд",
+            "delete": [],
+            "new": [],
+            "rename": [],
+            "convertType": [],
+            "depricatedValue": []
+          }
+        }
+      },
+      "section": {
+        "descripton": "Набор операций над секциями",
+        "delete": ["modules", "type", "location"],
+        "new": [{"propertyName": "mode", "value": "0"}, {"propertyName": "tags", "value": "0"},{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": [],
+        "compositeProperty": {}
+      },
+      "menu": {
+        "descripton": "Набор операций над пунктами меню",
+        "delete": [],
+        "new": [{"propertyName": "title", "value": ""}, {"propertyName": "metaVersion", "value": "2.0.0"}],
+        "rename": [],
+        "convertType": [],
+        "depricatedValue": [],
+        "compositeProperty": {}
+      }
+    }
+  }
+]
+
+
