@@ -655,6 +655,8 @@ function DsMetaRepository(options) {
                 pm = pms[j];
                 if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
                   pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
+                  pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
                 }
               }
             }
