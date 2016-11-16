@@ -1384,7 +1384,7 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
-   * @param {String} operation
+   * @param {Boolean} operation
    * @returns {*}
    * @private
    */
@@ -1414,24 +1414,43 @@ function IonDataRepository(options) {
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {
-          var props;
-          var backColls = [];
-          var parsed = {};
-          for (var i = 0; i < details.length; i++) {
-            if (!parsed.hasOwnProperty(details[i].getClassName())) {
-              props = details[i].getMetaClass().getPropertyMetas();
-              for (var j = 0; j < props.length; j++) {
-                if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
-                  backColls.push(props[j].name);
-                }
+          var i;
+          if(pm.backColl) {
+            var colls = [];
+            for (i = 0; i < details.length; i++) {
+              var bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
+              if(bcpm.type === PropertyTypes.COLLECTION){
+                colls.push(bcpm.name);
               }
-              parsed[details[i].getClassName()] = true;
             }
+            if(colls.length === 0) {
+              return new Promise(function (r) {
+                r();
+              });
+            }
+            return editCollections(details, colls, [master], operation ? 'put' : 'eject');
+          } else {
+            var props;
+            var backColls = [];
+            var parsed = {};
+            for (i = 0; i < details.length; i++) {
+              if (!parsed.hasOwnProperty(details[i].getClassName())) {
+                props = details[i].getMetaClass().getPropertyMetas();
+                for (var j = 0; j < props.length; j++) {
+                  if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
+                    backColls.push(props[j].name);
+                  }
+                }
+                parsed[details[i].getClassName()] = true;
+              }
+            }
+            if (backColls.length === 0) {
+              return new Promise(function (r) {
+                r();
+              });
+            }
+            return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
           }
-          if (backColls.length === 0) {
-            return new Promise(function (r) {r();});
-          }
-          return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
         }).then(function () {
           var updates = {};
           updates[collection] = [];
