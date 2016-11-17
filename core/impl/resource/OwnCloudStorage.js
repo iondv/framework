@@ -15,6 +15,8 @@ const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStora
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const utf8 = require('utf8');
 
+// jshint maxstatements: 30, maxcomplexity: 20
+
 function OwnCloudStorage(config) {
 
   if (!config.url || !config.login || !config.password) {
@@ -252,7 +254,8 @@ function OwnCloudStorage(config) {
               href = decodeURI(href);
               href = href.replace('/' + urlTypes.WEBDAV, '');
               var collection = xpath.select(
-                '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]/*[local-name()="collection"]',
+                '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]' +
+                '/*[local-name()="collection"]',
                 dResponse[i]
               );
               if (collection.length) {
