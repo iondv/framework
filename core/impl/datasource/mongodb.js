@@ -112,9 +112,13 @@ function MongoDs(config) {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         _this.db.collection(type, {strict: true}, function (err, c) {
           if (!c) {
-            _this.db.createCollection(type)
-              .then(resolve)
-              .catch(reject);
+            try {
+              _this.db.createCollection(type)
+                .then(resolve)
+                .catch(reject);
+            } catch (e) { // Для отлавливания ошибки, при падении системы - закрывается БД и основная ошибка не выводится, а выводится вторичная от создания коллекции на закрытой базе "TypeError: callback is not a function"
+              return reject(err);
+            }
           } else {
             if (err) {
               return reject(err);
