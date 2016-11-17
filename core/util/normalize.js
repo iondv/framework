@@ -28,11 +28,11 @@ function normalize(data) {
      */
     var item;
     item = clone(data.base);
-    /*
+
     delete item._id;
     delete item._classVer;
     delete item._class;
-    */
+
     item.className = data.getMetaClass().getCanonicalName();
     var propertyMetas, pm, p;
     propertyMetas = data.getMetaClass().getPropertyMetas();
