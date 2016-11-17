@@ -6,6 +6,8 @@
 var Property = require('./Property');
 var PropertyTypes = require('core/PropertyTypes');
 
+// jshint maxstatements: 30
+
 /**
  * @param {String} id
  * @param {{}} base
