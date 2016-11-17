@@ -4,8 +4,10 @@
  */
 'use strict';
 
-var PropertyTypes = require('core/PropertyTypes');
-var equal = require('core/equal');
+const PropertyTypes = require('core/PropertyTypes');
+const equal = require('core/equal');
+
+// jshint maxstatements: 30, maxcomplexity: 20
 
 /**
  * @param {Item} item
@@ -79,10 +81,26 @@ function Property(item, propertyMeta, name) {
   };
 
   this.getDisplayValue = function (dateCallback) {
+    var i;
+    if (this.getType() === PropertyTypes.COLLECTION) {
+      var result = '';
+      var agregates = this.item.getAggregates(this.getName());
+      for (i = 0; i < agregates.length; i++) {
+        agregates[i].toString();
+        if (typeof this.meta.semanticGetter === 'function') {
+          result = result + (result ? ' ' : '') +
+            this.meta.semanticGetter.call(agregates[i], dateCallback);
+        } else {
+          result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback);
+        }
+      }
+      return result;
+    }
+
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+      for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
         if (this.selectionKeyMatch(selection[i].key)) {
           return selection[i].value;
         }
