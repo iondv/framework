@@ -13,12 +13,12 @@ function Preprocessor() {
     return this._applicable(item, options);
   };
   /**
-   * @param {Item} item
-   * @param {{}} [options]
+   * @param {{}} values
+   * @param {{}} options
    * @returns {Promise}
    */
-  this.process = function (item, options) {
-    return this._process(item, options);
+  this.process = function (values, options) {
+    return this._process(values, options);
   };
 }
 
