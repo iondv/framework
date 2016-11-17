@@ -171,7 +171,7 @@ function DsMetaRepository(options) {
       }
     } catch (err) {
     }
-    throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -642,13 +642,14 @@ function DsMetaRepository(options) {
               /**
                * @type {ClassMeta}
                */
-              cm = _this.classMeta[ns][name].byOrder[i];
-              if (cm.plain.ancestor) {
-                cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
-                if (cm.ancestor) {
-                  cm.ancestor.descendants.push(cm);
+              try {
+                cm = _this.classMeta[ns][name].byOrder[i];
+                if (cm.plain.ancestor) {
+                  cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
+                  if (cm.ancestor) {
+                    cm.ancestor.descendants.push(cm);
+                  }
                 }
-              }
 
               pms = cm.getPropertyMetas();
               for (j = 0; j < pms.length; j++) {
@@ -658,6 +659,10 @@ function DsMetaRepository(options) {
                 } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
                   pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
                 }
+              } catch (e) {
+                console.error('В неймспейсе %s классе %s, атрибуте %s, ошибка получения связанного класса %s',
+                  cm.namespace, name, pm.name, pm.refClass);
+                throw e;
               }
             }
           }
