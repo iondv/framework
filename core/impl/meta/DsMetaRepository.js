@@ -13,7 +13,7 @@ var clone = require('clone');
 
 const defaultVersion = '___default';
 
-/* jshint maxstatements: 60, maxcomplexity: 20 */
+/* jshint maxstatements: 60, maxcomplexity: 20, maxdepth: 20 */
 
 function viewPath(nodeCode,className) {
   return (nodeCode ? nodeCode + '/' : '') + className;
@@ -170,6 +170,7 @@ function DsMetaRepository(options) {
         }
       }
     } catch (err) {
+      throw err;
     }
     throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
@@ -494,7 +495,7 @@ function DsMetaRepository(options) {
     return function (dateCallback) {
       var p = this.property(propertyName);
       var tmp = p.getDisplayValue(dateCallback);
-      if(p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
+      if (p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
         tmp = dateCallback.call(null, p.getValue());
       } else if (start) {
         tmp = tmp.substr(start, length || null);
@@ -646,23 +647,26 @@ function DsMetaRepository(options) {
                 cm = _this.classMeta[ns][name].byOrder[i];
                 if (cm.plain.ancestor) {
                   cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
-                  if (cm.ancestor) {
-                    cm.ancestor.descendants.push(cm);
-                  }
+                  cm.ancestor.descendants.push(cm);
                 }
+              } catch (e) {
+                throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
+                  cm.getCanonicalName() + '.');
+              }
 
               pms = cm.getPropertyMetas();
               for (j = 0; j < pms.length; j++) {
                 pm = pms[j];
-                if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
-                  pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
-                } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
-                  pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                try {
+                  if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                    pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                  } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
+                    pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                  }
+                } catch (e) {
+                  throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
+                    cm.getCanonicalName() + '.' + pm.name + '.');
                 }
-              } catch (e) {
-                console.error('В неймспейсе %s классе %s, атрибуте %s, ошибка получения связанного класса %s',
-                  cm.namespace, name, pm.name, pm.refClass);
-                throw e;
               }
             }
           }
