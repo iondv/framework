@@ -628,6 +628,9 @@ function IonDataRepository(options) {
           } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
             result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
             emptyResult = false;
+          } else if(nm === '$exists') {
+            result[nm] = filter[nm];
+            emptyResult = false;
           } else {
             result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, propertyMeta);
             emptyResult = false;
