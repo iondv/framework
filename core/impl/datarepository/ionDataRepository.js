@@ -625,7 +625,7 @@ function IonDataRepository(options) {
               loadFiles(item).
               then(
                 function (item) {
-                  return enrich([item], nestingDepth ? nestingDepth : 0);
+                  return enrich([item], nestingDepth || 0);
                 }
               ).
               then(
@@ -668,48 +668,6 @@ function IonDataRepository(options) {
       throw new Error('Переданы некорректные параметры метода getItem');
     }
   };
-
-  /*
-  Данный метод на будущее - если будет реализовываться редактирование вложенных объектов
-
-   * @param {Item} item
-   * @param {{}} values
-   * @param {ChangeLogger} [logger]
-
-  function processRefItems(item,values,logger) {
-    var updates = {};
-
-    for (var key in values) {
-      if (values.hasOwnProperty(key) && key.indexOf('.') > -1) {
-        var splittedKey = key.split('.');
-        var ref = splittedKey[0];
-        var nm = splittedKey[1];
-        if (!updates.hasOwnProperty(ref)) {
-          updates[ref] = {};
-        }
-        updates[ref][nm] = values[key];
-      }
-    }
-
-    for (var refProperty in updates) {
-      if (updates.hasOwnProperty(refProperty)) {
-        var p = item.property(refProperty);
-        if (p && p.getType() === PropertyTypes.REFERENCE) {
-          var v = p.getValue();
-          var refc = _this.meta.getMeta(rp.refClass, null, item.classMeta.getNamespace());
-          var rp = p.getMeta();
-          if (v) {
-            _this.editItem(cn(refc), v, updates[refProperty], logger);
-          } else {
-            var ri = _this.createItem(cn(refc), updates[refProperty], logger);
-            values[refProperty] = ri.getItemId();
-          }
-        }
-      }
-    }
-    return values;
-  }
-  */
 
   /* jshint maxcomplexity: 20 */
   /**
@@ -1156,7 +1114,7 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], nestingDepth !== null ? nestingDepth : 1);
+          return enrich([item], nestingDepth || 0);
         }).then(function (items) {
           _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0])
           .then(function () {
@@ -1225,7 +1183,7 @@ function IonDataRepository(options) {
           }).then(function (item) {
             return loadFiles(item);
           }).then(function (item) {
-            return enrich([item], nestingDepth !== null ? nestingDepth : 1);
+            return enrich([item], nestingDepth || 0);
           }).then(function (items) {
             resolve(items[0]);
           }).catch(reject);
@@ -1307,7 +1265,7 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], options && options.nestingDepth !== null ? options.nestingDepth : 1);
+          return enrich([item], options && options.nestingDepth || 0);
         }).then(function (items) {
           resolve(items[0]);
         }).catch(reject);
