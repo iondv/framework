@@ -736,13 +736,15 @@ function IonDataRepository(options) {
    * @param {Object} data
    * @param {Boolean} setCollections
    * @param {{}} refUpdates
-   * @return {Object}
+   * @return {Object | null}
    */
   function formUpdatedData(cm, data, setCollections, refUpdates) {
     var updates, pm, nm, dot, tmp;
     updates = {};
+    var empty = true;
     for (nm in data) {
       if (data.hasOwnProperty(nm)) {
+        empty = false;
         if ((dot = nm.indexOf('.')) >= 0) {
           if (refUpdates) {
             tmp = nm.substring(0, dot);
@@ -770,6 +772,9 @@ function IonDataRepository(options) {
           }
         }
       }
+    }
+    if (empty) {
+      return null;
     }
     return updates;
   }
