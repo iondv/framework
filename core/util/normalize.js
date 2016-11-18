@@ -2,7 +2,7 @@
  * Created by kras on 16.11.16.
  */
 'use strict';
-const clone = require('clone');
+const merge = require('merge');
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository').Item;
 
@@ -27,7 +27,7 @@ function normalize(data) {
      * @type {{}}
      */
     var item;
-    item = clone(data.base);
+    item = merge(data.base, data.calculated);
 
     delete item._id;
     delete item._classVer;
