@@ -610,8 +610,8 @@ function IonDataRepository(options) {
   this._getItem = function (obj, id, nestingDepth) {
     if (id && typeof obj === 'string') {
       return new Promise(function (resolve, reject) {
-        var cm = this._getMeta(obj);
-        var rcm = this._getRootType(cm);
+        var cm = _this._getMeta(obj);
+        var rcm = _this._getRootType(cm);
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
         if (conditions === null) {
           return resolve(null);
@@ -646,9 +646,9 @@ function IonDataRepository(options) {
       return new Promise(function (resolve, reject) {
         var options = {};
         var cm = obj.getMetaClass();
-        var rcm = this._getRootType(cm);
-        options.filter = this._addFilterByItem({}, obj);
-        options.filter = this._addDiscriminatorFilter(options.filter, cm);
+        var rcm = _this._getRootType(cm);
+        options.filter = _this._addFilterByItem({}, obj);
+        options.filter = _this._addDiscriminatorFilter(options.filter, cm);
         options.count = 1;
         _this.ds.fetch(tn(rcm), options).then(function (data) {
           var item;
