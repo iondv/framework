@@ -23,6 +23,9 @@ function MetaKeyProvider(options) {
    * @private
    */
   this._formKey = function (classname, data, namespace) {
+    if (data === null) {
+      return null;
+    }
     var cm = this.meta.getMeta(classname, null, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
