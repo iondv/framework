@@ -608,10 +608,10 @@ function IonDataRepository(options) {
    * @param {Number} [nestingDepth]
    */
   this._getItem = function (obj, id, nestingDepth) {
-    var cm = this._getMeta(obj);
-    var rcm = this._getRootType(cm);
-    if (id) {
+    if (id && typeof obj === 'string') {
       return new Promise(function (resolve, reject) {
+        var cm = this._getMeta(obj);
+        var rcm = this._getRootType(cm);
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
         if (conditions === null) {
           return resolve(null);
@@ -642,12 +642,14 @@ function IonDataRepository(options) {
           resolve(null);
         }).catch(reject);
       });
-    } else {
-      var options = {};
-      options.filter = this._addFilterByItem({}, obj);
-      options.filter = this._addDiscriminatorFilter(options.filter, cm);
-      options.count = 1;
+    } else if (obj instanceof Item) {
       return new Promise(function (resolve, reject) {
+        var options = {};
+        var cm = obj.getMetaClass();
+        var rcm = this._getRootType(cm);
+        options.filter = this._addFilterByItem({}, obj);
+        options.filter = this._addDiscriminatorFilter(options.filter, cm);
+        options.count = 1;
         _this.ds.fetch(tn(rcm), options).then(function (data) {
           var item;
           for (var i = 0; i < data.length; i++) {
@@ -662,6 +664,8 @@ function IonDataRepository(options) {
         then(function (items) { resolve(items[0]); }).
         catch(reject);
       });
+    } else {
+      throw new Error('Переданы некорректные параметры метода getItem');
     }
   };
 
