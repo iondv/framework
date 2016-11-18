@@ -612,8 +612,11 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     if (id) {
       return new Promise(function (resolve, reject) {
-        var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        _this.ds.get(tn(rcm), updates).
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+        if (conditions === null) {
+          return resolve(null);
+        }
+        _this.ds.get(tn(rcm), conditions).
         then(function (data) {
           var item = null;
           if (data) {

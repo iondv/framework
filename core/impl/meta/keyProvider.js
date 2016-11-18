@@ -19,7 +19,7 @@ function MetaKeyProvider(options) {
    * @param {String} classname
    * @param {Object} data
    * @param {String} [namespace]
-   * @returns {String}
+   * @returns {String | null}
    * @private
    */
   this._formKey = function (classname, data, namespace) {
