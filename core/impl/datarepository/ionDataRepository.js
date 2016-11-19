@@ -521,7 +521,7 @@ function IonDataRepository(options) {
         result.push(prepareFilter(cm, filter[i]));
       }
       return result;
-    } else if (filter && typeof filter === 'object') {
+    } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
       result = {};
       for (nm in filter) {
         if (filter.hasOwnProperty(nm)) {
