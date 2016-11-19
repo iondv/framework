@@ -71,6 +71,12 @@ app.use(methodOverride('X-HTTP-Method'));       // Microsoft
 app.use(methodOverride('X-HTTP-Method-Override')); // Google/GData
 app.use(methodOverride('X-Method-Override'));      // IBM
 
+var limit = config.requestSizeLimit || '1mb';
+app.use(bodyParser.text({type: 'text/*', limit: limit}));
+app.use(bodyParser.json({type: 'application/json', limit: limit}));
+app.use(bodyParser.urlencoded({extended: true, limit: limit}));
+app.use(bodyParser.raw({limit: limit}));
+
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
@@ -119,21 +125,14 @@ then(
       try {
         // Редирект на дефолтный модуль
         var defaultModule = null;
-        var limit = config.requestSizeLimit || '1mb';
         if (scope.settings && scope.settings instanceof SettingsRepository) {
           defaultModule = scope.settings.get('defaultModule');
           moduleTitles = scope.settings.get('moduleTitles') || {};
-          limit = scope.settings.get('requestSizeLimit') || limit;
         }
 
         if (!defaultModule && config.defaultModule) {
           defaultModule = config.defaultModule;
         }
-
-        app.use(bodyParser.text({type: 'text/*', limit: limit}));
-        app.use(bodyParser.json({type: 'application/json', limit: limit}));
-        app.use(bodyParser.urlencoded({extended: true, limit: limit}));
-        app.use(bodyParser.raw({limit: limit}));
 
         if (defaultModule) {
           app.get('/', function (req, res) {
