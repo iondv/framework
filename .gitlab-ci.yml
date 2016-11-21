@@ -18,7 +18,7 @@ Compile:
     - npm install
     - echo $'auth.denyTop=false\ndb.uri=mongodb://127.0.0.1:27017/ion\ndb.name=ion\ndb.user=root\ndb.pwd=ION-sql1\nserver.port1=8888\nserver.port2=8889\nserver.port3=3000\nmodule.default=registry\nfs.storageRoot=./files\nfs.urlBase=/files' > config/config.ini
     - export NODE_PATH=`pwd -P`
-    - gulp install
+    - gulp build
     artifacts:
         name: "$CI_BUILD_STAGE_$CI_BUILD_REF_NAME"
         expire_in: 20 min
