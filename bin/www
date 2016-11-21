@@ -71,15 +71,16 @@ app.use(methodOverride('X-HTTP-Method'));       // Microsoft
 app.use(methodOverride('X-HTTP-Method-Override')); // Google/GData
 app.use(methodOverride('X-Method-Override'));      // IBM
 
-app.use(bodyParser.text({type: 'text/*'}));
-app.use(bodyParser.json({type: 'application/json'}));
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(bodyParser.raw());
+var limit = config.requestSizeLimit || '1mb';
+app.use(bodyParser.text({type: 'text/*', limit: limit}));
+app.use(bodyParser.json({type: 'application/json', limit: limit}));
+app.use(bodyParser.urlencoded({extended: true, limit: limit}));
+app.use(bodyParser.raw({limit: limit}));
 
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
-// jshint maxstatements: 40, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 20
 var onError = function (error) {
   sysLog.error(error);
   server.close(function (err) {

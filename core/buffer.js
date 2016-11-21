@@ -3,9 +3,9 @@
  */
 'use strict';
 
-module.exports = function (data) {
+module.exports = function (data, enc) {
   if (process.version.substring(1, 1) === '6') {
-    return Buffer.from(data);
+    return Buffer.from(data, enc);
   }
-  return new Buffer(data);
+  return new Buffer(data, enc);
 };
