@@ -854,25 +854,7 @@ function IonDataRepository(options) {
           }
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           try {
-            switch (pm.type) {
-              case PropertyTypes.DATETIME: {
-                updates[pm.name] = new Date(pm.defaultValue); // TODO Использовать moment
-              }
-                break;
-              case PropertyTypes.INT: {
-                updates[pm.name] = parseInt(pm.defaultValue);
-              }
-                break;
-              case PropertyTypes.REAL:
-              case PropertyTypes.DECIMAL: {
-                updates[pm.name] = parseFloat(pm.defaultValue);
-              }
-                break;
-              default: {
-                updates[pm.name] = pm.defaultValue;
-              }
-                break;
-            }
+            updates[pm.name] = cast(pm.defaultValue, pm.type);
           } catch (err) {
           }
         } else if (keys.indexOf(pm.name) >= 0) {
