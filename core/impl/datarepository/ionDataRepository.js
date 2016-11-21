@@ -677,16 +677,23 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function castValue(value, pm, ns) {
-    if (value === null) {
-      return value;
-    }
-    if (pm.type === PropertyTypes.REFERENCE) {
+    if (pm.type === PropertyTypes.REFERENCE && value !== null) {
       var refcm = _this.meta.getMeta(pm.refClass, null, ns);
       var refkey = refcm.getPropertyMeta(refcm.getKeyProperties()[0]);
 
       if (refkey) {
         return castValue(value, refkey, ns);
       }
+      return value;
+    } else if (pm.type === PropertyTypes.BOOLEAN) {
+      if (value === null) {
+        if (pm.nullable) {
+          return null;
+        } else {
+          return false;
+        }
+      }
+    } else if (value === null) {
       return value;
     }
 
