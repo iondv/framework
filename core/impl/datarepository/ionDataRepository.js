@@ -1089,7 +1089,7 @@ function IonDataRepository(options) {
         var rcm = _this._getRootType(cm);
 
         var refUpdates = {};
-        var updates = formUpdatedData(cm, data, true, refUpdates);
+        var updates = formUpdatedData(cm, data, true, refUpdates) || {};
 
         var fileSavers = [];
 
@@ -1152,7 +1152,7 @@ function IonDataRepository(options) {
 
         if (conditions) {
           var refUpdates = {};
-          var updates = formUpdatedData(cm, data, false, refUpdates);
+          var updates = formUpdatedData(cm, data, false, refUpdates) || {};
 
           var fileSavers = [];
 
@@ -1216,7 +1216,7 @@ function IonDataRepository(options) {
         var rcm = _this._getRootType(cm);
 
         var refUpdates = {};
-        var updates = formUpdatedData(cm, data, true, refUpdates);
+        var updates = formUpdatedData(cm, data, true, refUpdates) || {};
         var conditionsData;
 
         if (id) {
@@ -1361,7 +1361,8 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' + master.getMetaClass().getName() + '@' + collection;
+      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' +
+        master.getMetaClass().getName() + '@' + collection;
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
@@ -1385,15 +1386,15 @@ function IonDataRepository(options) {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {
           var i;
-          if(pm.backColl) {
+          if (pm.backColl) {
             var colls = [];
             for (i = 0; i < details.length; i++) {
               var bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
-              if(bcpm.type === PropertyTypes.COLLECTION){
+              if (bcpm.type === PropertyTypes.COLLECTION) {
                 colls.push(bcpm.name);
               }
             }
-            if(colls.length === 0) {
+            if (colls.length === 0) {
               return new Promise(function (r) {
                 r();
               });
