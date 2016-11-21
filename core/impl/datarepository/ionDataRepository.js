@@ -1540,10 +1540,12 @@ function IonDataRepository(options) {
             for (k = 0; k < collections.length; k++) {
               src = m[i].base[collections[k]] || [];
               for (j = 0; j < details.length; j++) {
-                if (action === 'eject') {
-                  src.splice(src.indexOf(details[j].getItemId()), 1);
-                } else if (src.indexOf(details[j].getItemId()) < 0) {
-                  src.push(details[j].getItemId());
+                if (details[j]) {
+                  if (action === 'eject') {
+                    src.splice(src.indexOf(details[j].getItemId()), 1);
+                  } else if (src.indexOf(details[j].getItemId()) < 0) {
+                    src.push(details[j].getItemId());
+                  }
                 }
               }
               updates[collections[k]] = src;
