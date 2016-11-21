@@ -628,7 +628,7 @@ function IonDataRepository(options) {
           } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
             result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
             emptyResult = false;
-          } else if(nm === '$exists') {
+          } else if (nm === '$exists') {
             result[nm] = filter[nm];
             emptyResult = false;
           } else {
@@ -1329,7 +1329,7 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], nestingDepth || 0);
         }).then(function (items) {
-          _this.trigger('ionItemCreated:' + items[0].getMetaClass().getName(), items[0]).
+          _this.trigger(items[0].getMetaClass().getCanonicalName() + '.create', items[0]).
           then(function () {
             return calcProperties(items[0]);
           }).then(resolve).catch(reject);
@@ -1398,8 +1398,11 @@ function IonDataRepository(options) {
           }).then(function (item) {
             return enrich([item], nestingDepth || 0);
           }).then(function (items) {
-            return calcProperties(items[0]);
-          }).then(resolve).catch(reject);
+            _this.trigger(items[0].getMetaClass().getCanonicalName() + '.edit', items[0]).
+            then(function () {
+              return calcProperties(items[0]);
+            }).then(resolve).catch(reject);
+          }).catch(reject);
         } else {
           reject({Error: 'Не указан идентификатор объекта!'});
         }
@@ -1480,8 +1483,11 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return enrich([item], options && options.nestingDepth || 0);
         }).then(function (items) {
-          return calcProperties(items[0]);
-        }).then(resolve).catch(reject);
+          _this.trigger(items[0].getMetaClass().getCanonicalName() + '.save', items[0]).
+          then(function () {
+            return calcProperties(items[0]);
+          }).then(resolve).catch(reject);
+        }).catch(reject);
       } catch (err) {
         return reject(err);
       }
@@ -1503,6 +1509,11 @@ function IonDataRepository(options) {
       _this.ds.delete(tn(rcm), updates).then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
       }).
+      then(
+        function () {
+          return _this.trigger(classname + '.delete', id);
+        }
+      ).
       then(resolve).
       catch(reject);
     });
@@ -1576,8 +1587,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = 'ionEditCollection(' + (operation ? 'put' : 'eject') + '):' +
-        master.getMetaClass().getName() + '@' + collection;
+      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
       if (!pm) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
@@ -1592,11 +1602,8 @@ function IonDataRepository(options) {
         }
 
         Promise.all(writers).then(function () {
-          _this.trigger(event, {master: master, details: details})
-            .then(function () {
-              resolve();
-            }).catch(reject);
-        }).catch(reject);
+          return _this.trigger(event, {master: master, details: details});
+        }).then(resolve).catch(reject);
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {

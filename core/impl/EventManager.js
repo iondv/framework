@@ -17,8 +17,16 @@ function EventManager() {
     return new Promise(function (resolve, reject) {
       if (listeners[event]) {
         var promises = [];
-        for (var i = 0; i < listeners[event].length; i++) {
-          promises.push(listeners[event][i](values));
+        try {
+          var r;
+          for (var i = 0; i < listeners[event].length; i++) {
+            r = listeners[event][i](values);
+            if (r instanceof Promise) {
+              promises.push(r);
+            }
+          }
+        } catch (err) {
+          return reject(err);
         }
         Promise.all(promises).then(resolve).catch(reject);
       } else {
