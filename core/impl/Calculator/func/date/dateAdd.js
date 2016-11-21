@@ -2,7 +2,7 @@
  * Created by kras on 03.11.16.
  */
 'use strict';
-const moment = require('monent');
+const moment = require('moment');
 const ac = require('../util').argCalcPromise;
 
 module.exports = function (args) {

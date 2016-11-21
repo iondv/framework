@@ -13,8 +13,8 @@ module.exports = function (cb) {
           if (!args.length) {
             resolve(0);
           }
-          var result = args[args.length - 1];
-          for (var i = args.length - 2; i >= 0; i--) {
+          var result = args[0];
+          for (var i = 1; i < args.length; i++) {
             result = cb(result, args[i]);
           }
           resolve(result);
