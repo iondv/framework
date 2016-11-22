@@ -158,12 +158,6 @@
         "options":{
           "dataSource": "ion://Db"
         }
-      },
-      "accessChecker":{
-        "module": "core/impl/access/ionAccessChecker",
-        "options": {
-          "aclProvider": "ion://aclProvider"
-        }
       }
     }
 }

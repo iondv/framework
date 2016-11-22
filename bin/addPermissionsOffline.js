@@ -32,6 +32,22 @@ process.argv.forEach(function (val) {
   setPwd = false;
 });
 
+function permit(uid, className, acl) {
+  return new Promise(function (resolve, reject) {
+    var rolePromises = [];
+    rolePromises.push(acl.allow(className + 'Reader', 'read', 'c:::' + className));
+    rolePromises.push(acl.allow(className + 'Creator', 'create', 'c:::' + className));
+    rolePromises.push(acl.allow(className + 'Editor', 'update', 'c:::' + className));
+    rolePromises.push(acl.allow(className + 'Deletor', 'delete', 'c:::' + className));
+
+    Promise.all(rolePromises).then(function () {
+      var permPromises = [];
+      permPromises.push(acl.addUserRoles(uid, className + 'Reader'));
+      return Promise.all(permPromises);
+    }).then(resolve).catch(reject);
+  });
+}
+
 var scope = null;
 // Связываем приложение
 di('app', config.di,
@@ -45,35 +61,21 @@ di('app', config.di,
     scope = scp;
     return new Promise(function (rs, rj) {
       var acl = new Acl(new Acl.mongodbBackend(scope.Db.connection(), config.prefix ? config.prefix : 'ion_acl_'));
-      acl.allow('user',
-        ['n::develop-and-test@key_guid',
-          'n::develop-and-test@oneToOne.refBackRef.ref',
-          'n::develop-and-test@simple_workflow',
-          'n::develop-and-test@schedule',
-          'n::develop-and-test@class_string',
-          'c::develop-and-test@class_string',
-          'c::develop-and-test@otorbrRef'
-        ], '*', function (err) {
-          acl.addUserRoles('vasya', 'user', function (err) {
-              var promises = [];
-              promises.push(new Promise(function (resolve, reject) {
-                acl.isAllowed('vasya', 'n::develop-and-test@key_guid', '1', function (err,res) {
-                  resolve('isAllowed=' + res);
-                });
-              }));
-              promises.push(new Promise(function (resolve, reject) {
-                acl.userRoles('vasya', function (err, roles) {
-                  resolve(roles);
-                });
-              }));
-              promises.push(new Promise(function (resolve, reject) {
-                acl.whatResources('user', function (err, data) {
-                  resolve(data);
-                });
-              }));
-              Promise.all(promises).then(function (results) {console.log(results); rs();}).catch(function (err) {console.log(err);});
-            });
-        });
+      var classes = [
+        'mzRPNSanEpidConclusionsOpeka',
+        'smv0003546',
+        'smv2120SOCINFOTEX',
+        'smv2158SOCINFOTEX',
+        'smv2173SOCINFOTEX',
+        'rqstMain',
+        'smvFNSdeptRequestNew',
+        'rqstPfrSnilsVerify'
+      ];
+      var promises = [];
+      for (var i = 0; i < classes.length; i++) {
+        promises.push(permit('vasya', classes[i], acl));
+      }
+      Promise.all(promises).then(rs).catch(rj);
     });
   }
 ).then(function () {
