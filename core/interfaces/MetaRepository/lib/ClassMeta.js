@@ -3,7 +3,7 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-var checkConditions = require('core/ConditionParser');
+var checkConditions = require('core/ConditionChecker');
 var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
@@ -150,7 +150,7 @@ function ClassMeta(metaObject) {
         return this.ancestor.getPropertyMeta(name);
       }
     }
-    return this.propertyMetas[name];
+    return this.propertyMetas[name] || null;
   };
 
   this.getPropertyMetas = function () {

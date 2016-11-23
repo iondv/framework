@@ -1,34 +1,14 @@
 /**
- * Created by kras on 31.08.16.
+ * Created by Данил on 10.10.2016.
  */
 'use strict';
+// jshint maxstatements: 30
 
-var ConditionTypes = require('core/ConditionTypes');
-var OperationTypes = require('core/OperationTypes');
-var equal = require('core/equal');
-var cast = require('core/cast');
+const PropertyTypes = require('core/PropertyTypes');
+const ConditionTypes = require('core/ConditionTypes');
+const OperationTypes = require('core/OperationTypes');
 
-// jshint maxcomplexity: 40, eqeqeq: false
-function contains(container, content) {
-  if (container && content !== null) {
-    if (typeof container === 'string') {
-      if (content) {
-        return container.indexOf(String(content)) !== -1 ? true : false;
-      }
-    } else if (Array.isArray(container)) {
-      return container.indexOf(content) !== -1 ? true : false;
-    }
-  }
-  return false;
-}
-
-function toArray(v) {
-  if (!Array.isArray(v)) {
-    return [v];
-  }
-  return v;
-}
-
+// jshint maxstatements: 40, maxcomplexity: 30
 function toScalar(v) {
   if (Array.isArray(v) && v.length) {
     return v.length ? v[0] : null;
@@ -37,81 +17,142 @@ function toScalar(v) {
 }
 
 /**
- * @param {Item} item
+ * @param {ClassMeta} rcm
  * @param {{}} condition
- * @returns {Boolean}
  */
-function checkCondition(item, condition) {
-  var pn, p, v;
-  if (condition.property) {
-    pn = condition.property;
-    p = item.property(pn);
-    if (!p) {
-      throw new Error('Не найден указанный в условии атрибут ' + item.getClassName() + '.' + pn);
+function produceContainsFilter(rcm, condition) {
+  var pm = rcm.getPropertyMeta(condition.property);
+  if (pm) {
+    if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+      if (condition.value && condition.value.length) {
+        var tmp = {};
+        tmp[pm._refClass.getKeyProperties()[0]] = {$in: condition.value};
+        return {$contains: tmp};
+      }
+      return {$contains: ConditionParser(condition.nestedConditions, pm._refClass)};
+    } else if (pm.type === PropertyTypes.STRING && condition.value) {
+      return {$regex: toScalar(condition.value)};
+    } else {
+      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
-    v = cast(condition.value, p.getType());
-    switch (condition.operation) {
-      case ConditionTypes.EQUAL:
-        return equal(item.get(pn), toScalar(v));
-      case ConditionTypes.NOT_EQUAL:
-        return !equal(item.get(pn), toScalar(v));
-      case ConditionTypes.EMPTY:
-        return !item.get(pn);
-      case ConditionTypes.NOT_EMPTY:
-        return item.get(pn) ? true : false;
-      case ConditionTypes.LIKE:
-        return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
-      case ConditionTypes.LESS:
-        return item.get(pn) < toScalar(v) ? true : false;
-      case ConditionTypes.MORE:
-        return item.get(pn) > toScalar(v) ? true : false;
-      case ConditionTypes.LESS_OR_EQUAL:
-        return item.get(pn) <= toScalar(v) ? true : false;
-      case ConditionTypes.MORE_OR_EQUAL:
-        return item.get(pn) >= toScalar(v) ? true : false;
-      case ConditionTypes.IN:
-        return contains(toArray(v), item.get(pn));
-      case ConditionTypes.CONTAINS:
-        return contains(item.get(pn), toScalar(v));
-    }
-  } else if (condition.nestedConditions) {
-    switch (condition.operation) {
-      case OperationTypes.AND: return conjunct(item, condition.nestedConditions);
-      case OperationTypes.OR: return disjunct(item, condition.nestedConditions);
-      case OperationTypes.NOT: return !conjunct(item, condition.nestedConditions);
-    }
+  } else {
+    throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
   }
-  return false;
 }
 
-function conjunct(item, conditions) {
-  if (Array.isArray(conditions) && conditions.length) {
-    for (var i = 0; i < conditions.length; i++) {
-      if (!checkCondition(item, conditions[i])) {
-        return false;
-      }
-    }
-    return true;
+function produceFilter(condition, type, rcm) {
+  var result = {};
+  if (condition.value) {
+    result[type] = toScalar(condition.value);
+  } else if (condition.nestedConditions && condition.nestedConditions.length) {
+    result[type] = ConditionParser(condition.nestedConditions[0], rcm);
   }
-  return false;
-}
-
-function disjunct(item, conditions) {
-  if (Array.isArray(conditions) && conditions.length) {
-    for (var i = 0; i < conditions.length; i++) {
-      if (checkCondition(item, conditions[i])) {
-        return true;
-      }
-    }
-    return false;
-  }
-  return false;
+  return result;
 }
 
 /**
- * @param {Item} item
- * @param {Array} conditions
+ * @param {{}} condition
+ * @param {ClassMeta} rcm
+ * @returns {{className: String, collectionName: String, property: String, filter: {}}}
  */
-module.exports = function (item, conditions) {
-  return conjunct(item, conditions);
-};
+function produceAggregationOperation(condition, rcm) {
+  var an, av, pn, pm;
+  if (!condition.value || !condition.value.length) {
+    throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
+  }
+
+  if (condition.value.length === 1) {
+    pn = condition.value[0];
+    an = 'className';
+    av = rcm.getCanonicalName();
+  } else {
+    pn = condition.value[1];
+    av = condition.value[0];
+    an = 'className';
+    if ((pm = rcm.getPropertyMeta(condition.value[0])) !== null) {
+      if (pm.type === PropertyTypes.COLLECTION) {
+        an = 'collectionName';
+      }
+    }
+  }
+
+  var filter = ConditionParser(condition.nestedConditions, rcm);
+  var result = {
+    property: pn,
+    filter: filter
+  };
+  result[an] = av;
+  return result;
+}
+
+/**
+ * @param {Object[]} conditions
+ * @param {ClassMeta} rcm
+ */
+function produceArray(conditions, rcm) {
+  var result = [];
+  for (var i = 0; i < conditions.length; i++) {
+    result.push(ConditionParser(conditions[i], rcm));
+  }
+  return result;
+}
+
+/**
+ * @param {{}} condition
+ * @param {ClassMeta} rcm
+ * @returns {{}}
+ */
+function ConditionParser(condition, rcm) {
+  var result;
+  if (Array.isArray(condition)) {
+    result = {$and: produceArray(condition, rcm)};
+  } else {
+    result = {};
+    if (condition.property) {
+      switch (condition.operation) {
+        case ConditionTypes.EMPTY: {
+          result.$or = [{}, {}, {}];
+          result.$or[0][condition.property] = {$eq: null};
+          result.$or[1][condition.property] = {$eq: ''};
+          result.$or[2][condition.property] = {$exists: false};
+        } break;
+        case ConditionTypes.NOT_EMPTY: {
+          result.$and = [{}, {}, {}];
+          result.$and[0][condition.property] = {$ne: null};
+          result.$and[1][condition.property] = {$ne: ''};
+          result.$and[2][condition.property] = {$exists: true};
+        } break;
+        case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition);
+          break;
+        case ConditionTypes.EQUAL:
+          result[condition.property] = produceFilter(condition, '$eq', rcm); break;
+        case ConditionTypes.NOT_EQUAL:
+          result[condition.property] = produceFilter(condition, '$ne', rcm); break;
+        case ConditionTypes.LESS:
+          result[condition.property] = produceFilter(condition, '$lt', rcm); break;
+        case ConditionTypes.MORE:
+          result[condition.property] = produceFilter(condition, '$gt', rcm); break;
+        case ConditionTypes.LESS_OR_EQUAL:
+          result[condition.property] = produceFilter(condition, '$lte', rcm); break;
+        case ConditionTypes.MORE_OR_EQUAL:
+          result[condition.property] = produceFilter(condition, '$gte', rcm); break;
+        case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
+        case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
+      }
+    } else {
+      switch (condition.operation) {
+        case OperationTypes.AND: result.$and = produceArray(condition.nestedConditions, rcm); break;
+        case OperationTypes.OR: result.$or = produceArray(condition.nestedConditions, rcm); break;
+        case OperationTypes.NOT: result.$not = {$and: produceArray(condition.nestedConditions, rcm)}; break;
+        case OperationTypes.MIN: result.$min = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.MAX: result.$max = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.AVG: result.$avg = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.SUM: result.$sum = produceAggregationOperation(condition, rcm); break;
+        case OperationTypes.COUNT: result.$count = produceAggregationOperation(condition, rcm); break;
+      }
+    }
+  }
+  return result;
+}
+
+module.exports = ConditionParser;
