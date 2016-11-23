@@ -85,13 +85,15 @@ function Property(item, propertyMeta, name) {
     if (this.getType() === PropertyTypes.COLLECTION) {
       var result = '';
       var agregates = this.item.getAggregates(this.getName());
-      for (i = 0; i < agregates.length; i++) {
-        agregates[i].toString();
-        if (typeof this.meta.semanticGetter === 'function') {
-          result = result + (result ? ' ' : '') +
-            this.meta.semanticGetter.call(agregates[i], dateCallback);
-        } else {
-          result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback);
+      if (Array.isArray(aggregates)) {
+        for (i = 0; i < agregates.length; i++) {
+          agregates[i].toString();
+          if (typeof this.meta.semanticGetter === 'function') {
+            result = result + (result ? ' ' : '') +
+              this.meta.semanticGetter.call(agregates[i], dateCallback);
+          } else {
+            result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback);
+          }
         }
       }
       return result;
