@@ -84,12 +84,21 @@
           "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
         }
       },
+      "calculator": {
+        "module": "core/impl/Calculator",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "dataRepo": "dataRepo"
+        }
+      },
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
           "dataSource": "ion://Db",
+          "calc": "ion://calculator",
           "sync": {
             "name": "dbSync",
             "module": "core/impl/meta/mongo/dbSync",

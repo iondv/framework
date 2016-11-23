@@ -52,6 +52,18 @@ function DataRepository() {
   };
 
   /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {{}} [options.expressions]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.groupBy]
+   * @returns {Promise}
+   */
+  this.aggregate = function (className, options) {
+    return this._aggregate(className, options);
+  }
+
+  /**
    * @param {String | Item} obj
    * @param {String} [id]
    * @param {Number} [nestingDepth]

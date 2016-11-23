@@ -8,5 +8,8 @@ module.exports = {
   OR: 1,
   NOT: 2,
   MIN: 3,
-  MAX: 4
+  MAX: 4,
+  AVG: 5,
+  SUM: 6,
+  COUNT: 7
 };
