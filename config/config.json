@@ -150,7 +150,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "ion://redis",
+          "cacheRepository": "ion://innerCache",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
