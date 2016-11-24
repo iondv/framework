@@ -68,7 +68,13 @@ function DataSource() {
 
   /**
    * @param {String} type
-   * @param {{ filter: {}, sort: {}, offset: Number, count: Number, countTotal: Boolean }} options
+   * @param {{}} [options]
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.countTotal]
    * @returns {Promise}
    */
   this.fetch = function (type, options) {
@@ -77,11 +83,39 @@ function DataSource() {
 
   /**
    * @param {String} type
-   * @param {{}} options
+   * @param {{}} [options]
+   * @param {{}} [options.filter]
    * @returns {Promise}
    */
   this.count = function (type, options) {
     return this._count(type, options);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} [options]
+   * @param {String[]} [options.attributes]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.sort]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.countTotal]
+   * @param {Function} cb
+   * @returns {Promise}
+   */
+  this.forEach = function (type, options, cb) {
+    return this._forEach(type, options, cb);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{expressions: {}}} options
+   * @param {{}} [options.filter]
+   * @param {{}} [options.grouping]
+   * @returns {Promise}
+   */
+  this.aggregate = function (type, options) {
+    return this._aggregate(type, options);
   };
 
   /**

@@ -136,9 +136,9 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   return result;
 }
 
-function componentInitConstructor(component, method) {
+function componentInitConstructor(component, method, scope) {
   return function () {
-    return method.apply(component);
+    return method.apply(component, [scope]);
   };
 }
 
@@ -227,7 +227,7 @@ function di(context, components, presets, parentContext, skip, cwd) {
   var initLevels = [];
   var initLevel = [];
   for (var i = 0; i < init.length; i++) {
-    initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod]));
+    initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod], scope));
     if (i < init.length - 1) {
       if (init[i + 1].initLevel > init[i].initLevel) {
         initLevels.push(levelConstructor(initLevel));

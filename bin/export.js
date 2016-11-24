@@ -75,7 +75,7 @@ di('app', config.di,
     return scope.dataSources.disconnect();
   }
 ).then(function () {
-  console.info('Экспорт выполнен успешно.');
+  console.info('Экспорт выполнен успешно.', dst);
   process.exit(0);
 }).catch(function (err) {
   console.error(err);
