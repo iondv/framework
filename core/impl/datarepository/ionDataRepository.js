@@ -1427,12 +1427,9 @@ function IonDataRepository(options) {
         var event = EventType.UPDATE;
 
         prepareFileSavers(cm, fileSavers, updates);
-        var chr = checkRequired(cm, updates, false);
-        if (chr !== true) {
-          return reject(chr);
-        }
 
         Promise.all(fileSavers).then(function () {
+          var chr;
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
@@ -1445,11 +1442,14 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              return _this.ds.upsert(tn(rcm), conditions, updates);
+
+              chr = checkRequired(cm, updates, false);
+              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
-              return _this.ds.insert(tn(rcm), updates);
+              chr = checkRequired(cm, updates, false);
+              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates);
             }
           } catch (err) {
             reject(err);
