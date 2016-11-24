@@ -24,5 +24,7 @@ module.exports = {
   URL: 17,
   PERIOD_PICKER: 60,
   GEO: 100,
-  ATTACHMENTS: 110
+  ATTACHMENTS: 110,
+  SCHEDULE: 210,
+  CALENDAR: 220
 };
