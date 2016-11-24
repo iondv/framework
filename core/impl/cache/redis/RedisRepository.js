@@ -12,7 +12,6 @@ var redis = require('redis');
  * @constructor
  */
 function RedisRepository(config) {
-  console.log('this is redis');
 
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
