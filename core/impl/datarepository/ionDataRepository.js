@@ -146,12 +146,16 @@ function IonDataRepository(options) {
    * @param {String} className
    * @param {Object} data
    * @param {String} [version]
+   * @param {{autoassign: Boolean}} [options]
    * @private
    * @returns {Item | null}
    */
-  this._wrap = function (className, data, version) {
+  this._wrap = function (className, data, version, options) {
     var acm = this.meta.getMeta(className, version);
     delete data._id;
+    if (options && options.autoassign) {
+      autoAssign(acm, data, true);
+    }
     return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
   };
 
@@ -628,7 +632,7 @@ function IonDataRepository(options) {
           } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
             result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
             emptyResult = false;
-          } else if(nm === '$exists') {
+          } else if (nm === '$exists') {
             result[nm] = filter[nm];
             emptyResult = false;
           } else {
@@ -1020,7 +1024,7 @@ function IonDataRepository(options) {
    * @param {ClassMeta} cm
    * @param {{}} updates
    */
-  function autoAssign(cm, updates) {
+  function autoAssign(cm, updates, onlyDefaults) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
     }
@@ -1042,7 +1046,7 @@ function IonDataRepository(options) {
           continue;
         }
 
-        if (pm.autoassigned) {
+        if (pm.autoassigned && !onlyDefaults) {
           switch (pm.type) {
             case PropertyTypes.STRING:
             case PropertyTypes.GUID: {
@@ -1060,28 +1064,10 @@ function IonDataRepository(options) {
           }
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           try {
-            switch (pm.type) {
-              case PropertyTypes.DATETIME: {
-                updates[pm.name] = new Date(pm.defaultValue); // TODO Использовать moment
-              }
-                break;
-              case PropertyTypes.INT: {
-                updates[pm.name] = parseInt(pm.defaultValue);
-              }
-                break;
-              case PropertyTypes.REAL:
-              case PropertyTypes.DECIMAL: {
-                updates[pm.name] = parseFloat(pm.defaultValue);
-              }
-                break;
-              default: {
-                updates[pm.name] = pm.defaultValue;
-              }
-                break;
-            }
+            updates[pm.name] = cast(pm.defaultValue, pm.type);
           } catch (err) {
           }
-        } else if (keys.indexOf(pm.name) >= 0) {
+        } else if (keys.indexOf(pm.name) >= 0 && !onlyDefaults) {
           throw new Error('Не указано значение ключевого атрибута ' + cm.getCaption() + '.' + pm.caption);
         }
       }

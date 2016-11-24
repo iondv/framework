@@ -3,7 +3,7 @@
  */
 'use strict';
 const moment = require('moment');
-
+// jshint maxcomplexity: 20
 function add(parts, date) {
   var m = moment(date);
   for (var f in parts) {
