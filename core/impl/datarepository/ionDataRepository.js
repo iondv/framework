@@ -1271,6 +1271,25 @@ function IonDataRepository(options) {
     });
   }
 
+  function writeEventHandler(e) {
+    var up = false;
+    var data = {};
+    if (Array.isArray(e.results) && e.results.length) {
+      for (var i = 0; i < e.results.length; i++) {
+        for (var nm in e.results[i]) {
+          if (e.results[i].hasOwnProperty(nm)) {
+            up = true;
+            data[nm] = e.results[i][nm];
+          }
+        }
+      }
+    }
+    if (up) {
+      return _this._editItem(e.item.getMetaClass().getCanonicalName(), e.item.getItemId(), data);
+    }
+    return enrich(e.item);
+  }
+
   /**
    *
    * @param {String} classname
@@ -1313,13 +1332,17 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
-          return enrich([item], nestingDepth || 0);
-        }).then(function (items) {
-          _this.trigger(items[0].getMetaClass().getCanonicalName() + '.create', items[0]).
-          then(function () {
-            return calcProperties(items[0]);
-          }).then(resolve).catch(reject);
-        }).catch(reject);
+          return _this.trigger({
+            type: item.getMetaClass().getCanonicalName() + '.create',
+            item: item
+          });
+        }).
+        then(writeEventHandler).
+        then(
+          function (item) {
+            return calcProperties(item);
+          }
+        ).then(resolve).catch(reject);
       } catch (err) {
         reject(err);
       }
@@ -1381,14 +1404,19 @@ function IonDataRepository(options) {
             return refUpdator(item, refUpdates, changeLogger);
           }).then(function (item) {
             return loadFiles(item);
-          }).then(function (item) {
-            return enrich([item], nestingDepth || 0);
           }).then(function (items) {
-            _this.trigger(items[0].getMetaClass().getCanonicalName() + '.edit', items[0]).
-            then(function () {
-              return calcProperties(items[0]);
-            }).then(resolve).catch(reject);
-          }).catch(reject);
+            return _this.trigger({
+              type: items[0].getMetaClass().getCanonicalName() + '.edit',
+              item: items[0]
+            });
+          }).
+          then(writeEventHandler).
+          then(
+            function (item) {
+              return calcProperties(item);
+            }
+          ).
+          then(resolve).catch(reject);
         } else {
           reject({Error: 'Не указан идентификатор объекта!'});
         }
@@ -1466,14 +1494,18 @@ function IonDataRepository(options) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
           return loadFiles(item);
-        }).then(function (item) {
-          return enrich([item], options && options.nestingDepth || 0);
         }).then(function (items) {
-          _this.trigger(items[0].getMetaClass().getCanonicalName() + '.save', items[0]).
-          then(function () {
-            return calcProperties(items[0]);
-          }).then(resolve).catch(reject);
-        }).catch(reject);
+          return _this.trigger({
+            type: items[0].getMetaClass().getCanonicalName() + '.save',
+            item: items[0]
+          });
+        }).
+        then(writeEventHandler).
+        then(
+          function (item) {
+            return calcProperties(item);
+          }
+        ).then(resolve).catch(reject);
       } catch (err) {
         return reject(err);
       }
@@ -1497,10 +1529,15 @@ function IonDataRepository(options) {
       }).
       then(
         function () {
-          return _this.trigger(classname + '.delete', id);
+          return _this.trigger({
+            type: classname + '.delete',
+            id: id
+          });
         }
       ).
-      then(resolve).
+      then(function () {
+        resolve();
+      }).
       catch(reject);
     });
   };
@@ -1588,8 +1625,12 @@ function IonDataRepository(options) {
         }
 
         Promise.all(writers).then(function () {
-          return _this.trigger(event, {master: master, details: details});
-        }).then(resolve).catch(reject);
+          return _this.trigger({
+            type: event,
+            master: master,
+            details: details
+          });
+        }).then(function () {resolve();}).catch(reject);
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {
@@ -1649,9 +1690,9 @@ function IonDataRepository(options) {
           );
         }).
         then(function () {
-          return _this.trigger(event, {master: master, details: details});
+          return _this.trigger({type: event, master: master, details: details});
         }).
-        then(resolve).
+        then(function () {resolve();}).
         catch(reject);
       }
     });

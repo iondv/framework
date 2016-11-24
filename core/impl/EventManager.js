@@ -13,14 +13,14 @@ function EventManager() {
     listeners[event].push(func);
   };
 
-  this.trigger = function (event, values) {
+  this.trigger = function (event) {
     return new Promise(function (resolve, reject) {
-      if (listeners[event]) {
+      if (listeners[event.type]) {
         var promises = [];
         try {
           var r;
-          for (var i = 0; i < listeners[event].length; i++) {
-            r = listeners[event][i](values);
+          for (var i = 0; i < listeners[event.type].length; i++) {
+            r = listeners[event.type][i](event);
             if (r instanceof Promise) {
               promises.push(r);
             }
@@ -28,9 +28,12 @@ function EventManager() {
         } catch (err) {
           return reject(err);
         }
-        Promise.all(promises).then(resolve).catch(reject);
+        Promise.all(promises).then(function (results) {
+          event.results = results;
+          resolve(event);
+        }).catch(reject);
       } else {
-        resolve();
+        resolve(event);
       }
     });
   };
