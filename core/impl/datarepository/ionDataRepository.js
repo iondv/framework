@@ -1271,23 +1271,32 @@ function IonDataRepository(options) {
     });
   }
 
-  function writeEventHandler(e) {
-    var up = false;
-    var data = {};
-    if (Array.isArray(e.results) && e.results.length) {
-      for (var i = 0; i < e.results.length; i++) {
-        for (var nm in e.results[i]) {
-          if (e.results[i].hasOwnProperty(nm)) {
-            up = true;
-            data[nm] = e.results[i][nm];
+  function writeEventHandler(nestingDepth, changeLogger) {
+    return function (e) {
+      var up = false;
+      var data = {};
+      if (Array.isArray(e.results) && e.results.length) {
+        for (var i = 0; i < e.results.length; i++) {
+          for (var nm in e.results[i]) {
+            if (e.results[i].hasOwnProperty(nm)) {
+              up = true;
+              data[nm] = e.results[i][nm];
+            }
           }
         }
       }
-    }
-    if (up) {
-      return _this._editItem(e.item.getMetaClass().getCanonicalName(), e.item.getItemId(), data);
-    }
-    return enrich(e.item);
+      if (up) {
+        return _this._editItem(
+          e.item.getMetaClass().getCanonicalName(),
+          e.item.getItemId(),
+          data,
+          changeLogger,
+          nestingDepth,
+          true
+        );
+      }
+      return enrich(e.item, nestingDepth);
+    };
   }
 
   /**
@@ -1337,7 +1346,7 @@ function IonDataRepository(options) {
             item: item
           });
         }).
-        then(writeEventHandler).
+        then(writeEventHandler(nestingDepth, changeLogger)).
         then(
           function (item) {
             return calcProperties(item);
@@ -1356,9 +1365,10 @@ function IonDataRepository(options) {
    * @param {{}} data
    * @param {ChangeLogger} [changeLogger]
    * @param {Number} [nestingDepth]
+   * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
-  this._editItem = function (classname, id, data, changeLogger, nestingDepth) {
+  this._editItem = function (classname, id, data, changeLogger, nestingDepth, suppresEvent) {
     return new Promise(function (resolve, reject) {
       if (!id) {
         return reject(new Error('Не передан идентификатор объекта!'));
@@ -1404,13 +1414,16 @@ function IonDataRepository(options) {
             return refUpdator(item, refUpdates, changeLogger);
           }).then(function (item) {
             return loadFiles(item);
-          }).then(function (items) {
-            return _this.trigger({
-              type: items[0].getMetaClass().getCanonicalName() + '.edit',
-              item: items[0]
-            });
+          }).then(function (item) {
+            if (!suppresEvent) {
+              return _this.trigger({
+                type: item.getMetaClass().getCanonicalName() + '.edit',
+                item: item
+              });
+            }
+            return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler).
+          then(writeEventHandler(nestingDepth, changeLogger)).
           then(
             function (item) {
               return calcProperties(item);
@@ -1494,13 +1507,13 @@ function IonDataRepository(options) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
           return loadFiles(item);
-        }).then(function (items) {
+        }).then(function (item) {
           return _this.trigger({
-            type: items[0].getMetaClass().getCanonicalName() + '.save',
-            item: items[0]
+            type: item.getMetaClass().getCanonicalName() + '.save',
+            item: item
           });
         }).
-        then(writeEventHandler).
+        then(writeEventHandler(options.nestingDepth, changeLogger)).
         then(
           function (item) {
             return calcProperties(item);
