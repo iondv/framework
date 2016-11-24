@@ -85,7 +85,7 @@ function Property(item, propertyMeta, name) {
     if (this.getType() === PropertyTypes.COLLECTION) {
       var result = '';
       var agregates = this.item.getAggregates(this.getName());
-      if (Array.isArray(aggregates)) {
+      if (Array.isArray(agregates)) {
         for (i = 0; i < agregates.length; i++) {
           agregates[i].toString();
           if (typeof this.meta.semanticGetter === 'function') {
