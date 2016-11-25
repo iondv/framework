@@ -6,6 +6,7 @@
 const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
+const EventManager = require('core/impl/EventManager');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -17,6 +18,7 @@ const period = require('core/period');
  */
 function WorkflowProvider(options) {
   var _this = this;
+  EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
 
@@ -148,7 +150,12 @@ function WorkflowProvider(options) {
       {
         stage: nextState.name,
         since: new Date()
-      }).then(function () {resolve(item); }).catch(reject);
+      }
+    ).then(
+      function () {
+        resolve(item);
+      }
+    ).catch(reject);
   }
 
   /**
@@ -192,16 +199,36 @@ function WorkflowProvider(options) {
                   }
                 }
 
-                if (updates) {
-                  options.dataRepo.editItem(item.getMetaClass().getCanonicalName(), item.getItemId(), updates).
-                  then(function () {
-                    move(item, workflow, nextState, resolve, reject);
-                  }).
-                  catch(reject);
-                } else {
+                return _this.trigger({
+                  type: workflow + '.' + nextState.name,
+                  item: item
+                }).then(
+                  function (e) {
+                    if (Array.isArray(e.results) && e.results.length) {
+                      for (var i = 0; i < e.results.length; i++) {
+                        for (var nm in e.results[i]) {
+                          if (e.results[i].hasOwnProperty(nm)) {
+                            if (!updates) {
+                              updates = {};
+                            }
+                            updates[nm] = e.results[i][nm];
+                          }
+                        }
+                      }
+                    }
+
+                    if (updates) {
+                      return options.dataRepo.editItem(
+                        item.getMetaClass().getCanonicalName(),
+                        item.getItemId(),
+                        updates
+                      );
+                    }
+                    return new Promise(function (resolve) {resolve(item);});
+                  }
+                ).then(function (item) {
                   move(item, workflow, nextState, resolve, reject);
-                }
-                return;
+                }).catch(reject);
               }
             }
           }
