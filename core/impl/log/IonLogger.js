@@ -59,6 +59,10 @@ function IonLogger(options) {
       } else if (typeof dest[i] === 'string' && dest[i] !== 'console') {
         if (!streams.hasOwnProperty(dest[i])) {
           try {
+            if (!fs.existsSync(dest[i])) {
+              fs.mkdirSync(dest[i]);
+            }
+
             stat = fs.statSync(dest[i]);
             if (stat.isDirectory()) {
               result.push(FileStreamRotator.getStream({
