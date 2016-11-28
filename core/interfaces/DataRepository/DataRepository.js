@@ -12,10 +12,11 @@ function DataRepository() {
    * @param {String} className
    * @param {{}} data
    * @param {String} [version]
+   * @param {{autoassign: Boolean}} [options]
    * @returns {Item}
    */
-  this.wrap = function (className, data, version) {
-    return this._wrap(className, data, version);
+  this.wrap = function (className, data, version, options) {
+    return this._wrap(className, data, version, options);
   };
 
   /**
@@ -49,6 +50,18 @@ function DataRepository() {
    */
   this.getList = function (obj, options) {
     return this._getList(obj, options);
+  };
+
+  /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {{}} [options.expressions]
+   * @param {{}} [options.filter]
+   * @param {{}} [options.groupBy]
+   * @returns {Promise}
+   */
+  this.aggregate = function (className, options) {
+    return this._aggregate(className, options);
   };
 
   /**
