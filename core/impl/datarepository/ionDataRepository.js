@@ -22,6 +22,7 @@ const EventManager = require('core/impl/EventManager');
  * @param {KeyProvider} options.keyProvider
  * @param {Logger} [options.log]
  * @param {String} [options.namespaceSeparator]
+ * @param {Number} [options.maxEagerDepth]
  * @constructor
  */
 function IonDataRepository(options) {
@@ -55,7 +56,7 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(options.maxEagerDepth || 5);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
 
   const geoOperations = ['$geoWithin', '$geoIntersects'];
 
