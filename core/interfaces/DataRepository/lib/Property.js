@@ -85,7 +85,7 @@ function Property(item, propertyMeta, name) {
     if (this.getType() === PropertyTypes.COLLECTION) {
       var result = '';
       var agregates = this.item.getAggregates(this.getName());
-      if (Array.isArray(aggregates)) {
+      if (Array.isArray(agregates)) {
         for (i = 0; i < agregates.length; i++) {
           agregates[i].toString();
           if (typeof this.meta.semanticGetter === 'function') {
@@ -102,9 +102,11 @@ function Property(item, propertyMeta, name) {
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
-        if (this.selectionKeyMatch(selection[i].key)) {
-          return selection[i].value;
+      if (Array.isArray(selection)) {
+        for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+          if (this.selectionKeyMatch(selection[i].key)) {
+            return selection[i].value;
+          }
         }
       }
     }
