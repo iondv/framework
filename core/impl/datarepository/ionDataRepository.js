@@ -57,6 +57,8 @@ function IonDataRepository(options) {
 
   this.maxEagerDepth = -(options.maxEagerDepth || 5);
 
+  const geoOperations = ['$geoWithin', '$geoIntersects'];
+
   /**
    * @param {ClassMeta} cm
    * @returns {String}
@@ -592,7 +594,9 @@ function IonDataRepository(options) {
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
     var i, knm, keys, pm, emptyResult, result, containCheckers;
-    if (filter && Array.isArray(filter)) {
+    if (geoOperations.indexOf(part) !== -1) {
+      return filter;
+    } else if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
         result.push(prepareFilterOption(cm, filter[i], fetchers, result, i));
