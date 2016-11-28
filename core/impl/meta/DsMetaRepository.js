@@ -5,11 +5,12 @@
  */
 'use strict';
 
-var MetaRepositoryModule = require('core/interfaces/MetaRepository');
-var MetaRepository = MetaRepositoryModule.MetaRepository;
-var ClassMeta = MetaRepositoryModule.ClassMeta;
-var PropertyTypes = require('core/PropertyTypes');
-var clone = require('clone');
+const MetaRepositoryModule = require('core/interfaces/MetaRepository');
+const MetaRepository = MetaRepositoryModule.MetaRepository;
+const ClassMeta = MetaRepositoryModule.ClassMeta;
+const PropertyTypes = require('core/PropertyTypes');
+const Calculator = require('core/interfaces/Calculator');
+const clone = require('clone');
 
 const defaultVersion = '___default';
 
@@ -71,6 +72,7 @@ function findByVersion(arr, version, i1, i2) {
  * @param {String} [options.NavTableName]
  * @param {String} [options.WorkflowTableName]
  * @param {DbSync} [options.sync]
+ * @param {Calculator} [options.calc]
  * @constructor
  */
 function DsMetaRepository(options) {
@@ -666,6 +668,9 @@ function DsMetaRepository(options) {
                 } catch (e) {
                   throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
                     cm.getCanonicalName() + '.' + pm.name + '.');
+                }
+                if (pm.formula && options.calc instanceof Calculator) {
+                  pm._formula = options.calc.parseFormula(pm.formula);
                 }
               }
             }
