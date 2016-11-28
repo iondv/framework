@@ -63,10 +63,11 @@ function ResourceStorage() {
    *
    * @param {String} name
    * @param {String} parentDirId
+   * @param {Boolean} fetch
    * @returns {Promise}
    */
-  this.createDir = function (name, parentDirId) {
-    return this._createDir(name, parentDirId);
+  this.createDir = function (name, parentDirId, fetch) {
+    return this._createDir(name, parentDirId, fetch);
   };
 
   /**
