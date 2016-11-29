@@ -54,7 +54,7 @@ function toScalar(v, item) {
  * @param {{}} condition
  * @returns {Boolean}
  */
-function checkCondition(item, condition) {
+function checkCondition(item, condition, context) {
   var pn, p, v;
   if (condition.property) {
     pn = condition.property;
@@ -64,44 +64,44 @@ function checkCondition(item, condition) {
     }
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return equal(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
+        return equal(item.get(pn), cast(toScalar(condition.value, context), p.getType()));
       case ConditionTypes.NOT_EQUAL:
-        return !equal(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
+        return !equal(item.get(pn), cast(toScalar(condition.value, context), p.getType()));
       case ConditionTypes.EMPTY:
         return !item.get(pn);
       case ConditionTypes.NOT_EMPTY:
         return item.get(pn) ? true : false;
       case ConditionTypes.LIKE:
         return String(item.get(pn)).match(
-          new RegExp(cast(toScalar(condition.value, item), p.getType()))
+          new RegExp(cast(toScalar(condition.value, context), p.getType()))
         ) ? true : false;
       case ConditionTypes.LESS:
-        return item.get(pn) < cast(toScalar(condition.value, item), p.getType()) ? true : false;
+        return item.get(pn) < cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.MORE:
-        return item.get(pn) > cast(toScalar(condition.value, item), p.getType()) ? true : false;
+        return item.get(pn) > cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.LESS_OR_EQUAL:
-        return item.get(pn) <= cast(toScalar(condition.value, item), p.getType()) ? true : false;
+        return item.get(pn) <= cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.MORE_OR_EQUAL:
-        return item.get(pn) >= cast(toScalar(condition.value, item), p.getType()) ? true : false;
+        return item.get(pn) >= cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.IN:
         return contains(toArray(v), item.get(pn));
       case ConditionTypes.CONTAINS:
-        return contains(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
+        return contains(item.get(pn), cast(toScalar(condition.value, context), p.getType()));
     }
   } else if (condition.nestedConditions) {
     switch (condition.operation) {
-      case OperationTypes.AND: return conjunct(item, condition.nestedConditions);
-      case OperationTypes.OR: return disjunct(item, condition.nestedConditions);
-      case OperationTypes.NOT: return !conjunct(item, condition.nestedConditions);
+      case OperationTypes.AND: return conjunct(item, condition.nestedConditions, context);
+      case OperationTypes.OR: return disjunct(item, condition.nestedConditions, context);
+      case OperationTypes.NOT: return !conjunct(item, condition.nestedConditions, context);
     }
   }
   return false;
 }
 
-function conjunct(item, conditions) {
+function conjunct(item, conditions, context) {
   if (Array.isArray(conditions) && conditions.length) {
     for (var i = 0; i < conditions.length; i++) {
-      if (!checkCondition(item, conditions[i])) {
+      if (!checkCondition(item, conditions[i], context)) {
         return false;
       }
     }
@@ -110,10 +110,10 @@ function conjunct(item, conditions) {
   return false;
 }
 
-function disjunct(item, conditions) {
+function disjunct(item, conditions, context) {
   if (Array.isArray(conditions) && conditions.length) {
     for (var i = 0; i < conditions.length; i++) {
-      if (checkCondition(item, conditions[i])) {
+      if (checkCondition(item, conditions[i], context)) {
         return true;
       }
     }
@@ -125,7 +125,8 @@ function disjunct(item, conditions) {
 /**
  * @param {Item} item
  * @param {Array} conditions
+ * @param {Item} [context]
  */
-module.exports = function (item, conditions) {
-  return conjunct(item, conditions);
+module.exports = function (item, conditions, context) {
+  return conjunct(item, conditions, context || item);
 };
