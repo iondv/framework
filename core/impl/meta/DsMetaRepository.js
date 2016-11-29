@@ -754,7 +754,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptWorkflows(workflows) {
-    var i, j, ns, wf;
+    var i, j, k, ns, wf;
     _this.workflowMeta = {};
 
     for (i = 0; i < workflows.length; i++) {
@@ -780,6 +780,16 @@ function DsMetaRepository(options) {
       wf.transitionsByDest = {};
 
       for (j = 0; j < wf.transitions.length; j++) {
+        for (k = 0; k < wf.transitions[j].assignments.length; k++) {
+          if (
+            wf.transitions[j].assignments[k].value &&
+            wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
+            wf.transitions[j].assignments[k].value.indexOf(')') !== -1
+          ) {
+            wf.transitions[j].assignments[k].formula =
+              options.calc.parseFormula(wf.transitions[j].assignments[k].value);
+          }
+        }
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
         if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
           wf.transitionsBySrc[wf.transitions[j].startState] = [];
