@@ -77,7 +77,7 @@ function Item(id, base, classMeta) {
     var props = this.getProperties();
     var p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
-      return this.collections[name];
+      return this.collections[name] || [];
     }
     return [];
   };

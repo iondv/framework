@@ -343,6 +343,7 @@ function FsStorage(options) {
           _this._fetch(dir.files)
             .then(function (files) {
               dir.files = files;
+              dir.link = _options.urlBase + '/' + id;
               resolve(dir);
             }).catch(reject);
         } else {
@@ -356,9 +357,10 @@ function FsStorage(options) {
    *
    * @param {String} name
    * @param {String} parentDirId
+   * @param {Boolean} fetch
    * @returns {Promise}
    */
-  this._createDir = function (name, parentDirId) {
+  this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve, reject) {
       var id = cuid();
       var dirObject = {
@@ -370,6 +372,7 @@ function FsStorage(options) {
       };
       dataSource.insert('ion_files', dirObject)
         .then(function (dir) {
+          dir.link = _options.urlBase + '/' + id;
           if (parentDirId) {
             dataSource.get('ion_files', {id: parentDirId})
               .then(function (parentDir) {
@@ -378,7 +381,7 @@ function FsStorage(options) {
                     parentDir.dirs.push(dir.id);
                     dataSource.update('ion_files', {id: parentDir.id}, parentDir)
                       .then(function () {
-                        resolve(dir.id);
+                        resolve(fetch ? dir : null);
                       }).catch(reject);
                   } catch (err) {
                     reject(err);
@@ -388,7 +391,7 @@ function FsStorage(options) {
                 }
               }).catch(reject);
           } else {
-            resolve(dir.id);
+            resolve(fetch ? dir : null);
           }
         }).catch(reject);
     });

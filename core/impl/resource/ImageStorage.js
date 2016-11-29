@@ -194,6 +194,59 @@ function ImageStorage(options) {
       catch(reject);
     });
   };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this._getDir = function (id) {
+    return options.fileStorage.getDir(id);
+  };
+
+  /**
+   *
+   * @param {String} name
+   * @param {String} parentDirId
+   * @param {Boolean} fetch
+   * @returns {Promise}
+   */
+  this._createDir = function (name, parentDirId, fetch) {
+    return options.fileStorage.createDir(name, parentDirId, fetch);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this._removeDir = function (id) {
+    return options.fileStorage.removeDir(id);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+   */
+  this._putFile = function (dirId, fileId) {
+    return options.fileStorage.putFile(dirId, fileId);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+   */
+  this._ejectFile = function (dirId, fileId) {
+    return options.fileStorage.ejectFile(dirId, fileId);
+  };
+
+  this._share = function (id) {
+    return options.fileStorage.share(id);
+  };
 }
 
 ImageStorage.prototype = new ResourceStorage();

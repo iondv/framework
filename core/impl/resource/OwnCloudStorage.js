@@ -28,6 +28,7 @@ function OwnCloudStorage(config) {
   var ownCloudUrl = url.parse(config.url, true);
 
   var urlTypes = {
+    INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
   };
@@ -45,7 +46,7 @@ function OwnCloudStorage(config) {
       }
       return result;
     }
-    return url;
+    return uri;
   }
 
   function slashChecker(path) {
@@ -230,6 +231,9 @@ function OwnCloudStorage(config) {
           user: config.login,
           password: config.password
         },
+        headers: {
+          Depth: '1'
+        },
         method: 'PROPFIND'
       };
       request(reqParams, function (err, res, body) {
@@ -238,7 +242,7 @@ function OwnCloudStorage(config) {
             id: id,
             type: resourceType.DIR,
             name: id,
-            link: urlResolver(config.url, urlTypes.WEBDAV, id),
+            link: urlResolver(config.url, urlTypes.INDEX, id),
             files: [],
             dirs: []
           };
@@ -246,27 +250,32 @@ function OwnCloudStorage(config) {
             var dom = new Dom();
             var doc = dom.parseFromString(body);
             var dResponse = xpath.select(
-              '/*[local-name()="multistatus"]/*[local-name()="response"][position()>1]',
+              '/*[local-name()="multistatus"]/*[local-name()="response"]',
               doc
             );
             for (var i = 0; i < dResponse.length; i++) {
-              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.data;
+              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.nodeValue;
               href = decodeURI(href);
-              href = href.replace('/' + urlTypes.WEBDAV, '');
-              var collection = xpath.select(
-                '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]' +
-                '/*[local-name()="collection"]',
-                dResponse[i]
-              );
-              if (collection.length) {
-                dirObject.dirs.push({id: href, link: urlResolver(config.url, urlTypes.WEBDAV, href)});
+              if (i === 0) {
+                href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
+                dirObject.link = urlResolver(config.url, href);
               } else {
-                dirObject.files.push(new StoredFile(
-                  href,
-                  urlResolver(config.url, urlTypes.WEBDAV, href),
-                  {name: path.basename(href)},
-                  streamGetter(href)
-                ));
+                var collection = xpath.select(
+                  '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]' +
+                  '/*[local-name()="collection"]',
+                  dResponse[i]
+                );
+                if (collection.length) {
+                  href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
+                  dirObject.dirs.push({id: href, link: urlResolver(config.url, href)});
+                } else {
+                  dirObject.files.push(new StoredFile(
+                    href,
+                    urlResolver(config.url, href),
+                    {name: path.basename(href)},
+                    streamGetter(href)
+                  ));
+                }
               }
             }
             return resolve(dirObject);
@@ -284,15 +293,17 @@ function OwnCloudStorage(config) {
    *
    * @param {String} name
    * @param {String} parentDirId
+   * @param {Boolean} fetch
    * @returns {Promise}
    */
-  this._createDir = function (name, parentDirId) {
+  this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve,reject) {
+      var id = urlResolver(slashChecker(parentDirId) || '', name);
       var reqParams = {
         uri: urlResolver(
           config.url,
           urlTypes.WEBDAV,
-          utf8.encode(urlResolver(slashChecker(parentDirId) || '', name))
+          utf8.encode(id)
         ),
         auth: {
           user: config.login,
@@ -300,9 +311,13 @@ function OwnCloudStorage(config) {
         },
         method: 'MKCOL'
       };
-      request(reqParams, function (err, res, body) {
+      request(reqParams, function (err, res) {
         if (!err && res.statusCode === 201) {
-          resolve(name);
+          if (fetch) {
+            _this._getDir(id).then(resolve).catch(reject);
+          } else {
+            resolve(null);
+          }
         } else {
           return reject(err || new Error('Status code:' + res.statusCode));
         }
