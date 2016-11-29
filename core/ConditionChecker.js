@@ -29,11 +29,24 @@ function toArray(v) {
   return v;
 }
 
-function toScalar(v) {
+/**
+ * @param {*} v
+ * @param {Item} item
+ * @returns {*}
+ */
+function toScalar(v, item) {
+  var result = null;
+  var p;
   if (Array.isArray(v) && v.length) {
-    return v.length ? v[0] : null;
+    result = v.length ? v[0] : null;
   }
-  return v;
+  if (typeof result === 'string' && result[0] === '$') {
+    if ((p = item.getProperty(result.substring(1))) !== null) {
+      result = p.getValue();
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -49,30 +62,31 @@ function checkCondition(item, condition) {
     if (!p) {
       throw new Error('Не найден указанный в условии атрибут ' + item.getClassName() + '.' + pn);
     }
-    v = cast(condition.value, p.getType());
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return equal(item.get(pn), toScalar(v));
+        return equal(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
       case ConditionTypes.NOT_EQUAL:
-        return !equal(item.get(pn), toScalar(v));
+        return !equal(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
       case ConditionTypes.EMPTY:
         return !item.get(pn);
       case ConditionTypes.NOT_EMPTY:
         return item.get(pn) ? true : false;
       case ConditionTypes.LIKE:
-        return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
+        return String(item.get(pn)).match(
+          new RegExp(cast(toScalar(condition.value, item), p.getType()))
+        ) ? true : false;
       case ConditionTypes.LESS:
-        return item.get(pn) < toScalar(v) ? true : false;
+        return item.get(pn) < cast(toScalar(condition.value, item), p.getType()) ? true : false;
       case ConditionTypes.MORE:
-        return item.get(pn) > toScalar(v) ? true : false;
+        return item.get(pn) > cast(toScalar(condition.value, item), p.getType()) ? true : false;
       case ConditionTypes.LESS_OR_EQUAL:
-        return item.get(pn) <= toScalar(v) ? true : false;
+        return item.get(pn) <= cast(toScalar(condition.value, item), p.getType()) ? true : false;
       case ConditionTypes.MORE_OR_EQUAL:
-        return item.get(pn) >= toScalar(v) ? true : false;
+        return item.get(pn) >= cast(toScalar(condition.value, item), p.getType()) ? true : false;
       case ConditionTypes.IN:
         return contains(toArray(v), item.get(pn));
       case ConditionTypes.CONTAINS:
-        return contains(item.get(pn), toScalar(v));
+        return contains(item.get(pn), cast(toScalar(condition.value, item), p.getType()));
     }
   } else if (condition.nestedConditions) {
     switch (condition.operation) {
