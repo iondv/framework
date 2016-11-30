@@ -8,7 +8,7 @@ var DbSync = require('core/interfaces/DbSync');
 const AUTOINC_COLL = '__autoinc';
 const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30 */
+/* jshint maxstatements: 30, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
@@ -293,7 +293,11 @@ function MongoDbSync(options) {
 
         var fullText = [];
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === PropertyTypes.REFERENCE || cm.properties[i].indexed === true) {
+          if (
+            cm.properties[i].type === PropertyTypes.REFERENCE ||
+            cm.properties[i].indexed ||
+            cm.properties[i].unique
+          ) {
             promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
           }
 

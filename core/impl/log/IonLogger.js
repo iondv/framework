@@ -9,6 +9,8 @@ var FileStreamRotator = require('file-stream-rotator');
 var fs = require('fs');
 var path = require('path');
 
+// jshint maxcomplexity: 20
+
 function IonLogger(options) {
   var prefix = options.prefix || '';
   var logDestinations = options.logDestinations || ['console'];

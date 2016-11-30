@@ -115,7 +115,7 @@ function IonDataRepository(options) {
     if (!filter) {
       return {_class: {$in: cnFilter}};
     } else {
-      return {$and: [filter, {_class: {$in: cnFilter}}]};
+      return {$and: [{_class: {$in: cnFilter}}, filter]};
     }
   };
 
