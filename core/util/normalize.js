@@ -27,7 +27,7 @@ function normalize(data) {
      * @type {{}}
      */
     var item;
-    item = merge(data.base, data.calculated);
+    item = merge(true, data.base, data.calculated);
 
     delete item._id;
     delete item._classVer;
