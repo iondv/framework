@@ -123,6 +123,7 @@ function ConditionParser(condition, rcm) {
     }
   } else {
     if (condition.property) {
+      result = {};
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
           result.$or = [{}, {}, {}];
