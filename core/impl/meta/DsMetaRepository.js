@@ -71,6 +71,7 @@ function findByVersion(arr, version, i1, i2) {
  * @param {String} [options.ViewTableName]
  * @param {String} [options.NavTableName]
  * @param {String} [options.WorkflowTableName]
+ * @param {String} [options.UsertypeTableName]
  * @param {DbSync} [options.sync]
  * @param {Calculator} [options.calc]
  * @constructor
@@ -784,7 +785,8 @@ function DsMetaRepository(options) {
           if (
             wf.transitions[j].assignments[k].value &&
             wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
-            wf.transitions[j].assignments[k].value.indexOf(')') !== -1
+            wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
+            options.calc
           ) {
             wf.transitions[j].assignments[k].formula =
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
