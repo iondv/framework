@@ -151,6 +151,32 @@ function WorkflowProvider(options) {
       }).then(function () {resolve(item); }).catch(reject);
   }
 
+  function passAssignmentValue(updates, item, key, value) {
+    return new Promise(function (resolve, reject) {
+      try {
+        updates[key] = value;
+        item.set(key, value);
+        resolve(value);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function calcAssignmentValue(updates, item, key, formula) {
+    return formula.apply(item, [{}]).then(function (v) {
+      return new Promise(function (resolve, reject) {
+        try {
+          updates[key] = v;
+          item.set(key, v);
+          resolve(v);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
   /**
    * @param {Item} item
    * @param {String} workflow
@@ -177,30 +203,50 @@ function WorkflowProvider(options) {
                   return reject(new Error('Не найдено конечное состояние перехода.'));
                 }
 
-                var updates = null;
+                var updates = {};
+                var calculations = [];
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
                   for (var i = 0; i < transition.assignments.length; i++) {
-                    item.set(transition.assignments[i].key, transition.assignments[i].value);
-                    updates[transition.assignments[i].key] = transition.assignments[i].value;
+                    if (transition.assignments[i].formula) {
+                      calculations.push(
+                        calcAssignmentValue(
+                          updates,
+                          item,
+                          transition.assignments[i].key,
+                          transition.assignments[i].formula
+                        )
+                      );
+                    } else {
+                      calculations.push(
+                        passAssignmentValue(
+                          updates,
+                          item,
+                          transition.assignments[i].key,
+                          transition.assignments[i].value
+                        )
+                      );
+                    }
                   }
                 }
 
-                if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                  if (!checker(item, nextState.conditions)) {
-                    return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                Promise.all(calculations).then(function () {
+                  if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
+                    if (!checker(item, nextState.conditions)) {
+                      return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                    }
                   }
-                }
 
-                if (updates) {
-                  options.dataRepo.editItem(item.getMetaClass().getCanonicalName(), item.getItemId(), updates).
-                  then(function () {
+                  if (updates) {
+                    options.dataRepo.editItem(item.getMetaClass().getCanonicalName(), item.getItemId(), updates).
+                    then(function () {
+                      move(item, workflow, nextState, resolve, reject);
+                    }).
+                    catch(reject);
+                  } else {
                     move(item, workflow, nextState, resolve, reject);
-                  }).
-                  catch(reject);
-                } else {
-                  move(item, workflow, nextState, resolve, reject);
-                }
+                  }
+                }).catch(reject);
                 return;
               }
             }
