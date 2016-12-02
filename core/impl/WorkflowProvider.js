@@ -244,42 +244,48 @@ function WorkflowProvider(options) {
                     }
                   }
 
-                return _this.trigger({
-                  type: workflow + '.' + nextState.name,
-                  item: item
-                }).then(
-                  function (e) {
-                    if (Array.isArray(e.results) && e.results.length) {
-                      for (var i = 0; i < e.results.length; i++) {
-                        for (var nm in e.results[i]) {
-                          if (e.results[i].hasOwnProperty(nm)) {
-                            if (!updates) {
-                              updates = {};
+                  return _this.trigger({
+                    type: workflow + '.' + nextState.name,
+                    item: item
+                  }).then(
+                    function (e) {
+                      if (Array.isArray(e.results) && e.results.length) {
+                        for (var i = 0; i < e.results.length; i++) {
+                          for (var nm in e.results[i]) {
+                            if (e.results[i].hasOwnProperty(nm)) {
+                              if (!updates) {
+                                updates = {};
+                              }
+                              updates[nm] = e.results[i][nm];
                             }
-                            updates[nm] = e.results[i][nm];
                           }
                         }
                       }
-                    }
 
-                    if (updates) {
-                      return options.dataRepo.editItem(
-                        item.getMetaClass().getCanonicalName(),
-                        item.getItemId(),
-                        updates
-                      );
+                      if (updates) {
+                        return options.dataRepo.editItem(
+                          item.getMetaClass().getCanonicalName(),
+                          item.getItemId(),
+                          updates
+                        );
+                      }
+                      return new Promise(function (resolve) {
+                        resolve(item);
+                      });
                     }
-                    return new Promise(function (resolve) {resolve(item);});
-                  }
-                ).then(function (item) {
-                  move(item, workflow, nextState, resolve, reject);
-                }).catch(reject);
+                  ).then(
+                    function (item) {
+                      move(item, workflow, nextState, resolve, reject);
+                    }
+                  ).catch(reject);
+                }
+                ).catch(reject);
               }
             }
+            return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
           }
-          return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+          return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
         }
-        return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
       });
     });
   };
