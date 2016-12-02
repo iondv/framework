@@ -17,28 +17,17 @@ const saveImportedFiles = require('lib/convert-import-util').saveImportedFiles;
 const importReference = require('lib/convert-import-util').importReference;
 const getBeforeReference = require('lib/convert-import-util').getBeforeReference;
 
-/*const pathToImportFiles = path.join(__dirname, baseFolderOfImport);
-
-const pathToMeta = path.join(__dirname, 'meta');
-
-
-
-
-console.log('Путь к данным платформы', pathToPlatformData);
-console.log('Путь к мете', pathToMeta);
-
-// Проверяем наличие дирректории data в дирректории приложения, если её нет, создаем
-*/
-
 let appPath = getAppDir();
-console.log('#', appPath);
+console.log('Импортируемые приложения', appPath.toString());
 
-let promiseApps = appPath.map((appPathItem) => {
+appPath.map((appPathItem) => {
   const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference;
   const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference;
   const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders;
   const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles;
   const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles;
+
+  console.log('#importedFolders', importedFolders);
 
   const pathToData = path.join(appPathItem, 'data');
   if (!fs.existsSync(pathToData)) {
@@ -92,6 +81,7 @@ let promiseApps = appPath.map((appPathItem) => {
             throw err;
           });
       });
+
       return Promise.all(importPromises)
         .then((res) => {
           // importedData.verify = res[res.length - 1].verify; // Сохраняем последний промиз
@@ -128,6 +118,14 @@ let promiseApps = appPath.map((appPathItem) => {
 
 });
 
+/*Promise.all(promiseApps)
+  .then(() => {
+    console.info('Выполнен импорт');
+  })
+  .catch((err)=> {
+    console.error(err);
+  });*/
+
 // Получение списка приложений
 function getAppDir() {
   try {
@@ -153,3 +151,5 @@ function getAppDir() {
     console.warn('Отсутствует дирректория приложений applications');
   }
 }
+
+
