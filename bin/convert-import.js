@@ -27,7 +27,7 @@ appPath.map((appPathItem) => {
   const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles;
   const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles;
 
-  console.log('#importedFolders', importedFolders);
+  console.log('Импортируемые папки', importedFolders.toString());
 
   const pathToData = path.join(appPathItem, 'data');
   if (!fs.existsSync(pathToData)) {
@@ -63,20 +63,22 @@ appPath.map((appPathItem) => {
       importPromises = importedFolders.map((importPath) => {
         let importedPath = path.join(appPathItem, importPath);
         return getImportedFiles(importedData, importedPath)
-          .then((importedData) => {
-            console.log('Конвертируем распарсенные объекты из папки', importedPath);
-            return importedData;
-          })
+          // 4debug
+          // .then((importedData) => {
+          //   console.log('Конвертируем распарсенные объекты из папки', importedPath);
+          //   return importedData;
+          // })
           .then(convertImportedFiles)
           .then((importedData) => {
             delete importedData.parsed;
             return importedData;
           })
           .then(saveImportedFiles)
-          .then((importedData) => {
-            console.log('Сохранили и очистили память после импорта папки', importedPath);
-            return importedData;
-          })
+          // 4debug
+          // .then((importedData) => {
+          //   console.log('Сохранили и очистили память после импорта папки', importedPath);
+          //   return importedData;
+          // })
           .catch((err)=> {
             throw err;
           });
