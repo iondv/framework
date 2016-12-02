@@ -22,6 +22,7 @@ const EventManager = require('core/impl/EventManager');
  * @param {KeyProvider} options.keyProvider
  * @param {Logger} [options.log]
  * @param {String} [options.namespaceSeparator]
+ * @param {Number} [options.maxEagerDepth]
  * @constructor
  */
 function IonDataRepository(options) {
@@ -55,7 +56,9 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(options.maxEagerDepth || 5);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
+
+  const geoOperations = ['$geoWithin', '$geoIntersects'];
 
   /**
    * @param {ClassMeta} cm
@@ -592,7 +595,9 @@ function IonDataRepository(options) {
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
     var i, knm, keys, pm, emptyResult, result, containCheckers;
-    if (filter && Array.isArray(filter)) {
+    if (geoOperations.indexOf(part) !== -1) {
+      return filter;
+    } else if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
         result.push(prepareFilterOption(cm, filter[i], fetchers, result, i));
@@ -1616,17 +1621,17 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
-   * @param {Boolean} operation
    * @returns {*}
    * @private
    */
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
-      if (!pm) {
+      if (!pm || pm.type !== PropertyTypes.COLLECTION) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
+
+      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
 
       if (pm.backRef) {
         var update = {};
