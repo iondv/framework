@@ -13,10 +13,22 @@ var Memcached = require('memcached');
  */
 function MemcachedRepository(config) {
 
-  var mServerLocations = config.serverLocations || ['localhost:11211'];
+  var mServerLocations = [];
+  if (Array.isArray(config.serverLocations)) {
+    for (var i = 0; i < config.serverLocations.length; i++) {
+      if (config.serverLocations[i]) {
+        mServerLocations.push(config.serverLocations[i]);
+      }
+    }
+  }
+
+  if (!mServerLocations.length) {
+    mServerLocations.push('localhost:11211');
+  }
+
   var mOptions = config.connectOptions || {};
   var lifeTime = config.lifetime || 3600;
-  var memcached = new Memcached(mServerLocations,mOptions);
+  var memcached = new Memcached(mServerLocations, mOptions);
 
   function log(msg) {
     if (config.log) {
