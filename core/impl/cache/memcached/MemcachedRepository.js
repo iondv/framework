@@ -6,6 +6,11 @@
 var CacheRepository = require('core/interfaces/CacheRepository');
 var Memcached = require('memcached');
 
+/**
+ * @param {{serverLocations: String[], connectOptions: {}, lifetime: Number, enabled: Boolean}} config
+ * @param {Logger} [config.log]
+ * @constructor
+ */
 function MemcachedRepository(config) {
 
   var mServerLocations = config.serverLocations || ['localhost:11211'];
@@ -13,27 +18,15 @@ function MemcachedRepository(config) {
   var lifeTime = config.lifetime || 3600;
   var memcached = new Memcached(mServerLocations,mOptions);
 
-  memcached.on('issue',
-    function (details) {
-      console.log('Memcahced issue:' + details.server + ':' + details.messages.join(' '));
-    });
-  memcached.on('failure',
-    function (details) {
-      console.log('Memcahced failure:' + details.server + ':' + details.messages.join(' '));
-    });
-  memcached.on('reconnecting',
-    function (details) {
-      console.log('Memcahced reconnecting:' + details.server + ':' + details.messages.join(' '));
-    });
-  memcached.on('reconnect',
-    function (details) { console.log('Memcahced reconnect:' + details.server + ':' + details.messages.join(' '));
-    });
-  memcached.on('remove',
-    function (details) { console.log('Memcahced remove:' + details.server + ':' + details.messages.join(' '));
-    });
+  function log(msg) {
+    if (config.log) {
+      config.log.log(msg);
+    } else {
+      console.log(msg);
+    }
+  }
 
   /**
-   *
    * @param {String} key
    * @returns {Promise}
    * @private
@@ -43,19 +36,17 @@ function MemcachedRepository(config) {
       if (memcached) {
         memcached.get(key, function (err, data) {
           if (err) {
-            reject(err);
-          } else {
-            resolve(data);
+            return reject(err);
           }
+          resolve(data);
         });
       } else {
-        reject();
+        resolve(null);
       }
     });
   };
 
   /**
-   *
    * @param {String} key
    * @param {*} value
    * @returns {Promise}
@@ -66,13 +57,46 @@ function MemcachedRepository(config) {
       if (memcached) {
         memcached.set(key, value, lifeTime, function (err) {
           if (err) {
-            reject(err);
-          } else {
-            resolve();
+            return reject(err);
           }
+          resolve();
         });
       } else {
-        reject();
+        resolve();
+      }
+    });
+  };
+
+  this.init = function () {
+    return new Promise(function (resolve, reject) {
+      if (!config.enabled) {
+        return resolve();
+      }
+      try {
+        memcached = new Memcached(mServerLocations, mOptions);
+        memcached.on('issue',
+          function (details) {
+            log('Memcached issue:' + details.server + ':' + details.messages.join(' '));
+          });
+        memcached.on('failure',
+          function (details) {
+            log('Memcached failure:' + details.server + ':' + details.messages.join(' '));
+          });
+        memcached.on('reconnecting',
+          function (details) {
+            log('Memcached reconnecting:' + details.server + ':' + details.messages.join(' '));
+          });
+        memcached.on('reconnect',
+          function (details) {
+            log('Memcached reconnect:' + details.server + ':' + details.messages.join(' '));
+          });
+        memcached.on('remove',
+          function (details) {
+            log('Memcached remove:' + details.server + ':' + details.messages.join(' '));
+          });
+        resolve();
+      } catch (err) {
+        reject(err);
       }
     });
   };

@@ -150,7 +150,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "ion://innerCache",
+          "cacheRepository": "[[cache.module]]",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
@@ -168,11 +168,24 @@
       },
       "memcahed": {
         "module": "core/impl/cache/memcached/MemcachedRepository",
-        "options": {}
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.memcached.enabled]]",
+          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "connectOptions": {},
+          "lifetime": "[[cache.memcached.timeout]]",
+          "log": "ion://sysLog"
+        }
       },
       "redis": {
         "module": "core/impl/cache/redis/RedisRepository",
-        "options": {}
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.redis.enabled]]",
+          "host": "[[cache.redis.host]]",
+          "port": "[[cache.redis.port]]",
+          "log": "ion://sysLog"
+        }
       }
     }
 }
