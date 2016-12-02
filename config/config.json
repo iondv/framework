@@ -160,6 +160,15 @@
             }
           }
         }
+      },
+      "workflows": {
+        "module": "core/impl/WorkflowProvider",
+        "initMethod": "init",
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepo": "ion://metaRepo",
+          "dataRepo": "ion://dataRepo"
+        }
       }
     }
 }
