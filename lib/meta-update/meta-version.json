@@ -110,7 +110,7 @@
       "section": {
         "descripton": "Набор операций над секциями",
         "delete": ["modules", "type", "location"],
-        "new": [{"propertyName": "mode", "value": "0"}, {"propertyName": "tags", "value": "0"},{"propertyName": "metaVersion", "value": "2.0.0"}],
+        "new": [{"propertyName": "mode", "value": "0"}, {"propertyName": "tags", "value": null},{"propertyName": "metaVersion", "value": "2.0.0"}],
         "rename": [],
         "convertType": [],
         "depricatedValue": [],
