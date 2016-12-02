@@ -166,7 +166,7 @@
         "module": "core/impl/cache/InnerCacheRepository",
         "options": {}
       },
-      "memcahed": {
+      "memcached": {
         "module": "core/impl/cache/memcached/MemcachedRepository",
         "initLevel": 1,
         "options": {
