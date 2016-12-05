@@ -118,7 +118,7 @@ function IonDataRepository(options) {
     if (!filter) {
       return {_class: {$in: cnFilter}};
     } else {
-      return {$and: [filter, {_class: {$in: cnFilter}}]};
+      return {$and: [{_class: {$in: cnFilter}}, filter]};
     }
   };
 
@@ -894,6 +894,10 @@ function IonDataRepository(options) {
       return value;
     }
     if (pm.type === PropertyTypes.REFERENCE) {
+      if (!value) {
+        return null;
+      }
+
       var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
 
       if (refkey) {
@@ -1348,7 +1352,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item
+            item: item,
+            data: data
           });
         }).
         then(writeEventHandler(nestingDepth, changeLogger)).
@@ -1423,7 +1428,8 @@ function IonDataRepository(options) {
             if (!suppresEvent) {
               return _this.trigger({
                 type: item.getMetaClass().getCanonicalName() + '.edit',
-                item: item
+                item: item,
+                updates: data
               });
             }
             return new Promise(function (resolve) {resolve({item: item});});
@@ -1515,7 +1521,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item
+            item: item,
+            updates: data
           });
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger)).
