@@ -1423,7 +1423,8 @@ function IonDataRepository(options) {
             if (!suppresEvent) {
               return _this.trigger({
                 type: item.getMetaClass().getCanonicalName() + '.edit',
-                item: item
+                item: item,
+                updates: updates
               });
             }
             return new Promise(function (resolve) {resolve({item: item});});
@@ -1515,7 +1516,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item
+            item: item,
+            updates: updates
           });
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger)).

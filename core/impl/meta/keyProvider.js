@@ -37,6 +37,13 @@ function MetaKeyProvider(options) {
     return result || null;
   };
 
+  /**
+   * @param {String} classname
+   * @param {String} id
+   * @param {String} [namespace]
+   * @returns {{}}
+   * @private
+   */
   this._keyToData = function (classname, id, namespace) {
     var result = {};
     if (typeof id === 'string') {
@@ -50,6 +57,13 @@ function MetaKeyProvider(options) {
     return result;
   };
 
+  /**
+   * @param {String} classname
+   * @param {String} data
+   * @param {String} [namespace]
+   * @returns {{} | null}
+   * @private
+   */
   this._keyData = function (classname, data, namespace) {
     var result = {};
     if (typeof data === 'object' && data) {
