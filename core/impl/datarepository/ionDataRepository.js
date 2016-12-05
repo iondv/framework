@@ -894,6 +894,10 @@ function IonDataRepository(options) {
       return value;
     }
     if (pm.type === PropertyTypes.REFERENCE) {
+      if (!value) {
+        return null;
+      }
+
       var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
 
       if (refkey) {
@@ -1348,7 +1352,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item
+            item: item,
+            data: data
           });
         }).
         then(writeEventHandler(nestingDepth, changeLogger)).
@@ -1424,7 +1429,7 @@ function IonDataRepository(options) {
               return _this.trigger({
                 type: item.getMetaClass().getCanonicalName() + '.edit',
                 item: item,
-                updates: updates
+                updates: data
               });
             }
             return new Promise(function (resolve) {resolve({item: item});});
@@ -1517,7 +1522,7 @@ function IonDataRepository(options) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
             item: item,
-            updates: updates
+            updates: data
           });
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger)).
