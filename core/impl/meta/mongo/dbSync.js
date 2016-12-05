@@ -6,8 +6,9 @@
 var DbSync = require('core/interfaces/DbSync');
 
 const AUTOINC_COLL = '__autoinc';
+const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30 */
+/* jshint maxstatements: 30, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
@@ -271,15 +272,45 @@ function MongoDbSync(options) {
         );
       }
 
+      function createFullText(props) {
+        return new Promise(function (resolve, reject) {
+          var indexDef = {};
+          for (var i = 0; i < props.length; i++) {
+            indexDef[props[i]] = 'text';
+          }
+          var opts = {};
+          collection.createIndex(indexDef, opts, function (err, iname) {
+            resolve(iname);
+          });
+        });
+      }
+
       return new Promise(function (resolve, reject) {
         var i, promises;
         promises = [];
         promises.push(createIndexPromise(cm.key, true));
         promises.push(createIndexPromise('_class', false));
 
+        var fullText = [];
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
+          if (
+            cm.properties[i].type === PropertyTypes.REFERENCE ||
+            cm.properties[i].indexed ||
+            cm.properties[i].unique
+          ) {
             promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
+          }
+
+          if (
+            cm.properties[i].indexSearch &&
+            (
+              cm.properties[i].type === PropertyTypes.STRING ||
+              cm.properties[i].type === PropertyTypes.URL ||
+              cm.properties[i].type === PropertyTypes.HTML ||
+              cm.properties[i].type === PropertyTypes.MULTILINE
+            )
+          ) {
+            fullText.push(cm.properties[i].name);
           }
         }
 
@@ -287,6 +318,10 @@ function MongoDbSync(options) {
           for (i = 0; i < cm.compositeIndexes.length; i++) {
             promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
           }
+        }
+
+        if (fullText.length) {
+          promises.push(createFullText(fullText));
         }
 
         Promise.all(promises).
