@@ -244,7 +244,7 @@ function WorkflowProvider(options) {
                     }
                   }
 
-                  return _this.trigger({
+                  _this.trigger({
                     type: workflow + '.' + nextState.name,
                     item: item
                   }).then(
@@ -278,8 +278,8 @@ function WorkflowProvider(options) {
                       move(item, workflow, nextState, resolve, reject);
                     }
                   ).catch(reject);
-                }
-                ).catch(reject);
+                }).catch(reject);
+                return;
               }
             }
             return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
