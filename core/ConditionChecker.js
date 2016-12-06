@@ -9,7 +9,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var equal = require('core/equal');
 var cast = require('core/cast');
 
-// jshint maxcomplexity: 40, eqeqeq: false
+// jshint maxcomplexity: 40, maxstatements: 30, eqeqeq: false
 function contains(container, content) {
   if (container && content !== null) {
     if (typeof container === 'string') {
@@ -102,7 +102,7 @@ function checkCondition(item, condition) {
         if (p.getType() === PropertyTypes.COLLECTION) {
           return colContains(p.evaluate(), condition.nestedConditions);
         } else {
-          return contains(item.get(pn).evaluate(), toScalar(v));
+          return contains(p.evaluate(), toScalar(v));
         }
       }
     }
