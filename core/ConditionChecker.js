@@ -9,7 +9,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var equal = require('core/equal');
 var cast = require('core/cast');
 
-// jshint maxcomplexity: 40, eqeqeq: false
+// jshint maxcomplexity: 40, maxstatements: 30, eqeqeq: false
 function contains(container, content) {
   if (container && content !== null) {
     if (typeof container === 'string') {
@@ -73,18 +73,18 @@ function checkCondition(item, condition) {
       case ConditionTypes.NOT_EQUAL:
         return !equal(item.get(pn), toScalar(v));
       case ConditionTypes.EMPTY: {
-        v = p.evaluate();
+        v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length === 0;
         }
-        return v === null || v === '' ? true : false;
+        return v === null || v === '' || typeof v === 'undefined' ? true : false;
       }break;
       case ConditionTypes.NOT_EMPTY: {
-        v = p.evaluate();
+        v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length > 0;
         }
-        return v === null || v === '' ? false : true;
+        return v === null || v === '' || typeof v === 'undefined' ? false : true;
       }break;
       case ConditionTypes.LIKE:
         return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
@@ -102,7 +102,7 @@ function checkCondition(item, condition) {
         if (p.getType() === PropertyTypes.COLLECTION) {
           return colContains(p.evaluate(), condition.nestedConditions);
         } else {
-          return contains(item.get(pn).evaluate(), toScalar(v));
+          return contains(p.evaluate(), toScalar(v));
         }
       }
     }
