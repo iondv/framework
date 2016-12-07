@@ -316,7 +316,7 @@ function MongoDs(config) {
             {type: type},
             {$set: up},
             {returnOriginal: false, upsert: false},
-            function (err, result) {
+            function (err) {
               if (err) {
                 return reject(err);
               }
@@ -349,7 +349,7 @@ function MongoDs(config) {
 
     return this.getCollection(type).then(
       function (c) {
-        cleanNulls(c, type, data)
+        return cleanNulls(c, type, data)
           .then(
             function (data) {
               return new Promise(function (resolve, reject) {
@@ -365,30 +365,24 @@ function MongoDs(config) {
                     conditions,
                     updates,
                     {upsert: upsert},
-                    function (err, result) {
+                    function (err) {
                       if (err) {
-                        reject(err);
-                      } else if (result.result && result.result.n > 0) {
-                        _this._get(type, conditions).then(function (r) {
-                          if (upsert) {
-                            return adjustAutoInc(type, r);
-                          }
-                          return new Promise(function (resolve) { resolve(r); });
-                        }).then(resolve).catch(reject);
-                      } else {
-                        resolve();
+                        return reject(err);
                       }
+                      _this._get(type, conditions).then(function (r) {
+                        if (upsert) {
+                          return adjustAutoInc(type, r);
+                        }
+                        return resolve(r);
+                      }).then(resolve).catch(reject);
                     });
                 } else {
                   c.updateMany(conditions, updates,
                     function (err, result) {
                       if (err) {
-                        reject(err);
-                      } else if (result.result && result.result.n > 0) {
-                        _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
-                      } else {
-                        resolve([]);
+                        return reject(err);
                       }
+                      _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
                     });
                 }
               });
@@ -757,10 +751,9 @@ function MongoDs(config) {
 
           c.count(options.filter || {}, opts, function (err, cnt) {
             if (err) {
-              reject(err);
-            } else {
-              resolve(cnt);
+              return reject(err);
             }
+            resolve(cnt);
           });
         });
       }
@@ -773,10 +766,9 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              reject(err);
-            } else {
-              resolve(result);
+              return reject(err);
             }
+            resolve(result);
           });
         });
       });
