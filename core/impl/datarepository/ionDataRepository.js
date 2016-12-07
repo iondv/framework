@@ -1546,9 +1546,10 @@ function IonDataRepository(options) {
     var rcm = _this._getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
-      var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-      _this.ds.delete(tn(rcm), updates).then(function () {
-        return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var item = _this._wrap(classname, conditions);
+      _this.ds.delete(tn(rcm), conditions).then(function () {
+        return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
         function () {

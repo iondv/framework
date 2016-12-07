@@ -140,10 +140,9 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                reject(err);
-              } else if (result.deletedCount > 0) {
-                resolve(result.deletedCount);
+                return reject(err);
               }
+              resolve(result.deletedCount);
             });
         });
       }
