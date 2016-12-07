@@ -68,6 +68,7 @@ function importApplications(appPathItem) {
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
+          importedData.pathData = path.join(appPathItem, 'data');
           getImportedFiles(importedData, importedPath)
           // 4debug
           // .then((importedData) => {
@@ -124,6 +125,11 @@ function importApplications(appPathItem) {
       .then((importedData) => {
         // console.log('###Верификация', Object.keys(importedData.verify).length, '\n', importedData.verify);
         console.log('###Верификация person@khv-childzem', Object.keys(importedData.verify['person@khv-childzem']).length);
+        let sexres = require('lib/convert-import-util').checkSex(importedData.nameSex);
+        let util = require('util');
+        // console.log(util.inspect(sexres, {depth: 3}));
+        console.log('Женщины', util.inspect(Object.keys(sexres.woman)));
+        console.log('Мужчины', util.inspect(Object.keys(sexres.man)));
         return importedData;
       })
       .then((importedData) => { // Добавляем справочники, которые были не нужны для импорта
