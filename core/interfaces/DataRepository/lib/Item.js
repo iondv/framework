@@ -108,7 +108,12 @@ function Item(id, base, classMeta) {
   function setToBase(name,value) {
     var p = _this.property(name);
     if (p) {
-      _this.base[name] = value;
+      if (value instanceof Item) {
+        _this.references[name] = value;
+        _this.base[name] = value.getItemId();
+      } else {
+        _this.base[name] = value;
+      }
     }
   }
 
