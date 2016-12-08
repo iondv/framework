@@ -474,9 +474,18 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
    * @returns {*}
    */
   function checkAggregation(options) {
+    var i;
+    var dstnct = {};
+    if (options.distinct) {
+      for (i = 0; i < options.attributes.length; i++) {
+        dstnct[options.attributes[i]] = '$' + options.attributes[i];
+      }
+      dstnct = {$group: {_id: dstnct}};
+    }
     if (options.filter) {
       var exists = [];
       var match = produceMatchObject(options.attributes, options.filter, exists);
@@ -491,7 +500,7 @@ function MongoDs(config) {
           }
 
           var tmp = {};
-          for (var i = 0; i < options.attributes.length; i++) {
+          for (i = 0; i < options.attributes.length; i++) {
             tmp[options.attributes[i]] = 1;
           }
 
@@ -500,6 +509,10 @@ function MongoDs(config) {
           result.push({
             $project: tmp
           });
+        }
+
+        if (options.distinct) {
+          result.push(dstnct);
         }
 
         if (options.sort) {
@@ -515,6 +528,8 @@ function MongoDs(config) {
         }
         return result;
       }
+    } else if (options.distinct) {
+      return [dstnct];
     }
     return false;
   }
@@ -528,6 +543,7 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
    * @param {Object[]} aggregate
    * @param {Function} resolve
    * @param {Function} reject
@@ -535,7 +551,7 @@ function MongoDs(config) {
   function fetch(c, options, aggregate, resolve, reject) {
     var r, flds, i;
     if (aggregate) {
-      r = c.aggregate(aggregate, {}, function (err, data) {
+      c.aggregate(aggregate, {}, function (err, data) {
         if (err) {
           return reject(err);
         }
@@ -549,6 +565,14 @@ function MongoDs(config) {
           results.total = data.length ? data[0].count : 0;
         }
         resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
+      });
+    } else if(options.distinct && options.attributes.length === 1) {
+      c.distinct(options.attributes.length[0], options.filter || {}, function (err, docs) {
+        if (err) {
+          return reject(err);
+        }
+        console.log("Неуверен насчет правильности подсчета общего количества. Возможноли его вообще получить в дистинкте?");
+        resolve(docs, options.countTotal ? (docs.length ? docs.length : 0) : null);
       });
     } else {
       flds = null;
