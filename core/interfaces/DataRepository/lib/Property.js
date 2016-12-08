@@ -4,16 +4,20 @@
  */
 'use strict';
 
-var PropertyTypes = require('core/PropertyTypes');
-var equal = require('core/equal');
+const PropertyTypes = require('core/PropertyTypes');
+const equal = require('core/equal');
+
+// jshint maxstatements: 30, maxcomplexity: 20
 
 /**
  * @param {Item} item
  * @param {Object} propertyMeta
+ * @param {String} [name]
  * @constructor
  */
-function Property(item, propertyMeta) {
+function Property(item, propertyMeta, name) {
 
+  this.name = name;
   /**
    * @type {Item}
    */
@@ -27,7 +31,7 @@ function Property(item, propertyMeta) {
   this.selectList = null;
 
   this.getName = function () {
-    return this.meta.name;
+    return this.name || this.meta.name;
   };
 
   this.getType = function () {
@@ -76,13 +80,33 @@ function Property(item, propertyMeta) {
     return equal(this.getValue(), key);
   };
 
-  this.getDisplayValue = function () {
+  this.getDisplayValue = function (dateCallback) {
+    var i;
+    if (this.getType() === PropertyTypes.COLLECTION) {
+      var result = '';
+      var agregates = this.item.getAggregates(this.getName());
+      if (Array.isArray(agregates)) {
+        for (i = 0; i < agregates.length; i++) {
+          agregates[i].toString();
+          if (typeof this.meta.semanticGetter === 'function') {
+            result = result + (result ? ' ' : '') +
+              this.meta.semanticGetter.call(agregates[i], dateCallback);
+          } else {
+            result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback);
+          }
+        }
+      }
+      return result;
+    }
+
     var v = this.getValue();
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
-      for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
-        if (this.selectionKeyMatch(selection[i].key)) {
-          return selection[i].value;
+      if (Array.isArray(selection)) {
+        for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+          if (this.selectionKeyMatch(selection[i].key)) {
+            return selection[i].value;
+          }
         }
       }
     }
@@ -91,9 +115,9 @@ function Property(item, propertyMeta) {
       var agr = this.item.getAggregate(this.getName());
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.apply(agr);
+          return this.meta.semanticGetter.call(agr, dateCallback);
         }
-        return agr.toString();
+        return agr.toString(null, dateCallback);
       } else {
         return '';
       }

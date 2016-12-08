@@ -6,11 +6,17 @@
 var DbSync = require('core/interfaces/DbSync');
 
 const AUTOINC_COLL = '__autoinc';
+const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30 */
+/* jshint maxstatements: 30, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
+
+  /**
+   * @type {String}
+   */
+  this.userTypeTableName = options.UsertypeTableName || 'ion_usertype';
 
   /**
    * @type {String}
@@ -26,6 +32,13 @@ function MongoDbSync(options) {
    * @type {String}
    */
   this.navTableName = options.NavTableName || 'ion_nav';
+
+  /**
+   * @type {String}
+   */
+  this.workflowTableName = options.WorkflowTableName || 'ion_workflow';
+
+  var log = options.log || console;
 
   /**
    * @returns {Db}
@@ -89,6 +102,11 @@ function MongoDbSync(options) {
               });
           });
         }break;
+        case 'user_type': {
+          return new Promise(function (resolve, reject) {
+            resolve(collection);
+          });
+        }break;
       }
       throw new Error('Unsupported table type specified!');
     };
@@ -106,6 +124,12 @@ function MongoDbSync(options) {
           break;
         case 'nav':
           tn = _this.navTableName;
+          break;
+        case 'user_type':
+          tn = _this.userTypeTableName;
+          break;
+        case 'workflow':
+          tn = _this.workflowTableName;
           break;
       }
 
@@ -132,7 +156,7 @@ function MongoDbSync(options) {
             return new Promise(function (rs, rj) {
               autoinc.createIndex({type: 1}, {unique: true}, function (err) {
                 if (err) {
-                  rj(err);
+                  return rj(err);
                 }
                 rs(autoinc);
               });
@@ -175,6 +199,7 @@ function MongoDbSync(options) {
       getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
+        then(function () {return getMetaTable('user_type');}).
         then(function () {return getAutoIncColl();}).
         then(resolve).
         catch(reject);
@@ -216,13 +241,16 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return function (collection) {
-      function createIndexPromise(props, unique) {
+      function createIndexPromise(props, unique, nullable) {
         return new Promise(
           function (resolve) {
             var opts, i;
             opts = {};
             if (unique) {
               opts.unique = true;
+              if (nullable) {
+                opts.sparse = true;
+              }
             }
 
             var indexDef = {};
@@ -247,22 +275,67 @@ function MongoDbSync(options) {
         );
       }
 
+      function createFullText(props) {
+        return new Promise(function (resolve, reject) {
+          var indexDef = {};
+          for (var i = 0; i < props.length; i++) {
+            indexDef[props[i]] = 'text';
+          }
+          var opts = {};
+          collection.createIndex(indexDef, opts, function (err, iname) {
+            resolve(iname);
+          });
+        });
+      }
+
       return new Promise(function (resolve, reject) {
-        var i, promises;
+        var i, j, promises, tmp;
         promises = [];
         promises.push(createIndexPromise(cm.key, true));
         promises.push(createIndexPromise('_class', false));
 
+        var fullText = [];
+        var props = {};
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true || cm.properties[i].unique === true) {
-            promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
+          props[cm.properties[i].name] = cm.properties[i];
+          if (
+            cm.properties[i].type === PropertyTypes.REFERENCE ||
+            cm.properties[i].indexed ||
+            cm.properties[i].unique
+          ) {
+            promises.push(
+              createIndexPromise(cm.properties[i].name, cm.properties[i].unique, cm.properties[i].nullable)
+            );
+          }
+
+          if (
+            cm.properties[i].indexSearch &&
+            (
+              cm.properties[i].type === PropertyTypes.STRING ||
+              cm.properties[i].type === PropertyTypes.URL ||
+              cm.properties[i].type === PropertyTypes.HTML ||
+              cm.properties[i].type === PropertyTypes.MULTILINE
+            )
+          ) {
+            fullText.push(cm.properties[i].name);
           }
         }
 
         if (cm.compositeIndexes) {
           for (i = 0; i < cm.compositeIndexes.length; i++) {
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
+            tmp = false;
+            for (j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
+              if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+                tmp = true;
+                break;
+              }
+            }
+            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
           }
+        }
+
+        if (fullText.length) {
+          promises.push(createFullText(fullText));
         }
 
         Promise.all(promises).
@@ -330,13 +403,14 @@ function MongoDbSync(options) {
       getMetaTable('meta').then(function (metaCollection) {
         findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
           if (err) {
-            reject(err);
+            return reject(err);
           }
           _this._createCollection(cm, namespace).
           then(_this._addAutoInc(classMeta)).
           then(_this._addIndexes(classMeta)).
           then(function () {
-            console.log('Регистрируем класс ' + classMeta.name);
+            delete classMeta._id;
+            log.log('Регистрируем класс ' + classMeta.name);
             metaCollection.updateOne(
               {
                 name: classMeta.name,
@@ -349,6 +423,7 @@ function MongoDbSync(options) {
                 if (err) {
                   return reject(err);
                 }
+                log.log('Класс ' + classMeta.name + ' зарегистрирован.');
                 resolve(result);
               }
             );
@@ -386,6 +461,8 @@ function MongoDbSync(options) {
       viewMeta.className = className;
       viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
+      delete viewMeta._id;
+
       getMetaTable('view').then(function (collection) {
         collection.update(
           {
@@ -401,9 +478,9 @@ function MongoDbSync(options) {
             if (err) {
               return reject(err);
             }
+            log.log('Создано представление ' + type + ' для класса ' + className);
             resolve(vm);
           });
-
       }).catch(reject);
     });
   };
@@ -441,6 +518,8 @@ function MongoDbSync(options) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
         navSection.namespace = namespace || null;
+        delete navSection._id;
+
         collection.updateOne(
           {
             name: navSection.name,
@@ -485,6 +564,8 @@ function MongoDbSync(options) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace || null;
+        delete navNode._id;
+
         collection.updateOne(
           {
             code: navNode.code,
@@ -494,6 +575,7 @@ function MongoDbSync(options) {
           if (err) {
             return reject(err);
           }
+          log.log('Создан узел навигации ' + navNode.code);
           resolve(ns);
         });
       }).catch(reject);
@@ -515,6 +597,93 @@ function MongoDbSync(options) {
           }
           resolve(nnm);
         });
+      }).catch(reject);
+    });
+  };
+
+  /**
+   * @param {{wfClass: String, name: String, version: String}} wfMeta
+   * @param {String} [namespace]
+   * @returns {Promise}
+   * @private
+   */
+  this._defineWorkflow = function (wfMeta, namespace) {
+    return new Promise(function (resolve, reject) {
+      wfMeta.namespace = namespace || null;
+      delete wfMeta._id;
+
+      getMetaTable('workflow').then(function (collection) {
+        collection.update(
+          {
+            wfClass: wfMeta.wfClass,
+            name: wfMeta.name,
+            namespace: wfMeta.namespace,
+            version: wfMeta.version
+          },
+          wfMeta,
+          {upsert: true},
+          function (err, wf) {
+            if (err) {
+              return reject(err);
+            }
+            log.log('Создан бизнес-процесс ' + wfMeta.name + ' для класса ' + wfMeta.wfClass);
+            resolve(wf);
+          });
+      }).catch(reject);
+    });
+  };
+
+  /**
+   * @param {String} className
+   * @param {String} name
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Promise}
+   * @private
+   */
+  this._undefineWorkflow = function (className, name, namespace, version) {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('view').then(function (collection) {
+        var query = {
+          wfClass: className,
+          name: name
+        };
+        if (version) {
+          query.version = version;
+        }
+
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+
+        collection.remove(query, function (err, wf) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(wf);
+        });
+      }).catch(reject);
+    });
+  };
+
+  this._defineUserType = function (userType) {
+    return new Promise(function (resolve, reject) {
+      getMetaTable('user_type').then(function (collection) {
+        collection.updateOne(
+          {
+            name: userType.name
+          },
+          userType,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(ns);
+          }
+        );
       }).catch(reject);
     });
   };

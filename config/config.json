@@ -7,6 +7,7 @@
         "[[server.port3]]"
     ],
     "defaultModule":"[[module.default]]",
+    "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },
@@ -83,17 +84,27 @@
           "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
         }
       },
+      "calculator": {
+        "module": "core/impl/Calculator",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "dataRepo": "dataRepo"
+        }
+      },
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
           "dataSource": "ion://Db",
+          "calc": "ion://calculator",
           "sync": {
             "name": "dbSync",
             "module": "core/impl/meta/mongo/dbSync",
             "options": {
-              "dataSource": "ion://Db"
+              "dataSource": "ion://Db",
+              "log": "ion://sysLog"
             }
           }
         }
@@ -108,12 +119,38 @@
           "dataSource": "ion://Db"
         }
       },
+      "imageStorage": {
+        "module": "core/impl/resource/ImageStorage",
+        "initLevel": 1,
+        "options": {
+          "fileStorage": "ion://fileStorage",
+          "thumbnails": {
+            "tiny": {
+              "width": 50,
+              "height": 50
+            },
+            "small": {
+              "width": 100,
+              "height": 100
+            },
+            "medium": {
+              "width": 300,
+              "height": 300
+            },
+            "preview": {
+              "width": 500,
+              "height": 500
+            }
+          }
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
+          "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
             "name": "keyProvider",
@@ -122,6 +159,16 @@
               "metaRepo": "ion://metaRepo"
             }
           }
+        }
+      },
+      "workflows": {
+        "module": "core/impl/WorkflowProvider",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepo": "ion://metaRepo",
+          "dataRepo": "ion://dataRepo"
         }
       }
     }

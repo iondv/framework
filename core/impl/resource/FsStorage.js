@@ -3,15 +3,17 @@
  */
 'use strict';
 
-var ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
-var StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-var moment = require('moment');
-var fs = require('fs');
-var path = require('path');
-var cuid = require('cuid');
-var merge = require('merge');
-var clone = require('clone');
-var mkdirp = require('mkdirp');
+const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
+const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
+const moment = require('moment');
+const fs = require('fs');
+const url = require('url');
+const path = require('path');
+const cuid = require('cuid');
+const merge = require('merge');
+const clone = require('clone');
+const mkdirp = require('mkdirp');
+const xss = require('xss');
 
 /* jshint maxcomplexity: 20, maxstatements: 30 */
 /**
@@ -20,6 +22,11 @@ var mkdirp = require('mkdirp');
  */
 function FsStorage(options) {
   var _this = this;
+
+  var resourceType = {
+    FILE: 'file',
+    DIR: 'dir'
+  };
 
   /**
    * @type {DataSource}
@@ -31,6 +38,7 @@ function FsStorage(options) {
 
   delete options.dataSource;
   var _options = clone(options) || {};
+  _options.urlBase = _options.urlBase  || '';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
@@ -51,26 +59,36 @@ function FsStorage(options) {
     var fn;
     var id = cuid();
 
-    if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+    if (
+      typeof data === 'object' &&
+      (
+        typeof data.buffer !== 'undefined' ||
+        typeof data.path !== 'undefined' ||
+        typeof data.stream !== 'undefined'
+      )
+    ) {
       fn = opts.name || data.originalname || data.name || id;
       if (typeof data.buffer !== 'undefined') {
         d = data.buffer;
       } else if (typeof data.path !== 'undefined') {
         d = data.path;
+      } else if (typeof data.stream !== 'undefined') {
+        d = data.stream;
       }
 
       var dt = clone(data);
       delete dt.buffer;
       delete dt.path;
+      delete dt.stream;
 
       opts = merge(opts, dt);
-    } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+    } else {
       d = data;
       fn = opts.name || id;
     }
 
-    if (!d) {
-      throw new Error('Переданы данные недопустимого типа!');
+    if (!(typeof d === 'string' || Buffer.isBuffer(d) || typeof d.pipe === 'function')) {
+      throw new Error('Переданы данные недопустимого типа:!');
     }
 
     function checkDest(filename, prompt) {
@@ -95,7 +113,7 @@ function FsStorage(options) {
           return new Promise(function (rs, rj) {
             mkdirp(path.join(_options.storageBase, check.path), function (err) {
               if (err) {
-                rj(err);
+                return rj(err);
               }
 
               var dest = path.join(_options.storageBase, check.path, check.filename);
@@ -109,7 +127,7 @@ function FsStorage(options) {
                 }
                 writer.on('error', rj);
                 writer.on('finish', function () {
-                  rs(dest);
+                  rs(path.join(check.path, check.filename));
                 });
                 reader.pipe(writer);
               } else {
@@ -123,9 +141,14 @@ function FsStorage(options) {
             });
           });
         }).then(function (pth) { // TODO ОПределять mime-type и content-type
-          return dataSource.insert('ion_files', {id: id, path: pth, options: opts});
+          return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
         }).then(function (r) {
-          resolve(r.id);
+          resolve(new StoredFile(
+            r.id,
+            _options.urlBase + '/' + r.id,
+            r.options,
+            streamGetter(r)
+          ));
         }).catch(reject);
       });
   };
@@ -157,8 +180,13 @@ function FsStorage(options) {
   };
 
   function streamGetter(file) {
-    return function () {
-      return fs.createReadStream(path.join(_options.storageBase, file.path));
+    return function (callback) {
+      try {
+        var s = fs.createReadStream(path.join(_options.storageBase, file.path));
+        return callback(null, s);
+      } catch (err) {
+        return callback(err, null);
+      }
     };
   }
 
@@ -187,49 +215,108 @@ function FsStorage(options) {
     });
   };
 
+  function respondFile(req, res) {
+    return function (file) {
+      if (file && file.stream) {
+        res.status(200);
+        res.set('Content-Disposition',
+          (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+          '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+        res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
+        if (file.options.size) {
+          res.set('Content-Length', file.options.size);
+        }
+        if (file.options.encoding) {
+          res.set('Content-Encoding', file.options.encoding);
+        }
+        file.stream.pipe(res);
+      } else {
+        res.status(404).send('File not found!');
+      }
+    };
+  }
+
+  function respondDirectory(res, dirName,dirLinks,fileLinks) {
+    var i;
+    var html = '<html>' +
+      '<head><title>' + xss(dirName) + '</title></head>' +
+      '<body><div><h3>' + xss(dirName) + '</h3></div>' +
+      '<div>';
+    for (i = 0; i < dirLinks.length; i++) {
+      html += '<p><a href="' + dirLinks[i].link + '"><strong>' + xss(dirLinks[i].name) + '&sol;</strong></a></p>';
+    }
+    html += '</div><div>';
+    for (i = 0; i < fileLinks.length; i++) {
+      html += '<p><a href="' + fileLinks[i].link + '">' + xss(fileLinks[i].name) + '</a></p>';
+    }
+    html += '</div></body></html>';
+    res.status(404).send(html);
+  }
+
   /**
    * @returns {Function}
    */
   this._middle = function () {
     return function (req, res, next) {
-      if (req.path.indexOf(_options.urlBase) !== 0) {
+      var basePath = url.parse(_options.urlBase).path;
+      if (req.path.indexOf(basePath) !== 0) {
         return next();
       }
 
-      var fileId = req.path.replace(_options.urlBase + '/', '');
+      var fileId = req.path.replace(basePath + '/', '');
 
       if (!fileId) {
         return next();
       }
 
-      _this._fetch([fileId])
-        .then(
-          function (data) {
-            if (data.length > 0) {
-              return data[0].getContents();
-            }
-            return null;
-          }
-        ).then(
-          function (file) {
-            if (file && file.stream) {
-              res.status(200);
-              res.set('Content-Disposition',
-                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
-                '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
-              res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
-              if (file.options.size) {
-                res.set('Content-Length', file.options.size);
-              }
-              if (file.options.encoding) {
-                res.set('Content-Encoding', file.options.encoding);
-              }
-              file.stream.pipe(res);
+      dataSource.get('ion_files', {id: fileId})
+        .then(function (data) {
+          if (data && data.type === resourceType.FILE) {
+            var f = new StoredFile(
+              data.id,
+              _options.urlBase + '/' + data.id,
+              data.options,
+              streamGetter(data)
+            );
+            f.getContents()
+              .then(respondFile(req, res))
+              .catch(
+                function () {
+                  res.status(404).send('File not found!');
+                }
+              );
+          } else if (data && data.type === resourceType.DIR) {
+            if (data && (data.files.length || data.dirs.length)) {
+              var ids = data.files.concat(data.dirs);
+              dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
+                .then(function (files) {
+                  var dirLinks = [];
+                  var fileLinks = [];
+                  for (var i = 0; i < files.length; i++) {
+                    if (files[i].type === resourceType.FILE) {
+                      fileLinks.push({
+                        link: _options.urlBase + '/' + files[i].id,
+                        name: files[i].options.name || files[i].id
+                      });
+                    }
+                    if (files[i].type === resourceType.DIR) {
+                      dirLinks.push({
+                        link: _options.urlBase + '/' + files[i].id,
+                        name: files[i].options.name || files[i].id
+                      });
+                    }
+                  }
+                  respondDirectory(res, data.name, dirLinks, fileLinks);
+                }).catch(function () {
+                  res.status(404).send('File (or directory) not found!');
+                });
             } else {
-              res.status(404).send('File not found!');
+              res.status(200).send('Folder is empty!');
             }
+          } else {
+            res.status(404).send('File not found!');
           }
-        )
+        })
         .catch(
           function (err) {
             res.status(500).send(err.message);
@@ -247,6 +334,145 @@ function FsStorage(options) {
         .then(function () { return dataSource.ensureIndex('ion_files', {path: 1}); })
         .then(function () {resolve();})
         .catch(reject);
+    });
+  };
+
+  /**
+  *
+  * @param {String} id
+  * @returns {Promise}
+  */
+  this._getDir = function (id) {
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: id}).
+       then(function (dir) {
+        if (dir && dir.files.length) {
+          _this._fetch(dir.files)
+            .then(function (files) {
+              dir.files = files;
+              dir.link = _options.urlBase + '/' + id;
+              resolve(dir);
+            }).catch(reject);
+        } else {
+          resolve(dir);
+        }
+      }).catch(reject);
+    });
+  };
+
+  /**
+   *
+   * @param {String} name
+   * @param {String} parentDirId
+   * @param {Boolean} fetch
+   * @returns {Promise}
+   */
+  this._createDir = function (name, parentDirId, fetch) {
+    return new Promise(function (resolve, reject) {
+      var id = cuid();
+      var dirObject = {
+        id: id,
+        type: resourceType.DIR,
+        name: name || id,
+        files: [],
+        dirs: []
+      };
+      dataSource.insert('ion_files', dirObject)
+        .then(function (dir) {
+          dir.link = _options.urlBase + '/' + id;
+          if (parentDirId) {
+            dataSource.get('ion_files', {id: parentDirId})
+              .then(function (parentDir) {
+                if (parentDir && dir.id) {
+                  try {
+                    parentDir.dirs.push(dir.id);
+                    dataSource.update('ion_files', {id: parentDir.id}, parentDir)
+                      .then(function () {
+                        resolve(fetch ? dir : null);
+                      }).catch(reject);
+                  } catch (err) {
+                    reject(err);
+                  }
+                } else {
+                  reject('нет тайкой директории');
+                }
+              }).catch(reject);
+          } else {
+            resolve(fetch ? dir : null);
+          }
+        }).catch(reject);
+    });
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+     */
+  this._removeDir = function (id) {
+    return dataSource.delete('ion_files', {id: id});
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this._putFile = function (dirId, fileId) {
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: dirId})
+        .then(function (dir) {
+          if (dir) {
+            try {
+              dir.files.push(fileId);
+              dataSource.update('ion_files', {id: dirId}, dir)
+                .then(function () {
+                  resolve(fileId);
+                }).catch(reject);
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            reject('нет тайкой директории');
+          }
+        }).catch(reject);
+    });
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+     */
+  this._ejectFile = function (dirId, fileId) {
+    return new Promise(function (resolve, reject) {
+      dataSource.get('ion_files', {id: dirId})
+        .then(function (dir) {
+          if (dir) {
+            try {
+              var fileIndex = dir.files.indexOf(fileId);
+              if (fileIndex > -1) {
+                dir.files.splice(fileIndex, 1);
+              }
+              dataSource.update('ion_files', {id: dirId}, dir)
+                .then(function () {
+                  resolve(fileId);
+                }).catch(reject);
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            reject('нет такой директории');
+          }
+        }).catch(reject);
+    });
+  };
+
+  this._share = function (id) {
+    return new Promise(function (resolve) {
+      resolve(_options.urlBase + '/' + id);
     });
   };
 }

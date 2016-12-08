@@ -365,6 +365,9 @@ gulp.task('setup', function (done) {
   var scope = null;
 
   function finish(err) {
+    if (!scope) {
+      return done(err);
+    }
     scope.dataSources.disconnect().then(function () {
       done(err);
     }).catch(function (dcer) {
@@ -378,7 +381,7 @@ gulp.task('setup', function (done) {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler']
+    ['auth', 'rtEvents', 'sessionHandler', 'calculator']
   ).then(function (scp) {
     scope = scp;
     return new Promise(function (rs, rj) {

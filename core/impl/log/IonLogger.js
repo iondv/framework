@@ -9,6 +9,8 @@ var FileStreamRotator = require('file-stream-rotator');
 var fs = require('fs');
 var path = require('path');
 
+// jshint maxcomplexity: 20
+
 function IonLogger(options) {
   var prefix = options.prefix || '';
   var logDestinations = options.logDestinations || ['console'];
@@ -59,6 +61,10 @@ function IonLogger(options) {
       } else if (typeof dest[i] === 'string' && dest[i] !== 'console') {
         if (!streams.hasOwnProperty(dest[i])) {
           try {
+            if (!fs.existsSync(dest[i])) {
+              fs.mkdirSync(dest[i]);
+            }
+
             stat = fs.statSync(dest[i]);
             if (stat.isDirectory()) {
               result.push(FileStreamRotator.getStream({

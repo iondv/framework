@@ -6,11 +6,12 @@
 function ResourceStorage() {
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} directory
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this.accept = function (data, options) {
-    return this._accept(data, options);
+  this.accept = function (data, directory, options) {
+    return this._accept(data, directory, options);
   };
 
   /**
@@ -47,6 +48,64 @@ function ResourceStorage() {
       return this._init();
     }
     return new Promise(function (resolve) {resolve();});
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.getDir = function (id) {
+    return this._getDir(id);
+  };
+
+  /**
+   *
+   * @param {String} name
+   * @param {String} parentDirId
+   * @param {Boolean} fetch
+   * @returns {Promise}
+   */
+  this.createDir = function (name, parentDirId, fetch) {
+    return this._createDir(name, parentDirId, fetch);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.removeDir = function (id) {
+    return this._removeDir(id);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+   */
+  this.putFile = function (dirId, fileId) {
+    return this._putFile(dirId, fileId);
+  };
+
+  /**
+   *
+   * @param {String} dirId
+   * @param {String} fileId
+   * @returns {Promise}
+   */
+  this.ejectFile = function (dirId, fileId) {
+    return this._ejectFile(dirId, fileId);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.share = function (id) {
+    return this._share(id);
   };
 }
 

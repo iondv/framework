@@ -9,17 +9,16 @@ stages:
 Compile:
     type: compile
     tags:
-        - dev-docker
+        - build-02
     only:
         - master
         - develop
         - raw
     script:
-    - sudo docker exec local_mongo mongo ion --eval "db.dropDatabase()"
     - npm install
     - echo $'auth.denyTop=false\ndb.uri=mongodb://127.0.0.1:27017/ion\ndb.name=ion\ndb.user=root\ndb.pwd=ION-sql1\nserver.port1=8888\nserver.port2=8889\nserver.port3=3000\nmodule.default=registry\nfs.storageRoot=./files\nfs.urlBase=/files' > config/config.ini
     - export NODE_PATH=`pwd -P`
-    - gulp install
+    - gulp build
     artifacts:
         name: "$CI_BUILD_STAGE_$CI_BUILD_REF_NAME"
         expire_in: 20 min
@@ -27,7 +26,7 @@ Compile:
 Testing:
   type: test
   tags:
-    - dev-selenium
+    - test-01
   only:
         - master
         - develop
@@ -43,7 +42,7 @@ Testing:
 ."http://docker.local:Random platforma":
   type: deploy
   tags:
-    - dev-docker
+    - docker-01
   only:
         - master
         - develop
