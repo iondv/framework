@@ -42,7 +42,7 @@ function OwnCloudStorage(config) {
     if (arguments.length > 1) {
       var result = uri;
       for (var i = 1; i < arguments.length; i++) {
-        result = url.resolve(result, arguments[i]);
+        result = url.resolve(result, encodeURI(arguments[i]));
       }
       return result;
     }
@@ -51,9 +51,9 @@ function OwnCloudStorage(config) {
 
   function slashChecker(path) {
     if (path && path.slice(-1) !== '/') {
-      path  = path   + '/';
+      return path   + '/';
     }
-    return path;
+    return path || '';
   }
 
   function streamGetter(filePath) {
@@ -226,7 +226,7 @@ function OwnCloudStorage(config) {
     id = parseDirId(id);
     return new Promise(function (resolve,reject) {
       var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, utf8.encode(decodeURI(id))),
+        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
         auth: {
           user: config.login,
           password: config.password
@@ -237,6 +237,7 @@ function OwnCloudStorage(config) {
         method: 'PROPFIND'
       };
       request(reqParams, function (err, res, body) {
+        var tmp;
         if (!err && res.statusCode === 207) {
           var dirObject = {
             id: id,
@@ -267,7 +268,8 @@ function OwnCloudStorage(config) {
                 );
                 if (collection.length) {
                   href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
-                  dirObject.dirs.push({id: href, link: urlResolver(config.url, href)});
+                  tmp  = url.parse(href, true);
+                  dirObject.dirs.push({id: tmp.query.dir.replace(/^\//, ''), link: urlResolver(config.url, href)});
                 } else {
                   dirObject.files.push(new StoredFile(
                     href,
@@ -283,7 +285,7 @@ function OwnCloudStorage(config) {
             return reject(err);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return resolve(null);
         }
       });
     });
@@ -298,12 +300,12 @@ function OwnCloudStorage(config) {
    */
   this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve,reject) {
-      var id = urlResolver(slashChecker(parentDirId) || '', name);
+      var id = slashChecker(parentDirId) + name;
       var reqParams = {
         uri: urlResolver(
           config.url,
           urlTypes.WEBDAV,
-          utf8.encode(id)
+          id
         ),
         auth: {
           user: config.login,

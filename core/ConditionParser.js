@@ -8,6 +8,10 @@ const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
 
+const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
+const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
+  OperationTypes.SUM, OperationTypes.COUNT];
+
 // jshint maxstatements: 40, maxcomplexity: 30
 /**
  * @param {*} v
@@ -76,7 +80,7 @@ function produceFilter(condition, type, rcm, context) {
  * @param {{}} condition
  * @param {ClassMeta} rcm
  * @param {Item} [context]
- * @returns {{className: String, collectionName: String, property: String, filter: {}}}
+ * @returns {{className: String, collectionName: String, property: String, filter: {}} | null}
  */
 function produceAggregationOperation(condition, rcm, context) {
   var an, av, pn, pm;
@@ -100,6 +104,9 @@ function produceAggregationOperation(condition, rcm, context) {
   }
 
   var filter = ConditionParser(condition.nestedConditions, rcm, context);
+  if (!filter) {
+    return null;
+  }
   var result = {
     property: pn,
     filter: filter
@@ -112,40 +119,50 @@ function produceAggregationOperation(condition, rcm, context) {
  * @param {Object[]} conditions
  * @param {ClassMeta} rcm
  * @param {Item} [context]
+ * @returns {Array | null}
  */
 function produceArray(conditions, rcm, context) {
+  var tmp;
   var result = [];
   for (var i = 0; i < conditions.length; i++) {
-    result.push(ConditionParser(conditions[i], rcm, context));
+    tmp = ConditionParser(conditions[i], rcm, context);
+    if (tmp) {
+      result.push(tmp);
+    }
   }
-  return result;
+  return result.length ? result : null;
 }
 
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
  * @param {Item} [context]
- * @returns {{}}
+ * @returns {{} | null}
  */
 function ConditionParser(condition, rcm, context) {
-  var result;
+  var result, tmp;
   if (Array.isArray(condition)) {
-    result = {$and: produceArray(condition, rcm)};
+    tmp = produceArray(condition, rcm);
+    if (tmp) {
+      return {$and: tmp};
+    }
   } else {
-    result = {};
     if (condition.property) {
+      result = {};
       switch (condition.operation) {
         case ConditionTypes.EMPTY: {
           result.$or = [{}, {}, {}];
           result.$or[0][condition.property] = {$eq: null};
           result.$or[1][condition.property] = {$eq: ''};
           result.$or[2][condition.property] = {$exists: false};
+          return result;
         } break;
         case ConditionTypes.NOT_EMPTY: {
           result.$and = [{}, {}, {}];
           result.$and[0][condition.property] = {$ne: null};
           result.$and[1][condition.property] = {$ne: ''};
           result.$and[2][condition.property] = {$exists: true};
+          return result;
         } break;
         case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context);
           break;
@@ -164,20 +181,38 @@ function ConditionParser(condition, rcm, context) {
         case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value, context))}; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
+      if (result.hasOwnProperty(condition.property)) {
+        return result;
+      }
     } else {
-      switch (condition.operation) {
-        case OperationTypes.AND: result.$and = produceArray(condition.nestedConditions, rcm, context); break;
-        case OperationTypes.OR: result.$or = produceArray(condition.nestedConditions, rcm, context); break;
-        case OperationTypes.NOT: result.$not = {$and: produceArray(condition.nestedConditions, rcm, context)}; break;
-        case OperationTypes.MIN: result.$min = produceAggregationOperation(condition, rcm, context); break;
-        case OperationTypes.MAX: result.$max = produceAggregationOperation(condition, rcm, context); break;
-        case OperationTypes.AVG: result.$avg = produceAggregationOperation(condition, rcm, context); break;
-        case OperationTypes.SUM: result.$sum = produceAggregationOperation(condition, rcm, context); break;
-        case OperationTypes.COUNT: result.$count = produceAggregationOperation(condition, rcm, context); break;
+      if (BoolOpers.indexOf(condition.operation) !== -1) {
+        tmp = produceArray(condition.nestedConditions, rcm, context);
+        if (tmp) {
+          result = {};
+          switch (condition.operation) {
+            case OperationTypes.AND: result.$and = tmp; break;
+            case OperationTypes.OR: result.$or = tmp; break;
+            case OperationTypes.NOT: result.$not = {$and: tmp}; break;
+          }
+          return result;
+        }
+      } else if (AgregOpers.indexOf(condition.operation) !== -1) {
+        tmp =  produceAggregationOperation(condition, rcm, context);
+        if (tmp) {
+          result = {};
+          switch (condition.operation) {
+            case OperationTypes.MIN: result.$min = tmp; break;
+            case OperationTypes.MAX: result.$max = tmp; break;
+            case OperationTypes.AVG: result.$avg = tmp; break;
+            case OperationTypes.SUM: result.$sum = tmp; break;
+            case OperationTypes.COUNT: result.$count = tmp; break;
+          }
+          return result;
+        }
       }
     }
   }
-  return result;
+  return null;
 }
 
 module.exports = ConditionParser;

@@ -6,8 +6,9 @@
 var DbSync = require('core/interfaces/DbSync');
 
 const AUTOINC_COLL = '__autoinc';
+const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30 */
+/* jshint maxstatements: 30, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
@@ -240,13 +241,16 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return function (collection) {
-      function createIndexPromise(props, unique) {
+      function createIndexPromise(props, unique, nullable) {
         return new Promise(
           function (resolve) {
             var opts, i;
             opts = {};
             if (unique) {
               opts.unique = true;
+              if (nullable) {
+                opts.sparse = true;
+              }
             }
 
             var indexDef = {};
@@ -271,22 +275,67 @@ function MongoDbSync(options) {
         );
       }
 
+      function createFullText(props) {
+        return new Promise(function (resolve, reject) {
+          var indexDef = {};
+          for (var i = 0; i < props.length; i++) {
+            indexDef[props[i]] = 'text';
+          }
+          var opts = {};
+          collection.createIndex(indexDef, opts, function (err, iname) {
+            resolve(iname);
+          });
+        });
+      }
+
       return new Promise(function (resolve, reject) {
-        var i, promises;
+        var i, j, promises, tmp;
         promises = [];
         promises.push(createIndexPromise(cm.key, true));
         promises.push(createIndexPromise('_class', false));
 
+        var fullText = [];
+        var props = {};
         for (i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 13 || cm.properties[i].indexed === true) {
-            promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
+          props[cm.properties[i].name] = cm.properties[i];
+          if (
+            cm.properties[i].type === PropertyTypes.REFERENCE ||
+            cm.properties[i].indexed ||
+            cm.properties[i].unique
+          ) {
+            promises.push(
+              createIndexPromise(cm.properties[i].name, cm.properties[i].unique, cm.properties[i].nullable)
+            );
+          }
+
+          if (
+            cm.properties[i].indexSearch &&
+            (
+              cm.properties[i].type === PropertyTypes.STRING ||
+              cm.properties[i].type === PropertyTypes.URL ||
+              cm.properties[i].type === PropertyTypes.HTML ||
+              cm.properties[i].type === PropertyTypes.MULTILINE
+            )
+          ) {
+            fullText.push(cm.properties[i].name);
           }
         }
 
         if (cm.compositeIndexes) {
           for (i = 0; i < cm.compositeIndexes.length; i++) {
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
+            tmp = false;
+            for (j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
+              if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+                tmp = true;
+                break;
+              }
+            }
+            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
           }
+        }
+
+        if (fullText.length) {
+          promises.push(createFullText(fullText));
         }
 
         Promise.all(promises).

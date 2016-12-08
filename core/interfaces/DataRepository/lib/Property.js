@@ -103,7 +103,7 @@ function Property(item, propertyMeta, name) {
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
       if (Array.isArray(selection)) {
-        for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
             return selection[i].value;
           }

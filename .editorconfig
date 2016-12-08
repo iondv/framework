@@ -6,7 +6,7 @@ root = true
 # Для всех файлов используем unix-совместимые переносы строк, перенос в конце файла
 [*]
 end_of_line = lf
-insert_final_newline = true
+insert_final_newline = false
 # Для всех файлов используем кодировку utf-8
 charset = utf-8
 
