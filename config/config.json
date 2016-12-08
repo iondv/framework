@@ -168,6 +168,16 @@
         "options":{
           "dataSource": "ion://Db"
         }
+      },
+      "workflows": {
+        "module": "core/impl/WorkflowProvider",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepo": "ion://metaRepo",
+          "dataRepo": "ion://dataRepo"
+        }
       }
     }
 }

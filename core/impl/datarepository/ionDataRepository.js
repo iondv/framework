@@ -22,6 +22,7 @@ const EventManager = require('core/impl/EventManager');
  * @param {KeyProvider} options.keyProvider
  * @param {Logger} [options.log]
  * @param {String} [options.namespaceSeparator]
+ * @param {Number} [options.maxEagerDepth]
  * @constructor
  */
 function IonDataRepository(options) {
@@ -55,7 +56,9 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(options.maxEagerDepth || 5);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
+
+  const geoOperations = ['$geoWithin', '$geoIntersects'];
 
   /**
    * @param {ClassMeta} cm
@@ -115,7 +118,7 @@ function IonDataRepository(options) {
     if (!filter) {
       return {_class: {$in: cnFilter}};
     } else {
-      return {$and: [filter, {_class: {$in: cnFilter}}]};
+      return {$and: [{_class: {$in: cnFilter}}, filter]};
     }
   };
 
@@ -592,7 +595,9 @@ function IonDataRepository(options) {
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
     var i, knm, keys, pm, emptyResult, result, containCheckers;
-    if (filter && Array.isArray(filter)) {
+    if (geoOperations.indexOf(part) !== -1) {
+      return filter;
+    } else if (filter && Array.isArray(filter)) {
       result = [];
       for (i = 0; i < filter.length; i++) {
         result.push(prepareFilterOption(cm, filter[i], fetchers, result, i));
@@ -889,6 +894,10 @@ function IonDataRepository(options) {
       return value;
     }
     if (pm.type === PropertyTypes.REFERENCE) {
+      if (!value) {
+        return null;
+      }
+
       var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
 
       if (refkey) {
@@ -1343,7 +1352,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item
+            item: item,
+            data: data
           });
         }).
         then(writeEventHandler(nestingDepth, changeLogger)).
@@ -1402,9 +1412,7 @@ function IonDataRepository(options) {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
-              return new Promise(function (resolve, reject) {
-                reject(new Error('Не найден объект для редактирования.'));
-              });
+              return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
             var item = _this._wrap(data._class, data, data._classVer);
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
@@ -1418,7 +1426,8 @@ function IonDataRepository(options) {
             if (!suppresEvent) {
               return _this.trigger({
                 type: item.getMetaClass().getCanonicalName() + '.edit',
-                item: item
+                item: item,
+                updates: data
               });
             }
             return new Promise(function (resolve) {resolve({item: item});});
@@ -1510,7 +1519,8 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item
+            item: item,
+            updates: data
           });
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger)).
@@ -1536,9 +1546,10 @@ function IonDataRepository(options) {
     var rcm = _this._getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
-      var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-      _this.ds.delete(tn(rcm), updates).then(function () {
-        return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var item = _this._wrap(classname, conditions);
+      _this.ds.delete(tn(rcm), conditions).then(function () {
+        return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
         function () {
@@ -1616,17 +1627,17 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
-   * @param {Boolean} operation
    * @returns {*}
    * @private
    */
   function _editCollection(master, collection, details, changeLogger, operation) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
-      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
-      if (!pm) {
+      if (!pm || pm.type !== PropertyTypes.COLLECTION) {
         return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
       }
+
+      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
 
       if (pm.backRef) {
         var update = {};

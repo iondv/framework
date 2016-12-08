@@ -56,6 +56,8 @@ function normalize(data) {
         var refItem = data.getAggregate(pm.name);
         if (refItem) {
           item[pm.name] = normalize(refItem);
+        } else if (item[pm.name]) {
+          delete item[pm.name];
         }
       } else if (pm.type === PropertyTypes.COLLECTION) {
         item[pm.name] = normalize(data.getAggregates(pm.name));

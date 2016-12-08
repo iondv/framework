@@ -6,6 +6,7 @@
 const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
+const EventManager = require('core/impl/EventManager');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -17,6 +18,7 @@ const period = require('core/period');
  */
 function WorkflowProvider(options) {
   var _this = this;
+  EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
 
@@ -148,7 +150,38 @@ function WorkflowProvider(options) {
       {
         stage: nextState.name,
         since: new Date()
-      }).then(function () {resolve(item); }).catch(reject);
+      }
+    ).then(
+      function () {
+        resolve(item);
+      }
+    ).catch(reject);
+  }
+
+  function passAssignmentValue(updates, item, key, value) {
+    return new Promise(function (resolve, reject) {
+      try {
+        updates[key] = value;
+        item.set(key, value);
+        resolve(value);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function calcAssignmentValue(updates, item, key, formula) {
+    return formula.apply(item, [{}]).then(function (v) {
+      return new Promise(function (resolve, reject) {
+        try {
+          updates[key] = v;
+          item.set(key, v);
+          resolve(v);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
   }
 
   /**
@@ -177,37 +210,82 @@ function WorkflowProvider(options) {
                   return reject(new Error('Не найдено конечное состояние перехода.'));
                 }
 
-                var updates = null;
+                var updates = {};
+                var calculations = [];
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
                   for (var i = 0; i < transition.assignments.length; i++) {
-                    item.set(transition.assignments[i].key, transition.assignments[i].value);
-                    updates[transition.assignments[i].key] = transition.assignments[i].value;
+                    if (transition.assignments[i].formula) {
+                      calculations.push(
+                        calcAssignmentValue(
+                          updates,
+                          item,
+                          transition.assignments[i].key,
+                          transition.assignments[i].formula
+                        )
+                      );
+                    } else {
+                      calculations.push(
+                        passAssignmentValue(
+                          updates,
+                          item,
+                          transition.assignments[i].key,
+                          transition.assignments[i].value
+                        )
+                      );
+                    }
                   }
                 }
 
-                if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                  if (!checker(item, nextState.conditions)) {
-                    return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                Promise.all(calculations).then(function () {
+                  if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
+                    if (!checker(item, nextState.conditions)) {
+                      return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                    }
                   }
-                }
 
-                if (updates) {
-                  options.dataRepo.editItem(item.getMetaClass().getCanonicalName(), item.getItemId(), updates).
-                  then(function () {
-                    move(item, workflow, nextState, resolve, reject);
-                  }).
-                  catch(reject);
-                } else {
-                  move(item, workflow, nextState, resolve, reject);
-                }
+                  _this.trigger({
+                    type: workflow + '.' + nextState.name,
+                    item: item
+                  }).then(
+                    function (e) {
+                      if (Array.isArray(e.results) && e.results.length) {
+                        for (var i = 0; i < e.results.length; i++) {
+                          for (var nm in e.results[i]) {
+                            if (e.results[i].hasOwnProperty(nm)) {
+                              if (!updates) {
+                                updates = {};
+                              }
+                              updates[nm] = e.results[i][nm];
+                            }
+                          }
+                        }
+                      }
+
+                      if (updates) {
+                        return options.dataRepo.editItem(
+                          item.getMetaClass().getCanonicalName(),
+                          item.getItemId(),
+                          updates
+                        );
+                      }
+                      return new Promise(function (resolve) {
+                        resolve(item);
+                      });
+                    }
+                  ).then(
+                    function (item) {
+                      move(item, workflow, nextState, resolve, reject);
+                    }
+                  ).catch(reject);
+                }).catch(reject);
                 return;
               }
             }
+            return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
           }
-          return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+          return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
         }
-        return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
       });
     });
   };
