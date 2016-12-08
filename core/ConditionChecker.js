@@ -111,7 +111,7 @@ function checkCondition(item, condition, context) {
       case ConditionTypes.MORE_OR_EQUAL:
         return item.get(pn) >= cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.IN:
-        return contains(toArray(v), item.get(pn));
+        return contains(toArray(condition.value), item.get(pn));
       case ConditionTypes.CONTAINS: {
         if (p.getType() === PropertyTypes.COLLECTION) {
           return colContains(p.evaluate(), condition.nestedConditions);
