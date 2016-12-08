@@ -152,7 +152,7 @@ function ConditionParser(condition, rcm) {
           result[condition.property] = produceFilter(condition, '$lte', rcm); break;
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm); break;
-        case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
+        case ConditionTypes.LIKE: result[condition.property] = {$regex: toScalar(condition.value).toString()}; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
       if (result.hasOwnProperty(condition.property)) {
