@@ -70,7 +70,7 @@ function WorkflowProvider(options) {
             stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
-                if (!checker(item, stage.conditions)) {
+                if (!checker(item, stage.conditions, item)) {
                   delete result[workflows[i].name];
                   continue;
                 }
@@ -112,7 +112,7 @@ function WorkflowProvider(options) {
                 for (j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
                   transition = workflows[i].transitionsBySrc[stage.name][j];
                   if (Array.isArray(transition.conditions) && transition.conditions.length) {
-                    if (!checker(item, transition.conditions)) {
+                    if (!checker(item, transition.conditions, item)) {
                       continue;
                     }
                   }
@@ -239,7 +239,7 @@ function WorkflowProvider(options) {
 
                 Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions)) {
+                    if (!checker(item, nextState.conditions, item)) {
                       return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
                     }
                   }
