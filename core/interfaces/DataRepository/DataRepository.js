@@ -65,6 +65,17 @@ function DataRepository() {
   };
 
   /**
+   * @param {String} className
+   * @param {Object} [options.filter]
+   * @param {String[]} [options.attributes]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this.rawData = function (className, options) {
+    return this._rawData(className, options);
+  };
+
+  /**
    * @param {String | Item} obj
    * @param {String} [id]
    * @param {Number} [nestingDepth]

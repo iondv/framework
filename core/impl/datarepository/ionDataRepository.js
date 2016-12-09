@@ -817,7 +817,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.distinct]
    * @returns {Promise}
    */
-  this.rawData = function (className, options) {
+  this._rawData = function (className, options) {
     if (!options) {
       options = {};
     }
