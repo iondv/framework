@@ -528,7 +528,7 @@ function MongoDs(config) {
         }
         return result;
       }
-    } else if (options.distinct) {
+    } else if (options.distinct && options.attributes.length > 1) {
       return [dstnct];
     }
     return false;

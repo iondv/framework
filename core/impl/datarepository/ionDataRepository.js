@@ -802,12 +802,38 @@ function IonDataRepository(options) {
     var cm = this._getMeta(className);
     var rcm = this._getRootType(cm);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(options.filter).
+    return prepareFilterValues(cm, options.filter).
     then(
       function () {
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
+  };
+
+  /**
+   * @param {String} className
+   * @param {Object} [options.filter]
+   * @param {String[]} [options.attributes]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this.rawData = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = this._getMeta(className);
+    var rcm = this._getRootType(cm);
+    if(!options.attributes || !options.attributes.length) {
+      var props = cm.getPropertyMetas();
+      for (var i = 0; i < props.length; i++) {
+        options.attributes.push(props[i].name);
+      }
+    }
+    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      options.filter = filter;
+      return _this.ds.fetch(tn(rcm), options);
+    });
   };
 
   /**
