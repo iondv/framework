@@ -124,10 +124,11 @@ function importApplications(appPathItem) {
       })
       .then((importedData) => {
         // console.log('###Верификация', Object.keys(importedData.verify).length, '\n', importedData.verify);
+        console.log('###Верификация family@khv-childzem', Object.keys(importedData.verify['family@khv-childzem']).length);
         console.log('###Верификация person@khv-childzem', Object.keys(importedData.verify['person@khv-childzem']).length);
         let sexres = require('lib/convert-import-util').checkSex(importedData.nameSex);
         let util = require('util');
-        // console.log(util.inspect(sexres, {depth: 3}));
+        console.log(util.inspect(sexres, {depth: 3}));
         console.log('Женщины', util.inspect(Object.keys(sexres.woman)));
         console.log('Мужчины', util.inspect(Object.keys(sexres.man)));
         return importedData;
