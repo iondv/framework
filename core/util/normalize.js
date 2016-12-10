@@ -12,7 +12,7 @@ const Item = require('core/interfaces/DataRepository').Item;
  * @returns {{} | null}
  * @private
  */
-function normalize(data) {
+function normalize(data, dateCallback) {
   var i;
   if (Array.isArray(data)) {
     var result = [];
@@ -67,10 +67,13 @@ function normalize(data) {
         pm.type === PropertyTypes.FILE_LIST
       ) {
         item[pm.name] = p.getValue();
+      } else if (pm.selectionProvider) {
+        item[pm.name + '_str'] = p.getDisplayValue(dateCallback);
       }
     }
 
     item._id = data.getItemId();
+    item.__string = data.toString(dateCallback);
     return item;
   }
 
