@@ -67,9 +67,7 @@ function normalize(data, dateCallback) {
         pm.type === PropertyTypes.FILE_LIST
       ) {
         item[pm.name] = p.getValue();
-      }
-
-      if (pm.selectionProvider) {
+      } else if (pm.selectionProvider) {
         item[pm.name + '_str'] = p.getDisplayValue(dateCallback);
       }
     }
