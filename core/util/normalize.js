@@ -68,6 +68,10 @@ function normalize(data, dateCallback) {
       ) {
         item[pm.name] = p.getValue();
       }
+
+      if (pm.selectionProvider) {
+        item[pm.name + '_str'] = p.getDisplayValue(dateCallback);
+      }
     }
 
     item._id = data.getItemId();
