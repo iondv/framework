@@ -12,7 +12,7 @@ const Item = require('core/interfaces/DataRepository').Item;
  * @returns {{} | null}
  * @private
  */
-function normalize(data) {
+function normalize(data, dateCallback) {
   var i;
   if (Array.isArray(data)) {
     var result = [];
@@ -71,6 +71,7 @@ function normalize(data) {
     }
 
     item._id = data.getItemId();
+    item.__string = data.toString(dateCallback);
     return item;
   }
 
