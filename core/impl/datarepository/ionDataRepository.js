@@ -1412,9 +1412,7 @@ function IonDataRepository(options) {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
-              return new Promise(function (resolve, reject) {
-                reject(new Error('Не найден объект для редактирования.'));
-              });
+              return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
             var item = _this._wrap(data._class, data, data._classVer);
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
@@ -1548,9 +1546,10 @@ function IonDataRepository(options) {
     var rcm = _this._getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
-      var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-      _this.ds.delete(tn(rcm), updates).then(function () {
-        return logChanges(changeLogger, {type: EventType.DELETE, cm: cm, updates: updates});
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var item = _this._wrap(classname, conditions);
+      _this.ds.delete(tn(rcm), conditions).then(function () {
+        return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
         function () {

@@ -4,10 +4,11 @@
  */
 'use strict';
 
-var DataSource = require('core/interfaces/DataSource');
-var mongo = require('mongodb');
-var client = mongo.MongoClient;
-var LoggerProxy = require('core/impl/log/LoggerProxy');
+const DataSource = require('core/interfaces/DataSource');
+const mongo = require('mongodb');
+const client = mongo.MongoClient;
+const LoggerProxy = require('core/impl/log/LoggerProxy');
+const empty = require('core/empty');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
@@ -31,6 +32,8 @@ function MongoDs(config) {
   this.busy = false;
 
   var log = config.logger || new LoggerProxy();
+
+  var excludeNullsFor = {};
 
   /**
    * @returns {Promise}
@@ -137,10 +140,9 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                reject(err);
-              } else if (result.deletedCount > 0) {
-                resolve(result.deletedCount);
+                return reject(err);
               }
+              resolve(result.deletedCount);
             });
         });
       }
@@ -211,23 +213,74 @@ function MongoDs(config) {
     });
   }
 
+  function excludeNulls(data, excludes) {
+    var nm;
+    var unsets = {};
+    for (nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        if (data[nm] === null && excludes.hasOwnProperty(nm)) {
+          delete data[nm];
+          unsets[nm] = true;
+        }
+      }
+    }
+    return {data: data, unset: unsets};
+  }
+
+  /**
+   * @param {Collection} c
+   * @returns {Promise}
+   */
+  function cleanNulls(c, type, data) {
+    return new Promise(function (resolve, reject) {
+      if (excludeNullsFor.hasOwnProperty(type)) {
+        resolve(excludeNulls(data, excludeNullsFor[type]));
+      } else {
+        c.indexes(function (err, indexes) {
+          if (err) {
+            return reject(err);
+          }
+          var excludes = {};
+          var i, nm;
+          for (i = 0; i < indexes.length; i++) {
+            if (indexes[i].unique && indexes[i].sparse) {
+              for (nm in indexes[i].key) {
+                if (indexes[i].key.hasOwnProperty(nm)) {
+                  excludes[nm] = true;
+                }
+              }
+            }
+          }
+
+          excludeNullsFor[type] = excludes;
+          resolve(excludeNulls(data, excludeNullsFor[type]));
+        });
+      }
+    });
+  }
+
   this._insert = function (type, data) {
     return this.getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          autoInc(type, data).then(
-            function (data) {
-              c.insertOne(data, function (err, result) {
-                if (err) {
-                  reject(err);
-                } else if (result.insertedId) {
-                  _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
-                } else {
-                  reject(new Error('Inser failed'));
-                }
-              });
-            }
-          ).catch(reject);
+          autoInc(type, data)
+            .then(
+              function (data) {
+                return cleanNulls(c, type, data);
+              }
+            ).then(
+              function (data) {
+                c.insertOne(data.data, function (err, result) {
+                  if (err) {
+                    reject(err);
+                  } else if (result.insertedId) {
+                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                  } else {
+                    reject(new Error('Inser failed'));
+                  }
+                });
+              }
+            ).catch(reject);
         });
       }
     );
@@ -262,7 +315,7 @@ function MongoDs(config) {
             {type: type},
             {$set: up},
             {returnOriginal: false, upsert: false},
-            function (err, result) {
+            function (err) {
               if (err) {
                 return reject(err);
               }
@@ -295,36 +348,45 @@ function MongoDs(config) {
 
     return this.getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
-          if (!multi) {
-            c.updateOne(conditions, {$set: data}, {upsert: upsert},
-              function (err, result) {
-                if (err) {
-                  reject(err);
-                } else if (result.result && result.result.n > 0) {
-                  _this._get(type, conditions).then(function (r) {
-                    if (upsert) {
-                      return adjustAutoInc(type, r);
-                    }
-                    return new Promise(function (resolve) { resolve(r); });
-                  }).then(resolve).catch(reject);
+        return cleanNulls(c, type, data)
+          .then(
+            function (data) {
+              return new Promise(function (resolve, reject) {
+                var updates = {};
+                if (!empty(data.data)) {
+                  updates.$set = data.data;
+                }
+                if (!empty(data.unset)) {
+                  updates.$unset = data.unset;
+                }
+                if (!multi) {
+                  c.updateOne(
+                    conditions,
+                    updates,
+                    {upsert: upsert},
+                    function (err) {
+                      if (err) {
+                        return reject(err);
+                      }
+                      _this._get(type, conditions).then(function (r) {
+                        if (upsert) {
+                          return adjustAutoInc(type, r);
+                        }
+                        return resolve(r);
+                      }).then(resolve).catch(reject);
+                    });
                 } else {
-                  resolve();
+                  c.updateMany(conditions, updates,
+                    function (err, result) {
+                      if (err) {
+                        return reject(err);
+                      }
+                      _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
+                    });
                 }
               });
-          } else {
-            c.updateMany(conditions, {$set: data},
-              function (err, result) {
-                if (err) {
-                  reject(err);
-                } else if (result.result && result.result.n > 0) {
-                  _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
-                } else {
-                  resolve([]);
-                }
-              });
-          }
-        });
+            }
+          );
       });
   };
 
@@ -688,10 +750,9 @@ function MongoDs(config) {
 
           c.count(options.filter || {}, opts, function (err, cnt) {
             if (err) {
-              reject(err);
-            } else {
-              resolve(cnt);
+              return reject(err);
             }
+            resolve(cnt);
           });
         });
       }
@@ -704,10 +765,9 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              reject(err);
-            } else {
-              resolve(result);
+              return reject(err);
             }
+            resolve(result);
           });
         });
       });
