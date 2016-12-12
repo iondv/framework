@@ -7,6 +7,7 @@
         "[[server.port3]]"
     ],
     "defaultModule":"[[module.default]]",
+    "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },
@@ -158,6 +159,16 @@
               "metaRepo": "ion://metaRepo"
             }
           }
+        }
+      },
+      "workflows": {
+        "module": "core/impl/WorkflowProvider",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepo": "ion://metaRepo",
+          "dataRepo": "ion://dataRepo"
         }
       }
     }

@@ -14,7 +14,7 @@ const clone = require('clone');
 
 const defaultVersion = '___default';
 
-/* jshint maxstatements: 60, maxcomplexity: 20 */
+/* jshint maxstatements: 60, maxcomplexity: 20, maxdepth: 20 */
 
 function viewPath(nodeCode,className) {
   return (nodeCode ? nodeCode + '/' : '') + className;
@@ -71,6 +71,7 @@ function findByVersion(arr, version, i1, i2) {
  * @param {String} [options.ViewTableName]
  * @param {String} [options.NavTableName]
  * @param {String} [options.WorkflowTableName]
+ * @param {String} [options.UsertypeTableName]
  * @param {DbSync} [options.sync]
  * @param {Calculator} [options.calc]
  * @constructor
@@ -172,8 +173,9 @@ function DsMetaRepository(options) {
         }
       }
     } catch (err) {
+      throw err;
     }
-    throw new Error('Класс ' + name + '(' + version + ') не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -644,21 +646,29 @@ function DsMetaRepository(options) {
               /**
                * @type {ClassMeta}
                */
-              cm = _this.classMeta[ns][name].byOrder[i];
-              if (cm.plain.ancestor) {
-                cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
-                if (cm.ancestor) {
+              try {
+                cm = _this.classMeta[ns][name].byOrder[i];
+                if (cm.plain.ancestor) {
+                  cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
                   cm.ancestor.descendants.push(cm);
                 }
+              } catch (e) {
+                throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
+                  cm.getCanonicalName() + '.');
               }
 
               pms = cm.getPropertyMetas();
               for (j = 0; j < pms.length; j++) {
                 pm = pms[j];
-                if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
-                  pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
-                } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
-                  pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                try {
+                  if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                    pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                  } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
+                    pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                  }
+                } catch (e) {
+                  throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
+                    cm.getCanonicalName() + '.' + pm.name + '.');
                 }
                 if (pm.formula && options.calc instanceof Calculator) {
                   pm._formula = options.calc.parseFormula(pm.formula);
@@ -745,7 +755,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptWorkflows(workflows) {
-    var i, j, ns, wf;
+    var i, j, k, ns, wf;
     _this.workflowMeta = {};
 
     for (i = 0; i < workflows.length; i++) {
@@ -771,6 +781,17 @@ function DsMetaRepository(options) {
       wf.transitionsByDest = {};
 
       for (j = 0; j < wf.transitions.length; j++) {
+        for (k = 0; k < wf.transitions[j].assignments.length; k++) {
+          if (
+            wf.transitions[j].assignments[k].value &&
+            wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
+            wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
+            options.calc
+          ) {
+            wf.transitions[j].assignments[k].formula =
+              options.calc.parseFormula(wf.transitions[j].assignments[k].value);
+          }
+        }
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
         if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
           wf.transitionsBySrc[wf.transitions[j].startState] = [];

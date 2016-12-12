@@ -51,14 +51,14 @@ function seqChain(context, v, interrupt) {
 
 function sequence(context, args, interrupt) {
   var p = null;
-  if (!p.length) {
+  if (!args.length) {
     return new Promise(function (r) {r(false);});
   }
   for (var i = 0; i < args.length; i++) {
     if (!p) {
       p = seqPromiseConstructor(context, args[i]);
     } else {
-      p.then(seqChain(context, args[i], interrupt));
+      p = p.then(seqChain(context, args[i], interrupt));
     }
   }
   return p;

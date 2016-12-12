@@ -15,6 +15,8 @@ const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStora
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const utf8 = require('utf8');
 
+// jshint maxstatements: 30, maxcomplexity: 20
+
 function OwnCloudStorage(config) {
 
   if (!config.url || !config.login || !config.password) {
@@ -26,6 +28,7 @@ function OwnCloudStorage(config) {
   var ownCloudUrl = url.parse(config.url, true);
 
   var urlTypes = {
+    INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
   };
@@ -39,18 +42,18 @@ function OwnCloudStorage(config) {
     if (arguments.length > 1) {
       var result = uri;
       for (var i = 1; i < arguments.length; i++) {
-        result = url.resolve(result, arguments[i]);
+        result = url.resolve(result, encodeURI(arguments[i]));
       }
       return result;
     }
-    return url;
+    return uri;
   }
 
   function slashChecker(path) {
     if (path && path.slice(-1) !== '/') {
-      path  = path   + '/';
+      return path   + '/';
     }
-    return path;
+    return path || '';
   }
 
   function streamGetter(filePath) {
@@ -223,20 +226,24 @@ function OwnCloudStorage(config) {
     id = parseDirId(id);
     return new Promise(function (resolve,reject) {
       var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, utf8.encode(decodeURI(id))),
+        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
         auth: {
           user: config.login,
           password: config.password
         },
+        headers: {
+          Depth: '1'
+        },
         method: 'PROPFIND'
       };
       request(reqParams, function (err, res, body) {
+        var tmp;
         if (!err && res.statusCode === 207) {
           var dirObject = {
             id: id,
             type: resourceType.DIR,
             name: id,
-            link: urlResolver(config.url, urlTypes.WEBDAV, id),
+            link: urlResolver(config.url, urlTypes.INDEX, id),
             files: [],
             dirs: []
           };
@@ -244,26 +251,33 @@ function OwnCloudStorage(config) {
             var dom = new Dom();
             var doc = dom.parseFromString(body);
             var dResponse = xpath.select(
-              '/*[local-name()="multistatus"]/*[local-name()="response"][position()>1]',
+              '/*[local-name()="multistatus"]/*[local-name()="response"]',
               doc
             );
             for (var i = 0; i < dResponse.length; i++) {
-              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.data;
+              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.nodeValue;
               href = decodeURI(href);
-              href = href.replace('/' + urlTypes.WEBDAV, '');
-              var collection = xpath.select(
-                '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]/*[local-name()="collection"]',
-                dResponse[i]
-              );
-              if (collection.length) {
-                dirObject.dirs.push({id: href, link: urlResolver(config.url, urlTypes.WEBDAV, href)});
+              if (i === 0) {
+                href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
+                dirObject.link = urlResolver(config.url, href);
               } else {
-                dirObject.files.push(new StoredFile(
-                  href,
-                  urlResolver(config.url, urlTypes.WEBDAV, href),
-                  {name: path.basename(href)},
-                  streamGetter(href)
-                ));
+                var collection = xpath.select(
+                  '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]' +
+                  '/*[local-name()="collection"]',
+                  dResponse[i]
+                );
+                if (collection.length) {
+                  href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
+                  tmp  = url.parse(href, true);
+                  dirObject.dirs.push({id: tmp.query.dir.replace(/^\//, ''), link: urlResolver(config.url, href)});
+                } else {
+                  dirObject.files.push(new StoredFile(
+                    href,
+                    urlResolver(config.url, href),
+                    {name: path.basename(href)},
+                    streamGetter(href)
+                  ));
+                }
               }
             }
             return resolve(dirObject);
@@ -271,7 +285,7 @@ function OwnCloudStorage(config) {
             return reject(err);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return resolve(null);
         }
       });
     });
@@ -281,15 +295,17 @@ function OwnCloudStorage(config) {
    *
    * @param {String} name
    * @param {String} parentDirId
+   * @param {Boolean} fetch
    * @returns {Promise}
    */
-  this._createDir = function (name, parentDirId) {
+  this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve,reject) {
+      var id = slashChecker(parentDirId) + name;
       var reqParams = {
         uri: urlResolver(
           config.url,
           urlTypes.WEBDAV,
-          utf8.encode(urlResolver(slashChecker(parentDirId) || '', name))
+          id
         ),
         auth: {
           user: config.login,
@@ -297,9 +313,13 @@ function OwnCloudStorage(config) {
         },
         method: 'MKCOL'
       };
-      request(reqParams, function (err, res, body) {
+      request(reqParams, function (err, res) {
         if (!err && res.statusCode === 201) {
-          resolve(name);
+          if (fetch) {
+            _this._getDir(id).then(resolve).catch(reject);
+          } else {
+            resolve(null);
+          }
         } else {
           return reject(err || new Error('Status code:' + res.statusCode));
         }
