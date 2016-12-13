@@ -17,7 +17,7 @@ function normalize(data, dateCallback) {
   if (Array.isArray(data)) {
     var result = [];
     for (i = 0; i < data.length; i++) {
-      result.push(normalize(data[i]));
+      result.push(normalize(data[i], dateCallback));
     }
     return result;
   }
@@ -73,7 +73,7 @@ function normalize(data, dateCallback) {
     }
 
     item._id = data.getItemId();
-    item.__string = data.toString(dateCallback);
+    item.__string = data.toString(null, dateCallback);
     return item;
   }
 
