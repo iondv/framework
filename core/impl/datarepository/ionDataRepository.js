@@ -13,8 +13,9 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
+const clone = require('clone');
 
-/* jshint maxstatements: 100, maxcomplexity: 100 */
+/* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -927,7 +928,7 @@ function IonDataRepository(options) {
    * @return {Object | null}
    */
   function formUpdatedData(cm, data, setCollections, refUpdates) {
-    var updates, pm, nm, dot, tmp;
+    var updates, pm, nm, dot, tmp, tmp2, i;
     updates = {};
     var empty = true;
     for (nm in data) {
