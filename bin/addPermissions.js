@@ -51,8 +51,10 @@ di('app', config.di,
           'n::develop-and-test@simple_workflow',
           'n::develop-and-test@schedule',
           'n::develop-and-test@class_string',
+          'n::develop-and-test@simple_workflow',
           'c::develop-and-test@class_string',
-          'c::develop-and-test@otorbrRef'
+          'c::develop-and-test@otorbrRef',
+          'c::develop-and-test@workflowBase'
         ], '*', function (err) {
           acl.addUserRoles('vasya', 'user', function (err) {
               var promises = [];
