@@ -160,31 +160,6 @@ function IonDataRepository(options) {
     if (options && options.autoassign) {
       autoAssign(acm, data, true);
     }
-    var tmp, tmp2, i, j;
-    var props = acm.getPropertyMetas();
-    for (i = 0; i < props.length; i++) {
-      if (props[i].type === PropertyTypes.GEO && data[props[i].name]) {
-        tmp = data['__geo__' + props[i].name + '_f'];
-        if (tmp) {
-          tmp2 = data[props[i].name];
-          delete data['__geo__' + props[i].name + '_f'];
-          switch (tmp.type) {
-            case 'Feature': {
-              tmp.geometry = tmp2;
-              data[props[i].name] = tmp;
-            }
-              break;
-            case 'FeatureCollection': {
-              for (j = 0; j < tmp2.geometries.length; j++) {
-                tmp.features[j].geometry = tmp2.geometries[j];
-              }
-              data[props[i].name] = tmp;
-            }
-              break;
-          }
-        }
-      }
-    }
     return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
   };
 
@@ -975,34 +950,7 @@ function IonDataRepository(options) {
         } else {
           pm = cm.getPropertyMeta(nm);
           if (pm) {
-            if (pm.type === PropertyTypes.GEO) {
-              if (typeof data[nm] === 'object') {
-                switch (data[nm].type) {
-                  case 'Feature': {
-                    tmp = clone(data[nm], true);
-                    delete tmp.geometry;
-                    updates[nm] = data[nm].geometry;
-                    updates['__geo__' + nm + '_f'] = tmp;
-                  }
-                    break;
-                  case 'FeatureCollection': {
-                    tmp = {
-                      type: 'GeometryCollection',
-                      geometries: []
-                    };
-                    tmp2 = clone(data[nm], true);
-
-                    for (i = 0; i < tmp2.features.length; i++) {
-                      tmp.geometries.push(tmp2.features[i].geometry);
-                      delete tmp2.features[i].geometry;
-                    }
-                    updates[nm] = tmp;
-                    updates['__geo__' + nm + '_f'] = tmp2;
-                  }
-                    break;
-                }
-              }
-            } else if (pm.type !== PropertyTypes.COLLECTION) {
+            if (pm.type !== PropertyTypes.COLLECTION) {
               data[nm] = castValue(data[nm], pm, cm.namespace);
               if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
                 updates[nm] = data[nm];
