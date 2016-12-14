@@ -33,9 +33,11 @@ function importApplications(appPathItem) {
   return new Promise(function (resolve, reject) {
     const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference;
     const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference;
+    const config = require(path.join(appPathItem, 'convert-import-app')).config;
     const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders;
     const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles;
     const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles;
+    const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing;
 
     console.log('Импортируемые папки', importedFolders.toString());
 
@@ -79,17 +81,21 @@ function importApplications(appPathItem) {
             .then((importedData) => {
               delete importedData.parsed;
               importedData.path = '';
-              //importedData.result = [];
-              //importedData.result = [];
               // console.log('##Распарсенный импорт\n', importedData.parsed);
               // console.log('##Результат', importedData.result);
               return importedData;
             })
-            .then(saveImportedFiles)
+            .then((res) => {
+              if (!config.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                return saveImportedFiles(res);
+              } else {
+                return 0;
+              }
+            })
             // 4debug
             .then((qntSaved) => {
               console.log('Сохранили и очистили память после импорта папки', importedPath);
-              callback(null,qntSaved);
+              callback(null, qntSaved);
             })
             .catch((err)=> {
               callback(err);
@@ -102,7 +108,7 @@ function importApplications(appPathItem) {
           } else {
             console.log('Импортируем БД', importedFolders[i]);
             importAppBase(importedFolders[i], (err, qntSaved) => {
-              console.log('Закончили импорт БД, сохранено', importedFolders[i], qntSaved);
+              console.log('Закончили импорт БД %s, сохранено %s объектов', importedFolders[i], qntSaved);
               if (err) {
                 callback (err);
               } else {
@@ -144,6 +150,7 @@ function importApplications(appPathItem) {
         }
         return importedData;
       })
+      .then(postImportProcessing) // Переводим справочники для сохранения
       .then(importReference) // Переводим справочники для сохранения
       .then((importedData) => {
         delete importedData.reference; // Может бесполезно их уже удалять
