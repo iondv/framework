@@ -91,7 +91,7 @@ function WorkflowProvider(options) {
                 if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
                   propertyPermissions[stage.propertyPermissions[j].property] = {};
                 }
-                for (k = 0; k < stage.propertyPermissions[j].permissions; k++) {
+                for (k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
                   if (!propertyPermissions[stage.propertyPermissions[j].property].
                     hasOwnProperty(stage.propertyPermissions[j].permissions[k].role)) {
                     propertyPermissions
