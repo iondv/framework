@@ -494,6 +494,10 @@ function MongoDs(config) {
         result.push({$match: match});
         result = result.concat(exists);
 
+        if (options.distinct) {
+          result.push(dstnct);
+        }
+
         if (options.countTotal) {
           if (!options.attributes || !options.attributes.length) {
             throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
@@ -511,10 +515,6 @@ function MongoDs(config) {
           });
         }
 
-        if (options.distinct) {
-          result.push(dstnct);
-        }
-
         if (options.sort) {
           result.push({$sort: options.sort});
         }
@@ -528,7 +528,8 @@ function MongoDs(config) {
         }
         return result;
       }
-    } else if (options.distinct && options.attributes.length > 1) {
+    }
+    if (options.distinct && options.attributes.length > 1) {
       return [dstnct];
     }
     return false;
@@ -571,7 +572,6 @@ function MongoDs(config) {
         if (err) {
           return reject(err);
         }
-        console.log("Неуверен насчет правильности подсчета общего количества. Возможноли его вообще получить в дистинкте?");
         resolve(docs, options.countTotal ? (docs.length ? docs.length : 0) : null);
       });
     } else {
@@ -614,6 +614,7 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
