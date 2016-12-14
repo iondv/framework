@@ -84,7 +84,8 @@ function WorkflowProvider(options) {
                 if (!itemPermissions.hasOwnProperty(stage.itemPermissions[j].role)) {
                   itemPermissions[stage.itemPermissions[j].role] = 0;
                 }
-                itemPermissions[stage.itemPermissions[j].role] += stage.itemPermissions[j].permissions;
+                itemPermissions[stage.itemPermissions[j].role] =
+                  itemPermissions[stage.itemPermissions[j].role] | stage.itemPermissions[j].permissions;  // jshint ignore:line
               }
 
               for (j = 0; j < stage.propertyPermissions.length; j++) {
@@ -101,7 +102,10 @@ function WorkflowProvider(options) {
 
                   propertyPermissions
                     [stage.propertyPermissions[j].property]
-                    [stage.propertyPermissions[j].permissions[k].role] +=
+                    [stage.propertyPermissions[j].permissions[k].role] =
+                   propertyPermissions
+                    [stage.propertyPermissions[j].property]
+                    [stage.propertyPermissions[j].permissions[k].role] | // jshint ignore:line
                     stage.propertyPermissions[j].permissions[k].permissions;
                 }
               }
