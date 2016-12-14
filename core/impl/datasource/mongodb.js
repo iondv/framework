@@ -398,18 +398,43 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
+  function addPrefix(nm, prefix, sep) {
+    sep = sep || '.';
+    return (prefix ? prefix + sep : '') + nm;
+  }
+
+  function wind(attributes) {
+    var tmp = {};
+    var i;
+    for (i = 0; i < attributes.length; i++) {
+      tmp[attributes[i]] = '$' + attributes[i];
+    }
+    tmp = {_id: tmp};
+    return {$group: tmp};
+  }
+
+  function clean(attributes) {
+    var tmp = {};
+    var i;
+    for (i = 0; i < attributes.length; i++) {
+      tmp[attributes[i]] = 1;
+    }
+    return {$project: tmp};
+  }
+
   /**
    * @param {String[]} attributes
    * @param {{}} find
    * @param {Object[]} exists
+   * @param {String} prefix
    * @returns {*}
      */
-  function produceMatchObject(attributes, find, exists) {
+  function produceMatchObject(attributes, find, exists, prefix) {
     var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], exists);
+        tmp = produceMatchObject(attributes, find[i], exists, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -417,41 +442,53 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var arrFld;
+      var arrFld, uwFld, left;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists') {
+            left = addPrefix(find[name].left, prefix);
             if (find[name].many) {
               if (!attributes || !attributes.length) {
                 throw new Error('Не передан список атрибутов необходимый для выполнения объединения многие-ко-многим.');
               }
-              exists.push({$unwind: '$' + find[name].left});
+
+              tmp = clean(attributes);
+              uwFld = '__uw_' + addPrefix(find[name].left, prefix, '$');
+              tmp.$project[uwFld] = '$' + left;
+              exists.push(tmp);
+              left = uwFld;
+              exists.push({$unwind: '$' + uwFld});
             }
             tmp = {
               from: find[name].table,
-              localField: find[name].left,
+              localField: left,
               foreignField: find[name].right
             };
-            arrFld = '_join_check';
+            arrFld = addPrefix('__jc', prefix, '$');
             tmp.as = arrFld;
             exists.push({$lookup: tmp});
-            tmp = {};
-            tmp[arrFld] = {$elemMatch: find[name].filter};
-            exists.push({$match: tmp});
-
-            if (find[name].many) {
+            var exists2 = [];
+            var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
+            if (f !== null) {
               tmp = {};
-              for (i = 0; i < attributes.length; i++) {
-                if (attributes[i] !== find[name].left) {
-                  tmp[attributes[i]] = '$' + attributes[i];
-                }
+              tmp[arrFld] = {$elemMatch: f};
+              exists.push({$match: tmp});
+            }
+
+            if (exists2.length) {
+              exists.push({$unwind: '$' + arrFld});
+              Array.prototype.push.apply(exists, exists2);
+            }
+
+            if (!prefix) {
+              if (find[name].many) {
+                exists.push(wind(attributes));
+              } else {
+                exists.push(clean(attributes));
               }
-              tmp = {_id: tmp};
-              tmp[find[name].left] = {$addToSet: '$' + find[name].left};
-              exists.push({$group: tmp});
             }
           } else {
-            tmp = produceMatchObject(attributes, find[name], exists);
+            tmp = produceMatchObject(attributes, find[name], exists, prefix);
             if (tmp) {
               if (!result) {
                 result = {};
