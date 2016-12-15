@@ -568,11 +568,17 @@ function MongoDs(config) {
         resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
       });
     } else if(options.distinct && options.attributes.length === 1) {
-      c.distinct(options.attributes.length[0], options.filter || {}, function (err, docs) {
+      c.distinct(options.attributes[0], options.filter || {}, function (err, data) {
         if (err) {
           return reject(err);
         }
-        resolve(docs, options.countTotal ? (docs.length ? docs.length : 0) : null);
+        var res = [];
+        for (var i = 0; i < data.length; i++) {
+          var tmp = {};
+          tmp[options.attributes[0]] = data[i];
+          res.push(tmp);
+        }
+        resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
       });
     } else {
       flds = null;
