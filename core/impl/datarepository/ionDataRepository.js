@@ -572,7 +572,7 @@ function IonDataRepository(options) {
     var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
     var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
     if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-      throw new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!');
+      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
     }
     containCheckers.push({
       $joinExists: {
@@ -587,6 +587,66 @@ function IonDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
+   * @param {String[]} path
+   * @param {{}} filter
+   * @param {String} nm
+   * @param {Array} fetchers
+   * @param {{}} linkedCheckers
+   */
+  function prepareLinked(cm, path, filter, nm, fetchers, linkedCheckers) {
+    var i, lc, rMeta, n;
+    var pm = cm.getPropertyMeta(path[0]);
+    if (pm && pm.type === PropertyTypes.REFERENCE && path.length > 1) {
+      rMeta = pm._refClass;
+      if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
+        throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
+      }
+      if (linkedCheckers.hasOwnProperty(path[0])) {
+        lc = linkedCheckers[path[0]];
+      } else {
+        lc = {
+          $joinExists: {
+            table: tn(rMeta),
+            many: false,
+            left: pm.backRef ? cm.getKeyProperties()[0] : pm.name,
+            right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
+            filter: null,
+            forAttr: pm.name
+          }
+        };
+        linkedCheckers[path[0]] = lc;
+      }
+
+      var f = lc.$joinExists.filter || {$and: []};
+      var fo;
+      if (path.length === 2) {
+        fo = {};
+        fo[path[1]] = prepareFilterOption(rMeta, filter[nm], fetchers, fo, path[1]);
+        f.$and.push(fo);
+      } else {
+        var joins = {};
+        for (i = 0; i < f.$and.length; i++) {
+          if (f.$and[i].hasOwnProperty('$joinExists')) {
+            joins[f.$and[i].$joinExists.forAttr] = f.$and[i];
+          }
+        }
+        prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, joins);
+        for (n in joins) {
+          if (joins.hasOwnProperty(n)) {
+            if (f.$and.indexOf(joins[n]) < 0) {
+              f.$and.push(joins[n]);
+            }
+          }
+        }
+      }
+      if (f.$and.length) {
+        lc.$joinExists.filter = f;
+      }
+    }
+  }
+
+  /**
+   * @param {ClassMeta} cm
    * @param {{}} filter
    * @param {Array} fetchers
    * @param {{}} [parent]
@@ -595,7 +655,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
-    var i, knm, keys, pm, emptyResult, result, containCheckers;
+    var i, knm, nm, keys, pm, emptyResult, result, containCheckers, linkedCheckers;
     if (geoOperations.indexOf(part) !== -1) {
       return filter;
     } else if (filter && Array.isArray(filter)) {
@@ -607,8 +667,9 @@ function IonDataRepository(options) {
     } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
       result = {};
       containCheckers = [];
+      linkedCheckers = {};
       emptyResult = true;
-      for (var nm in filter) {
+      for (nm in filter) {
         if (filter.hasOwnProperty(nm)) {
           if ((pm = cm.getPropertyMeta(nm)) !== null) {
             if (pm.type === PropertyTypes.COLLECTION) {
@@ -641,10 +702,18 @@ function IonDataRepository(options) {
           } else if (nm === '$exists') {
             result[nm] = filter[nm];
             emptyResult = false;
+          } else if (nm.indexOf('.') > 0) {
+            prepareLinked(cm, nm.split('.'), filter, nm, fetchers, linkedCheckers);
           } else {
             result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, propertyMeta);
             emptyResult = false;
           }
+        }
+      }
+
+      for (nm in linkedCheckers) {
+        if (linkedCheckers.hasOwnProperty(nm)) {
+          containCheckers.push(linkedCheckers[nm]);
         }
       }
 
