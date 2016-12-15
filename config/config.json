@@ -87,7 +87,7 @@
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
-        "initLevel": 2,
+        "initLevel": 1,
         "options": {
           "dataRepo": "dataRepo"
         }
@@ -95,7 +95,7 @@
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "dataSource": "ion://Db",
           "calc": "ion://calculator",
