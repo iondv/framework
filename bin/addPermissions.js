@@ -53,10 +53,10 @@ di('app', config.di,
           'n::develop-and-test@class_string',
           'n::develop-and-test@simple_workflow',
           'c::develop-and-test@class_string',
-          'c::develop-and-test@otorbrRef',
-          'c::develop-and-test@workflowBase'
+          'c::develop-and-test@otorbrRef'
         ], '*', function (err) {
-          acl.addUserRoles('vasya', 'user', function (err) {
+          acl.allow('user', ['c::develop-and-test@workflowBase'], '1', function (err) {
+            acl.addUserRoles('vasya', 'user', function (err) {
               var promises = [];
               promises.push(new Promise(function (resolve, reject) {
                 acl.isAllowed('vasya', 'n::develop-and-test@key_guid', '1', function (err,res) {
@@ -75,6 +75,7 @@ di('app', config.di,
               }));
               Promise.all(promises).then(function (results) {console.log(results); rs();}).catch(function (err) {console.log(err);});
             });
+          });
         });
     });
   }
