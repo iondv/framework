@@ -83,7 +83,6 @@ function MongoAcl(config) {
   };
 
   /**
-   * 
    * @param {String} subject
    * @returns {Promise}
    */
@@ -110,6 +109,56 @@ function MongoAcl(config) {
           return reject(err);
         }
         return resolve(res);
+      });
+    });
+  };
+
+  /**
+   * @param {String[]} subjects
+   * @param {String[]} roles
+   * @returns {Promise}
+   */
+  this._assignRoles = function (subjects, roles) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.addUserRoles(subjects, roles, function (err) {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+  };
+
+  /**
+   * @param {String[]} roles
+   * @param {String[]} resources
+   * @param {String[]} permissions
+   * @returns {Promise}
+   */
+  this._grant = function (roles, resources, permissions) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.allow(roles, resources, permissions, function (err) {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+  };
+
+  /**
+   * @param {String[]} roles
+   * @param {String[]} resources
+   * @param {String[]} permissions
+   * @returns {Promise}
+   */
+  this._deny = function (roles, resources, permissions) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.removeAllow(roles, resources, permissions, function (err) {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
       });
     });
   };

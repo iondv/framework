@@ -4,6 +4,8 @@
 'use strict';
 
 const AccessChecker = require('core/interfaces/AccessChecker');
+const merge = require('merge');
+const Permissions = require('core/Permissions');
 
 function IonAccessChecker(config) {
 
@@ -37,31 +39,50 @@ function IonAccessChecker(config) {
       var promises = [];
       roles.forEach(function (role) {
         promises.push(new Promise(function (resolve, reject) {
+          var rn, i;
           if (permissions[role]) {
             return resolve(permissions[role]);
           } else {
             aclProvider.getResources(role).then(function (res) {
-              permissions[role] = res;
-              return resolve(res);
+              permissions[role] = {};
+              for (rn in res) {
+                if (res.hasOwnProperty(rn)) {
+                  permissions[role][rn] = {};
+                  for (i = 0; i < res[rn].length; i++) {
+                    permissions[role][rn][res[rn][i]] = true;
+                  }
+                }
+              }
+              resolve(permissions[role]);
             }).catch(reject);
           }
         }));
       });
-      Promise.all(promises).then(resolve).catch(reject);
+      Promise.all(promises).then(function (rolePermissions) {
+        var result = {};
+        for (var i = 0; i < rolePermissions.length; i++) {
+          for (var rn in rolePermissions[i]) {
+            if (rolePermissions[i].hasOwnProperty(rn)) {
+              if (!result.hasOwnProperty(rn)) {
+                result[rn] = {};
+              }
+              result[rn] = merge(result[rn], rolePermissions[i][rn]);
+            }
+          }
+        }
+        resolve(result);
+      }).catch(reject);
     });
   }
 
-  function checkPermission(user, code, permission) {
+  function permissions(user, code) {
     return new Promise(function (resolve, reject) {
-      getRoles(user).then(getPermissions).then(function (permissions) {
-          for (var i = 0; i < permissions.length; i++) {
-            if (permissions[i][code]) {
-              if (permissions[i][code].indexOf('*') > -1 || permissions[i][code].indexOf(permission) > -1) {
-                return resolve(true);
-              }
-            }
+      getRoles(user).then(getPermissions).then(
+        function (permissions) {
+          if (permissions.hasOwnProperty(code)) {
+            resolve(permissions[code]);
           }
-          return resolve(false);
+          return resolve({});
         }).catch(reject);
     });
   }
@@ -70,54 +91,41 @@ function IonAccessChecker(config) {
    *
    * @param {String} user
    * @param {{}} node
-   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkNode = function (user, node, permission) {
-    var code = nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code;
-    return checkPermission(user, code, permission);
+  this._checkNode = function (user, node) {
+    return permissions(user, nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code);
   };
 
   /**
    *
    * @param {String} user
    * @param {String} className
-   * @param {String} namespace
-   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkClass = function (user, className, namespace, permission) {
-    var code = classPrefix + (namespace ? namespace + '@' : '') + className;
-    return checkPermission(user, code, permission);
+  this._checkClass = function (user, className) {
+    return permissions(user, classPrefix + className);
   };
 
   /**
    *
    * @param {String} user
    * @param {Item} item
-   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkItem = function (user, item, permission) {
-    var code = itemPrefix + item.getClassName() + '@' + item.getItemId();
-    return checkPermission(user, code, permission);
+  this._checkItem = function (user, item) {
+    return permissions(user, itemPrefix + item.getClassName() + '@' + item.getItemId());
   };
 
   /**
    *
    * @param {String} user
    * @param {Property} attribute
-   * @param {String} permission
    * @returns {Promise}
    */
-  this._checkAttribute = function (user, attribute, permission) {
-    var code = attributePrefix + attribute.item.getClassName + attribute.name;
-    return checkPermission(user, code, permission);
+  this._checkAttribute = function (user, attribute) {
+    return permissions(user, attributePrefix + attribute.item.getClassName() + '.' + attribute.name);
   };
-
-  this._accessFilter = function () {
-  };
-
 }
 
 IonAccessChecker.prototype = new AccessChecker();
