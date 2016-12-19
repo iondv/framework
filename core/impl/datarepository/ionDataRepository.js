@@ -993,10 +993,12 @@ function IonDataRepository(options) {
         return null;
       }
 
-      var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
+      var refkey = pm._refClass.getKeyProperties();
 
-      if (refkey) {
-        return castValue(value, refkey, ns);
+      if (refkey.length > 1) {
+        return String(value);
+      } else {
+        return castValue(value, refkey[0], ns);
       }
       return value;
     } else if (pm.type === PropertyTypes.BOOLEAN) {
