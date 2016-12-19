@@ -882,7 +882,12 @@ function IonDataRepository(options) {
   /**
    * @param {String} className
    * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
    * @param {String[]} [options.attributes]
+   * @param {String[]} [options.select]
    * @param {Boolean} [options.distinct]
    * @returns {Promise}
    */
@@ -892,11 +897,10 @@ function IonDataRepository(options) {
     }
     var cm = this._getMeta(className);
     var rcm = this._getRootType(cm);
-    if(!options.attributes || !options.attributes.length) {
-      var props = cm.getPropertyMetas();
-      for (var i = 0; i < props.length; i++) {
-        options.attributes.push(props[i].name);
-      }
+    options.attributes = [];
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.attributes.push(props[i].name);
     }
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).then(function (filter) {

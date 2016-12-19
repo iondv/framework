@@ -440,12 +440,14 @@ function MongoDs(config) {
   }
 
   function wind(attributes) {
-    var tmp = {};
+    var tmp = {},
+        tmp2 = {};
     var i;
     for (i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = '$' + attributes[i];
+      tmp2[attributes[i]] = {$first: '$' + attributes[i]};
     }
-    tmp = {_id: tmp};
+    tmp = Object.assign({_id: tmp}, tmp2);
     return {$group: tmp};
   }
 
@@ -459,18 +461,18 @@ function MongoDs(config) {
   }
 
   /**
-   * @param {String[]} attributes
+   * @param {} options
    * @param {{}} find
    * @param {Object[]} exists
    * @param {String} prefix
    * @returns {*}
      */
-  function produceMatchObject(attributes, find, exists, prefix) {
+  function produceMatchObject(options, find, exists, prefix) {
     var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], exists, prefix);
+        tmp = produceMatchObject(options, find[i], exists, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -484,11 +486,11 @@ function MongoDs(config) {
           if (name === '$joinExists') {
             left = addPrefix(find[name].left, prefix);
             if (find[name].many) {
-              if (!attributes || !attributes.length) {
+              if (!options.attributes || !options.attributes.length) {
                 throw new Error('Не передан список атрибутов необходимый для выполнения объединения многие-ко-многим.');
               }
 
-              tmp = clean(attributes);
+              tmp = clean(options.attributes);
               uwFld = '__uw_' + addPrefix(find[name].left, prefix, '$');
               tmp.$project[uwFld] = '$' + left;
               exists.push(tmp);
@@ -504,7 +506,7 @@ function MongoDs(config) {
             tmp.as = arrFld;
             exists.push({$lookup: tmp});
             var exists2 = [];
-            var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
+            var f = produceMatchObject(options, find[name].filter, exists2, arrFld);
             if (f !== null) {
               tmp = {};
               tmp[arrFld] = {$elemMatch: f};
@@ -517,14 +519,16 @@ function MongoDs(config) {
             }
 
             if (!prefix) {
-              if (find[name].many) {
-                exists.push(wind(attributes));
+              if (options.distinct && options.select.length) {
+                exists.push(wind(options.select));
+              } else if (find[name].many) {
+                exists.push(wind(options.select || options.attributes));
               } else {
-                exists.push(clean(attributes));
+                exists.push(clean(options.select || options.attributes));
               }
             }
           } else {
-            tmp = produceMatchObject(attributes, find[name], exists, prefix);
+            tmp = produceMatchObject(options, find[name], exists, prefix);
             if (tmp) {
               if (!result) {
                 result = {};
@@ -548,62 +552,56 @@ function MongoDs(config) {
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @param {Boolean} [options.distinct]
+   * @param {String[]} [options.select]
    * @returns {*}
    */
   function checkAggregation(options) {
     var i;
-    var dstnct = {};
-    if (options.distinct) {
-      for (i = 0; i < options.attributes.length; i++) {
-        dstnct[options.attributes[i]] = '$' + options.attributes[i];
-      }
-      dstnct = {$group: {_id: dstnct}};
-    }
+    var exists = [];
+    var match = null;
+
     if (options.filter) {
-      var exists = [];
-      var match = produceMatchObject(options.attributes, options.filter, exists);
-      if (exists.length) {
-        var result = [];
-        result.push({$match: match});
-        result = result.concat(exists);
-
-        if (options.distinct) {
-          result.push(dstnct);
-        }
-
-        if (options.countTotal) {
-          if (!options.attributes || !options.attributes.length) {
-            throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
-          }
-
-          var tmp = {};
-          for (i = 0; i < options.attributes.length; i++) {
-            tmp[options.attributes[i]] = 1;
-          }
-
-          tmp.__total = {$sum: 1};
-
-          result.push({
-            $project: tmp
-          });
-        }
-
-        if (options.sort) {
-          result.push({$sort: options.sort});
-        }
-
-        if (options.offset) {
-          result.push({$skip: options.offset});
-        }
-
-        if (options.count) {
-          result.push({$limit: options.count});
-        }
-        return result;
-      }
+      match = produceMatchObject(options, options.filter, exists);
     }
-    if (options.distinct && options.attributes.length > 1) {
-      return [dstnct];
+
+    if (!exists.length && options.distinct && options.select.length > 1) {
+      exists.push(wind(options.select));
+    }
+
+    if (exists.length) {
+      var result = [];
+      result.push({$match: match});
+      result = result.concat(exists);
+
+      if (options.countTotal) {
+        if (!options.attributes || !options.attributes.length) {
+          throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
+        }
+
+        var tmp = {};
+        for (i = 0; i < options.attributes.length; i++) {
+          tmp[options.attributes[i]] = 1;
+        }
+
+        tmp.__total = {$sum: 1};
+
+        result.push({
+          $project: tmp
+        });
+      }
+
+      if (options.sort) {
+        result.push({$sort: options.sort});
+      }
+
+      if (options.offset) {
+        result.push({$skip: options.offset});
+      }
+
+      if (options.count) {
+        result.push({$limit: options.count});
+      }
+      return result;
     }
     return false;
   }
@@ -648,6 +646,7 @@ function MongoDs(config) {
    * @param {Boolean} [options.distinct]
    * @param {Object[]} aggregate
    * @param {Function} resolve
+   * @param {String[]} [options.select]
    * @param {Function} reject
    */
   function fetch(c, options, aggregate, resolve, reject) {
@@ -663,15 +662,28 @@ function MongoDs(config) {
         }
         resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
       });
-    } else if(options.distinct && options.attributes.length === 1) {
-      c.distinct(options.attributes[0], options.filter || {}, function (err, data) {
+    } else if(options.distinct && options.select.length === 1) {
+      r = c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
         if (err) {
           return reject(err);
         }
-        var res = [];
-        for (var i = 0; i < data.length; i++) {
+        if (options.sort && options.sort[options.select[0]]) {
+          var direction = options.sort[options.select[0]];
+          data = data.sort(function compare(a, b) {
+            if (a < b) {
+              return -1*direction;
+            } else if (a > b) {
+              return 1*direction;
+            }
+            return 0;
+          });
+        }
+        var res = [],
+            stPos = options.offset || 0,
+            endPos = options.count? stPos + options.count : data.length;
+        for (var i = stPos; i < endPos && i < data.length; i++) {
           var tmp = {};
-          tmp[options.attributes[0]] = data[i];
+          tmp[options.select[0]] = data[i];
           res.push(tmp);
         }
         resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
