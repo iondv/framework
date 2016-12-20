@@ -1002,7 +1002,7 @@ function IonDataRepository(options) {
       if (refkey.length > 1) {
         return String(value);
       } else {
-        return castValue(value, refkey[0], ns);
+        return castValue(value, pm._refClass.getPropertyMeta(refkey[0]), ns);
       }
       return value;
     } else if (pm.type === PropertyTypes.BOOLEAN) {
