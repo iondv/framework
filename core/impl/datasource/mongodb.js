@@ -574,16 +574,18 @@ function MongoDs(config) {
       result = result.concat(exists);
 
       if (options.countTotal) {
-        if (!options.attributes || !options.attributes.length) {
+        if ((!options.select || !options.select.length) && (!options.attributes || !options.attributes.length)) {
           throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
         }
 
-        var tmp = {};
-        for (i = 0; i < options.attributes.length; i++) {
-          tmp[options.attributes[i]] = 1;
-        }
+        result.push({$group:{"_id": null,"__total": {$sum: 1}, data: {$addToSet:'$_id'}}});
+        result.push({$unwind: "$data"});
 
-        tmp.__total = {$sum: 1};
+        var tmp = {__total: "$__total"},
+            ats = options.select || options.attributes;
+        for (i = 0; i < ats.length; i++) {
+          tmp[ats[i]] = "$data."+ats[i];
+        }
 
         result.push({
           $project: tmp
