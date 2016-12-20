@@ -5,7 +5,6 @@
 
 const AccessChecker = require('core/interfaces/AccessChecker');
 const merge = require('merge');
-const Permissions = require('core/Permissions');
 
 function IonAccessChecker(config) {
 
@@ -75,7 +74,7 @@ function IonAccessChecker(config) {
     });
   }
 
-  function permissions(user, code) {
+  function checkPermissions(user, code) {
     return new Promise(function (resolve, reject) {
       getRoles(user).then(getPermissions).then(
         function (permissions) {
@@ -94,7 +93,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkNode = function (user, node) {
-    return permissions(user, nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code);
+    return checkPermissions(user, nodePrefix + (node.namespace ? node.namespace + '@' : '') + node.code);
   };
 
   /**
@@ -104,7 +103,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkClass = function (user, className) {
-    return permissions(user, classPrefix + className);
+    return checkPermissions(user, classPrefix + className);
   };
 
   /**
@@ -114,7 +113,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkItem = function (user, item) {
-    return permissions(user, itemPrefix + item.getClassName() + '@' + item.getItemId());
+    return checkPermissions(user, itemPrefix + item.getClassName() + '@' + item.getItemId());
   };
 
   /**
@@ -124,7 +123,7 @@ function IonAccessChecker(config) {
    * @returns {Promise}
    */
   this._checkAttribute = function (user, attribute) {
-    return permissions(user, attributePrefix + attribute.item.getClassName() + '.' + attribute.name);
+    return checkPermissions(user, attributePrefix + attribute.item.getClassName() + '.' + attribute.name);
   };
 }
 

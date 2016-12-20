@@ -169,6 +169,14 @@
           "dataSource": "ion://Db"
         }
       },
+      "securedDataRepo": {
+        "module": "core/impl/datarepository/SecuredDataRepository",
+        "options": {
+          "dataRepo": "lazy://dataRepo",
+          "metaRepo": "ion://metaRepo",
+          "aclProvider": "ion://aclProvider"
+        }
+      },
       "workflows": {
         "module": "core/impl/WorkflowProvider",
         "initMethod": "init",
@@ -176,7 +184,7 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "ion://securedDataRepo"
         }
       }
     }

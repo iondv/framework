@@ -98,13 +98,29 @@ function MongoAcl(config) {
   };
 
   /**
-   *
-   * @param {String | Array} roles
+   * @param {String | String[]} roles
+   * @param {String | String[]} [permissions]
    * @returns {Promise}
    */
-  this._getResources = function (roles) {
+  this._getResources = function (roles, permissions) {
     return new Promise(function (resolve, reject) {
-      _this.acl.whatResources(roles, function (err, res) {
+      _this.acl.whatResources(roles, permissions, function (err, res) {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(res);
+      });
+    });
+  };
+
+  /**
+   * @param {String} subject
+   * @param {String | String[]} resources
+   * @returns {Promise}
+   */
+  this._getPermissions = function (subject, resources) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.allowedPermissions(subject, resources, function (err, res) {
         if (err) {
           return reject(err);
         }
