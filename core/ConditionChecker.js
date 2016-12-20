@@ -5,10 +5,11 @@
 
 var ConditionTypes = require('core/ConditionTypes');
 var OperationTypes = require('core/OperationTypes');
+var PropertyTypes = require('core/PropertyTypes');
 var equal = require('core/equal');
 var cast = require('core/cast');
 
-// jshint maxcomplexity: 40, eqeqeq: false
+// jshint maxcomplexity: 40, maxstatements: 30, eqeqeq: false
 function contains(container, content) {
   if (container && content !== null) {
     if (typeof container === 'string') {
@@ -17,6 +18,22 @@ function contains(container, content) {
       }
     } else if (Array.isArray(container)) {
       return container.indexOf(content) !== -1 ? true : false;
+    }
+  }
+  return false;
+}
+
+/**
+ * @param {Array} collection
+ * @param {Array} conditions
+ * @returns {Boolean}
+ */
+function colContains(collection, conditions) {
+  var r;
+  for (var i = 0; i < collection.length; i++) {
+    r = conjunct(collection[i], conditions);
+    if (r) {
+      return true;
     }
   }
   return false;
@@ -55,10 +72,20 @@ function checkCondition(item, condition) {
         return equal(item.get(pn), toScalar(v));
       case ConditionTypes.NOT_EQUAL:
         return !equal(item.get(pn), toScalar(v));
-      case ConditionTypes.EMPTY:
-        return !item.get(pn);
-      case ConditionTypes.NOT_EMPTY:
-        return item.get(pn) ? true : false;
+      case ConditionTypes.EMPTY: {
+        v = p.evaluate() || item.get(pn);
+        if (Array.isArray(v)) {
+          return v.length === 0;
+        }
+        return v === null || v === '' || typeof v === 'undefined' ? true : false;
+      }break;
+      case ConditionTypes.NOT_EMPTY: {
+        v = p.evaluate() || item.get(pn);
+        if (Array.isArray(v)) {
+          return v.length > 0;
+        }
+        return v === null || v === '' || typeof v === 'undefined' ? false : true;
+      }break;
       case ConditionTypes.LIKE:
         return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
       case ConditionTypes.LESS:
@@ -71,8 +98,13 @@ function checkCondition(item, condition) {
         return item.get(pn) >= toScalar(v) ? true : false;
       case ConditionTypes.IN:
         return contains(toArray(v), item.get(pn));
-      case ConditionTypes.CONTAINS:
-        return contains(item.get(pn), toScalar(v));
+      case ConditionTypes.CONTAINS: {
+        if (p.getType() === PropertyTypes.COLLECTION) {
+          return colContains(p.evaluate(), condition.nestedConditions);
+        } else {
+          return contains(p.evaluate(), toScalar(v));
+        }
+      }
     }
   } else if (condition.nestedConditions) {
     switch (condition.operation) {
