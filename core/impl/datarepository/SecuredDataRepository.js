@@ -30,13 +30,12 @@ function AclMock() {
       var result = {};
       resources = Array.isArray(resources) ? resources : [resources];
       for (var i = 0; i < resources.length; i++) {
-        result[resources[i]] = [
-          Permissions.READ,
-          Permissions.WRITE,
-          Permissions.DELETE,
-          Permissions.USE,
-          Permissions.FULL
-        ];
+        result[resources[i]] = {};
+        result[resources[i]][Permissions.READ] = true;
+        result[resources[i]][Permissions.WRITE] = true;
+        result[resources[i]][Permissions.DELETE] = true;
+        result[resources[i]][Permissions.USE] = true;
+        result[resources[i]][Permissions.FULL] = true;
       }
       resolve(result);
     });
@@ -55,7 +54,7 @@ function SecuredDataRepository(options) {
   /**
    * @type {DataRepository}
    */
-  var dataRepo = options.dataRepository;
+  var dataRepo = options.data;
 
   /**
    * @type {AclProvider}
@@ -97,19 +96,19 @@ function SecuredDataRepository(options) {
     var resources = [];
     classResources(check, resources, cm);
     return aclProvider.getPermissions(uid, resources).then(function (permissions) {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         var exc = [];
         for (var i = 0; i < check.length; i++) {
-          if (!permissions[resources[i]][Permissions.READ]) {
+          if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
             exc.push(check[i]);
           }
         }
 
         if (exc.length) {
           if (!filter) {
-            filter = {$not: {_class: {$in: exc}}};
+            filter = {_class: {$not: {$in: exc}}};
           } else {
-            filter = {$and: [{$not: {_class: {$in: exc}}}, filter]};
+            filter = {$and: [{_class: {$not: {$in: exc}}}, filter]};
           }
         }
 
@@ -416,7 +415,7 @@ function SecuredDataRepository(options) {
         ) {
           return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);
         }
-        Promise.reject(
+        return Promise.reject(
           new Error('Недостаточно прав для чтения коллекции ' + master.getClassName() + '.' + collection)
         );
       }).then(function (filter) {

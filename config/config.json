@@ -172,9 +172,9 @@
       "securedDataRepo": {
         "module": "core/impl/datarepository/SecuredDataRepository",
         "options": {
-          "dataRepo": "lazy://dataRepo",
-          "metaRepo": "ion://metaRepo",
-          "aclProvider": "ion://aclProvider"
+          "data": "lazy://dataRepo",
+          "meta": "ion://metaRepo",
+          "acl": "ion://aclProvider"
         }
       },
       "workflows": {

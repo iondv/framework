@@ -6,7 +6,7 @@ const di = require('core/di');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger({});
-const Acl = require('acl');
+const Permissions = require('core/Permissions');
 
 var permissions = [];
 var users = [];
@@ -106,10 +106,10 @@ di('app', config.di,
           resources.push(scope.aclProvider.globalMarker);
         }
         if (!permissions.length) {
-          permissions.push(scope.aclProvider.globalMarker);
+          permissions.push(Permissions.FULL);
         }
         if (method === 'grant') {
-          scope.aclProvider.allow(roles, resources, permissions).then(resolve).catch(reject);
+          scope.aclProvider.grant(roles, resources, permissions).then(resolve).catch(reject);
         } else {
           scope.aclProvider.deny(roles, resources, permissions).then(resolve).catch(reject);
         }

@@ -56,8 +56,8 @@ function AclProvider() {
    * @param {String | String[]} resources
    * @returns {Promise}
    */
-  this.getPermissions = function (subject, resources) {
-    return this._getPermissions(subject, resources);
+  this.getPermissions = function (subject, resources, skipGlobals) {
+    return this._getPermissions(subject, resources, skipGlobals);
   };
 
   /**
