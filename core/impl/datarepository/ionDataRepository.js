@@ -321,8 +321,7 @@ function IonDataRepository(options) {
               Array.isArray(attrs[nm].filter) &&
               attrs[nm].filter.length
             ) {
-              filter = {};
-              filter[attrs[nm].key] = {$in: attrs[nm].filter};
+              filter = _this.keyProvider.filterByItemId(attrs[nm].refClassName, attrs[nm].filter);
               cn = attrs[nm].refClassName;
             } else if (
               attrs[nm].type  === PropertyTypes.COLLECTION &&

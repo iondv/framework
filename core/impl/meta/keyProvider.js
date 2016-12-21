@@ -80,6 +80,46 @@ function MetaKeyProvider(options) {
     return result;
   };
 
+  /**
+   * @param {String} className
+   * @param {*} id
+   * @returns {{}}
+   */
+  this._filterByItemId = function (className, id, namespace) {
+    var cm = this.meta.getMeta(className, null, namespace),
+        keyProps = cm.getKeyProperties(),
+        result = {},
+        keys = [];
+    if(id.length) {
+      keys = id;
+    } else {
+      keys.push(id);
+    }
+    if (keyProps.length > 1) {
+      var tmp = [],
+          tmp2 = [],
+          tmp3 = {},
+          key = null;
+      for (var i = 0; i < keys.length; i++) {
+        key = this._keyToData(className, keys[i], namespace);
+        tmp2 = [];
+        for (var j in key) {
+          if (key.hasOwnProperty(j)) {
+            tmp3 = {};
+            tmp3[j] = {$eq: key[j]};
+            tmp2.push(tmp3);
+          }
+        }
+        tmp.push({$and: tmp2});
+      }
+      result = {$or: tmp};
+    } else {
+      result = {};
+      result[keyProps[0]] = {$in: keys};
+    }
+    return result;
+  };
+
   KeyProvider.apply(this);
 }
 
