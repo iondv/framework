@@ -880,6 +880,7 @@ function IonDataRepository(options) {
 
   /**
    * @param {String} className
+   * @param {Object} options
    * @param {Object} [options.filter]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]

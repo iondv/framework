@@ -1,4 +1,6 @@
 // jscs:disable requireCapitalizedComments
+// jshint maxstatements: 50, maxcomplexity: 25
+
 /**
  * Created by kras on 25.02.16.
  */
@@ -12,8 +14,6 @@ const empty = require('core/empty');
 const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
-
-// jshint maxstatements: 50, maxcomplexity: 20
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -440,9 +440,9 @@ function MongoDs(config) {
   }
 
   function wind(attributes) {
-    var tmp = {},
-        tmp2 = {};
-    var i;
+    var tmp, tmp2, i;
+    tmp = {};
+    tmp2 = {};
     for (i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = '$' + attributes[i];
       tmp2[attributes[i]] = {$first: '$' + attributes[i]};
@@ -461,7 +461,7 @@ function MongoDs(config) {
   }
 
   /**
-   * @param {} options
+   * @param {Object} options
    * @param {{}} find
    * @param {Object[]} exists
    * @param {String} prefix
@@ -578,13 +578,14 @@ function MongoDs(config) {
           throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
         }
 
-        result.push({$group:{"_id": null,"__total": {$sum: 1}, data: {$addToSet:'$_id'}}});
-        result.push({$unwind: "$data"});
+        result.push({$group: {_id: null,__total: {$sum: 1}, data: {$addToSet: '$_id'}}});
+        result.push({$unwind: '$data'});
 
-        var tmp = {__total: "$__total"},
-            ats = options.select || options.attributes;
+        var tmp, ats;
+        tmp = {__total: '$__total'};
+        ats = options.select || options.attributes;
         for (i = 0; i < ats.length; i++) {
-          tmp[ats[i]] = "$data."+ats[i];
+          tmp[ats[i]] = '$data.' + ats[i];
         }
 
         result.push({
@@ -646,9 +647,9 @@ function MongoDs(config) {
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @param {Boolean} [options.distinct]
+   * @param {String[]} [options.select]
    * @param {Object[]} aggregate
    * @param {Function} resolve
-   * @param {String[]} [options.select]
    * @param {Function} reject
    */
   function fetch(c, options, aggregate, resolve, reject) {
@@ -664,7 +665,7 @@ function MongoDs(config) {
         }
         resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
       });
-    } else if(options.distinct && options.select.length === 1) {
+    } else if (options.distinct && options.select.length === 1) {
       r = c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
         if (err) {
           return reject(err);
@@ -673,16 +674,17 @@ function MongoDs(config) {
           var direction = options.sort[options.select[0]];
           data = data.sort(function compare(a, b) {
             if (a < b) {
-              return -1*direction;
+              return -1 * direction;
             } else if (a > b) {
-              return 1*direction;
+              return 1 * direction;
             }
             return 0;
           });
         }
-        var res = [],
-            stPos = options.offset || 0,
-            endPos = options.count? stPos + options.count : data.length;
+        var res, stPos, endPos;
+        res = [];
+        stPos = options.offset || 0;
+        endPos = options.count ? stPos + options.count : data.length;
         for (var i = stPos; i < endPos && i < data.length; i++) {
           var tmp = {};
           tmp[options.select[0]] = data[i];
