@@ -20,7 +20,6 @@ const getBeforeReference = require('lib/convert-import-util').getBeforeReference
 let appPath = getAppDir();
 console.log('Импортируемые приложения', appPath.toString());
 
-
 Promise.all(appPath.map(importApplications))
   .then((res) => {
     console.info('Выполнен импорт', res);
@@ -72,17 +71,10 @@ function importApplications(appPathItem) {
           importedData.path = importedPath;
           importedData.pathData = path.join(appPathItem, 'data');
           getImportedFiles(importedData, importedPath)
-          // 4debug
-          // .then((importedData) => {
-          //   console.log('Конвертируем распарсенные объекты из папки', importedPath);
-          //   return importedData;
-          // })
-            .then(convertImportedFiles)
+            .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
             .then((importedData) => {
-              delete importedData.parsed;
+              delete importedData.parsed; // Очищаем память от уже сконвертированных данных
               importedData.path = '';
-              // console.log('##Распарсенный импорт\n', importedData.parsed);
-              // console.log('##Результат', importedData.result);
               return importedData;
             })
             .then((res) => {
@@ -92,7 +84,6 @@ function importApplications(appPathItem) {
                 return 0;
               }
             })
-            // 4debug
             .then((qntSaved) => {
               console.log('Сохранили и очистили память после импорта папки', importedPath);
               callback(null, qntSaved);
@@ -128,20 +119,6 @@ function importApplications(appPathItem) {
           });
         });
       })
-      .then((importedData) => {
-        Object.keys(importedData.verify).forEach((item) => {
-          console.log('###Верификация %s', item, typeof importedData.verify[item], Object.keys(importedData.verify[item]).length, importedData.result[item].length);
-        });
-        // console.log('###Верификация', Object.keys(importedData.verify).length, '\n', Object.keys(importedData.verify));
-        // console.log('###Верификация family@khv-childzem', Object.keys(importedData.verify['family@khv-childzem']).length);
-        // console.log('###Верификация person@khv-childzem', Object.keys(importedData.verify['person@khv-childzem']).length);
-        let sexres = require('lib/convert-import-util').checkSex(importedData.nameSex);
-        let util = require('util');
-        // console.log(util.inspect(sexres, {depth: 3}));
-        console.log('Женщины', util.inspect(Object.keys(sexres.woman)));
-        console.log('Мужчины', util.inspect(Object.keys(sexres.man)));
-        return importedData;
-      })
       .then((importedData) => { // Добавляем справочники, которые были не нужны для импорта
         for (let key in importedAfterReference) {
           if (importedAfterReference.hasOwnProperty(key)) {
@@ -159,7 +136,7 @@ function importApplications(appPathItem) {
         delete importedData.reference; // Может бесполезно их уже удалять
         return importedData;
       })
-      .then(saveImportedFiles) // TODO нужно после пересохранять, обновленные объекты verify и заодно
+      .then(saveImportedFiles)
       .then((res) => {
         resolve(appPathItem);
       })
@@ -195,5 +172,3 @@ function getAppDir() {
     console.warn('Отсутствует дирректория приложений applications');
   }
 }
-
-
