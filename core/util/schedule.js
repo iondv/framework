@@ -4,32 +4,6 @@
 
 const moment = require('moment');
 const util = require('util');
-/*
- { description: 'Недельное расписание',
- occurs:
- [ { weekday: 1, duration: 3600, hour: '13', minute: '00' },
- { weekday: 5, duration: 3600, hour: '13', minute: '00' },
- { weekday: 2, duration: 5400, hour: '03', minute: '00' },
- { weekday: 3, duration: 5400, hour: '03', minute: '00' },
- { weekday: 6, duration: 5400, hour: '03', minute: '00' } ],
- skipped:
- [ { weekday: 1, hour: '18', minute: '15', duration: 5400 },
- { weekday: 5, hour: '18', minute: '15', duration: 5400 },
- { weekday: 2, hour: '05', minute: '00', duration: 36000 },
- { weekday: 3, hour: '05', minute: '00', duration: 36000 },
- { weekday: 6, hour: '05', minute: '00', duration: 36000 } ] }
-*/
-
-/*
- "second": 30, // 1 - 60
- "minute": 20, // 1 - 60
- "hour": 9, // 0 - 23
- "day": 5, // 1 - 31
- "weekday": 1 // 1 - 7
- "month": 3 // 1 - 12
- "year": 2,
- "duration": 30 //
- */
 
 var segments = ['year', 'month', 'day', 'weekday', 'hour', 'minute', 'second'];
 var segmentCaptions = {
@@ -55,12 +29,20 @@ function getLevels(keys) {
   return result;
 }
 
-function getBaseString(occur, base) {
+function getBaseString(base) {
   var result = '';
-  for (var i = 0; i < base.length; i++) {
-    result += base[i] + ':' + occur[base[i]] + ';';
+  Object.keys(base).forEach(function (baseKey) {
+    result += baseKey + ':' + base[baseKey] + ';';
+  });
+  return result;
+}
+
+function getBase(occur, baseKeys) {
+  var result = {};
+  for (var i = 0; i < baseKeys.length; i++) {
+    result[baseKeys[i]] = occur[baseKeys[i]];
   }
-  result += 'duration:' + occur.duration;
+  result.duration = occur.duration;
   return result;
 }
 
@@ -76,7 +58,7 @@ function isSequential(values) {
   return false;
 }
 
-function createPeriod(segment, values) {
+function createTopPeriod(segment, values) {
   var i;
   var result = '';
   if (isSequential(values)) {
@@ -108,29 +90,74 @@ function createPeriod(segment, values) {
 }
 
 function getDurationSegments(duration) {
-  var dur = moment.duration(duration * 1000);
-  console.log('duration', duration);
   return {
-    years: dur.years(),
-    months: dur.months(),
-    days: dur.days(),
-    weeks: dur.weeks(),
-    hours: dur.hours(),
-    minutes: dur.minutes(),
-    seconds: dur.seconds()
+    year: duration.years(),
+    month: duration.months(),
+    day: duration.days(),
+    weekday: duration.weeks(),
+    hour: duration.hours(),
+    minute: duration.minutes(),
+    second: duration.seconds()
   };
 }
 
-function getStart(obj) {
+function intervalToString(start, end, mask) {
+  var s = getDurationSegments(start);
+  var e = getDurationSegments(end);
+  var startString = '';
+  var endString = '';
+  if (mask.indexOf('month') > -1) {
+    startString += segmentCaptions.month[s.month];
+    endString += segmentCaptions.month[e.month];
+  }
+  if (mask.indexOf('day') > -1) {
+    startString += (startString ? ' ' : '') + s.day + ' день';
+    endString += (endString ? ' ' : '') + e.day + ' день';
+  }
+  /*If (mask.indexOf('weekday') > -1) {
+    StartString += segmentCaptions.month[s.month];
+    endString += segmentCaptions.month[e.month];
+  }
+  */
+  if (mask.indexOf('hour') > -1 || mask.indexOf('minute') > -1 || mask.indexOf('second') > -1) {
+    if (s.second || e.second) {
+      startString += (startString ? ' ' : '') + moment({hours: s.hour, minutes: s.minute, seconds: s.second}).format('HH:mm:ss');
+      endString += (endString ? ' ' : '') + moment({hours: e.hour, minutes: e.minute, seconds: e.second}).format('HH:mm:ss');
+    } else {
+      startString += (startString ? ' ' : '') + moment({hours: s.hour, minutes: s.minute}).format('HH:mm');
+      endString += (endString ? ' ' : '') + moment({hours: e.hour, minutes: e.minute}).format('HH:mm');
+    }
+  }
+  return 'с ' + startString + ' до ' + endString;
+}
+
+function getMask(duration) {
+  var d = getDurationSegments(duration);
+  for (var i = 0; i < segments.length; i++) {
+    if (d[segments[i]]) {
+      return Object.keys(d);
+    } else {
+      delete d[segments[i]];
+    }
+  }
+  return Object.keys(d);
+}
+
+function createBasePeriod(group) {
   var result = '';
-  if (obj.base.indexOf('year') > -1) {
-    result += obj.values[0].year + 'лет ';
-  }
-  if (obj.base.indexOf('month') > -1) {
-    result += obj.values[0].year + 'месяцев ';
-  }
-  if (obj.base.indexOf('month') > -1) {
-    result += obj.values[0].year + 'месяцев ';
+  var start = moment.duration({
+    seconds: group.base.second ? group.base.second : null,
+    minutes: group.base.minute ? group.base.minute : null,
+    hours: group.base.hour ? group.base.hour : null,
+    days: group.base.day ? group.base.day : null,
+    months: group.base.month ? group.base.month : null
+  });
+  var diff = moment.duration(group.base.duration * 1000);
+  if (!getDurationSegments(diff)[group.top]) {
+    var end = moment.duration(start);
+    end.add(diff);
+    var mask = getMask(end);
+    result = intervalToString(start, end, mask);
   }
   return result;
 }
@@ -144,26 +171,27 @@ module.exports.scheduleToString = function (value) {
       if (!groups.hasOwnProperty(levels.top)) {
         groups[levels.top] = {};
       }
-      var baseString = getBaseString(occur, levels.base);
+      var base = getBase(occur, levels.base);
+      var baseString = getBaseString(base);
       if (!groups[levels.top].hasOwnProperty(baseString)) {
         groups[levels.top][baseString] = {
-          base: levels.base,
+          top: levels.top,
+          base: base,
           values: []
         };
       }
-      groups[levels.top][baseString].values.push(occur);
+      groups[levels.top][baseString].values.push(occur[levels.top]);
     }
   });
   Object.keys(groups).forEach(function (top) {
     Object.keys(groups[top]).forEach(function (baseKey) {
       groups[top][baseKey].values.sort(function (a, b) {
-        return a[top] - b[top];
+        return a - b;
       });
-      result += createPeriod(top, groups[top][baseKey].values.map(function (o) {return o[top];}));
-      result += '(';
-      result += getStart(groups[top][baseKey]);
-      result += ')';
-      //console.log(getDurationSegments(groups[top][baseKey].values[0].duration));
+      result += createTopPeriod(top, groups[top][baseKey].values);
+      result += ' ' + createBasePeriod(groups[top][baseKey]);
+      result += ' (';
+      result += '); ';
     });
   });
   return result;
