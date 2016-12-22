@@ -4,7 +4,6 @@
  */
 'use strict';
 
-const crypto = require('crypto');
 const DataRepositoryModule = require('core/interfaces/DataRepository');
 const DataRepository = DataRepositoryModule.DataRepository;
 const Item = DataRepositoryModule.Item;
@@ -14,13 +13,11 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
-const CacheProxy = require('core/impl/cache/CacheProxy');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
- * @param {CacheRepository} options.cacheRepository
  * @param {MetaRepository} options.metaRepository
  * @param {KeyProvider} options.keyProvider
  * @param {Logger} [options.log]
@@ -36,11 +33,6 @@ function IonDataRepository(options) {
    * @type {DataSource}
    */
   this.ds = options.dataSource;
-
-  /**
-   * @type {CacheRepository}
-   */
-  this.cache = options.cacheRepository || new CacheProxy();
 
   /**
    * @type {MetaRepository}
@@ -278,7 +270,7 @@ function IonDataRepository(options) {
   /**
    * @param {Item[]} src
    * @param {Number} depth
-   * @param {String[][]} forced
+   * @param {String[][]} [forced]
    * @returns {Promise}
    */
   function enrich(src, depth, forced) {
@@ -805,341 +797,6 @@ function IonDataRepository(options) {
     });
   }
 
-  function objectToMD5(object) {
-    return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
-  }
-
-  function cachingKey(classname, id) {
-    return classname + '@@' + id;
-  }
-
-  function cachingListKey(classname) {
-    return '__' + classname;
-  }
-
-  function retrieveCachedList(classname,options) {
-    return new Promise(function (resolve,reject) {
-      _this.cache.get(classname)
-        .then(function (classLevel) {
-          if (classLevel) {
-            var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
-            var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-            if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
-              _this.cache.get(classname + '@' + filterSortHash)
-                .then(function (filterLevel) {
-                  if (filterLevel) {
-                    if (filterLevel.indexOf(offsetCount) > -1) {
-                      _this.cache.get(classname + '@' + filterSortHash + '@' + offsetCount)
-                        .then(resolve).catch(reject);
-                    } else {
-                      resolve(null);
-                    }
-                  } else {
-                    resolve(null);
-                  }
-                }).catch(reject);
-            } else {
-              resolve(null);
-            }
-          } else {
-            resolve(null);
-          }
-        }).catch(reject);
-    });
-  }
-
-  function updateListObjectInCache(key,payload) {
-    return new Promise(function (resolve, reject) {
-      _this.cache.get(key)
-        .then(function (data) {
-          if (!data) {
-            data = [];
-          }
-          if (typeof payload !== 'string') {
-            data = payload;
-          } else {
-            if (data.indexOf(payload) < 0) {
-              data.push(payload);
-            }
-          }
-          _this.cache.set(key, data).then(resolve).catch(reject);
-        }).catch(reject);
-    });
-  }
-
-  function putListToCache(classname,options,list) {
-    return new Promise(function (resolve, reject) {
-      var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
-      var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-      var promises = [];
-      promises.push(updateListObjectInCache(classname, filterSortHash + '@' + offsetCount));
-      promises.push(updateListObjectInCache(classname + '@' + filterSortHash, offsetCount));
-      promises.push(updateListObjectInCache(classname + '@' + filterSortHash + '@' + offsetCount, list));
-      Promise.all(promises).then(resolve).catch(reject);
-    });
-  }
-
-  function cachingKeyDecode(key) {
-    var parts =  key.split('@@');
-    return {classname: parts[0],id: parts[1]};
-  }
-
-  function uncacheItem(obj, id) {
-    return new Promise(function (resolve, reject) {
-      var cm = _this._getMeta(obj);
-      var rcm = _this._getRootType(cm);
-      _this.cache.get(cachingKey(obj, id))
-        .then(function (value) {
-          if (value) {
-            resolve(value.base);
-          } else {
-            var updates = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-            if (updates  === null) {
-              return resolve(null);
-            }
-            _this.ds.get(tn(rcm), updates)
-              .then(function (data) {
-                if (data) {
-                  _this.cache.set(cachingKey(obj, id), {base: data,lists: []})
-                    .then(function () {
-                      resolve(data);
-                    }).catch(function () {
-                    resolve(data);
-                  });
-                } else {
-                  resolve(null);
-                }
-              }).catch(reject);
-          }
-        }).catch(reject);
-    });
-  }
-
-  function updateCachedItem(classname, id, data, list) {
-    return new Promise(function (resolve, reject) {
-      _this.cache
-        .get(cachingKey(classname, id))
-        .then(function (value) {
-          var result = {
-            base: data,
-            lists: []
-          };
-          if (value) {
-            result.lists = value.lists;
-          }
-          if (list) {
-            var push = true;
-            for (var i = 0; i < result.lists.length; i++) {
-              if (result.lists[i].classname === list.classname
-                && JSON.stringify(result.lists[i].options.filter) === JSON.stringify(list.options.filter)
-                && JSON.stringify(result.lists[i].options.sort) === JSON.stringify(list.options.sort)
-                && result.lists[i].options.offset === list.options.offset
-                && result.lists[i].options.count === list.options.count) {
-                push = false;
-              }
-            }
-            if (push) {
-              result.lists.push(list);
-            }
-          }
-          _this.cache.set(cachingKey(classname, id), result)
-            .then(function () {
-              resolve();
-            }).catch(function (err) {
-            console.log(err);
-            resolve();
-          });
-        }).catch(function (err) {
-        console.log(err);
-        resolve();
-      });
-    });
-  }
-
-  function removeCachedLists_afterCreate(classname) {
-    return new Promise(function (resolve, reject) {
-      _this.cache.get(classname)
-        .then(function (classLevel) {
-          if (classLevel) {
-            var promises1 = [];
-            for (var i = 0; i < classLevel.length; i++) {
-              promises1.push((function (filterSortHash) {
-                return new Promise(function (resolve, reject) {
-                  _this.cache.get(classname + '@' + filterSortHash)
-                    .then(function (filterLevel) {
-                      if (filterLevel) {
-                        var promises2 = [];
-                        for (var i = 0; i < filterLevel.length; i++) {
-                          promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
-                        }
-                        Promise.all(promises2).then(resolve).catch(reject);
-                      } else {
-                        resolve(null);
-                      }
-                    }).catch(reject);
-                });
-              })(classLevel[i].split('@')[0]));
-            }
-            Promise.all(promises1).then(resolve).catch(reject);
-          } else {
-            resolve(null);
-          }
-        }).catch(reject);
-    });
-  }
-
-  function removeCachedLists_afterUpdate(classname, id) {
-    return new Promise(function (resolve, reject) {
-      _this.cache.get(cachingKey(classname, id))
-        .then(function (value) {
-          if (value) {
-            var promises1 = [];
-            for (var i = 0; i < value.lists.length; i++) {
-              promises1.push((function (classname, options) {
-                return new Promise(function (resolve,reject) {
-                  _this.cache.get(classname)
-                    .then(function (classLevel) {
-                      if (classLevel) {
-                        var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
-                        var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-                        if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
-                          _this.cache.get(classname + '@' + filterSortHash)
-                            .then(function (filterLevel) {
-                              if (filterLevel) {
-                                var promises2 = [];
-                                for (var i = 0; i < filterLevel.length; i++) {
-                                  promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
-                                }
-                                Promise.all(promises2).then(resolve).catch(reject);
-                              } else {
-                                resolve(null);
-                              }
-                            }).catch(reject);
-                        } else {
-                          resolve(null);
-                        }
-                      } else {
-                        resolve(null);
-                      }
-                    }).catch(reject);
-                });
-              })(value.lists[i].classname, value.lists[i].options));
-            }
-            Promise.all(promises1).then(resolve).catch(reject);
-          } else {
-            resolve();
-          }
-        }).catch(reject);
-    });
-  }
-
-  function removeCachedLists_afterDelete(classname, id) {
-    return new Promise(function (resolve, reject) {
-      _this.cache.get(cachingKey(classname, id))
-        .then(function (value) {
-          if (value) {
-            var promises1 = [];
-            for (var i = 0; i < value.lists.length; i++) {
-              promises1.push((function (classname, options) {
-                return new Promise(function (resolve,reject) {
-                  _this.cache.get(classname)
-                    .then(function (classLevel) {
-                      if (classLevel) {
-                        var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
-                        var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-                        if (classLevel.indexOf(filterSortHash + '@' + offsetCount) > -1) {
-                          _this.cache.get(classname + '@' + filterSortHash)
-                            .then(function (filterLevel) {
-                              if (filterLevel) {
-                                var rx = new RegExp((options.offset ? options.offset : '') + '_' + '(\\d+)','g');
-                                var promises2 = [];
-                                for (var i = 0; i < filterLevel.length; i++) {
-                                  if (filterLevel[i] === offsetCount) {
-                                    promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + offsetCount, null));
-                                  } else if (options.count && rx.test(filterLevel[i]) && filterLevel[i].split('_')[1] > options.count) {
-                                    promises2.push(_this.cache.set(classname + '@' + filterSortHash + '@' + filterLevel[i], null));
-                                  }
-                                }
-                                Promise.all(promises2).then(resolve).catch(reject);
-                              } else {
-                                resolve(null);
-                              }
-                            }).catch(reject);
-                        } else {
-                          resolve(null);
-                        }
-                      } else {
-                        resolve(null);
-                      }
-                    }).catch(reject);
-                });
-              })(value.lists[i].classname, value.lists[i].options));
-            }
-            Promise.all(promises1).then(function () {
-              _this.cache.set(cachingKey(classname, id), null).then(resolve).catch(reject);
-            }).catch(reject);
-          } else {
-            resolve();
-          }
-        }).catch(reject);
-    });
-  }
-
-  function uncacheList(classname,options) {
-    return new Promise(function (resolve, reject) {
-      retrieveCachedList(cachingListKey(classname), options)
-        .then(function (listObject) {
-          var items = [];
-          if (listObject) {
-            var promises = [];
-            for (var i = 0; i < listObject.itemIds.length; i++) {
-              var key = cachingKeyDecode(listObject.itemIds[i]);
-              promises.push(uncacheItem(key.classname, key.id));
-            }
-            Promise.all(promises)
-              .then(function (data) {
-                for (var i = 0; i < data.length; i++) {
-                  items.push(_this._wrap(data[i]._class, data[i], data[i]._classVer));
-                }
-                items.total = listObject.total;
-                resolve(items);
-              }).catch(reject);
-          } else {
-            _this.ds.fetch(classname, options)
-              .then(function (data) {
-                var cacheObject = {
-                  itemIds: [],
-                  total: null
-                };
-                var promises = [];
-                for (var i = 0; i < data.length; i++) {
-                  var item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-                  items.push(item);
-                  cacheObject.itemIds.push(cachingKey(data[i]._class, item.getItemId()));
-                  var listId = {
-                    classname: cachingListKey(classname),
-                    options: options
-                  };
-                  promises.push(updateCachedItem(data[i]._class, item.getItemId(), data[i], listId));
-                }
-                if (typeof data.total !== 'undefined' && data.total !== null) {
-                  items.total = data.total;
-                  cacheObject.total = data.total;
-                }
-                Promise.all(promises).then(function () {
-                  putListToCache(cachingListKey(classname), options, cacheObject)
-                    .then(function () {
-                      resolve(items);
-                    }).catch(function () {
-                    resolve(items);
-                  });
-                }).catch(reject);
-              }).catch(reject);
-          }
-        });
-    });
-  }
-
   /**
    * @param {String | Item} obj
    * @param {Object} [options]
@@ -1168,7 +825,7 @@ function IonDataRepository(options) {
     return prepareFilterValues(cm, options.filter).
     then(function (filter) {
       options.filter = filter;
-      return uncacheList(tn(rcm), options);
+      return _this.ds.fetch(tn(rcm), options);
     }).
     then(function (result) {
       return new Promise(function (resolve, reject) {
@@ -1226,7 +883,13 @@ function IonDataRepository(options) {
   this._getItem = function (obj, id, options) {
     if (id && typeof obj === 'string') {
       return new Promise(function (resolve, reject) {
-        uncacheItem(obj, id).then(function (data) {
+        var cm = _this._getMeta(obj);
+        var rcm = _this._getRootType(cm);
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+        if (conditions  === null) {
+          return resolve(null);
+        }
+        _this.ds.get(tn(rcm), conditions).then(function (data) {
           var item = null;
           if (data) {
             try {
@@ -1742,21 +1405,7 @@ function IonDataRepository(options) {
           updates._classVer = cm.getVersion();
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
-          return new Promise(function(resolve, reject){
-            var item = _this._wrap(data._class, data, data._classVer);
-            _this.cache.set(cachingKey(classname, item.getItemId()), {base: data,lists: []})
-              .then(function () {
-                removeCachedLists_afterCreate(tn(rcm))
-                  .then(function () {
-                    resolve(item);
-                  }).catch(function () {
-                  resolve(item);
-                });
-              }).catch(function () {
-                resolve(item);
-              });
-          });
-        }).then(function(item){
+          var item = _this._wrap(data._class, data, data._classVer);
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
@@ -1827,21 +1476,10 @@ function IonDataRepository(options) {
           Promise.all(fileSavers).then(function () {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
-            return new Promise(function (resolve, reject) {
-              if (!data) {
-                  reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
-              }
-              var item = _this._wrap(data._class, data, data._classVer);
-              updateCachedItem(classname, id, data).then(function () {
-                removeCachedLists_afterUpdate(classname, id)
-                  .then(function () {
-                    resolve(item);
-                  }).catch(function () {
-                    resolve(item);
-                  });
-              });
-            });
-          }).then(function(item){
+            if (!data) {
+              reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
+            }
+            var item = _this._wrap(data._class, data, data._classVer);
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);
@@ -1935,18 +1573,7 @@ function IonDataRepository(options) {
             reject(err);
           }
         }).then(function (data) {
-          return new Promise(function(resolve, reject){
-            var item = _this._wrap(data._class, data, data._classVer);
-            updateCachedItem(classname, id, data).then(function () {
-              removeCachedLists_afterUpdate(classname, id)
-                .then(function () {
-                  resolve(item);
-                }).catch(function () {
-                resolve(item);
-              });
-            });
-          });
-        }).then(function(item){
+          var item = _this._wrap(data._class, data, data._classVer);
           return logChanges(changeLogger, {type: event, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data, id || item.getItemId());
@@ -1987,9 +1614,8 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       var item = _this._wrap(classname, conditions);
-      _this.ds.delete(tn(rcm), conditions).then(function(){
-        return removeCachedLists_afterDelete(classname, id);
-      }).then(function () {
+      _this.ds.delete(tn(rcm), conditions).
+      then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
