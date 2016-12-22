@@ -156,7 +156,6 @@ function MongoAcl(config) {
         }
         res = {};
         var nm, i, hasGlobals;
-
         hasGlobals = false;
         var globalPermissions = {};
         if (!skipGlobals) {
@@ -207,7 +206,6 @@ function MongoAcl(config) {
               }
             }
           }
-
           return resolve(res);
         });
       });
