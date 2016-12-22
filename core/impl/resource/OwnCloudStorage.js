@@ -51,9 +51,9 @@ function OwnCloudStorage(config) {
 
   function slashChecker(path) {
     if (path && path.slice(-1) !== '/') {
-      path  = path   + '/';
+      return path   + '/';
     }
-    return path;
+    return path || '';
   }
 
   function streamGetter(filePath) {
@@ -300,12 +300,12 @@ function OwnCloudStorage(config) {
    */
   this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve,reject) {
-      var id = urlResolver(slashChecker(parentDirId) || '', name);
+      var id = slashChecker(parentDirId) + name;
       var reqParams = {
         uri: urlResolver(
           config.url,
           urlTypes.WEBDAV,
-          utf8.encode(id)
+          id
         ),
         auth: {
           user: config.login,
