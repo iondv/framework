@@ -161,6 +161,22 @@
           }
         }
       },
+      "aclProvider":{
+        "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataSource": "ion://Db"
+        }
+      },
+      "securedDataRepo": {
+        "module": "core/impl/datarepository/SecuredDataRepository",
+        "options": {
+          "data": "lazy://dataRepo",
+          "meta": "ion://metaRepo",
+          "acl": "ion://aclProvider"
+        }
+      },
       "workflows": {
         "module": "core/impl/WorkflowProvider",
         "initMethod": "init",
@@ -168,7 +184,7 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "ion://securedDataRepo"
         }
       }
     }

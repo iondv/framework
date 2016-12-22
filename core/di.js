@@ -6,6 +6,20 @@ var contexts = {};
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
+function createProxy(scope, name) {
+  return new Proxy({}, {
+    get: function (target, property) {
+      return scope[name][property];
+    },
+    set: function (target, property, value) {
+      scope[name][property] = value;
+    },
+    getPrototypeOf: function () {
+      return Object.getPrototypeOf(scope[name]);
+    }
+  });
+}
+
 /**
  * @param {{}} options
  * @param {{}} components
@@ -70,6 +84,8 @@ function processOptions(options, scope, components, init, skip, cwd) {
         } else {
           return null;
         }
+      } else if (options.substr(0, 7) === 'lazy://') {
+        return createProxy(scope, options.substr(7));
       }
       return options;
     } else if (options instanceof Array) {
