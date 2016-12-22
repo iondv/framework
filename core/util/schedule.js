@@ -162,16 +162,25 @@ function createBasePeriod(group) {
   return result;
 }
 
-module.exports.scheduleToString = function (value) {
+function createSkipsPeriod(group, skips) {
   var result = '';
+  Object.keys(skips).forEach(function (top) {
+    Object.keys(skips[top]).forEach(function (baseKey) {
+      
+    });
+  });
+  return result;
+}
+
+function createGroups(values) {
   var groups = {};
-  value.occurs.forEach(function (occur) {
-    var levels = getLevels(Object.keys(occur));
+  values.forEach(function (value) {
+    var levels = getLevels(Object.keys(value));
     if (levels.top) {
       if (!groups.hasOwnProperty(levels.top)) {
         groups[levels.top] = {};
       }
-      var base = getBase(occur, levels.base);
+      var base = getBase(value, levels.base);
       var baseString = getBaseString(base);
       if (!groups[levels.top].hasOwnProperty(baseString)) {
         groups[levels.top][baseString] = {
@@ -180,17 +189,23 @@ module.exports.scheduleToString = function (value) {
           values: []
         };
       }
-      groups[levels.top][baseString].values.push(occur[levels.top]);
+      groups[levels.top][baseString].values.push(value[levels.top]);
     }
   });
+  return groups;
+}
+
+module.exports.scheduleToString = function (value) {
+  var result = '';
+  var groups = createGroups(value.occurs);
+  var skips = createGroups(value.skipped);
   Object.keys(groups).forEach(function (top) {
     Object.keys(groups[top]).forEach(function (baseKey) {
-      groups[top][baseKey].values.sort(function (a, b) {
-        return a - b;
-      });
+      groups[top][baseKey].values.sort();
       result += createTopPeriod(top, groups[top][baseKey].values);
       result += ' ' + createBasePeriod(groups[top][baseKey]);
       result += ' (';
+      result += createSkipsPeriod(groups[top][baseKey], skips);
       result += '); ';
     });
   });
