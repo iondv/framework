@@ -149,7 +149,7 @@ function ConditionParser(condition, rcm, context) {
   } else {
     if (condition.property) {
       result = {};
-      switch (condition.operation) {
+      switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
           result.$or = [{}, {}, {}];
           result.$or[0][condition.property] = {$eq: null};
