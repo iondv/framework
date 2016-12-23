@@ -16,7 +16,7 @@ function DataRepository() {
    * @returns {Item}
    */
   this.wrap = function (className, data, version, options) {
-    return this._wrap(className, data, version, options);
+    return this._wrap(className, data, version, options || {});
   };
 
   /**
@@ -34,7 +34,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getCount  = function (obj, options) {
-    return this._getCount(obj, options);
+    return this._getCount(obj, options || {});
   };
 
   /**
@@ -49,7 +49,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getList = function (obj, options) {
-    return this._getList(obj, options);
+    return this._getList(obj, options || {});
   };
 
   /**
@@ -61,7 +61,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.aggregate = function (className, options) {
-    return this._aggregate(className, options);
+    return this._aggregate(className, options || {});
   };
 
   /**
@@ -72,7 +72,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getItem = function (obj, id, options) {
-    return this._getItem(obj, id, options);
+    return this._getItem(obj, id, options || {});
   };
 
   /**
@@ -85,7 +85,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.createItem = function (className, data, version, changeLogger, options) {
-    return this._createItem(className, data, version, changeLogger, options);
+    return this._createItem(className, data, version, changeLogger, options || {});
   };
 
   /**
@@ -98,7 +98,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.editItem = function (className, id, data, changeLogger, options) {
-    return this._editItem(className, id, data, changeLogger, options);
+    return this._editItem(className, id, data, changeLogger, options || {});
   };
 
   /**
@@ -113,7 +113,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.saveItem = function (className, id, data, version, changeLogger, options) {
-    return this._saveItem(className, id, data, version, changeLogger, options);
+    return this._saveItem(className, id, data, version, changeLogger, options || {});
   };
 
   /**
@@ -124,7 +124,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.deleteItem = function (className, id, changeLogger, options) {
-    return this._deleteItem(className, id, changeLogger, options);
+    return this._deleteItem(className, id, changeLogger, options || {});
   };
 
   /**
@@ -136,7 +136,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.put = function (master, collection, details, changeLogger, options) {
-    return this._put(master, collection, details, changeLogger, options);
+    return this._put(master, collection, details, changeLogger, options || {});
   };
 
   /**
@@ -148,7 +148,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.eject = function (master, collection, details, changeLogger, options) {
-    return this._eject(master, collection, details, changeLogger, options);
+    return this._eject(master, collection, details, changeLogger, options || {});
   };
 
   /**
@@ -164,7 +164,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsList = function (master, collection, options) {
-    return this._getAssociationsList(master, collection, options);
+    return this._getAssociationsList(master, collection, options || {});
   };
 
   /**
@@ -180,7 +180,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsCount = function (master, collection, options) {
-    return this._getAssociationsCount(master, collection, options);
+    return this._getAssociationsCount(master, collection, options || {});
   };
 }
 
