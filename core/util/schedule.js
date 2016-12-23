@@ -3,7 +3,6 @@
  */
 
 const moment = require('moment');
-const util = require('util');
 
 var segments = ['year', 'month', 'day', 'weekday', 'hour', 'minute', 'second'];
 var segmentCaptions = {
@@ -101,7 +100,7 @@ function getDurationSegments(duration) {
   };
 }
 
-function intervalToString(start, end, mask) {
+function intervalToString(start, end, mask) { // jshint ignore:line
   var s = getDurationSegments(start);
   var e = getDurationSegments(end);
   var startString = '';
@@ -121,8 +120,10 @@ function intervalToString(start, end, mask) {
   */
   if (mask.indexOf('hour') > -1 || mask.indexOf('minute') > -1 || mask.indexOf('second') > -1) {
     if (s.second || e.second) {
-      startString += (startString ? ' ' : '') + moment({hours: s.hour, minutes: s.minute, seconds: s.second}).format('HH:mm:ss');
-      endString += (endString ? ' ' : '') + moment({hours: e.hour, minutes: e.minute, seconds: e.second}).format('HH:mm:ss');
+      startString += (startString ? ' ' : '') +
+        moment({hours: s.hour, minutes: s.minute, seconds: s.second}).format('HH:mm:ss');
+      endString += (endString ? ' ' : '') +
+        moment({hours: e.hour, minutes: e.minute, seconds: e.second}).format('HH:mm:ss');
     } else {
       startString += (startString ? ' ' : '') + moment({hours: s.hour, minutes: s.minute}).format('HH:mm');
       endString += (endString ? ' ' : '') + moment({hours: e.hour, minutes: e.minute}).format('HH:mm');
@@ -210,7 +211,7 @@ function createGroups(values) {
   return groups;
 }
 
-module.exports.scheduleToString = function (value) {
+function scheduleToString(value) {
   var result = '';
   var groups = createGroups(value.occurs);
   var skips = createGroups(value.skipped);
@@ -229,4 +230,21 @@ module.exports.scheduleToString = function (value) {
     });
   });
   return result;
+}
+
+/**
+ *
+ * @param {Array|Object} value
+ * @returns {String}
+ */
+module.exports.scheduleToString = function (value) {
+  if (Array.isArray(value)) {
+    var result = '';
+    for (var i = 0; i < value.length; i++) {
+      result += scheduleToString(value[i]);
+    }
+    return result;
+  } else {
+    return scheduleToString(value);
+  }
 };
