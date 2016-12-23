@@ -28,7 +28,7 @@ function MemcachedRepository(config) {
 
   var mOptions = config.connectOptions || {};
   var lifeTime = config.lifetime || 3600;
-  var memcached = new Memcached(mServerLocations, mOptions);
+  var memcached = null;
 
   function log(msg) {
     if (config.log) {
@@ -85,6 +85,7 @@ function MemcachedRepository(config) {
         return resolve();
       }
       try {
+        log('Инициализация memcached');
         memcached = new Memcached(mServerLocations, mOptions);
         memcached.on('issue',
           function (details) {

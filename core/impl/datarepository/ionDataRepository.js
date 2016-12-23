@@ -789,10 +789,7 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var calcs = [];
       for (var i = 0; i < items.length; i++) {
-        console.log(items[i]);
-        if (items[i]) {
-          calcs.push(calcProperties(items[i]));
-        }
+        calcs.push(calcProperties(items[i]));
       }
       Promise.all(calcs).then(function () {
         resolve(items);
@@ -830,21 +827,27 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
-    then(function (result) {
-      return new Promise(function (resolve, reject) {
+    then(
+      function (data) {
+        var result = [];
         var fl = [];
         try {
-          for (var i = 0; i < result.length; i++) {
+          for (var i = 0; i < data.length; i++) {
+            result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
             fl.push(loadFiles(result[i]));
           }
         } catch (err) {
-          return reject(err);
+          return Promise.reject(err);
         }
-        Promise.all(fl).then(function () {
-          resolve(result);
-        }).catch(reject);
-      });
-    }).
+
+        if (typeof data.total !== 'undefined' && data.total !== null) {
+          result.total = data.total;
+        }
+        return Promise.all(fl).then(function () {
+          return Promise.resolve(result);
+        });
+      }
+    ).
     then(
       function (result) {
         return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);

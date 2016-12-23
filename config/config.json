@@ -111,7 +111,7 @@
       },
       "fileStorage": {
         "module": "core/impl/resource/FsStorage",
-        "initMethod":"_init",
+        "initMethod":"init",
         "initLevel": 1,
         "options": {
           "storageBase": "[[fs.storageRoot]]",
@@ -121,7 +121,6 @@
       },
       "imageStorage": {
         "module": "core/impl/resource/ImageStorage",
-        "initLevel": 1,
         "options": {
           "fileStorage": "ion://fileStorage",
           "thumbnails": {
@@ -168,6 +167,7 @@
       },
       "memcached": {
         "module": "core/impl/cache/memcached/MemcachedRepository",
+        "initMethod": "init",
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
@@ -179,6 +179,7 @@
       },
       "redis": {
         "module": "core/impl/cache/redis/RedisRepository",
+        "initMethod": "init",
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.redis.enabled]]",
