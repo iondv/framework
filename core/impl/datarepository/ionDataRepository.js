@@ -270,7 +270,7 @@ function IonDataRepository(options) {
   /**
    * @param {Item[]} src
    * @param {Number} depth
-   * @param {String[][]} forced
+   * @param {String[][]} [forced]
    * @returns {Promise}
    */
   function enrich(src, depth, forced) {
@@ -827,8 +827,8 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
-    then(function (data) {
-      return new Promise(function (resolve, reject) {
+    then(
+      function (data) {
         var result = [];
         var fl = [];
         try {
@@ -837,17 +837,17 @@ function IonDataRepository(options) {
             fl.push(loadFiles(result[i]));
           }
         } catch (err) {
-          return reject(err);
+          return Promise.reject(err);
         }
 
         if (typeof data.total !== 'undefined' && data.total !== null) {
           result.total = data.total;
         }
-        Promise.all(fl).then(function () {
-          resolve(result);
-        }).catch(reject);
-      });
-    }).
+        return Promise.all(fl).then(function () {
+          return Promise.resolve(result);
+        });
+      }
+    ).
     then(
       function (result) {
         return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
@@ -892,11 +892,10 @@ function IonDataRepository(options) {
         var cm = _this._getMeta(obj);
         var rcm = _this._getRootType(cm);
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        if (conditions === null) {
+        if (conditions  === null) {
           return resolve(null);
         }
-        _this.ds.get(tn(rcm), conditions).
-        then(function (data) {
+        _this.ds.get(tn(rcm), conditions).then(function (data) {
           var item = null;
           if (data) {
             try {
@@ -1621,7 +1620,8 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       var item = _this._wrap(classname, conditions);
-      _this.ds.delete(tn(rcm), conditions).then(function () {
+      _this.ds.delete(tn(rcm), conditions).
+      then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
