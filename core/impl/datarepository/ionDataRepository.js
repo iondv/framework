@@ -789,7 +789,10 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var calcs = [];
       for (var i = 0; i < items.length; i++) {
-        calcs.push(calcProperties(items[i]));
+        console.log(items[i]);
+        if (items[i]) {
+          calcs.push(calcProperties(items[i]));
+        }
       }
       Promise.all(calcs).then(function () {
         resolve(items);

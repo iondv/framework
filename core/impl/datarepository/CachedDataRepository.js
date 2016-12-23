@@ -13,7 +13,7 @@ const crypto = require('crypto');
 /**
  * @param {{}} options
  * @param {DataRepository} options.data
- * @param {CacheRepository} options.cacheRepository
+ * @param {CacheRepository} options.cache
  * @param {MetaRepository} options.meta
  * @constructor
  */
@@ -29,7 +29,7 @@ function CachedDataRepository(options) {
   /**
    * @type {CacheRepository}
    */
-  this.cache = options.cacheRepository || new CacheProxy();
+  var cache = options.cache || new CacheProxy();
 
   function objectToMD5(object) {
     return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
@@ -51,11 +51,11 @@ function CachedDataRepository(options) {
   function retrieveCachedList(classname, options) {
     var filterSortHash = objectToMD5({filter: options.filter, sort: options.sort});
     var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-    return _this.cache.get(classname + '@' + filterSortHash + '@' + offsetCount);
+    return cache.get(classname + '@' + filterSortHash + '@' + offsetCount);
   }
 
   function updateListObjectInCache(key, payload) {
-    return _this.cache.get(key)
+    return cache.get(key)
         .then(
           function (data) {
             if (!data) {
@@ -65,22 +65,22 @@ function CachedDataRepository(options) {
             if (data.indexOf(payload) < 0) {
               data.push(payload);
             }
-            return _this.cache.set(key, data);
+            return cache.set(key, data);
           }
         );
   }
 
   function putListToCache(classname, options, list) {
-    var filterSortHash = objectToMD5({filter: options.filter,sort: options.sort});
-    var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-    return updateListObjectInCache(classname, filterSortHash + '@' + offsetCount)
-        .then(function () {
-          return _this.cache.set(classname + '@' + filterSortHash + '@' + offsetCount, list);
-        });
+    var listId = objectToMD5({filter: options.filter,sort: options.sort}) + '@' +
+      (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
+    return updateListObjectInCache(classname, {listId: listId, offset: options.offset})
+      .then(function () {
+        return cache.set(classname + '@' + listId, list);
+      });
   }
 
   function uncacheItem(classname, id) {
-    return _this.cache.get(cachingKey(classname, id))
+    return cache.get(cachingKey(classname, id))
         .then(
           function (value) {
             if (value) {
@@ -93,7 +93,7 @@ function CachedDataRepository(options) {
   }
 
   function updateCachedItem(classname, id, data, list) {
-    return _this.cache.get(cachingKey(classname, id))
+    return cache.get(cachingKey(classname, id))
         .then(
           function (value) {
             var result = {
@@ -120,59 +120,59 @@ function CachedDataRepository(options) {
                 result.lists.push(list);
               }
             }
-            return _this.cache.set(cachingKey(classname, id), result);
+            return cache.set(cachingKey(classname, id), result);
           }
         );
   }
 
   function unsetList(key) {
     return function () {
-      return _this.cache.set(key, null);
+      return cache.set(key, null);
     };
   }
 
   function removeCachedListsAfterCreate(classname) {
-    return _this.cache.get(classname)
+    return cache.get(classname)
         .then(
           function (lists) {
             if (lists) {
               var p;
               for (var i = 0; i < lists.length; i++) {
                 if (p) {
-                  p = p.then(unsetList(classname + '@' + lists[i]));
+                  p = p.then(unsetList(classname + '@' + lists[i].listId));
                 } else {
-                  p = unsetList(classname + '@' + lists[i])();
+                  p = unsetList(classname + '@' + lists[i].listId)();
                 }
               }
               if (p) {
                 return p.then(function () {
-                  return _this.cache.set(classname, null);
+                  return cache.set(classname, null);
                 });
               }
-              return _this.cache.set(classname, null);
+              return cache.set(classname, null);
             }
           }
         );
   }
 
   function removeCachedListsAfterUpdate(classname, id) {
-    return _this.cache.get(cachingKey(classname, id))
+    return cache.get(cachingKey(classname, id))
         .then(function (value) {
           if (value) {
-            var p, filterSortHash, offsetCount;
+            var p, listId;
             for (var i = 0; i < value.lists.length; i++) {
-              filterSortHash = objectToMD5(
+              listId = objectToMD5(
                 {
                   filter: value.lists[i].options.filter,
                   sort: value.lists[i].options.sort
                 }
-              );
-              offsetCount = (value.lists[i].options.offset ? value.lists[i].options.offset : '') + '_' +
+              ) + (value.lists[i].options.offset ? value.lists[i].options.offset : '') + '_' +
                 (value.lists[i].options.count ? value.lists[i].options.count : '');
+
               if (p) {
-                p = p.then(unsetList(classname + '@' + filterSortHash + '@' + offsetCount));
+                p = p.then(unsetList(value.lists[i].classname + '@' + listId));
               } else {
-                p = unsetList(classname + '@' + filterSortHash + '@' + offsetCount)();
+                p = unsetList(value.lists[i].classname + '@' + listId)();
               }
             }
             if (p) {
@@ -183,21 +183,35 @@ function CachedDataRepository(options) {
         });
   }
 
+  function unsetListOffset(classname, offset) {
+    return _this.cahce.get(classname).then(function (lists) {
+      var p;
+      for (var i = 0; i < lists.length; i++) {
+        if (!offset || lists[i].offset >= offset) {
+          if (p) {
+            p = p.then(unsetList(classname + '@' + lists[i].listId));
+          } else {
+            p = unsetList(classname + '@' + lists[i].listId)();
+          }
+        }
+      }
+      if (p) {
+        return p;
+      }
+      return Promise.resolve();
+    });
+  }
+
   function removeCachedListsAfterDelete(classname, id) {
-    return _this.cache.get(cachingKey(classname, id))
+    return cache.get(cachingKey(classname, id))
         .then(function (value) {
           if (value) {
-            var p, filterSortHash, offsetCount;
+            var p;
             for (var i = 0; i < value.lists.length; i++) {
-              filterSortHash = objectToMD5({filter: value.lists[i].options.filter, sort: value.lists[i].options.sort});
-              offsetCount = (value.lists[i].options.offset ? value.lists[i].options.offset : '') + '_' +
-                (value.lists[i].options.count ? value.lists[i].options.count : '');
-              
-              
               if (p) {
-                p = p.then(unsetList(classname + '@' + filterSortHash + '@' + offsetCount));
+                p = p.then(unsetListOffset(classname, value.lists[i].options.offset));
               } else {
-                p = unsetList(classname + '@' + filterSortHash + '@' + offsetCount)();
+                p = unsetListOffset(classname, value.lists[i].options.offset)();
               }
             }
             if (p) {
@@ -206,6 +220,12 @@ function CachedDataRepository(options) {
           }
           return Promise.resolve();
         });
+  }
+
+  function updateNextCacheItem(item, listId) {
+    return function () {
+      return updateCachedItem(item.getClassName(), item.getItemId(), item.base, listId);
+    };
   }
 
   function cacheList(classname, options, list) {
@@ -213,7 +233,7 @@ function CachedDataRepository(options) {
       itemIds: [],
       total: null
     };
-    var promises = [];
+    var p;
     var item;
     var listId = {
       classname: cachingListKey(classname),
@@ -223,25 +243,24 @@ function CachedDataRepository(options) {
     for (var i = 0; i < list.length; i++) {
       item = list[i];
       cacheObject.itemIds.push(cachingKey(item.getClassName(), item.getItemId()));
-      promises.push(updateCachedItem(item.getClassName(), item.getItemId(), item.base, listId));
+      if (p) {
+        p = p.then(updateNextCacheItem(item, listId));
+      } else {
+        p = updateCachedItem(item.getClassName(), item.getItemId(), item.base, listId);
+      }
     }
 
     if (typeof list.total !== 'undefined' && list.total !== null) {
       cacheObject.total = list.total;
     }
 
-    return Promise.all(promises).then(function () {
-      return putListToCache(cachingListKey(classname), options, cacheObject)
-        .then(
-          function () {
-            return Promise.resolve(list);
-          }
-        ).catch(
-          function () {
-            return Promise.resolve(list);
-          }
-        );
-    });
+    if (p) {
+      return p.then(function () {
+        return putListToCache(listId.classname, options, cacheObject);
+      });
+    }
+
+    return putListToCache(listId.classname, options, cacheObject);
   }
 
   function itemGetter(key, items) {
@@ -281,6 +300,18 @@ function CachedDataRepository(options) {
       );
   }
 
+  function uncacheCount(classname, options) {
+    return retrieveCachedList(cachingListKey(classname), options)
+      .then(
+        function (listObject) {
+          if (listObject) {
+            return Promise.resolve(listObject.total);
+          }
+          return Promise.resolve(null);
+        }
+      );
+  }
+
   /**
    * @param {String} className
    * @param {Object} data
@@ -300,7 +331,12 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
-    return dataRepo.getCount(obj, options);
+    return uncacheCount(obj, options).then(function (total) {
+      if (total) {
+        return Promise.resolve(total);
+      }
+      return dataRepo.getCount(obj, options);
+    });
   };
 
   /**
@@ -316,7 +352,22 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    return dataRepo.getList(obj, options);
+    return uncacheList(obj, options)
+      .then(function (list) {
+        if (list) {
+          return Promise.resolve(list);
+        }
+        return dataRepo.getList(obj, options)
+          .then(function (list) {
+            if (!list) {
+              return Promise.resolve(list);
+            }
+            return cacheList(obj, options, list)
+              .then(function () {
+                return Promise.resolve(list);
+              });
+          });
+      });
   };
 
   /**
@@ -339,8 +390,46 @@ function CachedDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    */
   this._getItem = function (obj, id, options) {
-    return dataRepo.getItem(obj, id, options);
+    return uncacheItem(obj, id)
+      .then(function (item) {
+        if (item) {
+          return Promise.resolve(item);
+        }
+        return dataRepo.getItem(obj, id, options)
+          .then(function (item) {
+            if (!item) {
+              return Promise.resolve(item);
+            }
+            return updateCachedItem(item.getClassName(), item.getItemId(), item.base)
+              .then(function () {
+                return Promise.resolve(item);
+              });
+          });
+      });
   };
+
+  function removeAfterCreate(classname) {
+    return function () {
+      return removeCachedListsAfterCreate(classname);
+    };
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   * @returns {Promise}
+   */
+  function removeAfterCreateH(cm) {
+    var p;
+    while (cm) {
+      if (p) {
+        p = p.then(removeAfterCreate(cm.getCanonicalName()));
+      } else {
+        p = removeCachedListsAfterCreate(cm.getCanonicalName());
+      }
+      cm = cm.getAncestor();
+    }
+    return p;
+  }
 
   /**
    *
@@ -352,7 +441,19 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
-    return dataRepo.createItem(classname, data, version, changeLogger, options);
+    return dataRepo.createItem(classname, data, version, changeLogger, options)
+      .then(function (result) {
+        if (!result) {
+          return Promise.resolve(result);
+        }
+
+        return removeAfterCreateH(result.getMetaClass()).then(function () {
+          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
+            .then(function () {
+              return Promise.resolve(result);
+            });
+        });
+      });
   };
 
   /**
@@ -365,7 +466,18 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options) {
-    return dataRepo.editItem(classname, id, data, changeLogger, options);
+    return dataRepo.editItem(classname, id, data, changeLogger, options)
+      .then(function (result) {
+        if (!result) {
+          return Promise.resolve(result);
+        }
+        return removeCachedListsAfterUpdate(classname, id).then(function () {
+          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
+            .then(function () {
+              return Promise.resolve(result);
+            });
+        });
+      });
   };
 
   /**
@@ -381,7 +493,19 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
-    return dataRepo.saveItem(classname, id, data, version, changeLogger, options);
+    return dataRepo.saveItem(classname, id, data, version, changeLogger, options)
+      .then(function (result) {
+        if (!result) {
+          return Promise.resolve(result);
+        }
+
+        return removeAfterCreateH(result.getMetaClass()).then(function () {
+          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
+            .then(function () {
+              return Promise.resolve(result);
+            });
+        });
+      });
   };
 
   /**
@@ -392,7 +516,13 @@ function CachedDataRepository(options) {
    * @param {{uid: String}} options
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    return dataRepo.deleteItem(classname, id, changeLogger);
+    return dataRepo.deleteItem(classname, id, changeLogger, options)
+      .then(function () {
+        return removeCachedListsAfterDelete(classname, id);
+      })
+      .then(function () {
+        return cache.set(cachingKey(classname, id), null);
+      });
   };
 
   /**
@@ -405,7 +535,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._put = function (master, collection, details, changeLogger, options) {
-    return dataRepo.put(master, collection, details, changeLogger);
+    return dataRepo.put(master, collection, details, changeLogger, options);
   };
 
   /**
@@ -418,7 +548,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._eject = function (master, collection, details, changeLogger, options) {
-    return dataRepo.eject(master, collection, details, changeLogger);
+    return dataRepo.eject(master, collection, details, changeLogger, options);
   };
 
   /**
