@@ -111,8 +111,8 @@ function intervalToString(start, end, mask) {
     endString += segmentCaptions.month[e.month];
   }
   if (mask.indexOf('day') > -1) {
-    startString += (startString ? ' ' : '') + s.day + ' день';
-    endString += (endString ? ' ' : '') + e.day + ' день';
+    startString += (startString ? ' ' : '') + s.day + '-го';
+    endString += (endString ? ' ' : '') + e.day + '-го';
   }
   /*If (mask.indexOf('weekday') > -1) {
     StartString += segmentCaptions.month[s.month];
@@ -162,11 +162,26 @@ function createBasePeriod(group) {
   return result;
 }
 
+function isIncluded(values1, values2) {
+  for (var i = 0; i < values2.length; i++) {
+    if (values1.indexOf(values2[i]) > -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function createSkipsPeriod(group, skips) {
   var result = '';
   Object.keys(skips).forEach(function (top) {
     Object.keys(skips[top]).forEach(function (baseKey) {
-      
+      if (skips[top][baseKey].top === group.top) {
+        if (isIncluded(group.values, skips[top][baseKey].values)) {
+          result += (result ? ', ' : '') + createBasePeriod(skips[top][baseKey]);
+        }
+      } else {
+        result += (result ? ', ' : '') + createBasePeriod(skips[top][baseKey]);
+      }
     });
   });
   return result;
@@ -204,9 +219,13 @@ module.exports.scheduleToString = function (value) {
       groups[top][baseKey].values.sort();
       result += createTopPeriod(top, groups[top][baseKey].values);
       result += ' ' + createBasePeriod(groups[top][baseKey]);
-      result += ' (';
-      result += createSkipsPeriod(groups[top][baseKey], skips);
-      result += '); ';
+      var skipPeriod = createSkipsPeriod(groups[top][baseKey], skips);
+      if (skipPeriod) {
+        result += ' (перерыв ';
+        result += skipPeriod;
+        result += ')';
+      }
+      result += '; ';
     });
   });
   return result;

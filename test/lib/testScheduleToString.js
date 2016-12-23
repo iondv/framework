@@ -3,7 +3,7 @@
  */
 const scheduleToString = require('core/util/schedule').scheduleToString;
 
-var schedule = {
+var schedule1 = {
   description: 'Недельное расписание',
   occurs: [
     {
@@ -11,7 +11,7 @@ var schedule = {
     duration: 5400,
     hour: '03',
     minute: '00'
-    },
+  },
   {
     weekday: 6,
     duration: 5400,
@@ -70,4 +70,5 @@ var schedule = {
   }
 ]
 };
-console.log(scheduleToString(schedule));
+
+console.log(scheduleToString(schedule1));
