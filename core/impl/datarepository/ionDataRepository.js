@@ -1483,7 +1483,7 @@ function IonDataRepository(options) {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
-              reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
+              return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
             var item = _this._wrap(data._class, data, data._classVer);
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
