@@ -883,7 +883,7 @@ function DsMetaRepository(options) {
         [
           _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
-          _this.ds.fetch(_this.viewTableName, {type: 1, className: 1, path: 1, version: 1}),
+          _this.ds.fetch(_this.viewTableName, {sort: {type: 1, className: 1, path: 1, version: 1}}),
           _this.ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
           _this.ds.fetch(_this.workflowTableName, {sort: {wfClass: 1, name: 1, version: 1}})
         ]

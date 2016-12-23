@@ -112,7 +112,7 @@ function IonDataRepository(options) {
     var descendants = this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
     var cnFilter = [cm.getCanonicalName()];
     for (var i = 0; i < descendants.length; i++) {
-      cnFilter[cnFilter.length] = descendants[i].getCanonicalName();
+      cnFilter.push(descendants[i].getCanonicalName());
     }
 
     if (!filter) {
@@ -137,7 +137,7 @@ function IonDataRepository(options) {
         if (props.hasOwnProperty(nm) && item.base.hasOwnProperty(nm)) {
           var c = {};
           c[nm] = item.base[nm];
-          conditions[conditions.length] = c;
+          conditions.push(c);
         }
       }
       return {$and: conditions};
@@ -270,7 +270,7 @@ function IonDataRepository(options) {
   /**
    * @param {Item[]} src
    * @param {Number} depth
-   * @param {String[][]} forced
+   * @param {String[][]} [forced]
    * @returns {Promise}
    */
   function enrich(src, depth, forced) {
@@ -827,8 +827,8 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
-    then(function (data) {
-      return new Promise(function (resolve, reject) {
+    then(
+      function (data) {
         var result = [];
         var fl = [];
         try {
@@ -837,17 +837,17 @@ function IonDataRepository(options) {
             fl.push(loadFiles(result[i]));
           }
         } catch (err) {
-          return reject(err);
+          return Promise.reject(err);
         }
 
         if (typeof data.total !== 'undefined' && data.total !== null) {
           result.total = data.total;
         }
-        Promise.all(fl).then(function () {
-          resolve(result);
-        }).catch(reject);
-      });
-    }).
+        return Promise.all(fl).then(function () {
+          return Promise.resolve(result);
+        });
+      }
+    ).
     then(
       function (result) {
         return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
@@ -883,19 +883,19 @@ function IonDataRepository(options) {
    *
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    */
-  this._getItem = function (obj, id, nestingDepth) {
+  this._getItem = function (obj, id, options) {
     if (id && typeof obj === 'string') {
       return new Promise(function (resolve, reject) {
         var cm = _this._getMeta(obj);
         var rcm = _this._getRootType(cm);
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        if (conditions === null) {
+        if (conditions  === null) {
           return resolve(null);
         }
-        _this.ds.get(tn(rcm), conditions).
-        then(function (data) {
+        _this.ds.get(tn(rcm), conditions).then(function (data) {
           var item = null;
           if (data) {
             try {
@@ -903,7 +903,7 @@ function IonDataRepository(options) {
               loadFiles(item).
               then(
                 function (item) {
-                  return enrich([item], nestingDepth || 0);
+                  return enrich([item], options.nestingDepth || 0);
                 }
               ).
               then(
@@ -1369,7 +1369,7 @@ function IonDataRepository(options) {
           e.item.getItemId(),
           data,
           changeLogger,
-          nestingDepth,
+          {nestingDepth: nestingDepth},
           true
         );
       }
@@ -1383,10 +1383,11 @@ function IonDataRepository(options) {
    * @param {Object} data
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
-  this._createItem = function (classname, data, version, changeLogger, nestingDepth) {
+  this._createItem = function (classname, data, version, changeLogger, options) {
     // jshint maxcomplexity: 30
     return new Promise(function (resolve, reject) {
       try {
@@ -1425,7 +1426,7 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger)).
         then(
           function (item) {
             return calcProperties(item);
@@ -1443,11 +1444,12 @@ function IonDataRepository(options) {
    * @param {String} id
    * @param {{}} data
    * @param {ChangeLogger} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
-  this._editItem = function (classname, id, data, changeLogger, nestingDepth, suppresEvent) {
+  this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
     return new Promise(function (resolve, reject) {
       if (!id) {
         return reject(new Error('Не передан идентификатор объекта!'));
@@ -1501,7 +1503,7 @@ function IonDataRepository(options) {
             }
             return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler(nestingDepth, changeLogger)).
+          then(writeEventHandler(options.nestingDepth, changeLogger)).
           then(
             function (item) {
               return calcProperties(item);
@@ -1609,15 +1611,17 @@ function IonDataRepository(options) {
    * @param {String} classname
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    */
-  this._deleteItem = function (classname, id, changeLogger) {
+  this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
     var rcm = _this._getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       var item = _this._wrap(classname, conditions);
-      _this.ds.delete(tn(rcm), conditions).then(function () {
+      _this.ds.delete(tn(rcm), conditions).
+      then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(
@@ -1797,9 +1801,10 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this._put = function (master, collection, details, changeLogger) {
+  this._put = function (master, collection, details, changeLogger, options) {
     return _editCollection(master, collection, details, changeLogger, true);
   };
 
@@ -1809,9 +1814,10 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this._eject = function (master, collection, details, changeLogger) {
+  this._eject = function (master, collection, details, changeLogger, options) {
     return _editCollection(master, collection, details, changeLogger, false);
   };
 

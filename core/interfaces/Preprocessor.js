@@ -14,7 +14,7 @@ function Preprocessor() {
   };
   /**
    * @param {Item} item
-   * @param {{}} [options]
+   * @param {{}} options
    * @returns {Promise}
    */
   this.process = function (item, options) {
