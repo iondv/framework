@@ -1497,22 +1497,18 @@ function IonDataRepository(options) {
                 }
               }
               chr = checkRequired(cm, updates, false);
-              if (chr !== true) {
+              if (chr !== true && options.ignoreIntegrityCheck) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
-              }
-              if (options.ignoreIntegrityCheck) { // Если задано игнорировать целостность - игнорируем
-                chr = true;
+                chr = true;// Если задано игнорировать целостность - игнорируем
               }
               return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
               chr = checkRequired(cm, updates, false);
-              if (chr !== true) {
+              if (chr !== true && options.ignoreIntegrityCheck) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
-              }
-              if (options.ignoreIntegrityCheck) { // Если задано игнорировать целостность - игнорируем
-                chr = true;
+                chr = true;// Если задано игнорировать целостность - игнорируем
               }
               return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates);
             }
