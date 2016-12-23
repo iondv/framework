@@ -90,20 +90,17 @@ function MemcachedRepository(config) {
         memcached.on('issue',
           function (details) {
             log('Memcached issue:' + details.server + ':' + details.messages.join(' '));
-          });
-        memcached.on('failure',
+          }).on('failure',
           function (details) {
             log('Memcached failure:' + details.server + ':' + details.messages.join(' '));
-          });
-        memcached.on('reconnecting',
+            reject(new Error('Не удалось подключиться к серверу Memcached'));
+          }).on('reconnecting',
           function (details) {
             log('Memcached reconnecting:' + details.server + ':' + details.messages.join(' '));
-          });
-        memcached.on('reconnect',
+          }).on('reconnect',
           function (details) {
             log('Memcached reconnect:' + details.server + ':' + details.messages.join(' '));
-          });
-        memcached.on('remove',
+          }).on('remove',
           function (details) {
             log('Memcached remove:' + details.server + ':' + details.messages.join(' '));
           });

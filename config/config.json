@@ -73,7 +73,7 @@
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "app": "ion://application",
           "logger": "ion://sysLog",

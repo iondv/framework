@@ -11,21 +11,21 @@ function CacheRepository() {
 
   /**
    *
-   * @param key
+   * @param {String} key
    * @returns {*}
    */
-  this.get = function(key) {
+  this.get = function (key) {
     return this._get(key);
   };
 
   /**
    *
-   * @param key
-   * @param value
+   * @param {String} key
+   * @param {*} value
    * @returns {*}
    */
-  this.set = function(key, value) {
-    return this._set(key,value);
+  this.set = function (key, value) {
+    return this._set(key, value);
   };
 
 }

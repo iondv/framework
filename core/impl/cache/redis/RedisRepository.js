@@ -3,8 +3,8 @@
  */
 'use strict';
 
-var CacheRepository = require('core/interfaces/CacheRepository');
-var redis = require('redis');
+const CacheRepository = require('core/interfaces/CacheRepository');
+const redis = require('redis');
 
 /**
  *
@@ -17,6 +17,14 @@ function RedisRepository(config) {
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
   var client = null;
+
+  function log(msg) {
+    if (config.log) {
+      config.log.log(msg);
+    } else {
+      console.log(msg);
+    }
+  }
 
   /**
    *
@@ -73,14 +81,11 @@ function RedisRepository(config) {
         return resolve();
       }
       try {
+        log('Инициализация Redis');
         client = redis.createClient({host: rHost, port: rPort});
         client.on('error', function (err) {
-          if (config.log) {
-            config.log.error(err);
-          } else {
-            console.warn('Redis Error: ' + err);
-          }
-        });
+            log('Redis error: ' + err);
+          });
         resolve();
       } catch (err) {
         reject(err);
