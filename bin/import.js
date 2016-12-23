@@ -14,6 +14,7 @@ var ns = null;
 
 var setSrc = false;
 var setNamespace = false;
+var setIgnoreIntegrityCheck =  false;
 
 process.argv.forEach(function (val) {
   if (val === '--src') {
@@ -28,6 +29,9 @@ process.argv.forEach(function (val) {
     src = val;
   } else if (setNamespace) {
     ns = val;
+  } else if (val === '--ignoreIntegrityCheck') {
+    console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
+    setIgnoreIntegrityCheck = true;
   }
   setSrc = false;
   setNamespace = false;
@@ -45,7 +49,8 @@ di('app', config.di,
   // Импорт
   function (scp) {
     scope = scp;
-    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns});
+    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns,
+      ignoreIntegrityCheck: setIgnoreIntegrityCheck});
   }
 ).then(function () {
   return scope.dataSources.disconnect();

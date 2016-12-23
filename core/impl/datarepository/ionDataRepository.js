@@ -1458,6 +1458,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -1495,13 +1496,24 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-
               chr = checkRequired(cm, updates, false);
+              if (chr !== true) {
+                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
+              }
+              if (options.ignoreIntegrityCheck) { // Если задано игнорировать целостность - игнорируем
+                chr = true;
+              }
               return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
               chr = checkRequired(cm, updates, false);
+              if (chr !== true) {
+                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
+              }
+              if (options.ignoreIntegrityCheck) { // Если задано игнорировать целостность - игнорируем
+                chr = true;
+              }
               return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates);
             }
           } catch (err) {
