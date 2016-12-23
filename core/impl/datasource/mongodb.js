@@ -9,6 +9,7 @@ const mongo = require('mongodb');
 const client = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
+const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
@@ -259,6 +260,41 @@ function MongoDs(config) {
     });
   }
 
+  function prepareGeoJSON(data) {
+    var tmp, tmp2, i;
+    for (var nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        if (typeof data[nm] === 'object' && data[nm] && data[nm].type && (data[nm].geometry || data[nm].features)) {
+          switch (data[nm].type) {
+            case 'Feature': {
+              tmp = clone(data[nm], true);
+              delete tmp.geometry;
+              data[nm] = data[nm].geometry;
+              data['__geo__' + nm + '_f'] = tmp;
+            }
+              break;
+            case 'FeatureCollection': {
+              tmp = {
+                type: 'GeometryCollection',
+                geometries: []
+              };
+              tmp2 = clone(data[nm], true);
+
+              for (i = 0; i < tmp2.features.length; i++) {
+                tmp.geometries.push(tmp2.features[i].geometry);
+                delete tmp2.features[i].geometry;
+              }
+              data[nm] = tmp;
+              data['__geo__' + nm + '_f'] = tmp2;
+            }
+              break;
+          }
+        }
+      }
+    }
+    return data;
+  }
+
   this._insert = function (type, data) {
     return this.getCollection(type).then(
       function (c) {
@@ -266,7 +302,7 @@ function MongoDs(config) {
           autoInc(type, data)
             .then(
               function (data) {
-                return cleanNulls(c, type, data);
+                return cleanNulls(c, type, prepareGeoJSON(data));
               }
             ).then(
               function (data) {
@@ -348,7 +384,7 @@ function MongoDs(config) {
 
     return this.getCollection(type).then(
       function (c) {
-        return cleanNulls(c, type, data)
+        return cleanNulls(c, type, prepareGeoJSON(data))
           .then(
             function (data) {
               return new Promise(function (resolve, reject) {
@@ -398,18 +434,43 @@ function MongoDs(config) {
     return this.doUpdate(type, conditions, data, true, false);
   };
 
+  function addPrefix(nm, prefix, sep) {
+    sep = sep || '.';
+    return (prefix ? prefix + sep : '') + nm;
+  }
+
+  function wind(attributes) {
+    var tmp = {};
+    var i;
+    for (i = 0; i < attributes.length; i++) {
+      tmp[attributes[i]] = '$' + attributes[i];
+    }
+    tmp = {_id: tmp};
+    return {$group: tmp};
+  }
+
+  function clean(attributes) {
+    var tmp = {};
+    var i;
+    for (i = 0; i < attributes.length; i++) {
+      tmp[attributes[i]] = 1;
+    }
+    return {$project: tmp};
+  }
+
   /**
    * @param {String[]} attributes
    * @param {{}} find
    * @param {Object[]} exists
+   * @param {String} prefix
    * @returns {*}
      */
-  function produceMatchObject(attributes, find, exists) {
+  function produceMatchObject(attributes, find, exists, prefix) {
     var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], exists);
+        tmp = produceMatchObject(attributes, find[i], exists, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -417,41 +478,53 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var arrFld;
+      var arrFld, uwFld, left;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists') {
+            left = addPrefix(find[name].left, prefix);
             if (find[name].many) {
               if (!attributes || !attributes.length) {
                 throw new Error('Не передан список атрибутов необходимый для выполнения объединения многие-ко-многим.');
               }
-              exists.push({$unwind: '$' + find[name].left});
+
+              tmp = clean(attributes);
+              uwFld = '__uw_' + addPrefix(find[name].left, prefix, '$');
+              tmp.$project[uwFld] = '$' + left;
+              exists.push(tmp);
+              left = uwFld;
+              exists.push({$unwind: '$' + uwFld});
             }
             tmp = {
               from: find[name].table,
-              localField: find[name].left,
+              localField: left,
               foreignField: find[name].right
             };
-            arrFld = '_join_check';
+            arrFld = addPrefix('__jc', prefix, '$');
             tmp.as = arrFld;
             exists.push({$lookup: tmp});
-            tmp = {};
-            tmp[arrFld] = {$elemMatch: find[name].filter};
-            exists.push({$match: tmp});
-
-            if (find[name].many) {
+            var exists2 = [];
+            var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
+            if (f !== null) {
               tmp = {};
-              for (i = 0; i < attributes.length; i++) {
-                if (attributes[i] !== find[name].left) {
-                  tmp[attributes[i]] = '$' + attributes[i];
-                }
+              tmp[arrFld] = {$elemMatch: f};
+              exists.push({$match: tmp});
+            }
+
+            if (exists2.length) {
+              exists.push({$unwind: '$' + arrFld});
+              Array.prototype.push.apply(exists, exists2);
+            }
+
+            if (!prefix) {
+              if (find[name].many) {
+                exists.push(wind(attributes));
+              } else {
+                exists.push(clean(attributes));
               }
-              tmp = {_id: tmp};
-              tmp[find[name].left] = {$addToSet: '$' + find[name].left};
-              exists.push({$group: tmp});
             }
           } else {
-            tmp = produceMatchObject(attributes, find[name], exists);
+            tmp = produceMatchObject(attributes, find[name], exists, prefix);
             if (tmp) {
               if (!result) {
                 result = {};
@@ -519,6 +592,34 @@ function MongoDs(config) {
     return false;
   }
 
+  function mergeGeoJSON(data) {
+    var tmp, tmp2, i;
+    for (var nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        tmp = data['__geo__' + nm + '_f'];
+        if (tmp) {
+          tmp2 = data[nm];
+          delete data['__geo__' + nm + '_f'];
+          switch (tmp.type) {
+            case 'Feature': {
+              tmp.geometry = tmp2;
+              data[nm] = tmp;
+            }
+              break;
+            case 'FeatureCollection': {
+              for (i = 0; i < tmp2.geometries.length; i++) {
+                tmp.features[i].geometry = tmp2.geometries[i];
+              }
+              data[nm] = tmp;
+            }
+              break;
+          }
+        }
+      }
+    }
+    return data;
+  }
+
   /**
    * @param {Collection} c
    * @param {{}} options
@@ -533,18 +634,13 @@ function MongoDs(config) {
    * @param {Function} reject
    */
   function fetch(c, options, aggregate, resolve, reject) {
-    var r, flds, i;
+    var r, flds;
     if (aggregate) {
       r = c.aggregate(aggregate, {}, function (err, data) {
         if (err) {
           return reject(err);
         }
-        var results = [];
-        if (data.length) {
-          for (i = 0; i < data.length; i++) {
-            results.push(data[i]);
-          }
-        }
+        var results = data;
         if (options.countTotal) {
           results.total = data.length ? data[0].count : 0;
         }
@@ -600,6 +696,7 @@ function MongoDs(config) {
           fetch(c, options, checkAggregation(options),
             function (r, amount) {
               if (Array.isArray(r)) {
+                r.forEach(mergeGeoJSON);
                 if (amount !== null) {
                   r.total = amount;
                 }
@@ -610,6 +707,7 @@ function MongoDs(config) {
                   if (err) {
                     return reject(err);
                   }
+                  docs.forEach(mergeGeoJSON);
                   if (amount !== null) {
                     docs.total = amount;
                   }
@@ -645,11 +743,11 @@ function MongoDs(config) {
             fetch(c, options, checkAggregation(options),
               function (r, amount) {
                 if (Array.isArray(r)) {
-                  r.forEach(cb);
+                  r.forEach(function (d) {cb(mergeGeoJSON(d));});
                 } else {
                   r.batchSize(options.batchSize || 1);
                   r.forEach(
-                    cb,
+                    function (d) {cb(mergeGeoJSON(d));},
                     function (err) {
                       r.close();
                       if (err) {
@@ -767,7 +865,7 @@ function MongoDs(config) {
             if (err) {
               return reject(err);
             }
-            resolve(result);
+            resolve(mergeGeoJSON(result));
           });
         });
       });

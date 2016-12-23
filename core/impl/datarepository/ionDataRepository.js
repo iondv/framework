@@ -14,7 +14,7 @@ const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
 
-/* jshint maxstatements: 100, maxcomplexity: 100 */
+/* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
  * @param {{}} options
  * @param {DataSource} options.dataSource
@@ -112,7 +112,7 @@ function IonDataRepository(options) {
     var descendants = this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
     var cnFilter = [cm.getCanonicalName()];
     for (var i = 0; i < descendants.length; i++) {
-      cnFilter[cnFilter.length] = descendants[i].getCanonicalName();
+      cnFilter.push(descendants[i].getCanonicalName());
     }
 
     if (!filter) {
@@ -137,7 +137,7 @@ function IonDataRepository(options) {
         if (props.hasOwnProperty(nm) && item.base.hasOwnProperty(nm)) {
           var c = {};
           c[nm] = item.base[nm];
-          conditions[conditions.length] = c;
+          conditions.push(c);
         }
       }
       return {$and: conditions};
@@ -571,7 +571,7 @@ function IonDataRepository(options) {
     var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
     var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
     if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-      throw new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!');
+      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
     }
     containCheckers.push({
       $joinExists: {
@@ -586,6 +586,66 @@ function IonDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
+   * @param {String[]} path
+   * @param {{}} filter
+   * @param {String} nm
+   * @param {Array} fetchers
+   * @param {{}} linkedCheckers
+   */
+  function prepareLinked(cm, path, filter, nm, fetchers, linkedCheckers) {
+    var i, lc, rMeta, n;
+    var pm = cm.getPropertyMeta(path[0]);
+    if (pm && pm.type === PropertyTypes.REFERENCE && path.length > 1) {
+      rMeta = pm._refClass;
+      if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
+        throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
+      }
+      if (linkedCheckers.hasOwnProperty(path[0])) {
+        lc = linkedCheckers[path[0]];
+      } else {
+        lc = {
+          $joinExists: {
+            table: tn(rMeta),
+            many: false,
+            left: pm.backRef ? cm.getKeyProperties()[0] : pm.name,
+            right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
+            filter: null,
+            forAttr: pm.name
+          }
+        };
+        linkedCheckers[path[0]] = lc;
+      }
+
+      var f = lc.$joinExists.filter || {$and: []};
+      var fo;
+      if (path.length === 2) {
+        fo = {};
+        fo[path[1]] = prepareFilterOption(rMeta, filter[nm], fetchers, fo, path[1]);
+        f.$and.push(fo);
+      } else {
+        var joins = {};
+        for (i = 0; i < f.$and.length; i++) {
+          if (f.$and[i].hasOwnProperty('$joinExists')) {
+            joins[f.$and[i].$joinExists.forAttr] = f.$and[i];
+          }
+        }
+        prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, joins);
+        for (n in joins) {
+          if (joins.hasOwnProperty(n)) {
+            if (f.$and.indexOf(joins[n]) < 0) {
+              f.$and.push(joins[n]);
+            }
+          }
+        }
+      }
+      if (f.$and.length) {
+        lc.$joinExists.filter = f;
+      }
+    }
+  }
+
+  /**
+   * @param {ClassMeta} cm
    * @param {{}} filter
    * @param {Array} fetchers
    * @param {{}} [parent]
@@ -594,7 +654,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
-    var i, knm, keys, pm, emptyResult, result, containCheckers;
+    var i, knm, nm, keys, pm, emptyResult, result, containCheckers, linkedCheckers;
     if (geoOperations.indexOf(part) !== -1) {
       return filter;
     } else if (filter && Array.isArray(filter)) {
@@ -606,8 +666,9 @@ function IonDataRepository(options) {
     } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
       result = {};
       containCheckers = [];
+      linkedCheckers = {};
       emptyResult = true;
-      for (var nm in filter) {
+      for (nm in filter) {
         if (filter.hasOwnProperty(nm)) {
           if ((pm = cm.getPropertyMeta(nm)) !== null) {
             if (pm.type === PropertyTypes.COLLECTION) {
@@ -640,10 +701,18 @@ function IonDataRepository(options) {
           } else if (nm === '$exists') {
             result[nm] = filter[nm];
             emptyResult = false;
+          } else if (nm.indexOf('.') > 0) {
+            prepareLinked(cm, nm.split('.'), filter, nm, fetchers, linkedCheckers);
           } else {
             result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, propertyMeta);
             emptyResult = false;
           }
+        }
+      }
+
+      for (nm in linkedCheckers) {
+        if (linkedCheckers.hasOwnProperty(nm)) {
+          containCheckers.push(linkedCheckers[nm]);
         }
       }
 
@@ -814,9 +883,10 @@ function IonDataRepository(options) {
    *
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    */
-  this._getItem = function (obj, id, nestingDepth) {
+  this._getItem = function (obj, id, options) {
     if (id && typeof obj === 'string') {
       return new Promise(function (resolve, reject) {
         var cm = _this._getMeta(obj);
@@ -834,7 +904,7 @@ function IonDataRepository(options) {
               loadFiles(item).
               then(
                 function (item) {
-                  return enrich([item], nestingDepth || 0);
+                  return enrich([item], options.nestingDepth || 0);
                 }
               ).
               then(
@@ -1300,7 +1370,7 @@ function IonDataRepository(options) {
           e.item.getItemId(),
           data,
           changeLogger,
-          nestingDepth,
+          {nestingDepth: nestingDepth},
           true
         );
       }
@@ -1314,10 +1384,11 @@ function IonDataRepository(options) {
    * @param {Object} data
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
-  this._createItem = function (classname, data, version, changeLogger, nestingDepth) {
+  this._createItem = function (classname, data, version, changeLogger, options) {
     // jshint maxcomplexity: 30
     return new Promise(function (resolve, reject) {
       try {
@@ -1356,7 +1427,7 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger)).
         then(
           function (item) {
             return calcProperties(item);
@@ -1374,11 +1445,12 @@ function IonDataRepository(options) {
    * @param {String} id
    * @param {{}} data
    * @param {ChangeLogger} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
-  this._editItem = function (classname, id, data, changeLogger, nestingDepth, suppresEvent) {
+  this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
     return new Promise(function (resolve, reject) {
       if (!id) {
         return reject(new Error('Не передан идентификатор объекта!'));
@@ -1432,7 +1504,7 @@ function IonDataRepository(options) {
             }
             return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler(nestingDepth, changeLogger)).
+          then(writeEventHandler(options.nestingDepth, changeLogger)).
           then(
             function (item) {
               return calcProperties(item);
@@ -1556,8 +1628,9 @@ function IonDataRepository(options) {
    * @param {String} classname
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    */
-  this._deleteItem = function (classname, id, changeLogger) {
+  this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
     var rcm = _this._getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
@@ -1744,9 +1817,10 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this._put = function (master, collection, details, changeLogger) {
+  this._put = function (master, collection, details, changeLogger, options) {
     return _editCollection(master, collection, details, changeLogger, true);
   };
 
@@ -1756,9 +1830,10 @@ function IonDataRepository(options) {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this._eject = function (master, collection, details, changeLogger) {
+  this._eject = function (master, collection, details, changeLogger, options) {
     return _editCollection(master, collection, details, changeLogger, false);
   };
 
