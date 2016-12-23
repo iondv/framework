@@ -1501,7 +1501,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
+              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1510,7 +1510,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates);
+              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
             }
           } catch (err) {
             reject(err);
@@ -1519,9 +1519,17 @@ function IonDataRepository(options) {
           var item = _this._wrap(data._class, data, data._classVer);
           return logChanges(changeLogger, {type: event, item: item, updates: updates});
         }).then(function (item) {
-          return updateBackRefs(item, cm, data, id || item.getItemId());
+          if (!options.ignoreIntegrityCheck) {
+            return updateBackRefs(item, cm, data, id || item.getItemId());
+          } else {
+            return item;
+          }
         }).then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
+          if (!options.ignoreIntegrityCheck) {
+            return refUpdator(item, refUpdates, changeLogger);
+          } else {
+            return item;
+          }
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
