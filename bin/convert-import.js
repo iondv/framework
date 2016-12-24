@@ -28,15 +28,24 @@ Promise.all(appPath.map(importApplications))
     console.error(err);
   });
 
+/**
+ * Функция возвращающая полученное значение, для замены нереализованные в конвертации функций
+ * @param {*} res
+ * @returns {*}
+ */
+function empty(res) {
+  return res;
+}
+
 function importApplications(appPathItem) {
   return new Promise(function (resolve, reject) {
-    const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference;
-    const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference;
-    const config = require(path.join(appPathItem, 'convert-import-app')).config;
-    const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders;
-    const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles;
-    const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles;
-    const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing;
+    const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference || {};
+    const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference || {};
+    const config = require(path.join(appPathItem, 'convert-import-app')).config || {};
+    const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
+    const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
+    const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles || empty;
+    const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing || empty;
 
     console.log('Импортируемые папки', importedFolders.toString());
 
@@ -54,6 +63,7 @@ function importApplications(appPathItem) {
          * @returns {Object} importedData.meta - структура метаданных, наименование объекта - класс с неймспейсом: adminTerritory@khv-svyaz-info
          * @returns {Object} importedData.parsed - объект с импортируемыми данными, где имена свойств имена исходных файлов
          * @returns {Object} importedData.path - путь к папкам импортируемых данных
+         * @returns {Object} importedData.pathData - путь к папке сохранения результатов импорта
          * @returns {Object} importedData.verify - объект с ключевыми данными верификации уникальности и связи объектов
          * @returns {Object} importedData.reference - обюъект с массивами объектов справочников в формате JSON, где имя свойства - имя класса с неймспоейсом: adminTerritory@khv-svyaz-info
          * @returns {Object} importedData.result  - именованный массивом объектов - имя с названием класса, значения - массив данных импорта
@@ -61,7 +71,10 @@ function importApplications(appPathItem) {
         function (res) {
           console.info('Считали мету, импортируем данные приложения', appPathItem);
           let importedData = {meta: res, parsed: {}, verify: {},
-            reference: importedBeforeReference, result: {}};  // Сформировали объект импорта
+            result: {}, pathData: pathToData};  // Сформировали объект импорта
+          if (importedBeforeReference) {
+            importedData.reference = importedBeforeReference;
+          }
           return importedData;
         })
       .then(getBeforeReference)
@@ -69,7 +82,6 @@ function importApplications(appPathItem) {
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
-          importedData.pathData = path.join(appPathItem, 'data');
           getImportedFiles(importedData, importedPath)
             .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
             .then((importedData) => {
@@ -93,6 +105,12 @@ function importApplications(appPathItem) {
             });
         }
 
+        /**
+         * Итератор импорта
+         * @param {Array} importedFolders
+         * @param {Number} i
+         * @param {Function} callback
+         */
         function importIterator(importedFolders, i, callback) {
           if (i === importedFolders.length) {
             callback (null);
