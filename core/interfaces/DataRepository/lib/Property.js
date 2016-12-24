@@ -6,6 +6,7 @@
 
 const PropertyTypes = require('core/PropertyTypes');
 const equal = require('core/equal');
+const scheduleToString = require('core/util/schedule').scheduleToString;
 
 // jshint maxstatements: 30, maxcomplexity: 20
 
@@ -121,6 +122,10 @@ function Property(item, propertyMeta, name) {
       } else {
         return '';
       }
+    }
+
+    if (this.getType() === PropertyTypes.SCHEDULE && v) {
+      return scheduleToString(v);
     }
     return v !== null ? v : '';
   };

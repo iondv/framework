@@ -328,6 +328,7 @@ function SecuredDataRepository(options) {
       resources.push(classPrefix + details[i].getClassName());
       resources.push(itemPrefix + details[i].getClassName() + '@' + details[i].getItemId());
     }
+    console.log('resources: ', resources);
     return resources;
   }
 
@@ -369,6 +370,9 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._put = function (master, collection, details, changeLogger, options) {
+    if (!details.length) {
+      return Promise.resolve();
+    }
     return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
       .then(function (permissions) {
         if (checkCollectionWriteAccess(master, collection, details, permissions)) {
@@ -390,6 +394,9 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._eject = function (master, collection, details, changeLogger, options) {
+    if (!details.length) {
+      return Promise.resolve();
+    }
     return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
       .then(function (permissions) {
         if (checkCollectionWriteAccess(master, collection, details, permissions)) {
