@@ -42,12 +42,13 @@ function importApplications(appPathItem) {
     const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference || {};
     const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference || {};
     const config = require(path.join(appPathItem, 'convert-import-app')).config || {};
-    const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
+    let importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
+    importedFolders = typeof importedFolders === 'string' ? [importedFolders] : importedFolders;
     const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
     const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles || empty;
     const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing || empty;
 
-    console.log('Импортируемые папки', importedFolders.toString());
+    console.info('Импортируемые папки', importedFolders.toString());
 
     const pathToData = path.join(appPathItem, 'data');
     if (!fs.existsSync(pathToData)) {
@@ -115,9 +116,9 @@ function importApplications(appPathItem) {
           if (i === importedFolders.length) {
             callback (null);
           } else {
-            console.log('Импортируем БД', importedFolders[i]);
+            console.info('Импортируем', importedFolders[i]);
             importAppBase(importedFolders[i], (err, qntSaved) => {
-              console.log('Закончили импорт БД %s, сохранено %s объектов', importedFolders[i], qntSaved);
+              console.info('Закончили импорт %s, сохранено %s объектов', importedFolders[i], qntSaved);
               if (err) {
                 callback (err);
               } else {
