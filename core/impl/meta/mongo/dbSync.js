@@ -241,13 +241,16 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return function (collection) {
-      function createIndexPromise(props, unique) {
+      function createIndexPromise(props, unique, nullable) {
         return new Promise(
           function (resolve) {
             var opts, i;
             opts = {};
             if (unique) {
               opts.unique = true;
+              if (nullable) {
+                opts.sparse = true;
+              }
             }
 
             var indexDef = {};
@@ -286,19 +289,23 @@ function MongoDbSync(options) {
       }
 
       return new Promise(function (resolve, reject) {
-        var i, promises;
+        var i, j, promises, tmp;
         promises = [];
         promises.push(createIndexPromise(cm.key, true));
         promises.push(createIndexPromise('_class', false));
 
         var fullText = [];
+        var props = {};
         for (i = 0; i < cm.properties.length; i++) {
+          props[cm.properties[i].name] = cm.properties[i];
           if (
             cm.properties[i].type === PropertyTypes.REFERENCE ||
             cm.properties[i].indexed ||
             cm.properties[i].unique
           ) {
-            promises.push(createIndexPromise(cm.properties[i].name, cm.properties[i].unique));
+            promises.push(
+              createIndexPromise(cm.properties[i].name, cm.properties[i].unique, cm.properties[i].nullable)
+            );
           }
 
           if (
@@ -316,7 +323,14 @@ function MongoDbSync(options) {
 
         if (cm.compositeIndexes) {
           for (i = 0; i < cm.compositeIndexes.length; i++) {
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique));
+            tmp = false;
+            for (j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
+              if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+                tmp = true;
+                break;
+              }
+            }
+            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
           }
         }
 
