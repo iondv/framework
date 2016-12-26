@@ -16,7 +16,7 @@ function DataRepository() {
    * @returns {Item}
    */
   this.wrap = function (className, data, version, options) {
-    return this._wrap(className, data, version, options);
+    return this._wrap(className, data, version, options || {});
   };
 
   /**
@@ -34,7 +34,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getCount  = function (obj, options) {
-    return this._getCount(obj, options);
+    return this._getCount(obj, options || {});
   };
 
   /**
@@ -49,7 +49,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getList = function (obj, options) {
-    return this._getList(obj, options);
+    return this._getList(obj, options || {});
   };
 
   /**
@@ -61,17 +61,18 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.aggregate = function (className, options) {
-    return this._aggregate(className, options);
+    return this._aggregate(className, options || {});
   };
 
   /**
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
-  this.getItem = function (obj, id, nestingDepth) {
-    return this._getItem(obj, id, nestingDepth);
+  this.getItem = function (obj, id, options) {
+    return this._getItem(obj, id, options || {});
   };
 
   /**
@@ -79,11 +80,12 @@ function DataRepository() {
    * @param {{}} data
    * @param {String} [version]
    * @param {ChangeLogger} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
-  this.createItem = function (className, data, version, changeLogger, nestingDepth) {
-    return this._createItem(className, data, version, changeLogger, nestingDepth);
+  this.createItem = function (className, data, version, changeLogger, options) {
+    return this._createItem(className, data, version, changeLogger, options || {});
   };
 
   /**
@@ -91,11 +93,12 @@ function DataRepository() {
    * @param {String} id
    * @param {{}} data
    * @param {ChangeLogger} [changeLogger]
-   * @param {Number} [nestingDepth]
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
-  this.editItem = function (className, id, data, changeLogger, nestingDepth) {
-    return this._editItem(className, id, data, changeLogger, nestingDepth);
+  this.editItem = function (className, id, data, changeLogger, options) {
+    return this._editItem(className, id, data, changeLogger, options || {});
   };
 
   /**
@@ -110,17 +113,18 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.saveItem = function (className, id, data, version, changeLogger, options) {
-    return this._saveItem(className, id, data, version, changeLogger, options);
+    return this._saveItem(className, id, data, version, changeLogger, options || {});
   };
 
   /**
    * @param {String} className
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this.deleteItem = function (className, id, changeLogger) {
-    return this._deleteItem(className, id, changeLogger);
+  this.deleteItem = function (className, id, changeLogger, options) {
+    return this._deleteItem(className, id, changeLogger, options || {});
   };
 
   /**
@@ -128,10 +132,11 @@ function DataRepository() {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this.put = function (master, collection, details, changeLogger) {
-    return this._put(master, collection, details, changeLogger);
+  this.put = function (master, collection, details, changeLogger, options) {
+    return this._put(master, collection, details, changeLogger, options || {});
   };
 
   /**
@@ -139,10 +144,11 @@ function DataRepository() {
    * @param {String} collection
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this.eject = function (master, collection, details, changeLogger) {
-    return this._eject(master, collection, details, changeLogger);
+  this.eject = function (master, collection, details, changeLogger, options) {
+    return this._eject(master, collection, details, changeLogger, options || {});
   };
 
   /**
@@ -158,7 +164,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsList = function (master, collection, options) {
-    return this._getAssociationsList(master, collection, options);
+    return this._getAssociationsList(master, collection, options || {});
   };
 
   /**
@@ -174,7 +180,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsCount = function (master, collection, options) {
-    return this._getAssociationsCount(master, collection, options);
+    return this._getAssociationsCount(master, collection, options || {});
   };
 }
 

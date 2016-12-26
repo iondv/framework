@@ -188,9 +188,10 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
+   * @param {String} user
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name) {
+  this._performTransition = function (item, workflow, name, user) {
     return _this._getStatus(item).then(function (status) {
       return new Promise(function (resolve, reject) {
         if (status.stages.hasOwnProperty(workflow)) {
@@ -266,7 +267,9 @@ function WorkflowProvider(options) {
                         return options.dataRepo.editItem(
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),
-                          updates
+                          updates,
+                          null,
+                          {uid: user}
                         );
                       }
                       return new Promise(function (resolve) {
