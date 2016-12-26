@@ -6,6 +6,20 @@ var contexts = {};
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
+function createProxy(scope, name) {
+  return new Proxy({}, {
+    get: function (target, property) {
+      return scope[name][property];
+    },
+    set: function (target, property, value) {
+      scope[name][property] = value;
+    },
+    getPrototypeOf: function () {
+      return Object.getPrototypeOf(scope[name]);
+    }
+  });
+}
+
 /**
  * @param {{}} options
  * @param {{}} components
@@ -70,6 +84,8 @@ function processOptions(options, scope, components, init, skip, cwd) {
         } else {
           return null;
         }
+      } else if (options.substr(0, 7) === 'lazy://') {
+        return createProxy(scope, options.substr(7));
       }
       return options;
     } else if (options instanceof Array) {
@@ -144,27 +160,36 @@ function componentInitConstructor(component, method, scope) {
 
 function levelConstructor(initLoaders) {
   return function () {
-    var promises = [];
+    var p;
     for (var i = 0; i < initLoaders.length; i++) {
-      promises.push(initLoaders[i]());
+      if (p) {
+        p = p.then(initLoaders[i]);
+      } else {
+        p = initLoaders[i]();
+      }
     }
-    return Promise.all(promises);
+    if (p) {
+      return p;
+    }
+    return Promise.resolve();
   };
 }
 
-function diInit(levels, level) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      if (level >= levels.length) {
-        resolve();
-        return;
-      }
+function diInit(levels) {
+  var p;
+  for (var i = 0; i < levels.length; i++) {
+    if (p) {
+      p = p.then(levels[i]);
+    } else {
+      p = levels[i]();
+    }
+  }
 
-      levels[level]().then(diInit(levels, level + 1)).
-      then(resolve).
-      catch(reject);
-    });
-  };
+  if (p) {
+    return p;
+  }
+
+  return Promise.resolve();
 }
 
 /**
@@ -238,13 +263,12 @@ function di(context, components, presets, parentContext, skip, cwd) {
     }
   }
 
-  return new Promise(function (resolve, reject) {
-    diInit(initLevels, 0, scope)().then(
+  return diInit(initLevels)
+    .then(
       function () {
-        resolve(scope);
-      }).
-    catch(reject);
-  });
+        return Promise.resolve(scope);
+      }
+    );
 }
 
 module.exports = di;

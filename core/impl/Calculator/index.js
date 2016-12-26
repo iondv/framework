@@ -12,6 +12,7 @@ const aggreg = require('./func/aggreg');
 /**
  * @param {{}} options
  * @param {DataRepository | String} options.dataRepo
+ * @param {Logger} [options.log]
  * @constructor
  */
 function Calculator(options) {
@@ -103,6 +104,11 @@ function Calculator(options) {
     };
   }
 
+  function warn(msg) {
+    var log = options.log || console;
+    log.warn(msg);
+  }
+
   /**
    * @param {String} formula
    * @returns {*}
@@ -128,6 +134,8 @@ function Calculator(options) {
 
       if (funcLib.hasOwnProperty(func)) {
         return funcLib[func](args);
+      } else {
+        warn('Не найдена функция ' + func);
       }
     }
 
@@ -142,7 +150,12 @@ function Calculator(options) {
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    return evaluate(formula.trim());
+    var f = evaluate(formula.trim());
+    if (typeof f === 'function') {
+      return f;
+    }
+    warn('Не удалось распознать формулу: ' + formula);
+    return null;
   };
 }
 
