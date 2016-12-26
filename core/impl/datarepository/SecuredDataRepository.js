@@ -328,7 +328,6 @@ function SecuredDataRepository(options) {
       resources.push(classPrefix + details[i].getClassName());
       resources.push(itemPrefix + details[i].getClassName() + '@' + details[i].getItemId());
     }
-    console.log('resources: ', resources);
     return resources;
   }
 
