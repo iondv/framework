@@ -270,7 +270,7 @@ function IonDataRepository(options) {
   /**
    * @param {Item[]} src
    * @param {Number} depth
-   * @param {String[][]} forced
+   * @param {String[][]} [forced]
    * @returns {Promise}
    */
   function enrich(src, depth, forced) {
@@ -827,8 +827,8 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
-    then(function (data) {
-      return new Promise(function (resolve, reject) {
+    then(
+      function (data) {
         var result = [];
         var fl = [];
         try {
@@ -837,17 +837,17 @@ function IonDataRepository(options) {
             fl.push(loadFiles(result[i]));
           }
         } catch (err) {
-          return reject(err);
+          return Promise.reject(err);
         }
 
         if (typeof data.total !== 'undefined' && data.total !== null) {
           result.total = data.total;
         }
-        Promise.all(fl).then(function () {
-          resolve(result);
-        }).catch(reject);
-      });
-    }).
+        return Promise.all(fl).then(function () {
+          return Promise.resolve(result);
+        });
+      }
+    ).
     then(
       function (result) {
         return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
@@ -892,11 +892,10 @@ function IonDataRepository(options) {
         var cm = _this._getMeta(obj);
         var rcm = _this._getRootType(cm);
         var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        if (conditions === null) {
+        if (conditions  === null) {
           return resolve(null);
         }
-        _this.ds.get(tn(rcm), conditions).
-        then(function (data) {
+        _this.ds.get(tn(rcm), conditions).then(function (data) {
           var item = null;
           if (data) {
             try {
@@ -1389,6 +1388,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
+    options = options || {};
     // jshint maxcomplexity: 30
     return new Promise(function (resolve, reject) {
       try {
@@ -1451,6 +1451,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
+    options = options || {};
     return new Promise(function (resolve, reject) {
       if (!id) {
         return reject(new Error('Не передан идентификатор объекта!'));
@@ -1530,9 +1531,11 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
+    options = options || {};
     return new Promise(function (resolve, reject) {
       var fileSavers = [];
       try {
@@ -1567,14 +1570,21 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-
               chr = checkRequired(cm, updates, false);
-              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
+              if (chr !== true && options.ignoreIntegrityCheck) {
+                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
+                chr = true;// Если задано игнорировать целостность - игнорируем
+              }
+              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
               chr = checkRequired(cm, updates, false);
-              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates);
+              if (chr !== true && options.ignoreIntegrityCheck) {
+                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
+                chr = true;// Если задано игнорировать целостность - игнорируем
+              }
+              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
             }
           } catch (err) {
             reject(err);
@@ -1583,9 +1593,17 @@ function IonDataRepository(options) {
           var item = _this._wrap(data._class, data, data._classVer);
           return logChanges(changeLogger, {type: event, item: item, updates: updates});
         }).then(function (item) {
-          return updateBackRefs(item, cm, data, id || item.getItemId());
+          if (!options.ignoreIntegrityCheck) {
+            return updateBackRefs(item, cm, data, id || item.getItemId());
+          } else {
+            return item;
+          }
         }).then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
+          if (!options.ignoreIntegrityCheck) {
+            return refUpdator(item, refUpdates, changeLogger);
+          } else {
+            return item;
+          }
         }).then(function (item) {
           return loadFiles(item);
         }).then(function (item) {
@@ -1621,7 +1639,8 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
       var item = _this._wrap(classname, conditions);
-      _this.ds.delete(tn(rcm), conditions).then(function () {
+      _this.ds.delete(tn(rcm), conditions).
+      then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
       }).
       then(

@@ -149,7 +149,7 @@ function ConditionParser(condition, rcm, context) {
   } else {
     if (condition.property) {
       result = {};
-      switch (condition.operation) {
+      switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
           result.$or = [{}, {}, {}];
           result.$or[0][condition.property] = {$eq: null};
@@ -178,7 +178,7 @@ function ConditionParser(condition, rcm, context) {
           result[condition.property] = produceFilter(condition, '$lte', rcm, context); break;
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
-        case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value, context))}; break;
+        case ConditionTypes.LIKE: result[condition.property] = {$regex: toScalar(condition.value, context)}; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
       if (result.hasOwnProperty(condition.property)) {

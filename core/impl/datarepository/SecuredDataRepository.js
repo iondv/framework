@@ -122,7 +122,7 @@ function SecuredDataRepository(options) {
   }
 
   function rejectByItem(className, id) {
-    return Promise.reject(new Error('Нет прав на чтение объекта ' + className + '@' + id));
+    return Promise.reject(new Error('Недостаточно прав на объект ' + className + '@' + id));
   }
 
   /**
@@ -217,7 +217,9 @@ function SecuredDataRepository(options) {
     return aclProvider.getPermissions(options.uid, [classPrefix + cname, itemPrefix + cname + '@' + id])
       .then(function (permissions) {
         if (
+          permissions[classPrefix + cname] &&
           permissions[classPrefix + cname][Permissions.READ] ||
+          permissions[itemPrefix + cname + '@' + id] &&
           permissions[itemPrefix + cname + '@' + id][Permissions.READ]) {
           return dataRepo.getItem(obj, id, options);
         }
@@ -257,8 +259,11 @@ function SecuredDataRepository(options) {
     return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then(function (permissions) {
         if (
+          permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE] ||
-          permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]) {
+          permissions[itemPrefix + classname + '@' + id] &&
+          permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]
+        ) {
           return dataRepo.editItem(classname, id, data, changeLogger, options);
         }
         return rejectByItem(classname, id);
@@ -281,8 +286,10 @@ function SecuredDataRepository(options) {
     return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then(function (permissions) {
         if (
-          permissions[classPrefix + classname][Permissions.WRITE] ||
-          permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]) {
+          permissions[classPrefix + classname] && permissions[classPrefix + classname][Permissions.WRITE] ||
+            permissions[itemPrefix + classname + '@' + id] &&
+            permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]
+        ) {
           return dataRepo.saveItem(classname, id, data, version, changeLogger, options);
         }
         return rejectByItem(classname, id);
@@ -300,8 +307,10 @@ function SecuredDataRepository(options) {
     return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then(function (permissions) {
         if (
-          permissions[classPrefix + classname][Permissions.DELETE] ||
-          permissions[itemPrefix + classname + '@' + id][Permissions.DELETE]) {
+          permissions[classPrefix + classname] && permissions[classPrefix + classname][Permissions.DELETE] ||
+            permissions[itemPrefix + classname + '@' + id] &&
+            permissions[itemPrefix + classname + '@' + id][Permissions.DELETE]
+        ) {
           return dataRepo.deleteItem(classname, id, changeLogger);
         }
         return rejectByItem(classname, id);
@@ -324,8 +333,11 @@ function SecuredDataRepository(options) {
 
   function checkCollectionWriteAccess(master, collection, details, permissions) {
     if (
-      !permissions[classPrefix + master.getClassName()][Permissions.WRITE] &&
-      !permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.WRITE]
+      !(
+        permissions[classPrefix + master.getClassName()] &&
+        permissions[classPrefix + master.getClassName()][Permissions.WRITE]) &&
+      !(permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
+        permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.WRITE])
     ) {
       return false;
     }
@@ -336,8 +348,10 @@ function SecuredDataRepository(options) {
     */
     for (var i = 0; i < details.length; i++) {
       if (
-        !permissions[classPrefix + details[i].getClassName()][Permissions.READ] &&
-        !permissions[itemPrefix + details[i].getClassName() + '@' + details[i].getItemId()][Permissions.READ]
+        !(permissions[classPrefix + details[i].getClassName()] &&
+          permissions[classPrefix + details[i].getClassName()][Permissions.READ]) &&
+        !(permissions[itemPrefix + details[i].getClassName() + '@' + details[i].getItemId()] &&
+          permissions[itemPrefix + details[i].getClassName() + '@' + details[i].getItemId()][Permissions.READ])
       ) {
         return false;
       }
@@ -355,6 +369,9 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._put = function (master, collection, details, changeLogger, options) {
+    if (!details.length) {
+      return Promise.resolve();
+    }
     return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
       .then(function (permissions) {
         if (checkCollectionWriteAccess(master, collection, details, permissions)) {
@@ -376,6 +393,9 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._eject = function (master, collection, details, changeLogger, options) {
+    if (!details.length) {
+      return Promise.resolve();
+    }
     return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
       .then(function (permissions) {
         if (checkCollectionWriteAccess(master, collection, details, permissions)) {
@@ -410,8 +430,10 @@ function SecuredDataRepository(options) {
       ])
       .then(function (permissions) {
         if (
-            permissions[classPrefix + master.getClassName()][Permissions.READ] ||
-            permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
+          permissions[classPrefix + master.getClassName()] &&
+          permissions[classPrefix + master.getClassName()][Permissions.READ] ||
+          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
+          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
         ) {
           return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);
         }
@@ -443,7 +465,9 @@ function SecuredDataRepository(options) {
       ])
       .then(function (permissions) {
         if (
+          permissions[classPrefix + master.getClassName()] &&
           permissions[classPrefix + master.getClassName()][Permissions.READ] ||
+          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
           permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
         ) {
           return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);

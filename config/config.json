@@ -73,7 +73,7 @@
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "app": "ion://application",
           "logger": "ion://sysLog",
@@ -87,7 +87,7 @@
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
-        "initLevel": 2,
+        "initLevel": 1,
         "options": {
           "dataRepo": "dataRepo"
         }
@@ -95,7 +95,7 @@
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "dataSource": "ion://Db",
           "calc": "ion://calculator",
@@ -111,7 +111,7 @@
       },
       "fileStorage": {
         "module": "core/impl/resource/FsStorage",
-        "initMethod":"_init",
+        "initMethod":"init",
         "initLevel": 1,
         "options": {
           "storageBase": "[[fs.storageRoot]]",
@@ -121,7 +121,6 @@
       },
       "imageStorage": {
         "module": "core/impl/resource/ImageStorage",
-        "initLevel": 1,
         "options": {
           "fileStorage": "ion://fileStorage",
           "thumbnails": {
@@ -150,6 +149,7 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
+          "cacheRepository": "[[cache.module]]",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
@@ -159,6 +159,40 @@
               "metaRepo": "ion://metaRepo"
             }
           }
+        }
+      },
+      "innerCache": {
+        "module": "core/impl/cache/InnerCacheRepository",
+        "options": {}
+      },
+      "memcached": {
+        "module": "core/impl/cache/memcached/MemcachedRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.memcached.enabled]]",
+          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "connectOptions": {},
+          "lifetime": "[[cache.memcached.timeout]]",
+          "log": "ion://sysLog"
+        }
+      },
+      "redis": {
+        "module": "core/impl/cache/redis/RedisRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.redis.enabled]]",
+          "host": "[[cache.redis.host]]",
+          "port": "[[cache.redis.port]]",
+          "log": "ion://sysLog"
+        }
+      },
+      "cachedDataRepo": {
+        "module": "core/impl/datarepository/CachedDataRepository",
+        "options": {
+          "data": "lazy://dataRepo",
+          "cache": "[[cache.module]]"
         }
       },
       "aclProvider":{
@@ -172,7 +206,7 @@
       "securedDataRepo": {
         "module": "core/impl/datarepository/SecuredDataRepository",
         "options": {
-          "data": "lazy://dataRepo",
+          "data": "ion://cachedDataRepo",
           "meta": "ion://metaRepo",
           "acl": "ion://aclProvider"
         }
