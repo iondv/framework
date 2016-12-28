@@ -41,7 +41,6 @@ function toScalar(v, context) {
  */
 function produceContainsFilter(rcm, condition, context) {
   var pm = rcm.getPropertyMeta(condition.property);
-  console.log('кондинсьён', condition);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
       if (condition.value && condition.value.length) {
