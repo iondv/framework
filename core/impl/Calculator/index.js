@@ -100,7 +100,7 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      return this.get(nm);
+      return this.property(nm).evaluate();
     };
   }
 

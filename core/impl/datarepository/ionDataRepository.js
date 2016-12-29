@@ -1388,6 +1388,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
+    options = options || {};
     // jshint maxcomplexity: 30
     return new Promise(function (resolve, reject) {
       try {
@@ -1450,6 +1451,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
+    options = options || {};
     return new Promise(function (resolve, reject) {
       if (!id) {
         return reject(new Error('Не передан идентификатор объекта!'));
@@ -1533,6 +1535,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
+    options = options || {};
     return new Promise(function (resolve, reject) {
       var fileSavers = [];
       try {
