@@ -19,7 +19,7 @@ const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
  * @returns {*}
  */
 function toScalar(v, context) {
-  var result = null;
+  var result = v;
   var p;
   if (Array.isArray(v) && v.length) {
     result = v.length ? v[0] : null;
