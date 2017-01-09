@@ -13,7 +13,6 @@ const xpath = require('xpath');
 const Dom = require('xmldom').DOMParser;
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const utf8 = require('utf8');
 
 // jshint maxstatements: 30, maxcomplexity: 20
 
@@ -30,7 +29,7 @@ function OwnCloudStorage(config) {
   var urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
-    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
+    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
   };
 
   var resourceType = {
@@ -379,12 +378,16 @@ function OwnCloudStorage(config) {
   /**
    *
    * @param {String} id
+   * @param {String} access
    * @returns {Promise}
    */
-  this._share = function (id) {
+  this._share = function (id, access) {
     return new Promise(function (resolve,reject) {
       var reqObject = {
         uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
+        qs: {
+          format: 'json'
+        },
         auth: {
           user: config.login,
           password: config.password
@@ -393,7 +396,7 @@ function OwnCloudStorage(config) {
           path: id,
           shareType: '3',
           publicUpload: 'true',
-          permissions: '8'
+          permissions: access ? access : '8'
         }
       };
       request.post(reqObject, function (err, res, body) {
@@ -406,6 +409,77 @@ function OwnCloudStorage(config) {
           return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
+    });
+  };
+
+  function requestShareIds(id) {
+    return new Promise(function (resolve, reject) {
+      var reqObject = {
+        uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
+        qs: {
+          path: id
+        },
+        auth: {
+          user: config.login,
+          password: config.password
+        }
+      };
+      request.get(reqObject, function (err, res, body) {
+        if (err) {
+          return reject(err);
+        }
+        var ids = [];
+        var dom = new Dom();
+        var doc = dom.parseFromString(body);
+        var elements = xpath.select(
+          '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
+          doc
+        );
+        for (var i = 0; i < elements.length; i++) {
+          var shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
+          if (shareId) {
+            ids.push(shareId);
+          }
+        }
+        resolve(ids);
+      });
+    });
+  }
+
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this._setShareAccess = function (id, access) {
+    id = parseDirId(id);
+    return new Promise(function (resolve, reject) {
+      requestShareIds(id).then(function (ids) {
+        var promises = [];
+        ids.forEach(function (shareId) {
+          promises.push(new Promise(function (resolve, reject) {
+            var reqObject = {
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId),
+              auth: {
+                user: config.login,
+                password: config.password
+              },
+              form: {
+                permissions: access ? access : '8'
+              }
+            };
+            request.put(reqObject, function (err, res) {
+              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+                resolve(true);
+              } else {
+                return reject(err || new Error('Status code:' + res.statusCode));
+              }
+            });
+          }));
+        });
+        Promise.all(promises).then(resolve).catch(reject);
+      }).catch(reject);
     });
   };
 

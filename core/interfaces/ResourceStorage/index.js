@@ -107,6 +107,16 @@ function ResourceStorage() {
   this.share = function (id) {
     return this._share(id);
   };
+
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this.setShareAccess  = function (id, access) {
+    return this._setShareAccess(id, access);
+  };
 }
 
 module.exports.ResourceStorage = ResourceStorage;
