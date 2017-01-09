@@ -39,7 +39,7 @@ function MongoDs(config) {
   /**
    * @returns {Promise}
    */
-  this.openDb = function () {
+  function openDb() {
     return new Promise(function (resolve, reject) {
       if (_this.db && _this.isOpen) {
         return resolve(_this.db);
@@ -74,7 +74,7 @@ function MongoDs(config) {
         });
       }
     });
-  };
+  }
 
   this._connection = function () {
     if (this.isOpen) {
@@ -84,7 +84,7 @@ function MongoDs(config) {
   };
 
   this._open = function () {
-    return this.openDb();
+    return openDb();
   };
 
   this._close = function () {
@@ -110,9 +110,9 @@ function MongoDs(config) {
    * @param {String} type
    * @returns {Promise}
    */
-  this.getCollection = function (type) {
+  function getCollection(type) {
     return new Promise(function (resolve, reject) {
-      _this.openDb().then(function () {
+      openDb().then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         _this.db.collection(type, {strict: true}, function (err, c) {
           if (!c) {
@@ -132,10 +132,10 @@ function MongoDs(config) {
         });
       }).catch(reject);
     });
-  };
+  }
 
   this._delete = function (type, conditions) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           c.deleteMany(conditions,
@@ -152,7 +152,7 @@ function MongoDs(config) {
 
   function getAutoInc(type) {
     return new Promise(function (resolve, reject) {
-      _this.getCollection(AUTOINC_COLLECTION).then(
+      getCollection(AUTOINC_COLLECTION).then(
         /**
          * @param {Collection} autoinc
          */
@@ -296,7 +296,7 @@ function MongoDs(config) {
   }
 
   this._insert = function (type, data) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           autoInc(type, data)
@@ -364,7 +364,7 @@ function MongoDs(config) {
     });
   }
 
-  this.doUpdate = function (type, conditions, data, upsert, multi) {
+  function doUpdate(type, conditions, data, upsert, multi) {
     var hasData = false;
     if (data) {
       for (var nm in data) {
@@ -382,7 +382,7 @@ function MongoDs(config) {
       return _this._get(type, conditions);
     }
 
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return cleanNulls(c, type, prepareGeoJSON(data))
           .then(
@@ -424,14 +424,14 @@ function MongoDs(config) {
             }
           );
       });
-  };
+  }
 
   this._update = function (type, conditions, data) {
-    return this.doUpdate(type, conditions, data, false, false);
+    return doUpdate(type, conditions, data, false, false);
   };
 
   this._upsert = function (type, conditions, data) {
-    return this.doUpdate(type, conditions, data, true, false);
+    return doUpdate(type, conditions, data, true, false);
   };
 
   function addPrefix(nm, prefix, sep) {
@@ -690,7 +690,7 @@ function MongoDs(config) {
    */
   this._fetch = function (type, options) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           fetch(c, options, checkAggregation(options),
@@ -736,7 +736,7 @@ function MongoDs(config) {
    */
   this._forEach = function (type, options, cb) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           try {
@@ -776,7 +776,7 @@ function MongoDs(config) {
    */
   this._aggregate = function (type, options) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           if (!options.expressions) {
@@ -835,7 +835,7 @@ function MongoDs(config) {
   };
 
   this._count = function (type, options) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           var opts = {};
@@ -858,7 +858,7 @@ function MongoDs(config) {
   };
 
   this._get = function (type, conditions) {
-    return _this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
@@ -878,7 +878,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._ensureIndex = function (type, properties, options) {
-    return _this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve) {
           c.createIndex(properties, options || {}, function () {
@@ -908,7 +908,7 @@ function MongoDs(config) {
 
       if (act) {
         return new Promise(function (resolve, reject) {
-          _this.getCollection(AUTOINC_COLLECTION).then(
+          getCollection(AUTOINC_COLLECTION).then(
             function (c) {
               c.findOne({type: type}, function (err, r) {
                 if (err) {
@@ -940,7 +940,7 @@ function MongoDs(config) {
         });
       }
     }
-    return new Promise(function (resolve) { resolve(); });
+    return Promise.resolve();
   };
 }
 

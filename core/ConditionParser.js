@@ -52,7 +52,7 @@ function produceContainsFilter(rcm, condition, context) {
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
       return {$regex: toScalar(condition.value, context)};
     } else {
-      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
     throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
