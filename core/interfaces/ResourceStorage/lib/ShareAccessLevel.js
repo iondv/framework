@@ -4,6 +4,6 @@
 'use strict';
 
 module.exports = {
-  READ: '1',
-  WRITE: '8'
+  READ: 'read',
+  WRITE: 'write'
 };

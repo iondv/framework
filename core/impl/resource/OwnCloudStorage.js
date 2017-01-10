@@ -13,6 +13,7 @@ const xpath = require('xpath');
 const Dom = require('xmldom').DOMParser;
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
+const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 
 // jshint maxstatements: 30, maxcomplexity: 20
 
@@ -375,6 +376,14 @@ function OwnCloudStorage(config) {
     return _this.remove(urlResolver(slashChecker(dirId), fileId));
   };
 
+  function accessLevel(level) {
+    switch (level) {
+      case ShareAccessLevel.READ: return '1';
+      case ShareAccessLevel.WRITE: return '8';
+    }
+    throw new Error('Некорректное значение уровня доступа!');
+  }
+
   /**
    *
    * @param {String} id
@@ -396,7 +405,7 @@ function OwnCloudStorage(config) {
           path: id,
           shareType: '3',
           publicUpload: 'true',
-          permissions: access ? access : '8'
+          permissions: access ? accessLevel(access) : '8'
         }
       };
       request.post(reqObject, function (err, res, body) {
@@ -466,7 +475,7 @@ function OwnCloudStorage(config) {
                 password: config.password
               },
               form: {
-                permissions: access ? access : '8'
+                permissions: accessLevel(access)
               }
             };
             request.put(reqObject, function (err, res) {
