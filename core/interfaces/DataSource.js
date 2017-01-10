@@ -69,8 +69,8 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -94,8 +94,8 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -109,9 +109,10 @@ function DataSource() {
 
   /**
    * @param {String} type
-   * @param {{expressions: {}}} options
+   * @param {{}} options
    * @param {{}} [options.filter]
-   * @param {{}} [options.grouping]
+   * @param {{}} [options.fields]
+   * @param {{}} [options.aggregates]
    * @returns {Promise}
    */
   this.aggregate = function (type, options) {

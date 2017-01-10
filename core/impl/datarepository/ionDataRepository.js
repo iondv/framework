@@ -819,10 +819,10 @@ function IonDataRepository(options) {
     }
     var cm = this._getMeta(obj);
     var rcm = this._getRootType(cm);
-    options.attributes = ['_class', '_classVer'];
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.attributes.push(props[i].name);
+      options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);

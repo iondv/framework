@@ -13,7 +13,7 @@ const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 30
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -540,21 +540,106 @@ function MongoDs(config) {
   }
 
   /**
+   * @param {String} lexem
+   * @param {String[]} attributes
+   * @param {{}} joinedSources
+   */
+  function checkAttrLexem(lexem, attributes, joinedSources) {
+    var tmp = lexem.indexOf('.') < 0 ? lexem : lexem.substr(0, lexem.indexOf('.'));
+    if (tmp === '$' && !joinedSources.hasOwnProperty(tmp)) {
+      tmp = tmp.substr(1);
+      if (attributes.indexOf(tmp) < 0) {
+        attributes.push(tmp);
+      }
+    }
+  }
+
+  /**
+   * @param {{}} expr
+   * @param {String[]} attributes
+   * @param {{}} joinedSources
+   */
+  function checkAttrExpr(expr, attributes, joinedSources) {
+    if (typeof expr === 'string') {
+      return checkAttrLexem(expr, attributes, joinedSources);
+    }
+
+    if (typeof expr === 'object') {
+      for (var nm in expr) {
+        if (expr.hasOwnProperty(nm)) {
+          if (nm[0] !== '$') {
+            checkAttrLexem('$' + nm, attributes, joinedSources);
+          }
+          checkAttrExpr(expr[nm], attributes, joinedSources);
+        }
+      }
+    }
+  }
+
+  function processJoin(result, leftPrefix) {
+    return function (join) {
+      result.push({
+        $lookup: {
+          from: join.table,
+          localField: leftPrefix + join.left,
+          foreignField: join.right,
+          as: leftPrefix + join.name
+        }
+      });
+      result.push({$unwind: '$' + leftPrefix + join.name});
+      if (join.join) {
+        processJoin(result, leftPrefix + join.name + '.')(join.join);
+      }
+    };
+  }
+
+  /**
    * @param {{}} options
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
+   * @param {{}} [options.aggregates]
+   * @param {{}} [options.joins]
    * @param {{}} [options.sort]
+   * @param {String} [options.to]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @returns {*}
    */
   function checkAggregation(options) {
+    var attributes = [];
+    var i, tmp;
+    var joinedSources = {};
+    var result = [];
+    if (Array.isArray(options.joins)) {
+      for (i = 0; i < options.joins.length; i++) {
+        if (attributes.indexOf(options.joins[i].left) < 0) {
+          attributes.push(options.joins[i].left);
+          joinedSources[options.joins[i].name] = true;
+        }
+      }
+    }
+
+    if (options.fields) {
+      for (tmp in options.fields) {
+        if (options.fields.hasOwnProperty(tmp)) {
+          checkAttrExpr(options.fields[tmp], attributes, joinedSources);
+        }
+      }
+    }
+
+    if (options.aggregates) {
+      for (tmp in options.aggregates) {
+        if (options.expressions.hasOwnProperty(tmp)) {
+          checkAttrExpr(options.expressions[tmp], attributes, joinedSources);
+        }
+      }
+    }
+
     if (options.filter) {
       var exists = [];
-      var match = produceMatchObject(options.attributes, options.filter, exists);
+      var match = produceMatchObject(attributes, options.filter, exists);
       if (exists.length) {
-        var result = [];
         result.push({$match: match});
         result = result.concat(exists);
 
@@ -563,8 +648,8 @@ function MongoDs(config) {
             throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
           }
 
-          var tmp = {};
-          for (var i = 0; i < options.attributes.length; i++) {
+          tmp = {};
+          for (i = 0; i < options.attributes.length; i++) {
             tmp[options.attributes[i]] = 1;
           }
 
@@ -574,21 +659,29 @@ function MongoDs(config) {
             $project: tmp
           });
         }
-
-        if (options.sort) {
-          result.push({$sort: options.sort});
-        }
-
-        if (options.offset) {
-          result.push({$skip: options.offset});
-        }
-
-        if (options.count) {
-          result.push({$limit: options.count});
-        }
-        return result;
       }
     }
+
+    if (Array.isArray(options.joins)) {
+      options.joins.forEach(processJoin(result));
+    }
+
+    if (options.sort) {
+      result.push({$sort: options.sort});
+    }
+
+    if (options.offset) {
+      result.push({$skip: options.offset});
+    }
+
+    if (options.count) {
+      result.push({$limit: options.count});
+    }
+
+    if (options.to) {
+      result.push({$out: options.to});
+    }
+
     return false;
   }
 
@@ -623,8 +716,8 @@ function MongoDs(config) {
   /**
    * @param {Collection} c
    * @param {{}} options
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -680,8 +773,8 @@ function MongoDs(config) {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -725,8 +818,8 @@ function MongoDs(config) {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -771,7 +864,8 @@ function MongoDs(config) {
    * @param {String} type
    * @param {{expressions: {}}} options
    * @param {{}} [options.filter]
-   * @param {{}} [options.grouping]
+   * @param {{}} [options.fields]
+   * @param {{}} [options.aggregates]
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
@@ -779,42 +873,23 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          if (!options.expressions) {
-            return reject(new Error('Не указано выражение агрегации!'));
-          }
-          var i;
-          var plan = [];
-          if (options.filter) {
-            plan.push({
-              $match: options.filter
-            });
+          var plan = checkAggregation(options) || [];
+
+          var expr = {$group: {}};
+          if (options.fields) {
+            expr.$group._id = options.fields;
           }
 
-          var groupings = null;
-          if (options.groupBy) {
-            groupings = {};
-            for (i = 0; i < options.groupBy.length; i++) {
-              groupings[options.groupBy[i]] = '$' + options.groupBy[i];
-            }
-          }
-
-          var expr = {
-            $group: {
-              _id: groupings
-            }
-          };
-
-          var alias, oper, attr;
-          for (alias in options.expressions) {
-            if (options.expressions.hasOwnProperty(alias)) {
-              for (oper in options.expressions[alias]) {
-                if (options.expressions[alias].hasOwnProperty(oper)) {
-                  attr = options.expressions[alias][oper];
+          var alias, oper;
+          for (alias in options.aggregates) {
+            if (options.aggregates.hasOwnProperty(alias)) {
+              for (oper in options.aggregates[alias]) {
+                if (options.aggregates[alias].hasOwnProperty(oper)) {
                   if (oper === 'count') {
                     expr.$group[alias] = {$sum: 1};
                   } else if (oper === 'sum' || oper === 'avg' || oper === 'min' || oper === 'max') {
                     expr.$group[alias] = {};
-                    expr.$group[alias]['$' + oper] = '$' + attr;
+                    expr.$group[alias]['$' + oper] = options.aggregates[alias][oper];
                   }
                 }
               }
