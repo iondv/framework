@@ -102,10 +102,21 @@ function ResourceStorage() {
   /**
    *
    * @param {String} id
+   * @param {String} [access]
    * @returns {Promise}
    */
-  this.share = function (id) {
-    return this._share(id);
+  this.share = function (id, access) {
+    return this._share(id, access);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this.setShareAccess  = function (id, access) {
+    return this._setShareAccess(id, access);
   };
 }
 
