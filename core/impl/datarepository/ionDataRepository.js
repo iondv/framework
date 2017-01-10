@@ -176,7 +176,11 @@ function IonDataRepository(options) {
     var rcm = this._getRootType(cm);
     options.filter = this._addFilterByItem(options.filter, obj);
     options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    return this.ds.count(tn(rcm), options);
+    return prepareFilterValues(cm, options.filter)
+      .then(function (filter) {
+        options.filter = filter;
+        return this.ds.count(tn(rcm), options);
+      });
   };
 
   /**
