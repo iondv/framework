@@ -27,13 +27,14 @@ function MemcachedRepository(config) {
   }
 
   var mOptions = config.connectOptions || {};
-  mOptions.debug = true;
+  //mOptions.debug = true;
   var lifeTime = config.lifetime || 3600;
   var memcached = null;
   var availableServers = mServerLocations.concat([]);
   var checkingForServers = false;
 
   function log(msg) {
+    console.log(msg);
     if (config.log) {
       config.log.log(msg);
     } else {
@@ -42,12 +43,14 @@ function MemcachedRepository(config) {
   }
 
   function checkAvailableServers() {
+    console.log('checking for servers');
     if (!checkingForServers) {
       checkingForServers = true;
       memcached.multi(false, function (server, key, index, totals) {
-        memcached.connect(server, function (err) {
+        memcached.connect(server, function (err, conn) {
+          console.log('checked ', server, (err ? 'err' : ''));
           if (!err) {
-            if (availableServers.indexOf(server) < 0) {
+            if (conn.readable && conn.writable && availableServers.indexOf(server) < 0) {
               availableServers.push(server);
             }
           }
@@ -68,14 +71,14 @@ function MemcachedRepository(config) {
     return new Promise(function (resolve, reject) {
       if (memcached && availableServers.length) {
         memcached.get(key, function (err, data) {
-          console.log('get ' + (err ? 'err' : ''));
+          console.log('get ' + (err ? 'err ' : ''), key);
           if (err) {
             return resolve();
           }
           resolve(data);
         });
       } else {
-        console.log('getter');
+        console.log('getter', key);
         if (memcached) {
           checkAvailableServers();
         }
@@ -94,11 +97,11 @@ function MemcachedRepository(config) {
     return new Promise(function (resolve, reject) {
       if (memcached && availableServers.length) {
         memcached.set(key, value, lifeTime, function (err) {
-          console.log('set ' + (err ? 'err' : ''));
+          console.log('set ' + (err ? 'err' : ''), key);
           resolve();
         });
       } else {
-        console.log('setter');
+        console.log('setter', key);
         if (memcached) {
           checkAvailableServers();
         }
