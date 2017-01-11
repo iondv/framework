@@ -546,7 +546,7 @@ function MongoDs(config) {
    */
   function checkAttrLexem(lexem, attributes, joinedSources) {
     var tmp = lexem.indexOf('.') < 0 ? lexem : lexem.substr(0, lexem.indexOf('.'));
-    if (tmp === '$' && !joinedSources.hasOwnProperty(tmp)) {
+    if (tmp[0] === '$' && !joinedSources.hasOwnProperty(tmp)) {
       tmp = tmp.substr(1);
       if (attributes.indexOf(tmp) < 0) {
         attributes.push(tmp);
@@ -576,19 +576,28 @@ function MongoDs(config) {
     }
   }
 
-  function processJoin(result, leftPrefix) {
+  function processJoin(result, attributes, joinedSources, leftPrefix) {
     return function (join) {
+      if (!leftPrefix && attributes.indexOf(join.left) < 0) {
+        attributes.push(join.left);
+      }
+
+      joinedSources[join.name] = true;
+
+      if (join.many) {
+        result.push({$unwind: leftPrefix + join.left});
+      }
       result.push({
         $lookup: {
           from: join.table,
           localField: leftPrefix + join.left,
           foreignField: join.right,
-          as: leftPrefix + join.name
+          as: join.name
         }
       });
-      result.push({$unwind: '$' + leftPrefix + join.name});
-      if (join.join) {
-        processJoin(result, leftPrefix + join.name + '.')(join.join);
+      result.push({$unwind: '$' + join.name});
+      if (Array.isArray(join.join)) {
+        join.join.forEach(processJoin(result, attributes, joinedSources, join.name + '.'));
       }
     };
   }
@@ -611,13 +620,9 @@ function MongoDs(config) {
     var i, tmp;
     var joinedSources = {};
     var result = [];
+    var joins = [];
     if (Array.isArray(options.joins)) {
-      for (i = 0; i < options.joins.length; i++) {
-        if (attributes.indexOf(options.joins[i].left) < 0) {
-          attributes.push(options.joins[i].left);
-          joinedSources[options.joins[i].name] = true;
-        }
-      }
+      options.joins.forEach(processJoin(joins, attributes, joinedSources));
     }
 
     if (options.fields) {
@@ -644,13 +649,13 @@ function MongoDs(config) {
         result = result.concat(exists);
 
         if (options.countTotal) {
-          if (!options.attributes || !options.attributes.length) {
+          if (!attributes.length) {
             throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
           }
 
           tmp = {};
-          for (i = 0; i < options.attributes.length; i++) {
-            tmp[options.attributes[i]] = 1;
+          for (i = 0; i < attributes.length; i++) {
+            tmp[attributes[i]] = 1;
           }
 
           tmp.__total = {$sum: 1};
@@ -662,8 +667,8 @@ function MongoDs(config) {
       }
     }
 
-    if (Array.isArray(options.joins)) {
-      options.joins.forEach(processJoin(result));
+    if (joins.length) {
+      Array.prototype.push.apply(result, joins);
     }
 
     if (options.sort) {
@@ -866,6 +871,7 @@ function MongoDs(config) {
    * @param {{}} [options.filter]
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
+   * @param {String} [options.to]
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {

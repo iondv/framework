@@ -113,6 +113,7 @@ function DataSource() {
    * @param {{}} [options.filter]
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
+   * @param {String} [options.to]
    * @returns {Promise}
    */
   this.aggregate = function (type, options) {
