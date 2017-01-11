@@ -27,15 +27,35 @@ function MemcachedRepository(config) {
   }
 
   var mOptions = config.connectOptions || {};
+  mOptions.debug = true;
   var lifeTime = config.lifetime || 3600;
   var memcached = null;
   var availableServers = mServerLocations.concat([]);
+  var checkingForServers = false;
 
   function log(msg) {
     if (config.log) {
       config.log.log(msg);
     } else {
       console.log(msg);
+    }
+  }
+
+  function checkAvailableServers() {
+    if (!checkingForServers) {
+      checkingForServers = true;
+      memcached.multi(false, function (server, key, index, totals) {
+        memcached.connect(server, function (err) {
+          if (!err) {
+            if (availableServers.indexOf(server) < 0) {
+              availableServers.push(server);
+            }
+          }
+          if (totals - 1 === index) {
+            checkingForServers = false;
+          }
+        });
+      });
     }
   }
 
@@ -48,12 +68,17 @@ function MemcachedRepository(config) {
     return new Promise(function (resolve, reject) {
       if (memcached && availableServers.length) {
         memcached.get(key, function (err, data) {
+          console.log('get ' + (err ? 'err' : ''));
           if (err) {
             return resolve();
           }
           resolve(data);
         });
       } else {
+        console.log('getter');
+        if (memcached) {
+          checkAvailableServers();
+        }
         resolve(null);
       }
     });
@@ -68,10 +93,15 @@ function MemcachedRepository(config) {
   this._set = function (key, value) {
     return new Promise(function (resolve, reject) {
       if (memcached && availableServers.length) {
-        memcached.set(key, value, lifeTime, function () {
+        memcached.set(key, value, lifeTime, function (err) {
+          console.log('set ' + (err ? 'err' : ''));
           resolve();
         });
       } else {
+        console.log('setter');
+        if (memcached) {
+          checkAvailableServers();
+        }
         resolve();
       }
     });
