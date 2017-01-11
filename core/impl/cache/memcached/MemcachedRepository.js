@@ -29,6 +29,7 @@ function MemcachedRepository(config) {
   var mOptions = config.connectOptions || {};
   var lifeTime = config.lifetime || 3600;
   var memcached = null;
+  var availableServers = mServerLocations.concat([]);
 
   function log(msg) {
     if (config.log) {
@@ -45,10 +46,10 @@ function MemcachedRepository(config) {
    */
   this._get = function (key) {
     return new Promise(function (resolve, reject) {
-      if (memcached) {
+      if (memcached && availableServers.length) {
         memcached.get(key, function (err, data) {
           if (err) {
-            return reject(err);
+            return resolve();
           }
           resolve(data);
         });
@@ -66,11 +67,8 @@ function MemcachedRepository(config) {
    */
   this._set = function (key, value) {
     return new Promise(function (resolve, reject) {
-      if (memcached) {
-        memcached.set(key, value, lifeTime, function (err) {
-          if (err) {
-            return reject(err);
-          }
+      if (memcached && availableServers.length) {
+        memcached.set(key, value, lifeTime, function () {
           resolve();
         });
       } else {
@@ -78,6 +76,12 @@ function MemcachedRepository(config) {
       }
     });
   };
+
+  function filterUnavailableServer(server) {
+    return function (value) {
+      return value !== server;
+    };
+  }
 
   this.init = function () {
     return new Promise(function (resolve, reject) {
@@ -87,23 +91,37 @@ function MemcachedRepository(config) {
       try {
         log('Инициализация memcached');
         memcached = new Memcached(mServerLocations, mOptions);
-        memcached.on('issue',
+        memcached.
+        on('issue',
           function (details) {
+            availableServers = availableServers.filter(filterUnavailableServer(details.server));
             log('Memcached issue:' + details.server + ':' + details.messages.join(' '));
-          }).on('failure',
+          }
+        ).
+        on('failure',
           function (details) {
+            availableServers = availableServers.filter(filterUnavailableServer(details.server));
             log('Memcached failure:' + details.server + ':' + details.messages.join(' '));
-            reject(new Error('Не удалось подключиться к серверу Memcached'));
-          }).on('reconnecting',
+          }
+        ).
+        on('reconnecting',
           function (details) {
             log('Memcached reconnecting:' + details.server + ':' + details.messages.join(' '));
-          }).on('reconnect',
+          }
+        ).
+        on('reconnect',
           function (details) {
+            if (availableServers.indexOf(details.server) < 0) {
+              availableServers.push(details.server);
+            }
             log('Memcached reconnect:' + details.server + ':' + details.messages.join(' '));
-          }).on('remove',
+          }
+        ).
+        on('remove',
           function (details) {
             log('Memcached remove:' + details.server + ':' + details.messages.join(' '));
-          });
+          }
+        );
         resolve();
       } catch (err) {
         reject(err);
