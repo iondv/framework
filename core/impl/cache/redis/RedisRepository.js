@@ -9,6 +9,7 @@ const redis = require('redis');
 /**
  *
  * @param {{host: String, port: String, enabled: Boolean}} config
+ * @param {{}} [config.connectOptions]
  * @param {Logger} [config.log]
  * @constructor
  */
@@ -17,6 +18,7 @@ function RedisRepository(config) {
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
   var client = null;
+  var available = false;
 
   function log(msg) {
     if (config.log) {
@@ -33,21 +35,15 @@ function RedisRepository(config) {
    * @private
    */
   this._get = function (key) {
-    return new Promise(function (resolve,reject) {
-      if (!client) {
-        resolve(null);
+    return new Promise(function (resolve) {
+      if (!client || !available) {
+        return resolve(null);
       }
       client.get(key, function (err, reply) {
-        if (err) {
-          reject(err);
-        } else if (reply) {
-          try {
-            var value = JSON.parse(reply.toString());
-            resolve(value);
-          } catch (err) {
-            reject(err);
-          }
-        } else {
+        try {
+          var value = reply ? JSON.parse(reply.toString()) : null;
+          resolve(value);
+        } catch (err) {
           resolve(null);
         }
       });
@@ -62,15 +58,14 @@ function RedisRepository(config) {
    * @private
    */
   this._set = function (key, value) {
-    return new Promise(function (resolve, reject) {
-      if (!client) {
-        resolve();
+    return new Promise(function (resolve) {
+      if (!client || !available) {
+        return resolve();
       }
       try {
         client.set(key, JSON.stringify(value));
+      } finally {
         resolve();
-      } catch (err) {
-        reject(err);
       }
     });
   };
@@ -82,10 +77,22 @@ function RedisRepository(config) {
       }
       try {
         log('Инициализация Redis');
-        client = redis.createClient({host: rHost, port: rPort});
+        var redisOptions = {host: rHost, port: rPort};
+        if (config.connectOptions) {
+          for (var p in config.connectOptions) {
+            if (config.connectOptions.hasOwnProperty(p)) {
+              redisOptions[p] = config.connectOptions[p];
+            }
+          }
+        }
+        client = redis.createClient(redisOptions);
+        client.on('ready', function () {
+          available = true;
+        });
         client.on('error', function (err) {
-            log('Redis error: ' + err);
-          });
+          available = false;
+          log('Redis error: ' + err);
+        });
         resolve();
       } catch (err) {
         reject(err);
