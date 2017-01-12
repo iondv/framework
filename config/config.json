@@ -172,8 +172,22 @@
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
           "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
-          "connectOptions": {},
-          "lifetime": "[[cache.memcached.timeout]]",
+          "connectOptions": {
+            "maxKeySize": "[[cache.memcached.maxKeySize]]",
+            "maxExpiration": "[[cache.memcached.maxExpiration]]",
+            "maxValue": "[[cache.memcached.maxValue]]",
+            "poolSize": "[[cache.memcached.poolSize]]",
+            "algorithm": "[[cache.memcached.algorithm]]",
+            "reconnect": "[[cache.memcached.reconnect]]",
+            "retries": "[[cache.memcached.retries]]",
+            "failures": "[[cache.memcached.failures]]",
+            "retry": "[[cache.memcached.retry]]",
+            "remove": "[[cache.memcached.remove]]",
+            "keyCompression": "[[cache.memcached.keyCompression]]",
+            "idle": "[[cache.memcached.idle]]",
+            "timeout": "[[cache.memcached.timeout]]"
+          },
+          "lifetime": "[[cache.memcached.lifetime]]",
           "reconnectTimeout": "[[cache.memcached.reconnectTimeout]]",
           "log": "ion://sysLog"
         }
@@ -186,7 +200,25 @@
           "enabled": "[[cache.redis.enabled]]",
           "host": "[[cache.redis.host]]",
           "port": "[[cache.redis.port]]",
-          "connectOptions": {},
+          "connectOptions": {
+            "path": "[[cache.redis.path]]",
+            "url": "[[cache.redis.url]]",
+            "string_numbers": "[[cache.redis.string_numbers]]",
+            "return_buffers": "[[cache.redis.return_buffers]]",
+            "detect_buffers": "[[cache.redis.detect_buffers]]",
+            "socket_keepalive": "[[cache.redis.socket_keepalive]]",
+            "no_ready_check": "[[cache.redis.no_ready_check]]",
+            "enable_offline_queue": "[[cache.redis.enable_offline_queue]]",
+            "retry_unfulfilled_commands": "[[cache.redis.retry_unfulfilled_commands]]",
+            "password": "[[cache.redis.password]]",
+            "db": "[[cache.redis.db]]",
+            "family": "[[cache.redis.family]]",
+            "disable_resubscribing": "[[cache.redis.disable_resubscribing]]",
+            "rename_commands": "[[cache.redis.rename_commands]]",
+            "tls": "[[cache.redis.tls]]",
+            "prefix": "[[cache.redis.prefix]]",
+            "retry_strategy": {}
+          },
           "log": "ion://sysLog"
         }
       },
