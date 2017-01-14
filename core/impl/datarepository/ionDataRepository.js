@@ -631,9 +631,9 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = this._getMeta(className);
-    var rcm = this._getRootType(cm);
-    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    var cm = getMeta(className);
+    var rcm = getRootType(cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(options.filter).
     then(
       function () {
@@ -688,9 +688,9 @@ function IonDataRepository(options) {
       return new Promise(function (resolve, reject) {
         var options = {};
         var cm = obj.getMetaClass();
-        var rcm = _this._getRootType(cm);
-        options.filter = _this._addFilterByItem({}, obj);
-        options.filter = _this._addDiscriminatorFilter(options.filter, cm);
+        var rcm = _getRootType(cm);
+        options.filter = addFilterByItem({}, obj);
+        options.filter = addDiscriminatorFilter(options.filter, cm);
         options.count = 1;
         _this.ds.fetch(tn(rcm), options).then(function (data) {
           var item;
@@ -1071,7 +1071,7 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       try {
         var cm = _this.meta.getMeta(classname, version);
-        var rcm = _this._getRootType(cm);
+        var rcm = getRootType(cm);
 
         var refUpdates = {};
         var updates = formUpdatedData(cm, data, true, refUpdates) || {};
@@ -1136,7 +1136,7 @@ function IonDataRepository(options) {
       }
       try {
         var cm = _this.meta.getMeta(classname);
-        var rcm = _this._getRootType(cm);
+        var rcm = getRootType(cm);
 
         /**
          * @var {{}}
@@ -1218,7 +1218,7 @@ function IonDataRepository(options) {
       var fileSavers = [];
       try {
         var cm = _this.meta.getMeta(classname, version);
-        var rcm = _this._getRootType(cm);
+        var rcm = getRootType(cm);
 
         var refUpdates = {};
         var updates = formUpdatedData(cm, data, true, refUpdates) || {};
@@ -1312,7 +1312,7 @@ function IonDataRepository(options) {
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
-    var rcm = _this._getRootType(cm);
+    var rcm = getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
@@ -1380,7 +1380,7 @@ function IonDataRepository(options) {
               act = true;
             }
             if (act) {
-              mrcm = _this._getRootType(m[i].getMetaClass());
+              mrcm = getRootType(m[i].getMetaClass());
               writers.push(_this.ds.update(tn(mrcm), cond, updates));
             }
           }
