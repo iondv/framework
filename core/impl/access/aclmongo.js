@@ -265,6 +265,40 @@ function MongoAcl(config) {
       });
     });
   };
+  
+  
+  
+  this._addUserRoles = function (user, roles) {  
+    return new Promise(function (resolve, reject) {
+      _this.acl.addUserRoles(user, roles, function (err) {
+        err ? reject(err) : resolve();
+      });
+    });
+  };
+  
+  this._removeUserRoles = function (user, roles) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.removeUserRoles(user, roles, function (err) {
+        err ? reject(err) : resolve();
+      });
+    });
+  };
+  
+  this._removeRole = function (role) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.removeRole(role, function (err) {
+        err ? reject(err) : resolve();
+      });
+    });
+  };
+  
+  this._whatResources = function (user) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.whatResources(user, function (err, access) {
+        err ? reject(err) : resolve(access);
+      });
+    });
+  };
 }
 
 MongoAcl.prototype = new AclProvider();
