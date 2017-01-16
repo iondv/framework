@@ -20,7 +20,6 @@ const getBeforeReference = require('lib/convert-import-util').getBeforeReference
 let appPath = getAppDir();
 console.log('Импортируемые приложения', appPath.toString());
 
-
 Promise.all(appPath.map(importApplications))
   .then((res) => {
     console.info('Выполнен импорт', res);
@@ -29,15 +28,27 @@ Promise.all(appPath.map(importApplications))
     console.error(err);
   });
 
+/**
+ * Функция возвращающая полученное значение, для замены нереализованные в конвертации функций
+ * @param {*} res
+ * @returns {*}
+ */
+function empty(res) {
+  return res;
+}
+
 function importApplications(appPathItem) {
   return new Promise(function (resolve, reject) {
-    const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference;
-    const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference;
-    const importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders;
-    const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles;
-    const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles;
+    const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference || {};
+    const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference || {};
+    const config = require(path.join(appPathItem, 'convert-import-app')).config || {};
+    let importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
+    importedFolders = typeof importedFolders === 'string' ? [importedFolders] : importedFolders;
+    const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
+    const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles || empty;
+    const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing || empty;
 
-    console.log('Импортируемые папки', importedFolders.toString());
+    console.info('Импортируемые папки', importedFolders.toString());
 
     const pathToData = path.join(appPathItem, 'data');
     if (!fs.existsSync(pathToData)) {
@@ -53,6 +64,7 @@ function importApplications(appPathItem) {
          * @returns {Object} importedData.meta - структура метаданных, наименование объекта - класс с неймспейсом: adminTerritory@khv-svyaz-info
          * @returns {Object} importedData.parsed - объект с импортируемыми данными, где имена свойств имена исходных файлов
          * @returns {Object} importedData.path - путь к папкам импортируемых данных
+         * @returns {Object} importedData.pathData - путь к папке сохранения результатов импорта
          * @returns {Object} importedData.verify - объект с ключевыми данными верификации уникальности и связи объектов
          * @returns {Object} importedData.reference - обюъект с массивами объектов справочников в формате JSON, где имя свойства - имя класса с неймспоейсом: adminTerritory@khv-svyaz-info
          * @returns {Object} importedData.result  - именованный массивом объектов - имя с названием класса, значения - массив данных импорта
@@ -60,7 +72,10 @@ function importApplications(appPathItem) {
         function (res) {
           console.info('Считали мету, импортируем данные приложения', appPathItem);
           let importedData = {meta: res, parsed: {}, verify: {},
-            reference: importedBeforeReference, result: {}};  // Сформировали объект импорта
+            result: {}, pathData: pathToData};  // Сформировали объект импорта
+          if (importedBeforeReference) {
+            importedData.reference = importedBeforeReference;
+          }
           return importedData;
         })
       .then(getBeforeReference)
@@ -68,41 +83,42 @@ function importApplications(appPathItem) {
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
-          importedData.pathData = path.join(appPathItem, 'data');
           getImportedFiles(importedData, importedPath)
-          // 4debug
-          // .then((importedData) => {
-          //   console.log('Конвертируем распарсенные объекты из папки', importedPath);
-          //   return importedData;
-          // })
-            .then(convertImportedFiles)
+            .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
             .then((importedData) => {
-              delete importedData.parsed;
+              delete importedData.parsed; // Очищаем память от уже сконвертированных данных
               importedData.path = '';
-              //importedData.result = [];
-              //importedData.result = [];
-              // console.log('##Распарсенный импорт\n', importedData.parsed);
-              // console.log('##Результат', importedData.result);
               return importedData;
             })
-            .then(saveImportedFiles)
-            // 4debug
+            .then((res) => {
+              if (!config.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                return saveImportedFiles(res);
+              } else {
+                return 0;
+              }
+            })
             .then((qntSaved) => {
               console.log('Сохранили и очистили память после импорта папки', importedPath);
-              callback(null,qntSaved);
+              callback(null, qntSaved);
             })
             .catch((err)=> {
               callback(err);
             });
         }
 
+        /**
+         * Итератор импорта
+         * @param {Array} importedFolders
+         * @param {Number} i
+         * @param {Function} callback
+         */
         function importIterator(importedFolders, i, callback) {
           if (i === importedFolders.length) {
             callback (null);
           } else {
-            console.log('Импортируем БД', importedFolders[i]);
+            console.info('Импортируем', importedFolders[i]);
             importAppBase(importedFolders[i], (err, qntSaved) => {
-              console.log('Закончили импорт БД, сохранено', importedFolders[i], qntSaved);
+              console.info('Закончили импорт %s, сохранено %s объектов', importedFolders[i], qntSaved);
               if (err) {
                 callback (err);
               } else {
@@ -122,16 +138,6 @@ function importApplications(appPathItem) {
           });
         });
       })
-      .then((importedData) => {
-        // console.log('###Верификация', Object.keys(importedData.verify).length, '\n', importedData.verify);
-        console.log('###Верификация person@khv-childzem', Object.keys(importedData.verify['person@khv-childzem']).length);
-        let sexres = require('lib/convert-import-util').checkSex(importedData.nameSex);
-        let util = require('util');
-        // console.log(util.inspect(sexres, {depth: 3}));
-        console.log('Женщины', util.inspect(Object.keys(sexres.woman)));
-        console.log('Мужчины', util.inspect(Object.keys(sexres.man)));
-        return importedData;
-      })
       .then((importedData) => { // Добавляем справочники, которые были не нужны для импорта
         for (let key in importedAfterReference) {
           if (importedAfterReference.hasOwnProperty(key)) {
@@ -143,12 +149,13 @@ function importApplications(appPathItem) {
         }
         return importedData;
       })
+      .then(postImportProcessing) // Переводим справочники для сохранения
       .then(importReference) // Переводим справочники для сохранения
       .then((importedData) => {
         delete importedData.reference; // Может бесполезно их уже удалять
         return importedData;
       })
-      .then(saveImportedFiles) // TODO нужно после пересохранять, обновленные объекты verify и заодно
+      .then(saveImportedFiles)
       .then((res) => {
         resolve(appPathItem);
       })
@@ -184,5 +191,3 @@ function getAppDir() {
     console.warn('Отсутствует дирректория приложений applications');
   }
 }
-
-

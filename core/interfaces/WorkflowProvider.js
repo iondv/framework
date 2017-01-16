@@ -16,10 +16,11 @@ function WorkflowProvider() {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
+   * @param {String} user
    * @returns {Promise}
    */
-  this.performTransition = function (item, workflow, name) {
-    return this._performTransition(item, workflow, name);
+  this.performTransition = function (item, workflow, name, user) {
+    return this._performTransition(item, workflow, name, user);
   };
 }
 
