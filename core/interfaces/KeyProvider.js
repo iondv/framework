@@ -7,6 +7,7 @@ function KeyProvider() {
   /**
    * @param {String} classname
    * @param {{}} data
+   * @param {String} [namespace]
    * @returns {String}
    */
   this.formKey = function (classname, data, namespace) {
@@ -16,6 +17,7 @@ function KeyProvider() {
   /**
    * @param {String} classname
    * @param {String} id
+   * @param {String} [namespace]
    * @returns {{}}
    */
   this.keyToData = function (classname, id, namespace) {
@@ -25,7 +27,8 @@ function KeyProvider() {
   /**
    * @param {String} classname
    * @param {{}} data
-   * @returns {{}}
+   * @param {String} [namespace]
+   * @returns {{} | null}
    */
   this.keyData = function (classname, data, namespace) {
     return this._keyData(classname, data, namespace);

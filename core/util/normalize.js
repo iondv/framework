@@ -12,12 +12,12 @@ const Item = require('core/interfaces/DataRepository').Item;
  * @returns {{} | null}
  * @private
  */
-function normalize(data) {
+function normalize(data, dateCallback) {
   var i;
   if (Array.isArray(data)) {
     var result = [];
     for (i = 0; i < data.length; i++) {
-      result.push(normalize(data[i]));
+      result.push(normalize(data[i], dateCallback));
     }
     return result;
   }
@@ -56,6 +56,8 @@ function normalize(data) {
         var refItem = data.getAggregate(pm.name);
         if (refItem) {
           item[pm.name] = normalize(refItem);
+        } else if (item[pm.name]) {
+          delete item[pm.name];
         }
       } else if (pm.type === PropertyTypes.COLLECTION) {
         item[pm.name] = normalize(data.getAggregates(pm.name));
@@ -65,10 +67,13 @@ function normalize(data) {
         pm.type === PropertyTypes.FILE_LIST
       ) {
         item[pm.name] = p.getValue();
+      } else if (pm.selectionProvider) {
+        item[pm.name + '_str'] = p.getDisplayValue(dateCallback);
       }
     }
 
     item._id = data.getItemId();
+    item.__string = data.toString(null, dateCallback);
     return item;
   }
 

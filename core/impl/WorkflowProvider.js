@@ -6,6 +6,7 @@
 const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
+const EventManager = require('core/impl/EventManager');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -17,6 +18,7 @@ const period = require('core/period');
  */
 function WorkflowProvider(options) {
   var _this = this;
+  EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
 
@@ -68,7 +70,7 @@ function WorkflowProvider(options) {
             stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
-                if (!checker(item, stage.conditions)) {
+                if (!checker(item, stage.conditions, item)) {
                   delete result[workflows[i].name];
                   continue;
                 }
@@ -110,7 +112,7 @@ function WorkflowProvider(options) {
                 for (j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
                   transition = workflows[i].transitionsBySrc[stage.name][j];
                   if (Array.isArray(transition.conditions) && transition.conditions.length) {
-                    if (!checker(item, transition.conditions)) {
+                    if (!checker(item, transition.conditions, item)) {
                       continue;
                     }
                   }
@@ -148,7 +150,12 @@ function WorkflowProvider(options) {
       {
         stage: nextState.name,
         since: new Date()
-      }).then(function () {resolve(item); }).catch(reject);
+      }
+    ).then(
+      function () {
+        resolve(item);
+      }
+    ).catch(reject);
   }
 
   function passAssignmentValue(updates, item, key, value) {
@@ -181,9 +188,10 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
+   * @param {String} user
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name) {
+  this._performTransition = function (item, workflow, name, user) {
     return _this._getStatus(item).then(function (status) {
       return new Promise(function (resolve, reject) {
         if (status.stages.hasOwnProperty(workflow)) {
@@ -232,28 +240,55 @@ function WorkflowProvider(options) {
 
                 Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions)) {
+                    if (!checker(item, nextState.conditions, item)) {
                       return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
                     }
                   }
 
-                  if (updates) {
-                    options.dataRepo.editItem(item.getMetaClass().getCanonicalName(), item.getItemId(), updates).
-                    then(function () {
+                  _this.trigger({
+                    type: workflow + '.' + nextState.name,
+                    item: item
+                  }).then(
+                    function (e) {
+                      if (Array.isArray(e.results) && e.results.length) {
+                        for (var i = 0; i < e.results.length; i++) {
+                          for (var nm in e.results[i]) {
+                            if (e.results[i].hasOwnProperty(nm)) {
+                              if (!updates) {
+                                updates = {};
+                              }
+                              updates[nm] = e.results[i][nm];
+                            }
+                          }
+                        }
+                      }
+
+                      if (updates) {
+                        return options.dataRepo.editItem(
+                          item.getMetaClass().getCanonicalName(),
+                          item.getItemId(),
+                          updates,
+                          null,
+                          {uid: user}
+                        );
+                      }
+                      return new Promise(function (resolve) {
+                        resolve(item);
+                      });
+                    }
+                  ).then(
+                    function (item) {
                       move(item, workflow, nextState, resolve, reject);
-                    }).
-                    catch(reject);
-                  } else {
-                    move(item, workflow, nextState, resolve, reject);
-                  }
+                    }
+                  ).catch(reject);
                 }).catch(reject);
                 return;
               }
             }
+            return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
           }
-          return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+          return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
         }
-        return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
       });
     });
   };
