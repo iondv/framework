@@ -911,6 +911,7 @@ function IonDataRepository(options) {
    * @param {String} [id]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
     if (id && typeof obj === 'string') {
@@ -929,7 +930,7 @@ function IonDataRepository(options) {
               loadFiles(item).
               then(
                 function (item) {
-                  return enrich([item], options.nestingDepth || 0);
+                  return enrich([item], options.nestingDepth || 0, options.forceEnrichment);
                 }
               ).
               then(
@@ -964,7 +965,7 @@ function IonDataRepository(options) {
           resolve(null);
         }).
         then(function (item) {
-          return enrich([item]);
+          return enrich([item], options.nestingDepth || 0, options.forceEnrichment);
         }).
         then(function (items) {
           return calcProperties(items[0]);
