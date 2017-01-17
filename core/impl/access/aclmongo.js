@@ -291,6 +291,14 @@ function MongoAcl(config) {
       });
     });
   };
+
+  this._removeResource = function (resource) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.removeResource(resource, function (err) {
+        err ? reject(err) : resolve();
+      });
+    });
+  };
   
   this._whatResources = function (user) {
     return new Promise(function (resolve, reject) {
