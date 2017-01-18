@@ -13,7 +13,7 @@ const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 70, maxcomplexity: 30
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -481,7 +481,7 @@ function MongoDs(config) {
       var arrFld, uwFld, left;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$joinExists') {
+          if (name === '$joinExists' || name === '$joinNotExists') {
             left = addPrefix(find[name].left, prefix);
             if (find[name].many) {
               if (!attributes || !attributes.length) {
@@ -504,10 +504,24 @@ function MongoDs(config) {
             tmp.as = arrFld;
             exists.push({$lookup: tmp});
             var exists2 = [];
-            var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
-            if (f !== null) {
+            if (find[name].filter) {
+              var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
+              if (f !== null) {
+                tmp = {};
+                tmp[arrFld] = {$elemMatch: f};
+                if (name === '$joinExists') {
+                  exists.push({$match: tmp});
+                } else {
+                  exists.push({$match: {$not: tmp}});
+                }
+              }
+            } else {
               tmp = {};
-              tmp[arrFld] = {$elemMatch: f};
+              if (name === '$joinExists') {
+                tmp[arrFld] = {$not: {$size: 0}};
+              } else {
+                tmp[arrFld] = {$size: 0};
+              }
               exists.push({$match: tmp});
             }
 
