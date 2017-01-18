@@ -1411,6 +1411,7 @@ function IonDataRepository(options) {
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
+   * @param {String} [options.uid]
    * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */
@@ -1437,6 +1438,9 @@ function IonDataRepository(options) {
         Promise.all(fileSavers).then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
+          if (options.uid) {
+            updates._creator = options.uid;
+          }
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
@@ -1474,6 +1478,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String} [options.uid]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1509,6 +1514,9 @@ function IonDataRepository(options) {
           }
 
           Promise.all(fileSavers).then(function () {
+            if (options.uid) {
+              updates._editor = options.uid;
+            }
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
