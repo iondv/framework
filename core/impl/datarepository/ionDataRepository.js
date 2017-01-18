@@ -13,6 +13,7 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
+const ConditionParser = require('core/ConditionParser');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -241,6 +242,13 @@ function IonDataRepository(options) {
         } else {
           attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.getItemId());
         }
+        if (property.meta.selConditions) {
+          attrs[item.classMeta.getName() + '.' + property.getName()].colFilter =
+            ConditionParser(property.meta.selConditions, property.meta._refClass, item);
+          if (!attrs[item.classMeta.getName() + '.' + property.getName()].colFilter) {
+            delete attrs[item.classMeta.getName() + '.' + property.getName()].colFilter;
+          }
+        }
       } else {
         var v = item.get(property.getName());
         if (v) {
@@ -331,6 +339,9 @@ function IonDataRepository(options) {
             ) {
               filter = {};
               filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
+              if (attrs[nm].colFilter) {
+                filter = {$and: [filter, attrs[nm].colFilter]};
+              }
               cn = attrs[nm].colClassName;
             }
 
@@ -1866,7 +1877,13 @@ function IonDataRepository(options) {
       if (pm.backRef) {
         var filter = {};
         filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+        if (pm.selConditions) {
+          var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
+          if (tmp) {
+            filter = {$and: [filter, tmp]};
+          }
+        }
+        options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
         _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
       } else {
         var key = null;
