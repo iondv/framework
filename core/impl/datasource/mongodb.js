@@ -447,7 +447,7 @@ function MongoDs(config) {
       tmp[attributes[i]] = '$' + attributes[i];
       tmp2[attributes[i]] = '$_id.' + attributes[i];
     }
-    return [{$group: {_id: tmp}}, {$project:tmp2}];
+    return [{$group: {_id: tmp}}, {$project: tmp2}];
   }
 
   function clean(attributes) {
@@ -636,6 +636,7 @@ function MongoDs(config) {
 
   function processJoin(result, attributes, joinedSources, leftPrefix) {
     return function (join) {
+      leftPrefix = leftPrefix || '';
       if (!leftPrefix && attributes.indexOf(join.left) < 0) {
         attributes.push(join.left);
       }
@@ -673,8 +674,8 @@ function MongoDs(config) {
    * @param {Boolean} [options.countTotal]
    * @returns {*}
    */
-  function checkAggregation(options) {
-    var attributes = [];
+  function checkAggregation(options, forcedStages) {
+    options.attributes = options.attributes || [];
     var i, tmp;
     var joinedSources = {};
     var result = [];
@@ -682,13 +683,13 @@ function MongoDs(config) {
     var extJoins = [];
 
     if (Array.isArray(options.joins)) {
-      options.joins.forEach(processJoin(extJoins, attributes, joinedSources));
+      options.joins.forEach(processJoin(extJoins, options.attributes, joinedSources));
     }
 
     if (options.fields) {
       for (tmp in options.fields) {
         if (options.fields.hasOwnProperty(tmp)) {
-          checkAttrExpr(options.fields[tmp], attributes, joinedSources);
+          checkAttrExpr(options.fields[tmp], options.attributes, joinedSources);
         }
       }
     }
@@ -696,7 +697,7 @@ function MongoDs(config) {
     if (options.aggregates) {
       for (tmp in options.aggregates) {
         if (options.expressions.hasOwnProperty(tmp)) {
-          checkAttrExpr(options.expressions[tmp], attributes, joinedSources);
+          checkAttrExpr(options.expressions[tmp], options.attributes, joinedSources);
         }
       }
     }
@@ -710,13 +711,13 @@ function MongoDs(config) {
         result = result.concat(exists);
 
         if (options.countTotal) {
-          if (!attributes.length) {
+          if (!options.attributes.length) {
             throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
           }
 
           tmp = {};
-          for (i = 0; i < attributes.length; i++) {
-            tmp[attributes[i]] = 1;
+          for (i = 0; i < options.attributes.length; i++) {
+            tmp[options.attributes[i]] = 1;
           }
 
           tmp.__total = {$sum: 1};
@@ -726,11 +727,13 @@ function MongoDs(config) {
           });
         }
       }
+
+      if ((extJoins.length || options.to) && !result.length) {
+        result.push({$match: options.filter});
+      }
     }
 
-    if (joins.length) {
-      Array.prototype.push.apply(result, extJoins);
-    }
+    Array.prototype.push.apply(result, extJoins);
 
     if (options.sort) {
       result.push({$sort: options.sort});
@@ -744,8 +747,16 @@ function MongoDs(config) {
       result.push({$limit: options.count});
     }
 
+    if (Array.isArray(forcedStages)) {
+      Array.prototype.push.apply(result, forcedStages);
+    }
+
     if (options.to) {
       result.push({$out: options.to});
+    }
+
+    if (result.length) {
+      return result;
     }
 
     return false;
@@ -940,7 +951,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          var plan = checkAggregation(options) || [];
+          var plan = [];
 
           var expr = {$group: {}};
           if (options.fields) {
@@ -964,6 +975,26 @@ function MongoDs(config) {
           }
 
           plan.push(expr);
+
+          var attrs = {};
+          if (options.fields) {
+            for (alias in options.fields) {
+              if (options.fields.hasOwnProperty(alias)) {
+                attrs[alias] = '$_id.' + alias;
+              }
+            }
+          }
+          if (options.aggregates) {
+            for (alias in options.aggregates) {
+              if (options.aggregates.hasOwnProperty(alias)) {
+                attrs[alias] = 1;
+              }
+            }
+          }
+
+          plan.push({$project: attrs});
+
+          plan = checkAggregation(options, plan);
 
           c.aggregate(plan, function (err, result) {
             if (err) {

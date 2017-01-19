@@ -6,7 +6,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
 const geoOperations = ['$geoWithin', '$geoIntersects'];
 
-// jshint maxparams: 12, maxstatements: 60, maxcomplexity: 30
+// jshint maxparams: 12, maxstatements: 60, maxcomplexity: 30, maxdepth: 15
 
 /**
  * @param {*} value
@@ -148,6 +148,16 @@ function prepareAgregOperation(cm, context, attr, operation, options, fetchers, 
   return result;
 }
 
+function join(pm, cm, colMeta, filter) {
+  return {
+    table: tn(colMeta),
+    many: !pm.backRef,
+    left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+    right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
+    filter: filter
+  };
+}
+
 /**
  * @param {ClassMeta} cm
  * @param {{type: Number, binding: String, backRef: String}} pm
@@ -165,15 +175,27 @@ function prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyP
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
-  containCheckers.push({
-    $joinExists: {
-      table: tn(colMeta, nsSep),
-      many: !pm.backRef,
-      left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
-      right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
-      filter: tmp
-    }
-  });
+  containCheckers.push({$joinExists: join(pm, cm, colMeta, tmp)});
+}
+
+/**
+ * @param {ClassMeta} cm
+ * @param {{type: Number}} pm
+ * @param {{}} filter
+ * @param {String} nm
+ * @param {Array} containCheckers
+ */
+function prepareEmpty(cm, pm, filter, nm, containCheckers) {
+  var colMeta = pm._refClass;
+  if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+    throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+  }
+
+  if (filter[nm].$empty) {
+    containCheckers.push({$joinNotExists: join(pm, cm, colMeta, null)});
+  } else {
+    containCheckers.push({$joinExists: join(pm, cm, colMeta, null)});
+  }
 }
 
 /**
@@ -271,9 +293,15 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
         if ((pm = cm.getPropertyMeta(nm)) !== null) {
           if (pm.type === PropertyTypes.COLLECTION) {
             for (knm in filter[nm]) {
-              if (filter[nm].hasOwnProperty(knm) && knm === '$contains') {
-                prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyProvider);
-                break;
+              if (filter[nm].hasOwnProperty(knm)) {
+                if (knm === '$contains') {
+                  prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyProvider);
+                  break;
+                }
+                if (knm === '$empty') {
+                  prepareEmpty(cm, pm, filter, nm, containCheckers);
+                  break;
+                }
               }
             }
           } else {
