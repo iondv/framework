@@ -188,9 +188,10 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @param {Property} property
    * @param {{}} attrs
+   * @param {{}} loaded
    */
-  function prepareRefEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.refClass, null, item.classMeta.getNamespace());
+  function prepareRefEnrichment(item, property, attrs, loaded) {
+    var refc = property.meta._refClass;
     if (refc) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
@@ -212,9 +213,14 @@ function IonDataRepository(options) {
       }
 
       if (v) {
-        attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
         if (typeof item.references === 'undefined') {
           item.references = {};
+        }
+        if (!property.meta.backRef && loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+          item.references[property.getName()] =
+            _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
+        } else {
+          attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
         }
       }
     }
@@ -224,9 +230,11 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @param {Property} property
    * @param {{}} attrs
+   * @param {{}} loaded
    */
-  function prepareColEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.itemsClass, null, item.classMeta.getNamespace());
+  function prepareColEnrichment(item, property, attrs, loaded) {
+    var refc = property.meta._refClass;
+    item.collections = item.collections || {};
     if (refc) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
@@ -248,13 +256,18 @@ function IonDataRepository(options) {
         }
       } else {
         var v = item.get(property.getName());
-        if (v) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems =
-            attrs[item.classMeta.getName() + '.' + property.getName()].colItems.concat(v);
+        if (Array.isArray(v)) {
+          item.collections[property.getName()] = [];
+          v.forEach(function (v) {
+            if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+              item.collections[property.getName()].push(
+                _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
+              );
+            } else {
+              attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(v);
+            }
+          });
         }
-      }
-      if (typeof item.collections === 'undefined') {
-        item.collections = [];
       }
     }
   }
@@ -276,6 +289,7 @@ function IonDataRepository(options) {
    * @param {Item[]} src
    * @param {Number} depth
    * @param {String[][]} [forced]
+   * @param {{}} [loaded]
    * @returns {Promise}
    */
   function enrich(src, depth, forced) {
@@ -285,9 +299,14 @@ function IonDataRepository(options) {
     formForced(forced, forced2);
     attrs = {};
     promises = [];
+    loaded = loaded || {};
 
     try {
       pcl = {};
+      for (i = 0; i < src.length; i++) {
+        loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+      }
+
       for (i = 0; i < src.length; i++) {
         item = src[i];
         if (item && item.constructor.name === 'Item') {
@@ -304,9 +323,9 @@ function IonDataRepository(options) {
                 (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs);
+                  prepareRefEnrichment(item, props[nm], attrs, loaded);
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
-                  prepareColEnrichment(item, props[nm], attrs);
+                  prepareColEnrichment(item, props[nm], attrs, loaded);
                 }
               }
             }
@@ -346,7 +365,8 @@ function IonDataRepository(options) {
                   {
                     filter: filter,
                     nestingDepth: depth - 1,
-                    forceEnrichment: forced2[attrs[nm].attrName]
+                    forceEnrichment: forced2[attrs[nm].attrName],
+                    ___loaded: loaded
                   }
                 )
               );
@@ -570,6 +590,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
+   * @param {{}} [options.___loaded]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
@@ -613,7 +634,12 @@ function IonDataRepository(options) {
     ).
     then(
       function (result) {
-        return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
+        return enrich(
+          result,
+          options.nestingDepth ? options.nestingDepth : 0,
+          options.forceEnrichment,
+          options.___loaded
+        );
       }
     ).
     then(calcItemsProperties);
@@ -648,6 +674,7 @@ function IonDataRepository(options) {
    * @param {String} [id]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
     if (id && typeof obj === 'string') {
@@ -666,7 +693,7 @@ function IonDataRepository(options) {
               loadFiles(item).
               then(
                 function (item) {
-                  return enrich([item], options.nestingDepth || 0);
+                  return enrich([item], options.nestingDepth || 0, options.forceEnrichment);
                 }
               ).
               then(
@@ -701,7 +728,7 @@ function IonDataRepository(options) {
           resolve(null);
         }).
         then(function (item) {
-          return enrich([item]);
+          return enrich([item], options.nestingDepth || 0, options.forceEnrichment);
         }).
         then(function (items) {
           return calcProperties(items[0]);
