@@ -13,7 +13,7 @@ const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 50, maxcomplexity: 30
+// jshint maxstatements: 70, maxcomplexity: 30
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -441,12 +441,13 @@ function MongoDs(config) {
 
   function wind(attributes) {
     var tmp = {};
+    var tmp2 = {};
     var i;
     for (i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = '$' + attributes[i];
+      tmp2[attributes[i]] = '$_id.' + attributes[i];
     }
-    tmp = {_id: tmp};
-    return {$group: tmp};
+    return [{$group: {_id: tmp}}, {$project:tmp2}];
   }
 
   function clean(attributes) {
@@ -458,19 +459,94 @@ function MongoDs(config) {
     return {$project: tmp};
   }
 
+  function joinId(join) {
+    return join.table + ':' + join.left + ':' + join.right + ':' + (join.many ? 'm' : '1');
+  }
+
+  /**
+   * @param {Array} joins
+   */
+  function mergeJoins(joins) {
+    var joinsMap = {};
+    var result = [];
+    joins.forEach(function (join) {
+      var jid = joinId(join);
+      var j;
+      if (joinsMap.hasOwnProperty(jid)) {
+        j = joinsMap[jid];
+        if (join.filter) {
+          if (j.filter) {
+            if (j.filter.$and) {
+              j.filter.$and.push(join.filter);
+            } else {
+              j.filter = {$and: [j.filter, join.filter]};
+            }
+          } else {
+            j.filter = join.filter;
+          }
+        }
+      } else {
+        result.push(join);
+        joinsMap[jid] = join;
+      }
+    });
+    return result;
+  }
+
+  /**
+   * @param {Array} attributes
+   * @param {Array} joins
+   * @param {Array} exists
+   */
+  function processJoins(attributes, joins, exists) {
+    if (joins.length) {
+      if (!attributes || !attributes.length) {
+        throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
+      }
+      var attrs = attributes.slice(0);
+      joins.forEach(function (join) {
+        var tmp, uwFld;
+        var left = addPrefix(join.left, join.prefix);
+        if (join.many) {
+          tmp = clean(attrs);
+          uwFld = '__uw_' + addPrefix(join.left, join.prefix, '$');
+          tmp.$project[uwFld] = '$' + left;
+          exists.push(tmp);
+          left = uwFld;
+          exists.push({$unwind: '$' + uwFld});
+        }
+
+        tmp = {
+          from: join.table,
+          localField: left,
+          foreignField: join.right,
+          as: join.alias
+        };
+        exists.push({$lookup: tmp});
+        attrs.push(join.alias);
+
+        if (join.filter) {
+          exists.push({$match: join.filter});
+        }
+        exists.push({$unwind: '$' + join.alias});
+      });
+      Array.prototype.push.apply(exists, wind(attributes));
+    }
+  }
+
   /**
    * @param {String[]} attributes
    * @param {{}} find
-   * @param {Object[]} exists
+   * @param {Object[]} joins
    * @param {String} prefix
    * @returns {*}
      */
-  function produceMatchObject(attributes, find, exists, prefix) {
+  function produceMatchObject(attributes, find, joins, prefix) {
     var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], exists, prefix);
+        tmp = produceMatchObject(attributes, find[i], joins, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -478,53 +554,35 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var arrFld, uwFld, left;
+      var arrFld, f;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$joinExists') {
-            left = addPrefix(find[name].left, prefix);
-            if (find[name].many) {
-              if (!attributes || !attributes.length) {
-                throw new Error('Не передан список атрибутов необходимый для выполнения объединения многие-ко-многим.');
-              }
-
-              tmp = clean(attributes);
-              uwFld = '__uw_' + addPrefix(find[name].left, prefix, '$');
-              tmp.$project[uwFld] = '$' + left;
-              exists.push(tmp);
-              left = uwFld;
-              exists.push({$unwind: '$' + uwFld});
-            }
-            tmp = {
-              from: find[name].table,
-              localField: left,
-              foreignField: find[name].right
-            };
+          if (name === '$joinExists' || name === '$joinNotExists') {
             arrFld = addPrefix('__jc', prefix, '$');
-            tmp.as = arrFld;
-            exists.push({$lookup: tmp});
-            var exists2 = [];
-            var f = produceMatchObject(attributes, find[name].filter, exists2, arrFld);
-            if (f !== null) {
+            find[name].alias = arrFld;
+            find[name].prefix = prefix;
+            joins.push(find[name]);
+            tmp = null;
+            if (find[name].filter) {
+              f = produceMatchObject(attributes, find[name].filter, joins, arrFld);
+              if (f !== null) {
+                tmp = {};
+                tmp[arrFld] = {$elemMatch: f};
+                if (name === '$joinNotExists') {
+                  tmp = {$not: tmp};
+                }
+              }
+            } else {
               tmp = {};
-              tmp[arrFld] = {$elemMatch: f};
-              exists.push({$match: tmp});
-            }
-
-            if (exists2.length) {
-              exists.push({$unwind: '$' + arrFld});
-              Array.prototype.push.apply(exists, exists2);
-            }
-
-            if (!prefix) {
-              if (find[name].many) {
-                exists.push(wind(attributes));
+              if (name === '$joinExists') {
+                tmp[arrFld] = {$not: {$size: 0}};
               } else {
-                exists.push(clean(attributes));
+                tmp[arrFld] = {$size: 0};
               }
             }
+            find[name].filter = tmp;
           } else {
-            tmp = produceMatchObject(attributes, find[name], exists, prefix);
+            tmp = produceMatchObject(attributes, find[name], joins, prefix);
             if (tmp) {
               if (!result) {
                 result = {};
@@ -643,7 +701,9 @@ function MongoDs(config) {
 
     if (options.filter) {
       var exists = [];
-      var match = produceMatchObject(attributes, options.filter, exists);
+      var joins = [];
+      var match = produceMatchObject(options, options.filter, joins);
+      processJoins(options.attributes, mergeJoins(joins), exists);
       if (exists.length) {
         result.push({$match: match});
         result = result.concat(exists);

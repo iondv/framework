@@ -151,18 +151,28 @@ function ConditionParser(condition, rcm, context) {
       result = {};
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
-          result.$or = [{}, {}, {}];
-          result.$or[0][condition.property] = {$eq: null};
-          result.$or[1][condition.property] = {$eq: ''};
-          result.$or[2][condition.property] = {$exists: false};
-          return result;
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: true};
+          } else {
+            result.$or = [{}, {}, {}];
+            result.$or[0][condition.property] = {$eq: null};
+            result.$or[1][condition.property] = {$eq: ''};
+            result.$or[2][condition.property] = {$exists: false};
+            return result;
+          }
         } break;
         case ConditionTypes.NOT_EMPTY: {
-          result.$and = [{}, {}, {}];
-          result.$and[0][condition.property] = {$ne: null};
-          result.$and[1][condition.property] = {$ne: ''};
-          result.$and[2][condition.property] = {$exists: true};
-          return result;
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: false};
+          } else {
+            result.$and = [{}, {}, {}];
+            result.$and[0][condition.property] = {$ne: null};
+            result.$and[1][condition.property] = {$ne: ''};
+            result.$and[2][condition.property] = {$exists: true};
+            return result;
+          }
         } break;
         case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context);
           break;
