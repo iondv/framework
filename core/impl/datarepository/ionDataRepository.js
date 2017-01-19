@@ -292,7 +292,7 @@ function IonDataRepository(options) {
    * @param {{}} [loaded]
    * @returns {Promise}
    */
-  function enrich(src, depth, forced) {
+  function enrich(src, depth, forced, loaded) {
     var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
 
     forced2 = {};
