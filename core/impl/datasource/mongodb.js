@@ -679,8 +679,10 @@ function MongoDs(config) {
     var joinedSources = {};
     var result = [];
     var joins = [];
+    var extJoins = [];
+
     if (Array.isArray(options.joins)) {
-      options.joins.forEach(processJoin(joins, attributes, joinedSources));
+      options.joins.forEach(processJoin(extJoins, attributes, joinedSources));
     }
 
     if (options.fields) {
@@ -701,7 +703,6 @@ function MongoDs(config) {
 
     if (options.filter) {
       var exists = [];
-      var joins = [];
       var match = produceMatchObject(options, options.filter, joins);
       processJoins(options.attributes, mergeJoins(joins), exists);
       if (exists.length) {
@@ -728,7 +729,7 @@ function MongoDs(config) {
     }
 
     if (joins.length) {
-      Array.prototype.push.apply(result, joins);
+      Array.prototype.push.apply(result, extJoins);
     }
 
     if (options.sort) {
