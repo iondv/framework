@@ -72,12 +72,13 @@ function ChangeLogger() {
   };
 
   /**
-   *
+   * @param {String} className
+   * @param {String} id
    * @param {Date} since
    * @param {Date} till
    * @returns {Promise}
    */
-  this.getChanges = function (since, till) {
+  this.getChanges = function (className, id, since, till) {
     if (
       Object.prototype.toString.call(since) !== '[object Date]' ||
       till && Object.prototype.toString.call(till) !== '[object Date]'
@@ -90,7 +91,7 @@ function ChangeLogger() {
       till = since;
       since = tmp;
     }
-    return this._getChanges(since, till);
+    return this._getChanges(className, id, since, till);
   };
 }
 
