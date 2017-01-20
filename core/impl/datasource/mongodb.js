@@ -696,8 +696,8 @@ function MongoDs(config) {
 
     if (options.aggregates) {
       for (tmp in options.aggregates) {
-        if (options.expressions.hasOwnProperty(tmp)) {
-          checkAttrExpr(options.expressions[tmp], options.attributes, joinedSources);
+        if (options.aggregates.hasOwnProperty(tmp)) {
+          checkAttrExpr(options.aggregates[tmp], options.attributes, joinedSources);
         }
       }
     }
@@ -963,11 +963,11 @@ function MongoDs(config) {
             if (options.aggregates.hasOwnProperty(alias)) {
               for (oper in options.aggregates[alias]) {
                 if (options.aggregates[alias].hasOwnProperty(oper)) {
-                  if (oper === 'count') {
+                  if (oper === '$count') {
                     expr.$group[alias] = {$sum: 1};
-                  } else if (oper === 'sum' || oper === 'avg' || oper === 'min' || oper === 'max') {
+                  } else if (oper === '$sum' || oper === '$avg' || oper === '$min' || oper === '$max') {
                     expr.$group[alias] = {};
-                    expr.$group[alias]['$' + oper] = options.aggregates[alias][oper];
+                    expr.$group[alias][oper] = options.aggregates[alias][oper];
                   }
                 }
               }
