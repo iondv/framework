@@ -579,6 +579,16 @@ function IonDataRepository(options) {
     return result;
   }
 
+  function join(pm, cm, colMeta, filter) {
+    return {
+        table: tn(colMeta),
+        many: !pm.backRef,
+        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
+        filter: filter
+      };
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {{type: Number}} pm
@@ -588,20 +598,33 @@ function IonDataRepository(options) {
    * @param {Array} containCheckers
    */
   function prepareContains(cm, pm, filter, nm, fetchers, containCheckers) {
-    var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
+    var colMeta = pm._refClass;
     var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
     if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
       throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
     }
-    containCheckers.push({
-      $joinExists: {
-        table: tn(colMeta),
-        many: !pm.backRef,
-        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
-        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
-        filter: tmp
-      }
-    });
+    containCheckers.push({$joinExists: join(pm, cm, colMeta, tmp)});
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   * @param {{type: Number}} pm
+   * @param {{}} filter
+   * @param {String} nm
+   * @param {Array} fetchers
+   * @param {Array} containCheckers
+   */
+  function prepareEmpty(cm, pm, filter, nm, fetchers, containCheckers) {
+    var colMeta = pm._refClass;
+    if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+    }
+
+    if (filter[nm].$empty) {
+      containCheckers.push({$joinNotExists: join(pm, cm, colMeta, null)});
+    } else {
+      containCheckers.push({$joinExists: join(pm, cm, colMeta, null)});
+    }
   }
 
   /**
@@ -695,6 +718,11 @@ function IonDataRepository(options) {
               for (knm in filter[nm]) {
                 if (filter[nm].hasOwnProperty(knm) && knm === '$contains') {
                   prepareContains(cm, pm, filter, nm, fetchers, containCheckers);
+                  break;
+                }
+
+                if (filter[nm].hasOwnProperty(knm) && knm === '$empty') {
+                  prepareEmpty(cm, pm, filter, nm, fetchers, containCheckers);
                   break;
                 }
               }
@@ -1597,7 +1625,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, false);
+              chr = checkRequired(cm, updates, id ? true : false);
               if (chr !== true && options.ignoreIntegrityCheck) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
