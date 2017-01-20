@@ -1597,7 +1597,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, false);
+              chr = checkRequired(cm, updates, id ? true : false);
               if (chr !== true && options.ignoreIntegrityCheck) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
