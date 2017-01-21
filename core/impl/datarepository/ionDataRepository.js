@@ -660,7 +660,7 @@ function IonDataRepository(options) {
     var cm = getMeta(className);
     var rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(options.filter).
+    return prepareFilterValues(cm, options.filter).
     then(
       function () {
         return _this.ds.aggregate(tn(rcm), options);
