@@ -79,6 +79,27 @@ function AclProvider() {
   this.deny = function (roles, resources, permissions) {
     return this._deny(roles, resources, permissions);
   };
+
+
+  this.addUserRoles = function (user, roles) {
+    return this._addUserRoles(user, roles);
+  };
+
+  this.removeUserRoles = function (user, roles) {
+    return this._removeUserRoles(user, roles);
+  };
+
+  this.removeRole = function (role) {
+    return this._removeRole(role);
+  };
+
+  this.removeResource = function (resource) {
+    return this._removeResource(resource);
+  };
+
+  this.whatResources = function (user) {
+    return this._whatResources(user);
+  };
 }
 
 module.exports = AclProvider;
