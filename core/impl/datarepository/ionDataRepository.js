@@ -1439,7 +1439,7 @@ function IonDataRepository(options) {
           true
         );
       }
-      return enrich(e.item, nestingDepth);
+      return enrich([e.item], nestingDepth || 0);
     };
   }
 
@@ -1496,7 +1496,7 @@ function IonDataRepository(options) {
         then(writeEventHandler(options.nestingDepth, changeLogger)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item[0]);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1574,7 +1574,7 @@ function IonDataRepository(options) {
           then(writeEventHandler(options.nestingDepth, changeLogger)).
           then(
             function (item) {
-              return calcProperties(item);
+              return calcProperties(item[0]);
             }
           ).
           then(resolve).catch(reject);
