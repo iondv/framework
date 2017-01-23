@@ -13,6 +13,7 @@ const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('node-uuid');
 const EventManager = require('core/impl/EventManager');
+const ConditionParser = require('core/ConditionParser');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -249,6 +250,13 @@ function IonDataRepository(options) {
         } else {
           attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.getItemId());
         }
+        if (property.meta.selConditions) {
+          attrs[item.classMeta.getName() + '.' + property.getName()].colFilter =
+            ConditionParser(property.meta.selConditions, property.meta._refClass, item);
+          if (!attrs[item.classMeta.getName() + '.' + property.getName()].colFilter) {
+            delete attrs[item.classMeta.getName() + '.' + property.getName()].colFilter;
+          }
+        }
       } else {
         var v = item.get(property.getName());
         if (Array.isArray(v)) {
@@ -350,6 +358,9 @@ function IonDataRepository(options) {
             ) {
               filter = {};
               filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
+              if (attrs[nm].colFilter) {
+                filter = {$and: [filter, attrs[nm].colFilter]};
+              }
               cn = attrs[nm].colClassName;
             }
 
@@ -579,6 +590,16 @@ function IonDataRepository(options) {
     return result;
   }
 
+  function join(pm, cm, colMeta, filter) {
+    return {
+        table: tn(colMeta),
+        many: !pm.backRef,
+        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
+        filter: filter
+      };
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {{type: Number}} pm
@@ -588,20 +609,33 @@ function IonDataRepository(options) {
    * @param {Array} containCheckers
    */
   function prepareContains(cm, pm, filter, nm, fetchers, containCheckers) {
-    var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
+    var colMeta = pm._refClass;
     var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
     if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
       throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
     }
-    containCheckers.push({
-      $joinExists: {
-        table: tn(colMeta),
-        many: !pm.backRef,
-        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
-        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
-        filter: tmp
-      }
-    });
+    containCheckers.push({$joinExists: join(pm, cm, colMeta, tmp)});
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   * @param {{type: Number}} pm
+   * @param {{}} filter
+   * @param {String} nm
+   * @param {Array} fetchers
+   * @param {Array} containCheckers
+   */
+  function prepareEmpty(cm, pm, filter, nm, fetchers, containCheckers) {
+    var colMeta = pm._refClass;
+    if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+    }
+
+    if (filter[nm].$empty) {
+      containCheckers.push({$joinNotExists: join(pm, cm, colMeta, null)});
+    } else {
+      containCheckers.push({$joinExists: join(pm, cm, colMeta, null)});
+    }
   }
 
   /**
@@ -695,6 +729,11 @@ function IonDataRepository(options) {
               for (knm in filter[nm]) {
                 if (filter[nm].hasOwnProperty(knm) && knm === '$contains') {
                   prepareContains(cm, pm, filter, nm, fetchers, containCheckers);
+                  break;
+                }
+
+                if (filter[nm].hasOwnProperty(knm) && knm === '$empty') {
+                  prepareEmpty(cm, pm, filter, nm, fetchers, containCheckers);
                   break;
                 }
               }
@@ -1597,7 +1636,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, false);
+              chr = checkRequired(cm, updates, id ? true : false);
               if (chr !== true && options.ignoreIntegrityCheck) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
@@ -1893,7 +1932,13 @@ function IonDataRepository(options) {
       if (pm.backRef) {
         var filter = {};
         filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+        if (pm.selConditions) {
+          var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
+          if (tmp) {
+            filter = {$and: [filter, tmp]};
+          }
+        }
+        options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
         _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
       } else {
         var key = null;
