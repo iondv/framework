@@ -8,6 +8,7 @@ const DataRepositoryModule = require('core/interfaces/DataRepository');
 const DataRepository = DataRepositoryModule.DataRepository;
 const Item = DataRepositoryModule.Item;
 const Permissions = require('core/Permissions');
+const merge = require('merge');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -90,7 +91,7 @@ function SecuredDataRepository(options) {
    * @param {{} | null} filter
    * @private
    */
-  function exclude(uid, cn, filter) {
+  function exclude(uid, cn, filter, classPermissions) {
     var cm = metaRepo.getMeta(cn);
     var check = [];
     var resources = [];
@@ -112,6 +113,7 @@ function SecuredDataRepository(options) {
           }
         }
 
+        merge(classPermissions || {}, permissions[classPrefix + cm.getCanonicalName()] || {});
         resolve(filter);
       });
     });
@@ -180,12 +182,18 @@ function SecuredDataRepository(options) {
    */
   this._getList = function (obj, options) {
     var cname = cn(obj);
-    return exclude(options.uid, cname, options.filter).then(
-      function (filter) {
-        options.filter = filter;
-        return dataRepo.getList(obj, options);
-      }
-    );
+    var listPermissions = {};
+    return exclude(options.uid, cname, options.filter, listPermissions)
+      .then(
+        function (filter) {
+          options.filter = filter;
+          return dataRepo.getList(obj, options);
+        }
+      )
+      .then(function (list) {
+        list.permissions = listPermissions;
+        return Promise.resolve(list);
+      });
   };
 
   /**
@@ -214,6 +222,7 @@ function SecuredDataRepository(options) {
    */
   this._getItem = function (obj, id, options) {
     var cname = cn(obj);
+    var itemPermissions = {};
     return aclProvider.getPermissions(options.uid, [classPrefix + cname, itemPrefix + cname + '@' + id])
       .then(function (permissions) {
         if (
@@ -221,10 +230,16 @@ function SecuredDataRepository(options) {
           permissions[classPrefix + cname][Permissions.READ] ||
           permissions[itemPrefix + cname + '@' + id] &&
           permissions[itemPrefix + cname + '@' + id][Permissions.READ]) {
-          options.permissions = permissions[itemPrefix + cname + '@' + id];
+          itemPermissions = merge(
+            permissions[itemPrefix + cname + '@' + id] || {},
+            permissions[classPrefix + cname] || {}
+          );
           return dataRepo.getItem(obj, id, options);
         }
         return rejectByItem(cname, id);
+      }).then(function (item) {
+        item.permissions = itemPermissions;
+        return Promise.resolve(item);
       });
   };
 
@@ -422,6 +437,7 @@ function SecuredDataRepository(options) {
    */
   this._getAssociationsList = function (master, collection, options) {
     var p = master.property(collection);
+    var collectionPermissions = {};
     return aclProvider.getPermissions(
       options.uid,
       [
@@ -436,7 +452,7 @@ function SecuredDataRepository(options) {
           permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
           permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
         ) {
-          return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);
+          return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter, collectionPermissions);
         }
         return Promise.reject(
           new Error('Недостаточно прав для чтения коллекции ' + master.getClassName() + '.' + collection)
@@ -444,6 +460,9 @@ function SecuredDataRepository(options) {
       }).then(function (filter) {
         options.filter = filter;
         return dataRepo.getAssociationsList(master, collection, options);
+      }).then(function (list) {
+        list.permissions = collectionPermissions;
+        return Promise.resolve(list);
       });
   };
 
@@ -480,10 +499,6 @@ function SecuredDataRepository(options) {
         options.filter = filter;
         return dataRepo.getAssociationsCount(master, collection, options);
       });
-  };
-
-  this.getResourcePrefixes = function () {
-    return { classPrefix, itemPrefix, attrPrefix };
   };
 }
 
