@@ -7,7 +7,7 @@
         "[[server.port3]]"
     ],
     "defaultModule":"[[module.default]]",
-    "skipModules": ["[[module.skip1]]", "[[module.skip2]]", "[[module.skip3]]"]
+    "skipModules": ["[[module.skip1]]", "[[module.skip2]]", "[[module.skip3]]"],
     "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
