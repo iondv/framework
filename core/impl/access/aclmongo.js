@@ -15,10 +15,6 @@ function MongoAcl(config) {
 
   var ds = config.dataSource;
 
-  if (!ds && global.ionDataSources) {
-    ds = global.ionDataSources.get(config.accessDs);
-  }
-
   if (!ds || ds.constructor.prototype.constructor.name !== 'DataSource') {
     throw 'Не указан источник данных для подсистемы контроля доступа!';
   }
@@ -102,41 +98,6 @@ function MongoAcl(config) {
 
   /**
    * @param {String} subject
-   * @returns {Promise}
-   */
-  this._getRoles = function (subject) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.userRoles(subject, function (err, roles) {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(roles);
-      });
-    });
-  };
-
-  /**
-   * @param {String | String[]} roles
-   * @param {String | String[]} [permissions]
-   * @returns {Promise}
-   */
-  this._getResources = function (roles, permissions) {
-    return new Promise(function (resolve, reject) {
-      var p = Array.isArray(permissions) ? permissions : [permissions];
-      if (p.indexOf(Permissions.FULL) < 0) {
-        p.push(Permissions.FULL);
-      }
-      _this.acl.whatResources(roles, p, function (err, res) {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(res);
-      });
-    });
-  };
-
-  /**
-   * @param {String} subject
    * @param {String | String[]} resources
    * @returns {Promise}
    */
@@ -208,102 +169,6 @@ function MongoAcl(config) {
           }
           return resolve(res);
         });
-      });
-    });
-  };
-
-  /**
-   * @param {String[]} subjects
-   * @param {String[]} roles
-   * @returns {Promise}
-   */
-  this._assignRoles = function (subjects, roles) {
-    var promises = [];
-    subjects.forEach(function (subject) {
-      promises.push(new Promise(function (resolve, reject) {
-        _this.acl.addUserRoles(subject, roles, function (err) {
-          if (err) {
-            return reject(err);
-          }
-          resolve();
-        });
-      }));
-    });
-    return Promise.all(promises);
-  };
-
-  /**
-   * @param {String[]} roles
-   * @param {String[]} resources
-   * @param {String[]} permissions
-   * @returns {Promise}
-   */
-  this._grant = function (roles, resources, permissions) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.allow(roles, resources, permissions, function (err) {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    });
-  };
-
-  /**
-   * @param {String[]} roles
-   * @param {String[]} resources
-   * @param {String[]} permissions
-   * @returns {Promise}
-   */
-  this._deny = function (roles, resources, permissions) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.removeAllow(roles, resources, permissions, function (err) {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    });
-  };
-  
-  
-  
-  this._addUserRoles = function (user, roles) {  
-    return new Promise(function (resolve, reject) {
-      _this.acl.addUserRoles(user, roles, function (err) {
-        err ? reject(err) : resolve();
-      });
-    });
-  };
-  
-  this._removeUserRoles = function (user, roles) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.removeUserRoles(user, roles, function (err) {
-        err ? reject(err) : resolve();
-      });
-    });
-  };
-  
-  this._removeRole = function (role) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.removeRole(role, function (err) {
-        err ? reject(err) : resolve();
-      });
-    });
-  };
-
-  this._removeResource = function (resource) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.removeResource(resource, function (err) {
-        err ? reject(err) : resolve();
-      });
-    });
-  };
-  
-  this._whatResources = function (user) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.whatResources(user, function (err, access) {
-        err ? reject(err) : resolve(access);
       });
     });
   };

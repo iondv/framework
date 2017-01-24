@@ -81,6 +81,17 @@ if (!users.length && !resources.length && !permissions.length) {
 }
 
 var scope = null;
+
+config.di.roleAccessManager =
+{
+  module: 'core/impl/access/amAccessManager',
+  initMethod: 'init',
+  initLevel: 1,
+  options: {
+    dataSource: 'ion://Db'
+  }
+};
+
 // Связываем приложение
 di('app', config.di,
   {
@@ -91,32 +102,28 @@ di('app', config.di,
 ).then(
   function (scp) {
     scope = scp;
-    return new Promise(function (resolve, reject) {
-      if (!users.length) {
-        return resolve();
-      }
-      scope.aclProvider.assignRoles(users, roles).then(resolve).catch(reject);
-    });
+    if (!users.length) {
+      return Promise.resolve();
+    }
+    return scope.roleAccessManager.assignRoles(users, roles);
   }
 ).then(
   function () {
-    return new Promise(function (resolve, reject) {
-      if (resources.length || permissions.length) {
-        if (!resources.length) {
-          resources.push(scope.aclProvider.globalMarker);
-        }
-        if (!permissions.length) {
-          permissions.push(Permissions.FULL);
-        }
-        if (method === 'grant') {
-          scope.aclProvider.grant(roles, resources, permissions).then(resolve).catch(reject);
-        } else {
-          scope.aclProvider.deny(roles, resources, permissions).then(resolve).catch(reject);
-        }
-      } else {
-        resolve();
+    if (resources.length || permissions.length) {
+      if (!resources.length) {
+        resources.push(scope.roleAccessManager.globalMarker);
       }
-    });
+      if (!permissions.length) {
+        permissions.push(Permissions.FULL);
+      }
+      if (method === 'grant') {
+        return scope.roleAccessManager.grant(roles, resources, permissions);
+      } else {
+        return scope.roleAccessManager.deny(roles, resources, permissions);
+      }
+    } else {
+      return Promise.resolve();
+    }
   }
 ).then(function () {
   return scope.dataSources.disconnect();
