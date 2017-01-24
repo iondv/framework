@@ -155,8 +155,12 @@ then(
       moduleInitiators = [];
       try {
         var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+        var skipModules = config.skipModules || [];
         for (i = 0; i < candidates.length; i++) {
-          if (fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js'))) {
+          if (
+            fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
+            skipModules.indexOf(candidates[i]) < 0
+          ) {
             var module = require('modules/' + candidates[i] + '/web');
             if (typeof module === 'function') {
               var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
