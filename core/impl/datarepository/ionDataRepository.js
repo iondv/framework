@@ -1915,6 +1915,8 @@ function IonDataRepository(options) {
    */
   function getCollection(master, collection, options, onlyCount) {
     return new Promise(function (resolve, reject) {
+      var filter;
+
       if (!options) {
         options = {};
       }
@@ -1930,7 +1932,7 @@ function IonDataRepository(options) {
       }
 
       if (pm.backRef) {
-        var filter = {};
+        filter = {};
         filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
         if (pm.selConditions) {
           var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
@@ -1947,22 +1949,15 @@ function IonDataRepository(options) {
           reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
         }
 
-        key = kp[0];
-
-        _this._getItem(master.getClassName(), master.getItemId(), 0).then(function (m) {
-          if (m) {
-            var filter = {};
-            filter[key] = {$in: m.base[collection] || []};
-            options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-            if (onlyCount) {
-              _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-            } else {
-              _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-            }
-          } else {
-            reject(new Error('Не найден контейнер коллекции!'));
-          }
-        }).catch(reject);
+        filter = {};
+        console.log(master.base[collection]);
+        filter[kp[0]] = {$in: master.base[collection] || []};
+        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+        if (onlyCount) {
+          _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+        } else {
+          _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+        }
       }
     });
   }
