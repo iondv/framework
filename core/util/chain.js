@@ -3,7 +3,7 @@
  */
 'use strict';
 
-function applier(s, worker){
+function applier(s, worker) {
   return function () {
     return worker(s);
   };
@@ -14,13 +14,17 @@ module.exports = function (seq, worker) {
   if (!Array.isArray(seq)) {
     seq = [seq];
   }
-  seq.forEach(function (s) {
-    if (p) {
-      p = applier(s, worker)();
-    } else {
-      p = p.then(applier(s, worker));
-    }
-  });
+  try {
+    seq.forEach(function (s) {
+      if (p) {
+        p = p.then(applier(s, worker));
+      } else {
+        p = applier(s, worker)();
+      }
+    });
+  } catch (err) {
+    return Promise.reject(err);
+  }
   if (p) {
     return p;
   }

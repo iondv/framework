@@ -51,11 +51,19 @@ function MongoAclAccessManager(config) {
    */
   this._getResources = function (roles, permissions) {
     return new Promise(function (resolve, reject) {
-      var p = Array.isArray(permissions) ? permissions : [permissions];
-      if (p.indexOf(Permissions.FULL) < 0) {
-        p.push(Permissions.FULL);
+      var p = null;
+      if (permissions) {
+        p = Array.isArray(permissions) ? permissions.slice(0) : [permissions];
+        if (p.indexOf(Permissions.FULL) < 0) {
+          p.push(Permissions.FULL);
+        }
       }
-      _this.acl.whatResources(roles, p, function (err, res) {
+      if (p) {
+        return _this.acl.whatResources(roles, p, function (err, res) {
+          return err ? reject(err) : resolve(res);
+        });
+      }
+      return _this.acl.whatResources(roles, function (err, res) {
         return err ? reject(err) : resolve(res);
       });
     });
