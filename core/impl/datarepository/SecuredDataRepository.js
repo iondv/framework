@@ -67,8 +67,8 @@ function SecuredDataRepository(options) {
   var metaRepo = options.meta;
 
   var classPrefix = options.classPrefix || 'c:::';
-  var itemPrefix = options.classPrefix || 'i:::';
-  var attrPrefix = options.classPrefix || 'a:::';
+  var itemPrefix = options.itemPrefix || 'i:::';
+  var attrPrefix = options.attrPrefix || 'a:::';
 
   /**
    * @param {String[]} check
@@ -221,6 +221,7 @@ function SecuredDataRepository(options) {
           permissions[classPrefix + cname][Permissions.READ] ||
           permissions[itemPrefix + cname + '@' + id] &&
           permissions[itemPrefix + cname + '@' + id][Permissions.READ]) {
+          options.permissions = permissions[itemPrefix + cname + '@' + id];
           return dataRepo.getItem(obj, id, options);
         }
         return rejectByItem(cname, id);
@@ -479,6 +480,10 @@ function SecuredDataRepository(options) {
         options.filter = filter;
         return dataRepo.getAssociationsCount(master, collection, options);
       });
+  };
+
+  this.getResourcePrefixes = function () {
+    return { classPrefix, itemPrefix, attrPrefix };
   };
 }
 
