@@ -9,6 +9,7 @@ const DataRepository = DataRepositoryModule.DataRepository;
 const Item = DataRepositoryModule.Item;
 const Permissions = require('core/Permissions');
 const merge = require('merge');
+const PropertyTypes = require('core/PropertyTypes');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -214,6 +215,66 @@ function SecuredDataRepository(options) {
   };
 
   /**
+   * @param {Item} item
+   * @returns {Array}
+   */
+  function attrResources(item) {
+    var props = item.getProperties();
+    var p, ri;
+    var result = [];
+    for (var nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        p = props[nm];
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          result.push(classPrefix + p.meta._refClass.getCanonicalName());
+          ri = p.evaluate();
+          if (ri instanceof Item) {
+            result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
+          } else {
+            result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + ri);
+          }
+        } else if (p.getType() === PropertyTypes.COLLECTION) {
+          result.push(classPrefix + p.meta._refClass.getCanonicalName());
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {Item} item
+   * @param {{}} permissions
+   * @returns {{}}
+   */
+  function attrPermissions(item, permissions) {
+    var props = item.getProperties();
+    var p, ri, tmp;
+    var result = {};
+    for (var nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        p = props[nm];
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          ri = p.evaluate();
+          tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
+          if (ri instanceof Item) {
+            tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
+          }
+
+          result[p.getName()] = merge(
+            true,
+            permissions[tmp] || {},
+            permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}
+          );
+        } else if (p.getType() === PropertyTypes.COLLECTION) {
+          result[p.getName()] = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+        }
+      }
+    }
+    return result;
+  }
+
+
+  /**
    *
    * @param {String | Item} obj
    * @param {String} [id]
@@ -238,8 +299,12 @@ function SecuredDataRepository(options) {
         }
         return rejectByItem(cname, id);
       }).then(function (item) {
-        item.permissions = itemPermissions;
-        return Promise.resolve(item);
+        return aclProvider.getPermissions(options.uid, attrResources(item))
+          .then(function (ap) {
+            item.permissions = itemPermissions;
+            item.attrPermissions = attrPermissions(item, ap);
+            return Promise.resolve(item);
+          });
       });
   };
 
