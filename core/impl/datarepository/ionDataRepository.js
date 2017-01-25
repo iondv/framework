@@ -289,15 +289,19 @@ function IonDataRepository(options) {
   }
 
   /**
-   * @param {Item[]} src
+   * @param {Item[]|Item} src2
    * @param {Number} depth
    * @param {String[][]} [forced]
    * @param {{}} [loaded]
    * @returns {Promise}
    */
-  function enrich(src, depth, forced, loaded) {
+  function enrich(src2, depth, forced, loaded) {
     return new Promise(function (resolve, reject) {
       var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
+
+
+      var src = src2.length ? src2 : [src2];
+      depth = depth || 0;
 
       forced2 = {};
       formForced(forced, forced2);
@@ -468,7 +472,7 @@ function IonDataRepository(options) {
               }
             }
           }
-          resolve(src);
+          resolve(src2.length ? src : src[0]);
         }
       ).catch(reject);
     });
@@ -1439,7 +1443,7 @@ function IonDataRepository(options) {
           true
         );
       }
-      return enrich([e.item], nestingDepth || 0);
+      return enrich(e.item, nestingDepth || 0);
     };
   }
 
