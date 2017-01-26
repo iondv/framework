@@ -816,7 +816,10 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @returns {Promise}
      */
-  function calcProperties(item) {
+  function calcProperties(item, skip) {
+    if (skip) {
+      return Promise.resolve(item);
+    }
     return new Promise(function (resolve, reject) {
       var calculations = [];
       var calcNames = [];
@@ -1415,7 +1418,7 @@ function IonDataRepository(options) {
     });
   }
 
-  function writeEventHandler(nestingDepth, changeLogger) {
+  function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
       var data = {};
@@ -1439,6 +1442,9 @@ function IonDataRepository(options) {
           true
         );
       }
+      if (skip) {
+        return Promise.resolve(e.item);
+      }
       return enrich(e.item, nestingDepth);
     };
   }
@@ -1451,6 +1457,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1493,10 +1500,10 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1513,6 +1520,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1571,10 +1579,10 @@ function IonDataRepository(options) {
             }
             return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler(options.nestingDepth, changeLogger)).
+          then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
           then(
             function (item) {
-              return calcProperties(item);
+              return calcProperties(item, options.skipResult);
             }
           ).
           then(resolve).catch(reject);
@@ -1597,6 +1605,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
@@ -1679,10 +1688,10 @@ function IonDataRepository(options) {
             updates: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
