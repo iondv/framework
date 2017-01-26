@@ -735,20 +735,22 @@ function MongoDs(config) {
 
     Array.prototype.push.apply(result, extJoins);
 
-    if (options.sort) {
-      result.push({$sort: options.sort});
-    }
-
-    if (options.offset) {
-      result.push({$skip: options.offset});
-    }
-
-    if (options.count) {
-      result.push({$limit: options.count});
-    }
-
     if (Array.isArray(forcedStages)) {
       Array.prototype.push.apply(result, forcedStages);
+    }
+
+    if (result.length || options.to) {
+      if (options.sort) {
+        result.push({$sort: options.sort});
+      }
+
+      if (options.offset) {
+        result.push({$skip: options.offset});
+      }
+
+      if (options.count) {
+        result.push({$limit: options.count});
+      }
     }
 
     if (options.to) {
