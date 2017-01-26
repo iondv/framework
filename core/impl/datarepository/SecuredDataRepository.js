@@ -230,6 +230,7 @@ function SecuredDataRepository(options) {
           ri = p.evaluate();
           if (ri instanceof Item) {
             result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
+            Array.prototype.push.apply(result, attrResources(ri));
           } else {
             result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + ri);
           }
@@ -258,6 +259,7 @@ function SecuredDataRepository(options) {
           tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
           if (ri instanceof Item) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
+            ri.attrPermissions = attrPermissions(ri, permissions);
           }
 
           result[p.getName()] = merge(
@@ -272,7 +274,6 @@ function SecuredDataRepository(options) {
     }
     return result;
   }
-
 
   /**
    *
