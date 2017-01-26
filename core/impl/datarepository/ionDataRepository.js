@@ -512,17 +512,16 @@ function IonDataRepository(options) {
         }
       }
     }
-    return new Promise(function (resolve, reject) {
-      if (fids.length === 0 && iids.length === 0) {
-        resolve(item);
-        return;
-      }
+    if (fids.length === 0 && iids.length === 0) {
+      return Promise.resolve(item);
+    }
 
-      var loaders = [];
-      loaders.push(_this.fileStorage.fetch(fids));
-      loaders.push(_this.imageStorage.fetch(iids));
+    var loaders = [];
+    loaders.push(_this.fileStorage.fetch(fids));
+    loaders.push(_this.imageStorage.fetch(iids));
 
-      Promise.all(loaders).then(function (files) {
+    return Promise.all(loaders)
+      .then(function (files) {
         var tmp, i, j, k;
         for (k = 0; k < files.length; k++) {
           for (i = 0; i < files[k].length; i++) {
@@ -541,9 +540,8 @@ function IonDataRepository(options) {
             }
           }
         }
-        resolve(item);
-      }).catch(reject);
-    });
+        return Promise.resolve(item);
+      });
   }
 
   /**
