@@ -536,7 +536,7 @@ function MongoDs(config) {
   }
 
   /**
-   * @param {Object} options
+   * @param {Array} attributes
    * @param {{}} find
    * @param {Object[]} joins
    * @param {String} prefix
@@ -679,7 +679,7 @@ function MongoDs(config) {
    */
   function checkAggregation(options, forcedStages) {
     options.attributes = options.attributes || [];
-    var i, tmp;
+    var i, tmp, tmp2;
     var joinedSources = {};
     var result = [];
     var joins = [];
@@ -712,30 +712,6 @@ function MongoDs(config) {
       if (exists.length) {
         result.push({$match: match});
         result = result.concat(exists);
-
-        if (options.countTotal) {
-          if (!options.attributes.length) {
-            throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
-          }
-
-          tmp = {};
-          for (i = 0; i < options.attributes.length; i++) {
-            tmp[options.attributes[i]] = 1;
-          }
-        result.push({$group: {_id: null,__total: {$sum: 1}, data: {$addToSet: '$_id'}}});
-        result.push({$unwind: '$data'});
-
-        var tmp, ats;
-        tmp = {__total: '$__total'};
-        ats = options.select || options.attributes;
-        for (i = 0; i < ats.length; i++) {
-          tmp[ats[i]] = '$data.' + ats[i];
-        }
-
-          result.push({
-            $project: tmp
-          });
-        }
       }
 
       if ((extJoins.length || options.to) && !result.length) {
@@ -750,6 +726,23 @@ function MongoDs(config) {
     }
 
     if (result.length || options.to) {
+      if (options.countTotal) {
+        if (!options.attributes.length) {
+          throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
+        }
+
+        tmp = {};
+        tmp2 = {__total: '$__total'};
+        for (i = 0; i < options.attributes.length; i++) {
+          tmp[options.attributes[i]] = '$' + options.attributes[i];
+          tmp2[options.attributes[i]] = '$data.' + options.attributes[i];
+        }
+        result.push({$group: {_id: tmp}});
+        result.push({$group: {_id: null, __total: {$sum: 1}, data: {$addToSet: '$_id'}}});
+        result.push({$unwind: '$data'});
+        result.push({$project: tmp2});
+      }
+
       if (options.sort) {
         result.push({$sort: options.sort});
       }

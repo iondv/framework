@@ -100,6 +100,32 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
 module.exports.formDsUpdatedData = formUpdatedData;
 
 /**
+ * @param {KeyProvider} keyProvider
+ * @param {ClassMeta} cm
+ * @param {String[]} ids
+ */
+function filterByItemIds(keyProvider, cm, ids) {
+  var filter = [];
+  if (cm.getKeyProperties().length === 1) {
+    var result = {};
+    var pn = cm.getKeyProperties()[0];
+    var kp = cm.getPropertyMeta(pn);
+    ids.forEach(function (id) {
+      filter.push(cast(id, kp.type));
+    });
+    result[pn] = {$in: filter};
+    return result;
+  } else {
+    ids.forEach(function (id) {
+      filter.push(keyProvider.keyToData(cm, id));
+    });
+    return {$or: filter};
+  }
+}
+
+module.exports.filterByItemIds = filterByItemIds;
+
+/**
  * @param {ClassMeta} cm
  * @returns {String}
  */
@@ -313,7 +339,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
           }
         } else if (nm === '$ItemId') {
           if (typeof filter[nm] === 'string') {
-            keys = formUpdatedData(cm, keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+            keys = formUpdatedData(cm, keyProvider.keyToData(cm, filter[nm]));
             for (knm in keys) {
               if (keys.hasOwnProperty(knm)) {
                 result[knm] = keys[knm];

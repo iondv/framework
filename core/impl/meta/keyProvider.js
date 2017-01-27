@@ -3,7 +3,8 @@
  */
 'use strict';
 
-var KeyProvider = require('core/interfaces/KeyProvider');
+const KeyProvider = require('core/interfaces/KeyProvider');
+const cast = require('core/cast');
 
 /**
  * @param {{}} options
@@ -16,17 +17,15 @@ function MetaKeyProvider(options) {
   this.meta = options.metaRepo;
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {Object} data
-   * @param {String} [namespace]
    * @returns {String | null}
    * @private
    */
-  this._formKey = function (classname, data, namespace) {
+  this._formKey = function (cm, data) {
     if (data === null) {
       return null;
     }
-    var cm = this.meta.getMeta(classname, null, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
@@ -38,36 +37,34 @@ function MetaKeyProvider(options) {
   };
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {String} id
-   * @param {String} [namespace]
    * @returns {{}}
    * @private
    */
-  this._keyToData = function (classname, id, namespace) {
+  this._keyToData = function (cm, id) {
     var result = {};
     if (typeof id === 'string') {
-      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       var parts = id.split('_');
+      var pm;
       for (var i = 0; i < keyProps.length; i++) {
-        result[keyProps[i]] = parts[i];
+        pm = cm.getPropertyMeta(keyProps[i]);
+        result[keyProps[i]] = cast(parts[i], pm.type);
       }
     }
     return result;
   };
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {String} data
-   * @param {String} [namespace]
    * @returns {{} | null}
    * @private
    */
-  this._keyData = function (classname, data, namespace) {
+  this._keyData = function (cm, data) {
     var result = {};
     if (typeof data === 'object' && data) {
-      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
         if (data.hasOwnProperty(keyProps[i]) && data[keyProps[i]] !== null) {
@@ -76,46 +73,6 @@ function MetaKeyProvider(options) {
           return null;
         }
       }
-    }
-    return result;
-  };
-
-  /**
-   * @param {String} className
-   * @param {*} id
-   * @returns {{}}
-   */
-  this._filterByItemId = function (className, id, namespace) {
-    var cm = this.meta.getMeta(className, null, namespace),
-        keyProps = cm.getKeyProperties(),
-        result = {},
-        keys = [];
-    if(id.length) {
-      keys = id;
-    } else {
-      keys.push(id);
-    }
-    if (keyProps.length > 1) {
-      var tmp = [],
-          tmp2 = [],
-          tmp3 = {},
-          key = null;
-      for (var i = 0; i < keys.length; i++) {
-        key = this._keyToData(className, keys[i], namespace);
-        tmp2 = [];
-        for (var j in key) {
-          if (key.hasOwnProperty(j)) {
-            tmp3 = {};
-            tmp3[j] = {$eq: key[j]};
-            tmp2.push(tmp3);
-          }
-        }
-        tmp.push({$and: tmp2});
-      }
-      result = {$or: tmp};
-    } else {
-      result = {};
-      result[keyProps[0]] = {$in: keys};
     }
     return result;
   };
