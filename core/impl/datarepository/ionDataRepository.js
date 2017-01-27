@@ -356,8 +356,7 @@ function IonDataRepository(options) {
             Array.isArray(attrs[nm].filter) &&
             attrs[nm].filter.length
           ) {
-            filter = {};
-            filter[attrs[nm].key] = {$in: attrs[nm].filter};
+            filter = _this.keyProvider.filterByItemId(attrs[nm].refClassName, attrs[nm].filter);
             cn = attrs[nm].refClassName;
           } else if (
             attrs[nm].type  === PropertyTypes.COLLECTION &&
@@ -684,6 +683,37 @@ function IonDataRepository(options) {
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
+  };
+
+  /**
+   * @param {String} className
+   * @param {Object} options
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {String[]} [options.attributes]
+   * @param {String[]} [options.select]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this._rawData = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = this._getMeta(className);
+    var rcm = this._getRootType(cm);
+    options.attributes = [];
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.attributes.push(props[i].name);
+    }
+    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      options.filter = filter;
+      return _this.ds.fetch(tn(rcm), options);
+    });
   };
 
   /**

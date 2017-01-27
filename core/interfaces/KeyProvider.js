@@ -33,6 +33,16 @@ function KeyProvider() {
   this.keyData = function (classname, data, namespace) {
     return this._keyData(classname, data, namespace);
   };
+
+  /**
+   * @param {} className
+   * @param {*} id
+   * @param {String} [namespace]
+   * @returns {{}}
+     */
+  this.filterByItemId = function (className, id, namespace) {
+    return this._filterByItemId(className, id, namespace);
+  };
 }
 
 module.exports = KeyProvider;

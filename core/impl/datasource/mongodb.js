@@ -1,4 +1,5 @@
 // jscs:disable requireCapitalizedComments
+
 /**
  * Created by kras on 25.02.16.
  */
@@ -440,9 +441,9 @@ function MongoDs(config) {
   }
 
   function wind(attributes) {
-    var tmp = {};
-    var tmp2 = {};
-    var i;
+    var tmp, tmp2, i;
+    tmp = {};
+    tmp2 = {};
     for (i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = '$' + attributes[i];
       tmp2[attributes[i]] = '$_id.' + attributes[i];
@@ -535,7 +536,7 @@ function MongoDs(config) {
   }
 
   /**
-   * @param {String[]} attributes
+   * @param {Object} options
    * @param {{}} find
    * @param {Object[]} joins
    * @param {String} prefix
@@ -672,6 +673,8 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
+   * @param {String[]} [options.select]
    * @returns {*}
    */
   function checkAggregation(options, forcedStages) {
@@ -719,8 +722,15 @@ function MongoDs(config) {
           for (i = 0; i < options.attributes.length; i++) {
             tmp[options.attributes[i]] = 1;
           }
+        result.push({$group: {_id: null,__total: {$sum: 1}, data: {$addToSet: '$_id'}}});
+        result.push({$unwind: '$data'});
 
-          tmp.__total = {$sum: 1};
+        var tmp, ats;
+        tmp = {__total: '$__total'};
+        ats = options.select || options.attributes;
+        for (i = 0; i < ats.length; i++) {
+          tmp[ats[i]] = '$data.' + ats[i];
+        }
 
           result.push({
             $project: tmp
@@ -801,6 +811,8 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
+   * @param {String[]} [options.select]
    * @param {Object[]} aggregate
    * @param {Function} resolve
    * @param {Function} reject
@@ -808,7 +820,7 @@ function MongoDs(config) {
   function fetch(c, options, aggregate, resolve, reject) {
     var r, flds;
     if (aggregate) {
-      r = c.aggregate(aggregate, {}, function (err, data) {
+      c.aggregate(aggregate, {}, function (err, data) {
         if (err) {
           return reject(err);
         }
@@ -817,6 +829,33 @@ function MongoDs(config) {
           results.total = data.length ? data[0].count : 0;
         }
         resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
+      });
+    } else if (options.distinct && options.select.length === 1) {
+      r = c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
+        if (err) {
+          return reject(err);
+        }
+        if (options.sort && options.sort[options.select[0]]) {
+          var direction = options.sort[options.select[0]];
+          data = data.sort(function compare(a, b) {
+            if (a < b) {
+              return -1 * direction;
+            } else if (a > b) {
+              return 1 * direction;
+            }
+            return 0;
+          });
+        }
+        var res, stPos, endPos;
+        res = [];
+        stPos = options.offset || 0;
+        endPos = options.count ? stPos + options.count : data.length;
+        for (var i = stPos; i < endPos && i < data.length; i++) {
+          var tmp = {};
+          tmp[options.select[0]] = data[i];
+          res.push(tmp);
+        }
+        resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
       });
     } else {
       flds = null;
@@ -858,6 +897,7 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {Boolean} [options.distinct]
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
