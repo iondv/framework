@@ -1629,18 +1629,9 @@ function IonDataRepository(options) {
         options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
         _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
       } else {
-        var key = null;
-        var kp = detailCm.getKeyProperties();
-        if (kp.length > 1) {
-          reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
-        }
-
-        key = kp[0];
-
         _this._getItem(master.getClassName(), master.getItemId(), 0).then(function (m) {
           if (m) {
-            var filter = {};
-            filter[key] = {$in: m.base[collection] || []};
+            var filter = filterByItemIds(_this.keyProvider, detailCm, m.base[collection] || []);
             options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
             if (onlyCount) {
               _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
