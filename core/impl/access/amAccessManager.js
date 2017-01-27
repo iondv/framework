@@ -109,7 +109,6 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
-    roles = Array.isArray(roles) ? roles : [roles];
     return chain(roles, function (role) {
       return new Promise(function (resolve, reject) {
         _this.acl.removeAllow(role, resources, permissions, function (err) {
