@@ -539,15 +539,16 @@ function MongoDs(config) {
    * @param {Array} attributes
    * @param {{}} find
    * @param {Object[]} joins
+   * @param {{}} joinedSources
    * @param {String} prefix
    * @returns {*}
      */
-  function produceMatchObject(attributes, find, joins, prefix) {
+  function produceMatchObject(attributes, find, joins, joinedSources, prefix) {
     var result, tmp, i;
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], joins, prefix);
+        tmp = produceMatchObject(attributes, find[i], joins, joinedSources, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -562,10 +563,12 @@ function MongoDs(config) {
             arrFld = addPrefix('__jc', prefix, '$');
             find[name].alias = arrFld;
             find[name].prefix = prefix;
+
             joins.push(find[name]);
+
             tmp = null;
             if (find[name].filter) {
-              f = produceMatchObject(attributes, find[name].filter, joins, arrFld);
+              f = produceMatchObject(attributes, find[name].filter, joins, joinedSources, arrFld);
               if (f !== null) {
                 tmp = {};
                 tmp[arrFld] = {$elemMatch: f};
@@ -583,7 +586,7 @@ function MongoDs(config) {
             }
             find[name].filter = tmp;
           } else {
-            tmp = produceMatchObject(attributes, find[name], joins, prefix);
+            tmp = produceMatchObject(attributes, find[name], joins, joinedSources, prefix);
             if (tmp) {
               if (!result) {
                 result = {};
@@ -635,29 +638,19 @@ function MongoDs(config) {
     }
   }
 
-  function processJoin(result, attributes, joinedSources, leftPrefix) {
+  function processJoin(attributes, joinedSources, lookups, leftPrefix) {
     return function (join) {
       leftPrefix = leftPrefix || '';
       if (!leftPrefix && attributes.indexOf(join.left) < 0) {
         attributes.push(join.left);
       }
-
-      joinedSources[join.name] = true;
-
-      if (join.many) {
-        result.push({$unwind: leftPrefix + join.left});
+      if (leftPrefix) {
+        join.prefix = leftPrefix;
       }
-      result.push({
-        $lookup: {
-          from: join.table,
-          localField: leftPrefix + join.left,
-          foreignField: join.right,
-          as: join.name
-        }
-      });
-      result.push({$unwind: '$' + join.name});
+      joinedSources[join.name] = join;
+      lookups[joinId(join)] = join;
       if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(result, attributes, joinedSources, join.name + '.'));
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.name + '.'));
       }
     };
   }
@@ -681,12 +674,13 @@ function MongoDs(config) {
     options.attributes = options.attributes || [];
     var i, tmp, tmp2;
     var joinedSources = {};
+    var lookups = {};
     var result = [];
     var joins = [];
-    var extJoins = [];
 
     if (Array.isArray(options.joins)) {
-      options.joins.forEach(processJoin(extJoins, options.attributes, joinedSources));
+      joins = options.joins;
+      options.joins.forEach(processJoin(options.attributes, joinedSources, lookups));
     }
 
     if (options.fields) {
@@ -707,19 +701,13 @@ function MongoDs(config) {
 
     if (options.filter) {
       var exists = [];
-      var match = produceMatchObject(options, options.filter, joins);
-      processJoins(options.attributes, mergeJoins(joins), exists);
-      if (exists.length) {
+      var match = produceMatchObject(options, options.filter, joins, lookups);
+      processJoins(options.attributes, joins, exists);
+      if (exists.length || options.to) {
         result.push({$match: match});
         result = result.concat(exists);
       }
-
-      if ((extJoins.length || options.to) && !result.length) {
-        result.push({$match: options.filter});
-      }
     }
-
-    Array.prototype.push.apply(result, extJoins);
 
     if (Array.isArray(forcedStages)) {
       Array.prototype.push.apply(result, forcedStages);
