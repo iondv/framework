@@ -352,21 +352,21 @@ function IonDataRepository(options) {
               Array.isArray(attrs[nm].filter) &&
               attrs[nm].filter.length
             ) {
-              filter = {};
-              filter[attrs[nm].key] = {$in: attrs[nm].filter};
-              cn = attrs[nm].refClassName;
-            } else if (
+            filter = {};
+            filter[attrs[nm].key] = {$in: attrs[nm].filter};
+            cn = attrs[nm].refClassName;
+          } else if (
               attrs[nm].type  === PropertyTypes.COLLECTION &&
               Array.isArray(attrs[nm].colItems) &&
               attrs[nm].colItems.length
             ) {
-              filter = {};
-              filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
-              if (attrs[nm].colFilter) {
-                filter = {$and: [filter, attrs[nm].colFilter]};
-              }
-              cn = attrs[nm].colClassName;
+            filter = {};
+            filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
+            if (attrs[nm].colFilter) {
+              filter = {$and: [filter, attrs[nm].colFilter]};
             }
+            cn = attrs[nm].colClassName;
+          }
 
           if (filter) {
             attrs[nm].pIndex = i;
