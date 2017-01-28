@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const util = require('util');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -19,7 +20,7 @@ const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
  * @returns {*}
  */
 function toScalar(v, context) {
-  var result = null;
+  var result = v;
   var p;
   if (Array.isArray(v) && v.length) {
     result = v.length ? v[0] : null;
