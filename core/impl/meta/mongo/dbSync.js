@@ -314,7 +314,7 @@ function MongoDbSync(options) {
               cm.properties[i].type === PropertyTypes.STRING ||
               cm.properties[i].type === PropertyTypes.URL ||
               cm.properties[i].type === PropertyTypes.HTML ||
-              cm.properties[i].type === PropertyTypes.MULTILINE
+              cm.properties[i].type === PropertyTypes.TEXT
             )
           ) {
             fullText.push(cm.properties[i].name);

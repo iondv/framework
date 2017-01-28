@@ -523,8 +523,8 @@ function IonDataRepository(options) {
     loaders.push(_this.fileStorage.fetch(fids));
     loaders.push(_this.imageStorage.fetch(iids));
 
-    return Promise.all(loaders).then(
-      function (files) {
+    return Promise.all(loaders)
+      .then(function (files) {
         var tmp, i, j, k;
         for (k = 0; k < files.length; k++) {
           for (i = 0; i < files[k].length; i++) {
@@ -552,7 +552,10 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @returns {Promise}
      */
-  function calcProperties(item) {
+  function calcProperties(item, skip) {
+    if (skip) {
+      return Promise.resolve(item);
+    }
     var calculations = [];
     var calcNames = [];
     var props = item.getMetaClass().getPropertyMetas();
@@ -1065,7 +1068,7 @@ function IonDataRepository(options) {
     });
   }
 
-  function writeEventHandler(nestingDepth, changeLogger) {
+  function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
       var data = {};
@@ -1089,6 +1092,9 @@ function IonDataRepository(options) {
           true
         );
       }
+      if (skip) {
+        return Promise.resolve(e.item);
+      }
       return enrich(e.item, nestingDepth);
     };
   }
@@ -1101,6 +1107,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1143,10 +1150,10 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1163,6 +1170,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1221,10 +1229,10 @@ function IonDataRepository(options) {
             }
             return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler(options.nestingDepth, changeLogger)).
+          then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
           then(
             function (item) {
-              return calcProperties(item);
+              return calcProperties(item, options.skipResult);
             }
           ).
           then(resolve).catch(reject);
@@ -1247,6 +1255,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
@@ -1329,10 +1338,10 @@ function IonDataRepository(options) {
             updates: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
