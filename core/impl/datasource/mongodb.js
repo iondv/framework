@@ -465,56 +465,26 @@ function MongoDs(config) {
   }
 
   /**
-   * @param {Array} joins
-   */
-  function mergeJoins(joins) {
-    var joinsMap = {};
-    var result = [];
-    joins.forEach(function (join) {
-      var jid = joinId(join);
-      var j;
-      if (joinsMap.hasOwnProperty(jid)) {
-        j = joinsMap[jid];
-        if (join.filter) {
-          if (j.filter) {
-            if (j.filter.$and) {
-              j.filter.$and.push(join.filter);
-            } else {
-              j.filter = {$and: [j.filter, join.filter]};
-            }
-          } else {
-            j.filter = join.filter;
-          }
-        }
-      } else {
-        result.push(join);
-        joinsMap[jid] = join;
-      }
-    });
-    return result;
-  }
-
-  /**
    * @param {Array} attributes
    * @param {Array} joins
-   * @param {Array} exists
+   * @param {Array} result
    */
-  function processJoins(attributes, joins, exists) {
+  function processJoins(attributes, joins, result) {
     if (joins.length) {
       if (!attributes || !attributes.length) {
         throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
       }
       var attrs = attributes.slice(0);
       joins.forEach(function (join) {
-        var tmp, uwFld;
-        var left = addPrefix(join.left, join.prefix);
+        var tmp;
+        var left = join.left;
         if (join.many) {
+          left = '__uw_' + join.left;
           tmp = clean(attrs);
-          uwFld = '__uw_' + addPrefix(join.left, join.prefix, '$');
-          tmp.$project[uwFld] = '$' + left;
-          exists.push(tmp);
-          left = uwFld;
-          exists.push({$unwind: '$' + uwFld});
+          tmp.$project[left] = '$' + join.left;
+          attrs.push(left);
+          result.push(tmp);
+          result.push({$unwind: '$' + left});
         }
 
         tmp = {
@@ -523,32 +493,33 @@ function MongoDs(config) {
           foreignField: join.right,
           as: join.alias
         };
-        exists.push({$lookup: tmp});
+        result.push({$lookup: tmp});
         attrs.push(join.alias);
-
-        if (join.filter) {
-          exists.push({$match: join.filter});
+        if (join.passSize) {
+          tmp = clean(attrs);
+          tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
+          attrs.push(join.alias + '_size');
+          result.push(tmp);
         }
-        exists.push({$unwind: '$' + join.alias});
+        result.push({$unwind: '$' + join.alias});
       });
-      Array.prototype.push.apply(exists, wind(attributes));
     }
   }
 
   /**
-   * @param {Array} attributes
    * @param {{}} find
    * @param {Object[]} joins
-   * @param {{}} joinedSources
-   * @param {String} prefix
+   * @param {{}} explicitJoins
+   * @param {{v:Number}} counter
    * @returns {*}
-     */
-  function produceMatchObject(attributes, find, joins, joinedSources, prefix) {
+   */
+  function producePrefilter(find, joins, explicitJoins, counter) {
     var result, tmp, i;
+    counter = counter || {v: 0};
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = produceMatchObject(attributes, find[i], joins, joinedSources, prefix);
+        tmp = producePrefilter(find[i], joins, explicitJoins, counter);
         if (tmp) {
           result.push(tmp);
         }
@@ -556,42 +527,97 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var arrFld, f;
+      var j, jid;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
-            arrFld = addPrefix('__jc', prefix, '$');
-            find[name].alias = arrFld;
-            find[name].prefix = prefix;
-
-            joins.push(find[name]);
-
-            tmp = null;
-            if (find[name].filter) {
-              f = produceMatchObject(attributes, find[name].filter, joins, joinedSources, arrFld);
-              if (f !== null) {
-                tmp = {};
-                tmp[arrFld] = {$elemMatch: f};
-                if (name === '$joinNotExists') {
-                  tmp = {$not: tmp};
-                }
-              }
+            jid = joinId(find[name]);
+            if (explicitJoins.hasOwnProperty(jid)) {
+              j = explicitJoins[jid];
             } else {
-              tmp = {};
-              if (name === '$joinExists') {
-                tmp[arrFld] = {$not: {$size: 0}};
-              } else {
-                tmp[arrFld] = {$size: 0};
-              }
+              j = clone(find[name]);
+              delete j.filter;
+              j.alias = '__j' + counter.v;
+              counter.v++;
+              explicitJoins[jid] = j;
+              joins.push(j);
             }
-            find[name].filter = tmp;
+
+            if (find[name].filter) {
+              producePrefilter(find[name].filter, joins, explicitJoins, counter);
+            }
           } else {
-            tmp = produceMatchObject(attributes, find[name], joins, joinedSources, prefix);
+            tmp = producePrefilter(find[name], joins, explicitJoins, counter);
             if (tmp) {
               if (!result) {
                 result = {};
               }
               result[name] = tmp;
+            }
+          }
+        }
+      }
+      return result;
+    }
+    return find;
+  }
+
+  /**
+   * @param {{}} find
+   * @param {{}} explicitJoins
+   * @param {String} [prefix]
+   * @returns {*}
+   */
+  function producePostfilter(find, explicitJoins, prefix) {
+    var result, tmp, i;
+    if (Array.isArray(find)) {
+      result = [];
+      for (i = 0; i < find.length; i++) {
+        tmp = producePostfilter(find[i], explicitJoins, prefix);
+        if (tmp) {
+          result.push(tmp);
+        }
+      }
+      return result.length ? result : null;
+    } else if (typeof find === 'object') {
+      result = null;
+      var f, j, jid;
+      for (var name in find) {
+        if (find.hasOwnProperty(name)) {
+          if (name === '$joinExists' || name === '$joinNotExists') {
+            jid = joinId(find[name]);
+            j = explicitJoins[jid];
+
+            if (prefix) {
+              j.left = addPrefix(j.left, prefix);
+            }
+            tmp = null;
+            if (find[name].filter) {
+              f = producePostfilter(find[name].filter, explicitJoins, j.alias);
+              if (f !== null) {
+                if (name === '$joinNotExists') {
+                  f = {$not: f};
+                }
+                return f;
+              }
+            } else {
+              tmp = {};
+              tmp[j.alias + '_size'] = 0;
+              j.passSize = true;
+              if (name === '$joinExists') {
+                tmp[j.alias + '_size'] = {$ne: 0};
+              }
+              return tmp;
+            }
+          } else {
+            tmp = producePostfilter(find[name], explicitJoins, prefix);
+            if (tmp) {
+              result = result || {};
+              if (name[0] !== '$') {
+                result[prefix ? addPrefix(name, prefix) : name] = tmp;
+              } else {
+                result[name] = tmp;
+              }
             }
           }
         }
@@ -699,14 +725,26 @@ function MongoDs(config) {
       }
     }
 
+    var prefilter, postfilter, jl;
+
     if (options.filter) {
-      var exists = [];
-      var match = produceMatchObject(options, options.filter, joins, lookups);
-      processJoins(options.attributes, joins, exists);
-      if (exists.length || options.to) {
-        result.push({$match: match});
-        result = result.concat(exists);
+      jl = joins.length;
+      prefilter = producePrefilter(options.filter, joins, lookups);
+      if (joins.length > jl) {
+        postfilter = producePostfilter(options.filter, lookups);
       }
+    }
+
+    if (prefilter && (joins.length || options.to)) {
+      result.push({$match: prefilter});
+    }
+
+    if (joins.length) {
+      processJoins(options.attributes, joins, result);
+      if (postfilter) {
+        result.push({$match: postfilter});
+      }
+      Array.prototype.push.apply(result, wind(options.attributes));
     }
 
     if (Array.isArray(forcedStages)) {
