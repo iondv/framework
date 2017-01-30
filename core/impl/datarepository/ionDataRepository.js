@@ -1601,22 +1601,19 @@ function IonDataRepository(options) {
       options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
       return _this._getList(detailCm.getCanonicalName(), options);
     } else {
-      var key = null;
       var kp = detailCm.getKeyProperties();
       if (kp.length > 1) {
         return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
       }
 
-        filter = {};
-        filter[kp[0]] = {$in: master.base[collection] || []};
-        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-        if (onlyCount) {
-              return _this._getCount(detailCm.getCanonicalName(), options);
-        } else {
-              return _this._getList(detailCm.getCanonicalName(), options);
-        }
-          }
-        });
+      filter = {};
+      filter[kp[0]] = {$in: master.base[collection] || []};
+      options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+      if (onlyCount) {
+        return _this._getCount(detailCm.getCanonicalName(), options);
+      } else {
+        return _this._getList(detailCm.getCanonicalName(), options);
+      }
     }
   }
 
