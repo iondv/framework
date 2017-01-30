@@ -1950,7 +1950,6 @@ function IonDataRepository(options) {
         }
 
         filter = {};
-        console.log(master.base[collection]);
         filter[kp[0]] = {$in: master.base[collection] || []};
         options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
         if (onlyCount) {
