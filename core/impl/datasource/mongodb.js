@@ -546,12 +546,12 @@ function MongoDs(config) {
             if (find[name].filter) {
               producePrefilter(find[name].filter, joins, explicitJoins, counter);
             }
+            result = {};
+            result[j.left] = {$exists: true};
           } else {
             tmp = producePrefilter(find[name], joins, explicitJoins, counter);
             if (tmp) {
-              if (!result) {
-                result = {};
-              }
+              result = result || {};
               result[name] = tmp;
             }
           }
