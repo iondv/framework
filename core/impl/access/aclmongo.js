@@ -109,7 +109,6 @@ function MongoAcl(config) {
           r = r.concat([_this.globalMarker]);
         }
       }
-
       var res = null;
       _this.acl.allowedPermissions(subject, r, function (err, perm) {
         if (err) {
