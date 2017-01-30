@@ -530,8 +530,8 @@ function IonDataRepository(options) {
     loaders.push(_this.fileStorage.fetch(fids));
     loaders.push(_this.imageStorage.fetch(iids));
 
-    return Promise.all(loaders).then(
-      function (files) {
+    return Promise.all(loaders)
+      .then(function (files) {
         var tmp, i, j, k;
         for (k = 0; k < files.length; k++) {
           for (i = 0; i < files[k].length; i++) {
@@ -559,8 +559,8 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @returns {Promise}
      */
-  function calcProperties(item) {
-    if (!item) {
+  function calcProperties(item, skip) {
+    if (!item || skip) {
       return Promise.resolve(item);
     }
     var calculations = [];
@@ -729,20 +729,21 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
+    var cm, rcm, opts;
     if (id && typeof obj === 'string') {
-      return new Promise(function (resolve, reject) {
-        var cm = getMeta(obj);
-        var rcm = getRootType(cm);
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
-        if (conditions  === null) {
-          return resolve(null);
-        }
-        _this.ds.get(tn(rcm), conditions).then(function (data) {
+      cm = getMeta(obj);
+      rcm = getRootType(cm);
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      if (conditions  === null) {
+        return Promise.resolve(null);
+      }
+      return _this.ds.get(tn(rcm), conditions)
+        .then(function (data) {
           var item = null;
           if (data) {
             try {
               item = _this._wrap(data._class, data, data._classVer);
-              loadFiles(item).
+              return loadFiles(item).
               then(
                 function (item) {
                   return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
@@ -752,42 +753,41 @@ function IonDataRepository(options) {
                 function (item) {
                   return calcProperties(item);
                 }
-              ).
-              then(resolve).
-              catch(reject);
-              return;
+              );
             } catch (err) {
-              return reject(err);
+              return Promise.reject(err);
             }
           }
-          resolve(null);
-        }).catch(reject);
-      });
+          return Promise.resolve(null);
+        });
     } else if (obj instanceof Item) {
-      return new Promise(function (resolve, reject) {
-        var options = {};
-        var cm = obj.getMetaClass();
-        var rcm = getRootType(cm);
-        options.filter = addFilterByItem({}, obj);
-        options.filter = addDiscriminatorFilter(options.filter, cm);
-        options.count = 1;
-        _this.ds.fetch(tn(rcm), options).then(function (data) {
-          var item;
-          for (var i = 0; i < data.length; i++) {
-            item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            return loadFiles(item);
-          }
-          resolve(null);
-        }).
-        then(function (item) {
+      opts = {};
+      cm = obj.getMetaClass();
+      var fetcher = null;
+      if (obj.getItemId()) {
+        rcm = getRootType(cm);
+        opts.filter = addFilterByItem({}, obj);
+        opts.filter = addDiscriminatorFilter(opts.filter, cm);
+        opts.count = 1;
+        fetcher = _this.ds.fetch(tn(rcm), opts)
+          .then(function (data) {
+            var item;
+            for (var i = 0; i < data.length; i++) {
+              item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+              return loadFiles(item);
+            }
+            return Promise.resolve(null);
+          });
+      } else {
+        fetcher = Promise.resolve(obj);
+      }
+      return fetcher
+        .then(function (item) {
           return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
-        }).
-        then(function (item) {
+        })
+        .then(function (item) {
           return calcProperties(item);
-        }).
-        then(resolve).
-        catch(reject);
-      });
+        });
     } else {
       throw new Error('Переданы некорректные параметры метода getItem');
     }
@@ -1106,7 +1106,7 @@ function IonDataRepository(options) {
     });
   }
 
-  function writeEventHandler(nestingDepth, changeLogger) {
+  function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
       var data = {};
@@ -1130,6 +1130,9 @@ function IonDataRepository(options) {
           true
         );
       }
+      if (skip) {
+        return Promise.resolve(e.item);
+      }
       return enrich(e.item, nestingDepth || 0);
     };
   }
@@ -1142,6 +1145,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1184,10 +1188,10 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1204,6 +1208,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1262,10 +1267,10 @@ function IonDataRepository(options) {
             }
             return new Promise(function (resolve) {resolve({item: item});});
           }).
-          then(writeEventHandler(options.nestingDepth, changeLogger)).
+          then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
           then(
             function (item) {
-              return calcProperties(item);
+              return calcProperties(item, options.skipResult);
             }
           ).
           then(resolve).catch(reject);
@@ -1288,6 +1293,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
@@ -1370,10 +1376,10 @@ function IonDataRepository(options) {
             updates: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1602,48 +1608,55 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
-    return new Promise(function (resolve, reject) {
-      if (!options) {
-        options = {};
-      }
+    if (!options) {
+      options = {};
+    }
 
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
-      }
+    var pm = master.getMetaClass().getPropertyMeta(collection);
+    if (!pm) {
+      return Promise.reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+    }
 
-      var detailCm = _this.meta.getMeta(pm.itemsClass, null, master.getMetaClass().getNamespace());
-      if (!detailCm) {
-        return reject(new Error('Не найден класс элементов коллекции!'));
-      }
+    var detailCm = pm._refClass;
+    if (!detailCm) {
+      return Promise.reject(new Error('Не найден класс элементов коллекции!'));
+    }
 
-      if (pm.backRef) {
-        var filter = {};
-        filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        if (pm.selConditions) {
-          var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
-          if (tmp) {
-            filter = {$and: [filter, tmp]};
-          }
+    if (pm.backRef) {
+      var filter = {};
+      filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
+      if (pm.selConditions) {
+        var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
+        if (tmp) {
+          filter = {$and: [filter, tmp]};
         }
-        options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
-        _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-      } else {
-        _this._getItem(master.getClassName(), master.getItemId(), 0).then(function (m) {
+      }
+      options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
+      return _this._getList(detailCm.getCanonicalName(), options);
+    } else {
+      var key = null;
+      var kp = detailCm.getKeyProperties();
+      if (kp.length > 1) {
+        return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+      }
+
+      key = kp[0];
+
+      return _this._getItem(master.getClassName(), master.getItemId(), 0)
+        .then(function (m) {
           if (m) {
             var filter = filterByItemIds(_this.keyProvider, detailCm, m.base[collection] || []);
             options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
             if (onlyCount) {
-              _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+              return _this._getCount(detailCm.getCanonicalName(), options);
             } else {
-              _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+              return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            reject(new Error('Не найден контейнер коллекции!'));
+            return Promise.reject(new Error('Не найден контейнер коллекции!'));
           }
-        }).catch(reject);
-      }
-    });
+        });
+    }
   }
 
   /**
