@@ -285,6 +285,7 @@ function SecuredDataRepository(options) {
   this._getItem = function (obj, id, options) {
     var cname = cn(obj);
     var itemPermissions = {};
+    id = id || '';
     return aclProvider.getPermissions(options.uid, [classPrefix + cname, itemPrefix + cname + '@' + id])
       .then(function (permissions) {
         if (
