@@ -39,7 +39,7 @@ function MongoDs(config) {
   /**
    * @returns {Promise}
    */
-  this.openDb = function () {
+  function openDb() {
     return new Promise(function (resolve, reject) {
       if (_this.db && _this.isOpen) {
         return resolve(_this.db);
@@ -74,7 +74,7 @@ function MongoDs(config) {
         });
       }
     });
-  };
+  }
 
   this._connection = function () {
     if (this.isOpen) {
@@ -84,7 +84,7 @@ function MongoDs(config) {
   };
 
   this._open = function () {
-    return this.openDb();
+    return openDb();
   };
 
   this._close = function () {
@@ -110,9 +110,9 @@ function MongoDs(config) {
    * @param {String} type
    * @returns {Promise}
    */
-  this.getCollection = function (type) {
+  function getCollection(type) {
     return new Promise(function (resolve, reject) {
-      _this.openDb().then(function () {
+      openDb().then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         _this.db.collection(type, {strict: true}, function (err, c) {
           if (!c) {
@@ -132,10 +132,10 @@ function MongoDs(config) {
         });
       }).catch(reject);
     });
-  };
+  }
 
   this._delete = function (type, conditions) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           if (conditions._id instanceof String || typeof conditions._id === 'string') {
@@ -155,7 +155,7 @@ function MongoDs(config) {
 
   function getAutoInc(type) {
     return new Promise(function (resolve, reject) {
-      _this.getCollection(AUTOINC_COLLECTION).then(
+      getCollection(AUTOINC_COLLECTION).then(
         /**
          * @param {Collection} autoinc
          */
@@ -299,7 +299,7 @@ function MongoDs(config) {
   }
 
   this._insert = function (type, data) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           autoInc(type, data)
@@ -367,7 +367,7 @@ function MongoDs(config) {
     });
   }
 
-  this.doUpdate = function (type, conditions, data, upsert, multi) {
+  function doUpdate(type, conditions, data, upsert, multi) {
     var hasData = false;
     if (data) {
       for (var nm in data) {
@@ -385,7 +385,7 @@ function MongoDs(config) {
       return _this._get(type, conditions);
     }
 
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return cleanNulls(c, type, prepareGeoJSON(data))
           .then(
@@ -430,14 +430,14 @@ function MongoDs(config) {
             }
           );
       });
-  };
+  }
 
   this._update = function (type, conditions, data) {
-    return this.doUpdate(type, conditions, data, false, false);
+    return doUpdate(type, conditions, data, false, false);
   };
 
   this._upsert = function (type, conditions, data) {
-    return this.doUpdate(type, conditions, data, true, false);
+    return doUpdate(type, conditions, data, true, false);
   };
 
   function addPrefix(nm, prefix, sep) {
@@ -453,7 +453,7 @@ function MongoDs(config) {
       tmp[attributes[i]] = '$' + attributes[i];
       tmp2[attributes[i]] = '$_id.' + attributes[i];
     }
-    return [{$group: {_id: tmp}}, {$project:tmp2}];
+    return [{$group: {_id: tmp}}, {$project: tmp2}];
   }
 
   function clean(attributes) {
@@ -604,33 +604,125 @@ function MongoDs(config) {
   }
 
   /**
+   * @param {String} lexem
+   * @param {String[]} attributes
+   * @param {{}} joinedSources
+   */
+  function checkAttrLexem(lexem, attributes, joinedSources) {
+    var tmp = lexem.indexOf('.') < 0 ? lexem : lexem.substr(0, lexem.indexOf('.'));
+    if (tmp[0] === '$' && !joinedSources.hasOwnProperty(tmp)) {
+      tmp = tmp.substr(1);
+      if (attributes.indexOf(tmp) < 0) {
+        attributes.push(tmp);
+      }
+    }
+  }
+
+  /**
+   * @param {{}} expr
+   * @param {String[]} attributes
+   * @param {{}} joinedSources
+   */
+  function checkAttrExpr(expr, attributes, joinedSources) {
+    if (typeof expr === 'string') {
+      return checkAttrLexem(expr, attributes, joinedSources);
+    }
+
+    if (typeof expr === 'object') {
+      for (var nm in expr) {
+        if (expr.hasOwnProperty(nm)) {
+          if (nm[0] !== '$') {
+            checkAttrLexem('$' + nm, attributes, joinedSources);
+          }
+          checkAttrExpr(expr[nm], attributes, joinedSources);
+        }
+      }
+    }
+  }
+
+  function processJoin(result, attributes, joinedSources, leftPrefix) {
+    return function (join) {
+      leftPrefix = leftPrefix || '';
+      if (!leftPrefix && attributes.indexOf(join.left) < 0) {
+        attributes.push(join.left);
+      }
+
+      joinedSources[join.name] = true;
+
+      if (join.many) {
+        result.push({$unwind: leftPrefix + join.left});
+      }
+      result.push({
+        $lookup: {
+          from: join.table,
+          localField: leftPrefix + join.left,
+          foreignField: join.right,
+          as: join.name
+        }
+      });
+      result.push({$unwind: '$' + join.name});
+      if (Array.isArray(join.join)) {
+        join.join.forEach(processJoin(result, attributes, joinedSources, join.name + '.'));
+      }
+    };
+  }
+
+  /**
    * @param {{}} options
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
+   * @param {{}} [options.aggregates]
+   * @param {{}} [options.joins]
    * @param {{}} [options.sort]
+   * @param {String} [options.to]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @returns {*}
    */
-  function checkAggregation(options) {
+  function checkAggregation(options, forcedStages) {
+    options.attributes = options.attributes || [];
+    var i, tmp;
+    var joinedSources = {};
+    var result = [];
+    var joins = [];
+    var extJoins = [];
+
+    if (Array.isArray(options.joins)) {
+      options.joins.forEach(processJoin(extJoins, options.attributes, joinedSources));
+    }
+
+    if (options.fields) {
+      for (tmp in options.fields) {
+        if (options.fields.hasOwnProperty(tmp)) {
+          checkAttrExpr(options.fields[tmp], options.attributes, joinedSources);
+        }
+      }
+    }
+
+    if (options.aggregates) {
+      for (tmp in options.aggregates) {
+        if (options.aggregates.hasOwnProperty(tmp)) {
+          checkAttrExpr(options.aggregates[tmp], options.attributes, joinedSources);
+        }
+      }
+    }
+
     if (options.filter) {
       var exists = [];
-      var joins = [];
-      var match = produceMatchObject(options.attributes, options.filter, joins);
+      var match = produceMatchObject(options, options.filter, joins);
       processJoins(options.attributes, mergeJoins(joins), exists);
       if (exists.length) {
-        var result = [];
         result.push({$match: match});
         result = result.concat(exists);
 
         if (options.countTotal) {
-          if (!options.attributes || !options.attributes.length) {
+          if (!options.attributes.length) {
             throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
           }
 
-          var tmp = {};
-          for (var i = 0; i < options.attributes.length; i++) {
+          tmp = {};
+          for (i = 0; i < options.attributes.length; i++) {
             tmp[options.attributes[i]] = 1;
           }
 
@@ -640,21 +732,41 @@ function MongoDs(config) {
             $project: tmp
           });
         }
+      }
 
-        if (options.sort) {
-          result.push({$sort: options.sort});
-        }
-
-        if (options.offset) {
-          result.push({$skip: options.offset});
-        }
-
-        if (options.count) {
-          result.push({$limit: options.count});
-        }
-        return result;
+      if ((extJoins.length || options.to) && !result.length) {
+        result.push({$match: options.filter});
       }
     }
+
+    Array.prototype.push.apply(result, extJoins);
+
+    if (Array.isArray(forcedStages)) {
+      Array.prototype.push.apply(result, forcedStages);
+    }
+
+    if (result.length || options.to) {
+      if (options.sort) {
+        result.push({$sort: options.sort});
+      }
+
+      if (options.offset) {
+        result.push({$skip: options.offset});
+      }
+
+      if (options.count) {
+        result.push({$limit: options.count});
+      }
+    }
+
+    if (options.to) {
+      result.push({$out: options.to});
+    }
+
+    if (result.length) {
+      return result;
+    }
+
     return false;
   }
 
@@ -689,8 +801,8 @@ function MongoDs(config) {
   /**
    * @param {Collection} c
    * @param {{}} options
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -746,8 +858,8 @@ function MongoDs(config) {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -756,7 +868,7 @@ function MongoDs(config) {
    */
   this._fetch = function (type, options) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           fetch(c, options, checkAggregation(options),
@@ -791,8 +903,8 @@ function MongoDs(config) {
   /**
    * @param {String} type
    * @param {{}} [options]
-   * @param {String[]} [options.attributes]
    * @param {{}} [options.filter]
+   * @param {{}} [options.fields]
    * @param {{}} [options.sort]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -802,7 +914,7 @@ function MongoDs(config) {
    */
   this._forEach = function (type, options, cb) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           try {
@@ -837,50 +949,33 @@ function MongoDs(config) {
    * @param {String} type
    * @param {{expressions: {}}} options
    * @param {{}} [options.filter]
-   * @param {{}} [options.grouping]
+   * @param {{}} [options.fields]
+   * @param {{}} [options.aggregates]
+   * @param {String} [options.to]
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
     options = options || {};
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          if (!options.expressions) {
-            return reject(new Error('Не указано выражение агрегации!'));
-          }
-          var i;
           var plan = [];
-          if (options.filter) {
-            plan.push({
-              $match: options.filter
-            });
+
+          var expr = {$group: {}};
+          if (options.fields) {
+            expr.$group._id = options.fields;
           }
 
-          var groupings = null;
-          if (options.groupBy) {
-            groupings = {};
-            for (i = 0; i < options.groupBy.length; i++) {
-              groupings[options.groupBy[i]] = '$' + options.groupBy[i];
-            }
-          }
-
-          var expr = {
-            $group: {
-              _id: groupings
-            }
-          };
-
-          var alias, oper, attr;
-          for (alias in options.expressions) {
-            if (options.expressions.hasOwnProperty(alias)) {
-              for (oper in options.expressions[alias]) {
-                if (options.expressions[alias].hasOwnProperty(oper)) {
-                  attr = options.expressions[alias][oper];
-                  if (oper === 'count') {
+          var alias, oper;
+          for (alias in options.aggregates) {
+            if (options.aggregates.hasOwnProperty(alias)) {
+              for (oper in options.aggregates[alias]) {
+                if (options.aggregates[alias].hasOwnProperty(oper)) {
+                  if (oper === '$count') {
                     expr.$group[alias] = {$sum: 1};
-                  } else if (oper === 'sum' || oper === 'avg' || oper === 'min' || oper === 'max') {
+                  } else if (oper === '$sum' || oper === '$avg' || oper === '$min' || oper === '$max') {
                     expr.$group[alias] = {};
-                    expr.$group[alias]['$' + oper] = '$' + attr;
+                    expr.$group[alias][oper] = options.aggregates[alias][oper];
                   }
                 }
               }
@@ -888,6 +983,26 @@ function MongoDs(config) {
           }
 
           plan.push(expr);
+
+          var attrs = {};
+          if (options.fields) {
+            for (alias in options.fields) {
+              if (options.fields.hasOwnProperty(alias)) {
+                attrs[alias] = '$_id.' + alias;
+              }
+            }
+          }
+          if (options.aggregates) {
+            for (alias in options.aggregates) {
+              if (options.aggregates.hasOwnProperty(alias)) {
+                attrs[alias] = 1;
+              }
+            }
+          }
+
+          plan.push({$project: attrs});
+
+          plan = checkAggregation(options, plan);
 
           c.aggregate(plan, function (err, result) {
             if (err) {
@@ -901,7 +1016,7 @@ function MongoDs(config) {
   };
 
   this._count = function (type, options) {
-    return this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           var opts = {};
@@ -924,7 +1039,7 @@ function MongoDs(config) {
   };
 
   this._get = function (type, conditions) {
-    return _this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
@@ -944,7 +1059,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._ensureIndex = function (type, properties, options) {
-    return _this.getCollection(type).then(
+    return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve) {
           c.createIndex(properties, options || {}, function () {
@@ -974,7 +1089,7 @@ function MongoDs(config) {
 
       if (act) {
         return new Promise(function (resolve, reject) {
-          _this.getCollection(AUTOINC_COLLECTION).then(
+          getCollection(AUTOINC_COLLECTION).then(
             function (c) {
               c.findOne({type: type}, function (err, r) {
                 if (err) {
@@ -1006,7 +1121,7 @@ function MongoDs(config) {
         });
       }
     }
-    return new Promise(function (resolve) { resolve(); });
+    return Promise.resolve();
   };
 }
 
