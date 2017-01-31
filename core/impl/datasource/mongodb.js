@@ -139,6 +139,9 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          if (conditions._id instanceof String || typeof conditions._id === 'string') {
+            conditions._id = new mongo.ObjectID(conditions._id);
+          }
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
@@ -395,6 +398,9 @@ function MongoDs(config) {
                 }
                 if (!empty(data.unset)) {
                   updates.$unset = data.unset;
+                }
+                if (conditions._id instanceof String || typeof conditions._id === 'string') {
+                  conditions._id = new mongo.ObjectID(conditions._id);
                 }
                 if (!multi) {
                   c.updateOne(
