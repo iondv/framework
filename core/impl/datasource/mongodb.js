@@ -135,25 +135,6 @@ function MongoDs(config) {
     });
   }
 
-  this._delete = function (type, conditions) {
-    return getCollection(type).then(
-      function (c) {
-        return new Promise(function (resolve, reject) {
-          if (conditions._id instanceof String || typeof conditions._id === 'string') {
-            conditions._id = new mongo.ObjectID(conditions._id);
-          }
-          c.deleteMany(conditions,
-            function (err, result) {
-              if (err) {
-                return reject(err);
-              }
-              resolve(result.deletedCount);
-            });
-        });
-      }
-    );
-  };
-
   function getAutoInc(type) {
     return new Promise(function (resolve, reject) {
       getCollection(AUTOINC_COLLECTION).then(
@@ -368,6 +349,21 @@ function MongoDs(config) {
     });
   }
 
+  function checkObjectId(conditions) {
+    if (typeof conditions === 'object' && conditions) {
+      for (var nm in conditions) {
+        if (conditions.hasOwnProperty(nm)) {
+          if (nm === '_id' && typeof conditions._id === 'string') {
+            conditions._id = new mongo.ObjectID(conditions._id);
+          } else {
+            checkObjectId(conditions[nm]);
+          }
+        }
+      }
+    }
+    return conditions;
+  }
+
   function doUpdate(type, conditions, data, upsert, multi) {
     var hasData = false;
     if (data) {
@@ -399,9 +395,7 @@ function MongoDs(config) {
                 if (!empty(data.unset)) {
                   updates.$unset = data.unset;
                 }
-                if (conditions._id instanceof String || typeof conditions._id === 'string') {
-                  conditions._id = new mongo.ObjectID(conditions._id);
-                }
+                checkObjectId(conditions);
                 if (!multi) {
                   c.updateOne(
                     conditions,
@@ -439,6 +433,23 @@ function MongoDs(config) {
 
   this._upsert = function (type, conditions, data) {
     return doUpdate(type, conditions, data, true, false);
+  };
+
+  this._delete = function (type, conditions) {
+    return getCollection(type).then(
+      function (c) {
+        return new Promise(function (resolve, reject) {
+          checkObjectId(conditions);
+          c.deleteMany(conditions,
+            function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              resolve(result.deletedCount);
+            });
+        });
+      }
+    );
   };
 
   function addPrefix(nm, prefix, sep) {
@@ -700,9 +711,11 @@ function MongoDs(config) {
    * @param {Boolean} [options.countTotal]
    * @param {Boolean} [options.distinct]
    * @param {String[]} [options.select]
+   * @param {Array} [forcedStages]
+   * @param {Boolean} [onlyCount]
    * @returns {*}
    */
-  function checkAggregation(options, forcedStages) {
+  function checkAggregation(options, forcedStages, onlyCount) {
     options.attributes = options.attributes || [];
     var i, tmp, tmp2;
     var joinedSources = {};
@@ -758,7 +771,7 @@ function MongoDs(config) {
     }
 
     if (result.length || options.to) {
-      if (options.countTotal) {
+      if (options.countTotal || onlyCount) {
         if (!options.attributes.length) {
           throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
         }
@@ -770,21 +783,27 @@ function MongoDs(config) {
           tmp2[options.attributes[i]] = '$data.' + options.attributes[i];
         }
         result.push({$group: {_id: tmp}});
-        result.push({$group: {_id: null, __total: {$sum: 1}, data: {$addToSet: '$_id'}}});
-        result.push({$unwind: '$data'});
-        result.push({$project: tmp2});
+        if (onlyCount) {
+          result.push({$group: {_id: null, __total: {$sum: 1}}});
+        } else {
+          result.push({$group: {_id: null, __total: {$sum: 1}, data: {$addToSet: '$_id'}}});
+          result.push({$unwind: '$data'});
+          result.push({$project: tmp2});
+        }
       }
 
-      if (options.sort) {
-        result.push({$sort: options.sort});
-      }
+      if (!onlyCount) {
+        if (options.sort) {
+          result.push({$sort: options.sort});
+        }
 
-      if (options.offset) {
-        result.push({$skip: options.offset});
-      }
+        if (options.offset) {
+          result.push({$skip: options.offset});
+        }
 
-      if (options.count) {
-        result.push({$limit: options.count});
+        if (options.count) {
+          result.push({$limit: options.count});
+        }
       }
     }
 
@@ -930,6 +949,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          checkObjectId(options.filter);
           fetch(c, options, checkAggregation(options),
             function (r, amount) {
               if (Array.isArray(r)) {
@@ -977,6 +997,7 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           try {
+            checkObjectId(options.filter);
             fetch(c, options, checkAggregation(options),
               function (r, amount) {
                 if (Array.isArray(r)) {
@@ -1061,6 +1082,10 @@ function MongoDs(config) {
 
           plan.push({$project: attrs});
 
+          if (options.filter) {
+            checkObjectId(options.filter);
+          }
+
           plan = checkAggregation(options, plan);
 
           c.aggregate(plan, function (err, result) {
@@ -1078,7 +1103,9 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          checkObjectId(options.filter);
           var opts = {};
+
           if (options.offset) {
             opts.skip = options.offset;
           }
@@ -1086,12 +1113,26 @@ function MongoDs(config) {
             opts.limit = options.count;
           }
 
-          c.count(options.filter || {}, opts, function (err, cnt) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(cnt);
-          });
+          var agreg = checkAggregation(options, [], true);
+          if (agreg) {
+            c.aggregate(agreg, function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              var cnt = 0;
+              if (result.length) {
+                cnt = result[0].__total;
+              }
+              resolve(cnt);
+            });
+          } else {
+            c.count(options.filter || {}, opts, function (err, cnt) {
+              if (err) {
+                return reject(err);
+              }
+              resolve(cnt);
+            });
+          }
         });
       }
     );
@@ -1101,6 +1142,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          checkObjectId(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
               return reject(err);
