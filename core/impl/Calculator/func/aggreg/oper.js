@@ -27,8 +27,8 @@ module.exports = function (collFunc, af) {
               } else if (typeof args[0] === 'string') {
                 var opts = args.length > 2 && typeof args[2] === 'object' ? {filter: args[2]} : {};
                 var oper = {};
-                oper[af] = args[1];
-                opts.expressions = {result: oper};
+                oper['$' + af] = args[1];
+                opts.aggregates = {result: oper};
                 dataRepo.aggregate(args[0], opts).then(function (data) {
                   resolve(data.result);
                 }).catch(reject);
