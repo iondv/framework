@@ -523,6 +523,20 @@ function MongoDs(config) {
     }
   }
 
+  function processJoin(attributes, joinedSources, lookups, leftPrefix) {
+    return function (join) {
+      leftPrefix = leftPrefix || '';
+      if (!leftPrefix && attributes.indexOf(join.left) < 0) {
+        attributes.push(join.left);
+      }
+      joinedSources[join.alias] = join;
+      lookups[joinId(join)] = join;
+      if (Array.isArray(join.join)) {
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias + '.'));
+      }
+    };
+  }
+
   /**
    * @param {{}} find
    * @param {Object[]} joins
@@ -544,7 +558,7 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var j, jid;
+      var j, jid, ja;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
@@ -555,6 +569,13 @@ function MongoDs(config) {
               j = clone(find[name]);
               delete j.filter;
               j.alias = '__j' + counter.v;
+              var jsrc = {};
+              processJoin(j, jsrc, explicitJoins);
+              for (ja in jsrc) {
+                if (jsrc.hasOwnProperty(ja)) {
+                  joins.push(jsrc[ja]);
+                }
+              }
               counter.v++;
               explicitJoins[jid] = j;
               joins.push(j);
@@ -679,23 +700,6 @@ function MongoDs(config) {
         }
       }
     }
-  }
-
-  function processJoin(attributes, joinedSources, lookups, leftPrefix) {
-    return function (join) {
-      leftPrefix = leftPrefix || '';
-      if (!leftPrefix && attributes.indexOf(join.left) < 0) {
-        attributes.push(join.left);
-      }
-      if (leftPrefix) {
-        join.prefix = leftPrefix;
-      }
-      joinedSources[join.name] = join;
-      lookups[joinId(join)] = join;
-      if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.name + '.'));
-      }
-    };
   }
 
   /**
