@@ -7,6 +7,7 @@ const ICalculator = require('core/interfaces/Calculator');
 const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
+const Item = require('core/interfaces/DataRepository').Item;
 
 // jshint maxstatements: 50, maxcomplexity: 20
 /**
@@ -100,7 +101,10 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      return this.property(nm).evaluate();
+      if (this instanceof Item) {
+        return this.property(nm).evaluate();
+      }
+      return this[nm];
     };
   }
 
