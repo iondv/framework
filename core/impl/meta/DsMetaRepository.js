@@ -568,13 +568,14 @@ function DsMetaRepository(options) {
    * @returns {*}
    */
   function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
-    var tmp, pm, result, ppath;
+    var tmp, pm, result, ppath, re;
+    re = /^\w[\w\.]*\w$/;
     var parts = semantic.split('|');
     for (var i = 0; i < parts.length; i++) {
       tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
       if (tmp) {
-        if (semanticAttrs) {
-
+        if (semanticAttrs && re.test(tmp[1])) {
+          semanticAttrs.push(tmp[1]);
         }
         ppath = tmp[1].split('.');
         pm = locatePropertyMeta(ppath, cm);

@@ -733,7 +733,7 @@ function IonDataRepository(options) {
     if (id && typeof obj === 'string') {
       cm = getMeta(obj);
       rcm = getRootType(cm);
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
       if (conditions  === null) {
         return Promise.resolve(null);
       }

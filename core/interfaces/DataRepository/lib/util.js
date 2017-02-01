@@ -282,13 +282,16 @@ function prepareLinked(cm, path, filter, nm, fetchers, ds, keyProvider, nsSep) {
  * @returns {*}
  */
 function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, parent, part, propertyMeta) {
-  var i, knm, nm, keys, pm, emptyResult, result, containCheckers, linkedCheckers;
+  var i, knm, nm, keys, pm, emptyResult, result, tmp;
   if (geoOperations.indexOf(part) !== -1) {
     return filter;
   } else if (filter && Array.isArray(filter)) {
     result = [];
     for (i = 0; i < filter.length; i++) {
-      result.push(prepareFilterOption(cm, filter[i], fetchers, ds, keyProvider, nsSep, result, i));
+      tmp = prepareFilterOption(cm, filter[i], fetchers, ds, keyProvider, nsSep, result, i);
+      if (tmp) {
+        result.push(tmp);
+      }
     }
     return result;
   } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {

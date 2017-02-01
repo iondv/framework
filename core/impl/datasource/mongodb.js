@@ -501,7 +501,7 @@ function MongoDs(config) {
           tmp.$project[left] = '$' + join.left;
           attrs.push(left);
           result.push(tmp);
-          result.push({$unwind: '$' + left});
+          result.push({$unwind: {path: '$' + left, preserveNullAndEmptyArrays: true}});
         }
 
         tmp = {
@@ -518,7 +518,7 @@ function MongoDs(config) {
           attrs.push(join.alias + '_size');
           result.push(tmp);
         }
-        result.push({$unwind: '$' + join.alias});
+        result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
       });
     }
   }
@@ -791,7 +791,7 @@ function MongoDs(config) {
           result.push({$group: {_id: null, __total: {$sum: 1}}});
         } else {
           result.push({$group: {_id: null, __total: {$sum: 1}, data: {$addToSet: '$_id'}}});
-          result.push({$unwind: '$data'});
+          result.push({$unwind: {path: '$data', preserveNullAndEmptyArrays: true}});
           result.push({$project: tmp2});
         }
       }
