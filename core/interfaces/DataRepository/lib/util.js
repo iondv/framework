@@ -262,7 +262,7 @@ function prepareLinked(cm, path, filter, nm, fetchers, ds, keyProvider, nsSep) {
     } else {
       var je = prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, ds, keyProvider, nsSep);
       if (je) {
-        lc.$joinExists.join = je.$joinExists;
+        lc.$joinExists.join = [je.$joinExists];
       }
     }
   }

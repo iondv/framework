@@ -121,7 +121,7 @@ function MongoDs(config) {
               _this.db.createCollection(type)
                 .then(resolve)
                 .catch(reject);
-            } catch (e) { // Для отлавливания ошибки, при падении системы - закрывается БД и основная ошибка не выводится, а выводится вторичная от создания коллекции на закрытой базе "TypeError: callback is not a function"
+            } catch (e) {
               return reject(err);
             }
           } else {
@@ -523,34 +523,43 @@ function MongoDs(config) {
     }
   }
 
-  function processJoin(attributes, joinedSources, lookups, leftPrefix) {
+  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter) {
+    counter = counter || {v: 0};
     return function (join) {
       leftPrefix = leftPrefix || '';
       if (!leftPrefix && attributes.indexOf(join.left) < 0) {
         attributes.push(join.left);
       }
-      joinedSources[join.alias] = join;
-      lookups[joinId(join)] = join;
+      if (!join.alias) {
+        join.alias = '__j' + counter.v;
+        counter.v++;
+      }
+      var jid = joinId(join);
+      if (!lookups.hasOwnProperty(jid)) {
+        lookups[jid] = join;
+        joinedSources[join.alias] = join;
+      }
       if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias + '.'));
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter));
       }
     };
   }
 
   /**
+   * @param {Array} attributes
    * @param {{}} find
    * @param {Object[]} joins
    * @param {{}} explicitJoins
    * @param {{v:Number}} counter
    * @returns {*}
    */
-  function producePrefilter(find, joins, explicitJoins, counter) {
+  function producePrefilter(attributes, find, joins, explicitJoins, counter) {
     var result, tmp, i;
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
       result = [];
       for (i = 0; i < find.length; i++) {
-        tmp = producePrefilter(find[i], joins, explicitJoins, counter);
+        tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
         if (tmp) {
           result.push(tmp);
         }
@@ -559,6 +568,8 @@ function MongoDs(config) {
     } else if (typeof find === 'object') {
       result = null;
       var j, jid, ja;
+      var jsrc = {};
+      var pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
@@ -569,25 +580,19 @@ function MongoDs(config) {
               j = clone(find[name]);
               delete j.filter;
               j.alias = '__j' + counter.v;
-              var jsrc = {};
-              processJoin(j, jsrc, explicitJoins);
-              for (ja in jsrc) {
-                if (jsrc.hasOwnProperty(ja)) {
-                  joins.push(jsrc[ja]);
-                }
-              }
               counter.v++;
-              explicitJoins[jid] = j;
-              joins.push(j);
             }
 
+            find[name].alias = j.alias;
+            pj(find[name]);
+
             if (find[name].filter) {
-              producePrefilter(find[name].filter, joins, explicitJoins, counter);
+              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
             result = {};
             result[j.left] = {$exists: true};
           } else {
-            tmp = producePrefilter(find[name], joins, explicitJoins, counter);
+            tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (tmp) {
               result = result || {};
               result[name] = tmp;
@@ -595,9 +600,62 @@ function MongoDs(config) {
           }
         }
       }
+
+      for (ja in jsrc) {
+        if (jsrc.hasOwnProperty(ja)) {
+          joins.push(jsrc[ja]);
+        }
+      }
+
       return result;
     }
     return find;
+  }
+
+  function joinPostFilter(join, explicitJoins, prefix, not) {
+    var jid = joinId(join);
+    var j = explicitJoins[jid];
+
+    if (prefix) {
+      j.left = addPrefix(j.left, prefix);
+    }
+    var f = null;
+    if (join.filter || join.join) {
+      f = null;
+      if (join.filter) {
+        f = producePostfilter(join.filter, explicitJoins, addPrefix(join.alias, prefix));
+        if (f !== null) {
+          if (not) {
+            f = {$not: f};
+          }
+        }
+      }
+
+      if (Array.isArray(join.join)) {
+        var and = [];
+        var tmp;
+        for (var i = 0; i < join.join.length; i++) {
+          tmp = joinPostFilter(join.join[i], explicitJoins, addPrefix(join.alias, prefix), false);
+          if (tmp) {
+            and.push(tmp);
+          }
+        }
+        if (and.length) {
+          if (f) {
+            and.push(f);
+          }
+          f = {$and: and};
+        }
+      }
+    } else {
+      f = {};
+      f[j.alias + '_size'] = 0;
+      j.passSize = true;
+      if (!not) {
+        f[j.alias + '_size'] = {$ne: 0};
+      }
+    }
+    return f;
   }
 
   /**
@@ -619,34 +677,12 @@ function MongoDs(config) {
       return result.length ? result : null;
     } else if (typeof find === 'object') {
       result = null;
-      var f, j, jid;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
-            jid = joinId(find[name]);
-            j = explicitJoins[jid];
-
-            if (prefix) {
-              j.left = addPrefix(j.left, prefix);
-            }
-            tmp = null;
-            if (find[name].filter) {
-              f = producePostfilter(find[name].filter, explicitJoins, j.alias);
-              if (f !== null) {
-                if (name === '$joinNotExists') {
-                  f = {$not: f};
-                }
-                return f;
-              }
-            } else {
-              tmp = {};
-              tmp[j.alias + '_size'] = 0;
-              j.passSize = true;
-              if (name === '$joinExists') {
-                tmp[j.alias + '_size'] = {$ne: 0};
-              }
-              return tmp;
-            }
+            return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
+          } else if (name === '$text') {
+            return null;
           } else {
             tmp = producePostfilter(find[name], explicitJoins, prefix);
             if (tmp) {
@@ -752,7 +788,7 @@ function MongoDs(config) {
 
     if (options.filter) {
       jl = joins.length;
-      prefilter = producePrefilter(options.filter, joins, lookups);
+      prefilter = producePrefilter(options.attributes, options.filter, joins, lookups);
       if (joins.length > jl) {
         postfilter = producePostfilter(options.filter, lookups);
       }
