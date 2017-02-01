@@ -1144,6 +1144,7 @@ function IonDataRepository(options) {
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
+   * @param {String} [options.uid]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
    * @returns {Promise}
@@ -1171,6 +1172,9 @@ function IonDataRepository(options) {
         Promise.all(fileSavers).then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
+          if (options.uid) {
+            updates._creator = options.uid;
+          }
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
@@ -1208,6 +1212,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String} [options.uid]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
@@ -1244,6 +1249,9 @@ function IonDataRepository(options) {
           }
 
           Promise.all(fileSavers).then(function () {
+            if (options.uid) {
+              updates._editor = options.uid;
+            }
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
@@ -1608,6 +1616,8 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
+      var filter;
+
     if (!options) {
       options = {};
     }
@@ -1623,7 +1633,7 @@ function IonDataRepository(options) {
     }
 
     if (pm.backRef) {
-      var filter = {};
+        filter = {};
       filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
       if (pm.selConditions) {
         var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
@@ -1634,13 +1644,10 @@ function IonDataRepository(options) {
       options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
       return _this._getList(detailCm.getCanonicalName(), options);
     } else {
-      var key = null;
       var kp = detailCm.getKeyProperties();
       if (kp.length > 1) {
         return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
       }
-
-      key = kp[0];
 
       return _this._getItem(master.getClassName(), master.getItemId(), 0)
         .then(function (m) {
