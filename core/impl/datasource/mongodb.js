@@ -14,7 +14,7 @@ const clone = require('clone');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 70, maxcomplexity: 30
+// jshint maxstatements: 70, maxcomplexity: 30, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -589,13 +589,31 @@ function MongoDs(config) {
             if (find[name].filter) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
-            result = {};
-            result[j.left] = {$exists: true};
+            result = true;
           } else {
             tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (tmp) {
-              result = result || {};
-              result[name] = tmp;
+              if (name === '$or') {
+                for (i = 0; i < tmp.length; i++) {
+                  if (tmp[i] === true) {
+                    result = true;
+                  }
+                }
+                if (!result) {
+                  result = {$or: tmp};
+                }
+              } else if (name === '$and') {
+                result = [];
+                for (i = 0; i < tmp.length; i++) {
+                  if (tmp[i] !== true) {
+                    result.push(tmp[i]);
+                  }
+                }
+                result = {$and: result};
+              } else {
+                result = result || {};
+                result[name] = tmp;
+              }
             }
           }
         }
@@ -623,7 +641,7 @@ function MongoDs(config) {
     if (join.filter || join.join) {
       f = null;
       if (join.filter) {
-        f = producePostfilter(join.filter, explicitJoins, addPrefix(join.alias, prefix));
+        f = producePostfilter(join.filter, explicitJoins, join.alias);
         if (f !== null) {
           if (not) {
             f = {$not: f};
@@ -635,7 +653,7 @@ function MongoDs(config) {
         var and = [];
         var tmp;
         for (var i = 0; i < join.join.length; i++) {
-          tmp = joinPostFilter(join.join[i], explicitJoins, addPrefix(join.alias, prefix), false);
+          tmp = joinPostFilter(join.join[i], explicitJoins, join.alias, false);
           if (tmp) {
             and.push(tmp);
           }
