@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const util = require('util');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -19,7 +20,7 @@ const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
  * @returns {*}
  */
 function toScalar(v, context) {
-  var result = null;
+  var result = v;
   var p;
   if (Array.isArray(v) && v.length) {
     result = v.length ? v[0] : null;
@@ -52,7 +53,7 @@ function produceContainsFilter(rcm, condition, context) {
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
       return {$regex: toScalar(condition.value, context)};
     } else {
-      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
     throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
@@ -151,18 +152,28 @@ function ConditionParser(condition, rcm, context) {
       result = {};
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
-          result.$or = [{}, {}, {}];
-          result.$or[0][condition.property] = {$eq: null};
-          result.$or[1][condition.property] = {$eq: ''};
-          result.$or[2][condition.property] = {$exists: false};
-          return result;
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: true};
+          } else {
+            result.$or = [{}, {}, {}];
+            result.$or[0][condition.property] = {$eq: null};
+            result.$or[1][condition.property] = {$eq: ''};
+            result.$or[2][condition.property] = {$exists: false};
+            return result;
+          }
         } break;
         case ConditionTypes.NOT_EMPTY: {
-          result.$and = [{}, {}, {}];
-          result.$and[0][condition.property] = {$ne: null};
-          result.$and[1][condition.property] = {$ne: ''};
-          result.$and[2][condition.property] = {$exists: true};
-          return result;
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: false};
+          } else {
+            result.$and = [{}, {}, {}];
+            result.$and[0][condition.property] = {$ne: null};
+            result.$and[1][condition.property] = {$ne: ''};
+            result.$and[2][condition.property] = {$exists: true};
+            return result;
+          }
         } break;
         case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context);
           break;

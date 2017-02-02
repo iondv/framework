@@ -77,6 +77,7 @@ function WorkflowProvider(options) {
               }
 
               state.stageCaption = stage.caption;
+              state.stage = stage.name;
               if (state.since && stage.maxPeriod) {
                 state.expires = period(stage.maxPeriod).addTo(state.since);
                 state.expired = state.expires.getTime() < new Date().getTime();

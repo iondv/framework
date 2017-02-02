@@ -57,6 +57,20 @@ function Item(id, base, classMeta) {
   };
 
   /**
+   * @returns {String}
+   */
+  this.getCreator = function () {
+    return this.base._creator;
+  };
+
+  /**
+   * @returns {String}
+   */
+  this.getEditor = function () {
+    return this.base._editor;
+  };
+
+  /**
    * @param {String} name
    * @returns {Item | null}
    */

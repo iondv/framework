@@ -382,7 +382,7 @@ gulp.task('setup', function (done) {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler', 'calculator']
+    ['auth', 'rtEvents', 'sessionHandler']
   ).then(function (scp) {
     scope = scp;
     return new Promise(function (rs, rj) {
