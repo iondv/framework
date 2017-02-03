@@ -599,7 +599,7 @@ function MongoDs(config) {
                     result = true;
                   }
                 }
-                if (!result) {
+                if (!result && tmp.length) {
                   result = {$or: tmp};
                 }
               } else if (name === '$and') {
@@ -609,7 +609,7 @@ function MongoDs(config) {
                     result.push(tmp[i]);
                   }
                 }
-                result = {$and: result};
+                result = result.length ? {$and: result} : null;
               } else {
                 result = result || {};
                 result[name] = tmp;
