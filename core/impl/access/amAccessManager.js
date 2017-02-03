@@ -75,15 +75,14 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._assignRoles = function (subjects, roles) {
-    var promises = [];
-    subjects.forEach(function (subject) {
-      promises.push(new Promise(function (resolve, reject) {
+    subjects  = Array.isArray(subjects) ? subjects : [subjects];
+    return chain(subjects, function (subject) {
+      return new Promise(function (resolve, reject) {
         _this.acl.addUserRoles(subject, roles, function (err) {
           return err ? reject(err) : resolve();
         });
-      }));
+      });
     });
-    return Promise.all(promises);
   };
 
   /**
@@ -110,9 +109,11 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.removeAllow(roles, resources, permissions, function (err) {
-        return err ? reject(err) : resolve();
+    return chain(roles, function (role) {
+      return new Promise(function (resolve, reject) {
+        _this.acl.removeAllow(role, resources, permissions, function (err) {
+          return err ? reject(err) : resolve();
+        });
       });
     });
   };

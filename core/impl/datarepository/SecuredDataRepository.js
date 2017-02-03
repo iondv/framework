@@ -301,6 +301,9 @@ function SecuredDataRepository(options) {
         }
         return rejectByItem(cname, id);
       }).then(function (item) {
+        if (!item) {
+          return Promise.resolve(null);
+        }
         return aclProvider.getPermissions(options.uid, attrResources(item))
           .then(function (ap) {
             item.permissions = itemPermissions;
