@@ -62,6 +62,8 @@ function ClassMeta(metaObject) {
 
   this._forcedEnrichment = [];
 
+  this._semanticAttrs = [];
+
   this._semanticFunc = null;
 
   loadPropertyMetas(_this, metaObject);
@@ -91,6 +93,10 @@ function ClassMeta(metaObject) {
       return this._semanticFunc.call(item, dateCallback);
     }
     return item.getItemId();
+  };
+
+  this.getSemanticAttrs = function () {
+    return this._semanticAttrs || [];
   };
 
   this.getForcedEnrichment = function () {

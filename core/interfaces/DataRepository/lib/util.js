@@ -100,6 +100,32 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
 module.exports.formDsUpdatedData = formUpdatedData;
 
 /**
+ * @param {KeyProvider} keyProvider
+ * @param {ClassMeta} cm
+ * @param {String[]} ids
+ */
+function filterByItemIds(keyProvider, cm, ids) {
+  var filter = [];
+  if (cm.getKeyProperties().length === 1) {
+    var result = {};
+    var pn = cm.getKeyProperties()[0];
+    var kp = cm.getPropertyMeta(pn);
+    ids.forEach(function (id) {
+      filter.push(cast(id, kp.type));
+    });
+    result[pn] = {$in: filter};
+    return result;
+  } else {
+    ids.forEach(function (id) {
+      filter.push(keyProvider.keyToData(cm, id));
+    });
+    return {$or: filter};
+  }
+}
+
+module.exports.filterByItemIds = filterByItemIds;
+
+/**
  * @param {ClassMeta} cm
  * @returns {String}
  */
@@ -167,18 +193,17 @@ function join(pm, cm, colMeta, filter) {
  * @param {{}} filter
  * @param {String} nm
  * @param {Array} fetchers
- * @param {Array} containCheckers
  * @param {DataSource} ds
  * @param {KeyProvider} keyProvider
  * @param {String} [nsSep]
  */
-function prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyProvider, nsSep) {
+function prepareContains(cm, pm, filter, nm, fetchers, ds, keyProvider, nsSep) {
   var colMeta = pm._refClass;
   var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, ds, keyProvider, nsSep, filter, nm);
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
-  containCheckers.push({$joinExists: join(pm, cm, colMeta, tmp)});
+  return {$joinExists: join(pm, cm, colMeta, tmp)};
 }
 
 /**
@@ -186,18 +211,17 @@ function prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyP
  * @param {{type: Number}} pm
  * @param {{}} filter
  * @param {String} nm
- * @param {Array} containCheckers
  */
-function prepareEmpty(cm, pm, filter, nm, containCheckers) {
+function prepareEmpty(cm, pm, filter, nm) {
   var colMeta = pm._refClass;
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
 
   if (filter[nm].$empty) {
-    containCheckers.push({$joinNotExists: join(pm, cm, colMeta, null)});
+    return {$joinNotExists: join(pm, cm, colMeta, null)};
   } else {
-    containCheckers.push({$joinExists: join(pm, cm, colMeta, null)});
+    return {$joinExists: join(pm, cm, colMeta, null)};
   }
 }
 
@@ -207,61 +231,42 @@ function prepareEmpty(cm, pm, filter, nm, containCheckers) {
  * @param {{}} filter
  * @param {String} nm
  * @param {Array} fetchers
- * @param {{}} linkedCheckers
  * @param {DataSource} ds
  * @param {KeyProvider} keyProvider
  * @param {String} nsSep
  */
-function prepareLinked(cm, path, filter, nm, fetchers, linkedCheckers, ds, keyProvider, nsSep) {
-  var i, lc, rMeta, n;
+function prepareLinked(cm, path, filter, nm, fetchers, ds, keyProvider, nsSep) {
+  var lc, rMeta;
+  lc = null;
   var pm = cm.getPropertyMeta(path[0]);
   if (pm && pm.type === PropertyTypes.REFERENCE && path.length > 1) {
     rMeta = pm._refClass;
     if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
       throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
     }
-    if (linkedCheckers.hasOwnProperty(path[0])) {
-      lc = linkedCheckers[path[0]];
-    } else {
-      lc = {
-        $joinExists: {
-          table: tn(rMeta),
-          many: false,
-          left: pm.backRef ? cm.getKeyProperties()[0] : pm.name,
-          right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-          filter: null,
-          forAttr: pm.name
-        }
-      };
-      linkedCheckers[path[0]] = lc;
-    }
+    lc = {
+      $joinExists: {
+        table: tn(rMeta),
+        many: false,
+        left: pm.backRef ? cm.getKeyProperties()[0] : pm.name,
+        right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
+        filter: null
+      }
+    };
 
-    var f = lc.$joinExists.filter || {$and: []};
     var fo;
     if (path.length === 2) {
       fo = {};
       fo[path[1]] = prepareFilterOption(rMeta, filter[nm], fetchers, ds, keyProvider, nsSep, fo, path[1]);
-      f.$and.push(fo);
+      lc.$joinExists.filter = fo;
     } else {
-      var joins = {};
-      for (i = 0; i < f.$and.length; i++) {
-        if (f.$and[i].hasOwnProperty('$joinExists')) {
-          joins[f.$and[i].$joinExists.forAttr] = f.$and[i];
-        }
+      var je = prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, ds, keyProvider, nsSep);
+      if (je) {
+        lc.$joinExists.join = [je.$joinExists];
       }
-      prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, joins, ds, keyProvider, nsSep);
-      for (n in joins) {
-        if (joins.hasOwnProperty(n)) {
-          if (f.$and.indexOf(joins[n]) < 0) {
-            f.$and.push(joins[n]);
-          }
-        }
-      }
-    }
-    if (f.$and.length) {
-      lc.$joinExists.filter = f;
     }
   }
+  return lc;
 }
 
 /**
@@ -277,19 +282,20 @@ function prepareLinked(cm, path, filter, nm, fetchers, linkedCheckers, ds, keyPr
  * @returns {*}
  */
 function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, parent, part, propertyMeta) {
-  var i, knm, nm, keys, pm, emptyResult, result, containCheckers, linkedCheckers;
+  var i, knm, nm, keys, pm, emptyResult, result, tmp;
   if (geoOperations.indexOf(part) !== -1) {
     return filter;
   } else if (filter && Array.isArray(filter)) {
     result = [];
     for (i = 0; i < filter.length; i++) {
-      result.push(prepareFilterOption(cm, filter[i], fetchers, ds, keyProvider, nsSep, result, i));
+      tmp = prepareFilterOption(cm, filter[i], fetchers, ds, keyProvider, nsSep, result, i);
+      if (tmp) {
+        result.push(tmp);
+      }
     }
     return result;
   } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
     result = {};
-    containCheckers = [];
-    linkedCheckers = {};
     emptyResult = true;
     for (nm in filter) {
       if (filter.hasOwnProperty(nm)) {
@@ -298,12 +304,10 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
             for (knm in filter[nm]) {
               if (filter[nm].hasOwnProperty(knm)) {
                 if (knm === '$contains') {
-                  prepareContains(cm, pm, filter, nm, fetchers, containCheckers, ds, keyProvider);
-                  break;
+                  return prepareContains(cm, pm, filter, nm, fetchers, ds, keyProvider);
                 }
                 if (knm === '$empty') {
-                  prepareEmpty(cm, pm, filter, nm, containCheckers);
-                  break;
+                  return prepareEmpty(cm, pm, filter, nm);
                 }
               }
             }
@@ -313,7 +317,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
           }
         } else if (nm === '$ItemId') {
           if (typeof filter[nm] === 'string') {
-            keys = formUpdatedData(cm, keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
+            keys = formUpdatedData(cm, keyProvider.keyToData(cm, filter[nm]));
             for (knm in keys) {
               if (keys.hasOwnProperty(knm)) {
                 result[knm] = keys[knm];
@@ -331,27 +335,12 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
           result[nm] = filter[nm];
           emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
-          prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider, linkedCheckers);
+          return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
         } else {
           result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, propertyMeta);
           emptyResult = false;
         }
       }
-    }
-
-    for (nm in linkedCheckers) {
-      if (linkedCheckers.hasOwnProperty(nm)) {
-        containCheckers.push(linkedCheckers[nm]);
-      }
-    }
-
-    if (containCheckers.length) {
-      if (!emptyResult) {
-        containCheckers.push(result);
-      }
-      return {
-        $and: containCheckers
-      };
     }
 
     if (emptyResult) {
