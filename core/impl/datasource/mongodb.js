@@ -709,40 +709,41 @@ function MongoDs(config) {
       }
     }
 
+    var exists = [];
+    var match;
     if (options.filter) {
-      var exists = [];
-      var match = produceMatchObject(options, options.filter, joins);
+      match = produceMatchObject(options, options.filter, joins);
       processJoins(options.attributes, mergeJoins(joins), exists);
-
-      if (options.distinct && options.select.length && (exists.length || options.select.length > 1)) {
-        Array.prototype.push.apply(exists, wind(options.select));
-      }
 
       if (exists.length) {
         result.push({$match: match});
         result = result.concat(exists);
+      }
+    }
 
-        if (options.countTotal) {
-          if (!options.attributes.length) {
-            throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
-          }
+    if (options.distinct && options.select.length && (result.length || options.select.length > 1)) {
+      Array.prototype.push.apply(result, wind(options.select));
+    }
 
-          tmp = {};
-          for (i = 0; i < options.attributes.length; i++) {
-            tmp[options.attributes[i]] = 1;
-          }
-
-          tmp.__total = {$sum: 1};
-
-          result.push({
-            $project: tmp
-          });
-        }
+    if (result.length && options.countTotal) {
+      if (!options.attributes.length) {
+        throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
       }
 
-      if ((extJoins.length || options.to) && !result.length) {
-        result.push({$match: options.filter});
+      tmp = {};
+      for (i = 0; i < options.attributes.length; i++) {
+        tmp[options.attributes[i]] = 1;
       }
+
+      tmp.__total = {$sum: 1};
+
+      result.push({
+        $project: tmp
+      });
+    }
+
+    if ((extJoins.length || options.to) && !result.length) {
+      result.push({$match: options.filter});
     }
 
     Array.prototype.push.apply(result, extJoins);
