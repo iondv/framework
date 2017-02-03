@@ -356,7 +356,12 @@ function IonDataRepository(options) {
             Array.isArray(attrs[nm].filter) &&
             attrs[nm].filter.length
           ) {
-            filter = filterByItemIds(_this.keyProvider, attrs[nm].refClass, attrs[nm].filter);
+            if (attrs[nm].backRef) {
+              filter = {};
+              filter[attrs[nm].key] = {$in: attrs[nm].filter};
+            } else {
+              filter = filterByItemIds(_this.keyProvider, attrs[nm].refClass, attrs[nm].filter);
+            }
             cn = attrs[nm].refClass.getCanonicalName();
           } else if (
             attrs[nm].type  === PropertyTypes.COLLECTION &&
@@ -1616,7 +1621,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
-      var filter;
+    var filter;
 
     if (!options) {
       options = {};
@@ -1633,7 +1638,7 @@ function IonDataRepository(options) {
     }
 
     if (pm.backRef) {
-        filter = {};
+      filter = {};
       filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
       if (pm.selConditions) {
         var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
