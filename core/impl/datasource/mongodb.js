@@ -592,8 +592,8 @@ function MongoDs(config) {
             result = true;
           } else {
             tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
-            if (tmp) {
-              if (name === '$or') {
+            if (name === '$or') {
+              if (tmp) {
                 for (i = 0; i < tmp.length; i++) {
                   if (tmp[i] === true) {
                     result = true;
@@ -602,7 +602,9 @@ function MongoDs(config) {
                 if (!result && tmp.length) {
                   result = {$or: tmp};
                 }
-              } else if (name === '$and') {
+              }
+            } else if (name === '$and') {
+              if (tmp) {
                 result = [];
                 for (i = 0; i < tmp.length; i++) {
                   if (tmp[i] !== true) {
@@ -610,7 +612,9 @@ function MongoDs(config) {
                   }
                 }
                 result = result.length ? {$and: result} : null;
-              } else {
+              }
+            } else {
+              if (!(name === '$not' && tmp === true)) {
                 result = result || {};
                 result[name] = tmp;
               }
