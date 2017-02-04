@@ -105,6 +105,9 @@ module.exports.formDsUpdatedData = formUpdatedData;
  * @param {String[]} ids
  */
 function filterByItemIds(keyProvider, cm, ids) {
+  if (!Array.isArray(ids)) {
+    throw new Error('неправильные данные');
+  }
   var filter = [];
   if (cm.getKeyProperties().length === 1) {
     var result = {};
