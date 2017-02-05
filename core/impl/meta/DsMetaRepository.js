@@ -567,12 +567,16 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    * @returns {*}
    */
-  function createSemanticFunc(semantic, cm, forceEnrichment, prefix) {
-    var tmp, pm, result, ppath;
+  function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
+    var tmp, pm, result, ppath, re;
+    re = /^\w[\w\.]*\w$/;
     var parts = semantic.split('|');
     for (var i = 0; i < parts.length; i++) {
       tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
       if (tmp) {
+        if (semanticAttrs && re.test(tmp[1])) {
+          semanticAttrs.push(tmp[1]);
+        }
         ppath = tmp[1].split('.');
         pm = locatePropertyMeta(ppath, cm);
         if (pm) {
@@ -624,6 +628,7 @@ function DsMetaRepository(options) {
               propertyMetas[i].semantic,
               refcm,
               cm._forcedEnrichment,
+              null,
               propertyMetas[i].name
             );
           }
@@ -631,7 +636,7 @@ function DsMetaRepository(options) {
       }
 
       if (cm.plain.semantic) {
-        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment);
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
       }
     }
   }

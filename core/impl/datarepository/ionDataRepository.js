@@ -16,6 +16,7 @@ const EventManager = require('core/impl/EventManager');
 const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
+const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const ConditionParser = require('core/ConditionParser');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
@@ -161,7 +162,7 @@ function IonDataRepository(options) {
     if (options && options.autoassign) {
       autoAssign(acm, data, true);
     }
-    return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
+    return new Item(this.keyProvider.formKey(acm, data), data, acm);
   };
 
   /**
@@ -197,7 +198,7 @@ function IonDataRepository(options) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
           type: PropertyTypes.REFERENCE,
-          refClassName: refc.getCanonicalName(),
+          refClass: refc,
           attrName: property.getName(),
           key: refc.getKeyProperties()[0],
           pIndex: 0,
@@ -240,9 +241,8 @@ function IonDataRepository(options) {
       if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
         attrs[item.classMeta.getName() + '.' + property.getName()] = {
           type: PropertyTypes.COLLECTION,
-          colClassName: refc.getCanonicalName(),
+          colClass: refc,
           attrName: property.getName(),
-          key: refc.getKeyProperties()[0],
           backRef: property.meta.backRef,
           pIndex: 0,
           colItems: []
@@ -356,20 +356,28 @@ function IonDataRepository(options) {
             Array.isArray(attrs[nm].filter) &&
             attrs[nm].filter.length
           ) {
-            filter = {};
-            filter[attrs[nm].key] = {$in: attrs[nm].filter};
-            cn = attrs[nm].refClassName;
+            if (attrs[nm].backRef) {
+              filter = {};
+              filter[attrs[nm].key] = {$in: attrs[nm].filter};
+            } else {
+              filter = filterByItemIds(_this.keyProvider, attrs[nm].refClass, attrs[nm].filter);
+            }
+            cn = attrs[nm].refClass.getCanonicalName();
           } else if (
             attrs[nm].type  === PropertyTypes.COLLECTION &&
             Array.isArray(attrs[nm].colItems) &&
             attrs[nm].colItems.length
           ) {
-            filter = {};
-            filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
+            if (attrs[nm].backRef) {
+              filter = {};
+              filter[attrs[nm].backRef] = {$in: attrs[nm].colItems};
+            } else {
+              filter = filterByItemIds(_this.keyProvider, attrs[nm].colClass, attrs[nm].colItems);
+            }
             if (attrs[nm].colFilter) {
               filter = {$and: [filter, attrs[nm].colFilter]};
             }
-            cn = attrs[nm].colClassName;
+            cn = attrs[nm].colClass.getCanonicalName();
           }
 
           if (filter) {
@@ -687,6 +695,37 @@ function IonDataRepository(options) {
   };
 
   /**
+   * @param {String} className
+   * @param {Object} options
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {String[]} [options.attributes]
+   * @param {String[]} [options.select]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this._rawData = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = this._getMeta(className);
+    var rcm = this._getRootType(cm);
+    options.attributes = [];
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.attributes.push(props[i].name);
+    }
+    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      options.filter = filter;
+      return _this.ds.fetch(tn(rcm), options);
+    });
+  };
+
+  /**
    *
    * @param {String | Item} obj
    * @param {String} [id]
@@ -699,7 +738,7 @@ function IonDataRepository(options) {
     if (id && typeof obj === 'string') {
       cm = getMeta(obj);
       rcm = getRootType(cm);
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
       if (conditions  === null) {
         return Promise.resolve(null);
       }
@@ -1196,7 +1235,7 @@ function IonDataRepository(options) {
         /**
          * @var {{}}
          */
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
+        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
 
         if (conditions) {
           var refUpdates = {};
@@ -1284,9 +1323,9 @@ function IonDataRepository(options) {
         var conditionsData;
 
         if (id) {
-          conditionsData = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
+          conditionsData = _this.keyProvider.keyToData(rcm, id);
         } else {
-          conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
+          conditionsData = _this.keyProvider.keyData(rcm, updates);
         }
 
         var event = EventType.UPDATE;
@@ -1374,7 +1413,7 @@ function IonDataRepository(options) {
     var rcm = getRootType(cm);
     // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
     return new Promise(function (resolve, reject) {
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
       var item = _this._wrap(classname, conditions);
       _this.ds.delete(tn(rcm), conditions).
       then(function () {
@@ -1417,10 +1456,7 @@ function IonDataRepository(options) {
           if (m[i]) {
             cond = formUpdatedData(
               m[i].getMetaClass(),
-              _this.keyProvider.keyToData(
-                m[i].getMetaClass().getName(),
-                m[i].getItemId(),
-                m[i].getMetaClass().getNamespace())
+              _this.keyProvider.keyToData(m[i].getMetaClass(), m[i].getItemId())
             );
             updates = {};
             act = false;
@@ -1585,7 +1621,7 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
-      var filter;
+    var filter;
 
     if (!options) {
       options = {};
@@ -1602,7 +1638,7 @@ function IonDataRepository(options) {
     }
 
     if (pm.backRef) {
-        filter = {};
+      filter = {};
       filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
       if (pm.selConditions) {
         var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
@@ -1618,14 +1654,20 @@ function IonDataRepository(options) {
         return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
       }
 
-      filter = {};
-      filter[kp[0]] = {$in: master.base[collection] || []};
-      options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-      if (onlyCount) {
-        return _this._getCount(detailCm.getCanonicalName(), options);
-      } else {
-        return _this._getList(detailCm.getCanonicalName(), options);
-      }
+      return _this._getItem(master.getClassName(), master.getItemId(), 0)
+        .then(function (m) {
+          if (m) {
+            var filter = filterByItemIds(_this.keyProvider, detailCm, m.base[collection] || []);
+            options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+            if (onlyCount) {
+              return _this._getCount(detailCm.getCanonicalName(), options);
+            } else {
+              return _this._getList(detailCm.getCanonicalName(), options);
+            }
+          } else {
+            return Promise.reject(new Error('Не найден контейнер коллекции!'));
+          }
+        });
     }
   }
 
