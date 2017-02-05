@@ -13,7 +13,7 @@ const xpath = require('xpath');
 const Dom = require('xmldom').DOMParser;
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const utf8 = require('utf8');
+const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 
 // jshint maxstatements: 30, maxcomplexity: 20
 
@@ -30,7 +30,7 @@ function OwnCloudStorage(config) {
   var urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
-    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares?format=json'
+    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
   };
 
   var resourceType = {
@@ -42,7 +42,7 @@ function OwnCloudStorage(config) {
     if (arguments.length > 1) {
       var result = uri;
       for (var i = 1; i < arguments.length; i++) {
-        result = url.resolve(result, arguments[i]);
+        result = url.resolve(result, encodeURI(arguments[i]));
       }
       return result;
     }
@@ -51,9 +51,9 @@ function OwnCloudStorage(config) {
 
   function slashChecker(path) {
     if (path && path.slice(-1) !== '/') {
-      path  = path   + '/';
+      return path   + '/';
     }
-    return path;
+    return path || '';
   }
 
   function streamGetter(filePath) {
@@ -226,7 +226,7 @@ function OwnCloudStorage(config) {
     id = parseDirId(id);
     return new Promise(function (resolve,reject) {
       var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, utf8.encode(decodeURI(id))),
+        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
         auth: {
           user: config.login,
           password: config.password
@@ -237,6 +237,7 @@ function OwnCloudStorage(config) {
         method: 'PROPFIND'
       };
       request(reqParams, function (err, res, body) {
+        var tmp;
         if (!err && res.statusCode === 207) {
           var dirObject = {
             id: id,
@@ -267,7 +268,8 @@ function OwnCloudStorage(config) {
                 );
                 if (collection.length) {
                   href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
-                  dirObject.dirs.push({id: href, link: urlResolver(config.url, href)});
+                  tmp  = url.parse(href, true);
+                  dirObject.dirs.push({id: tmp.query.dir.replace(/^\//, ''), link: urlResolver(config.url, href)});
                 } else {
                   dirObject.files.push(new StoredFile(
                     href,
@@ -283,7 +285,7 @@ function OwnCloudStorage(config) {
             return reject(err);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return resolve(null);
         }
       });
     });
@@ -298,12 +300,12 @@ function OwnCloudStorage(config) {
    */
   this._createDir = function (name, parentDirId, fetch) {
     return new Promise(function (resolve,reject) {
-      var id = urlResolver(slashChecker(parentDirId) || '', name);
+      var id = slashChecker(parentDirId) + name;
       var reqParams = {
         uri: urlResolver(
           config.url,
           urlTypes.WEBDAV,
-          utf8.encode(id)
+          id
         ),
         auth: {
           user: config.login,
@@ -374,15 +376,27 @@ function OwnCloudStorage(config) {
     return _this.remove(urlResolver(slashChecker(dirId), fileId));
   };
 
+  function accessLevel(level) {
+    switch (level) {
+      case ShareAccessLevel.READ: return '1';
+      case ShareAccessLevel.WRITE: return '8';
+    }
+    throw new Error('Некорректное значение уровня доступа!');
+  }
+
   /**
    *
    * @param {String} id
+   * @param {String} access
    * @returns {Promise}
    */
-  this._share = function (id) {
+  this._share = function (id, access) {
     return new Promise(function (resolve,reject) {
       var reqObject = {
         uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
+        qs: {
+          format: 'json'
+        },
         auth: {
           user: config.login,
           password: config.password
@@ -391,7 +405,7 @@ function OwnCloudStorage(config) {
           path: id,
           shareType: '3',
           publicUpload: 'true',
-          permissions: '8'
+          permissions: access ? accessLevel(access) : '8'
         }
       };
       request.post(reqObject, function (err, res, body) {
@@ -404,6 +418,77 @@ function OwnCloudStorage(config) {
           return reject(err || new Error('Status code:' + res.statusCode));
         }
       });
+    });
+  };
+
+  function requestShareIds(id) {
+    return new Promise(function (resolve, reject) {
+      var reqObject = {
+        uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
+        qs: {
+          path: id
+        },
+        auth: {
+          user: config.login,
+          password: config.password
+        }
+      };
+      request.get(reqObject, function (err, res, body) {
+        if (err) {
+          return reject(err);
+        }
+        var ids = [];
+        var dom = new Dom();
+        var doc = dom.parseFromString(body);
+        var elements = xpath.select(
+          '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
+          doc
+        );
+        for (var i = 0; i < elements.length; i++) {
+          var shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
+          if (shareId) {
+            ids.push(shareId);
+          }
+        }
+        resolve(ids);
+      });
+    });
+  }
+
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this._setShareAccess = function (id, access) {
+    id = parseDirId(id);
+    return new Promise(function (resolve, reject) {
+      requestShareIds(id).then(function (ids) {
+        var promises = [];
+        ids.forEach(function (shareId) {
+          promises.push(new Promise(function (resolve, reject) {
+            var reqObject = {
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId),
+              auth: {
+                user: config.login,
+                password: config.password
+              },
+              form: {
+                permissions: accessLevel(access)
+              }
+            };
+            request.put(reqObject, function (err, res) {
+              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+                resolve(true);
+              } else {
+                return reject(err || new Error('Status code:' + res.statusCode));
+              }
+            });
+          }));
+        });
+        Promise.all(promises).then(resolve).catch(reject);
+      }).catch(reject);
     });
   };
 

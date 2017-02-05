@@ -12,7 +12,10 @@ function AclProvider() {
    * @returns {Promise}
    */
   this.init = function () {
-    return this._init();
+    if (typeof this._init === 'function') {
+      return this._init();
+    }
+    return Promise.resolve();
   };
 
   /**
@@ -23,6 +26,15 @@ function AclProvider() {
    */
   this.checkAccess = function (subject, resource, permissions) {
     return this._checkAccess(subject, resource, permissions);
+  };
+
+  /**
+   * @param {String} subject
+   * @param {String | String[]} resources
+   * @returns {Promise}
+   */
+  this.getPermissions = function (subject, resources, skipGlobals) {
+    return this._getPermissions(subject, resources, skipGlobals);
   };
 }
 

@@ -6,6 +6,7 @@
 
 const PropertyTypes = require('core/PropertyTypes');
 const equal = require('core/equal');
+const scheduleToString = require('core/util/schedule').scheduleToString;
 
 // jshint maxstatements: 30, maxcomplexity: 20
 
@@ -103,7 +104,7 @@ function Property(item, propertyMeta, name) {
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
       if (Array.isArray(selection)) {
-        for (var i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
             return selection[i].value;
           }
@@ -121,6 +122,10 @@ function Property(item, propertyMeta, name) {
       } else {
         return '';
       }
+    }
+
+    if (this.getType() === PropertyTypes.SCHEDULE && v) {
+      return scheduleToString(v);
     }
     return v !== null ? v : '';
   };

@@ -9,7 +9,7 @@ var PropertyTypes = require('core/PropertyTypes');
 var equal = require('core/equal');
 var cast = require('core/cast');
 
-// jshint maxcomplexity: 40, eqeqeq: false
+// jshint maxcomplexity: 40, maxstatements: 30, eqeqeq: false
 function contains(container, content) {
   if (container && content !== null) {
     if (typeof container === 'string') {
@@ -46,11 +46,24 @@ function toArray(v) {
   return v;
 }
 
-function toScalar(v) {
+/**
+ * @param {*} v
+ * @param {Item} item
+ * @returns {*}
+ */
+function toScalar(v, item) {
+  var result = null;
+  var p;
   if (Array.isArray(v) && v.length) {
-    return v.length ? v[0] : null;
+    result = v.length ? v[0] : null;
   }
-  return v;
+  if (typeof result === 'string' && result[0] === '$') {
+    if ((p = item.getProperty(result.substring(1))) !== null) {
+      result = p.getValue();
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -58,7 +71,7 @@ function toScalar(v) {
  * @param {{}} condition
  * @returns {Boolean}
  */
-function checkCondition(item, condition) {
+function checkCondition(item, condition, context) {
   var pn, p, v;
   if (condition.property) {
     pn = condition.property;
@@ -66,60 +79,61 @@ function checkCondition(item, condition) {
     if (!p) {
       throw new Error('Не найден указанный в условии атрибут ' + item.getClassName() + '.' + pn);
     }
-    v = cast(condition.value, p.getType());
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return equal(item.get(pn), toScalar(v));
+        return equal(item.get(pn), cast(toScalar(condition.value, context), p.getType()));
       case ConditionTypes.NOT_EQUAL:
-        return !equal(item.get(pn), toScalar(v));
+        return !equal(item.get(pn), cast(toScalar(condition.value, context), p.getType()));
       case ConditionTypes.EMPTY: {
-        v = p.evaluate();
+        v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length === 0;
         }
-        return v === null || v === '' ? true : false;
+        return v === null || v === '' || typeof v === 'undefined' ? true : false;
       }break;
       case ConditionTypes.NOT_EMPTY: {
-        v = p.evaluate();
+        v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length > 0;
         }
-        return v === null || v === '' ? false : true;
+        return v === null || v === '' || typeof v === 'undefined' ? false : true;
       }break;
       case ConditionTypes.LIKE:
-        return String(item.get(pn)).match(new RegExp(toScalar(v))) ? true : false;
+        return String(item.get(pn)).match(
+          new RegExp(cast(toScalar(condition.value, context), p.getType()))
+        ) ? true : false;
       case ConditionTypes.LESS:
-        return item.get(pn) < toScalar(v) ? true : false;
+        return item.get(pn) < cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.MORE:
-        return item.get(pn) > toScalar(v) ? true : false;
+        return item.get(pn) > cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.LESS_OR_EQUAL:
-        return item.get(pn) <= toScalar(v) ? true : false;
+        return item.get(pn) <= cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.MORE_OR_EQUAL:
-        return item.get(pn) >= toScalar(v) ? true : false;
+        return item.get(pn) >= cast(toScalar(condition.value, context), p.getType()) ? true : false;
       case ConditionTypes.IN:
-        return contains(toArray(v), item.get(pn));
+        return contains(toArray(condition.value), item.get(pn));
       case ConditionTypes.CONTAINS: {
         if (p.getType() === PropertyTypes.COLLECTION) {
           return colContains(p.evaluate(), condition.nestedConditions);
         } else {
-          return contains(item.get(pn).evaluate(), toScalar(v));
+          return contains(p.evaluate(), cast(toScalar(condition.value, context), p.getType()));
         }
       }
     }
   } else if (condition.nestedConditions) {
     switch (condition.operation) {
-      case OperationTypes.AND: return conjunct(item, condition.nestedConditions);
-      case OperationTypes.OR: return disjunct(item, condition.nestedConditions);
-      case OperationTypes.NOT: return !conjunct(item, condition.nestedConditions);
+      case OperationTypes.AND: return conjunct(item, condition.nestedConditions, context);
+      case OperationTypes.OR: return disjunct(item, condition.nestedConditions, context);
+      case OperationTypes.NOT: return !conjunct(item, condition.nestedConditions, context);
     }
   }
   return false;
 }
 
-function conjunct(item, conditions) {
+function conjunct(item, conditions, context) {
   if (Array.isArray(conditions) && conditions.length) {
     for (var i = 0; i < conditions.length; i++) {
-      if (!checkCondition(item, conditions[i])) {
+      if (!checkCondition(item, conditions[i], context)) {
         return false;
       }
     }
@@ -128,10 +142,10 @@ function conjunct(item, conditions) {
   return false;
 }
 
-function disjunct(item, conditions) {
+function disjunct(item, conditions, context) {
   if (Array.isArray(conditions) && conditions.length) {
     for (var i = 0; i < conditions.length; i++) {
-      if (checkCondition(item, conditions[i])) {
+      if (checkCondition(item, conditions[i], context)) {
         return true;
       }
     }
@@ -143,7 +157,8 @@ function disjunct(item, conditions) {
 /**
  * @param {Item} item
  * @param {Array} conditions
+ * @param {Item} [context]
  */
-module.exports = function (item, conditions) {
-  return conjunct(item, conditions);
+module.exports = function (item, conditions, context) {
+  return conjunct(item, conditions, context || item);
 };

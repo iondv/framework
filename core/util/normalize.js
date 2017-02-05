@@ -2,22 +2,26 @@
  * Created by kras on 16.11.16.
  */
 'use strict';
-const merge = require('merge');
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository').Item;
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 30, maxdepth: 20
 /**
  * @param {*} data
+ * @param {Function} dateCallback
+ * @param {{}} [options]
+ * @param {{}} [processed]
  * @returns {{} | null}
  * @private
  */
-function normalize(data) {
+function normalize(data, dateCallback, options, processed) {
   var i;
+  options = options || {};
+  processed = processed || {};
   if (Array.isArray(data)) {
     var result = [];
     for (i = 0; i < data.length; i++) {
-      result.push(normalize(data[i]));
+      result.push(normalize(data[i], dateCallback, options, processed));
     }
     return result;
   }
@@ -27,48 +31,71 @@ function normalize(data) {
      * @type {{}}
      */
     var item;
-    item = merge(true, data.base, data.calculated);
+    var nm, p, refItem;
+    var props = data.getProperties();
+    if (!options.greedy) {
+      if (processed.hasOwnProperty(data.getClassName() + '@' + data.getItemId())) {
+        item = processed[data.getClassName() + '@' + data.getItemId()];
+        for (nm in props) {
+          if (props.hasOwnProperty(nm)) {
+            /**
+             * @type {Property}
+             */
+            p = props[nm];
 
-    delete item._id;
-    delete item._classVer;
-    delete item._class;
+            if (p.getType() === PropertyTypes.REFERENCE) {
+              if (typeof item[p.getName()] !== 'object') {
+                refItem = data.getAggregate(p.getName());
+                if (refItem) {
+                  item[p.getName()] = normalize(refItem, dateCallback, options, processed);
+                }
+              }
+            } else if (p.getType() === PropertyTypes.COLLECTION) {
+              if (!Array.isArray(item[p.getName()])) {
+                item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
+              }
+            }
+          }
+        }
+        return item;
+      }
+    }
+
+    item = {};
 
     item.className = data.getMetaClass().getCanonicalName();
-    var propertyMetas, pm, p;
-    propertyMetas = data.getMetaClass().getPropertyMetas();
-    for (i = 0; i < propertyMetas.length; i++) {
-      pm = propertyMetas[i];
-      if (!item.hasOwnProperty(pm.name)) {
-        item[pm.name] = null;
-      }
+    item._creator = data.getCreator();
+    item._editor = data.getEditor();
+    processed[data.getClassName() + '@' + data.getItemId()] = item;
 
-      if (pm.type === PropertyTypes.STRUCT) {
-        continue;
-      }
+    for (nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        /**
+         * @type {Property}
+         */
+        p = props[nm];
 
-      p = data.property(pm.name);
-
-      if (!p) {
-        continue;
-      }
-
-      if (pm.type === PropertyTypes.REFERENCE) {
-        var refItem = data.getAggregate(pm.name);
-        if (refItem) {
-          item[pm.name] = normalize(refItem);
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          refItem = data.getAggregate(p.getName());
+          if (refItem) {
+            item[p.getName()] = normalize(refItem, dateCallback, options, processed);
+          } else if (item[p.getName()]) {
+            delete item[p.getName()];
+          }
+        } else if (p.getType() === PropertyTypes.COLLECTION) {
+          item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
+        } else {
+          item[p.getName()] = p.getValue();
         }
-      } else if (pm.type === PropertyTypes.COLLECTION) {
-        item[pm.name] = normalize(data.getAggregates(pm.name));
-      } else if (
-        pm.type === PropertyTypes.FILE ||
-        pm.type === PropertyTypes.IMAGE ||
-        pm.type === PropertyTypes.FILE_LIST
-      ) {
-        item[pm.name] = p.getValue();
+
+        if (p.meta.selectionProvider) {
+          item[p.getName() + '_str'] = p.getDisplayValue(dateCallback);
+        }
       }
     }
 
     item._id = data.getItemId();
+    item.__string = data.toString(null, dateCallback);
     return item;
   }
 

@@ -3,25 +3,23 @@
  */
 'use strict';
 
-var Acl = require('acl');
+const Acl = require('acl');
+const AclProvider = require('core/interfaces/AclProvider');
+const Permissions = require('core/Permissions');
+const clone = require('clone');
 
-var AclProvider = require('core/interfaces/AclProvider');
-
+// jshint maxstatements: 50, maxcomplexity: 20
 function MongoAcl(config) {
 
   var _this = this;
 
   var ds = config.dataSource;
 
-  if (!ds && global.ionDataSources) {
-    ds = global.ionDataSources.get(config.accessDs);
-  }
-
   if (!ds || ds.constructor.prototype.constructor.name !== 'DataSource') {
     throw 'Не указан источник данных для подсистемы контроля доступа!';
   }
 
-  this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+  this.acl = {};
 
   this.globalMarker = config.allAlias ? config.allAlias : '*';
 
@@ -31,6 +29,7 @@ function MongoAcl(config) {
    */
   this._init = function () {
     return new Promise(function (resolve, reject) {
+      _this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
       resolve();
     });
   };
@@ -57,17 +56,33 @@ function MongoAcl(config) {
         return false;
       };
 
-      this.acl.isAllowed(subject, resource, permissions, function (err, res) {
+      _this.acl.isAllowed(subject, resource, permissions, function (err, res) {
         if (!pr(err, res)) {
-          _this.acl.isAllowed(subject, resource, _this.globalMarker, function (err, res) {
+          _this.acl.isAllowed(subject, resource, Permissions.FULL, function (err, res) {
             if (!pr(err, res)) {
               _this.acl.isAllowed(subject, _this.globalMarker, permissions, function (err, res) {
                 if (!pr(err, res)) {
-                  _this.acl.isAllowed(subject, _this.globalMarker, _this.globalMarker, function (err, res) {
+                  _this.acl.isAllowed(subject, _this.globalMarker, Permissions.FULL, function (err, res) {
                     if (!pr(err, res)) {
                       _this.acl.isAllowed(_this.globalMarker, resource, permissions, function (err, res) {
                         if (!pr(err, res)) {
-                          reject();
+                          _this.acl.isAllowed(_this.globalMarker, resource, Permissions.FULL, function (err, res) {
+                            if (!pr(err, res)) {
+                              _this.acl.isAllowed(_this.globalMarker, _this.globalMarker, permissions,
+                                function (err, res) {
+                                  if (!pr(err, res)) {
+                                    _this.acl.isAllowed(_this.globalMarker, _this.globalMarker, Permissions.FULL,
+                                      function (err, res) {
+                                        if (!pr(err, res)) {
+                                          resolve(false);
+                                        }
+                                      }
+                                    );
+                                  }
+                                }
+                              );
+                            }
+                          });
                         }
                       });
                     }
@@ -77,6 +92,82 @@ function MongoAcl(config) {
             }
           });
         }
+      });
+    });
+  };
+
+  /**
+   * @param {String} subject
+   * @param {String | String[]} resources
+   * @returns {Promise}
+   */
+  this._getPermissions = function (subject, resources, skipGlobals) {
+    return new Promise(function (resolve, reject) {
+      var r = Array.isArray(resources) ? resources : [resources];
+      if (!skipGlobals) {
+        if (r.indexOf(_this.globalMarker) < 0) {
+          r = r.concat([_this.globalMarker]);
+        }
+      }
+      var res = null;
+      _this.acl.allowedPermissions(subject, r, function (err, perm) {
+        if (err) {
+          return reject(err);
+        }
+        res = {};
+        var nm, i, hasGlobals;
+        hasGlobals = false;
+        var globalPermissions = {};
+        if (!skipGlobals) {
+          if (perm.hasOwnProperty(_this.globalMarker)) {
+            for (i = 0; i < perm[_this.globalMarker].length; i++) {
+              globalPermissions[perm[_this.globalMarker][i]] = true;
+              hasGlobals = true;
+            }
+          }
+        }
+
+        if (perm.hasOwnProperty(_this.globalMarker)) {
+          delete perm[_this.globalMarker];
+        }
+
+        for (nm in perm) {
+          if (perm.hasOwnProperty(nm)) {
+            if (perm[nm].length || hasGlobals) {
+              res[nm] = clone(globalPermissions);
+              if (perm[nm].indexOf(Permissions.FULL) >= 0 || res[nm][Permissions.FULL]) {
+                res[nm][Permissions.READ] = true;
+                res[nm][Permissions.WRITE] = true;
+                res[nm][Permissions.DELETE] = true;
+                res[nm][Permissions.USE] = true;
+                res[nm][Permissions.FULL] = true;
+              } else {
+                for (i = 0; i < perm[nm].length; i++) {
+                  res[nm][perm[nm][i]] = true;
+                }
+              }
+            }
+          }
+        }
+
+        if (skipGlobals) {
+          return resolve(res);
+        }
+
+        _this.acl.allowedPermissions(_this.globalMarker, r, function (err, perm) {
+          if (err) {
+            return reject(err);
+          }
+
+          for (var nm in perm) {
+            if (perm.hasOwnProperty(nm) && res.hasOwnProperty(nm)) {
+              for (i = 0; i < perm[nm].length; i++) {
+                res[nm][perm[nm][i]] = true;
+              }
+            }
+          }
+          return resolve(res);
+        });
       });
     });
   };

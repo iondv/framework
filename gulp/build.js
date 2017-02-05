@@ -343,7 +343,8 @@ function setup(appDir, scope) {
         console.log('Импорт выполняется в ' +
           (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
         return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
-          namespace: ns
+          namespace: ns,
+          ignoreIntegrityCheck: true // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
         });
       }).then(function () {
         console.log('Мета и данные импортированы в БД');
@@ -381,7 +382,7 @@ gulp.task('setup', function (done) {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler', 'calculator']
+    ['auth', 'rtEvents', 'sessionHandler']
   ).then(function (scp) {
     scope = scp;
     return new Promise(function (rs, rj) {

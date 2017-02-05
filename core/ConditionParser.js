@@ -7,24 +7,40 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const util = require('util');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
 
 // jshint maxstatements: 40, maxcomplexity: 30
-function toScalar(v) {
+/**
+ * @param {*} v
+ * @param {Item} [context]
+ * @returns {*}
+ */
+function toScalar(v, context) {
+  var result = v;
+  var p;
   if (Array.isArray(v) && v.length) {
-    return v.length ? v[0] : null;
+    result = v.length ? v[0] : null;
   }
-  return v;
+
+  if (typeof result === 'string' && result[0] === '$' && context) {
+    if ((p = context.property(result.substring(1))) !== null) {
+      return p.getValue();
+    }
+  }
+
+  return result;
 }
 
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
+ * @param {Item} [context]
  */
-function produceContainsFilter(rcm, condition) {
+function produceContainsFilter(rcm, condition, context) {
   var pm = rcm.getPropertyMeta(condition.property);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
@@ -33,23 +49,30 @@ function produceContainsFilter(rcm, condition) {
         tmp[pm._refClass.getKeyProperties()[0]] = {$in: condition.value};
         return {$contains: tmp};
       }
-      return {$contains: ConditionParser(condition.nestedConditions, pm._refClass)};
+      return {$contains: ConditionParser(condition.nestedConditions, pm._refClass, context)};
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
-      return {$regex: toScalar(condition.value)};
+      return {$regex: toScalar(condition.value, context)};
     } else {
-      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
     throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
   }
 }
 
-function produceFilter(condition, type, rcm) {
+/**
+ * @param {{}} condition
+ * @param {String} type
+ * @param {ClassMeta} rcm
+ * @param {Item} [context]
+ * @returns {{}}
+ */
+function produceFilter(condition, type, rcm, context) {
   var result = {};
   if (condition.value) {
-    result[type] = toScalar(condition.value);
+    result[type] = toScalar(condition.value, context);
   } else if (condition.nestedConditions && condition.nestedConditions.length) {
-    result[type] = ConditionParser(condition.nestedConditions[0], rcm);
+    result[type] = ConditionParser(condition.nestedConditions[0], rcm, context);
   }
   return result;
 }
@@ -57,9 +80,10 @@ function produceFilter(condition, type, rcm) {
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
+ * @param {Item} [context]
  * @returns {{className: String, collectionName: String, property: String, filter: {}} | null}
  */
-function produceAggregationOperation(condition, rcm) {
+function produceAggregationOperation(condition, rcm, context) {
   var an, av, pn, pm;
   if (!condition.value || !condition.value.length) {
     throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
@@ -80,7 +104,7 @@ function produceAggregationOperation(condition, rcm) {
     }
   }
 
-  var filter = ConditionParser(condition.nestedConditions, rcm);
+  var filter = ConditionParser(condition.nestedConditions, rcm, context);
   if (!filter) {
     return null;
   }
@@ -95,13 +119,14 @@ function produceAggregationOperation(condition, rcm) {
 /**
  * @param {Object[]} conditions
  * @param {ClassMeta} rcm
+ * @param {Item} [context]
  * @returns {Array | null}
  */
-function produceArray(conditions, rcm) {
+function produceArray(conditions, rcm, context) {
   var tmp;
   var result = [];
   for (var i = 0; i < conditions.length; i++) {
-    tmp = ConditionParser(conditions[i], rcm);
+    tmp = ConditionParser(conditions[i], rcm, context);
     if (tmp) {
       result.push(tmp);
     }
@@ -112,9 +137,10 @@ function produceArray(conditions, rcm) {
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
+ * @param {Item} [context]
  * @returns {{} | null}
  */
-function ConditionParser(condition, rcm) {
+function ConditionParser(condition, rcm, context) {
   var result, tmp;
   if (Array.isArray(condition)) {
     tmp = produceArray(condition, rcm);
@@ -124,34 +150,46 @@ function ConditionParser(condition, rcm) {
   } else {
     if (condition.property) {
       result = {};
-      switch (condition.operation) {
+      switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
-          result.$or = [{}, {}, {}];
-          result.$or[0][condition.property] = {$eq: null};
-          result.$or[1][condition.property] = {$eq: ''};
-          result.$or[2][condition.property] = {$exists: false};
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: true};
+          } else {
+            result.$or = [{}, {}, {}];
+            result.$or[0][condition.property] = {$eq: null};
+            result.$or[1][condition.property] = {$eq: ''};
+            result.$or[2][condition.property] = {$exists: false};
+            return result;
+          }
         } break;
         case ConditionTypes.NOT_EMPTY: {
-          result.$and = [{}, {}, {}];
-          result.$and[0][condition.property] = {$ne: null};
-          result.$and[1][condition.property] = {$ne: ''};
-          result.$and[2][condition.property] = {$exists: true};
+          tmp = rcm.getPropertyMeta(condition.property);
+          if (tmp.type === PropertyTypes.COLLECTION) {
+            result[condition.property] = {$empty: false};
+          } else {
+            result.$and = [{}, {}, {}];
+            result.$and[0][condition.property] = {$ne: null};
+            result.$and[1][condition.property] = {$ne: ''};
+            result.$and[2][condition.property] = {$exists: true};
+            return result;
+          }
         } break;
-        case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition);
+        case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context);
           break;
         case ConditionTypes.EQUAL:
-          result[condition.property] = produceFilter(condition, '$eq', rcm); break;
+          result[condition.property] = produceFilter(condition, '$eq', rcm, context); break;
         case ConditionTypes.NOT_EQUAL:
-          result[condition.property] = produceFilter(condition, '$ne', rcm); break;
+          result[condition.property] = produceFilter(condition, '$ne', rcm, context); break;
         case ConditionTypes.LESS:
-          result[condition.property] = produceFilter(condition, '$lt', rcm); break;
+          result[condition.property] = produceFilter(condition, '$lt', rcm, context); break;
         case ConditionTypes.MORE:
-          result[condition.property] = produceFilter(condition, '$gt', rcm); break;
+          result[condition.property] = produceFilter(condition, '$gt', rcm, context); break;
         case ConditionTypes.LESS_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$lte', rcm); break;
+          result[condition.property] = produceFilter(condition, '$lte', rcm, context); break;
         case ConditionTypes.MORE_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$gte', rcm); break;
-        case ConditionTypes.LIKE: result[condition.property] = {$regex: new RegExp(toScalar(condition.value))}; break;
+          result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
+        case ConditionTypes.LIKE: result[condition.property] = {$regex: toScalar(condition.value, context)}; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
       if (result.hasOwnProperty(condition.property)) {
@@ -159,26 +197,26 @@ function ConditionParser(condition, rcm) {
       }
     } else {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
-        tmp = produceArray(condition.nestedConditions, rcm);
+        tmp = produceArray(condition.nestedConditions, rcm, context);
         if (tmp) {
           result = {};
           switch (condition.operation) {
-            case OperationTypes.AND: result.$and = produceArray(condition.nestedConditions, rcm); break;
-            case OperationTypes.OR: result.$or = produceArray(condition.nestedConditions, rcm); break;
-            case OperationTypes.NOT: result.$not = {$and: produceArray(condition.nestedConditions, rcm)}; break;
+            case OperationTypes.AND: result.$and = tmp; break;
+            case OperationTypes.OR: result.$or = tmp; break;
+            case OperationTypes.NOT: result.$not = {$and: tmp}; break;
           }
           return result;
         }
       } else if (AgregOpers.indexOf(condition.operation) !== -1) {
-        tmp =  produceAggregationOperation(condition, rcm);
+        tmp =  produceAggregationOperation(condition, rcm, context);
         if (tmp) {
           result = {};
           switch (condition.operation) {
-            case OperationTypes.MIN: result.$min = produceAggregationOperation(condition, rcm); break;
-            case OperationTypes.MAX: result.$max = produceAggregationOperation(condition, rcm); break;
-            case OperationTypes.AVG: result.$avg = produceAggregationOperation(condition, rcm); break;
-            case OperationTypes.SUM: result.$sum = produceAggregationOperation(condition, rcm); break;
-            case OperationTypes.COUNT: result.$count = produceAggregationOperation(condition, rcm); break;
+            case OperationTypes.MIN: result.$min = tmp; break;
+            case OperationTypes.MAX: result.$max = tmp; break;
+            case OperationTypes.AVG: result.$avg = tmp; break;
+            case OperationTypes.SUM: result.$sum = tmp; break;
+            case OperationTypes.COUNT: result.$count = tmp; break;
           }
           return result;
         }

@@ -3,7 +3,8 @@
  */
 'use strict';
 
-var KeyProvider = require('core/interfaces/KeyProvider');
+const KeyProvider = require('core/interfaces/KeyProvider');
+const cast = require('core/cast');
 
 /**
  * @param {{}} options
@@ -16,17 +17,15 @@ function MetaKeyProvider(options) {
   this.meta = options.metaRepo;
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {Object} data
-   * @param {String} [namespace]
    * @returns {String | null}
    * @private
    */
-  this._formKey = function (classname, data, namespace) {
+  this._formKey = function (cm, data) {
     if (data === null) {
       return null;
     }
-    var cm = this.meta.getMeta(classname, null, namespace);
     var result = '';
     var keyProps = cm.getKeyProperties();
     for (var i = 0; i < keyProps.length; i++) {
@@ -37,23 +36,35 @@ function MetaKeyProvider(options) {
     return result || null;
   };
 
-  this._keyToData = function (classname, id, namespace) {
+  /**
+   * @param {ClassMeta} cm
+   * @param {String} id
+   * @returns {{}}
+   * @private
+   */
+  this._keyToData = function (cm, id) {
     var result = {};
     if (typeof id === 'string') {
-      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       var parts = id.split('_');
+      var pm;
       for (var i = 0; i < keyProps.length; i++) {
-        result[keyProps[i]] = parts[i];
+        pm = cm.getPropertyMeta(keyProps[i]);
+        result[keyProps[i]] = cast(parts[i], pm.type);
       }
     }
     return result;
   };
 
-  this._keyData = function (classname, data, namespace) {
+  /**
+   * @param {ClassMeta} cm
+   * @param {String} data
+   * @returns {{} | null}
+   * @private
+   */
+  this._keyData = function (cm, data) {
     var result = {};
     if (typeof data === 'object' && data) {
-      var cm = this.meta.getMeta(classname, null, namespace);
       var keyProps = cm.getKeyProperties();
       for (var i = 0; i < keyProps.length; i++) {
         if (data.hasOwnProperty(keyProps[i]) && data[keyProps[i]] !== null) {

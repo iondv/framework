@@ -5,31 +5,36 @@
 
 function KeyProvider() {
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {{}} data
    * @returns {String}
    */
-  this.formKey = function (classname, data, namespace) {
-    return this._formKey(classname, data, namespace);
+  this.formKey = function (cm, data) {
+    return this._formKey(cm, data);
   };
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {String} id
    * @returns {{}}
    */
-  this.keyToData = function (classname, id, namespace) {
-    return this._keyToData(classname, id, namespace);
+  this.keyToData = function (cm, id) {
+    return this._keyToData(cm, id);
   };
 
   /**
-   * @param {String} classname
+   * @param {ClassMeta} cm
    * @param {{}} data
-   * @returns {{}}
+   * @returns {{} | null}
    */
-  this.keyData = function (classname, data, namespace) {
-    return this._keyData(classname, data, namespace);
+  this.keyData = function (cm, data) {
+    return this._keyData(cm, data);
   };
+
+  this.filterByItemId = function() {
+    
+  };
+
 }
 
 module.exports = KeyProvider;
