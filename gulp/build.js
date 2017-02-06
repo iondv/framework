@@ -334,7 +334,7 @@ gulp.task('minify:js', function (done) {
   });
 });
 
-function setup(appDir, scope) {
+function setup(appDir, scope, log) {
   return function () {
     return new Promise(function (resolve, reject) {
       deployer(appDir).then(function (dep) {
@@ -342,7 +342,7 @@ function setup(appDir, scope) {
         var ns = dep ? dep.namespace || '' : '';
         console.log('Импорт выполняется в ' +
           (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
-        return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, {
+        return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
           namespace: ns,
           ignoreIntegrityCheck: true // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
         });
@@ -361,7 +361,7 @@ gulp.task('setup', function (done) {
 
   var IonLogger = require('core/impl/log/IonLogger');
 
-  var sysLog = new IonLogger({});
+  var sysLog = new IonLogger(config.log || {});
 
   var scope = null;
 
@@ -395,9 +395,9 @@ gulp.task('setup', function (done) {
           stat = fs.statSync(path.join(appDir, applications[i]));
           if (stat.isDirectory()) {
             if (!stage) {
-              stage = setup(path.join(appDir, applications[i]), scope)();
+              stage = setup(path.join(appDir, applications[i]), scope, sysLog)();
             } else {
-              stage = stage.then(setup(path.join(appDir, applications[i]), scope));
+              stage = stage.then(setup(path.join(appDir, applications[i]), scope, sysLog));
             }
           }
         }

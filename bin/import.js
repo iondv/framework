@@ -7,7 +7,7 @@ var di = require('core/di');
 
 var IonLogger = require('core/impl/log/IonLogger');
 
-var sysLog = new IonLogger({});
+var sysLog = new IonLogger(config.log || {});
 
 var src = '../in';
 var ns = null;
@@ -52,8 +52,8 @@ di('app', config.di,
   // Импорт
   function (scp) {
     scope = scp;
-    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns,
-      ignoreIntegrityCheck: setIgnoreIntegrityCheck});
+    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, sysLog,
+      {namespace: ns, ignoreIntegrityCheck: setIgnoreIntegrityCheck});
   }
 ).then(function () {
   return scope.dataSources.disconnect();
