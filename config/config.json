@@ -7,6 +7,7 @@
         "[[server.port3]]"
     ],
     "defaultModule":"[[module.default]]",
+    "skipModules": ["[[module.skip1]]", "[[module.skip2]]", "[[module.skip3]]"],
     "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
@@ -222,27 +223,12 @@
           "log": "ion://sysLog"
         }
       },
-      "cachedDataRepo": {
-        "module": "core/impl/datarepository/CachedDataRepository",
-        "options": {
-          "data": "lazy://dataRepo",
-          "cache": "[[cache.module]]"
-        }
-      },
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
         "initLevel": 1,
         "options":{
           "dataSource": "ion://Db"
-        }
-      },
-      "securedDataRepo": {
-        "module": "core/impl/datarepository/SecuredDataRepository",
-        "options": {
-          "data": "ion://cachedDataRepo",
-          "meta": "ion://metaRepo",
-          "acl": "ion://aclProvider"
         }
       },
       "workflows": {
@@ -252,7 +238,7 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://securedDataRepo"
+          "dataRepo": "ion://dataRepo"
         }
       }
     }

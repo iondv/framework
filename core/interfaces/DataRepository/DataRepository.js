@@ -65,6 +65,17 @@ function DataRepository() {
   };
 
   /**
+   * @param {String} className
+   * @param {Object} [options.filter]
+   * @param {String[]} [options.attributes]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this.rawData = function (className, options) {
+    return this._rawData(className, options);
+  };
+
+  /**
    * @param {String | Item} obj
    * @param {String} [id]
    * @param {{}} [options]
@@ -82,6 +93,7 @@ function DataRepository() {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this.createItem = function (className, data, version, changeLogger, options) {
@@ -95,6 +107,7 @@ function DataRepository() {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this.editItem = function (className, id, data, changeLogger, options) {
@@ -110,6 +123,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this.saveItem = function (className, id, data, version, changeLogger, options) {

@@ -429,6 +429,26 @@ function DsMetaRepository(options) {
     return null;
   };
 
+  /**
+   * @param {String} className
+   * @param {String} workflow
+   * @param {String} state
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this._getWorkflowView = function (className, workflow, state, namespace, version) {
+    var cm = this._getMeta(className, version, namespace);
+    if (cm) {
+      if (_this.viewMeta.workflowModels[workflow] &&
+        _this.viewMeta.workflowModels[workflow][state] &&
+        _this.viewMeta.workflowModels[workflow][state][cm.getCanonicalName()]) {
+        return _this.viewMeta.workflowModels[workflow][state][cm.getCanonicalName()];
+      }
+    }
+    return null;
+  };
+
   this._getMask = function (name) {
     if (this.viewMeta.masks.hasOwnProperty(name)) {
       return this.viewMeta.masks[name];
@@ -547,12 +567,16 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    * @returns {*}
    */
-  function createSemanticFunc(semantic, cm, forceEnrichment, prefix) {
-    var tmp, pm, result, ppath;
+  function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
+    var tmp, pm, result, ppath, re;
+    re = /^\w[\w\.]*\w$/;
     var parts = semantic.split('|');
     for (var i = 0; i < parts.length; i++) {
       tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
       if (tmp) {
+        if (semanticAttrs && re.test(tmp[1])) {
+          semanticAttrs.push(tmp[1]);
+        }
         ppath = tmp[1].split('.');
         pm = locatePropertyMeta(ppath, cm);
         if (pm) {
@@ -604,6 +628,7 @@ function DsMetaRepository(options) {
               propertyMetas[i].semantic,
               refcm,
               cm._forcedEnrichment,
+              null,
               propertyMetas[i].name
             );
           }
@@ -611,7 +636,7 @@ function DsMetaRepository(options) {
       }
 
       if (cm.plain.semantic) {
-        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment);
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
       }
     }
   }
@@ -736,6 +761,7 @@ function DsMetaRepository(options) {
       itemModels: {},
       createModels: {},
       detailModels: {},
+      workflowModels: {},
       masks: {},
       validators: {}
     };
@@ -744,7 +770,25 @@ function DsMetaRepository(options) {
       switch (views[i].type){
         case 'list': assignVm(_this.viewMeta.listModels, sortViewElements(views[i])); break;
         case 'collection': assignVm(_this.viewMeta.collectionModels, sortViewElements(views[i])); break;
-        case 'item': assignVm(_this.viewMeta.itemModels, sortViewElements(views[i])); break;
+        case 'item': {
+          if (views[i].path.split('.')[0] === 'workflows') {
+            var pathParts = views[i].path.split('.');
+            var wf = pathParts[1];
+            var state = pathParts[2];
+            var cm = _this._getMeta(views[i].className, views[i].version, views[i].namespace);
+            if (cm) {
+              if (!_this.viewMeta.workflowModels.hasOwnProperty(wf)) {
+                _this.viewMeta.workflowModels[wf] = {};
+              }
+              if (!_this.viewMeta.workflowModels[wf].hasOwnProperty(state)) {
+                _this.viewMeta.workflowModels[wf][state] = {};
+              }
+              _this.viewMeta.workflowModels[wf][state][cm.getCanonicalName()] = views[i];
+            }
+          } else {
+            assignVm(_this.viewMeta.itemModels, sortViewElements(views[i]));
+          }
+        } break;
         case 'create': assignVm(_this.viewMeta.createModels, sortViewElements(views[i])); break;
         case 'detail': assignVm(_this.viewMeta.detailModels, sortViewElements(views[i])); break;
         case 'masks': _this.viewMeta.masks[views[i].name] = views[i]; break;
