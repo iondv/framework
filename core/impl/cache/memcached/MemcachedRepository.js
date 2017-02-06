@@ -5,6 +5,7 @@
 
 var CacheRepository = require('core/interfaces/CacheRepository');
 var Memcached = require('memcached');
+var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 /**
  * @param {{}} config
@@ -13,10 +14,12 @@ var Memcached = require('memcached');
  * @param {Number} config.lifetime
  * @param {Boolean} config.enabled
  * @param {Number} [config.reconnectTimeout]
- * @param {Logger} [config.log]
+ * @param {Logger} [config.logger]
  * @constructor
  */
 function MemcachedRepository(config) {
+
+  var log = config.logger || new LoggerProxy();
 
   var mServerLocations = [];
   if (Array.isArray(config.serverLocations)) {
@@ -37,14 +40,6 @@ function MemcachedRepository(config) {
   var memcached = null;
   var availableServers = mServerLocations.concat([]);
   var checkingForServers = false;
-
-  function log(msg) {
-    if (config.log) {
-      config.log.log(msg);
-    } else {
-      console.log(msg);
-    }
-  }
 
   function checkAvailableServers() {
     if (!checkingForServers) {
@@ -126,18 +121,18 @@ function MemcachedRepository(config) {
         on('issue',
           function (details) {
             availableServers = availableServers.filter(filterUnavailableServer(details.server));
-            log('Memcached issue:' + details.server + ':' + details.messages.join(' '));
+            log.warn(`Memcached issue:${details.server}:${details.messages.join(' ')}`);
           }
         ).
         on('failure',
           function (details) {
             availableServers = availableServers.filter(filterUnavailableServer(details.server));
-            log('Memcached failure:' + details.server + ':' + details.messages.join(' '));
+            log.warn(`Memcached failure:${details.server}:${details.messages.join(' ')}`);
           }
         ).
         on('reconnecting',
           function (details) {
-            log('Memcached reconnecting:' + details.server + ':' + details.messages.join(' '));
+            log.warn(`Memcached reconnecting:${details.server}:${details.messages.join(' ')}`);
           }
         ).
         on('reconnect',
@@ -145,12 +140,12 @@ function MemcachedRepository(config) {
             if (availableServers.indexOf(details.server) < 0) {
               availableServers.push(details.server);
             }
-            log('Memcached reconnect:' + details.server + ':' + details.messages.join(' '));
+            log.warn(`Memcached reconnect:${details.server}:${details.messages.join(' ')}`);
           }
         ).
         on('remove',
           function (details) {
-            log('Memcached remove:' + details.server + ':' + details.messages.join(' '));
+            log.warn(`Memcached remove:${details.server}:${details.messages.join(' ')}`);
           }
         );
         resolve();

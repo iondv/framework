@@ -190,7 +190,7 @@
           },
           "lifetime": "[[cache.memcached.lifetime]]",
           "reconnectTimeout": "[[cache.memcached.reconnectTimeout]]",
-          "log": "ion://sysLog"
+          "logger": "ion://sysLog"
         }
       },
       "redis": {
@@ -220,7 +220,7 @@
             "prefix": "[[cache.redis.prefix]]",
             "retry_strategy": {}
           },
-          "log": "ion://sysLog"
+          "logger": "ion://sysLog"
         }
       },
       "aclProvider":{
