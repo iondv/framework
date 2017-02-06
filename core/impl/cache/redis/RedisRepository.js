@@ -5,28 +5,23 @@
 
 const CacheRepository = require('core/interfaces/CacheRepository');
 const redis = require('redis');
+var LoggerProxy = require('core/impl/log/LoggerProxy');
 
 /**
  *
  * @param {{host: String, port: String, enabled: Boolean}} config
  * @param {{}} [config.connectOptions]
- * @param {Logger} [config.log]
+ * @param {Logger} [config.logger]
  * @constructor
  */
 function RedisRepository(config) {
+
+  var log = config.logger || new LoggerProxy();
 
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
   var client = null;
   var available = false;
-
-  function log(msg) {
-    if (config.log) {
-      config.log.log(msg);
-    } else {
-      console.log(msg);
-    }
-  }
 
   /**
    *
@@ -76,7 +71,7 @@ function RedisRepository(config) {
         return resolve();
       }
       try {
-        log('Инициализация Redis');
+        log.log('Инициализация Redis');
         var redisOptions = {host: rHost, port: rPort};
         if (config.connectOptions) {
           for (var p in config.connectOptions) {
@@ -91,7 +86,7 @@ function RedisRepository(config) {
         });
         client.on('error', function (err) {
           available = false;
-          log('Redis error: ' + err);
+          log.error('Redis error: ' + err);
         });
         resolve();
       } catch (err) {
