@@ -11,6 +11,7 @@ const client = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
+const cuid = require('cuid');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
@@ -994,6 +995,32 @@ function MongoDs(config) {
 
   }
 
+  function copyColl(src, dest, cb) {
+    _this.db.collection(src, {strict: true}, function (err, c2) {
+      if (err) {
+        return cb(err);
+      }
+
+      getCollection(dest)
+        .then(
+          function (c3) {
+            c2.aggregate([]).toArray(function (err, docs) {
+              if (err) {
+                return cb(err);
+              }
+              c3.insertMany(docs, function (err) {
+                if (err) {
+                  return cb(err);
+                }
+                _this.db.dropCollection(src, cb);
+              });
+            });
+          }
+        )
+        .catch(cb);
+    });
+  }
+
   /**
    * @param {String} type
    * @param {{}} [options]
@@ -1004,6 +1031,8 @@ function MongoDs(config) {
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @param {Boolean} [options.distinct]
+   * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
@@ -1012,8 +1041,23 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           checkObjectId(options.filter);
+          var tmpApp = null;
+          if (options.append) {
+            tmpApp = 'tmp_' + cuid();
+            options.to = tmpApp;
+          }
           fetch(c, options, checkAggregation(options),
             function (r, amount) {
+              if (tmpApp) {
+                copyColl(tmpApp, options.append, function (err) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+                return;
+              }
+
               if (Array.isArray(r)) {
                 r.forEach(mergeGeoJSON);
                 if (amount !== null) {
@@ -1148,12 +1192,29 @@ function MongoDs(config) {
             checkObjectId(options.filter);
           }
 
+          var tmpApp = null;
+          if (options.append) {
+            tmpApp = 'tmp_' + cuid();
+            options.to = tmpApp;
+          }
+
           plan = checkAggregation(options, plan);
 
           c.aggregate(plan, function (err, result) {
             if (err) {
               return reject(err);
             }
+
+            if (tmpApp) {
+              copyColl(tmpApp, options.append, function (err) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve();
+              });
+              return;
+            }
+
             resolve(result);
           });
         });
