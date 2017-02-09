@@ -95,6 +95,25 @@ function Calculator(options) {
     return result;
   }
 
+  function objProp(obj, nm) {
+    if (!nm) {
+      return null;
+    }
+    if (nm.indexOf('.') < 0) {
+      return obj[nm];
+    }
+
+    var pth = nm.split('.');
+    var ctx = obj;
+    for (var i = 0; i < pth.length; i++) {
+      ctx = ctx[pth[i]];
+      if (typeof ctx !== 'object' || !ctx) {
+        return ctx;
+      }
+    }
+    return ctx;
+  }
+
   /**
    * @param {{name: String}} nm
    * @returns {Function}
@@ -104,7 +123,7 @@ function Calculator(options) {
       if (this instanceof Item) {
         return this.property(nm).evaluate();
       }
-      return this[nm];
+      return objProp(this, nm);
     };
   }
 

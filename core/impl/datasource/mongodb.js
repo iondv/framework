@@ -15,7 +15,7 @@ const cuid = require('cuid');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 70, maxcomplexity: 30, maxdepth: 10
+// jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -350,14 +350,21 @@ function MongoDs(config) {
     });
   }
 
-  function checkObjectId(conditions) {
-    if (typeof conditions === 'object' && conditions) {
+  function checkObjectId(conditions, nottop) {
+    if (Array.isArray(conditions)) {
+      conditions.forEach(checkObjectId);
+    } else if (typeof conditions === 'object' && conditions) {
+      var tmp;
       for (var nm in conditions) {
         if (conditions.hasOwnProperty(nm)) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
+          } else if (nm === '$not' && nottop !== true) {
+            tmp = checkObjectId(conditions[nm], true);
+            conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
+            delete conditions[nm];
           } else {
-            checkObjectId(conditions[nm]);
+            checkObjectId(conditions[nm], true);
           }
         }
       }
@@ -587,6 +594,12 @@ function MongoDs(config) {
             find[name].alias = j.alias;
             pj(find[name]);
 
+            for (ja in jsrc) {
+              if (jsrc.hasOwnProperty(ja)) {
+                joins.push(jsrc[ja]);
+              }
+            }
+
             if (find[name].filter) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
@@ -601,7 +614,7 @@ function MongoDs(config) {
                   }
                 }
                 if (!result && tmp.length) {
-                  result = {$or: tmp};
+                  result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
               }
             } else if (name === '$and') {
@@ -612,25 +625,31 @@ function MongoDs(config) {
                     result.push(tmp[i]);
                   }
                 }
-                result = result.length ? {$and: result} : null;
+                result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
               }
             } else {
-              if (!(name === '$not' && tmp === true)) {
-                result = result || {};
+              if (name === '$nor') {
+                if (Array.isArray(tmp)) {
+                  tmp = tmp.length ? tmp[0] : true;
+                }
+                if (tmp === true) {
+                  result = true;
+                } else {
+                  result = {};
+                  result.$nor = [tmp];
+                }
+              }
+              if (!result) {
+                result = {};
                 result[name] = tmp;
               }
             }
           }
         }
       }
-
-      for (ja in jsrc) {
-        if (jsrc.hasOwnProperty(ja)) {
-          joins.push(jsrc[ja]);
-        }
+      if (result !== null) {
+        return result;
       }
-
-      return result;
     }
     return find;
   }
@@ -708,13 +727,11 @@ function MongoDs(config) {
             return null;
           } else {
             tmp = producePostfilter(find[name], explicitJoins, prefix);
-            if (tmp) {
-              result = result || {};
-              if (name[0] !== '$') {
-                result[prefix ? addPrefix(name, prefix) : name] = tmp;
-              } else {
-                result[name] = tmp;
-              }
+            result = result || {};
+            if (name[0] !== '$') {
+              result[prefix ? addPrefix(name, prefix) : name] = tmp;
+            } else {
+              result[name] = tmp;
             }
           }
         }
@@ -779,6 +796,7 @@ function MongoDs(config) {
    * @returns {*}
    */
   function checkAggregation(options, forcedStages, onlyCount) {
+    forcedStages = forcedStages || [];
     options.attributes = options.attributes || [];
     var i, tmp, tmp2;
     var joinedSources = {};
@@ -817,7 +835,7 @@ function MongoDs(config) {
       }
     }
 
-    if (prefilter && (joins.length || options.to)) {
+    if (prefilter && typeof prefilter === 'object' && (joins.length || options.to || forcedStages.length)) {
       result.push({$match: prefilter});
     }
 
@@ -829,7 +847,7 @@ function MongoDs(config) {
       Array.prototype.push.apply(result, wind(options.attributes));
     }
 
-    if (Array.isArray(forcedStages)) {
+    if (forcedStages.length) {
       Array.prototype.push.apply(result, forcedStages);
     }
 
@@ -1008,6 +1026,9 @@ function MongoDs(config) {
               if (err) {
                 return cb(err);
               }
+              if (!docs.length) {
+                return cb();
+              }
               c3.insertMany(docs, function (err) {
                 if (err) {
                   return cb(err);
@@ -1170,7 +1191,7 @@ function MongoDs(config) {
 
           plan.push(expr);
 
-          var attrs = {};
+          var attrs = {_id: false};
           if (options.fields) {
             for (alias in options.fields) {
               if (options.fields.hasOwnProperty(alias)) {
@@ -1199,12 +1220,10 @@ function MongoDs(config) {
           }
 
           plan = checkAggregation(options, plan);
-
           c.aggregate(plan, function (err, result) {
             if (err) {
               return reject(err);
             }
-
             if (tmpApp) {
               copyColl(tmpApp, options.append, function (err) {
                 if (err) {
@@ -1214,7 +1233,6 @@ function MongoDs(config) {
               });
               return;
             }
-
             resolve(result);
           });
         });

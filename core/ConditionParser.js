@@ -7,7 +7,6 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
-const util = require('util');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -199,11 +198,29 @@ function ConditionParser(condition, rcm, context) {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
         tmp = produceArray(condition.nestedConditions, rcm, context);
         if (tmp) {
-          result = {};
-          switch (condition.operation) {
-            case OperationTypes.AND: result.$and = tmp; break;
-            case OperationTypes.OR: result.$or = tmp; break;
-            case OperationTypes.NOT: result.$not = {$and: tmp}; break;
+          if (tmp.length > 1) {
+            result = {};
+            switch (condition.operation) {
+              case OperationTypes.AND:
+                result.$and = tmp;
+                break;
+              case OperationTypes.OR:
+                result.$or = tmp;
+                break;
+              case OperationTypes.NOT:
+                result.$not = {$and: tmp};
+                break;
+            }
+          } else {
+            switch (condition.operation) {
+              case OperationTypes.AND:
+              case OperationTypes.OR:
+                result = tmp[0];
+                break;
+              case OperationTypes.NOT:
+                result = {$not: tmp[0]};
+                break;
+            }
           }
           return result;
         }
