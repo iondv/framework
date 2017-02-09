@@ -5,7 +5,6 @@
  */
 
 
-
 // Уточняем параметры jsHint.
 // maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
 // jshint maxcomplexity: 12
@@ -50,6 +49,7 @@ function importApplications(appPathItem) {
     const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
     const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles || empty;
     const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing || empty;
+    const afterSaveProcessing = require(path.join(appPathItem, 'convert-import-app')).afterSaveProcessing || empty;
 
     console.info('Импортируемые папки', importedFolders.toString());
 
@@ -83,6 +83,11 @@ function importApplications(appPathItem) {
         })
       .then(getBeforeReference)
       .then((importedData) => {
+        /**
+         * Импорт и сохранение партии данных из пути импортируемой базы
+         * @param importPath импортируемый путь
+         * @param callback
+         */
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
@@ -100,9 +105,9 @@ function importApplications(appPathItem) {
                 return 0;
               }
             })
-            .then((qntSaved) => {
+            .then((res) => {
               console.log('Сохранили и очистили память после импорта папки', importedPath);
-              callback(null, qntSaved);
+              callback(null, res);
             })
             .catch((err)=> {
               callback(err);
@@ -111,7 +116,7 @@ function importApplications(appPathItem) {
 
         /**
          * Итератор импорта
-         * @param {Array} importedFolders
+         * @param {Array} importedFolders - список импортируемых дирректорий
          * @param {Number} i
          * @param {Function} callback
          */
@@ -120,8 +125,8 @@ function importApplications(appPathItem) {
             callback (null);
           } else {
             console.info('Импортируем', importedFolders[i]);
-            importAppBase(importedFolders[i], (err, qntSaved) => {
-              console.info('Закончили импорт %s, сохранено %s объектов', importedFolders[i], qntSaved);
+            importAppBase(importedFolders[i], (err, res) => {
+              console.info('Закончили импорт %s', importedFolders[i]);
               if (err) {
                 callback (err);
               } else {
@@ -159,6 +164,7 @@ function importApplications(appPathItem) {
         return importedData;
       })
       .then(saveImportedFiles)
+      .then(afterSaveProcessing) // Обработка после сохранения (чаще всего самих сохраненных объектов, например проставление единого автоинкремента для объединенной базы)
       .then((res) => {
         resolve(appPathItem);
       })
