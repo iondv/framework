@@ -586,6 +586,12 @@ function MongoDs(config) {
             find[name].alias = j.alias;
             pj(find[name]);
 
+            for (ja in jsrc) {
+              if (jsrc.hasOwnProperty(ja)) {
+                joins.push(jsrc[ja]);
+              }
+            }
+
             if (find[name].filter) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
@@ -616,12 +622,6 @@ function MongoDs(config) {
               }
             }
           }
-        }
-      }
-
-      for (ja in jsrc) {
-        if (jsrc.hasOwnProperty(ja)) {
-          joins.push(jsrc[ja]);
         }
       }
 
