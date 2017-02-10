@@ -332,11 +332,11 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
         } else if (aggregOperations.indexOf(nm) >= 0) {
           result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
           emptyResult = false;
-        } else if (nm === '$exists') {
-          result[nm] = filter[nm];
-          emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
           return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
+        } else if (nm === '$empty' || nm === '$exists') {
+          result[nm] = filter[nm];
+          emptyResult = false;
         } else {
           result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, propertyMeta);
           emptyResult = false;
