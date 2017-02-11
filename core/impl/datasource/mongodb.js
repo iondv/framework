@@ -658,9 +658,8 @@ function MongoDs(config) {
                   result = {};
                   result.$nor = [tmp];
                 }
-              }
-              if (!result) {
-                result = {};
+              } else {
+                result = result || {};
                 result[name] = tmp;
               }
             }
