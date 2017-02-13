@@ -292,7 +292,7 @@ function MongoDs(config) {
               }
             ).then(
               function (data) {
-                c.insertOne(data.data, function (err, result) {
+                c.insertOne(clone(data.data), function (err, result) {
                   if (err) {
                     reject(err);
                   } else if (result.insertedId) {
@@ -658,9 +658,8 @@ function MongoDs(config) {
                   result = {};
                   result.$nor = [tmp];
                 }
-              }
-              if (!result) {
-                result = {};
+              } else {
+                result = result || {};
                 result[name] = tmp;
               }
             }
