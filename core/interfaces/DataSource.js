@@ -75,6 +75,8 @@ function DataSource() {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this.fetch = function (type, options) {
@@ -114,6 +116,7 @@ function DataSource() {
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
    * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this.aggregate = function (type, options) {

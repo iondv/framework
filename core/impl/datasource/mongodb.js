@@ -11,10 +11,11 @@ const client = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
+const cuid = require('cuid');
 
 const AUTOINC_COLLECTION = '__autoinc';
 
-// jshint maxstatements: 70, maxcomplexity: 30, maxdepth: 10
+// jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -349,14 +350,37 @@ function MongoDs(config) {
     });
   }
 
-  function checkObjectId(conditions) {
-    if (typeof conditions === 'object' && conditions) {
+  function prepareConditions(conditions, part, parent, nottop) {
+    if (Array.isArray(conditions)) {
+      for (var i = 0; i < conditions.length; i++) {
+        prepareConditions(conditions[i], i, conditions);
+      }
+    } else if (typeof conditions === 'object' && conditions) {
+      var tmp, tmp2;
       for (var nm in conditions) {
         if (conditions.hasOwnProperty(nm)) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
+          } else if (nm === '$not' && nottop !== true) {
+            tmp = prepareConditions(conditions[nm], nm, conditions, true);
+            conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
+            delete conditions[nm];
+          } else if (nm === '$empty') {
+            if (parent && part) {
+              tmp = conditions[nm] ? '$or' : '$nor';
+              delete parent[part];
+              parent[tmp] = [];
+              tmp2 = {};
+              tmp2[part] = {$eq: ''};
+              parent[tmp].push(tmp2);
+              tmp2 = {};
+              tmp2[part] = {$eq: null};
+              parent[tmp].push(tmp2);
+              tmp2[part] = {$exists: false};
+              parent[tmp].push(tmp2);
+            }
           } else {
-            checkObjectId(conditions[nm]);
+            prepareConditions(conditions[nm], nm, conditions, true);
           }
         }
       }
@@ -395,7 +419,7 @@ function MongoDs(config) {
                 if (!empty(data.unset)) {
                   updates.$unset = data.unset;
                 }
-                checkObjectId(conditions);
+                prepareConditions(conditions);
                 if (!multi) {
                   c.updateOne(
                     conditions,
@@ -439,7 +463,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          checkObjectId(conditions);
+          prepareConditions(conditions);
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
@@ -486,20 +510,19 @@ function MongoDs(config) {
    * @param {Array} joins
    * @param {Array} result
    */
-  function processJoins(attributes, joins, result) {
+  function processJoins(attributes, joins, result, prefix) {
     if (joins.length) {
       if (!attributes || !attributes.length) {
         throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
       }
-      var attrs = attributes.slice(0);
       joins.forEach(function (join) {
         var tmp;
-        var left = join.left;
+        var left = (prefix ? prefix + '.' : '') + join.left;
         if (join.many) {
           left = '__uw_' + join.left;
-          tmp = clean(attrs);
-          tmp.$project[left] = '$' + join.left;
-          attrs.push(left);
+          tmp = clean(attributes);
+          tmp.$project[left] = '$' + (prefix ? prefix + '.' : '') + join.left;
+          attributes.push(left);
           result.push(tmp);
           result.push({$unwind: {path: '$' + left, preserveNullAndEmptyArrays: true}});
         }
@@ -511,14 +534,19 @@ function MongoDs(config) {
           as: join.alias
         };
         result.push({$lookup: tmp});
-        attrs.push(join.alias);
+        attributes.push(join.alias);
         if (join.passSize) {
-          tmp = clean(attrs);
+          tmp = clean(attributes);
           tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
-          attrs.push(join.alias + '_size');
+          attributes.push(join.alias + '_size');
           result.push(tmp);
         }
-        result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
+        if (!join.onlySize || Array.isArray(join.join)) {
+          result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
+        }
+        if (Array.isArray(join.join)) {
+          processJoins(attributes, join.join, result, join.alias);
+        }
       });
     }
   }
@@ -598,34 +626,50 @@ function MongoDs(config) {
             result = true;
           } else {
             tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
-            if (tmp) {
-              if (name === '$or') {
+            if (name === '$or') {
+              if (tmp) {
                 for (i = 0; i < tmp.length; i++) {
                   if (tmp[i] === true) {
                     result = true;
                   }
                 }
                 if (!result && tmp.length) {
-                  result = {$or: tmp};
+                  result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
-              } else if (name === '$and') {
+              }
+            } else if (name === '$and') {
+              if (tmp) {
                 result = [];
                 for (i = 0; i < tmp.length; i++) {
                   if (tmp[i] !== true) {
                     result.push(tmp[i]);
                   }
                 }
-                result = result.length ? {$and: result} : null;
-              } else {
-                result = result || {};
+                result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+              }
+            } else {
+              if (name === '$nor') {
+                if (Array.isArray(tmp)) {
+                  tmp = tmp.length ? tmp[0] : true;
+                }
+                if (tmp === true) {
+                  result = true;
+                } else {
+                  result = {};
+                  result.$nor = [tmp];
+                }
+              }
+              if (!result) {
+                result = {};
                 result[name] = tmp;
               }
             }
           }
         }
       }
-
-      return result;
+      if (result !== null) {
+        return result;
+      }
     }
     return find;
   }
@@ -703,13 +747,11 @@ function MongoDs(config) {
             return null;
           } else {
             tmp = producePostfilter(find[name], explicitJoins, prefix);
-            if (tmp) {
-              result = result || {};
-              if (name[0] !== '$') {
-                result[prefix ? addPrefix(name, prefix) : name] = tmp;
-              } else {
-                result[name] = tmp;
-              }
+            result = result || {};
+            if (name[0] !== '$') {
+              result[prefix ? addPrefix(name, prefix) : name] = tmp;
+            } else {
+              result[name] = tmp;
             }
           }
         }
@@ -742,9 +784,11 @@ function MongoDs(config) {
   function checkAttrExpr(expr, attributes, joinedSources) {
     if (typeof expr === 'string') {
       return checkAttrLexem(expr, attributes, joinedSources);
-    }
-
-    if (typeof expr === 'object') {
+    } else if (Array.isArray(expr)) {
+      for (var i = 0; i < expr.length; i++) {
+        checkAttrExpr(expr[i], attributes, joinedSources);
+      }
+    } else if (typeof expr === 'object') {
       for (var nm in expr) {
         if (expr.hasOwnProperty(nm)) {
           if (nm[0] !== '$') {
@@ -774,7 +818,8 @@ function MongoDs(config) {
    * @returns {*}
    */
   function checkAggregation(options, forcedStages, onlyCount) {
-    options.attributes = options.attributes || [];
+    forcedStages = forcedStages || [];
+    var attributes = options.attributes || [];
     var i, tmp, tmp2;
     var joinedSources = {};
     var lookups = {};
@@ -783,13 +828,13 @@ function MongoDs(config) {
 
     if (Array.isArray(options.joins)) {
       joins = options.joins;
-      options.joins.forEach(processJoin(options.attributes, joinedSources, lookups));
+      options.joins.forEach(processJoin(attributes, joinedSources, lookups));
     }
 
     if (options.fields) {
       for (tmp in options.fields) {
         if (options.fields.hasOwnProperty(tmp)) {
-          checkAttrExpr(options.fields[tmp], options.attributes, joinedSources);
+          checkAttrExpr(options.fields[tmp], attributes, joinedSources);
         }
       }
     }
@@ -797,34 +842,35 @@ function MongoDs(config) {
     if (options.aggregates) {
       for (tmp in options.aggregates) {
         if (options.aggregates.hasOwnProperty(tmp)) {
-          checkAttrExpr(options.aggregates[tmp], options.attributes, joinedSources);
+          checkAttrExpr(options.aggregates[tmp], attributes, joinedSources);
         }
       }
     }
 
+    var resultAttrs = attributes.slice(0);
     var prefilter, postfilter, jl;
 
     if (options.filter) {
       jl = joins.length;
-      prefilter = producePrefilter(options.attributes, options.filter, joins, lookups);
+      prefilter = producePrefilter(attributes, options.filter, joins, lookups);
       if (joins.length > jl) {
         postfilter = producePostfilter(options.filter, lookups);
       }
     }
 
-    if (prefilter && (joins.length || options.to)) {
+    if (prefilter && typeof prefilter === 'object' && (joins.length || options.to || forcedStages.length)) {
       result.push({$match: prefilter});
     }
 
     if (joins.length) {
-      processJoins(options.attributes, joins, result);
+      processJoins(attributes, joins, result);
       if (postfilter) {
         result.push({$match: postfilter});
       }
-      Array.prototype.push.apply(result, wind(options.attributes));
+      Array.prototype.push.apply(result, wind(resultAttrs));
     }
 
-    if (Array.isArray(forcedStages)) {
+    if (forcedStages.length) {
       Array.prototype.push.apply(result, forcedStages);
     }
 
@@ -836,9 +882,9 @@ function MongoDs(config) {
 
         tmp = {};
         tmp2 = {__total: '$__total'};
-        for (i = 0; i < options.attributes.length; i++) {
-          tmp[options.attributes[i]] = '$' + options.attributes[i];
-          tmp2[options.attributes[i]] = '$data.' + options.attributes[i];
+        for (i = 0; i < resultAttrs.length; i++) {
+          tmp[resultAttrs[i]] = '$' + options.attributes[i];
+          tmp2[resultAttrs[i]] = '$data.' + options.attributes[i];
         }
         result.push({$group: {_id: tmp}});
         if (onlyCount) {
@@ -990,6 +1036,35 @@ function MongoDs(config) {
 
   }
 
+  function copyColl(src, dest, cb) {
+    _this.db.collection(src, {strict: true}, function (err, c2) {
+      if (err) {
+        return cb(err);
+      }
+
+      getCollection(dest)
+        .then(
+          function (c3) {
+            c2.aggregate([]).toArray(function (err, docs) {
+              if (err) {
+                return cb(err);
+              }
+              if (!docs.length) {
+                return cb();
+              }
+              c3.insertMany(docs, function (err) {
+                if (err) {
+                  return cb(err);
+                }
+                _this.db.dropCollection(src, cb);
+              });
+            });
+          }
+        )
+        .catch(cb);
+    });
+  }
+
   /**
    * @param {String} type
    * @param {{}} [options]
@@ -1000,6 +1075,8 @@ function MongoDs(config) {
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
    * @param {Boolean} [options.distinct]
+   * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
@@ -1007,9 +1084,24 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          checkObjectId(options.filter);
+          prepareConditions(options.filter);
+          var tmpApp = null;
+          if (options.append) {
+            tmpApp = 'tmp_' + cuid();
+            options.to = tmpApp;
+          }
           fetch(c, options, checkAggregation(options),
             function (r, amount) {
+              if (tmpApp) {
+                copyColl(tmpApp, options.append, function (err) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+                return;
+              }
+
               if (Array.isArray(r)) {
                 r.forEach(mergeGeoJSON);
                 if (amount !== null) {
@@ -1055,7 +1147,7 @@ function MongoDs(config) {
       function (c) {
         return new Promise(function (resolve, reject) {
           try {
-            checkObjectId(options.filter);
+            prepareConditions(options.filter);
             fetch(c, options, checkAggregation(options),
               function (r, amount) {
                 if (Array.isArray(r)) {
@@ -1122,7 +1214,7 @@ function MongoDs(config) {
 
           plan.push(expr);
 
-          var attrs = {};
+          var attrs = {_id: false};
           if (options.fields) {
             for (alias in options.fields) {
               if (options.fields.hasOwnProperty(alias)) {
@@ -1141,14 +1233,28 @@ function MongoDs(config) {
           plan.push({$project: attrs});
 
           if (options.filter) {
-            checkObjectId(options.filter);
+            prepareConditions(options.filter);
+          }
+
+          var tmpApp = null;
+          if (options.append) {
+            tmpApp = 'tmp_' + cuid();
+            options.to = tmpApp;
           }
 
           plan = checkAggregation(options, plan);
-
           c.aggregate(plan, function (err, result) {
             if (err) {
               return reject(err);
+            }
+            if (tmpApp) {
+              copyColl(tmpApp, options.append, function (err) {
+                if (err) {
+                  return reject(err);
+                }
+                resolve();
+              });
+              return;
             }
             resolve(result);
           });
@@ -1161,7 +1267,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          checkObjectId(options.filter);
+          prepareConditions(options.filter);
           var opts = {};
 
           if (options.offset) {
@@ -1200,7 +1306,7 @@ function MongoDs(config) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
-          checkObjectId(conditions);
+          prepareConditions(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
               return reject(err);
