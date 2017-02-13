@@ -67,8 +67,10 @@ function DsChangeLogger(ds, authCallback) {
   this._getChanges = function (className, id, since, till) {
     return new Promise(function (resolve, reject) {
       var opts = {$and: [{className: className},
-                          {id: id},
-                          {timestamp: {$gte: since.toISOString()}}]};
+                          {id: id}]};
+      if (since) {
+        opts.$and.push({timestamp: {$gte: since.toISOString()}});
+      }
       if (till) {
         opts.$and.push({timestamp: {$lt: till.toISOString()}});
       }
