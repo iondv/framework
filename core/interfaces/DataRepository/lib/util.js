@@ -5,6 +5,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
 const geoOperations = ['$geoWithin', '$geoIntersects'];
+const aggregOperations = ['$min', '$max', '$avg', '$sum', '$count'];
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 30, maxdepth: 15
 
@@ -331,14 +332,14 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
             result[cm.getKeyProperties()[0]] = filter[nm];
             emptyResult = false;
           }
-        } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
+        } else if (aggregOperations.indexOf(nm) >= 0) {
           result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
-          emptyResult = false;
-        } else if (nm === '$exists') {
-          result[nm] = filter[nm];
           emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
           return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
+        } else if (nm === '$empty' || nm === '$exists') {
+          result[nm] = filter[nm];
+          emptyResult = false;
         } else {
           result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, propertyMeta);
           emptyResult = false;
