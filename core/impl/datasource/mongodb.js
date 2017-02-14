@@ -812,7 +812,7 @@ function MongoDs(config) {
       }
     }
 
-    if (prefilter/* && (joins.length || options.to)*/) {
+    if (prefilter && (joins.length || options.to || forcedStages)) {
       result.push({$match: prefilter});
     }
 
