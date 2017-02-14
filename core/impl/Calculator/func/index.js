@@ -17,6 +17,7 @@ module.exports = {
   mul: require('./arithmetic/mul'),
   sub: require('./arithmetic/sub'),
   div: require('./arithmetic/div'),
+  round: require('./arithmetic/round'),
   obj: require('./obj'),
   now: require('./date/now'),
   dateAdd: require('./date/dateAdd'),

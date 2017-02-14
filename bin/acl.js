@@ -20,7 +20,7 @@ var addResource = false;
 var addRole = false;
 var setMethod = false;
 
-// jshint maxstatements: 30
+// jshint maxstatements: 40
 process.argv.forEach(function (val) {
   if (val === '--u') {
     addUser = true;

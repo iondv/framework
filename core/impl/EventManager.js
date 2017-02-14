@@ -7,10 +7,14 @@ function EventManager() {
   var listeners = {};
 
   this.on = function (event, func) {
-    if (!listeners[event]) {
-      listeners[event] = [];
+    if (Array.isArray(event)) {
+      event.forEach(e => this.on(e, func));
+    } else {
+      if (!listeners[event]) {
+        listeners[event] = [];
+      }
+      listeners[event].push(func);
     }
-    listeners[event].push(func);
   };
 
   this.trigger = function (event) {
