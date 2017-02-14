@@ -909,15 +909,11 @@ function MongoDs(config) {
 
       if (result.length || options.to) {
         if (options.countTotal || onlyCount) {
-          if (!options.attributes.length) {
-            throw new Error('Не передан список атрибутов необходимый для подсчета размера выборки.');
-          }
-
           tmp = {};
           tmp2 = {__total: '$__total'};
           for (i = 0; i < resultAttrs.length; i++) {
-            tmp[resultAttrs[i]] = '$' + options.attributes[i];
-            tmp2[resultAttrs[i]] = '$data.' + options.attributes[i];
+            tmp[resultAttrs[i]] = '$' + resultAttrs[i];
+            tmp2[resultAttrs[i]] = '$data.' + resultAttrs[i];
           }
           result.push({$group: {_id: tmp}});
           if (onlyCount) {
@@ -1115,6 +1111,7 @@ function MongoDs(config) {
    */
   this._fetch = function (type, options) {
     options = options || {};
+    console.log(JSON.stringify(options));
     var tmpApp = null;
     var c;
     return getCollection(type).then(
