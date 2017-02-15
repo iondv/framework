@@ -1,13 +1,9 @@
 {
     "log_level": "notice",
     "parametrised": true,
-    "port": [
-        "[[server.port1]]",
-        "[[server.port2]]",
-        "[[server.port3]]"
-    ],
+    "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
-    "skipModules": ["[[module.skip1]]", "[[module.skip2]]", "[[module.skip3]]"],
+    "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
@@ -82,7 +78,7 @@
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
-          "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
+          "exclude": "[[auth.exclude]]"
         }
       },
       "calculator": {
