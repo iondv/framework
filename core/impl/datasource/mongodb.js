@@ -1111,7 +1111,6 @@ function MongoDs(config) {
    */
   this._fetch = function (type, options) {
     options = options || {};
-    console.log(JSON.stringify(options));
     var tmpApp = null;
     var c;
     return getCollection(type).then(
