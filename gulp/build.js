@@ -284,14 +284,14 @@ function _themeDirs(basePath) {
 }
 
 function themeDirs() {
-  var themes = _themeDirs(path.join(platformPath, 'views'));
+  var themes = _themeDirs(path.join(platformPath, 'view'));
   var pth = path.join(platformPath, 'modules');
   var tmp = fs.readdirSync(pth);
   tmp.forEach(function (dir) {
     var module = path.join(pth, dir);
     var stat = fs.statSync(module);
     if (stat.isDirectory()) {
-      Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'views')));
+      Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
     }
   });
   pth = path.join(platformPath, 'applications');
