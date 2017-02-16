@@ -30,11 +30,6 @@ function KeyProvider() {
   this.keyData = function (cm, data) {
     return this._keyData(cm, data);
   };
-
-  this.filterByItemId = function() {
-    
-  };
-
 }
 
 module.exports = KeyProvider;
