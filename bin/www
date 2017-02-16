@@ -3,22 +3,22 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var path = require('path');
-var http = require('http');
-var express = require('express');
-var ejsLocals = require('ejs-locals');
-var flash = require('connect-flash');
-var fs = require('fs');
-var favicon = require('serve-favicon');
+const path = require('path');
+const http = require('http');
+const express = require('express');
+const ejsLocals = require('ejs-locals');
+const flash = require('connect-flash');
+const fs = require('fs');
 
-var bodyParser = require('body-parser');
-var methodOverride = require('method-override');
+const bodyParser = require('body-parser');
+const methodOverride = require('method-override');
 
-var config = require('../config');
-var di = require('core/di');
+const config = require('../config');
+const di = require('core/di');
+const theme = require('lib/util/theme');
 
-var IonLogger = require('core/impl/log/IonLogger');
-var SettingsRepository = require('core/impl/SettingsRepository');
+const IonLogger = require('core/impl/log/IonLogger');
+const SettingsRepository = require('core/impl/SettingsRepository');
 
 var sysLog = new IonLogger(config.log || {});
 
@@ -57,13 +57,7 @@ app.use(flash());
 // Шаблонизатор
 
 app.engine('ejs', ejsLocals);
-app.set('views', path.join(__dirname, '../view/templates'));
 app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, '../view/static')));
-
-// Типовые настройки
-
-app.use(favicon(path.join(__dirname, '../view/static/favicon.ico')));
 
 // Поддержка put и deletes
 // override with different headers; last one takes precedence
@@ -132,6 +126,13 @@ then(
   function (scope) {
     var moduleTitles = {};
     try {
+      // Тема оформления страниц аутентификации и регистрации
+      theme(
+        app, '',
+        path.normalize(path.join(__dirname, '..')),
+        scope.settings.get('theme') || config.theme || 'default', sysLog
+      );
+
       // Редирект на дефолтный модуль
       var defaultModule = null;
       if (scope.settings && scope.settings instanceof SettingsRepository) {
