@@ -133,6 +133,8 @@ then(
         scope.settings.get('theme') || config.theme || 'default', sysLog
       );
 
+      scope.auth.setTopLevelAuth();
+
       // Редирект на дефолтный модуль
       var defaultModule = null;
       if (scope.settings && scope.settings instanceof SettingsRepository) {
