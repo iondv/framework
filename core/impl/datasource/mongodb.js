@@ -182,14 +182,13 @@ function MongoDs(config) {
 
             if (act) {
               result.ai.findOneAndUpdate(
-                {type: type},
+                {__type: type},
                 {$inc: inc},
                 {returnOriginal: false, upsert: false},
                 function (err, result) {
                   if (err) {
                     return reject(err);
                   }
-
                   for (var nm in result.value.counters) {
                     if (result.value.counters.hasOwnProperty(nm)) {
                       data[nm] = result.value.counters[nm];
