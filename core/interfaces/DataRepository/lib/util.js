@@ -337,7 +337,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
           emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
           return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
-        } else if (nm === '$empty' || nm === '$exists') {
+        } else if (nm === '$empty' || nm === '$exists' || nm === '$regex' || nm === '$options') {
           result[nm] = filter[nm];
           emptyResult = false;
         } else {
