@@ -291,6 +291,7 @@ function themeDirs() {
     var module = path.join(pth, dir);
     var stat = fs.statSync(module);
     if (stat.isDirectory()) {
+      themes.push(path.join(module, 'view'));
       Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
     }
   });
