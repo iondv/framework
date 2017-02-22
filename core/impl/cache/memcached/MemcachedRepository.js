@@ -115,7 +115,7 @@ function MemcachedRepository(config) {
         return resolve();
       }
       try {
-        log('Инициализация memcached');
+        log.log('Инициализация memcached');
         memcached = new Memcached(mServerLocations, mOptions);
         memcached.
         on('issue',
