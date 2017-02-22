@@ -1183,6 +1183,9 @@ function IonDataRepository(options) {
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
+          delete updates._class;
+          delete updates._classVer;
+          delete updates._creator;
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
@@ -1263,6 +1266,7 @@ function IonDataRepository(options) {
               return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
             var item = _this._wrap(data._class, data, data._classVer);
+            delete updates._editor;
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);

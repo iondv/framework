@@ -1,6 +1,6 @@
 {
-  "directory": "./view/vendor",
-  "vendorDir": "./view/static/vendor",
+  "directory": "./vendor",
+  "vendorDir": "./static/vendor",
   "ignore": [
     "**/.*",
     "node_modules",

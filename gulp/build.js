@@ -171,16 +171,19 @@ function bower(p) {
 function compileLess(p) {
   return function () {
     return new Promise(function (resolve, reject) {
+      if (!fs.existsSync(path.join(p, 'less'))) {
+        return resolve();
+      }
       console.log('Компиляция less-файлов для пути ' + p);
       try {
-        gulp.src([path.join(p, 'view/less/*.less')])
+        gulp.src([path.join(p, 'less', '*.less')])
           .pipe(less({
-            paths: [path.join(p, 'view/less/*.less')]
+            paths: [path.join(p, 'less', '*.less')]
           }))
           .pipe(rename({
             suffix: '.less'
           }))
-          .pipe(gulp.dest(path.join(p, 'view/static/css')))
+          .pipe(gulp.dest(path.join(p, 'static', 'css')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -193,15 +196,18 @@ function compileLess(p) {
 function minifyCSS(p) {
   return function () {
     return new Promise(function (resolve, reject) {
+      if (!fs.existsSync(path.join(p, 'static', 'css'))) {
+        return resolve();
+      }
       console.log('Минификация файлов стилей фронтенда для пути ' + p);
       try {
         gulp.src([
-          path.join(p, 'view/static/css/*.css'),
-          '!' + path.join(p, 'view/static/css/*.min.css')
-        ], {base: path.join(p, 'view/static/css')})
+          path.join(p, 'static', 'css', '*.css'),
+          '!' + path.join(p, 'static', 'css', '*.min.css')
+        ], {base: path.join(p, 'static', 'css')})
           .pipe(cssMin())
           .pipe(rename({suffix: '.min'}))
-          .pipe(gulp.dest(path.join(p, 'view/static/css')))
+          .pipe(gulp.dest(path.join(p, 'static', 'css')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -214,16 +220,20 @@ function minifyCSS(p) {
 function minifyJS(p) {
   return function () {
     return new Promise(function (resolve, reject) {
+      if (!fs.existsSync(path.join(p, 'static', 'js'))) {
+        return resolve();
+      }
+
       console.log('Минификация файлов скриптов фронтенда для пути ' + p);
       try {
         gulp.src(
           [
-            path.join(p, 'view/static/js/*.js'),
-            '!' + path.join(p, 'view/static/js/*.min.js')
-          ], {base: path.join(p, 'view/static/js')})
+            path.join(p, 'static', 'js', '*.js'),
+            '!' + path.join(p, 'static', 'js', '*.min.js')
+          ], {base: path.join(p, 'static', 'js')})
           .pipe(jsMin())
           .pipe(rename({suffix: '.min'}))
-          .pipe(gulp.dest(path.join(p, 'view/static/js')))
+          .pipe(gulp.dest(path.join(p, 'static', 'js')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -258,54 +268,107 @@ gulp.task('build:npm', function (done) {
   });
 });
 
-gulp.task('build:bower', function (done) {
-  var modulesDir = path.join(platformPath, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = bower(platformPath)();
-  var stat;
-  for (var i = 0; i < modules.length; i++) {
-    stat = fs.statSync(path.join(modulesDir, modules[i]));
+function _themeDirs(basePath) {
+  var themes = [];
+  if (fs.existsSync(basePath)) {
+    var tmp = fs.readdirSync(basePath);
+    tmp.forEach(function (dir) {
+      var theme = path.join(basePath, dir);
+      var stat = fs.statSync(theme);
+      if (stat.isDirectory()) {
+        themes.push(theme);
+      }
+    });
+  }
+  return themes;
+}
+
+function themeDirs() {
+  var themes = _themeDirs(path.join(platformPath, 'view'));
+  var pth = path.join(platformPath, 'modules');
+  var tmp = fs.readdirSync(pth);
+  tmp.forEach(function (dir) {
+    var module = path.join(pth, dir);
+    var stat = fs.statSync(module);
     if (stat.isDirectory()) {
-      start = start.then(bower(path.join(modulesDir, modules[i])));
+      themes.push(path.join(module, 'view'));
+      Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
     }
+  });
+  pth = path.join(platformPath, 'applications');
+  tmp = fs.readdirSync(pth);
+  tmp.forEach(function (dir) {
+    var module = path.join(pth, dir);
+    var stat = fs.statSync(module);
+    if (stat.isDirectory()) {
+      var themesDir = path.join(module, 'themes');
+      if (fs.existsSync(themesDir)) {
+        Array.prototype.push.apply(themes, _themeDirs(themesDir));
+      } else {
+        themes.push(module);
+      }
+    }
+  });
+  return themes;
+}
+
+gulp.task('build:bower', function (done) {
+  var themes = themeDirs();
+  var start = null;
+  for (var i = 0; i < themes.length; i++) {
+    if (start) {
+      start = start.then(bower(themes[i]));
+    } else {
+      start = bower(themes[i])();
+    }
+  }
+  if (!start) {
+    start = Promise.resolve();
   }
   start.then(function () {
     done();
-  }).catch(function (err) {
+  }).
+  catch(function (err) {
     console.error(err);
     done(err);
   });
 });
 
 gulp.task('compile:less', function (done) {
-  var modulesDir = path.join(platformPath, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = compileLess(platformPath)();
-  var stat;
-  for (var i = 0; i < modules.length; i++) {
-    stat = fs.statSync(path.join(modulesDir, modules[i]));
-    if (stat.isDirectory()) {
-      start = start.then(compileLess(path.join(modulesDir, modules[i])));
+  var themes = themeDirs();
+  var start = null;
+  for (var i = 0; i < themes.length; i++) {
+    if (start) {
+      start = start.then(compileLess(themes[i]));
+    } else {
+      start = compileLess(themes[i])();
     }
   }
+  if (!start) {
+    start = Promise.resolve();
+  }
+
   start.then(function () {
     done();
-  }).catch(function (err) {
+  }).
+  catch(function (err) {
     console.error(err);
     done(err);
   });
 });
 
 gulp.task('minify:css', function (done) {
-  var modulesDir = path.join(platformPath, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = minifyCSS(platformPath)();
-  var stat;
-  for (var i = 0; i < modules.length; i++) {
-    stat = fs.statSync(path.join(modulesDir, modules[i]));
-    if (stat.isDirectory()) {
-      start = start.then(minifyCSS(path.join(modulesDir, modules[i])));
+  var themes = themeDirs();
+  var start = null;
+  for (var i = 0; i < themes.length; i++) {
+    if (start) {
+      start = start.then(minifyCSS(themes[i]));
+    } else {
+      start = minifyCSS(themes[i])();
     }
+  }
+  if (!start) {
+    start = Promise.resolve();
   }
   start.then(function () {
     done();
@@ -316,19 +379,22 @@ gulp.task('minify:css', function (done) {
 });
 
 gulp.task('minify:js', function (done) {
-  var modulesDir = path.join(platformPath, 'modules');
-  var modules = fs.readdirSync(modulesDir);
-  var start = minifyJS(platformPath)();
-  var stat;
-  for (var i = 0; i < modules.length; i++) {
-    stat = fs.statSync(path.join(modulesDir, modules[i]));
-    if (stat.isDirectory()) {
-      start = start.then(minifyJS(path.join(modulesDir, modules[i])));
+  var themes = themeDirs();
+  var start = null;
+  for (var i = 0; i < themes.length; i++) {
+    if (start) {
+      start = start.then(minifyJS(themes[i]));
+    } else {
+      start = minifyJS(themes[i])();
     }
+  }
+  if (!start) {
+    start = Promise.resolve();
   }
   start.then(function () {
     done();
-  }).catch(function (err) {
+  }).
+  catch(function (err) {
     console.error(err);
     done(err);
   });

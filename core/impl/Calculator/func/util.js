@@ -6,7 +6,7 @@
 // jshint maxstatements: 50, maxcomplexity: 20
 function passValue(v) {
   var val = v;
-  return new Promise(function (r) {r(val);});
+  return Promise.resolve(val);
 }
 
 function argCalcPromise(context, args, argCount) {
@@ -14,14 +14,8 @@ function argCalcPromise(context, args, argCount) {
   var tmp;
   var n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
   for (var i = 0; i < n; i++) {
-    if (typeof args[i] === 'function') {
-      tmp = args[i].apply(context);
-    }
-    if (tmp instanceof Promise) {
-      calc.push(tmp);
-    } else {
-      calc.push(passValue(tmp));
-    }
+    tmp = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
+    calc.push(tmp instanceof Promise ? tmp : passValue(tmp));
   }
   return Promise.all(calc);
 }
