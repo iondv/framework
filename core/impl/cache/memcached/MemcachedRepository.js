@@ -41,21 +41,41 @@ function MemcachedRepository(config) {
   var availableServers = mServerLocations.concat([]);
   var checkingForServers = false;
 
-  function checkAvailableServers() {
+  function afterConnect(cb) {
+    return function () {
+      log.info('Выполнена проверка доступности серверов memcached.');
+      setTimeout(function () {
+        checkingForServers = false;
+      }, reconnectTimeout * 1000);
+      if (typeof cb === 'function') {
+        cb();
+      }
+    };
+  }
+
+  function checkAvailableServers(cb) {
     if (!checkingForServers) {
       checkingForServers = true;
+      var connectors = [];
+
       memcached.multi(false, function (server, key, index, totals) {
-        memcached.connect(server, function (err, conn) {
-          if (!err) {
-            if (conn.readable && conn.writable && availableServers.indexOf(server) < 0) {
-              availableServers.push(server);
+        connectors.push(new Promise(function (resolve, reject) {
+          memcached.connect(server, function (err, conn) {
+            if (!err) {
+              if (conn.readable && conn.writable && availableServers.indexOf(server) < 0) {
+                availableServers.push(server);
+              }
+            } else {
+              log.warn('Сервер memcached ' + server + ' недоступен.');
             }
-          }
-          if (totals - 1 === index) {
-            setTimeout(function () {checkingForServers = false;}, reconnectTimeout * 1000);
-          }
-        });
+            resolve();
+          });
+        }));
       });
+
+      var ac = afterConnect(cb);
+      Promise.all(connectors)
+        .then(ac).catch(ac);
     }
   }
 
@@ -115,7 +135,7 @@ function MemcachedRepository(config) {
         return resolve();
       }
       try {
-        log.log('Инициализация memcached');
+        log.log('Инициализация memcached...');
         memcached = new Memcached(mServerLocations, mOptions);
         memcached.
         on('issue',
@@ -148,7 +168,7 @@ function MemcachedRepository(config) {
             log.warn(`Memcached remove:${details.server}:${details.messages.join(' ')}`);
           }
         );
-        resolve();
+        checkAvailableServers(resolve);
       } catch (err) {
         reject(err);
       }
