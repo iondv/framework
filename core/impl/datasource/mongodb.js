@@ -12,6 +12,7 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
+const Iterator = require('core/interfaces/Iterator');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
@@ -928,14 +929,6 @@ function MongoDs(config) {
           if (options.sort) {
             result.push({$sort: options.sort});
           }
-
-          if (options.offset) {
-            result.push({$skip: options.offset});
-          }
-
-          if (options.count) {
-            result.push({$limit: options.count});
-          }
         }
       }
 
@@ -997,72 +990,41 @@ function MongoDs(config) {
   function fetch(c, options, aggregate, resolve, reject) {
     var r, flds;
     if (aggregate) {
-      c.aggregate(aggregate, {}, function (err, data) {
-        if (err) {
-          return reject(err);
-        }
-        var results = data;
-        if (options.countTotal) {
-          results.total = data.length ? data[0].count : 0;
-        }
-        resolve(results, options.countTotal ? (data.length ? data[0].__total : 0) : null);
-      });
-    } else if (options.distinct && options.select.length === 1) {
-      r = c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
-        if (err) {
-          return reject(err);
-        }
-        if (options.sort && options.sort[options.select[0]]) {
-          var direction = options.sort[options.select[0]];
-          data = data.sort(function compare(a, b) {
-            if (a < b) {
-              return -1 * direction;
-            } else if (a > b) {
-              return 1 * direction;
-            }
-            return 0;
-          });
-        }
-        var res, stPos, endPos;
-        res = [];
-        stPos = options.offset || 0;
-        endPos = options.count ? stPos + options.count : data.length;
-        for (var i = stPos; i < endPos && i < data.length; i++) {
-          var tmp = {};
-          tmp[options.select[0]] = data[i];
-          res.push(tmp);
-        }
-        resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
-      });
+      r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
     } else {
-      flds = null;
-      r = c.find(options.filter || {});
+      if (options.distinct && options.select.length === 1) {
+        r = c.distinct(options.select[0], options.filter || {}, {});
+      } else {
+        flds = null;
+        r = c.find(options.filter || {});
+      }
 
       if (options.sort) {
         r = r.sort(options.sort);
       }
-
-      if (options.offset) {
-        r = r.skip(options.offset);
-      }
-
-      if (options.count) {
-        r = r.limit(options.count);
-      }
-
-      if (options.countTotal) {
-        r.count(false, function (err, amount) {
-          if (err) {
-            r.close();
-            return reject(err);
-          }
-          resolve(r, amount);
-        });
-      } else {
-        resolve(r);
-      }
     }
 
+    if (options.offset) {
+      r = r.skip(options.offset);
+    }
+
+    if (options.count) {
+      r = r.limit(options.count);
+    }
+
+    r.batchSize(options.batchSize || options.count || 1);
+
+    if (options.countTotal) {
+      r.count(false, function (err, amount) {
+        if (err) {
+          r.close();
+          return reject(err);
+        }
+        resolve(r, amount);
+      });
+    } else {
+      resolve(r);
+    }
   }
 
   function copyColl(src, dest, cb) {
@@ -1135,25 +1097,17 @@ function MongoDs(config) {
                 return;
               }
 
-              if (Array.isArray(r)) {
-                r.forEach(mergeGeoJSON);
-                if (amount !== null) {
-                  r.total = amount;
+              r.toArray(function (err, docs) {
+                r.close();
+                if (err) {
+                  return reject(err);
                 }
-                resolve(r);
-              } else {
-                r.toArray(function (err, docs) {
-                  r.close();
-                  if (err) {
-                    return reject(err);
-                  }
-                  docs.forEach(mergeGeoJSON);
-                  if (amount !== null) {
-                    docs.total = amount;
-                  }
-                  resolve(docs);
-                });
-              }
+                docs.forEach(mergeGeoJSON);
+                if (amount !== null) {
+                  docs.total = amount;
+                }
+                resolve(docs);
+              });
             },
             reject
           );
@@ -1161,6 +1115,28 @@ function MongoDs(config) {
       }
     );
   };
+
+  function DsIterator(cursor, amount) {
+    this._next = function () {
+      return new Promise(function (resolve, reject) {
+        cursor.next(function (err, r) {
+          if (err) {
+            return reject(err);
+          }
+          if (r) {
+            return resolve(mergeGeoJSON(r));
+          }
+          resolve(null);
+        });
+      });
+    };
+
+    this._count = function () {
+      return amount;
+    };
+  }
+
+  DsIterator.prototype = new Iterator();
 
   /**
    * @param {String} type
@@ -1171,10 +1147,9 @@ function MongoDs(config) {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Number} [options.batchSize]
-   * @param {Function} cb
    * @returns {Promise}
    */
-  this._forEach = function (type, options, cb) {
+  this._iterator = function (type, options) {
     options = options || {};
     var c;
     return getCollection(type).then(
@@ -1185,24 +1160,12 @@ function MongoDs(config) {
       }).then(function (aggregation) {
         return new Promise(function (resolve, reject) {
           try {
+            options.batchSize = options.batchSize || 1;
             fetch(c, options, aggregation,
               function (r, amount) {
-                if (Array.isArray(r)) {
-                  r.forEach(function (d) {cb(mergeGeoJSON(d));});
-                } else {
-                  r.batchSize(options.batchSize || 1);
-                  r.forEach(
-                    function (d) {cb(mergeGeoJSON(d));},
-                    function (err) {
-                      r.close();
-                      if (err) {
-                        return reject(err);
-                      }
-                      resolve();
-                    }
-                  );
-                }
-              }, reject
+                resolve(new DsIterator(r, amount));
+              },
+              reject
             );
           } catch (err) {
             reject(err);
@@ -1305,19 +1268,18 @@ function MongoDs(config) {
 
   this._count = function (type, options) {
     var c;
+    var opts = {};
+
+    if (options.offset) {
+      opts.skip = options.offset;
+    }
+    if (options.count) {
+      opts.limit = options.count;
+    }
     return getCollection(type).then(
       function (col) {
         c = col;
         prepareConditions(options.filter);
-        var opts = {};
-
-        if (options.offset) {
-          opts.skip = options.offset;
-        }
-        if (options.count) {
-          opts.limit = options.count;
-        }
-
         return checkAggregation(type, options, [], true);
       }).then(function (agreg) {
         return new Promise(function (resolve, reject) {
