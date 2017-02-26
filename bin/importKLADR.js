@@ -11,12 +11,12 @@ const IonLogger = require('core/impl/log/IonLogger');
 const encoding = require('encoding');
 
 const classNames = {
-  STREET: 'STREET',
-  PLACE: 'PLACE',
-  CITY: 'CITY',
-  AREA: 'AREA',
-  REGION: 'REGION',
-  KLADR: 'KLADR'
+  STREET: 'STREET@develop-and-test',
+  PLACE: 'PLACE@develop-and-test',
+  CITY: 'CITY@develop-and-test',
+  AREA: 'AREA@develop-and-test',
+  REGION: 'REGION@develop-and-test',
+  KLADR: 'KLADR@develop-and-test'
 };
 
 var sysLog = new IonLogger({});
@@ -42,16 +42,15 @@ for (var i = 0; i < process.argv.length; i++) {
 }
 
 di('app', config.di,
-  {
-    sysLog: sysLog
-  },
+  {sysLog: sysLog},
   null,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(function (s) {
+  // Получение и фильтрация записей из DBF-файла.
 
   return new Promise(function (resolve) {
     scope = s;
-    var parser = new DBF(filePath);
+    var parser = new DBF(filePath, {parseTypes: false});
     var stream = parser.stream;
     var records = [];
 
@@ -67,6 +66,7 @@ di('app', config.di,
   });
 
 }).then(function (records) {
+  // Проверка существования записи с последующим изменением, либо добавлением новой.
 
   var containers = [];
   var created = 0;
@@ -138,7 +138,7 @@ di('app', config.di,
 
 function packageSequence(array, start, body) {
   var promises = [];
-  var end = start + packageSize <= array.length - 1 ? start + packageSize : array.length - 1;
+  var end = start + packageSize <= array.length ? start + packageSize : array.length;
   array.slice(start, end).forEach(function (item, i) {
     var p = body.call(this, item, i);
     if (p) {
@@ -196,9 +196,9 @@ function getRecordClass(record) {
 }
 
 function filtration(record) {
-  if (filterBy && filter && record[filter].search(new RegExp(filterBy)) > -1) {
+  if (!filter || !filterBy || record[filter].search(new RegExp(filterBy)) > -1) {
     var className = getRecordClass(record);
-    if (className) {
+    if (className && getInternalCode(record)) {
       if (isFIAS(record)) {
         return record.ACTSTATUS === '1';
       } else {
@@ -216,13 +216,13 @@ function filtration(record) {
 function getInternalCode(record) {
   switch (getRecordClass(record)) {
     case classNames.STREET: {
-      return record.CODE.trim().substring(0, 15);
+      return record.CODE.trim(). length >= 15 ? record.CODE.trim().substring(0, 15) : null;
     } break;
     case classNames.PLACE:
     case classNames.CITY:
     case classNames.AREA:
     case classNames.REGION: {
-      return record.CODE.trim().substring(0, 11);
+      return record.CODE.trim(). length >= 11 ? record.CODE.trim().substring(0, 11) : null;
     } break;
   }
   return null;
