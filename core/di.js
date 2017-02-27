@@ -73,6 +73,9 @@ function processOptions(options, scope, components, init, skip, cwd) {
     if (typeof options === 'string') {
       if (options.substr(0, 6) === 'ion://') {
         nm = options.substr(6);
+        if (!nm) {
+          return null;
+        }
         if (scope.hasOwnProperty(nm)) {
           return scope[nm];
         }

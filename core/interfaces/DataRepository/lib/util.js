@@ -4,6 +4,8 @@
 'use strict';
 const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
+const strToDate = require('core/strToDate');
+const ConditionParser = require('core/ConditionParser');
 const geoOperations = ['$geoWithin', '$geoIntersects'];
 const aggregOperations = ['$min', '$max', '$avg', '$sum', '$count'];
 
@@ -150,7 +152,7 @@ module.exports.classTableName = tn;
  * @param {DataSource} ds
  * @param {String} [nsSep]
  */
-function prepareAgregOperation(cm, context, attr, operation, options, fetchers, ds, nsSep) {
+function prepareAggregOperation(cm, context, attr, operation, options, fetchers, ds, nsSep) {
   var cn;
   if (options.className) {
     cn = options.className;
@@ -333,7 +335,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
             emptyResult = false;
           }
         } else if (aggregOperations.indexOf(nm) >= 0) {
-          result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
+          result[nm] = prepareAggregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
           emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
           return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
@@ -377,3 +379,166 @@ function prepareFilterValues(cm, filter, ds, keyProvider, nsSep) {
 }
 
 module.exports.prepareDsFilter = prepareFilterValues;
+
+function spFilter(cm, pm, or, svre, prefix) {
+  var spList, j, k, cond, aname;
+  aname = (prefix || '') + pm.name;
+  if (pm.selectionProvider.type === 'SIMPLE') {
+    spList = pm.selectionProvider.list;
+    for (j = 0; j < spList.length; j++) {
+      if (svre.test(spList[j].value)) {
+        cond = {};
+        cond[aname] = {$eq: cast(spList[j].key, pm.type)};
+        or.push(cond);
+      }
+    }
+  } else if (pm.selectionProvider.type === 'MATRIX') {
+    var spOr;
+    for (k = 0; k < pm.selectionProvider.matrix.length; k++) {
+      spList = pm.selectionProvider.matrix[k].result;
+      spOr = [];
+      for (j = 0; j < spList.length; j++) {
+        if (svre.test(spList[j].value)) {
+          cond = {};
+          cond[aname] = {$eq: cast(spList[j].key, pm.type)};
+          spOr.push(cond);
+        }
+      }
+      if (spOr.length) {
+        if (spOr.length === 1) {
+          spOr = spOr[0];
+        } else if (spOr.length > 1) {
+          spOr = {$or: spOr};
+        }
+        or.push({
+          $and: [
+            ConditionParser(pm.selectionProvider.matrix[k].conditions, cm),
+            spOr
+          ]
+        });
+      }
+    }
+  }
+}
+
+function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
+  var cond, aname, floatv, datev;
+
+  if (pm.selectionProvider) {
+    spFilter(cm, pm, or, new RegExp(sv.replace(/\s+/, '\\s+')), prefix);
+  } else if (pm.type === PropertyTypes.REFERENCE) {
+    if (depth > 0) {
+      searchFilter(pm._refClass, or, pm._refClass.getSemanticAttrs(), sv, lang, false,
+        (prefix || '') + pm.name + '.', depth - 1);
+    }
+  } else if (pm.type === PropertyTypes.COLLECTION) {
+    if (depth > 0) {
+      var cor = [];
+      searchFilter(pm._refClass, cor, pm._refClass.getSemanticAttrs(), sv, lang, false, depth - 1);
+      if (cor.length) {
+        cond = {};
+        aname = (prefix || '') + pm.name;
+        cond[aname] = {$contains: {$or: cor}};
+        or.push(cond);
+      }
+    }
+  } else {
+    cond = {};
+    aname = (prefix || '') + pm.name;
+    if (pm.indexed && !pm.formula) {
+      if (
+        pm.type === PropertyTypes.STRING ||
+        pm.type === PropertyTypes.URL ||
+        pm.type === PropertyTypes.TEXT ||
+        pm.type === PropertyTypes.HTML
+      ) {
+        if (!pm.autoassigned) {
+          cond[aname] = {$regex: sv.replace(/\s+/, '\\s+'), $options: 'i'};
+          or.push(cond);
+        }
+      } else if (!isNaN(floatv = parseFloat(sv)) && (
+          pm.type === PropertyTypes.INT ||
+          pm.type === PropertyTypes.DECIMAL ||
+          pm.type === PropertyTypes.REAL
+        )
+      ) {
+        if (String(floatv) === sv) {
+          cond[aname] = {$eq: floatv};
+          or.push(cond);
+        }
+      } else if (
+        (datev = strToDate(sv, lang)) &&
+        pm.type === PropertyTypes.DATETIME
+      ) {
+        cond[aname] = {$eq: datev};
+        or.push(cond);
+      }
+    }
+  }
+}
+
+/**
+ * @param {ClassMeta} cm
+ * @param {Array} or
+ * @param {Array} attrs
+ * @param {String} sv
+ * @param {String} lang
+ * @param {Boolean} [useFullText]
+ */
+function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
+  var fullText = false;
+
+  var tmp = [];
+  attrs.forEach(function (nm) {
+    if (nm.indexOf('.') >= 0) {
+      var path = nm.split('.');
+      var p = null;
+      var cm2 = cm;
+      for (var i = 0; i < path.length; i++) {
+        p = cm2.getPropertyMeta(path[i]);
+        if (p && p.type === PropertyTypes.REFERENCE) {
+          cm2 = p._refClass;
+        } else if (i < path.length - 1) {
+          p = null;
+          break;
+        }
+      }
+      if (p) {
+        attrSearchFilter(cm, p, tmp, sv, lang, (prefix || '') + path.slice(0, path.length - 1).join('.') + '.', depth);
+      }
+    } else {
+      var pm = cm.getPropertyMeta(nm);
+      if (pm.indexSearch && useFullText) {
+        fullText = true;
+      }
+      attrSearchFilter(cm, pm, tmp, sv, lang, prefix, depth);
+    }
+  });
+
+  if (fullText) {
+    var tmp2 = tmp.slice(0);
+    tmp = [];
+    tmp2.forEach(function (o) {
+      if (o.hasOwnProperty('$contains')) {
+        return;
+      }
+
+      for (var nm in o) {
+        if (nm.indexOf('.') > 0) {
+          return;
+        }
+      }
+
+      tmp.push(o);
+    });
+    tmp.push(
+      {
+        $text: {$search: sv}
+      }
+    );
+  }
+
+  Array.prototype.push.apply(or, tmp);
+}
+
+module.exports.textSearchFilter = searchFilter;

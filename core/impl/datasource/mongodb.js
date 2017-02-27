@@ -1295,6 +1295,13 @@ function MongoDs(config) {
               resolve(cnt);
             });
           } else {
+            var opts = {};
+            if (options.offset) {
+              opts.skip = options.offset;
+            }
+            if (options.count) {
+              opts.limit = options.count;
+            }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
                 return reject(err);
