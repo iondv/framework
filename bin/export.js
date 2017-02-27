@@ -9,43 +9,28 @@ var IonLogger = require('core/impl/log/IonLogger');
 
 var sysLog = new IonLogger({});
 
-var dst = '../out';
-var version = '';
-var ns = '';
-var skipData = false;
+var params = {
+  dst: '../out',
+  ver: '',
+  ns: '',
+  skipData: false,
+  fileDir: false
+};
 
-var setDst = false;
-var setVer = false;
-var setNamespace = false;
+var setParam = false;
+
+// jshint maxstatements
 
 process.argv.forEach(function (val) {
-  if (val === '--dst') {
-    setDst = true;
-    setVer = false;
-    setNamespace = false;
-    return;
-  } else if (val === '--ns') {
-    setDst = false;
-    setVer = false;
-    setNamespace = true;
-    return;
-  } else if (val === '--ver') {
-    setDst = false;
-    setVer = true;
-    setNamespace = false;
-    return;
+  if (val === '--file-dir') {
+    setParam = 'fileDir';
+  } else if (val.substr(0, 2) === '--') {
+    setParam = val.substr(2);
   } else if (val === '--nodata') {
-    skipData = true;
-  } else if (setDst) {
-    dst = val;
-  } else if (setVer) {
-    version = val;
-  } else if (setNamespace) {
-    ns = val;
+    params.skipData = true;
+  } else if (setParam) {
+    params[setParam] = val;
   }
-  setDst = false;
-  setVer = false;
-  setNamespace = false;
 });
 
 var scope = null;
@@ -61,13 +46,14 @@ di('app', config.di,
   function (scp) {
     scope = scp;
     return worker(
-      dst,
+      params.dst,
       scope.metaRepo,
       scope.dataRepo,
       {
-        namespace: ns,
-        version: version,
-        skipData: skipData
+        namespace: params.ns,
+        version: params.version,
+        skipData: params.skipData,
+        fileDir: params.fileDir
       });
   }
 ).then(
@@ -75,7 +61,7 @@ di('app', config.di,
     return scope.dataSources.disconnect();
   }
 ).then(function () {
-  console.info('Экспорт выполнен успешно.', dst);
+  console.info('Экспорт выполнен успешно.', params.dst);
   process.exit(0);
 }).catch(function (err) {
   console.error(err);

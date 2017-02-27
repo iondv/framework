@@ -18,6 +18,7 @@ const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util')
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const ConditionParser = require('core/ConditionParser');
+const SortingParser = require('core/SortingParser');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -262,6 +263,10 @@ function IonDataRepository(options) {
             delete attrs[item.classMeta.getName() + '.' + property.getName()].colFilter;
           }
         }
+        if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
+          attrs[item.classMeta.getName() + '.' + property.getName()].sort =
+            SortingParser(property.meta.selSorting);
+        }
       } else {
         var v = item.get(property.getName());
         if (Array.isArray(v)) {
@@ -301,7 +306,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, depth, forced, loaded) {
-    var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
+    var i, nm, attrs, item, props, promises, filter, sort, cn, cm, forced2, pcl;
     var src = Array.isArray(src2) ? src2 : [src2];
     depth = depth || 0;
 
@@ -351,6 +356,7 @@ function IonDataRepository(options) {
       for (nm in attrs) {
         if (attrs.hasOwnProperty(nm)) {
           filter = null;
+          sort = null;
           if (
             attrs[nm].type  === PropertyTypes.REFERENCE &&
             Array.isArray(attrs[nm].filter) &&
@@ -368,6 +374,9 @@ function IonDataRepository(options) {
             Array.isArray(attrs[nm].colItems) &&
             attrs[nm].colItems.length
           ) {
+            if (attrs[nm].sort) {
+              sort = attrs[nm].sort;
+            }
             if (attrs[nm].backRef) {
               filter = {};
               filter[attrs[nm].backRef] = {$in: attrs[nm].colItems};
@@ -386,6 +395,7 @@ function IonDataRepository(options) {
             promises.push(
               _this._getList(cn,
                 {
+                  sort: sort,
                   filter: filter,
                   nestingDepth: depth - 1,
                   forceEnrichment: forced2[attrs[nm].attrName],

@@ -12,7 +12,7 @@ const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
 
-// jshint maxstatements: 40, maxcomplexity: 30
+// jshint maxstatements: 40, maxcomplexity: 40
 /**
  * @param {*} v
  * @param {Item} [context]
