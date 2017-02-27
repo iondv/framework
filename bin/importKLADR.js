@@ -25,7 +25,7 @@ var filePath = null;
 var packageSize = 1000;
 var filter = null;
 var filterBy = null;
-var charset = 'utf8';
+var charset = 'cp866';
 
 for (var i = 0; i < process.argv.length; i++) {
   if (process.argv[i] === '--path') {
@@ -50,9 +50,20 @@ di('app', config.di,
 
   return new Promise(function (resolve) {
     scope = s;
-    var parser = new DBF(filePath, {parseTypes: false});
-    var stream = parser.stream;
     var records = [];
+
+    var parser = new DBF(filePath, {parseTypes: false});
+    for (var i = 0; i < parser.header.fields.length; i++) {
+      switch (parser.header.fields[i].name) {
+        case 'NAME':
+        case 'SOCR':
+        case 'FORMALNAME':
+        case 'SHORTNAME': {
+          parser.header.fields[i].raw = true;
+        } break;
+      }
+    }
+    var stream = parser.stream;
 
     stream.on('data', function (record) {
       if (record && filtration(record)) {
@@ -68,7 +79,7 @@ di('app', config.di,
 }).then(function (records) {
   // Проверка существования записи с последующим изменением, либо добавлением новой.
 
-  var containers = [];
+  var containers = {};
   var created = 0;
   var edited = 0;
   return packageSequence(records, 0, function (record) {
@@ -76,7 +87,9 @@ di('app', config.di,
     return scope.dataRepo.getItem(className, getInternalCode(record)).then(function (result) {
       var updates = getUpdates(record, result, containers);
       if (result) {
-        return scope.dataRepo.editItem(className, result.get('CODE'), updates).then(function () { edited++; });
+        if (updates) {
+          return scope.dataRepo.editItem(className, result.get('CODE'), updates).then(function () { edited++; });
+        }
       } else {
         return scope.dataRepo.createItem(className, updates).then(function () { created++; });
       }
@@ -91,8 +104,8 @@ di('app', config.di,
 
   var references = [];
   var checked = 0;
-  return packageSequence(containers.keys, 0, function (container) {
-    if (Array.isArray(containers[container]) && containers[container] > 0) {
+  return packageSequence(Object.keys(containers), 0, function (container) {
+    if (Array.isArray(containers[container]) && containers[container].length > 0) {
       return scope.dataRepo.getItem(classNames.KLADR, container).then(function (result) {
         if (result) {
           for (var i = 0; i < containers[container].length; i++) {
@@ -279,5 +292,5 @@ function getUpdates(record, item, containers) {
 }
 
 function convertCharset(text) {
-  return encoding.convert(text, charset, '').toString(charset);
+  return encoding.convert(text, 'utf-8', charset).toString();
 }
