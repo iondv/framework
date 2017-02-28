@@ -594,9 +594,7 @@ function IonDataRepository(options) {
 
     return Promise.all(calculations).
       then(function (results) {
-        var p;
-        for (var i = 0; i < results.length; i++) {
-          p = item.property(calcNames[i]);
+        for (var i = 0; i < calcNames.length; i++) {
           item.calculated[calcNames[i]] = results[i];
         }
         return Promise.resolve(item);

@@ -66,6 +66,7 @@ function DataRepository() {
 
   /**
    * @param {String} className
+   * @param {{}} [options]
    * @param {Object} [options.filter]
    * @param {String[]} [options.attributes]
    * @param {Boolean} [options.distinct]
