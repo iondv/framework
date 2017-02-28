@@ -17,16 +17,7 @@ const IonError = require('core/IonError');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-function errorHandle(err, type) {
-  if (err && err.name === 'IonError') {
-    return err;
-  } else if (err && err.name === 'MongoError') {
-    if (err.code === 11000) {
-      return new IonError(DataSource.ERR_UNIQ_KEY, err, `Нарушена уникальность ключа в коллекции ${type}`);
-    }
-  }
-  return new IonError(DataSource.ERR_REQUEST, err, `Ошибка DataSource в коллекции ${type}`);
-}
+
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -50,6 +41,25 @@ function MongoDs(config) {
   var log = config.logger || new LoggerProxy();
 
   var excludeNullsFor = {};
+
+  function errorHandle(err, type) {
+    if (!err) {
+      return null;
+    }
+
+    if (err && err.name === 'IonError') {
+      return err;
+    }
+
+    //log.error(err);
+    if (err.name === 'MongoError') {
+      if (err.code === 11000) {
+        let key = err.message.match(/.*index: (.*)_.*{/i)[1] || '';
+        return new IonError(IonError.ERR_DS_UNIQ_KEY, err, `Нарушена уникальность ключа ${key} в коллекции ${type}`);
+      }
+    }
+    return new IonError(IonError.ERR_DS_REQUEST, err, `Ошибка DataSource в коллекции ${type}`);
+  }
 
   /**
    * @returns {Promise}
