@@ -6,16 +6,21 @@
 /**
  *
  * @param {Number} code
- * @param {String} message
- * @param {Error} error
+ * @param {Error} [error]
+ * @param {String} [message]
  * @constructor
  */
-function IonError(code, message, error) {
+function IonError(code, error, message) {
 
   this.code = code;
+
   this.name = 'IonError';
-  this.message = message || error.message;
-  this.stack = error.stack;
+  
+  this.parentError = error || {};
+
+  this.message = message || this.parentError.message;
+
+  Error.captureStackTrace(this, IonError);
 
 }
 

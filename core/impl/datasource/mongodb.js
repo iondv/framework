@@ -12,9 +12,21 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
+const IonError = require('core/IonError');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
+
+function errorHandle(err, type) {
+  if (err && err.name === 'IonError') {
+    return err;
+  } else if (err && err.name === 'MongoError') {
+    if (err.code === 11000) {
+      return new IonError(DataSource.ERR_UNIQ_KEY, err, `Нарушена уникальность ключа в коллекции ${type}`);
+    }
+  }
+  return new IonError(DataSource.ERR_REQUEST, err, `Ошибка DataSource в коллекции ${type}`);
+}
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -104,7 +116,7 @@ function MongoDs(config) {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
-            reject(err);
+            reject(errorHandle(err));
           } else {
             resolve();
           }
@@ -128,18 +140,18 @@ function MongoDs(config) {
             try {
               _this.db.createCollection(type)
                 .then(resolve)
-                .catch(reject);
+                .catch(e => reject(errorHandle(e, type)));
             } catch (e) {
-              return reject(err);
+              return reject(errorHandle(e, type));
             }
           } else {
             if (err) {
-              return reject(err);
+              return reject(errorHandle(err, type));
             }
             resolve(c);
           }
         });
-      }).catch(reject);
+      }).catch(e => reject(errorHandle(e, type)));
     });
   }
 
@@ -231,7 +243,7 @@ function MongoDs(config) {
       } else {
         c.indexes(function (err, indexes) {
           if (err) {
-            return reject(err);
+            return reject(errorHandle(err, type));
           }
           var excludes = {};
           var i, nm;
@@ -300,15 +312,15 @@ function MongoDs(config) {
               function (data) {
                 c.insertOne(clone(data.data), function (err, result) {
                   if (err) {
-                    reject(err);
+                    reject(errorHandle(err, type));
                   } else if (result.insertedId) {
-                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(e => reject(errorHandle(e, type)));
                   } else {
-                    reject(new Error('Inser failed'));
+                    reject(new IonError(1, null, 'Insert failed'));
                   }
                 });
               }
-            ).catch(reject);
+            ).catch(e => reject(errorHandle(e, type)));
         });
       }
     );
@@ -433,22 +445,22 @@ function MongoDs(config) {
                     {upsert: upsert},
                     function (err) {
                       if (err) {
-                        return reject(err);
+                        return reject(errorHandle(err, type));
                       }
                       _this._get(type, conditions).then(function (r) {
                         if (upsert) {
                           return adjustAutoInc(type, r);
                         }
                         return resolve(r);
-                      }).then(resolve).catch(reject);
+                      }).then(resolve).catch(e => reject(errorHandle(e, type)));
                     });
                 } else {
                   c.updateMany(conditions, updates,
                     function (err, result) {
                       if (err) {
-                        return reject(err);
+                        return reject(errorHandle(err, type));
                       }
-                      _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
+                      _this._fetch(type, {filter: conditions}).then(resolve).catch(e => reject(errorHandle(e, type)));
                     });
                 }
               });
@@ -473,7 +485,7 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(errorHandle(err, type));
               }
               resolve(result.deletedCount);
             });
@@ -869,7 +881,7 @@ function MongoDs(config) {
         result.push({$match: prefilter});
       }
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(errorHandle(err, type));
     }
 
     var p = null;
@@ -1128,7 +1140,7 @@ function MongoDs(config) {
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(err);
+                    return reject(errorHandle(err));
                   }
                   resolve();
                 });
@@ -1145,7 +1157,7 @@ function MongoDs(config) {
                 r.toArray(function (err, docs) {
                   r.close();
                   if (err) {
-                    return reject(err);
+                    return reject(errorHandle(err, type));
                   }
                   docs.forEach(mergeGeoJSON);
                   if (amount !== null) {
@@ -1155,7 +1167,7 @@ function MongoDs(config) {
                 });
               }
             },
-            reject
+            function (e) {reject(errorHandle(e, type));}
           );
         });
       }
@@ -1196,16 +1208,17 @@ function MongoDs(config) {
                     function (err) {
                       r.close();
                       if (err) {
-                        return reject(err);
+                        return reject(errorHandle(err, type));
                       }
                       resolve();
                     }
                   );
                 }
-              }, reject
+              },
+              function (e) {reject(errorHandle(e, type));}
             );
           } catch (err) {
-            reject(err);
+            reject(errorHandle(err, type));
           }
         });
       }
@@ -1285,12 +1298,12 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           c.aggregate(plan, function (err, result) {
             if (err) {
-              return reject(err);
+              return reject(errorHandle(err, type));
             }
             if (tmpApp) {
               copyColl(tmpApp, options.append, function (err) {
                 if (err) {
-                  return reject(err);
+                  return reject(errorHandle(err, type));
                 }
                 resolve();
               });
@@ -1315,7 +1328,7 @@ function MongoDs(config) {
           if (agreg) {
             c.aggregate(agreg, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(errorHandle(err, type));
               }
               var cnt = 0;
               if (result.length) {
@@ -1333,7 +1346,7 @@ function MongoDs(config) {
             }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
-                return reject(err);
+                return reject(errorHandle(err, type));
               }
               resolve(cnt);
             });
@@ -1350,7 +1363,7 @@ function MongoDs(config) {
           prepareConditions(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              return reject(err);
+              return reject(errorHandle(err, type));
             }
             resolve(mergeGeoJSON(result));
           });
@@ -1399,7 +1412,7 @@ function MongoDs(config) {
             function (c) {
               c.findOne({__type: type}, function (err, r) {
                 if (err) {
-                  return reject(err);
+                  return reject(errorHandle(err, type));
                 }
 
                 if (r && r.counters) {
@@ -1416,14 +1429,14 @@ function MongoDs(config) {
                   {upsert: true},
                   function (err) {
                     if (err) {
-                      return reject(err);
+                      return reject(errorHandle(err, type));
                     }
                     resolve();
                   }
                 );
               });
             }
-          ).catch(reject);
+          ).catch(e => reject(errorHandle(e, type)));
         });
       }
     }

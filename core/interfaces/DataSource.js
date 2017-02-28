@@ -6,7 +6,7 @@
 /**
  * @constructor
  */
-function DataSource() {
+var DataSource = function DataSource() {
   /**
    * @returns {*}
    */
@@ -150,6 +150,9 @@ function DataSource() {
   this.ensureAutoincrement = function (type, properties) {
     return this._ensureAutoincrement(type, properties);
   };
-}
+};
+
+DataSource.ERR_REQUEST = 'ds_request';
+DataSource.ERR_UNIQ_KEY = 'ds_uniq_key';
 
 module.exports = DataSource;
