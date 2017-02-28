@@ -1309,15 +1309,6 @@ function MongoDs(config) {
       function (col) {
         c = col;
         prepareConditions(options.filter);
-        var opts = {};
-
-        if (options.offset) {
-          opts.skip = options.offset;
-        }
-        if (options.count) {
-          opts.limit = options.count;
-        }
-
         return checkAggregation(type, options, [], true);
       }).then(function (agreg) {
         return new Promise(function (resolve, reject) {
@@ -1333,6 +1324,13 @@ function MongoDs(config) {
               resolve(cnt);
             });
           } else {
+            var opts = {};
+            if (options.offset) {
+              opts.skip = options.offset;
+            }
+            if (options.count) {
+              opts.limit = options.count;
+            }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
                 return reject(err);
