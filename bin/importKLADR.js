@@ -9,6 +9,7 @@ const config = require('../config');
 const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const encoding = require('encoding');
+const fs = require('fs');
 
 const classNames = {
   STREET: 'STREET@develop-and-test',
@@ -21,17 +22,14 @@ const classNames = {
 
 var sysLog = new IonLogger({});
 var scope = null;
-var filePath = null;
-var packageSize = 1000;
+var charset = 'cp866';
+var sourcePath = null;
 var filter = null;
 var filterBy = null;
-var charset = 'cp866';
 
 for (var i = 0; i < process.argv.length; i++) {
-  if (process.argv[i] === '--path') {
-    filePath = process.argv[i + 1];
-  } else if (process.argv[i] === '--packageSize') {
-    packageSize = parseInt(process.argv[i + 1]);
+  if (process.argv[i] === '--sourcePath') {
+    sourcePath = process.argv[i + 1];
   } else if (process.argv[i] === '--filter') {
     filter = process.argv[i + 1];
   } else if (process.argv[i] === '--filterBy') {
@@ -46,94 +44,68 @@ di('app', config.di,
   null,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(function (s) {
-  // Получение и фильтрация записей из DBF-файла.
 
-  return new Promise(function (resolve) {
+  return new Promise (function (resolve) {
     scope = s;
-    var records = [];
-
-    var parser = new DBF(filePath, {parseTypes: false});
-    for (var i = 0; i < parser.header.fields.length; i++) {
-      switch (parser.header.fields[i].name) {
-        case 'NAME':
-        case 'SOCR':
-        case 'FORMALNAME':
-        case 'SHORTNAME': {
-          parser.header.fields[i].raw = true;
-        } break;
+    var files = [];
+    var chain = null;
+    fs.readdirSync(sourcePath).forEach(function (file) {
+      if (file === 'KLADR.DBF' || file === 'STREET.DBF' || file === 'ADDROBJ.DBF') {
+        files.push(file);
       }
+    });
+    if (files.length > 0) {
+      sequenceReadFiles(0);
+    } else {
+      throw new Error('Указанная директория не содержит необходимых для импорта .DBF-файлов формата КЛАДР либо ФИАС.');
     }
-    var stream = parser.stream;
 
-    stream.on('data', function (record) {
-      if (record && filtration(record)) {
-        records.push(record);
-      }
-    });
-    stream.on('end', function () {
-      console.log(records.length + ' записей готовы к импорту.');
-      resolve(records);
-    });
-  });
+    function sequenceReadFiles(index) {
+      console.log('Читается файл ' + files[index]);
+      var counter = 0;
 
-}).then(function (records) {
-  // Проверка существования записи с последующим изменением, либо добавлением новой.
-
-  var containers = {};
-  var created = 0;
-  var edited = 0;
-  return packageSequence(records, 0, function (record) {
-    var className = getRecordClass(record);
-    return scope.dataRepo.getItem(className, getInternalCode(record)).then(function (result) {
-      var updates = getUpdates(record, result, containers);
-      if (result) {
-        if (updates) {
-          return scope.dataRepo.editItem(className, result.get('CODE'), updates).then(function () { edited++; });
+      var parser = new DBF(sourcePath + '/' + files[index], {parseTypes: false});
+      for (var i = 0; i < parser.header.fields.length; i++) {
+        switch (parser.header.fields[i].name) {
+          case 'NAME':
+          case 'SOCR':
+          case 'FORMALNAME':
+          case 'SHORTNAME': {
+            parser.header.fields[i].raw = true;
+          } break;
         }
-      } else {
-        return scope.dataRepo.createItem(className, updates).then(function () { created++; });
       }
-    });
-  }).then(function () {
-    console.log(created + ' записей добавлено.');
-    console.log(edited + ' записей обновлено.');
-    return containers;
-  });
+      var stream = parser.stream;
 
-}).then(function (containers) {
-
-  var references = [];
-  var checked = 0;
-  return packageSequence(Object.keys(containers), 0, function (container) {
-    if (Array.isArray(containers[container]) && containers[container].length > 0) {
-      return scope.dataRepo.getItem(classNames.KLADR, container).then(function (result) {
-        if (result) {
-          for (var i = 0; i < containers[container].length; i++) {
-            references.push({container: container, record: containers[container][i]});
+      stream.on('data', function (record) {
+        if (record) {
+          if (chain) {
+            chain = chain.then(importRecord(record));
+          } else {
+            chain = importRecord(record)();
           }
-        } else {
-          console.error('Контейнер ' + container + ' не обнаружен.');
+          chain = chain.then(function (result) {
+            if (!result) {
+              counter++;
+            }
+          });
         }
-        checked++;
+      });
+      stream.on('end', function () {
+        // TODO: Тут косяк. Это не конец импорта файла. Тут нужно встраиваться в цепочку
+        console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
+        if (index < files.length - 1) {
+          sequenceReadFiles(index + 1);
+        } else {
+          resolve(chain);
+        }
       });
     }
-  }).then(function () {
-    console.log(checked + ' контейнеров проверено.');
-    return references;
   });
-
-}).then(function (references) {
-
-  var conts = 0;
-  return packageSequence(references, 0, function (item) {
-    return scope.dataRepo.editItem(getRecordClass(item.record), getInternalCode(item.record), {
-      CONTAINER: item.container
-    }).then(function () {
-      conts++;
-    });
-  }).then(function () {
-    console.log(conts + ' ссылок на контейнер установлено.');
-  });
+}).then(function (chain) {
+  return chain;
+}).then(function () {
+  return checkContainers();
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(
@@ -142,63 +114,66 @@ di('app', config.di,
     process.exit(0);
   }
 ).catch(function (err) {
-
   console.error(err);
   var exit = function () { process.exit(130); };
   scope.dataSources.disconnect().then(exit).catch(exit);
-
 });
 
-function packageSequence(array, start, body) {
-  var promises = [];
-  var end = start + packageSize <= array.length ? start + packageSize : array.length;
-  array.slice(start, end).forEach(function (item, i) {
-    var p = body.call(this, item, i);
-    if (p) {
-      promises.push(p);
-    }
-  });
-  return Promise.all(promises).then(function () {
-    if (end < array.length - 1) {
-      return packageSequence(array, end, body);
-    } else {
-      return null;
-    }
+function importRecord(record) {
+  return function () {
+    /*var fias = record.hasOwnProperty('NORMDOC');
+    var className = getRecordClass(record, fias);
+    if (
+      className &&
+      ((fias && record.ACTSTATUS === '1') || (!fias && record.CODE.substring(record.CODE.length - 2) === '00')) &&
+      // TODO: использование фильтра через регулярные выражения очень неэффективно, продумать другой способ
+      (!filter || !filterBy || record[filter].search(new RegExp(filterBy)) > -1)
+    ) {
+      return scope.dataRepo.saveItem(className, null, getData(record, className, fias));
+    } else {*/
+      return new Promise(function (r) {r();});
+    //}
+  };
+}
+
+function checkContainers(dataRepo) {
+  console.log('checkContainers');
+  return scope.dataRepo.aggregate(classNames.KLADR, {
+    filter: {$empty: 'CONTAINER'},
+    aggregates: {$lookup: {from: 'classNames.KLADR', localField: 'CONTAINER', foreignField: 'CODE', as: 'OLOLATION'}}
+  }).then(function (result) {
+    console.log(result);
   });
 }
 
-function isFIAS(record) {
-  return record.hasOwnProperty('NORMDOC');
-}
-
-function getRecordClass(record) {
-  if (isFIAS(record)) {
+function getRecordClass(record, fias) {
+  if (fias) {
     if (record.STREETCODE && record.STREETCODE !== '0000') {
       return classNames.STREET;
     } else if (record.PLANCODE && record.PLANCODE !== '0000') {
-      return null;
+      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
     } else if (record.PLACECODE && record.PLACECODE !== '000') {
       return classNames.PLACE;
     } else if (record.CTARCODE && record.CTARCODE !== '000') {
-      return null;
+      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
     } else if (record.CITYCODE && record.CITYCODE !== '000') {
       return classNames.CITY;
     } else if (record.AREACODE && record.AREACODE !== '000') {
       return classNames.AREA;
     } else if (record.AUTOCODE && record.AUTOCODE !== '000') {
-      return null;
+      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
     } else if (record.REGIONCODE && record.REGIONCODE !== '00') {
       return classNames.REGION;
     }
   } else {
     if (record.CODE.length === 13) {
-      if (record.CODE.search(/^\d{2}0{9}\d{2}$/) > -1) {
+      if (record.CODE.substring(2, 11) === '000000000') {
         return classNames.REGION;
-      } else if (record.CODE.search(/^\d{5}0{6}\d{2}$/) > -1) {
+      } else if (record.CODE.substring(5, 11) === '000000') {
         return classNames.AREA;
-      } else if (record.CODE.search(/^\d{8}0{3}\d{2}$/) > -1) {
+      } else if (record.CODE.substring(8, 11) === '000') {
         return classNames.CITY;
-      } else if (record.CODE.search(/^\d{11}\d{2}$/) > -1) {
+      } else {
         return classNames.PLACE;
       }
     } else if (record.CODE.length === 17) {
@@ -208,87 +183,42 @@ function getRecordClass(record) {
   return null;
 }
 
-function filtration(record) {
-  if (!filter || !filterBy || record[filter].search(new RegExp(filterBy)) > -1) {
-    var className = getRecordClass(record);
-    if (className && getInternalCode(record)) {
-      if (isFIAS(record)) {
-        return record.ACTSTATUS === '1';
-      } else {
-        if (className === classNames.STREET) {
-          return record.CODE.search(/^\d{15}00$/) > -1;
-        } else {
-          return record.CODE.search(/^\d{11}00$/) > -1;
-        }
-      }
-    }
-  }
-  return false;
-}
+function getData(record, className, fias) {
+  var data = {};
 
-function getInternalCode(record) {
-  switch (getRecordClass(record)) {
-    case classNames.STREET: {
-      return record.CODE.trim(). length >= 15 ? record.CODE.trim().substring(0, 15) : null;
-    } break;
-    case classNames.PLACE:
-    case classNames.CITY:
-    case classNames.AREA:
-    case classNames.REGION: {
-      return record.CODE.trim(). length >= 11 ? record.CODE.trim().substring(0, 11) : null;
-    } break;
-  }
-  return null;
-}
-
-function getUpdates(record, item, containers) {
-  var updates = {};
-  if (isFIAS(record)) {
-    updates.NAME = convertCharset(record.FORMALNAME);
-    updates.SOCR = convertCharset(record.SHORTNAME);
-    updates.INDEX = record.POSTALCODE.trim();
-    updates.GNINMB = record.IFNSUL.trim().length > 0 ? record.IFNSUL.trim() : record.IFNSFL.trim();
-    updates.UNO = record.TERRIFNSUL.trim().length > 0 ? record.TERRIFNSUL.trim() : record.TERRIFNSFL.trim();
-    updates.OCATD = record.OKATO.trim();
-  } else {
-    updates.NAME = convertCharset(record.NAME);
-    updates.SOCR = convertCharset(record.SOCR);
-    updates.INDEX = record.INDEX.trim();
-    updates.GNINMB = record.GNINMB.trim();
-    updates.UNO = record.UNO.trim();
-    updates.OCATD = record.OCATD.trim();
-  }
-
-  var code = getInternalCode(record);
-  var container = null;
-  switch (getRecordClass(record)) {
-    case classNames.STREET: {container = code.substring(0, 11);} break;
-    case classNames.PLACE: {container = code.replace(/^(\d{8})\d{3}$/, '$1000');} break;
-    case classNames.CITY: {container = code.replace(/^(\d{5})\d{6}$/, '$1000000');} break;
-    case classNames.AREA: {container = code.replace(/^(\d{2})\d{9}$/, '$1000000000');} break;
-    case classNames.REGION: {container = null;} break;
-  }
-  if (container && container.search(/[\d^0]/) > -1 && (!item || item.get('CONTAINER') !== container)) {
-    if (!Array.isArray(containers[container])) {
-      containers[container] = [];
-    }
-    containers[container].push(record);
-  }
-
-  if (item) {
-    for (var attr in updates) {
-      if (updates.hasOwnProperty(attr) && item.get(attr) === updates[attr]) {
-        delete updates[attr];
-      }
+  if (fias) {
+    data.CODE = record.REGIONCODE + record.AREACODE + record.CITYCODE + record.PLACECODE;
+    if (className === classNames.STREET) {
+      data.CODE = data.CODE + record.STREETCODE;
     }
   } else {
-    updates.CODE = code;
+    data.CODE = record.CODE.substring(0, record.CODE.length - 2);
   }
-  if (Object.keys(updates).length) {
-    return updates;
+
+  switch (className) {
+    case classNames.STREET: {data.CONTAINER = data.CODE.substring(0, 11);} break;
+    case classNames.PLACE: {data.CONTAINER = data.CODE.substring(0, 8) + '000';} break;
+    case classNames.CITY: {data.CONTAINER = data.CODE.substring(0, 5) + '000000';} break;
+    case classNames.AREA: {data.CONTAINER = data.CODE.substring(0, 2) + '000000000';} break;
+  }
+
+  if (fias) {
+    data.NAME = convertCharset(record.FORMALNAME);
+    data.SOCR = convertCharset(record.SHORTNAME);
+    data.INDEX = record.POSTALCODE;
+    data.GNINMB = record.IFNSUL.length > 0 ? record.IFNSUL : record.IFNSFL;
+    data.UNO = record.TERRIFNSUL.length > 0 ? record.TERRIFNSUL : record.TERRIFNSFL;
+    data.OCATD = record.OKATO;
   } else {
-    return null;
+    data.NAME = convertCharset(record.NAME);
+    data.SOCR = convertCharset(record.SOCR);
+    data.INDEX = record.INDEX;
+    data.GNINMB = record.GNINMB;
+    data.UNO = record.UNO;
+    data.OCATD = record.OCATD;
   }
+
+  return data;
 }
 
 function convertCharset(text) {
