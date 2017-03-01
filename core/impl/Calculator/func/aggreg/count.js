@@ -12,12 +12,14 @@ module.exports = c(
   function (col, attr, cond) {
     var result = 0;
     for (var i = 0; i < col.length; i++) {
-      if (cond) {
-        if (!cond.apply(col[i])) {
-          continue;
+      if (col[i] !== null) {
+        if (cond) {
+          if (!cond.apply(col[i])) {
+            continue;
+          }
         }
+        result++;
       }
-      result++;
     }
     return result;
   },

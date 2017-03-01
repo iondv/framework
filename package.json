@@ -50,7 +50,7 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.17.1",
     "mongo-fast-join": "0.0.11",
-    "mongodb": "~2.0.53",
+    "mongodb": "^2.0.53",
     "morgan": "^1.5.1",
     "node-uuid": "^1.4.7",
     "passport": "*",
