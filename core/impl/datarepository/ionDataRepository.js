@@ -19,6 +19,30 @@ const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formD
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const ConditionParser = require('core/ConditionParser');
 const SortingParser = require('core/SortingParser');
+const IonError = require('core/IonError');
+
+function errorHandle(err, cm) {
+  if (!err) {
+    return null;
+  }
+
+  if (err && err.name === 'IonError') {
+    if (err.code === IonError.ERR_DS_UNIQ_KEY) {
+      let property = '';
+      let key = err.message.match(/Нарушена уникальность ключа (.*) в коллекции (.*)/i)[1];
+      if (key && cm) {
+        let pm = cm.getPropertyMeta(key);
+        if (pm) {
+          property = pm.caption;
+        }
+      }
+      return new IonError(IonError.ERR_DR_REQUEST, err, `Объект с таким идентификатором ${property} уже существует`);
+    }
+    return err;
+  }
+
+  return new IonError(IonError.ERR_DR_REQUEST, err, `Ошибка в DataRepository`);
+}
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -1166,10 +1190,11 @@ function IonDataRepository(options) {
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
     options = options || {};
+    var cm;
     // jshint maxcomplexity: 30
     return new Promise(function (resolve, reject) {
       try {
-        var cm = _this.meta.getMeta(classname, version);
+        cm = _this.meta.getMeta(classname, version);
         var rcm = getRootType(cm);
 
         var refUpdates = {};
@@ -1215,9 +1240,9 @@ function IonDataRepository(options) {
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(reject);
+        ).then(resolve).catch(e => reject(errorHandle(e, cm)));
       } catch (err) {
-        reject(err);
+        reject(errorHandle(err, cm));
       }
     });
   };

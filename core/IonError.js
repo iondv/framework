@@ -30,4 +30,6 @@ IonError.prototype.constructor = IonError;
 IonError.ERR_DS_REQUEST = 'ds_request';
 IonError.ERR_DS_CONNECT = 'ds_connect';
 IonError.ERR_DS_UNIQ_KEY = 'ds_uniq_key';
+
+IonError.ERR_DR_REQUEST = 'dr_request';
 module.exports = IonError;
