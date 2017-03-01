@@ -21,7 +21,7 @@ const ConditionParser = require('core/ConditionParser');
 const SortingParser = require('core/SortingParser');
 const IonError = require('core/IonError');
 
-function errorHandle(err, cm) {
+function errorHandle(method, err, cm) {
   if (!err) {
     return null;
   }
@@ -36,7 +36,7 @@ function errorHandle(err, cm) {
           property = pm.caption;
         }
       }
-      return new IonError(IonError.ERR_DR_REQUEST, err, `Объект с таким идентификатором ${property} уже существует`);
+      return new IonError(IonError.ERR_DR_ITEM_EXISTS, err, `Объект с таким идентификатором ${property} уже существует`);
     }
     return err;
   }
@@ -794,7 +794,7 @@ function IonDataRepository(options) {
                 }
               );
             } catch (err) {
-              return Promise.reject(err);
+              return Promise.reject(errorHandle('', err, cm));
             }
           }
           return Promise.resolve(null);
@@ -828,7 +828,7 @@ function IonDataRepository(options) {
           return calcProperties(item);
         });
     } else {
-      throw new Error('Переданы некорректные параметры метода getItem');
+      throw new IonError(IonError.ERR_DR_REQUEST, null, 'Переданы некорректные параметры метода getItem');
     }
   };
 
@@ -1240,9 +1240,9 @@ function IonDataRepository(options) {
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(e => reject(errorHandle(e, cm)));
+        ).then(resolve).catch(e => reject(errorHandle('create', e, cm)));
       } catch (err) {
-        reject(errorHandle(err, cm));
+        reject(errorHandle('create', err, cm));
       }
     });
   };
@@ -1261,13 +1261,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
+    var cm;
     options = options || {};
     return new Promise(function (resolve, reject) {
       if (!id) {
-        return reject(new Error('Не передан идентификатор объекта!'));
+        return reject(new IonError(IonError.ERR_DR_REQUEST, null, 'Не передан идентификатор объекта!'));
       }
       try {
-        var cm = _this.meta.getMeta(classname);
+        cm = _this.meta.getMeta(classname);
         var rcm = getRootType(cm);
 
         /**
@@ -1298,7 +1299,7 @@ function IonDataRepository(options) {
             return _this.ds.update(tn(rcm), conditions, updates);
           }).then(function (data) {
             if (!data) {
-              return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
+              return reject(new IonError(IonError.ERR_DR_REQUEST, null, `Не найден объект для редактирования ${cm.getName()}@${id}`));
             }
             var item = _this._wrap(data._class, data, data._classVer);
             delete updates._editor;
@@ -1325,12 +1326,12 @@ function IonDataRepository(options) {
               return calcProperties(item, options.skipResult);
             }
           ).
-          then(resolve).catch(reject);
+          then(resolve).catch(e => reject(errorHandle('', e, cm)));
         } else {
           reject({Error: 'Не указан идентификатор объекта!'});
         }
       } catch (err) {
-        reject(err);
+        reject(errorHandle('', err, cm));
       }
     });
   };
@@ -1350,11 +1351,12 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
+    var cm;
     options = options || {};
     return new Promise(function (resolve, reject) {
       var fileSavers = [];
       try {
-        var cm = _this.meta.getMeta(classname, version);
+        cm = _this.meta.getMeta(classname, version);
         var rcm = getRootType(cm);
 
         var refUpdates = {};
@@ -1390,7 +1392,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
+              return chr !== true ? reject(errorHandle('', chr, cm)) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1399,7 +1401,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
+              return chr !== true ? reject(errorHandle('', chr, cm)) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
             }
           } catch (err) {
             reject(err);
@@ -1433,9 +1435,9 @@ function IonDataRepository(options) {
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(reject);
+        ).then(resolve).catch(e => reject(errorHandle('', e, cm)));
       } catch (err) {
-        return reject(err);
+        return reject(errorHandle('', err, cm));
       }
     });
   };
@@ -1469,7 +1471,7 @@ function IonDataRepository(options) {
       then(function () {
         resolve();
       }).
-      catch(reject);
+      catch(e => reject(errorHandle('', e, cm)));
     });
   };
 
@@ -1538,7 +1540,7 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
       if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+        return reject(new IonError(IonError.ERR_DR_REQUEST, null, `Не найден атрибут коллекции ${master.getClassName()}.${collection}`));
       }
 
       var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
@@ -1558,7 +1560,7 @@ function IonDataRepository(options) {
             master: master,
             details: details
           });
-        }).then(function () {resolve();}).catch(reject);
+        }).then(function () {resolve();}).catch(e => reject(errorHandle('', e, master.getMetaClass())));
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {
@@ -1621,7 +1623,7 @@ function IonDataRepository(options) {
           return _this.trigger({type: event, master: master, details: details});
         }).
         then(function () {resolve();}).
-        catch(reject);
+        catch(e => reject(errorHandle('', e, master.getMetaClass())));
       }
     });
   }
@@ -1690,7 +1692,7 @@ function IonDataRepository(options) {
     } else {
       var kp = detailCm.getKeyProperties();
       if (kp.length > 1) {
-        return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+        return Promise.reject(new IonError(IonError.ERR_DR_ITEM_EXISTS, null,'Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
       }
 
       return _this._getItem(master.getClassName(), master.getItemId(), 0)
@@ -1704,7 +1706,7 @@ function IonDataRepository(options) {
               return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            return Promise.reject(new Error('Не найден контейнер коллекции!'));
+            return Promise.reject(new IonError(IonError.ERR_DR_ITEM_EXISTS, null, 'Не найден контейнер коллекции!'));
           }
         });
     }

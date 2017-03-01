@@ -32,4 +32,5 @@ IonError.ERR_DS_CONNECT = 'ds_connect';
 IonError.ERR_DS_UNIQ_KEY = 'ds_uniq_key';
 
 IonError.ERR_DR_REQUEST = 'dr_request';
+IonError.ERR_DR_ITEM_EXISTS = 'dr_item_exists';
 module.exports = IonError;
