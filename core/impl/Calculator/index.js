@@ -8,6 +8,7 @@ const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
 const Item = require('core/interfaces/DataRepository').Item;
+const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 
 // jshint maxstatements: 50, maxcomplexity: 20
 /**
@@ -22,8 +23,8 @@ function Calculator(options) {
 
   this.init = function (scope) {
     return new Promise(function (resolve) {
-      var dataRepo = typeof options.dataRepo === String ? scope[options.dataRepo] : options.dataRepo;
-      if (dataRepo) {
+      var dataRepo = typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo;
+      if (dataRepo instanceof DataRepository) {
         funcLib.sum = aggreg.sum(dataRepo);
         funcLib.count = aggreg.count(dataRepo);
         funcLib.avg = aggreg.avg(dataRepo);
@@ -121,7 +122,11 @@ function Calculator(options) {
   function propertyGetter(nm) {
     return function () {
       if (this instanceof Item) {
-        return this.property(nm).evaluate();
+        let p = this.property(nm);
+        if (!p) {
+          return null;
+        }
+        return p.evaluate();
       }
       return objProp(this, nm);
     };
