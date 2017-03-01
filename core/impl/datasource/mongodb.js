@@ -17,8 +17,6 @@ const IonError = require('core/IonError');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-
-
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
 /**
@@ -47,11 +45,11 @@ function MongoDs(config) {
       return null;
     }
 
-    if (err && err.name === 'IonError') {
+    if (err.name === 'IonError') {
       return err;
     }
 
-    //log.error(err);
+    log.error(err);
     if (err.name === 'MongoError') {
       if (err.code === 11000) {
         let key = err.message.match(/.*index: (.*)_.*{/i)[1] || '';

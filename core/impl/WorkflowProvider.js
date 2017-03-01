@@ -7,6 +7,7 @@ const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
+const IonError = require('core/IonError');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -14,6 +15,7 @@ const EventManager = require('core/impl/EventManager');
  * @param {MetaRepository} options.metaRepo
  * @param {DataRepository} options.dataRepo
  * @param {DataSource} options.dataSource
+ * @param {Logger} options.log
  * @constructor
  */
 function WorkflowProvider(options) {
@@ -21,6 +23,26 @@ function WorkflowProvider(options) {
   EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
+
+  function errorHandle(err, item, transition) {
+    if (!err) {
+      return null;
+    }
+
+    if (options.log) {
+      options.log.error(err);
+    }
+
+    if (err.name === 'IonError') {
+      return err;
+    }
+
+
+    let itemId = item ? item.getItemId() : '';
+    let classCaption = item ? item.getClassMeta()
+    let transition = transition ? transition.caption : '';
+    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП объекта ${itemId}`);
+  }
 
   /**
    * @param {Item} item
@@ -138,7 +160,7 @@ function WorkflowProvider(options) {
             selectionProviders: selectionProviders
           });
         }
-      ).catch(reject);
+      ).catch(e => reject(errorHandle(e)));
     });
   };
 

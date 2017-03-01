@@ -21,28 +21,7 @@ const ConditionParser = require('core/ConditionParser');
 const SortingParser = require('core/SortingParser');
 const IonError = require('core/IonError');
 
-function errorHandle(method, err, cm) {
-  if (!err) {
-    return null;
-  }
 
-  if (err && err.name === 'IonError') {
-    if (err.code === IonError.ERR_DS_UNIQ_KEY) {
-      let property = '';
-      let key = err.message.match(/Нарушена уникальность ключа (.*) в коллекции (.*)/i)[1];
-      if (key && cm) {
-        let pm = cm.getPropertyMeta(key);
-        if (pm) {
-          property = pm.caption;
-        }
-      }
-      return new IonError(IonError.ERR_DR_ITEM_EXISTS, err, `Объект с таким идентификатором ${property} уже существует`);
-    }
-    return err;
-  }
-
-  return new IonError(IonError.ERR_DR_REQUEST, err, `Ошибка в DataRepository`);
-}
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -87,6 +66,39 @@ function IonDataRepository(options) {
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
+
+  function errorHandle(err, cm, data, type) {
+    if (!err) {
+      return null;
+    }
+
+    if (options.log) {
+      options.log.error(err);
+    }
+
+    if (err.name === 'IonError') {
+      if (err.code === IonError.ERR_DS_UNIQ_KEY) {
+        if (type === 'collection') {
+          let colName = data || '';
+          return new IonError(IonError.ERR_DR_COL_REQ, err, `Объект уже существует в коллекции ${colName}`);
+        }
+        let key = _this.keyProvider.formKey(cm, data) || '';
+        return new IonError(IonError.ERR_DR_ITEM_EXISTS, err, `Объект с идентификатором ${key} уже существует`);
+      }
+      return err;
+    }
+
+    if (type === 'collection') {
+      let colName = data || '';
+      return new IonError(IonError.ERR_DR_COL_REQ, err, `Ошибка в коллекции ${colName}`);
+    }
+
+    return new IonError(IonError.ERR_DR_REQUEST, err, `Ошибка в DataRepository`);
+  }
+
+  function colErrorHandle(err, collection) {
+    return errorHandle(err, null, collection, 'collection');
+  }
 
   /**
    *
@@ -794,7 +806,7 @@ function IonDataRepository(options) {
                 }
               );
             } catch (err) {
-              return Promise.reject(errorHandle('', err, cm));
+              return Promise.reject(errorHandle(err, cm));
             }
           }
           return Promise.resolve(null);
@@ -1206,7 +1218,7 @@ function IonDataRepository(options) {
         prepareFileSavers(cm, fileSavers, updates);
         var chr = checkRequired(cm, updates, false);
         if (chr !== true) {
-          return reject(chr);
+          return reject(errorHandle(chr));
         }
 
         Promise.all(fileSavers).then(function () {
@@ -1240,9 +1252,9 @@ function IonDataRepository(options) {
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(e => reject(errorHandle('create', e, cm)));
+        ).then(resolve).catch(e => reject(errorHandle(e, cm, data)));
       } catch (err) {
-        reject(errorHandle('create', err, cm));
+        reject(errorHandle(err, cm, data));
       }
     });
   };
@@ -1326,12 +1338,12 @@ function IonDataRepository(options) {
               return calcProperties(item, options.skipResult);
             }
           ).
-          then(resolve).catch(e => reject(errorHandle('', e, cm)));
+          then(resolve).catch(e => reject(errorHandle(e, cm, data)));
         } else {
           reject({Error: 'Не указан идентификатор объекта!'});
         }
       } catch (err) {
-        reject(errorHandle('', err, cm));
+        reject(errorHandle(err, cm, data));
       }
     });
   };
@@ -1392,7 +1404,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(errorHandle('', chr, cm)) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
+              return chr !== true ? reject(errorHandle(chr, cm)) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1401,7 +1413,7 @@ function IonDataRepository(options) {
                 console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? reject(errorHandle('', chr, cm)) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
+              return chr !== true ? reject(errorHandle(chr, cm)) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
             }
           } catch (err) {
             reject(err);
@@ -1435,9 +1447,9 @@ function IonDataRepository(options) {
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(e => reject(errorHandle('', e, cm)));
+        ).then(resolve).catch(e => reject(errorHandle(e, cm)));
       } catch (err) {
-        return reject(errorHandle('', err, cm));
+        return reject(errorHandle(err, cm));
       }
     });
   };
@@ -1471,7 +1483,7 @@ function IonDataRepository(options) {
       then(function () {
         resolve();
       }).
-      catch(e => reject(errorHandle('', e, cm)));
+      catch(e => reject(errorHandle(e, cm)));
     });
   };
 
@@ -1540,7 +1552,7 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       var pm = master.getMetaClass().getPropertyMeta(collection);
       if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-        return reject(new IonError(IonError.ERR_DR_REQUEST, null, `Не найден атрибут коллекции ${master.getClassName()}.${collection}`));
+        return reject(new IonError(IonError.ERR_DR_COL_P, null, `Не найден атрибут коллекции ${master.getClassName()}.${collection}`));
       }
 
       var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
@@ -1560,7 +1572,7 @@ function IonDataRepository(options) {
             master: master,
             details: details
           });
-        }).then(function () {resolve();}).catch(e => reject(errorHandle('', e, master.getMetaClass())));
+        }).then(function () {resolve();}).catch(e => reject(colErrorHandle(e, collection)));
       } else {
         editCollections([master], [collection], details, operation ? 'put' : 'eject').
         then(function () {
@@ -1623,7 +1635,7 @@ function IonDataRepository(options) {
           return _this.trigger({type: event, master: master, details: details});
         }).
         then(function () {resolve();}).
-        catch(e => reject(errorHandle('', e, master.getMetaClass())));
+        catch(e => reject(colErrorHandle(e, collection)));
       }
     });
   }
@@ -1670,12 +1682,12 @@ function IonDataRepository(options) {
 
     var pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm) {
-      return Promise.reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+      return Promise.reject(new IonError(IonError.ERR_DR_COL_P, null, `Не найден атрибут коллекции ${master.getClassName()}.${collection}`));
     }
 
     var detailCm = pm._refClass;
     if (!detailCm) {
-      return Promise.reject(new Error('Не найден класс элементов коллекции!'));
+      return Promise.reject(new IonError(IonError.ERR_DR_COL_P, null, 'Не найден класс элементов коллекции!'));
     }
 
     if (pm.backRef) {
@@ -1692,7 +1704,7 @@ function IonDataRepository(options) {
     } else {
       var kp = detailCm.getKeyProperties();
       if (kp.length > 1) {
-        return Promise.reject(new IonError(IonError.ERR_DR_ITEM_EXISTS, null,'Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+        return Promise.reject(new IonError(IonError.ERR_DR_COL_P, null, 'Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
       }
 
       return _this._getItem(master.getClassName(), master.getItemId(), 0)
@@ -1706,7 +1718,7 @@ function IonDataRepository(options) {
               return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            return Promise.reject(new IonError(IonError.ERR_DR_ITEM_EXISTS, null, 'Не найден контейнер коллекции!'));
+            return Promise.reject(new IonError(IonError.ERR_DR_COL_P, null, 'Не найден контейнер коллекции!'));
           }
         });
     }
