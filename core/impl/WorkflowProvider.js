@@ -38,8 +38,8 @@ function WorkflowProvider(options) {
     }
 
     let transitionName = transition ? transition.caption : '';
-    let itemId = item ? item.getMetaClass().getCaption() + '@' + item.getItemId() : '';
-    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП ${transitionName} объекта ${itemId}`);
+    let itemId = item ? `"${item.getMetaClass().getCaption()}"@${item.getItemId()}` : '';
+    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП "${transitionName}" объекта ${itemId}`);
   }
 
   /**

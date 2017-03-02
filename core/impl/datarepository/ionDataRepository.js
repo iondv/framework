@@ -94,7 +94,8 @@ function IonDataRepository(options) {
       return new IonError(IonError.ERR_DR_COL_REQ, err, `Ошибка в коллекции ${colName}`);
     }
 
-    return new IonError(IonError.ERR_DR_REQUEST, err, `Ошибка в DataRepository`);
+    let classCaption = cm ? cm.getCaption() : '';
+    return new IonError(IonError.ERR_DR_REQUEST, err, `Ошибка при обращении к классу ${classCaption}`);
   }
 
   function colErrorHandle(err, collection) {

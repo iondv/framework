@@ -57,7 +57,7 @@ function MongoDs(config) {
         return new IonError(IonError.ERR_DS_UNIQ_KEY, err, `Нарушена уникальность ключа ${key} в коллекции ${type}`);
       }
     }
-    return new IonError(IonError.ERR_DS_REQUEST, err, `Ошибка DataSource в коллекции ${type}`);
+    return new IonError(IonError.ERR_DS_REQUEST, err, `Ошибка запроса в коллекции ${type}`);
   }
 
   /**
