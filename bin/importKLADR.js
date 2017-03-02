@@ -10,6 +10,7 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const encoding = require('encoding');
 const fs = require('fs');
+const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 
 const classNames = {
   STREET: 'STREET@develop-and-test',
@@ -24,16 +25,13 @@ var sysLog = new IonLogger({});
 var scope = null;
 var charset = 'cp866';
 var sourcePath = null;
-var filter = null;
-var filterBy = null;
+var regionFilter = null;
 
 for (var i = 0; i < process.argv.length; i++) {
   if (process.argv[i] === '--sourcePath') {
     sourcePath = process.argv[i + 1];
-  } else if (process.argv[i] === '--filter') {
-    filter = process.argv[i + 1];
-  } else if (process.argv[i] === '--filterBy') {
-    filterBy = process.argv[i + 1];
+  } else if (process.argv[i] === '--region') {
+    regionFilter = process.argv[i + 1];
   } else if (process.argv[i] === '--charset') {
     charset = process.argv[i + 1];
   }
@@ -88,6 +86,7 @@ di('app', config.di,
             if (result) {
               counter++;
             }
+            return Promise.resolve();
           });
         }
       });
@@ -100,12 +99,15 @@ di('app', config.di,
           } else {
             resolve();
           }
+          return Promise.resolve();
         });
       });
     }
   });
 }).then(function () {
-  return checkContainers();
+  return checkContainers(classNames.KLADR, scope.dataRepo, scope.metaRepo);
+}).then(function () {
+  return checkContainers(classNames.STREET, scope.dataRepo, scope.metaRepo);
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(
@@ -126,21 +128,34 @@ function importRecord(record) {
     if (
       className &&
       ((fias && record.ACTSTATUS === '1') || (!fias && record.CODE.substring(record.CODE.length - 2) === '00')) &&
-      // TODO: использование фильтра через регулярные выражения очень неэффективно, продумать другой способ
-      (!filter || !filterBy || record[filter].search(new RegExp(filterBy)) > -1)
+      (!regionFilter || record.CODE.substring(0, 2) === regionFilter)
     ) {
-      return scope.dataRepo.saveItem(className, null, getData(record, className, fias));
-    } else {
-      return new Promise(function (r) {r();});
-    }
+      return scope.dataRepo.saveItem(
+        className,
+        null,
+        getData(record, className, fias),
+        null,
+        null,
+        {
+          skipResult: true,
+          nestingDepth: 0,
+          autoAssign: true,
+          ignoreIntegrityCheck: true
+        });
+
+    return Promise.resolve();
   };
 }
 
-function checkContainers(dataRepo) {
+function checkContainers(className, dataRepo, metaRepo) {
   console.log('checkContainers');
-  return scope.dataRepo.aggregate(classNames.KLADR, {
-    filter: {$empty: 'CONTAINER'},
-    aggregates: {$lookup: {from: 'classNames.KLADR', localField: 'CONTAINER', foreignField: 'CODE', as: 'OLOLATION'}}
+  return dataRepo.aggregate(className, {
+    fields: ['CODE'],
+    joins: [{
+      table: ctn(metaRepo.getMeta(className), dataRepo.namespaceSeparator),
+      left: 'CONTAINER',
+      right: 'CODE'
+    }]
   }).then(function (result) {
     console.log(result);
   });
