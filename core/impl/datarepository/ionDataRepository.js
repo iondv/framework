@@ -18,6 +18,7 @@ const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util')
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const ConditionParser = require('core/ConditionParser');
+const Iterator = require('core/interfaces/Iterator');
 const SortingParser = require('core/SortingParser');
 const IonError = require('core/IonError');
 
@@ -630,9 +631,7 @@ function IonDataRepository(options) {
 
     return Promise.all(calculations).
       then(function (results) {
-        var p;
-        for (var i = 0; i < results.length; i++) {
-          p = item.property(calcNames[i]);
+        for (var i = 0; i < calcNames.length; i++) {
           item.calculated[calcNames[i]] = results[i];
         }
         return Promise.resolve(item);
@@ -715,6 +714,71 @@ function IonDataRepository(options) {
       }
     ).
     then(calcItemsProperties);
+  };
+
+  function ItemIterator(iterator, options) {
+    this._next = function () {
+      return iterator.next().then(function (data) {
+        if (data) {
+          let item = _this._wrap(data._class, data, data._classVer);
+          return loadFiles(item).
+          then(
+            function (item) {
+              return enrich(
+                item,
+                options.nestingDepth ? options.nestingDepth : 0,
+                options.forceEnrichment,
+                options.___loaded
+              );
+            }
+          ).
+          then(calcItemsProperties);
+        }
+        return Promise.resolve(null);
+      });
+    };
+
+    this._count = function () {
+      return iterator.count();
+    };
+  }
+
+  ItemIterator.prototype = new Iterator();
+
+  /**
+   * @param {String | Item} obj
+   * @param {Object} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {{}} [options.___loaded]
+   * @returns {Promise}
+   */
+  this._getIterator = function (obj, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = getMeta(obj);
+    var rcm = getRootType(cm);
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.fields[props[i].name] = '$' + props[i].name;
+    }
+    options.filter = addFilterByItem(options.filter, obj);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).
+    then(function (filter) {
+      options.filter = filter;
+      return _this.ds.iterator(tn(rcm), options);
+    }).
+    then(function (iter) {
+      return Promise.resolve(new ItemIterator(iter, options));
+    });
   };
 
   /**

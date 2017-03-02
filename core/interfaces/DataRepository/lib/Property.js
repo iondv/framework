@@ -17,6 +17,7 @@ const scheduleToString = require('core/util/schedule').scheduleToString;
  * @constructor
  */
 function Property(item, propertyMeta, name) {
+  var _this = this;
 
   this.name = name;
   /**
@@ -69,7 +70,7 @@ function Property(item, propertyMeta, name) {
 
   this.getValue = function () {
     if (this.getType() === PropertyTypes.REFERENCE && this.meta.backRef) {
-      var agr = this.item.getAggregate(this.getName());
+      var agr = this.evaluate();
       if (agr) {
         return agr.getItemId();
       }
@@ -85,7 +86,7 @@ function Property(item, propertyMeta, name) {
     var i;
     if (this.getType() === PropertyTypes.COLLECTION) {
       var result = '';
-      var agregates = this.item.getAggregates(this.getName());
+      var agregates = this.evaluate();
       if (Array.isArray(agregates)) {
         for (i = 0; i < agregates.length; i++) {
           agregates[i].toString();
@@ -113,7 +114,7 @@ function Property(item, propertyMeta, name) {
     }
 
     if (this.getType() === PropertyTypes.REFERENCE) {
-      var agr = this.item.getAggregate(this.getName());
+      var agr = this.evaluate();
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
           return this.meta.semanticGetter.call(agr, dateCallback);
@@ -130,14 +131,48 @@ function Property(item, propertyMeta, name) {
     return v !== null ? v : '';
   };
 
-  this.evaluate = function () {
-    if (this.getType() === PropertyTypes.REFERENCE) {
-      return this.item.getAggregate(this.getName());
-    } else if (this.getType() === PropertyTypes.COLLECTION) {
-      return this.item.getAggregates(this.getName());
-    } else {
-      return this.getValue();
+  function evalProperty(item, prop) {
+    var pos;
+    if ((pos = prop.getName().indexOf('.')) > 0) {
+      let p = item.property(prop.getName().substring(0, pos));
+      if (p.getType() === PropertyTypes.REFERENCE) {
+        let ri = p.evaluate();
+        if (ri) {
+          p = ri.property(prop.getName().substr(pos + 1));
+          if (p) {
+            return evalProperty(ri, p);
+          }
+        }
+      } else if (p.getType() === PropertyTypes.COLLECTION) {
+        let ris = p.evaluate();
+        let result = [];
+        for (let i = 0; i < ris.length; i++) {
+          p = ris[i].property(prop.getName().substr(pos + 1));
+          if (p) {
+            let v = evalProperty(ris[i], p);
+            if (Array.isArray(v)) {
+              Array.prototype.push.apply(result, v);
+            } else {
+              result.push(v);
+            }
+          }
+        }
+        return result;
+      }
+      return null;
     }
+
+    if (prop.getType() === PropertyTypes.REFERENCE) {
+      return item.getAggregate(prop.getName());
+    } else if (prop.getType() === PropertyTypes.COLLECTION) {
+      return item.getAggregates(prop.getName());
+    } else {
+      return prop.getValue();
+    }
+  }
+
+  this.evaluate = function () {
+    return evalProperty(this.item, this);
   };
 
   this.getSelection = function () {
