@@ -85,25 +85,25 @@ di('app', config.di,
             chain = importRecord(record)();
           }
           chain = chain.then(function (result) {
-            if (!result) {
+            if (result) {
               counter++;
             }
           });
         }
       });
       stream.on('end', function () {
-        // TODO: Тут косяк. Это не конец импорта файла. Тут нужно встраиваться в цепочку
-        console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
-        if (index < files.length - 1) {
-          sequenceReadFiles(index + 1);
-        } else {
-          resolve(chain);
-        }
+        chain = chain.then(function () {
+          console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
+          counter = 0;
+          if (index < files.length - 1) {
+            sequenceReadFiles(index + 1);
+          } else {
+            resolve();
+          }
+        });
       });
     }
   });
-}).then(function (chain) {
-  return chain;
 }).then(function () {
   return checkContainers();
 }).then(function () {
@@ -121,7 +121,7 @@ di('app', config.di,
 
 function importRecord(record) {
   return function () {
-    /*var fias = record.hasOwnProperty('NORMDOC');
+    var fias = record.hasOwnProperty('NORMDOC');
     var className = getRecordClass(record, fias);
     if (
       className &&
@@ -130,9 +130,9 @@ function importRecord(record) {
       (!filter || !filterBy || record[filter].search(new RegExp(filterBy)) > -1)
     ) {
       return scope.dataRepo.saveItem(className, null, getData(record, className, fias));
-    } else {*/
+    } else {
       return new Promise(function (r) {r();});
-    //}
+    }
   };
 }
 
