@@ -37,11 +37,9 @@ function WorkflowProvider(options) {
       return err;
     }
 
-
-    let itemId = item ? item.getItemId() : '';
-    let classCaption = item ? item.getClassMeta()
-    let transition = transition ? transition.caption : '';
-    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП объекта ${itemId}`);
+    let transitionName = transition ? transition.caption : '';
+    let itemId = item ? item.getMetaClass().getCaption() + '@' + item.getItemId() : '';
+    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП ${transitionName} объекта ${itemId}`);
   }
 
   /**
@@ -160,7 +158,7 @@ function WorkflowProvider(options) {
             selectionProviders: selectionProviders
           });
         }
-      ).catch(e => reject(errorHandle(e)));
+      ).catch(e => reject(errorHandle(e, item)));
     });
   };
 
@@ -178,7 +176,7 @@ function WorkflowProvider(options) {
       function () {
         resolve(item);
       }
-    ).catch(reject);
+    ).catch(e => reject(errorHandle(e, item)));
   }
 
   function passAssignmentValue(updates, item, key, value) {
@@ -215,6 +213,7 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, user) {
+    var transition;
     return _this._getStatus(item).then(function (status) {
       return new Promise(function (resolve, reject) {
         if (status.stages.hasOwnProperty(workflow)) {
@@ -228,10 +227,10 @@ function WorkflowProvider(options) {
 
             if (wf) {
               if (wf.transitionsByName.hasOwnProperty(name)) {
-                var transition = wf.transitionsByName[name];
+                transition = wf.transitionsByName[name];
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
-                  return reject(new Error('Не найдено конечное состояние перехода.'));
+                  return reject(new IonError(IonError.ERR_WF_P, null, 'Не найдено конечное состояние перехода.'));
                 }
 
                 var updates = {};
@@ -264,7 +263,7 @@ function WorkflowProvider(options) {
                 Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
-                      return reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                      return reject(new IonError(IonError.ERR_WF_P, null, 'Объект не удовлетворяет условиям конечного состояния перехода.'));
                     }
                   }
 
@@ -303,14 +302,14 @@ function WorkflowProvider(options) {
                     function (item) {
                       move(item, workflow, nextState, resolve, reject);
                     }
-                  ).catch(reject);
-                }).catch(reject);
+                  ).catch(e => reject(errorHandle(e, item, transition)));
+                }).catch(e => reject(errorHandle(e, item, transition)));
                 return;
               }
             }
-            return reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+            return reject(new IonError(IonError.ERR_WF_P, null, `Невозможно выполнить переход ${name} рабочего процесса ${workflow}`));
           }
-          return reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
+          return reject(new IonError(IonError.ERR_WF_P, null, `Объект не участвует в рабочем процессе ${workflow}`));
         }
       });
     });
