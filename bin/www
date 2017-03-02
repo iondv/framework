@@ -3,22 +3,22 @@
 // jscs:disable requireCapitalizedComments
 'use strict';
 
-var path = require('path');
-var http = require('http');
-var express = require('express');
-var ejsLocals = require('ejs-locals');
-var flash = require('connect-flash');
-var fs = require('fs');
-var favicon = require('serve-favicon');
+const path = require('path');
+const http = require('http');
+const express = require('express');
+const ejsLocals = require('ejs-locals');
+const flash = require('connect-flash');
+const fs = require('fs');
 
-var bodyParser = require('body-parser');
-var methodOverride = require('method-override');
+const bodyParser = require('body-parser');
+const methodOverride = require('method-override');
 
-var config = require('../config');
-var di = require('core/di');
+const config = require('../config');
+const di = require('core/di');
+const theme = require('lib/util/theme');
 
-var IonLogger = require('core/impl/log/IonLogger');
-var SettingsRepository = require('core/impl/SettingsRepository');
+const IonLogger = require('core/impl/log/IonLogger');
+const SettingsRepository = require('core/impl/SettingsRepository');
 
 var sysLog = new IonLogger(config.log || {});
 
@@ -57,13 +57,7 @@ app.use(flash());
 // Шаблонизатор
 
 app.engine('ejs', ejsLocals);
-app.set('views', path.join(__dirname, '../view/templates'));
 app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, '../view/static')));
-
-// Типовые настройки
-
-app.use(favicon(path.join(__dirname, '../view/static/favicon.ico')));
 
 // Поддержка put и deletes
 // override with different headers; last one takes precedence
@@ -105,6 +99,16 @@ function start(ports, i) {
   });
 }
 
+function moduleLoader(name, module) {
+  return function () {
+    sysLog.info('Загрузка модуля ' + name);
+    return module._init().then(function () {
+      sysLog.info('Модуль ' + name + ' загружен.');
+      return Promise.resolve();
+    });
+  };
+}
+
 // Связываем приложение
 di('app', config.di,
   {
@@ -120,77 +124,89 @@ then(
    * @returns {Promise}
      */
   function (scope) {
-    return new Promise(function (resolve, reject) {
-      var moduleTitles = {};
-      try {
-        // Редирект на дефолтный модуль
-        var defaultModule = null;
-        if (scope.settings && scope.settings instanceof SettingsRepository) {
-          defaultModule = scope.settings.get('defaultModule');
-          moduleTitles = scope.settings.get('moduleTitles') || {};
-        }
+    var moduleTitles = {};
+    try {
+      // Тема оформления страниц аутентификации и регистрации
+      theme(
+        app, '',
+        path.normalize(path.join(__dirname, '..')),
+        scope.settings.get('theme') || config.theme || 'default', sysLog
+      );
 
-        if (!defaultModule && config.defaultModule) {
-          defaultModule = config.defaultModule;
-        }
+      scope.auth.setTopLevelAuth();
 
-        if (defaultModule) {
-          app.get('/', function (req, res) {
-            res.redirect('/' + defaultModule);
-          });
-        } else {
-          throw new Error('Не указан модуль по умолчанию!');
-        }
-
-        if (scope.fileStorage) {
-          app.use(scope.fileStorage.middle());
-        }
-      } catch (err) {
-        return reject(err);
+      // Редирект на дефолтный модуль
+      var defaultModule = null;
+      if (scope.settings && scope.settings instanceof SettingsRepository) {
+        defaultModule = scope.settings.get('defaultModule');
+        moduleTitles = scope.settings.get('moduleTitles') || {};
       }
 
-      var i, moduleInitiators;
-      sysLog.info('Загрузка веб-модулей.');
-      app.locals.sysMenu = [];
-      moduleInitiators = [];
-      try {
-        var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-        var skipModules = config.skipModules || [];
-        for (i = 0; i < candidates.length; i++) {
-          if (
-            fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
-            skipModules.indexOf(candidates[i]) < 0
-          ) {
-            var module = require('modules/' + candidates[i] + '/web');
-            if (typeof module === 'function') {
-              var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
-              if (title) {
-                app.locals.sysMenu.push({
+      if (!defaultModule && config.defaultModule) {
+        defaultModule = config.defaultModule;
+      }
+
+      if (defaultModule) {
+        app.get('/', function (req, res) { res.redirect('/' + defaultModule); });
+      } else {
+        throw new Error('Не указан модуль по умолчанию!');
+      }
+
+      if (scope.fileStorage) {
+        app.use(scope.fileStorage.middle());
+      }
+    } catch (err) {
+      return Promise.reject(err);
+    }
+
+    var i, moduleInitiators;
+    sysLog.info('Загрузка веб-модулей.');
+    app.locals.sysMenu = [];
+    moduleInitiators = null;
+    try {
+      var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+      var skipModules = config.skipModules || [];
+      for (i = 0; i < candidates.length; i++) {
+        if (
+          fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
+          skipModules.indexOf(candidates[i]) < 0
+        ) {
+          var module = require('modules/' + candidates[i] + '/web');
+          if (typeof module === 'function') {
+            var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            if (title) {
+              app.locals.sysMenu.push(
+                {
                   name: candidates[i],
                   description: title
-                });
-                module.locals.sysTitle = title;
-              }
-              module.locals.sysMenu = app.locals.sysMenu;
-              app.use(module);
-              if (typeof module._init === 'function') {
-                moduleInitiators.push(module._init());
-              }
-              sysLog.info('Модуль ' + candidates[i] + ' загружен.');
-            } else {
-              sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+                }
+              );
+              module.locals.sysTitle = title;
             }
+            module.locals.sysMenu = app.locals.sysMenu;
+            app.use(module);
+            if (typeof module._init === 'function') {
+              if (moduleInitiators) {
+                moduleInitiators = moduleInitiators.then(moduleLoader(candidates[i], module));
+              } else {
+                moduleInitiators = moduleLoader(candidates[i], module)();
+              }
+            }
+          } else {
+            sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
           }
         }
-      } catch (err) {
-        reject(err);
       }
-      if (moduleInitiators.length > 0) {
-        Promise.all(moduleInitiators).then(resolve).catch(reject);
-        return;
-      }
-      resolve();
-    });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    if (moduleInitiators) {
+      return moduleInitiators.then(function () {
+        sysLog.info('Все модули загружены.');
+        return Promise.resolve();
+      });
+    }
+    return Promise.resolve();
   }
 ).then(
   // Запускаем приложение

@@ -3,81 +3,73 @@
  */
 const config = require('../config');
 const di = require('core/di');
+const fs = require('fs');
+const path = require('path');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger({});
 const Permissions = require('core/Permissions');
 
-var permissions = [];
-var users = [];
-var resources = [];
-var roles = [];
-var method = 'grant';
+var params = {
+  permissions: [],
+  users: [],
+  resources: [],
+  roles: [],
+  method: 'grant',
+  aclFile: null
+};
 
-var addUser = false;
-var addPermission = false;
-var addResource = false;
-var addRole = false;
-var setMethod = false;
+var aclDefinitions = [];
 
-// jshint maxstatements: 40
+var setParam = false;
+
+// jshint maxstatements: 40, maxcomplexity: 20
+
 process.argv.forEach(function (val) {
   if (val === '--u') {
-    addUser = true;
-    addPermission = false;
-    addResource = false;
-    addRole = false;
-    setMethod = false;
-    return;
+    setParam = 'users';
   } else if (val === '--res') {
-    addUser = false;
-    addPermission = false;
-    addResource = true;
-    addRole = false;
-    setMethod = false;
-    return;
+    setParam = 'resources';
   } else if (val === '--role') {
-    addUser = false;
-    addPermission = false;
-    addResource = false;
-    addRole = true;
-    setMethod = false;
-    return;
+    setParam = 'roles';
   } else if (val === '--p') {
-    addUser = false;
-    addPermission = true;
-    addResource = false;
-    addRole = false;
-    setMethod = false;
-    return;
+    setParam = 'permissions';
   } else if (val === '--m') {
-    addUser = false;
-    addPermission = false;
-    addResource = false;
-    addRole = false;
-    setMethod = true;
-    return;
-  } else if (addUser) {
-    users.push(val);
-  } else if (addResource) {
-    resources.push(val);
-  } else if (addPermission) {
-    permissions.push(val);
-  } else if (addRole) {
-    roles.push(val);
-  } else if (setMethod) {
-    method = val === 'deny' ? 'deny' : 'grant';
+    setParam = 'method';
+  } else if (val === '--d') {
+    setParam = 'aclDir';
+  } else if (setParam) {
+    if (Array.isArray(params[setParam])) {
+      params[setParam].push(val);
+    } else if (setParam === 'method') {
+      params[setParam] = val === 'deny' ? 'deny' : 'grant';
+    } else {
+      params[setParam] = val;
+    }
   }
 });
 
-if (!roles.length) {
-  console.error('Не указаны роли!');
-  process.exit(130);
-}
+if (!params.aclDir) {
+  if (!params.roles.length) {
+    console.error('Не указаны роли!');
+    process.exit(130);
+  }
 
-if (!users.length && !resources.length && !permissions.length) {
-  console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
-  process.exit(130);
+  if (!params.users.length && !params.resources.length && !params.permissions.length) {
+    console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
+    process.exit(130);
+  }
+} else {
+  if (fs.existsSync(params.aclDir)) {
+    let files = fs.readdirSync(params.aclDir);
+    files.forEach(function (file) {
+      if (fs.statSync(path.join(params.aclDir, file)).isFile()) {
+        aclDefinitions.push(JSON.parse(fs.readFileSync(path.join(params.aclDir, file), {encoding: 'utf-8'})));
+      }
+    });
+  } else {
+    console.warn('Указанная директория списков доступа не существует.');
+  }
 }
 
 var scope = null;
@@ -92,6 +84,63 @@ config.di.roleAccessManager =
   }
 };
 
+function setRolePermissions(role, resource, permissions) {
+  return function () {
+    return scope.roleAccessManager.grant([role], [resource], permissions);
+  };
+}
+
+function processAclDefinition(u) {
+  return function () {
+    if (u.type === 'user') {
+      return new Promise(function (resolve, reject) {
+        scope.auth.register(
+          {
+            name: u.name,
+            pwd: u.pwd
+          },
+          function (err, u) {
+            if (err) {
+              return reject(err);
+            }
+            resolve(u);
+          }
+        );
+      }).catch(function (err) {
+        console.warn('Не удалось зарегистрировать пользователя ' + u.name);
+        return Promise.resolve();
+      }).then(function (user) {
+        if (Array.isArray(u.roles)) {
+          return scope.roleAccessManager.assignRoles(
+            [(user ? user.id : u.name) + '@' + (user ? user.type : 'local')],
+            u.roles
+          );
+        }
+        return Promise.resolve();
+      });
+    } else if (u.type === 'role') {
+      let w;
+      if (u.permissions && typeof u.permissions === 'object') {
+        for (let resource in u.permissions) {
+          if (u.permissions.hasOwnProperty(resource)) {
+            if (Array.isArray(u.permissions[resource])) {
+              if (w) {
+                w = w.then(setRolePermissions(u.name, resource, u.permissions[resource]));
+              } else {
+                w = setRolePermissions(u.name, resource, u.permissions[resource])();
+              }
+            }
+          }
+        }
+      }
+      if (!w) {
+        return Promise.resolve();
+      }
+      return w;
+    }
+  };
+}
+
 // Связываем приложение
 di('app', config.di,
   {
@@ -102,32 +151,51 @@ di('app', config.di,
 ).then(
   function (scp) {
     scope = scp;
-    if (!users.length) {
+    if (!params.users.length) {
       return Promise.resolve();
     }
-    return scope.roleAccessManager.assignRoles(users, roles);
+    return scope.roleAccessManager.assignRoles(params.users, params.roles);
   }
 ).then(
   function () {
-    if (resources.length || permissions.length) {
-      if (!resources.length) {
-        resources.push(scope.roleAccessManager.globalMarker);
+    if (params.resources.length || params.permissions.length) {
+      if (!params.resources.length) {
+        params.resources.push(scope.roleAccessManager.globalMarker);
       }
-      if (!permissions.length) {
-        permissions.push(Permissions.FULL);
+      if (!params.permissions.length) {
+        params.permissions.push(Permissions.FULL);
       }
-      if (method === 'grant') {
-        return scope.roleAccessManager.grant(roles, resources, permissions);
+      if (params.method === 'grant') {
+        return scope.roleAccessManager.grant(params.roles, params.resources, params.permissions);
       } else {
-        return scope.roleAccessManager.deny(roles, resources, permissions);
+        return scope.roleAccessManager.deny(params.roles, params.resources, params.permissions);
       }
     } else {
       return Promise.resolve();
     }
   }
-).then(function () {
-  return scope.dataSources.disconnect();
-}).then(
+).then(
+  function () {
+    var w = null;
+
+    aclDefinitions.forEach(function (u) {
+      if (w) {
+        w = w.then(processAclDefinition(u));
+      } else {
+        w = processAclDefinition(u)();
+      }
+    });
+
+    if (!w) {
+      return Promise.resolve();
+    }
+    return w;
+  }
+).then(
+  function () {
+    return scope.dataSources.disconnect();
+  }
+).then(
   // Справились
   function () {
     console.info('Права назначены');

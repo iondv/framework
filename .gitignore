@@ -41,11 +41,10 @@
 /applications/*
 /node_modules/*
 
-/view/vendor/*
-/view/static/vendor/*
-/view/static/css/*.less.css
-/view/static/**/*.min.css
-/view/static/**/*.min.js
+/view/**/vendor/*
+/view/**/*.less.css
+/view/**/*.min.css
+/view/**/*.min.js
 /files
 
 # Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
