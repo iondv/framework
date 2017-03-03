@@ -6,6 +6,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
 const strToDate = require('core/strToDate');
 const ConditionParser = require('core/ConditionParser');
+
 const geoOperations = ['$geoWithin', '$geoIntersects'];
 const aggregOperations = ['$min', '$max', '$avg', '$sum', '$count'];
 
@@ -330,6 +331,8 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
                 emptyResult = false;
               }
             }
+          } if (Array.isArray(filter[nm])) {
+            return filterByItemIds(keyProvider, cm, filter[nm]);
           } else {
             result[cm.getKeyProperties()[0]] = filter[nm];
             emptyResult = false;
