@@ -13,6 +13,15 @@ function WorkflowProvider() {
   };
 
   /**
+   * @param {String} workflow
+   * @param {String} status
+   * @returns {Promise}
+   */
+  this.itemsInStatus = function (workflow, status) {
+    return this._itemsInStatus(workflow, status);
+  };
+
+  /**
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name

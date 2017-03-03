@@ -47,8 +47,9 @@ function AclMock() {
 /**
  * @param {{}} options
  * @param {DataRepository} options.data
- * @param {AclProvider} options.acl
  * @param {MetaRepository} options.meta
+ * @param {AclProvider} [options.acl]
+ * @param {WorkflowProvider} [options.workflows]
  * @constructor
  */
 function SecuredDataRepository(options) {
@@ -59,14 +60,19 @@ function SecuredDataRepository(options) {
   var dataRepo = options.data;
 
   /**
+   * @type {MetaRepository}
+   */
+  var metaRepo = options.meta;
+
+  /**
    * @type {AclProvider}
    */
   var aclProvider = options.acl || new AclMock();
 
   /**
-   * @type {MetaRepository}
+   * @type {WorkflowProvider}
    */
-  var metaRepo = options.meta;
+  var wfProvider = options.workflows;
 
   var classPrefix = options.classPrefix || 'c:::';
   var itemPrefix = options.itemPrefix || 'i:::';
@@ -86,13 +92,23 @@ function SecuredDataRepository(options) {
     }
   }
 
+  function getWfItems(workflow, status, wfFilter) {
+    return function () {
+      return wfProvider.itemsInStatus(workflow, status)
+        .then(function (results) {
+          wfFilter.push();
+        });
+    }
+  }
+
+
   /**
    * @param {String} uid
    * @param {String} cn
    * @param {{} | null} filter
    * @private
    */
-  function exclude(uid, cn, filter, classPermissions) {
+  function exclude(uid, cn, filter, classPermissions, uid) {
     var cm = metaRepo.getMeta(cn);
     var check = [];
     var resources = [];
@@ -100,9 +116,32 @@ function SecuredDataRepository(options) {
     return aclProvider.getPermissions(uid, resources).then(function (permissions) {
       return new Promise(function (resolve) {
         var exc = [];
-        for (var i = 0; i < check.length; i++) {
+        var filterStates = [];
+
+        var wfItems = null;
+
+        for (let i = 0; i < check.length; i++) {
           if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
             exc.push(check[i]);
+          }
+
+          if (wfProvider) {
+            let workflows = metaRepo.getWorkflows(check[i]);
+            for (let j = 0; j < workflows.length; j++) {
+              let wf = workflows[j];
+              for (let k = 0; k < wf.states.length; k++) {
+                let wfs = wf.states[k];
+                let denyRoles = [];
+                let allowRoles = [];
+                for (let role in wfs.itemPermissions) {
+                  if (wfs.itemPermissions.hasOwnProperty(role)) {
+                    if (wfs.itemPermissions[role].indexOf(Permissions.READ) === -1) {
+                      denyRoles.push({});
+                    }
+                  }
+                }
+              }
+            }
           }
         }
 

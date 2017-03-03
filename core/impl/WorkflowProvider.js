@@ -142,6 +142,32 @@ function WorkflowProvider(options) {
     });
   };
 
+  this._itemsInStatus = function (workflow, status) {
+    return options.dataSource.fetch(tableName,
+        {
+          filter: {
+            workflow: workflow,
+            stage: status
+          }
+        }
+      ).
+      then(
+        function (states) {
+          var result = [];
+
+          for (let i = 0; i < states.length; i++) {
+            let parts = states[i].item.split('@');
+            result.push({
+              className: parts[0],
+              id: parts[1]
+            });
+          }
+
+          return Promise.resolve(result);
+        }
+      );
+  };
+
   function move(item, workflow, nextState, resolve, reject) {
     options.dataSource.upsert(tableName,
       {
