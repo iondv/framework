@@ -76,12 +76,14 @@ di('app', config.di,
 
       stream.on('data', function (record) {
         if (record) {
+          stream.pause();
           if (chain) {
             chain = chain.then(importRecord(record));
           } else {
             chain = importRecord(record)();
           }
           chain = chain.then(function (result) {
+            stream.resume();
             if (result) {
               counter++;
             }
@@ -143,7 +145,7 @@ function importRecord(record) {
           autoAssign: true,
           ignoreIntegrityCheck: true
         });
-
+    }
     return Promise.resolve();
   };
 }
