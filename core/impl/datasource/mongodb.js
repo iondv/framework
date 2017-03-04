@@ -383,6 +383,7 @@ function MongoDs(config) {
               tmp2 = {};
               tmp2[part] = {$eq: null};
               parent[tmp].push(tmp2);
+              tmp2 = {};
               tmp2[part] = {$exists: false};
               parent[tmp].push(tmp2);
             }
@@ -657,13 +658,13 @@ function MongoDs(config) {
             } else {
               if (name === '$nor') {
                 if (Array.isArray(tmp)) {
-                  tmp = tmp.length ? tmp[0] : true;
+                  tmp = tmp.length ? tmp : true;
                 }
                 if (tmp === true) {
                   result = true;
                 } else {
                   result = {};
-                  result.$nor = [tmp];
+                  result.$nor = tmp;
                 }
               } else {
                 result = result || {};

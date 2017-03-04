@@ -10,7 +10,6 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const encoding = require('encoding');
 const fs = require('fs');
-const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 
 const classNames = {
   STREET: 'STREET@develop-and-test',
@@ -45,24 +44,24 @@ di('app', config.di,
 
   return new Promise (function (resolve) {
     scope = s;
-    var files = [];
-    var chain = null;
+    var fls = [];
+    var promises = null;
     fs.readdirSync(sourcePath).forEach(function (file) {
       if (file === 'KLADR.DBF' || file === 'STREET.DBF' || file === 'ADDROBJ.DBF') {
-        files.push(file);
+        fls.push(sourcePath + '/' + file);
       }
     });
-    if (files.length > 0) {
-      sequenceReadFiles(0);
+    if (fls.length > 0) {
+      sequenceReadFiles(fls, 0, promises);
     } else {
       throw new Error('Указанная директория не содержит необходимых для импорта .DBF-файлов формата КЛАДР либо ФИАС.');
     }
 
-    function sequenceReadFiles(index) {
+    function sequenceReadFiles(files, index, chain) {
       console.log('Читается файл ' + files[index]);
       var counter = 0;
 
-      var parser = new DBF(sourcePath + '/' + files[index], {parseTypes: false});
+      var parser = new DBF(files[index], {parseTypes: false});
       for (var i = 0; i < parser.header.fields.length; i++) {
         switch (parser.header.fields[i].name) {
           case 'NAME':
@@ -95,7 +94,7 @@ di('app', config.di,
           console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
           counter = 0;
           if (index < files.length - 1) {
-            sequenceReadFiles(index + 1);
+            sequenceReadFiles(files, index + 1, chain);
           } else {
             resolve();
           }
@@ -105,8 +104,10 @@ di('app', config.di,
     }
   });
 }).then(function () {
+  console.log('Проверка ссылочной целостности адресных элементов');
   return checkContainers(classNames.KLADR, scope.dataRepo, scope.metaRepo);
 }).then(function () {
+  console.log('Проверка ссылочной целостности улиц');
   return checkContainers(classNames.STREET, scope.dataRepo, scope.metaRepo);
 }).then(function () {
   return scope.dataSources.disconnect();
@@ -147,17 +148,18 @@ function importRecord(record) {
   };
 }
 
-function checkContainers(className, dataRepo, metaRepo) {
-  console.log('checkContainers');
-  return dataRepo.aggregate(className, {
-    fields: ['CODE'],
-    joins: [{
-      table: ctn(metaRepo.getMeta(className), dataRepo.namespaceSeparator),
-      left: 'CONTAINER',
-      right: 'CODE'
-    }]
+function checkContainers(className, dataRepo) {
+  return dataRepo.getList(className, {
+    filter: {$and: [
+      {CONTAINER: {$empty: false}},
+      {'CONTAINER.CODE': {$empty: true}}
+    ]},
+    nestingDepth: 0
   }).then(function (result) {
-    console.log(result);
+    for (var i = 0; i < result.length; i++) {
+      console.error('Запись ' + result[i].base.CODE + ' ссылается на несуществующий контейнер ' + result[i].base.CONTAINER);
+    }
+    return result;
   });
 }
 
