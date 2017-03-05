@@ -35,281 +35,67 @@ function CachedDataRepository(options) {
     return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
   }
 
-  function cachingKey(classname, id) {
-    return classname + '@@' + id;
-  }
-
-  function cachingKeyDecode(key) {
-    var parts =  key.split('@@');
-    return {classname: parts[0], id: parts[1]};
-  }
-
-  function cachingListKey(classname) {
-    return '__' + classname;
-  }
-
-  function retrieveCachedList(classname, options) {
-    var filterSortHash = objectToMD5({filter: options.filter, sort: options.sort});
-    var offsetCount = (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-    return cache.get(classname + '@' + filterSortHash + '@' + offsetCount);
-  }
-
-  function updateListObjectInCache(key, payload) {
-    return cache.get(key)
-        .then(
-          function (data) {
-            if (!data) {
-              data = [];
-            }
-
-            if (data.indexOf(payload) < 0) {
-              data.push(payload);
-            }
-            return cache.set(key, data);
-          }
-        );
-  }
-
-  function putListToCache(classname, options, list) {
-    var listId = objectToMD5({filter: options.filter,sort: options.sort}) + '@' +
-      (options.offset ? options.offset : '') + '_' + (options.count ? options.count : '');
-    return updateListObjectInCache(classname, {listId: listId, offset: options.offset})
-      .then(function () {
-        return cache.set(classname + '@' + listId, list);
-      });
-  }
-
-  function uncacheItem(classname, id) {
-    return cache.get(cachingKey(classname, id))
-        .then(
-          function (value) {
-            if (value) {
-              return Promise.resolve(_this._wrap(classname, value.base));
-            } else {
-              return Promise.resolve(null);
-            }
-          }
-        );
-  }
-
-  function updateCachedItem(classname, id, data, list) {
-    return cache.get(cachingKey(classname, id))
-        .then(
-          function (value) {
-            var result = {
-              base: data,
-              lists: []
-            };
-            if (value) {
-              result.lists = value.lists;
-            }
-            if (list) {
-              var push = true;
-              for (var i = 0; i < result.lists.length; i++) {
-                if (
-                  result.lists[i].classname === list.classname &&
-                  JSON.stringify(result.lists[i].options.filter) === JSON.stringify(list.options.filter) &&
-                  JSON.stringify(result.lists[i].options.sort) === JSON.stringify(list.options.sort) &&
-                  result.lists[i].options.offset === list.options.offset &&
-                  result.lists[i].options.count === list.options.count
-                ) {
-                  push = false;
-                }
-              }
-              if (push) {
-                result.lists.push(list);
-              }
-            }
-            return cache.set(cachingKey(classname, id), result);
-          }
-        );
-  }
-
-  function unsetList(key) {
-    return function () {
-      return cache.set(key, null);
-    };
-  }
-
-  function removeCachedListsAfterCreate(classname) {
-    return cache.get(classname)
-        .then(
-          function (lists) {
-            if (lists) {
-              var p;
-              for (var i = 0; i < lists.length; i++) {
-                if (p) {
-                  p = p.then(unsetList(classname + '@' + lists[i].listId));
-                } else {
-                  p = unsetList(classname + '@' + lists[i].listId)();
-                }
-              }
-              if (p) {
-                return p.then(function () {
-                  return cache.set(classname, null);
-                });
-              }
-              return cache.set(classname, null);
-            }
-          }
-        );
-  }
-
-  function removeCachedListsAfterUpdate(classname, id) {
-    return cache.get(cachingKey(classname, id))
-        .then(function (value) {
-          if (value) {
-            var p, listId;
-            for (var i = 0; i < value.lists.length; i++) {
-              listId = objectToMD5(
-                {
-                  filter: value.lists[i].options.filter,
-                  sort: value.lists[i].options.sort
-                }
-              ) + (value.lists[i].options.offset ? value.lists[i].options.offset : '') + '_' +
-                (value.lists[i].options.count ? value.lists[i].options.count : '');
-
-              if (p) {
-                p = p.then(unsetList(value.lists[i].classname + '@' + listId));
-              } else {
-                p = unsetList(value.lists[i].classname + '@' + listId)();
-              }
-            }
-            if (p) {
-              return p;
-            }
-          }
-          return Promise.resolve();
-        });
-  }
-
-  function unsetListOffset(classname, offset) {
-    return _this.cahce.get(classname).then(function (lists) {
-      var p;
-      for (var i = 0; i < lists.length; i++) {
-        if (!offset || lists[i].offset >= offset) {
-          if (p) {
-            p = p.then(unsetList(classname + '@' + lists[i].listId));
-          } else {
-            p = unsetList(classname + '@' + lists[i].listId)();
-          }
-        }
-      }
-      if (p) {
-        return p;
-      }
-      return Promise.resolve();
-    });
-  }
-
-  function removeCachedListsAfterDelete(classname, id) {
-    return cache.get(cachingKey(classname, id))
-        .then(function (value) {
-          if (value) {
-            var p;
-            for (var i = 0; i < value.lists.length; i++) {
-              if (p) {
-                p = p.then(unsetListOffset(classname, value.lists[i].options.offset));
-              } else {
-                p = unsetListOffset(classname, value.lists[i].options.offset)();
-              }
-            }
-            if (p) {
-              return p;
-            }
-          }
-          return Promise.resolve();
-        });
-  }
-
-  function updateNextCacheItem(item, listId) {
-    return function () {
-      return updateCachedItem(item.getClassName(), item.getItemId(), item.base, listId);
-    };
-  }
-
-  function cacheList(classname, options, list) {
-    var cacheObject = {
-      itemIds: [],
-      total: null
-    };
-    var p;
-    var item;
-    var listId = {
-      classname: cachingListKey(classname),
-      options: options
-    };
-
+  function cacheList(className, options, list) {
+    var listId = 'l:' + className + ':' + objectToMD5(options);
+    var l = [];
     for (var i = 0; i < list.length; i++) {
-      item = list[i];
-      cacheObject.itemIds.push(cachingKey(item.getClassName(), item.getItemId()));
-      if (p) {
-        p = p.then(updateNextCacheItem(item, listId));
-      } else {
-        p = updateCachedItem(item.getClassName(), item.getItemId(), item.base, listId);
-      }
+      l.push({className: list[i].getClassName(), id: list[i].getItemId()});
     }
-
-    if (typeof list.total !== 'undefined' && list.total !== null) {
-      cacheObject.total = list.total;
-    }
-
-    if (p) {
-      return p.then(function () {
-        return putListToCache(listId.classname, options, cacheObject);
-      });
-    }
-
-    return putListToCache(listId.classname, options, cacheObject);
+    return cache.set(listId, l);
   }
 
-  function itemGetter(key, items) {
-    return function (item) {
-      items.push(item.base);
-      return uncacheItem(key.classname, key.id);
+  function uncacheNext(className, id, result) {
+    return function () {
+      return uncacheItem(className, id).then(function (item) {
+        if (item) {
+          result.push(item);
+        }
+        return Promise.resolve();
+      });
     };
   }
 
-  function uncacheList(classname, options) {
-    return retrieveCachedList(cachingListKey(classname), options)
-      .then(
-        function (listObject) {
-          var items = [];
-          if (listObject) {
-            var p;
-            var key;
-            for (var i = 0; i < listObject.itemIds.length; i++) {
-              key = cachingKeyDecode(listObject.itemIds[i]);
-              if (p) {
-                p = p.then(itemGetter(key, items));
-              } else {
-                p = uncacheItem(key.classname, key.id);
-              }
-            }
-            if (p) {
-              return p.then(function (item) {
-                items.push(item);
-                items.total = listObject.total;
-                return Promise.resolve(items);
-              });
-            }
-            return Promise.resolve([]);
-          }
+  function uncacheList(className, options) {
+    var listId = 'l:' + className + ':' + objectToMD5(options);
+    return cache.get(listId)
+      .then(function (list) {
+        if (!list) {
           return Promise.resolve(null);
         }
-      );
+        var p = null;
+        var result = [];
+        for (var i = 0; i < list.length; i++) {
+          if (p) {
+            p = p.then(uncacheNext(list[i].className, list[i].id, result));
+          } else {
+            p = uncacheNext(list[i].className, list[i].id, result)();
+          }
+        }
+        if (p) {
+          return p.then(function () {
+            return Promise.resolve(result);
+          });
+        }
+        return Promise.resolve(result);
+      });
   }
 
-  function uncacheCount(classname, options) {
-    return retrieveCachedList(cachingListKey(classname), options)
-      .then(
-        function (listObject) {
-          if (listObject) {
-            return Promise.resolve(listObject.total);
-          }
+  /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  function cacheItem(item) {
+    return cache.set(item.getClassName() + '@' + item.getItemId(), item.base);
+  }
+
+  function uncacheItem(className, id) {
+    return cache.get(className + '@' + id)
+      .then(function (item) {
+        if (!item) {
           return Promise.resolve(null);
         }
-      );
+        return Promise.resolve(_this._wrap(className, item));
+      });
   }
 
   /**
@@ -331,12 +117,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
-    return uncacheCount(obj, options).then(function (total) {
-      if (total) {
-        return Promise.resolve(total);
-      }
-      return dataRepo.getCount(obj, options);
-    });
+    return dataRepo.getCount(obj, options);
   };
 
   /**
@@ -357,6 +138,7 @@ function CachedDataRepository(options) {
         if (list) {
           return Promise.resolve(list);
         }
+        console.log('getting list from db for ', obj);
         return dataRepo.getList(obj, options)
           .then(function (list) {
             if (!list) {
@@ -400,36 +182,13 @@ function CachedDataRepository(options) {
             if (!item) {
               return Promise.resolve(item);
             }
-            return updateCachedItem(item.getClassName(), item.getItemId(), item.base)
+            return cacheItem(item)
               .then(function () {
                 return Promise.resolve(item);
               });
           });
       });
   };
-
-  function removeAfterCreate(classname) {
-    return function () {
-      return removeCachedListsAfterCreate(classname);
-    };
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @returns {Promise}
-   */
-  function removeAfterCreateH(cm) {
-    var p;
-    while (cm) {
-      if (p) {
-        p = p.then(removeAfterCreate(cm.getCanonicalName()));
-      } else {
-        p = removeCachedListsAfterCreate(cm.getCanonicalName());
-      }
-      cm = cm.getAncestor();
-    }
-    return p;
-  }
 
   /**
    *
@@ -441,19 +200,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
-    return dataRepo.createItem(classname, data, version, changeLogger, options)
-      .then(function (result) {
-        if (!result) {
-          return Promise.resolve(result);
-        }
-
-        return removeAfterCreateH(result.getMetaClass()).then(function () {
-          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
-            .then(function () {
-              return Promise.resolve(result);
-            });
-        });
-      });
+    return dataRepo.createItem(classname, data, version, changeLogger, options);
   };
 
   /**
@@ -466,18 +213,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options) {
-    return dataRepo.editItem(classname, id, data, changeLogger, options)
-      .then(function (result) {
-        if (!result) {
-          return Promise.resolve(result);
-        }
-        return removeCachedListsAfterUpdate(classname, id).then(function () {
-          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
-            .then(function () {
-              return Promise.resolve(result);
-            });
-        });
-      });
+    return dataRepo.editItem(classname, id, data, changeLogger, options);
   };
 
   /**
@@ -493,19 +229,7 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
-    return dataRepo.saveItem(classname, id, data, version, changeLogger, options)
-      .then(function (result) {
-        if (!result) {
-          return Promise.resolve(result);
-        }
-
-        return removeAfterCreateH(result.getMetaClass()).then(function () {
-          return updateCachedItem(result.getClassName(), result.getItemId(), result.base)
-            .then(function () {
-              return Promise.resolve(result);
-            });
-        });
-      });
+    return dataRepo.saveItem(classname, id, data, version, changeLogger, options);
   };
 
   /**
@@ -516,13 +240,7 @@ function CachedDataRepository(options) {
    * @param {{uid: String}} options
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    return dataRepo.deleteItem(classname, id, changeLogger, options)
-      .then(function () {
-        return removeCachedListsAfterDelete(classname, id);
-      })
-      .then(function () {
-        return cache.set(cachingKey(classname, id), null);
-      });
+    return dataRepo.deleteItem(classname, id, changeLogger, options);
   };
 
   /**
