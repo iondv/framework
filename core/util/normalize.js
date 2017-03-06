@@ -64,6 +64,8 @@ function normalize(data, dateCallback, options, processed) {
     item = {};
 
     item.className = data.getMetaClass().getCanonicalName();
+    item._creator = data.getCreator();
+    item._editor = data.getEditor();
     processed[data.getClassName() + '@' + data.getItemId()] = item;
 
     for (nm in props) {

@@ -9,35 +9,23 @@ var IonLogger = require('core/impl/log/IonLogger');
 
 var sysLog = new IonLogger({});
 
-var src = '../in';
-var ns = null;
+var params = {
+  src: '../in',
+  ns: null,
+  ignoreIntegrityCheck: true
+};
 
-var setSrc = false;
-var setNamespace = false;
-var setIgnoreIntegrityCheck =  true; // Игнорирование контроля целостности. Сделано всегда по умолчанию true, так как система контролирует целостнось данных
-// и атрибуты с значеиями ссылок, которые не находит в БД. А так как ссылаемые объекты могут быть импортированы позже ссылающихся.
-// Соответственно сама ссылка уже будет уничтожена. Если нужно отключить можно переработать параметр ignoreIntegrityCheck
-// на integrityCheck и ставить false.
+var setParam = false;
 
 process.argv.forEach(function (val) {
-  if (val === '--src') {
-    setSrc = true;
-    setNamespace = false;
-    return;
-  } else if (val === '--ns') {
-    setNamespace = true;
-    setSrc = false;
-    return;
-  } else if (setSrc) {
-    src = val;
-  } else if (setNamespace) {
-    ns = val;
+  if (val.substr(0, 2) === '--') {
+    setParam = val.substr(2);
   } else if (val === '--ignoreIntegrityCheck') {
     console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
-    setIgnoreIntegrityCheck = true;
+    params.ignoreIntegrityCheck = true;
+  } else if (setParam) {
+    params[setParam] = val;
   }
-  setSrc = false;
-  setNamespace = false;
 });
 
 var scope = null;
@@ -52,8 +40,11 @@ di('app', config.di,
   // Импорт
   function (scp) {
     scope = scp;
-    return worker(src, scope.dbSync, scope.metaRepo, scope.dataRepo, {namespace: ns,
-      ignoreIntegrityCheck: setIgnoreIntegrityCheck});
+    return worker(params.src, scope.dbSync, scope.metaRepo, scope.dataRepo,
+      {
+        namespace: params.ns,
+        ignoreIntegrityCheck: params.ignoreIntegrityCheck
+      });
   }
 ).then(function () {
   return scope.dataSources.disconnect();

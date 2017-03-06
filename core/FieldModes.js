@@ -13,6 +13,7 @@ module.exports = {
   REF_LINK: 1,
   REF_INFO: 2,
   REF_HIERARCHY: 3,
+  REF_SPECIFY: 4,
 
   GEO_MAP: 0,
   GEO_LOCATOR: 1,

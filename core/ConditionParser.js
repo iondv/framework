@@ -12,14 +12,14 @@ const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
 
-// jshint maxstatements: 40, maxcomplexity: 30
+// jshint maxstatements: 40, maxcomplexity: 40
 /**
  * @param {*} v
  * @param {Item} [context]
  * @returns {*}
  */
 function toScalar(v, context) {
-  var result = null;
+  var result = v;
   var p;
   if (Array.isArray(v) && v.length) {
     result = v.length ? v[0] : null;
@@ -52,7 +52,7 @@ function produceContainsFilter(rcm, condition, context) {
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
       return {$regex: toScalar(condition.value, context)};
     } else {
-      throw new Error('Условие CONTAINS неприменимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
     throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
@@ -151,28 +151,10 @@ function ConditionParser(condition, rcm, context) {
       result = {};
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
-          tmp = rcm.getPropertyMeta(condition.property);
-          if (tmp.type === PropertyTypes.COLLECTION) {
-            result[condition.property] = {$empty: true};
-          } else {
-            result.$or = [{}, {}, {}];
-            result.$or[0][condition.property] = {$eq: null};
-            result.$or[1][condition.property] = {$eq: ''};
-            result.$or[2][condition.property] = {$exists: false};
-            return result;
-          }
+          result[condition.property] = {$empty: true};
         } break;
         case ConditionTypes.NOT_EMPTY: {
-          tmp = rcm.getPropertyMeta(condition.property);
-          if (tmp.type === PropertyTypes.COLLECTION) {
-            result[condition.property] = {$empty: false};
-          } else {
-            result.$and = [{}, {}, {}];
-            result.$and[0][condition.property] = {$ne: null};
-            result.$and[1][condition.property] = {$ne: ''};
-            result.$and[2][condition.property] = {$exists: true};
-            return result;
-          }
+          result[condition.property] = {$empty: false};
         } break;
         case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context);
           break;
@@ -188,7 +170,10 @@ function ConditionParser(condition, rcm, context) {
           result[condition.property] = produceFilter(condition, '$lte', rcm, context); break;
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
-        case ConditionTypes.LIKE: result[condition.property] = {$regex: toScalar(condition.value, context)}; break;
+        case ConditionTypes.LIKE: result[condition.property] = {
+            $regex: String(toScalar(condition.value, context)).
+              replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+')
+          }; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
       if (result.hasOwnProperty(condition.property)) {
@@ -198,11 +183,29 @@ function ConditionParser(condition, rcm, context) {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
         tmp = produceArray(condition.nestedConditions, rcm, context);
         if (tmp) {
-          result = {};
-          switch (condition.operation) {
-            case OperationTypes.AND: result.$and = tmp; break;
-            case OperationTypes.OR: result.$or = tmp; break;
-            case OperationTypes.NOT: result.$not = {$and: tmp}; break;
+          if (tmp.length > 1) {
+            result = {};
+            switch (condition.operation) {
+              case OperationTypes.AND:
+                result.$and = tmp;
+                break;
+              case OperationTypes.OR:
+                result.$or = tmp;
+                break;
+              case OperationTypes.NOT:
+                result.$not = {$and: tmp};
+                break;
+            }
+          } else {
+            switch (condition.operation) {
+              case OperationTypes.AND:
+              case OperationTypes.OR:
+                result = tmp[0];
+                break;
+              case OperationTypes.NOT:
+                result = {$not: tmp[0]};
+                break;
+            }
           }
           return result;
         }

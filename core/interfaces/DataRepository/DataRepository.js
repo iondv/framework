@@ -53,6 +53,21 @@ function DataRepository() {
   };
 
   /**
+   * @param {String | Item} obj
+   * @param {{}} [options]
+   * @param {{}} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {{}} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {Number} [options.nestingDepth]
+   * @returns {Promise}
+   */
+  this.getIterator = function (obj, options) {
+    return this._getIterator(obj, options || {});
+  };
+
+  /**
    * @param {String} className
    * @param {{}} [options]
    * @param {{}} [options.expressions]
@@ -62,6 +77,18 @@ function DataRepository() {
    */
   this.aggregate = function (className, options) {
     return this._aggregate(className, options || {});
+  };
+
+  /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {{}} [options.filter]
+   * @param {String[]} [options.attributes]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this.rawData = function (className, options) {
+    return this._rawData(className, options);
   };
 
   /**

@@ -72,25 +72,26 @@ function ChangeLogger() {
   };
 
   /**
-   *
+   * @param {String} className
+   * @param {String} id
    * @param {Date} since
    * @param {Date} till
    * @returns {Promise}
    */
-  this.getChanges = function (since, till) {
+  this.getChanges = function (className, id, since, till) {
     if (
-      Object.prototype.toString.call(since) !== '[object Date]' ||
+      since && Object.prototype.toString.call(since) !== '[object Date]' ||
       till && Object.prototype.toString.call(till) !== '[object Date]'
     ) {
       throw new Error('Интервал должен быть задан объектами класса Date!');
     }
 
-    if (till && since.getTime() > till.getTime()) {
+    if (since && till && since.getTime() > till.getTime()) {
       var tmp = till;
       till = since;
       since = tmp;
     }
-    return this._getChanges(since, till);
+    return this._getChanges(className, id, since, till);
   };
 }
 

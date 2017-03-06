@@ -1,5 +1,5 @@
 {
-  "name": "ION",
+  "name": "ion-web-ui",
   "version": "1.0.0",
   "moduleType": [
     "node"
@@ -12,5 +12,7 @@
     "test",
     "tests"
   ],
-  "dependencies": {}
+  "dependencies": {
+    "bootstrap": "3.3.5"
+  }
 }

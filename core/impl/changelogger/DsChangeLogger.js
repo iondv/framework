@@ -57,16 +57,22 @@ function DsChangeLogger(ds, authCallback) {
   };
 
   /**
+   * @param {String} className
+   * @param {String} id
    * @param {Date} since
    * @param {Date} till
    * @return {Promise}
    * @private
    */
-  this._getChanges = function (since, till) {
+  this._getChanges = function (className, id, since, till) {
     return new Promise(function (resolve, reject) {
-      var opts = {timestamp: {$gte: since.toISOString()}};
+      var opts = {$and: [{className: className},
+                          {id: id}]};
+      if (since) {
+        opts.$and.push({timestamp: {$gte: since.toISOString()}});
+      }
       if (till) {
-        opts = {$and: [opts, {timestamp: {$lt: till.toISOString()}}]};
+        opts.$and.push({timestamp: {$lt: till.toISOString()}});
       }
       _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
         function (changes) {
