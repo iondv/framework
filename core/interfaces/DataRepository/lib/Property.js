@@ -8,7 +8,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const equal = require('core/equal');
 const scheduleToString = require('core/util/schedule').scheduleToString;
 
-// jshint maxstatements: 30, maxcomplexity: 20
+// jshint maxstatements: 40, maxcomplexity: 20
 
 /**
  * @param {Item} item
@@ -17,7 +17,6 @@ const scheduleToString = require('core/util/schedule').scheduleToString;
  * @constructor
  */
 function Property(item, propertyMeta, name) {
-  var _this = this;
 
   this.name = name;
   /**
@@ -82,19 +81,19 @@ function Property(item, propertyMeta, name) {
     return equal(this.getValue(), key);
   };
 
-  this.getDisplayValue = function (dateCallback) {
+  this.getDisplayValue = function (dateCallback, circular) {
     var i;
+    circular  = typeof circular !== 'undefined' && circular !== null ? circular : {};
     if (this.getType() === PropertyTypes.COLLECTION) {
       var result = '';
       var agregates = this.evaluate();
       if (Array.isArray(agregates)) {
         for (i = 0; i < agregates.length; i++) {
-          agregates[i].toString();
           if (typeof this.meta.semanticGetter === 'function') {
             result = result + (result ? ' ' : '') +
-              this.meta.semanticGetter.call(agregates[i], dateCallback);
+              this.meta.semanticGetter.call(agregates[i], dateCallback, circular);
           } else {
-            result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback);
+            result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback, circular);
           }
         }
       }
@@ -117,9 +116,9 @@ function Property(item, propertyMeta, name) {
       var agr = this.evaluate();
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.call(agr, dateCallback);
+          return this.meta.semanticGetter.call(agr, dateCallback, circular);
         }
-        return agr.toString(null, dateCallback);
+        return agr.toString(null, dateCallback, circular);
       } else {
         return '';
       }

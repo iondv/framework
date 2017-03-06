@@ -542,3 +542,112 @@ function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
 }
 
 module.exports.textSearchFilter = searchFilter;
+
+/**
+ * @param {Item} item
+ * @param {ResourceStorage} fileStorage
+ * @param {ResourceStorage} imageStorage
+ * @returns {Promise}
+ */
+function loadFiles(item, fileStorage, imageStorage) {
+  var pm;
+  var fids = [];
+  var iids = [];
+  var attrs = {};
+  for (var nm in item.base) {
+    if (item.base.hasOwnProperty(nm) && item.base[nm]) {
+      pm = item.classMeta.getPropertyMeta(nm);
+      if (pm) {
+        if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+          fids.push(item.base[nm]);
+          if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
+            attrs['f_' + item.base[nm]] = [];
+          }
+          attrs['f_' + item.base[nm]].push(nm);
+          if (pm.type === PropertyTypes.FILE) {
+            fids.push(item.base[nm]);
+          } else if (pm.type === PropertyTypes.IMAGE) {
+            iids.push(item.base[nm]);
+          }
+        } else if (pm.type === PropertyTypes.FILE_LIST) {
+          if (Array.isArray(item.base[nm])) {
+            for (var i = 0; i < item.base[nm].length; i++) {
+              fids.push(item.base[nm][i]);
+              if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
+                attrs['f_' + item.base[nm][i]] = [];
+              }
+              attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+            }
+          }
+        }
+      }
+    }
+  }
+  if (fids.length === 0 && iids.length === 0) {
+    return Promise.resolve(item);
+  }
+
+  var loaders = [];
+  loaders.push(fileStorage.fetch(fids));
+  loaders.push(imageStorage.fetch(iids));
+
+  return Promise.all(loaders)
+    .then(function (files) {
+        var tmp, i, j, k;
+        for (k = 0; k < files.length; k++) {
+          for (i = 0; i < files[k].length; i++) {
+            if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
+              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
+                tmp = attrs['f_' + files[k][i].id][j];
+                if (typeof tmp === 'object') {
+                  if (!Array.isArray(item.files[tmp.attr])) {
+                    item.files[tmp.attr] = [];
+                  }
+                  item.files[tmp.attr][tmp.index] = files[k][i];
+                } else if (typeof tmp === 'string') {
+                  item.files[tmp] = files[k][i];
+                }
+              }
+            }
+          }
+        }
+        return Promise.resolve(item);
+      }
+    );
+}
+
+module.exports.loadFiles = loadFiles;
+
+/**
+ * @param {Item} item
+ * @param {Boolean} [skip]
+ * @returns {Promise}
+ */
+function calcProperties(item, skip) {
+  if (!item || skip) {
+    return Promise.resolve(item);
+  }
+  var calculations = [];
+  var calcNames = [];
+  var props = item.getMetaClass().getPropertyMetas();
+  for (var i = 0; i < props.length; i++) {
+    if (props[i]._formula) {
+      calculations.push(props[i]._formula.apply(item, [{}]));
+      calcNames.push(props[i].name);
+    }
+  }
+
+  if (calculations.length === 0) {
+    return Promise.resolve(item);
+  }
+
+  return Promise.all(calculations).
+  then(function (results) {
+    for (var i = 0; i < calcNames.length; i++) {
+      item.calculated[calcNames[i]] = results[i];
+    }
+    return Promise.resolve(item);
+  });
+}
+
+module.exports.calcProperties = calcProperties;
