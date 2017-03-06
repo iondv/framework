@@ -31,11 +31,7 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "server": {
-                    "socketOptions":{
-                      "keepAlive": 1
-                    }
-                  }
+                  "keepAlive": 1
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",

@@ -59,11 +59,10 @@ function MongoDs(config) {
           }
           try {
             _this.db = db;
-            _this.db.open(function () {
-              _this.busy = false;
-              _this.isOpen = true;
-              log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
-              _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
+            _this.busy = false;
+            _this.isOpen = true;
+            log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
+            _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                 .then(
                   function () {
                     return _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true});
@@ -75,7 +74,6 @@ function MongoDs(config) {
                     _this.db.emit('isOpen', _this.db);
                   }
                 ).catch(reject);
-            });
           } catch (e) {
             _this.busy = false;
             _this.isOpen = false;
@@ -1015,13 +1013,24 @@ function MongoDs(config) {
     r.batchSize(options.batchSize || options.count || 1);
 
     if (options.countTotal) {
-      r.count(false, function (err, amount) {
-        if (err) {
-          r.close();
-          return reject(err);
-        }
-        resolve(r, amount);
-      });
+      if (aggregate) {
+        r.next(function (err, d) {
+          var amount = null;
+          if (d && d.__total) {
+            amount = d.__total;
+          }
+          r.rewind();
+          resolve(r, amount);
+        });
+      } else {
+        r.count(false, function (err, amount) {
+          if (err) {
+            r.close();
+            return reject(err);
+          }
+          resolve(r, amount);
+        });
+      }
     } else {
       resolve(r);
     }
@@ -1119,14 +1128,22 @@ function MongoDs(config) {
   function DsIterator(cursor, amount) {
     this._next = function () {
       return new Promise(function (resolve, reject) {
-        cursor.next(function (err, r) {
+        cursor.hasNext(function (err, r) {
           if (err) {
             return reject(err);
           }
-          if (r) {
-            return resolve(mergeGeoJSON(r));
+          if (!r) {
+            return resolve(null);
           }
-          resolve(null);
+          cursor.next(function (err, r) {
+            if (err) {
+              return reject(err);
+            }
+            if (r) {
+              return resolve(mergeGeoJSON(r));
+            }
+            resolve(null);
+          });
         });
       });
     };

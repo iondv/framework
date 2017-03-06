@@ -240,7 +240,7 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return function (collection) {
-      function createIndexPromise(props, unique, nullable) {
+      function createIndexPromise(props, unique, nullable, type) {
         return new Promise(
           function (resolve) {
             var opts, i;
@@ -258,7 +258,7 @@ function MongoDbSync(options) {
             } else if (Array.isArray(props)) {
               for (i = 0; i < props.length; i++) {
                 if (props[i]) {
-                  indexDef[props[i]] = 1;
+                  indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
                 }
               }
             }
@@ -324,7 +324,12 @@ function MongoDbSync(options) {
             cm.properties[i].unique
           ) {
             promises.push(
-              createIndexPromise(cm.properties[i].name, cm.properties[i].unique, cm.properties[i].nullable)
+              createIndexPromise(
+                cm.properties[i].name,
+                cm.properties[i].unique,
+                cm.properties[i].nullable,
+                cm.properties[i].type
+              )
             );
           }
 
