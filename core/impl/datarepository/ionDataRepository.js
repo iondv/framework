@@ -316,7 +316,6 @@ function IonDataRepository(options) {
     attrs = {};
     promises = [];
     loaded = loaded || {};
-
     try {
       pcl = {};
       for (i = 0; i < src.length; i++) {
@@ -342,7 +341,7 @@ function IonDataRepository(options) {
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
                   prepareRefEnrichment(item, props[nm], attrs, loaded);
-                } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
+                } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
                   prepareColEnrichment(item, props[nm], attrs, loaded);
                 }
               }
