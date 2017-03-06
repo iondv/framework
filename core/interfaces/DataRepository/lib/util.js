@@ -424,11 +424,24 @@ function spFilter(cm, pm, or, svre, prefix) {
   }
 }
 
+/**
+ * @param {String} search
+ * @param {Boolean} [asString]
+ * @returns {RegExp | String}
+ */
+function createSearchRegexp(search, asString) {
+  var result = search.replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+');
+  if (asString) {
+    return result;
+  }
+  return new RegExp(result);
+}
+
 function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
   var cond, aname, floatv, datev;
 
   if (pm.selectionProvider) {
-    spFilter(cm, pm, or, new RegExp(sv.replace(/\s+/, '\\s+')), prefix);
+    spFilter(cm, pm, or, createSearchRegexp(sv), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
       searchFilter(pm._refClass, or, pm._refClass.getSemanticAttrs(), sv, lang, false,
@@ -456,7 +469,7 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          cond[aname] = {$regex: sv.replace(/\s+/, '\\s+'), $options: 'i'};
+          cond[aname] = {$regex: createSearchRegexp(sv, true), $options: 'i'};
           or.push(cond);
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
