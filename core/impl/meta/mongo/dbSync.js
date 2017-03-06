@@ -6,6 +6,7 @@
 var DbSync = require('core/interfaces/DbSync');
 
 const AUTOINC_COLL = '__autoinc';
+const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
 
 /* jshint maxstatements: 30, maxcomplexity: 30 */
@@ -145,20 +146,17 @@ function MongoDbSync(options) {
     });
   }
 
-  function getAutoIncColl() {
+  function getSysColl(name) {
     return new Promise(function (resolve, reject) {
-      db().collection(AUTOINC_COLL, {strict: true}, function (err, collection) {
+      db().collection(name, {strict: true}, function (err, collection) {
         if (collection) {
           return resolve(collection);
         }
-        db().createCollection(AUTOINC_COLL).then(
-          function (autoinc) {
-            return new Promise(function (rs, rj) {
-              autoinc.createIndex({type: 1}, {unique: true}, function (err) {
-                if (err) {
-                  return rj(err);
-                }
-                rs(autoinc);
+        db().createCollection(name).then(
+          function (collection) {
+            return new Promise(function (resolve, reject) {
+              collection.createIndex({__type: 1}, {unique: true}, function (err) {
+                return err ? reject(err) : resolve(collection);
               });
             });
           }
@@ -200,7 +198,8 @@ function MongoDbSync(options) {
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
         then(function () {return getMetaTable('user_type');}).
-        then(function () {return getAutoIncColl();}).
+        then(function () {return getSysColl(AUTOINC_COLL);}).
+        then(function () {return getSysColl(GEOFLD_COLL);}).
         then(resolve).
         catch(reject);
     });
@@ -236,12 +235,12 @@ function MongoDbSync(options) {
    * @param {{}} cm
    * @private
    */
-  this._addIndexes = function (cm) {
+  this._addIndexes = function (cm, rcm, namespace) {
     /**
      * @param {Collection} collection
      */
     return function (collection) {
-      function createIndexPromise(props, unique, nullable) {
+      function createIndexPromise(props, unique, nullable, type) {
         return new Promise(
           function (resolve) {
             var opts, i;
@@ -259,7 +258,7 @@ function MongoDbSync(options) {
             } else if (Array.isArray(props)) {
               for (i = 0; i < props.length; i++) {
                 if (props[i]) {
-                  indexDef[props[i]] = 1;
+                  indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
                 }
               }
             }
@@ -288,6 +287,27 @@ function MongoDbSync(options) {
         });
       }
 
+      function registerGeoField(property) {
+        return getSysColl(GEOFLD_COLL)
+          .then(function (coll) {
+            return new Promise(function (resolve, reject) {
+              var cn = (namespace ? namespace + '_' : '') + rcm.name;
+              var d = {};
+              d[property.name] = true;
+              coll.updateOne(
+                {
+                  __type: cn
+                },
+                {$set: d},
+                {upsert: true},
+                function (err) {
+                  return err ? reject(err) : resolve();
+                }
+              );
+            });
+          });
+      }
+
       return new Promise(function (resolve, reject) {
         var i, j, promises, tmp;
         promises = [];
@@ -304,7 +324,12 @@ function MongoDbSync(options) {
             cm.properties[i].unique
           ) {
             promises.push(
-              createIndexPromise(cm.properties[i].name, cm.properties[i].unique, cm.properties[i].nullable)
+              createIndexPromise(
+                cm.properties[i].name,
+                cm.properties[i].unique,
+                cm.properties[i].nullable,
+                cm.properties[i].type
+              )
             );
           }
 
@@ -318,6 +343,10 @@ function MongoDbSync(options) {
             )
           ) {
             fullText.push(cm.properties[i].name);
+          }
+
+          if (cm.properties[i].type === PropertyTypes.GEO) {
+            promises.push(registerGeoField(cm.properties[i]));
           }
         }
 
@@ -362,8 +391,8 @@ function MongoDbSync(options) {
         }
 
         if (Object.keys(inc).length > 0) {
-          getAutoIncColl().then(function (autoinc) {
-            autoinc.find({type: cn}).limit(1).next(function (err, c) {
+          getSysColl(AUTOINC_COLL).then(function (autoinc) {
+            autoinc.find({__type: cn}).limit(1).next(function (err, c) {
               if (err) {
                 return reject(err);
               }
@@ -376,7 +405,7 @@ function MongoDbSync(options) {
                 }
               }
 
-              autoinc.updateOne({type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
+              autoinc.updateOne({__type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
                 if (err) {
                   return reject(err);
                 }
@@ -407,7 +436,7 @@ function MongoDbSync(options) {
           }
           _this._createCollection(cm, namespace).
           then(_this._addAutoInc(classMeta)).
-          then(_this._addIndexes(classMeta)).
+          then(_this._addIndexes(classMeta, cm, namespace)).
           then(function () {
             delete classMeta._id;
             log.log('Регистрируем класс ' + classMeta.name);

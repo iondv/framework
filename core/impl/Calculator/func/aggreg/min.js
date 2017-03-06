@@ -3,6 +3,7 @@
  */
 'use strict';
 const c = require('./oper');
+const Item = require('core/interfaces/DataRepository').Item;
 
 /**
  * @param {DataRepository} dataRepo
@@ -15,13 +16,16 @@ module.exports = c(
     }
     var result = Number.POSITIVE_INFINITY;
     for (var i = 0; i < col.length; i++) {
-      if (cond) {
-        if (!cond.apply(col[i])) {
-          continue;
+      if (col[i] !== null) {
+        if (cond) {
+          if (!cond.apply(col[i])) {
+            continue;
+          }
         }
-      }
-      if (col[i].get(attr) < result) {
-        result = col[i].get(attr);
+        let v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
+        if (v < result) {
+          result = v;
+        }
       }
     }
     return result;

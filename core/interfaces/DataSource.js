@@ -75,6 +75,8 @@ function DataSource() {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
+   * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this.fetch = function (type, options) {
@@ -100,11 +102,10 @@ function DataSource() {
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Boolean} [options.countTotal]
-   * @param {Function} cb
    * @returns {Promise}
    */
-  this.forEach = function (type, options, cb) {
-    return this._forEach(type, options, cb);
+  this.iterator = function (type, options) {
+    return this._iterator(type, options);
   };
 
   /**
@@ -114,6 +115,7 @@ function DataSource() {
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
    * @param {String} [options.to]
+   * @param {String} [options.append]
    * @returns {Promise}
    */
   this.aggregate = function (type, options) {
