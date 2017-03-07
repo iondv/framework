@@ -57,7 +57,7 @@ di('app', config.di,
       throw new Error('Указанная директория не содержит необходимых для импорта .DBF-файлов формата КЛАДР либо ФИАС.');
     }
 
-    function sequenceReadFiles(files, index, chain) {
+    function sequenceReadFiles(files, index) {
       console.log('Читается файл ' + files[index]);
       var counter = 0;
 
@@ -77,31 +77,25 @@ di('app', config.di,
       stream.on('data', function (record) {
         if (record) {
           stream.pause();
-          if (chain) {
-            chain = chain.then(importRecord(record));
-          } else {
-            chain = importRecord(record)();
-          }
-          chain = chain.then(function (result) {
+          importRecord(record).then(function (result) {
             stream.resume();
             if (result) {
               counter++;
             }
             return Promise.resolve();
+          }).catch(function (err) {
+            console.error(err);
+            stream.resume();
           });
         }
       });
       stream.on('end', function () {
-        chain = chain.then(function () {
-          console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
-          counter = 0;
-          if (index < files.length - 1) {
-            sequenceReadFiles(files, index + 1, chain);
-          } else {
-            resolve();
-          }
-          return Promise.resolve();
-        });
+        console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
+        if (index < files.length - 1) {
+          sequenceReadFiles(files, index + 1);
+        } else {
+          resolve();
+        }
       });
     }
   });
@@ -125,29 +119,27 @@ di('app', config.di,
 });
 
 function importRecord(record) {
-  return function () {
-    var fias = record.hasOwnProperty('NORMDOC');
-    var className = getRecordClass(record, fias);
-    if (
-      className &&
-      ((fias && record.ACTSTATUS === '1') || (!fias && record.CODE.substring(record.CODE.length - 2) === '00')) &&
-      (!regionFilter || record.CODE.substring(0, 2) === regionFilter)
-    ) {
-      return scope.dataRepo.saveItem(
-        className,
-        null,
-        getData(record, className, fias),
-        null,
-        null,
-        {
-          skipResult: true,
-          nestingDepth: 0,
-          autoAssign: true,
-          ignoreIntegrityCheck: true
-        });
-    }
-    return Promise.resolve();
-  };
+  var fias = record.hasOwnProperty('NORMDOC');
+  var className = getRecordClass(record, fias);
+  if (
+    className &&
+    ((fias && record.ACTSTATUS === '1') || (!fias && record.CODE.substring(record.CODE.length - 2) === '00')) &&
+    (!regionFilter || record.CODE.substring(0, 2) === regionFilter)
+  ) {
+    return scope.dataRepo.saveItem(
+      className,
+      null,
+      getData(record, className, fias),
+      null,
+      null,
+      {
+        skipResult: true,
+        nestingDepth: 0,
+        autoAssign: true,
+        ignoreIntegrityCheck: true
+      });
+  }
+  return Promise.resolve();
 }
 
 function checkContainers(className, dataRepo) {

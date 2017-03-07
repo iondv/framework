@@ -441,7 +441,7 @@ function MongoDs(config) {
                         if (upsert) {
                           return adjustAutoInc(type, r);
                         }
-                        return resolve(r);
+                        return Promise.resolve(r);
                       }).then(resolve).catch(reject);
                     });
                 } else {
