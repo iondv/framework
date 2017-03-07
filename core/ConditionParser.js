@@ -12,7 +12,7 @@ const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
 
-// jshint maxstatements: 40, maxcomplexity: 30
+// jshint maxstatements: 40, maxcomplexity: 40
 /**
  * @param {*} v
  * @param {Item} [context]
@@ -170,7 +170,10 @@ function ConditionParser(condition, rcm, context) {
           result[condition.property] = produceFilter(condition, '$lte', rcm, context); break;
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
-        case ConditionTypes.LIKE: result[condition.property] = {$regex: toScalar(condition.value, context)}; break;
+        case ConditionTypes.LIKE: result[condition.property] = {
+            $regex: String(toScalar(condition.value, context)).
+              replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+')
+          }; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
       if (result.hasOwnProperty(condition.property)) {
