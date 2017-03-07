@@ -83,12 +83,11 @@ function Property(item, propertyMeta, name) {
   };
 
   this.getDisplayValue = function (dateCallback) {
-    var i;
     if (this.getType() === PropertyTypes.COLLECTION) {
-      var result = '';
-      var agregates = this.evaluate();
+      let result = '';
+      let agregates = this.evaluate();
       if (Array.isArray(agregates)) {
-        for (i = 0; i < agregates.length; i++) {
+        for (let i = 0; i < agregates.length; i++) {
           agregates[i].toString();
           if (typeof this.meta.semanticGetter === 'function') {
             result = result + (result ? ' ' : '') +
@@ -102,10 +101,15 @@ function Property(item, propertyMeta, name) {
     }
 
     var v = this.getValue();
+
+    if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
+      v = typeof dateCallback === 'function' ? dateCallback.call(null, v) : v.toDateString();
+    }
+
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
       if (Array.isArray(selection)) {
-        for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        for (let i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
             return selection[i].value;
           }
@@ -114,7 +118,7 @@ function Property(item, propertyMeta, name) {
     }
 
     if (this.getType() === PropertyTypes.REFERENCE) {
-      var agr = this.evaluate();
+      let agr = this.evaluate();
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
           return this.meta.semanticGetter.call(agr, dateCallback);
