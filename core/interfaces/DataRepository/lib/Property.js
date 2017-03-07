@@ -145,19 +145,21 @@ function Property(item, propertyMeta, name) {
         }
       } else if (p.getType() === PropertyTypes.COLLECTION) {
         let ris = p.evaluate();
-        let result = [];
-        for (let i = 0; i < ris.length; i++) {
-          p = ris[i].property(prop.getName().substr(pos + 1));
-          if (p) {
-            let v = evalProperty(ris[i], p);
-            if (Array.isArray(v)) {
-              Array.prototype.push.apply(result, v);
-            } else {
-              result.push(v);
+        if (Array.isArray(ris)) {
+          let result = [];
+          for (let i = 0; i < ris.length; i++) {
+            p = ris[i].property(prop.getName().substr(pos + 1));
+            if (p) {
+              let v = evalProperty(ris[i], p);
+              if (Array.isArray(v)) {
+                Array.prototype.push.apply(result, v);
+              } else {
+                result.push(v);
+              }
             }
           }
+          return result;
         }
-        return result;
       }
       return null;
     }
