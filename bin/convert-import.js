@@ -75,7 +75,7 @@ function importApplications(appPathItem) {
         function (res) {
           console.info('Считали мету, импортируем данные приложения', appPathItem);
           let importedData = {meta: res, parsed: {}, verify: {},
-            result: {}, pathData: pathToData};  // Сформировали объект импорта
+            result: {}, pathData: pathToData, config: config};  // Сформировали объект импорта
           if (importedBeforeReference) {
             importedData.reference = importedBeforeReference;
           }
