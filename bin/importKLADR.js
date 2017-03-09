@@ -10,6 +10,8 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const encoding = require('encoding');
 const fs = require('fs');
+const path = require('path');
+const Writable = require('stream').Writable;
 
 const classNames = {
   STREET: 'STREET@develop-and-test',
@@ -36,69 +38,68 @@ for (var i = 0; i < process.argv.length; i++) {
   }
 }
 
-di('app', config.di,
-  {sysLog: sysLog},
-  null,
-  ['auth', 'rtEvents', 'sessionHandler']
-).then(function (s) {
-
-  return new Promise (function (resolve) {
-    scope = s;
-    var fls = [];
-    var promises = null;
-    fs.readdirSync(sourcePath).forEach(function (file) {
-      if (file === 'KLADR.DBF' || file === 'STREET.DBF' || file === 'ADDROBJ.DBF') {
-        fls.push(sourcePath + '/' + file);
-      }
-    });
-    if (fls.length > 0) {
-      sequenceReadFiles(fls, 0, promises);
-    } else {
-      throw new Error('Указанная директория не содержит необходимых для импорта .DBF-файлов формата КЛАДР либо ФИАС.');
-    }
-
-    function sequenceReadFiles(files, index) {
-      console.log('Читается файл ' + files[index]);
+function importFile(fn) {
+  return function () {
+    return new Promise(function (resolve) {
+      console.log('Читается файл ' + fn);
       var counter = 0;
 
-      var parser = new DBF(files[index], {parseTypes: false});
+      var parser = new DBF(fn, {parseTypes: false});
       for (var i = 0; i < parser.header.fields.length; i++) {
         switch (parser.header.fields[i].name) {
           case 'NAME':
           case 'SOCR':
           case 'FORMALNAME':
-          case 'SHORTNAME': {
-            parser.header.fields[i].raw = true;
-          } break;
+          case 'SHORTNAME': parser.header.fields[i].raw = true; break;
         }
       }
-      var stream = parser.stream;
+      parser.stream.pipe(new Writable({
+        write: function (record, encoding, cb) {
+          importRecord(record)
+            .then(
+              function (result) {
+                counter++;
+                cb();
+              }
+            )
+            .catch(
+              function (err) {
+                console.error(err);
+                cb();
+              }
+            );
+        },
+        objectMode: true
+      })).on('finish', function () {
+        console.log(`Из файла ${fn} импортировано ${counter} записей`);
+        resolve();
+      });
+    });
+  };
+}
 
-      stream.on('data', function (record) {
-        if (record) {
-          stream.pause();
-          importRecord(record).then(function (result) {
-            stream.resume();
-            if (result) {
-              counter++;
-            }
-            return Promise.resolve();
-          }).catch(function (err) {
-            console.error(err);
-            stream.resume();
-          });
-        }
-      });
-      stream.on('end', function () {
-        console.log('Из файла ' + files[index] + ' импортировано ' + counter + ' записей');
-        if (index < files.length - 1) {
-          sequenceReadFiles(files, index + 1);
-        } else {
-          resolve();
-        }
-      });
+di('app', config.di,
+  {sysLog: sysLog},
+  null,
+  ['auth', 'rtEvents', 'sessionHandler']
+).then(function (s) {
+  scope = s;
+  var fls = [];
+  var p;
+  fs.readdirSync(sourcePath).forEach(function (file) {
+    if (file === 'KLADR.DBF' || file === 'STREET.DBF' || file === 'ADDROBJ.DBF') {
+      if (p) {
+        p = p.then(importFile(path.join(sourcePath, file)));
+      } else {
+        p = importFile(path.join(sourcePath, file))();
+      }
     }
   });
+  if (p) {
+    return p;
+  } else {
+    return Promise.reject(new Error('Указанная директория не содержит необходимых для импорта .DBF-файлов формата КЛАДР либо ФИАС.'));
+  }
 }).then(function () {
   console.log('Проверка ссылочной целостности адресных элементов');
   return checkContainers(classNames.KLADR, scope.dataRepo, scope.metaRepo);
@@ -123,7 +124,7 @@ function importRecord(record) {
   var className = getRecordClass(record, fias);
   if (
     className &&
-    ((fias && record.ACTSTATUS === '1') || (!fias && record.CODE.substring(record.CODE.length - 2) === '00')) &&
+    (fias && record.ACTSTATUS === '1' || !fias && record.CODE.substring(record.CODE.length - 2) === '00') &&
     (!regionFilter || record.CODE.substring(0, 2) === regionFilter)
   ) {
     return scope.dataRepo.saveItem(
@@ -137,7 +138,8 @@ function importRecord(record) {
         nestingDepth: 0,
         autoAssign: true,
         ignoreIntegrityCheck: true
-      });
+      }
+    );
   }
   return Promise.resolve();
 }
@@ -151,7 +153,7 @@ function checkContainers(className, dataRepo) {
     nestingDepth: 0
   }).then(function (result) {
     for (var i = 0; i < result.length; i++) {
-      console.error('Запись ' + result[i].base.CODE + ' ссылается на несуществующий контейнер ' + result[i].base.CONTAINER);
+      console.error(`Запись ${result[i].base.CODE} ссылается на несуществующий контейнер ${result[i].base.CONTAINER}`);
     }
     return result;
   });
