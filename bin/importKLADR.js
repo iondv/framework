@@ -41,10 +41,13 @@ for (var i = 0; i < process.argv.length; i++) {
 function importFile(fn) {
   return function () {
     return new Promise(function (resolve) {
-      console.log('Читается файл ' + fn);
+      var start = new Date();
       var counter = 0;
-
+      var gCounter = 0;
       var parser = new DBF(fn, {parseTypes: false});
+
+      console.log(`Читается файл ${fn}. Он содержит ${parser.header.numberOfRecords} записей.`);
+
       for (var i = 0; i < parser.header.fields.length; i++) {
         switch (parser.header.fields[i].name) {
           case 'NAME':
@@ -53,25 +56,30 @@ function importFile(fn) {
           case 'SHORTNAME': parser.header.fields[i].raw = true; break;
         }
       }
+
       parser.stream.pipe(new Writable({
         write: function (record, encoding, cb) {
           importRecord(record)
             .then(
               function (result) {
-                counter++;
+                if (result) {
+                  counter++;
+                }
+                gCounter++;
+                process.stdout.write('\rПрогресс импорта: ' + Math.round(gCounter / parser.header.numberOfRecords * 100) + '%');
                 cb();
               }
             )
             .catch(
               function (err) {
-                console.error(err);
+                console.error('\r' + err);
                 cb();
               }
             );
         },
         objectMode: true
       })).on('finish', function () {
-        console.log(`Из файла ${fn} импортировано ${counter} записей`);
+        console.log(`\nИз файла ${fn} импортировано ${counter} записей. Затрачено ${(new Date() - start) / 1000} секунд.`);
         resolve();
       });
     });
@@ -84,7 +92,6 @@ di('app', config.di,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(function (s) {
   scope = s;
-  var fls = [];
   var p;
   fs.readdirSync(sourcePath).forEach(function (file) {
     if (file === 'KLADR.DBF' || file === 'STREET.DBF' || file === 'ADDROBJ.DBF') {
