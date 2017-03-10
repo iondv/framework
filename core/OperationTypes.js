@@ -11,5 +11,7 @@ module.exports = {
   MAX: 4,
   AVG: 5,
   SUM: 6,
-  COUNT: 7
+  COUNT: 7,
+  DATE: 8,
+  DATEADD: 9
 };
