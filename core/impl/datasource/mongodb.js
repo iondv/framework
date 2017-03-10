@@ -432,10 +432,10 @@ function MongoDs(config) {
     });
   }
 
-  function prepareConditions(conditions, part, parent, nottop) {
+  function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
       for (let i = 0; i < conditions.length; i++) {
-        prepareConditions(conditions[i], i, conditions);
+        prepareConditions(conditions[i], i, conditions, false, part, parent);
       }
     } else if (typeof conditions === 'object' && conditions) {
       for (let nm in conditions) {
@@ -443,7 +443,7 @@ function MongoDs(config) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
           } else if (nm === '$not' && nottop !== true) {
-            let tmp = prepareConditions(conditions[nm], nm, conditions, true);
+            let tmp = prepareConditions(conditions[nm], nm, conditions, true, part, parent);
             conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
             delete conditions[nm];
           } else if (nm === '$empty') {
@@ -491,10 +491,30 @@ function MongoDs(config) {
             }
             break;
           } else if (nm === '$dateAdd') {
-            delete parent[part];
-            parent['$where'] = 'this.' + part
+            let args = [];
+            for (let k = 0; k < conditions[nm].length; k++) {
+              args.push(conditions[nm][k].replace(/^$/, 'this.'));
+            }
+            if (parent2) {
+              delete parent2[part2];
+              parent2.$where = 'this.' + part2;
+              switch (part) {
+                case '$eq': parent2.$where = parent2.$where + ' == '; break;
+                case '$ne': parent2.$where = parent2.$where + ' != '; break;
+                case '$lt': parent2.$where = parent2.$where + ' < '; break;
+                case '$gt': parent2.$where = parent2.$where + ' > '; break;
+                case '$lte': parent2.$where = parent2.$where + ' <= '; break;
+                case '$gte': parent2.$where = parent2.$where + ' >= '; break;
+              }
+              parent2.$where = parent2.$where + 'dateAdd(' + args.join(', ') + ')';
+            } else if (parent) {
+              delete parent[part];
+              parent.$where = 'this.' + part + ' = dateAdd(' + args.join(', ') + ')';
+            } else {
+              throw new Error('Ошибка в синтаксисе условий запроса.');
+            }
           } else {
-            prepareConditions(conditions[nm], nm, conditions, true);
+            prepareConditions(conditions[nm], nm, conditions, true, part, parent);
           }
         }
       }
