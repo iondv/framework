@@ -4,7 +4,11 @@
 'use strict';
 const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
+const strToDate = require('core/strToDate');
+const ConditionParser = require('core/ConditionParser');
+
 const geoOperations = ['$geoWithin', '$geoIntersects'];
+const aggregOperations = ['$min', '$max', '$avg', '$sum', '$count'];
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 30, maxdepth: 15
 
@@ -105,6 +109,9 @@ module.exports.formDsUpdatedData = formUpdatedData;
  * @param {String[]} ids
  */
 function filterByItemIds(keyProvider, cm, ids) {
+  if (!Array.isArray(ids)) {
+    throw new Error('неправильные данные');
+  }
   var filter = [];
   if (cm.getKeyProperties().length === 1) {
     var result = {};
@@ -146,7 +153,7 @@ module.exports.classTableName = tn;
  * @param {DataSource} ds
  * @param {String} [nsSep]
  */
-function prepareAgregOperation(cm, context, attr, operation, options, fetchers, ds, nsSep) {
+function prepareAggregOperation(cm, context, attr, operation, options, fetchers, ds, nsSep) {
   var cn;
   if (options.className) {
     cn = options.className;
@@ -324,18 +331,20 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
                 emptyResult = false;
               }
             }
+          } if (Array.isArray(filter[nm])) {
+            return filterByItemIds(keyProvider, cm, filter[nm]);
           } else {
             result[cm.getKeyProperties()[0]] = filter[nm];
             emptyResult = false;
           }
-        } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
-          result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
-          emptyResult = false;
-        } else if (nm === '$exists') {
-          result[nm] = filter[nm];
+        } else if (aggregOperations.indexOf(nm) >= 0) {
+          result[nm] = prepareAggregOperation(cm, parent, part, nm, filter[nm], fetchers, ds, nsSep);
           emptyResult = false;
         } else if (nm.indexOf('.') > 0) {
           return prepareLinked(cm, nm.split('.'), filter, nm, fetchers, ds, keyProvider);
+        } else if (nm === '$empty' || nm === '$exists' || nm === '$regex' || nm === '$options') {
+          result[nm] = filter[nm];
+          emptyResult = false;
         } else {
           result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, propertyMeta);
           emptyResult = false;
@@ -373,3 +382,288 @@ function prepareFilterValues(cm, filter, ds, keyProvider, nsSep) {
 }
 
 module.exports.prepareDsFilter = prepareFilterValues;
+
+function spFilter(cm, pm, or, svre, prefix) {
+  var spList, j, k, cond, aname;
+  aname = (prefix || '') + pm.name;
+  if (pm.selectionProvider.type === 'SIMPLE') {
+    spList = pm.selectionProvider.list;
+    for (j = 0; j < spList.length; j++) {
+      if (svre.test(spList[j].value)) {
+        cond = {};
+        cond[aname] = {$eq: cast(spList[j].key, pm.type)};
+        or.push(cond);
+      }
+    }
+  } else if (pm.selectionProvider.type === 'MATRIX') {
+    var spOr;
+    for (k = 0; k < pm.selectionProvider.matrix.length; k++) {
+      spList = pm.selectionProvider.matrix[k].result;
+      spOr = [];
+      for (j = 0; j < spList.length; j++) {
+        if (svre.test(spList[j].value)) {
+          cond = {};
+          cond[aname] = {$eq: cast(spList[j].key, pm.type)};
+          spOr.push(cond);
+        }
+      }
+      if (spOr.length) {
+        if (spOr.length === 1) {
+          spOr = spOr[0];
+        } else if (spOr.length > 1) {
+          spOr = {$or: spOr};
+        }
+        or.push({
+          $and: [
+            ConditionParser(pm.selectionProvider.matrix[k].conditions, cm),
+            spOr
+          ]
+        });
+      }
+    }
+  }
+}
+
+/**
+ * @param {String} search
+ * @param {Boolean} [asString]
+ * @returns {RegExp | String}
+ */
+function createSearchRegexp(search, asString) {
+  var result = search.replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+');
+  if (asString) {
+    return result;
+  }
+  return new RegExp(result);
+}
+
+function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
+  var cond, aname, floatv, datev;
+
+  if (pm.selectionProvider) {
+    spFilter(cm, pm, or, createSearchRegexp(sv), prefix);
+  } else if (pm.type === PropertyTypes.REFERENCE) {
+    if (depth > 0) {
+      searchFilter(pm._refClass, or, pm._refClass.getSemanticAttrs(), sv, lang, false,
+        (prefix || '') + pm.name + '.', depth - 1);
+    }
+  } else if (pm.type === PropertyTypes.COLLECTION) {
+    if (depth > 0) {
+      var cor = [];
+      searchFilter(pm._refClass, cor, pm._refClass.getSemanticAttrs(), sv, lang, false, depth - 1);
+      if (cor.length) {
+        cond = {};
+        aname = (prefix || '') + pm.name;
+        cond[aname] = {$contains: {$or: cor}};
+        or.push(cond);
+      }
+    }
+  } else {
+    cond = {};
+    aname = (prefix || '') + pm.name;
+    if (pm.indexed && !pm.formula) {
+      if (
+        pm.type === PropertyTypes.STRING ||
+        pm.type === PropertyTypes.URL ||
+        pm.type === PropertyTypes.TEXT ||
+        pm.type === PropertyTypes.HTML
+      ) {
+        if (!pm.autoassigned) {
+          cond[aname] = {$regex: createSearchRegexp(sv, true), $options: 'i'};
+          or.push(cond);
+        }
+      } else if (!isNaN(floatv = parseFloat(sv)) && (
+          pm.type === PropertyTypes.INT ||
+          pm.type === PropertyTypes.DECIMAL ||
+          pm.type === PropertyTypes.REAL
+        )
+      ) {
+        if (String(floatv) === sv) {
+          cond[aname] = {$eq: floatv};
+          or.push(cond);
+        }
+      } else if (
+        (datev = strToDate(sv, lang)) &&
+        pm.type === PropertyTypes.DATETIME
+      ) {
+        cond[aname] = {$eq: datev};
+        or.push(cond);
+      }
+    }
+  }
+}
+
+/**
+ * @param {ClassMeta} cm
+ * @param {Array} or
+ * @param {Array} attrs
+ * @param {String} sv
+ * @param {String} lang
+ * @param {Boolean} [useFullText]
+ */
+function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
+  var fullText = false;
+
+  var tmp = [];
+  attrs.forEach(function (nm) {
+    if (nm.indexOf('.') >= 0) {
+      var path = nm.split('.');
+      var p = null;
+      var cm2 = cm;
+      for (var i = 0; i < path.length; i++) {
+        p = cm2.getPropertyMeta(path[i]);
+        if (p && p.type === PropertyTypes.REFERENCE) {
+          cm2 = p._refClass;
+        } else if (i < path.length - 1) {
+          p = null;
+          break;
+        }
+      }
+      if (p) {
+        attrSearchFilter(cm, p, tmp, sv, lang, (prefix || '') + path.slice(0, path.length - 1).join('.') + '.', depth);
+      }
+    } else {
+      var pm = cm.getPropertyMeta(nm);
+      if (pm.indexSearch && useFullText) {
+        fullText = true;
+      }
+      attrSearchFilter(cm, pm, tmp, sv, lang, prefix, depth);
+    }
+  });
+
+  if (fullText) {
+    var tmp2 = tmp.slice(0);
+    tmp = [];
+    tmp2.forEach(function (o) {
+      if (o.hasOwnProperty('$contains')) {
+        return;
+      }
+
+      for (var nm in o) {
+        if (nm.indexOf('.') > 0) {
+          return;
+        }
+      }
+
+      tmp.push(o);
+    });
+    tmp.push(
+      {
+        $text: {$search: sv}
+      }
+    );
+  }
+
+  Array.prototype.push.apply(or, tmp);
+}
+
+module.exports.textSearchFilter = searchFilter;
+
+/**
+ * @param {Item} item
+ * @param {ResourceStorage} fileStorage
+ * @param {ResourceStorage} imageStorage
+ * @returns {Promise}
+ */
+function loadFiles(item, fileStorage, imageStorage) {
+  var pm;
+  var fids = [];
+  var iids = [];
+  var attrs = {};
+  for (var nm in item.base) {
+    if (item.base.hasOwnProperty(nm) && item.base[nm]) {
+      pm = item.classMeta.getPropertyMeta(nm);
+      if (pm) {
+        if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
+          fids.push(item.base[nm]);
+          if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
+            attrs['f_' + item.base[nm]] = [];
+          }
+          attrs['f_' + item.base[nm]].push(nm);
+          if (pm.type === PropertyTypes.FILE) {
+            fids.push(item.base[nm]);
+          } else if (pm.type === PropertyTypes.IMAGE) {
+            iids.push(item.base[nm]);
+          }
+        } else if (pm.type === PropertyTypes.FILE_LIST) {
+          if (Array.isArray(item.base[nm])) {
+            for (var i = 0; i < item.base[nm].length; i++) {
+              fids.push(item.base[nm][i]);
+              if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
+                attrs['f_' + item.base[nm][i]] = [];
+              }
+              attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+            }
+          }
+        }
+      }
+    }
+  }
+  if (fids.length === 0 && iids.length === 0) {
+    return Promise.resolve(item);
+  }
+
+  var loaders = [];
+  loaders.push(fileStorage.fetch(fids));
+  loaders.push(imageStorage.fetch(iids));
+
+  return Promise.all(loaders)
+    .then(function (files) {
+        var tmp, i, j, k;
+        for (k = 0; k < files.length; k++) {
+          for (i = 0; i < files[k].length; i++) {
+            if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
+              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
+                tmp = attrs['f_' + files[k][i].id][j];
+                if (typeof tmp === 'object') {
+                  if (!Array.isArray(item.files[tmp.attr])) {
+                    item.files[tmp.attr] = [];
+                  }
+                  item.files[tmp.attr][tmp.index] = files[k][i];
+                } else if (typeof tmp === 'string') {
+                  item.files[tmp] = files[k][i];
+                }
+              }
+            }
+          }
+        }
+        return Promise.resolve(item);
+      }
+    );
+}
+
+module.exports.loadFiles = loadFiles;
+
+/**
+ * @param {Item} item
+ * @param {Boolean} [skip]
+ * @returns {Promise}
+ */
+function calcProperties(item, skip) {
+  if (!item || skip) {
+    return Promise.resolve(item);
+  }
+  var calculations = [];
+  var calcNames = [];
+  var props = item.getMetaClass().getPropertyMetas();
+  for (var i = 0; i < props.length; i++) {
+    if (props[i]._formula) {
+      calculations.push(props[i]._formula.apply(item, [{}]));
+      calcNames.push(props[i].name);
+    }
+  }
+
+  if (calculations.length === 0) {
+    return Promise.resolve(item);
+  }
+
+  return Promise.all(calculations).
+  then(function (results) {
+    for (var i = 0; i < calcNames.length; i++) {
+      item.calculated[calcNames[i]] = results[i];
+    }
+    return Promise.resolve(item);
+  });
+}
+
+module.exports.calcProperties = calcProperties;

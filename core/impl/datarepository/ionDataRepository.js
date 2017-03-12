@@ -17,7 +17,11 @@ const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
+const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
 const ConditionParser = require('core/ConditionParser');
+const Iterator = require('core/interfaces/Iterator');
+const SortingParser = require('core/SortingParser');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -267,6 +271,10 @@ function IonDataRepository(options) {
             delete attributes[item.classMeta.getName() + '.' + property.getName()].colFilter;
           }
         }
+        if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
+          attrs[item.classMeta.getName() + '.' + property.getName()].sort =
+            SortingParser(property.meta.selSorting);
+        }
       } else {
         var v = item.get(property.getName());
         if (Array.isArray(v)) {
@@ -306,7 +314,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, depth, forced, loaded) {
-    var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
+    var i, nm, attrs, item, props, promises, filter, sort, cn, cm, forced2, pcl;
     var src = Array.isArray(src2) ? src2 : [src2];
     depth = depth || 0;
 
@@ -356,6 +364,7 @@ function IonDataRepository(options) {
       for (nm in attrs) {
         if (attrs.hasOwnProperty(nm)) {
           filter = null;
+          sort = null;
           if (
             attrs[nm].type  === PropertyTypes.REFERENCE &&
             Array.isArray(attrs[nm].filter) &&
@@ -373,6 +382,9 @@ function IonDataRepository(options) {
             Array.isArray(attrs[nm].colItems) &&
             attrs[nm].colItems.length
           ) {
+            if (attrs[nm].sort) {
+              sort = attrs[nm].sort;
+            }
             if (attrs[nm].backRef) {
               filter = {};
               filter[attrs[nm].backRef] = {$in: attrs[nm].colItems};
@@ -391,6 +403,7 @@ function IonDataRepository(options) {
             promises.push(
               _this._getList(cn,
                 {
+                  sort: sort,
                   filter: filter,
                   nestingDepth: depth - 1,
                   forceEnrichment: forced2[attrs[nm].attrName],
@@ -494,110 +507,6 @@ function IonDataRepository(options) {
     );
   }
 
-  /**
-   * @param {Item} item
-   * @returns {Promise}
-   */
-  function loadFiles(item) {
-    var pm;
-    var fids = [];
-    var iids = [];
-    var attrs = {};
-    for (var nm in item.base) {
-      if (item.base.hasOwnProperty(nm) && item.base[nm]) {
-        pm = item.classMeta.getPropertyMeta(nm);
-        if (pm) {
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            fids.push(item.base[nm]);
-            if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
-              attrs['f_' + item.base[nm]] = [];
-            }
-            attrs['f_' + item.base[nm]].push(nm);
-            if (pm.type === PropertyTypes.FILE) {
-              fids.push(item.base[nm]);
-            } else if (pm.type === PropertyTypes.IMAGE) {
-              iids.push(item.base[nm]);
-            }
-          } else if (pm.type === PropertyTypes.FILE_LIST) {
-            if (Array.isArray(item.base[nm])) {
-              for (var i = 0; i < item.base[nm].length; i++) {
-                fids.push(item.base[nm][i]);
-                if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
-                  attrs['f_' + item.base[nm][i]] = [];
-                }
-                attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
-              }
-            }
-          }
-        }
-      }
-    }
-    if (fids.length === 0 && iids.length === 0) {
-      return Promise.resolve(item);
-    }
-
-    var loaders = [];
-    loaders.push(_this.fileStorage.fetch(fids));
-    loaders.push(_this.imageStorage.fetch(iids));
-
-    return Promise.all(loaders)
-      .then(function (files) {
-        var tmp, i, j, k;
-        for (k = 0; k < files.length; k++) {
-          for (i = 0; i < files[k].length; i++) {
-            if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
-              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
-                tmp = attrs['f_' + files[k][i].id][j];
-                if (typeof tmp === 'object') {
-                  if (!Array.isArray(item.files[tmp.attr])) {
-                    item.files[tmp.attr] = [];
-                  }
-                  item.files[tmp.attr][tmp.index] = files[k][i];
-                } else if (typeof tmp === 'string') {
-                  item.files[tmp] = files[k][i];
-                }
-              }
-            }
-          }
-        }
-        return Promise.resolve(item);
-      }
-    );
-  }
-
-  /**
-   * @param {Item} item
-   * @returns {Promise}
-     */
-  function calcProperties(item, skip) {
-    if (!item || skip) {
-      return Promise.resolve(item);
-    }
-    var calculations = [];
-    var calcNames = [];
-    var props = item.getMetaClass().getPropertyMetas();
-    for (var i = 0; i < props.length; i++) {
-      if (props[i]._formula) {
-        calculations.push(props[i]._formula.apply(item, [{}]));
-        calcNames.push(props[i].name);
-      }
-    }
-
-    if (calculations.length === 0) {
-      return Promise.resolve(item);
-    }
-
-    return Promise.all(calculations).
-      then(function (results) {
-        var p;
-        for (var i = 0; i < results.length; i++) {
-          p = item.property(calcNames[i]);
-          item.calculated[calcNames[i]] = results[i];
-        }
-        return Promise.resolve(item);
-      });
-  }
-
   function calcItemsProperties(items) {
     var calcs = [];
     for (var i = 0; i < items.length; i++) {
@@ -649,7 +558,7 @@ function IonDataRepository(options) {
         try {
           for (var i = 0; i < data.length; i++) {
             result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            fl.push(loadFiles(result[i]));
+            fl.push(loadFiles(result[i], _this.fileStorage, _this.imageStorage));
           }
         } catch (err) {
           return Promise.reject(err);
@@ -674,6 +583,71 @@ function IonDataRepository(options) {
       }
     ).
     then(calcItemsProperties);
+  };
+
+  function ItemIterator(iterator, options) {
+    this._next = function () {
+      return iterator.next().then(function (data) {
+        if (data) {
+          let item = _this._wrap(data._class, data, data._classVer);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage).
+          then(
+            function (item) {
+              return enrich(
+                item,
+                options.nestingDepth ? options.nestingDepth : 0,
+                options.forceEnrichment,
+                options.___loaded
+              );
+            }
+          ).
+          then(calcItemsProperties);
+        }
+        return Promise.resolve(null);
+      });
+    };
+
+    this._count = function () {
+      return iterator.count();
+    };
+  }
+
+  ItemIterator.prototype = new Iterator();
+
+  /**
+   * @param {String | Item} obj
+   * @param {Object} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {{}} [options.___loaded]
+   * @returns {Promise}
+   */
+  this._getIterator = function (obj, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = getMeta(obj);
+    var rcm = getRootType(cm);
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.fields[props[i].name] = '$' + props[i].name;
+    }
+    options.filter = addFilterByItem(options.filter, obj);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).
+    then(function (filter) {
+      options.filter = filter;
+      return _this.ds.iterator(tn(rcm), options);
+    }).
+    then(function (iter) {
+      return Promise.resolve(new ItemIterator(iter, options));
+    });
   };
 
   /**
@@ -752,7 +726,7 @@ function IonDataRepository(options) {
           if (data) {
             try {
               item = _this._wrap(data._class, data, data._classVer);
-              return loadFiles(item).
+              return loadFiles(item, _this.fileStorage, _this.imageStorage).
               then(
                 function (item) {
                   return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
@@ -783,7 +757,7 @@ function IonDataRepository(options) {
             var item;
             for (var i = 0; i < data.length; i++) {
               item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-              return loadFiles(item);
+              return loadFiles(item, _this.fileStorage, _this.imageStorage);
             }
             return Promise.resolve(null);
           });
@@ -1187,13 +1161,16 @@ function IonDataRepository(options) {
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
+          delete updates._class;
+          delete updates._classVer;
+          delete updates._creator;
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
         }).then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
-          return loadFiles(item);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.create',
@@ -1267,13 +1244,14 @@ function IonDataRepository(options) {
               return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
             var item = _this._wrap(data._class, data, data._classVer);
+            delete updates._editor;
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
           }).then(function (item) {
             return updateBackRefs(item, cm, data, id);
           }).then(function (item) {
             return refUpdator(item, refUpdates, changeLogger);
           }).then(function (item) {
-            return loadFiles(item);
+            return loadFiles(item, _this.fileStorage, _this.imageStorage);
           }).then(function (item) {
             if (!suppresEvent) {
               return _this.trigger({
@@ -1385,7 +1363,7 @@ function IonDataRepository(options) {
             return item;
           }
         }).then(function (item) {
-          return loadFiles(item);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
