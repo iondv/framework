@@ -518,9 +518,8 @@ function DsMetaRepository(options) {
     return function (dateCallback) {
       var p = this.property(propertyName);
       var tmp = p.getDisplayValue(dateCallback);
-      if (p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
-        tmp = dateCallback.call(null, p.getValue());
-      } else if (start) {
+
+      if (start && typeof tmp === 'string') {
         tmp = tmp.substr(start, length || null);
       }
 
