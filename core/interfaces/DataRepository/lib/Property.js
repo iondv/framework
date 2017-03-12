@@ -82,13 +82,12 @@ function Property(item, propertyMeta, name) {
   };
 
   this.getDisplayValue = function (dateCallback, circular) {
-    var i;
     circular  = typeof circular !== 'undefined' && circular !== null ? circular : {};
     if (this.getType() === PropertyTypes.COLLECTION) {
-      var result = '';
-      var agregates = this.evaluate();
+      let result = '';
+      let agregates = this.evaluate();
       if (Array.isArray(agregates)) {
-        for (i = 0; i < agregates.length; i++) {
+        for (let i = 0; i < agregates.length; i++) {
           if (typeof this.meta.semanticGetter === 'function') {
             result = result + (result ? ' ' : '') +
               this.meta.semanticGetter.call(agregates[i], dateCallback, circular);
@@ -101,10 +100,15 @@ function Property(item, propertyMeta, name) {
     }
 
     var v = this.getValue();
+
+    if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
+      v = typeof dateCallback === 'function' ? dateCallback.call(null, v) : v.toDateString();
+    }
+
     if (this.meta.selectionProvider) {
       var selection = this.getSelection();
       if (Array.isArray(selection)) {
-        for (i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        for (let i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
             return selection[i].value;
           }
@@ -113,7 +117,7 @@ function Property(item, propertyMeta, name) {
     }
 
     if (this.getType() === PropertyTypes.REFERENCE) {
-      var agr = this.evaluate();
+      let agr = this.evaluate();
       if (agr) {
         if (typeof this.meta.semanticGetter === 'function') {
           return this.meta.semanticGetter.call(agr, dateCallback, circular);
@@ -144,19 +148,21 @@ function Property(item, propertyMeta, name) {
         }
       } else if (p.getType() === PropertyTypes.COLLECTION) {
         let ris = p.evaluate();
-        let result = [];
-        for (let i = 0; i < ris.length; i++) {
-          p = ris[i].property(prop.getName().substr(pos + 1));
-          if (p) {
-            let v = evalProperty(ris[i], p);
-            if (Array.isArray(v)) {
-              Array.prototype.push.apply(result, v);
-            } else {
-              result.push(v);
+        if (Array.isArray(ris)) {
+          let result = [];
+          for (let i = 0; i < ris.length; i++) {
+            p = ris[i].property(prop.getName().substr(pos + 1));
+            if (p) {
+              let v = evalProperty(ris[i], p);
+              if (Array.isArray(v)) {
+                Array.prototype.push.apply(result, v);
+              } else {
+                result.push(v);
+              }
             }
           }
+          return result;
         }
-        return result;
       }
       return null;
     }

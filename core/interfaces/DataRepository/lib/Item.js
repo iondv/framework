@@ -87,15 +87,15 @@ function Item(id, base, classMeta) {
 
   /**
    * @param {String} name
-   * @returns {Array}
+   * @returns {Array | null}
    */
   this.getAggregates = function (name) {
     var props = this.getProperties();
     var p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
-      return this.collections[name] || [];
+      return this.collections[name] || null;
     }
-    return [];
+    return null;
   };
 
   function getFromBase(name) {
