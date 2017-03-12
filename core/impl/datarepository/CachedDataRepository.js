@@ -349,14 +349,16 @@ function CachedDataRepository(options) {
    */
   function cleanClassLists(cm) {
     return function () {
-      cache.get('ll:' + cm.getCanonicalName())
+      return cache.get('ll:' + cm.getCanonicalName())
         .then(function (lists) {
           var p;
-          for (var i = 0; i < lists.length; i++) {
-            if (p) {
-              p = p.then(cleanList(lists[i]));
-            } else {
-              p = cleanList(lists[i])();
+          if (lists) {
+            for (var i = 0; i < lists.length; i++) {
+              if (p) {
+                p = p.then(cleanList(lists[i]));
+              } else {
+                p = cleanList(lists[i])();
+              }
             }
           }
           if (!p) {
@@ -374,21 +376,22 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   function cleanLists(item) {
-    return function () {
-      var p;
-      var cm = item.getMetaClass();
-      while (cm) {
-        if (p) {
-          p = p.then(cleanClassLists(cm));
-        } else {
-          p = cleanClassLists(cm)();
-        }
-        cm = cm.getAncestor();
+    if (!item) {
+      return Promise.resolve();
+    }
+    var p;
+    var cm = item.getMetaClass();
+    while (cm) {
+      if (p) {
+        p = p.then(cleanClassLists(cm));
+      } else {
+        p = cleanClassLists(cm)();
       }
-      return p.then(function () {
-        return Promise.resolve(item);
-      });
-    };
+      cm = cm.getAncestor();
+    }
+    return p.then(function () {
+      return Promise.resolve(item);
+    });
   }
 
   /**
@@ -441,7 +444,11 @@ function CachedDataRepository(options) {
    * @param {{uid: String}} options
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    return dataRepo.deleteItem(classname, id, changeLogger, options).then(cleanLists);
+    return dataRepo.getItem(classname, id)
+      .then(cleanLists)
+      .then(function () {
+        return dataRepo.deleteItem(classname, id, changeLogger, options);
+      });
   };
 
   /**
