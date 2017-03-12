@@ -4,7 +4,6 @@
  * Если не нужно сохранение в режиме отладки, нужно задать переменную окружения IMPORT = DONTSAVE
  */
 
-
 // Уточняем параметры jsHint.
 // maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
 // jshint maxcomplexity: 12
@@ -43,7 +42,13 @@ function importApplications(appPathItem) {
   return new Promise(function (resolve, reject) {
     const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference || {};
     const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference || {};
-    const config = require(path.join(appPathItem, 'convert-import-app')).config || {};
+    /** Параметры importOptions
+      saveAll - Сохранять все объекты сразу, а не каждую итерацию и соответственно не очищать
+      skipClassName - пропускаемы в итерационном сохранении классы - сохраняются только по итогу импорта (занимают память)
+      zip - архивировать выдачу
+      zipIgnore: /(declaration@khv-childzem)/ - regexp значение игнрируемых для архивирования файлов - сохранять их как есть (нужно например для пост обработки)
+    */
+    const importOptions = require(path.join(appPathItem, 'convert-import-app')).options || {};
     let importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
     importedFolders = typeof importedFolders === 'string' ? [importedFolders] : importedFolders;
     const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
@@ -75,7 +80,7 @@ function importApplications(appPathItem) {
         function (res) {
           console.info('Считали мету, импортируем данные приложения', appPathItem);
           let importedData = {meta: res, parsed: {}, verify: {},
-            result: {}, pathData: pathToData, config: config};  // Сформировали объект импорта
+            result: {}, pathData: pathToData, config: importOptions};  // Сформировали объект импорта
           if (importedBeforeReference) {
             importedData.reference = importedBeforeReference;
           }
@@ -85,8 +90,8 @@ function importApplications(appPathItem) {
       .then((importedData) => {
         /**
          * Импорт и сохранение партии данных из пути импортируемой базы
-         * @param importPath импортируемый путь
-         * @param callback
+         * @param {String} importPath импортируемый путь
+         * @param {Function} callback
          */
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
@@ -99,14 +104,18 @@ function importApplications(appPathItem) {
               return importedData;
             })
             .then((res) => {
-              if (!config.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
-                return saveImportedFiles(res);
+              if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                return saveImportedFiles(res, importOptions.skipClassName);
               } else {
                 return 0;
               }
             })
             .then((res) => {
-              console.log('Сохранили и очистили память после импорта папки', importedPath);
+              if (!importOptions.saveAll) {
+                console.info('Сохранили и очистили память после импорта папки', importedPath);
+              } else {
+                console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
+              }
               callback(null, res);
             })
             .catch((err)=> {
