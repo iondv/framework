@@ -438,7 +438,7 @@ function MongoDs(config) {
                         if (upsert) {
                           return adjustAutoInc(type, r);
                         }
-                        return resolve(r);
+                        return Promise.resolve(r);
                       }).then(resolve).catch(reject);
                     });
                 } else {
@@ -1128,14 +1128,22 @@ function MongoDs(config) {
   function DsIterator(cursor, amount) {
     this._next = function () {
       return new Promise(function (resolve, reject) {
-        cursor.next(function (err, r) {
+        cursor.hasNext(function (err, r) {
           if (err) {
             return reject(err);
           }
-          if (r) {
-            return resolve(mergeGeoJSON(r));
+          if (!r) {
+            return resolve(null);
           }
-          resolve(null);
+          cursor.next(function (err, r) {
+            if (err) {
+              return reject(err);
+            }
+            if (r) {
+              return resolve(mergeGeoJSON(r));
+            }
+            resolve(null);
+          });
         });
       });
     };
