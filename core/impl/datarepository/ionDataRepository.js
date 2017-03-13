@@ -309,7 +309,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, depth, forced, loaded) {
-    var i, nm, attrs, item, props, promises, filter, sort, cn, cm, forced2, pcl;
+    var i, nm, attrs, item, promises, filter, sort, cn, forced2, pcl;
     var src = Array.isArray(src2) ? src2 : [src2];
     depth = depth || 0;
 
@@ -330,12 +330,12 @@ function IonDataRepository(options) {
       for (i = 0; i < src.length; i++) {
         item = src[i];
         if (item && item instanceof Item) {
-          cm = item.getMetaClass();
+          let cm = item.getMetaClass();
+          let props = item.getProperties();
           if (!pcl.hasOwnProperty(cm.getName())) {
             pcl[cm.getName()] = true;
             formForced(cm.getForcedEnrichment(), forced2);
           }
-          props = item.getProperties();
           for (nm in props) {
             if (props.hasOwnProperty(nm)) {
               if (
