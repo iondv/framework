@@ -171,17 +171,17 @@ function getRecordClass(record, fias) {
     if (record.STREETCODE && record.STREETCODE !== '0000') {
       return classNames.STREET;
     } else if (record.PLANCODE && record.PLANCODE !== '0000') {
-      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
+      return null; // TODO: Код элемента планировочной структуры
     } else if (record.PLACECODE && record.PLACECODE !== '000') {
       return classNames.PLACE;
     } else if (record.CTARCODE && record.CTARCODE !== '000') {
-      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
+      return null; // TODO: Код внутригородского района
     } else if (record.CITYCODE && record.CITYCODE !== '000') {
       return classNames.CITY;
     } else if (record.AREACODE && record.AREACODE !== '000') {
       return classNames.AREA;
     } else if (record.AUTOCODE && record.AUTOCODE !== '000') {
-      return null; // TODO: Требует обсуждения, возможно имеет смысл приводить к соседнему уровню
+      return null; // TODO: уровень автономного округа (устаревшее)
     } else if (record.REGIONCODE && record.REGIONCODE !== '00') {
       return classNames.REGION;
     }
