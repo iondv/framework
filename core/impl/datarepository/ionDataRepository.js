@@ -661,8 +661,8 @@ function IonDataRepository(options) {
     var rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).
-    then(
-      function () {
+    then(function (filter) {
+        options.filter = filter;
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
