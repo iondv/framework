@@ -88,9 +88,9 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantics = function (item, dateCallback) {
+  this.getSemantics = function (item, dateCallback, circular) {
     if (typeof this._semanticFunc === 'function') {
-      return this._semanticFunc.call(item, dateCallback);
+      return this._semanticFunc.call(item, dateCallback, circular);
     }
     return item.getItemId();
   };
