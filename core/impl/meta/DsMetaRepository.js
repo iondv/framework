@@ -831,7 +831,7 @@ function DsMetaRepository(options) {
             wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
             options.calc
           ) {
-            wf.transitions[j].assignments[k].formula =
+            wf.transitions[j].assignments[k]._formula =
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
           }
         }
