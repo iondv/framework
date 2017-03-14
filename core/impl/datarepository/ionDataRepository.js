@@ -318,7 +318,6 @@ function IonDataRepository(options) {
     attrs = {};
     promises = [];
     loaded = loaded || {};
-
     try {
       pcl = {};
       for (i = 0; i < src.length; i++) {
@@ -344,7 +343,7 @@ function IonDataRepository(options) {
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
                   prepareRefEnrichment(item, props[nm], attrs, loaded);
-                } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
+                } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
                   prepareColEnrichment(item, props[nm], attrs, loaded);
                 }
               }
@@ -915,49 +914,47 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function backRefUpdater(itemId, pm, updates, cm, oldId) {
-    return new Promise(function (resolve, reject) {
-      var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
-      var rpm = rcm.getPropertyMeta(pm.backRef);
+    var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+    var rpm = rcm.getPropertyMeta(pm.backRef);
 
-      if (!rpm) {
-        return reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
-          ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
-      }
+    if (!rpm) {
+      return Promise.reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
+        ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
+    }
 
-      var clr = {};
-      var clrf = {$and: []};
-      var ups = {};
-      var conds = {};
-      var tmp;
+    var clr = {};
+    var clrf = {$and: []};
+    var ups = {};
+    var conds = {};
+    var tmp;
 
-      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+    conds[rcm.getKeyProperties()[0]] = updates[pm.name];
 
-      tmp = {};
-      tmp[pm.backRef] = oldId || itemId;
-      clrf.$and.push(tmp);
+    tmp = {};
+    tmp[pm.backRef] = oldId || itemId;
+    clrf.$and.push(tmp);
 
-      tmp = {};
-      tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
-      clrf.$and.push(tmp);
+    tmp = {};
+    tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
+    clrf.$and.push(tmp);
 
-      clrf[pm.backRef] = oldId || itemId;
-      clr[pm.backRef] = null;
-      ups[pm.backRef] = itemId;
+    clrf[pm.backRef] = oldId || itemId;
+    clr[pm.backRef] = null;
+    ups[pm.backRef] = itemId;
 
-      if (oldId) {
-        if (!rpm.nullable) {
-          if (options.log) {
-            options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
-          }
-        } else {
-          return options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
-            return options.dataSource.update(tn(rcm), conds, ups);
-          }).then(resolve).catch(reject);
+    if (oldId) {
+      if (!rpm.nullable) {
+        if (options.log) {
+          options.log.warn('Предыдущий объект по ссылке "' + pm.caption + '" не был отвязан.');
         }
+      } else {
+        return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
+          return options.dataSource.update(tn(rcm), conds, ups);
+        });
       }
+    }
 
-      options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
-    });
+    return options.dataSource.update(tn(rcm), conds, ups);
   }
 
   /**
