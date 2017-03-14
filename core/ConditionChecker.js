@@ -29,11 +29,12 @@ function contains(container, content) {
  * @returns {Boolean}
  */
 function colContains(collection, conditions) {
-  var r;
-  for (var i = 0; i < collection.length; i++) {
-    r = conjunct(collection[i], conditions);
-    if (r) {
-      return true;
+  if (Array.isArray(collection)) {
+    for (let i = 0; i < collection.length; i++) {
+      let r = conjunct(collection[i], conditions);
+      if (r) {
+        return true;
+      }
     }
   }
   return false;
