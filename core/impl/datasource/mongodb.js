@@ -1211,8 +1211,15 @@ function MongoDs(config) {
         var plan = [];
 
         var expr = {$group: {}};
-        if (options.fields) {
-          expr.$group._id = options.fields;
+
+        expr.$group._id = null;
+        if (options.fields && typeof options.fields === 'object') {
+          for (let fld in options.fields) {
+            if (options.fields.hasOwnProperty(fld)) {
+              expr.$group._id = options.fields;
+              break;
+            }
+          }
         }
 
         var alias, oper;
