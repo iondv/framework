@@ -515,17 +515,16 @@ function DsMetaRepository(options) {
   }
 
   function propertyGetter(prev, propertyName, start, length) {
-    return function (dateCallback) {
+    return function (dateCallback, circular) {
       var p = this.property(propertyName);
-      var tmp = p.getDisplayValue(dateCallback);
-      if (p.getType() === PropertyTypes.DATETIME && typeof dateCallback === 'function') {
-        tmp = dateCallback.call(null, p.getValue());
-      } else if (start) {
+      var tmp = p.getDisplayValue(dateCallback, circular);
+
+      if (start && typeof tmp === 'string') {
         tmp = tmp.substr(start, length || null);
       }
 
       if (typeof prev === 'function') {
-        return prev.call(this, dateCallback) + tmp;
+        return prev.call(this, dateCallback, circular) + tmp;
       }
 
       return tmp;
@@ -533,9 +532,9 @@ function DsMetaRepository(options) {
   }
 
   function constGetter(prev, v) {
-    return function (dateCallback) {
+    return function (dateCallback, circular) {
       if (typeof prev === 'function') {
-        return prev.call(this, dateCallback) + v;
+        return prev.call(this, dateCallback, circular) + v;
       }
       return v;
     };
@@ -606,38 +605,8 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    */
   function produceSemantics(cm) {
-    var i, propertyMetas;
-
-    if (cm) {
-      propertyMetas = cm.getPropertyMetas();
-
-      for (i = 0; i < propertyMetas.length; i++) {
-        if (
-          (
-            propertyMetas[i].type === PropertyTypes.REFERENCE ||
-            propertyMetas[i].type === PropertyTypes.COLLECTION
-          ) && propertyMetas[i].semantic) {
-          var refcm = getFromMeta(
-            propertyMetas[i].type === PropertyTypes.COLLECTION ?
-              propertyMetas[i].itemsClass : propertyMetas[i].refClass,
-            cm.getVersion(),
-            cm.getNamespace()
-          );
-          if (refcm) {
-            propertyMetas[i].semanticGetter = createSemanticFunc(
-              propertyMetas[i].semantic,
-              refcm,
-              cm._forcedEnrichment,
-              null,
-              propertyMetas[i].name
-            );
-          }
-        }
-      }
-
-      if (cm.plain.semantic) {
-        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
-      }
+    if (cm && cm.plain.semantic) {
+      cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
     }
   }
 
@@ -832,7 +801,7 @@ function DsMetaRepository(options) {
             wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
             options.calc
           ) {
-            wf.transitions[j].assignments[k].formula =
+            wf.transitions[j].assignments[k]._formula =
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
           }
         }

@@ -142,7 +142,6 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "[[cache.module]]",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
@@ -230,7 +229,8 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "ion://dataRepo",
+          "calc": "ion://calculator"
         }
       }
     }
