@@ -8,6 +8,7 @@ const DBF = require('stream-dbf');
 const config = require('../config');
 const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
+const Item = require('core/interfaces/DataRepository').Item;
 const encoding = require('encoding');
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +19,6 @@ const classNames = {
   EXTR: 'EXTR@develop-and-test',
   STREET: 'STREET@develop-and-test',
   PLAN: 'PLAN@develop-and-test',
-  ADDROBJ_LOWLEVEL: 'ADDROBJ_LOWLEVEL@develop-and-test',
   PLACE: 'PLACE@develop-and-test',
   CTAR: 'CTAR@develop-and-test',
   CITY: 'CITY@develop-and-test',
@@ -26,7 +26,7 @@ const classNames = {
   AREA: 'AREA@develop-and-test',
   AUTO: 'AUTO@develop-and-test',
   REGION: 'REGION@develop-and-test',
-  ADDROBJ_HIGHLEVEL: 'ADDROBJ_HIGHLEVEL@develop-and-test'
+  ADDROBJ: 'ADDROBJ@develop-and-test'
 };
 
 var sysLog = new IonLogger({});
@@ -76,21 +76,22 @@ di('app', config.di,
   }
 }).then(function () {
   if (isFias === false) {
-    // TODO: Решить вопрос с ссылочностью на нижнем уровне
     return importFile(
       path.join(sourcePath, 'ALTNAMES.DBF'),
       reassign
     ).then(function () {
-      return setContainers(classNames.ADDROBJ_HIGHLEVEL);
-    }).then(function () {
-      return setContainers(classNames.ADDROBJ_LOWLEVEL);
+      return setContainers(classNames.ADDROBJ);
     });
   }
   return Promise.resolve();
 }).then(function () {
-  return checkContainers(classNames.ADDROBJ_HIGHLEVEL);
+  // TODO: Дублирование верхнего уровня
+  return Promise.resolve();
 }).then(function () {
-  return checkContainers(classNames.ADDROBJ_LOWLEVEL);
+  return checkContainers(classNames.ADDROBJ);
+}).then(function () {
+  // TODO: Проверка ссылочной целостности для дублей верхнего уровня
+  return Promise.resolve();
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(
@@ -144,24 +145,27 @@ function importFile(fn, recordCallback) {
 function importRecord(record) {
   if (isActual(record) && isFiltered(record)) {
     var className = getRecordClass(record);
-    var options = {
-      count: 1,
-      nestingDepth: 0
-    };
+    var p = null;
     if (isFias === true) {
-      options.filter = {FIAS_AOGUID: {$eq: record.AOGUID}};
+      p = scope.dataRepo.getItem(className, record.AOGUID, {nestingDepth: 0});
     } else if (isFias === false) {
-      options.filter = {KLADR_CODE: {$eq: record.CODE}};
+      p = scope.dataRepo.getList(className, {
+        count: 1,
+        nestingDepth: 0,
+        filter: {KLADR_CODE: {$eq: record.CODE.substring(0, record.CODE.length - 2)}}
+      });
     } else {
       return Promise.reject(new Error('Не удаётся определить формат импортируемой записи.'));
     }
-    return scope.dataRepo.getList(className, options).then(function (items) {
+    return p.then(function (result) {
       var item = null;
-      if (Array.isArray(items) && items.length > 0) {
-        item = items[0];
+      if (Array.isArray(result) && result.length > 0) {
+        item = result[0];
+      } else if (result instanceof Item) {
+        item = result;
       }
       var dummy = getData(record);
-      options = {
+      var options = {
         skipResult: true,
         ignoreIntegrityCheck: true
       };
@@ -185,9 +189,9 @@ function importRecord(record) {
     return scope.dataRepo.getList(getRecordClass(record), {
       count: 1,
       nestingDepth: 0,
-      filter: {KLADR_CODE: {$eq: record.CODE.substring(0, 11) + '00'}}
+      filter: {KLADR_CODE: {$eq: record.CODE.substring(0, record.CODE.length - 2)}}
     }).then(function (results) {
-      var p = new Promise(function (r) {r();});
+      var p = Promise.resolve();
       results.forEach(function (item) {
         p = p.then(function () {
           return scope.dataRepo.deleteItem(item.getClassName(), item.getItemId());
@@ -200,6 +204,8 @@ function importRecord(record) {
 }
 
 function setContainers(className) {
+  // TODO: Разгрузить через групповой апдейт
+  // TODO: Итератор
   return scope.dataRepo.getList(className, {
     filter: {$and: [
       {_class: {$ne: classNames.REGION}},
@@ -207,7 +213,7 @@ function setContainers(className) {
     ]},
     nestingDepth: 0
   }).then(function (results) {
-    var p = new Promise(function (r) {r();});
+    var p = Promise.resolve();
     results.forEach(function (item) {
       p = p.then(function () {
         var options = {
@@ -216,14 +222,14 @@ function setContainers(className) {
         };
         var code = null;
         switch (item.getClassName()) {
-          case classNames.AREA: code = item.base.KLADR_CODE.substring(0, 2) + '00000000000'; break;
-          case classNames.CITY: code = item.base.KLADR_CODE.substring(0, 5) + '00000000'; break;
-          case classNames.PLACE: code = item.base.KLADR_CODE.substring(0, 8) + '00000'; break;
-          case classNames.STREET: code = item.base.KLADR_CODE.substring(0, 11) + '00'; break;
+          case classNames.AREA: code = item.base.KLADR_CODE.substring(0, 2) + '000000000'; break;
+          case classNames.CITY: code = item.base.KLADR_CODE.substring(0, 5) + '000000'; break;
+          case classNames.PLACE: code = item.base.KLADR_CODE.substring(0, 8) + '000'; break;
+          case classNames.STREET: code = item.base.KLADR_CODE.substring(0, 11); break;
           default: return Promise.resolve();
         }
         options.filter = {KLADR_CODE: {$eq: code}};
-        return scope.dataRepo.getList(classNames.ADDROBJ_HIGHLEVEL, options)
+        return scope.dataRepo.getList(classNames.ADDROBJ, options)
           .then(function (containers) {
             var container = null;
             if (Array.isArray(containers) && containers.length > 0) {
@@ -250,7 +256,7 @@ function reassign(record) {
   return scope.dataRepo.getList(className, {
     count: 1,
     nestingDepth: 0,
-    filter: {KLADR_CODE: {$regex: '^' + record.NEWCODE.substring(0, record.NEWCODE.length - 2)}}
+    filter: {KLADR_CODE: {$eq: record.NEWCODE.substring(0, record.NEWCODE.length - 2)}}
   }).then(function (containers) {
     var container = null;
     if (Array.isArray(containers) && containers.length > 0) {
@@ -264,8 +270,27 @@ function reassign(record) {
         case classNames.CITY: prefix = record.OLDCODE.substring(0, 8); break;
         case classNames.PLACE: prefix = record.OLDCODE.substring(0, 11); break;
       }
-      return resetContainers(classNames.ADDROBJ_HIGHLEVEL, container, prefix).then(function () {
-        return resetContainers(classNames.ADDROBJ_LOWLEVEL, container, prefix);
+      // TODO: Итератор
+      return scope.dataRepo.getList(classNames.ADDROBJ, {
+        nestingDepth: 0,
+        // TODO: Тут можно использовать спец поля с кодом родителя, которое потом удалять
+        filter: {KLADR_CODE: {$regex: '^' + prefix}}
+      }).then(function (items) {
+        var p = Promise.resolve();
+        items.forEach(function (item) {
+          p = p.then(function () {
+            return scope.dataRepo.editItem(
+              item.getClassName(),
+              item.getItemId(),
+              {CONTAINER: container.getItemId()},
+              null,
+              {
+                skipResult: true,
+                ignoreIntegrityCheck: true
+              });
+          });
+        });
+        return p;
       });
     } else {
       return Promise.reject(new Error(`Не удаётся найти переподчиненную запись ${record.NEWCODE}.`));
@@ -273,30 +298,8 @@ function reassign(record) {
   });
 }
 
-function resetContainers(className, container, prefix) {
-  return scope.dataRepo.getList(className, {
-    nestingDepth: 0,
-    filter: {KLADR_CODE: {$regex: '^' + prefix}}
-  }).then(function (items) {
-    var p = new Promise(function (r) {r();});
-    items.forEach(function (item) {
-      p = p.then(function () {
-        return scope.dataRepo.editItem(
-          item.getClassName(),
-          item.getItemId(),
-          {CONTAINER: container.getItemId()},
-          null,
-          {
-            skipResult: true,
-            ignoreIntegrityCheck: true
-          });
-      });
-    });
-    return p;
-  });
-}
-
 function checkContainers(className) {
+  // TODO: Итератор
   return scope.dataRepo.getList(className, {
     filter: {$and: [
       {_class: {$ne: classNames.REGION}},
@@ -310,6 +313,7 @@ function checkContainers(className) {
     });
     return Promise.resolve();
   }).then(function () {
+    // TODO: Итератор
     return scope.dataRepo.getList(className, {
       filter: {$and: [
         {CONTAINER: {$empty: false}},
@@ -379,7 +383,7 @@ function getData(record) {
   if (isFias === true) {
     data.ID = record.AOGUID;
     data.FIAS_AOGUID = record.AOGUID;
-    data.KLADR_CODE = record.CODE;
+    data.KLADR_CODE = record.PLAINCODE;
     data.SHORTNAME = convertCharset(record.SHORTNAME);
     data.OFFNAME = convertCharset(record.OFFNAME);
     data.FORMALNAME = convertCharset(record.FORMALNAME);
@@ -388,7 +392,8 @@ function getData(record) {
     data.POSTALCODE = record.POSTALCODE;
     data.CONTAINER = record.PARENTGUID;
   } else if (isFias === false) {
-    data.KLADR_CODE = record.CODE;
+    data.KLADR_CODE = record.CODE.substring(0, record.CODE.length - 2);
+    // TODO: Тут можно формировать спец поля с кодом родителя, которое потом удалять
     data.SHORTNAME = convertCharset(record.SOCR);
     data.OFFNAME = convertCharset(record.NAME);
     data.OKATO = record.OCATD;
