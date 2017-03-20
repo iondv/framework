@@ -914,7 +914,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function backRefUpdater(itemId, pm, updates, cm, oldId) {
-    var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
+    var rcm = pm._refClass;
     var rpm = rcm.getPropertyMeta(pm.backRef);
 
     if (!rpm) {
@@ -942,19 +942,41 @@ function IonDataRepository(options) {
     clr[pm.backRef] = null;
     ups[pm.backRef] = itemId;
 
+    /**
+     * @param {ClassMeta} rcm
+     * @param {{}} conds
+     * @param {{}} ups
+     * @returns {Promise.<TResult>}
+     */
+    function setBrLink(rcm, conds, ups) {
+      return _this._getItem(rcm.getCanonicalName(), updates[pm.name], {forcedEnrichment: [[pm.backRef]]})
+        .then(function (bro) {
+          var lost = bro.property(pm.backRef).evaluate();
+          if (lost) {
+            if (options.log) {
+              options.log.warn('Объект "' + bro.toString() +
+                '" был отвязан от "' + lost.toString() + '".');
+            }
+          }
+          return options.dataSource.update(tn(rcm), conds, ups);
+        });
+    }
+
     if (oldId) {
       if (!rpm.nullable) {
         if (options.log) {
-          options.log.warn('Предыдущий объект по ссылке "' + pm.caption + '" не был отвязан.');
+          options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
+            '" не может быть отвязан. Обратная ссылка не была присвоена.');
         }
+        return Promise.resolve();
       } else {
         return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
-          return options.dataSource.update(tn(rcm), conds, ups);
+          return setBrLink(rcm, conds, ups);
         });
       }
     }
 
-    return options.dataSource.update(tn(rcm), conds, ups);
+    return setBrLink(rcm, conds, ups);
   }
 
   /**
@@ -1035,7 +1057,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} changeLogger
      * @returns {Function}
      */
-  function fetchNSaveBackRefs(meta, backRef, id, updates, changeLogger){
+  function fetchNSaveBackRefs(meta, backRef, id, updates, changeLogger) {
     return function () {
       var f = {};
       f[backRef] = id;
@@ -1383,7 +1405,8 @@ function IonDataRepository(options) {
                 }
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
+              // TODO передавать игнорирование целостности
+              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1394,7 +1417,8 @@ function IonDataRepository(options) {
                 }
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? Promise.reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
+              // TODO передавать игнорирование целостности
+              return chr !== true ? Promise.reject(chr) : _this.ds.insert(tn(rcm), updates);
             }
           } catch (err) {
             return Promise.reject(err);
