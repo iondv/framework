@@ -1287,7 +1287,7 @@ function IonDataRepository(options) {
             if (options.uid) {
               updates._editor = options.uid;
             }
-            return _this.ds.update(tn(rcm), conditions, updates);
+            return _this.ds.update(tn(rcm), conditions, updates, {skipResult: options.skipResult});
           }).then(function (data) {
             if (!data) {
               return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
@@ -1383,7 +1383,7 @@ function IonDataRepository(options) {
                 }
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
+              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates, {skipResult: options.skipResult}); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1465,6 +1465,19 @@ function IonDataRepository(options) {
       }).
       catch(reject);
     });
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
+   * @param {{}} data
+   * @param {ChangeLogger} [changeLogger]
+   * @returns {Promise}
+   */
+  this._bulkUpdate = function (classname, options, data, changeLogger) {
+    return _this.ds.updateMany(type, conditions, data, {skipResult: options.skipResult});
   };
 
   /**

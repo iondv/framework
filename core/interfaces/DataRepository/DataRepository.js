@@ -212,6 +212,19 @@ function DataRepository() {
   this.getAssociationsCount = function (master, collection, options) {
     return this._getAssociationsCount(master, collection, options || {});
   };
+
+  /**
+   * @param {String} className
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
+   * @param {{}} data
+   * @param {ChangeLogger} [changeLogger]
+   * @returns {Promise}
+   */
+  this.bulkUpdate = function (className, options, data, changeLogger) {
+    return this._bulkUpdate(className, options || {}, data, changeLogger);
+  };
 }
 
 module.exports = DataRepository;

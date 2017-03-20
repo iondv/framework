@@ -570,6 +570,27 @@ function SecuredDataRepository(options) {
         return dataRepo.getAssociationsCount(master, collection, options);
       });
   };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
+   * @param {{}} data
+   * @param {ChangeLogger} [changeLogger]
+   * @returns {Promise}
+   */
+  this._bulkUpdate = function (classname, options, data, changeLogger) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
+        if (
+          permissions[classPrefix + classname] &&
+          permissions[classPrefix + classname][Permissions.WRITE]
+        ) {
+          return dataRepo.bulkUpdate(classname, options, data, changeLogger);
+        }
+        return rejectByClass(classname);
+      });
+  };
 }
 
 SecuredDataRepository.prototype = new DataRepository();

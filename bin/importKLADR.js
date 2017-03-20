@@ -76,22 +76,13 @@ di('app', config.di,
   }
 }).then(function () {
   if (isFias === false) {
-    return importFile(
-      path.join(sourcePath, 'ALTNAMES.DBF'),
-      reassign
-    ).then(function () {
-      return setContainers(classNames.ADDROBJ);
-    });
+    return importFile(path.join(sourcePath, 'ALTNAMES.DBF'), reassign).then(setContainers);
   }
   return Promise.resolve();
 }).then(function () {
-  // TODO: Дублирование верхнего уровня
-  return Promise.resolve();
+  return checkContainers();
 }).then(function () {
-  return checkContainers(classNames.ADDROBJ);
-}).then(function () {
-  // TODO: Проверка ссылочной целостности для дублей верхнего уровня
-  return Promise.resolve();
+  return makeCopies();
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(
@@ -164,7 +155,7 @@ function importRecord(record) {
       } else if (result instanceof Item) {
         item = result;
       }
-      var dummy = getData(record);
+      var dummy = getData(record, className);
       var options = {
         skipResult: true,
         ignoreIntegrityCheck: true
@@ -189,65 +180,67 @@ function importRecord(record) {
     return scope.dataRepo.getList(getRecordClass(record), {
       count: 1,
       nestingDepth: 0,
-      filter: {KLADR_CODE: {$eq: record.CODE.substring(0, record.CODE.length - 2)}}
+      filter: {
+        KLADR_CODE: {$eq: record.CODE.substring(0, record.CODE.length - 2)}
+      }
     }).then(function (results) {
-      var p = Promise.resolve();
-      results.forEach(function (item) {
-        p = p.then(function () {
-          return scope.dataRepo.deleteItem(item.getClassName(), item.getItemId());
-        });
-      });
-      return p;
+      var item = null;
+      if (Array.isArray(results) && results.length > 0) {
+        item = results[0];
+      }
+      if (item) {
+        return scope.dataRepo.bulkUpdate(
+          classNames.ADDROBJ,
+          {
+            skipResult: true,
+            filter: {CONTAINER: {$eq: item.getItemId()}}
+          },
+          {
+            CONTAINER: item.base.KLADR_CODE
+          }).then(function () {
+            return scope.dataRepo.deleteItem(item.getClassName(), item.getItemId());
+          });
+      }
+      return Promise.resolve();
     });
   }
   return Promise.resolve();
 }
 
-function setContainers(className) {
-  // TODO: Разгрузить через групповой апдейт
-  // TODO: Итератор
-  return scope.dataRepo.getList(className, {
-    filter: {$and: [
-      {_class: {$ne: classNames.REGION}},
-      {CONTAINER: {$empty: true}}
-    ]},
-    nestingDepth: 0
-  }).then(function (results) {
-    var p = Promise.resolve();
-    results.forEach(function (item) {
-      p = p.then(function () {
-        var options = {
-          count: 1,
-          nestingDepth: 0
-        };
-        var code = null;
-        switch (item.getClassName()) {
-          case classNames.AREA: code = item.base.KLADR_CODE.substring(0, 2) + '000000000'; break;
-          case classNames.CITY: code = item.base.KLADR_CODE.substring(0, 5) + '000000'; break;
-          case classNames.PLACE: code = item.base.KLADR_CODE.substring(0, 8) + '000'; break;
-          case classNames.STREET: code = item.base.KLADR_CODE.substring(0, 11); break;
-          default: return Promise.resolve();
-        }
-        options.filter = {KLADR_CODE: {$eq: code}};
-        return scope.dataRepo.getList(classNames.ADDROBJ, options)
-          .then(function (containers) {
-            var container = null;
-            if (Array.isArray(containers) && containers.length > 0) {
-              container = containers[0];
-            }
-            return scope.dataRepo.editItem(
-              item.getClassName(),
-              item.getItemId(),
-              {CONTAINER: container.getItemId()},
-              null,
-              {
-                skipResult: true,
-                ignoreIntegrityCheck: true
-              });
-          });
-      });
+function iteratorToChain(iterator, callback) {
+  return function () {
+    return iterator.next().then(function (item) {
+      if (item) {
+        return callback(item).then(iteratorToChain(iterator, callback));
+      }
+      return Promise.resolve();
     });
-    return p;
+  };
+}
+
+function setContainersByItem(item) {
+  return scope.dataRepo.bulkUpdate(
+    classNames.ADDROBJ,
+    {
+      skipResult: true,
+      filter: {CONTAINER: {$eq: item.base.KLADR_CODE}}
+    },
+    {
+      CONTAINER: item.getItemId()
+    }
+  ).then(function () {
+    return scope.dataRepo.getIterator(classNames.ADDROBJ, {
+      nestingDepth: 0,
+      filter: {CONTAINER: {$eq: item.base.KLADR_CODE}}
+    }).then(function (iterator) {
+      return iteratorToChain(iterator, setContainersByItem)();
+    });
+  });
+}
+
+function setContainers() {
+  return scope.dataRepo.getIterator(classNames.REGION, {nestingDepth: 0}).then(function (iterator) {
+    return iteratorToChain(iterator, setContainersByItem)();
   });
 }
 
@@ -256,76 +249,78 @@ function reassign(record) {
   return scope.dataRepo.getList(className, {
     count: 1,
     nestingDepth: 0,
-    filter: {KLADR_CODE: {$eq: record.NEWCODE.substring(0, record.NEWCODE.length - 2)}}
+    filter: {KLADR_CODE: {$eq: record.NEWCODE.substring(0, 11)}}
   }).then(function (containers) {
     var container = null;
     if (Array.isArray(containers) && containers.length > 0) {
       container = containers[0];
     }
     if (container) {
-      var prefix = null;
-      switch (classNameByFiasCode(record.OLDCODE)) {
-        case classNames.REGION: prefix = record.OLDCODE.substring(0, 2); break;
-        case classNames.AREA: prefix = record.OLDCODE.substring(0, 5); break;
-        case classNames.CITY: prefix = record.OLDCODE.substring(0, 8); break;
-        case classNames.PLACE: prefix = record.OLDCODE.substring(0, 11); break;
-      }
-      // TODO: Итератор
-      return scope.dataRepo.getList(classNames.ADDROBJ, {
-        nestingDepth: 0,
-        // TODO: Тут можно использовать спец поля с кодом родителя, которое потом удалять
-        filter: {KLADR_CODE: {$regex: '^' + prefix}}
-      }).then(function (items) {
-        var p = Promise.resolve();
-        items.forEach(function (item) {
-          p = p.then(function () {
-            return scope.dataRepo.editItem(
-              item.getClassName(),
-              item.getItemId(),
-              {CONTAINER: container.getItemId()},
-              null,
-              {
-                skipResult: true,
-                ignoreIntegrityCheck: true
-              });
-          });
+      return scope.dataRepo.bulkUpdate(
+        classNames.ADDROBJ,
+        {
+          skipResult: true,
+          filter: {CONTAINER: {$eq: record.OLDCODE.substring(0, 11)}}
+        },
+        {
+          CONTAINER: container.getItemId()
         });
-        return p;
-      });
     } else {
       return Promise.reject(new Error(`Не удаётся найти переподчиненную запись ${record.NEWCODE}.`));
     }
   });
 }
 
-function checkContainers(className) {
-  // TODO: Итератор
-  return scope.dataRepo.getList(className, {
+function checkContainers() {
+  return scope.dataRepo.getIterator(classNames.ADDROBJ, {
     filter: {$and: [
       {_class: {$ne: classNames.REGION}},
       {CONTAINER: {$empty: true}}
     ]},
     nestingDepth: 0
-  }).then(function (results) {
-    results.forEach(function (result) {
-      console.error(`Запись ${result.getItemId()}, ` +
-        `принадлежащая классу ${result.getClassName()}, не имеет ссылки на контейнер.`);
+  }).then(function (iterator) {
+    return iteratorToChain(iterator, function (item) {
+      console.error(`Запись ${item.getItemId()}, ` +
+        `принадлежащая классу ${item.getClassName()}, не имеет ссылки на контейнер.`);
     });
-    return Promise.resolve();
   }).then(function () {
-    // TODO: Итератор
-    return scope.dataRepo.getList(className, {
+    return scope.dataRepo.getIterator(classNames.ADDROBJ, {
       filter: {$and: [
         {CONTAINER: {$empty: false}},
-        {'CONTAINER.CODE': {$empty: true}}
+        {'CONTAINER.ID': {$empty: true}}
       ]},
       nestingDepth: 0
     });
-  }).then(function (results) {
-    results.forEach(function (result) {
-      console.error(`Запись ${result.getItemId()} ссылается на несуществующий контейнер ${result.base.CONTAINER}.`);
+  }).then(function (iterator) {
+    return iteratorToChain(iterator, function (item) {
+      console.error(`Запись ${item.getItemId()} ссылается на несуществующий контейнер ${item.base.CONTAINER}.`);
     });
-    return Promise.resolve();
+  });
+}
+
+function makeCopies() {
+  return scope.dataRepo.getIterator(classNames.ADDROBJ, {
+    filter: {$and: [
+      {_class: {$ne: classNames.PLAN}},
+      {_class: {$ne: classNames.STREET}},
+      {_class: {$ne: classNames.EXTR}},
+      {_class: {$ne: classNames.SEXT}}
+    ]},
+    nestingDepth: 0
+  }).then(function (iterator) {
+    return iteratorToChain(iterator, function (item) {
+      var data = {};
+      for (var p in item.base) {
+        if (item.base.hasOwnProperty(p) && p[0] === '_') {
+          data[p] = item.base[p];
+        }
+      }
+      return scope.dataRepo.createItem(item.getClassName().replace('@', '_REPLICA@'), data, null, null,
+        {
+          skipResult: true,
+          ignoreIntegrityCheck: true
+        });
+    });
   });
 }
 
@@ -378,7 +373,7 @@ function classNameByFiasCode(code) {
   }
 }
 
-function getData(record) {
+function getData(record, className) {
   var data = {};
   if (isFias === true) {
     data.ID = record.AOGUID;
@@ -393,11 +388,16 @@ function getData(record) {
     data.CONTAINER = record.PARENTGUID;
   } else if (isFias === false) {
     data.KLADR_CODE = record.CODE.substring(0, record.CODE.length - 2);
-    // TODO: Тут можно формировать спец поля с кодом родителя, которое потом удалять
     data.SHORTNAME = convertCharset(record.SOCR);
     data.OFFNAME = convertCharset(record.NAME);
     data.OKATO = record.OCATD;
     data.POSTALCODE = record.INDEX;
+    switch (className) {
+      case classNames.AREA: data.CONTAINER = data.KLADR_CODE.substring(0, 2) + '000000000'; break;
+      case classNames.CITY: data.CONTAINER = data.KLADR_CODE.substring(0, 5) + '000000'; break;
+      case classNames.PLACE: data.CONTAINER = data.KLADR_CODE.substring(0, 8) + '000'; break;
+      case classNames.STREET: data.CONTAINER = data.KLADR_CODE.substring(0, 11); break;
+    }
   }
   return data;
 }

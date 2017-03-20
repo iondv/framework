@@ -50,20 +50,36 @@ function DataSource() {
    * @param {String} type
    * @param {{}} conditions
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
-  this.update = function (type, conditions, data) {
-    return this._update(type, conditions, data);
+  this.update = function (type, conditions, data, options) {
+    return this._update(type, conditions, data, options || {});
   };
 
   /**
    * @param {String} type
    * @param {{}} conditions
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
-  this.upsert = function (type, conditions, data) {
-    return this._upsert(type, conditions, data);
+  this.updateMany = function (type, conditions, data, options) {
+    return this._updateMany(type, conditions, data, options || {});
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @returns {Promise}
+   */
+  this.upsert = function (type, conditions, data, options) {
+    return this._upsert(type, conditions, data, options || {});
   };
 
   /**
