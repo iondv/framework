@@ -1210,7 +1210,7 @@ function IonDataRepository(options) {
           return _this.ds.insert(tn(rcm), updates, options);
         }).then(function (data) {
           if (options.skipResult) {
-            return Promise.resolve();
+            return resolve(true);
           }
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
@@ -1293,7 +1293,7 @@ function IonDataRepository(options) {
             return _this.ds.update(tn(rcm), conditions, updates, options);
           }).then(function (data) {
             if (options.skipResult) {
-              resolve();
+              return resolve(true);
             }
             if (!data) {
               return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
@@ -1407,7 +1407,7 @@ function IonDataRepository(options) {
           }
         }).then(function (data) {
           if (options.skipResult) {
-            return Promise.resolve();
+            return Promise.resolve(true);
           }
           var item = _this._wrap(data._class, data, data._classVer);
           return logChanges(changeLogger, {type: event, item: item, updates: updates}).
@@ -1520,7 +1520,7 @@ function IonDataRepository(options) {
       });
     }).then(function (data) {
       if (options.skipResult) {
-        return Promise.resolve();
+        return Promise.resolve(true);
       }
       var res = [];
       var fl = [];

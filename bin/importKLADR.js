@@ -29,6 +29,8 @@ const classNames = {
   ADDROBJ: 'ADDROBJ@develop-and-test'
 };
 
+var start = new Date();
+
 var sysLog = new IonLogger({});
 var scope = null;
 var charset = 'cp866';
@@ -40,7 +42,16 @@ for (var i = 0; i < process.argv.length; i++) {
   if (process.argv[i] === '--sourcePath') {
     sourcePath = process.argv[i + 1];
   } else if (process.argv[i] === '--region') {
-    regionFilter = process.argv[i + 1];
+    var rF = parseInt(process.argv[i + 1]);
+    if (rF < 100 || rF > 0) {
+      regionFilter = process.argv[i + 1];
+      if (regionFilter.length === 1) {
+        regionFilter = '0' + regionFilter;
+      }
+    } else {
+      console.error('Фильтр по регионам не соответствует формату.');
+      process.exit(130);
+    }
   } else if (process.argv[i] === '--charset') {
     charset = process.argv[i + 1];
   } else if (process.argv[i] === '--FIAS') {
@@ -76,10 +87,18 @@ di('app', config.di,
   }
 }).then(function () {
   if (isFias === false) {
-    return importFile(path.join(sourcePath, 'ALTNAMES.DBF'), reassign).then(setContainers);
+    console.log('обработка переподчинений.');
+    return importFile(path.join(sourcePath, 'ALTNAMES.DBF'), reassign).
+    then(function () {
+      console.log('Установка ссылок на контейнеры.');
+      return scope.dataRepo.getIterator(classNames.REGION, {nestingDepth: 0}).then(function (iterator) {
+        return iteratorToChain(iterator, setContainersByItem)();
+      });
+    });
   }
   return Promise.resolve();
 }).then(function () {
+  console.log('Проверка ссылочной целостности реестра.');
   return checkContainers();
 }).then(function () {
   return makeCopies();
@@ -87,7 +106,7 @@ di('app', config.di,
   return scope.dataSources.disconnect();
 }).then(
   function () {
-    console.log('Импорт справочника адресов успешно завершен.');
+    console.log(`Импорт справочника адресов успешно завершен. Затрачено ${(new Date() - start) / 1000} секунд.`);
     process.exit(0);
   }
 ).catch(function (err) {
@@ -98,7 +117,6 @@ di('app', config.di,
 
 function importFile(fn, recordCallback) {
   return new Promise(function (resolve) {
-    var start = new Date();
     var counter = 0;
     var gCounter = 0;
     var parser = new DBF(fn, {parseTypes: false});
@@ -127,7 +145,7 @@ function importFile(fn, recordCallback) {
       },
       objectMode: true
     })).on('finish', function () {
-      console.log(`\nОбработано ${counter} записей. Затрачено ${(new Date() - start) / 1000} секунд.`);
+      console.log(`\nГотово. Обработано ${counter} записей.`);
       resolve();
     });
   });
@@ -162,8 +180,10 @@ function importRecord(record) {
       };
       if (item) {
         for (var val in item.base) {
-          if (item.base.hasOwnProperty(val) && dummy.hasOwnProperty(val) && item.base[val] === dummy[val]) {
-            delete dummy[val];
+          if (item.base.hasOwnProperty(val) && dummy.hasOwnProperty(val)) {
+            if (item.base[val] === dummy[val] || val === 'CONTAINER' && isFias === false) {
+              delete dummy[val];
+            }
           }
         }
         if (Object.keys(dummy).length > 0) {
@@ -198,7 +218,10 @@ function importRecord(record) {
           {
             CONTAINER: item.base.KLADR_CODE
           }).then(function () {
-            return scope.dataRepo.deleteItem(item.getClassName(), item.getItemId());
+            return scope.dataRepo.deleteItem(item.getClassName(), item.getItemId()).then(function () {
+              console.log(`\rУдален из реестра более неактуальный адресный объект ${item.base.KLADR_CODE}.`);
+              return Promise.resolve();
+            });
           });
       }
       return Promise.resolve();
@@ -238,12 +261,6 @@ function setContainersByItem(item) {
   });
 }
 
-function setContainers() {
-  return scope.dataRepo.getIterator(classNames.REGION, {nestingDepth: 0}).then(function (iterator) {
-    return iteratorToChain(iterator, setContainersByItem)();
-  });
-}
-
 function reassign(record) {
   var className = classNameByFiasCode(record.NEWCODE);
   return scope.dataRepo.getList(className, {
@@ -272,33 +289,54 @@ function reassign(record) {
 }
 
 function checkContainers() {
+  var showIdentificators = function (iterator) {
+    var s = [];
+    return iteratorToChain(iterator, function (item) {
+      s.push(item.getItemId());
+      if (s.length % 5 === 0 && s.length) {
+        console.error(JSON.stringify(s));
+        s = [];
+      }
+      return Promise.resolve();
+    })().then(function () {
+      if (s.length) {
+        console.error(JSON.stringify(s));
+      }
+      return Promise.resolve();
+    });
+  };
+
   return scope.dataRepo.getIterator(classNames.ADDROBJ, {
     filter: {$and: [
       {_class: {$ne: classNames.REGION}},
       {CONTAINER: {$empty: true}}
     ]},
-    nestingDepth: 0
+    nestingDepth: 0,
+    countTotal: true
   }).then(function (iterator) {
-    return iteratorToChain(iterator, function (item) {
-      console.error(`Запись ${item.getItemId()}, ` +
-        `принадлежащая классу ${item.getClassName()}, не имеет ссылки на контейнер.`);
-    });
+    if (iterator.count()) {
+      console.error(`Обнаружено ${iterator.count()} записей, которые не имеют ссылки на контейнер.`);
+    }
+    return showIdentificators(iterator);
   }).then(function () {
     return scope.dataRepo.getIterator(classNames.ADDROBJ, {
       filter: {$and: [
         {CONTAINER: {$empty: false}},
         {'CONTAINER.ID': {$empty: true}}
       ]},
-      nestingDepth: 0
+      nestingDepth: 0,
+      countTotal: true
     });
   }).then(function (iterator) {
-    return iteratorToChain(iterator, function (item) {
-      console.error(`Запись ${item.getItemId()} ссылается на несуществующий контейнер ${item.base.CONTAINER}.`);
-    });
+    if (iterator.count()) {
+      console.error(`Обнаружено ${iterator.count()} записей, которые ссылаются на несуществующий контейнер.`);
+    }
+    return showIdentificators(iterator);
   });
 }
 
 function makeCopies() {
+  var counter = 0;
   return scope.dataRepo.getIterator(classNames.ADDROBJ, {
     filter: {$and: [
       {_class: {$ne: classNames.PLAN}},
@@ -306,8 +344,10 @@ function makeCopies() {
       {_class: {$ne: classNames.EXTR}},
       {_class: {$ne: classNames.SEXT}}
     ]},
-    nestingDepth: 0
+    nestingDepth: 0,
+    countTotal: true
   }).then(function (iterator) {
+    console.log(`Дублирование записей верхнего уровня в количестве ${iterator.count()}.`);
     return iteratorToChain(iterator, function (item) {
       var data = {};
       for (var p in item.base) {
@@ -315,12 +355,19 @@ function makeCopies() {
           data[p] = item.base[p];
         }
       }
-      return scope.dataRepo.createItem(item.getClassName().replace('@', '_REPLICA@'), data, null, null,
+      return scope.dataRepo.saveItem(item.getClassName().replace('@', '_REPLICA@'), item.getItemId(), data, null, null,
         {
           skipResult: true,
           ignoreIntegrityCheck: true
+        }).then(function (result) {
+          if (result) {
+            counter++;
+          }
         });
-    });
+    })();
+  }).then(function () {
+    console.log(`Дублировано ${counter} записей верхнего уровня.`);
+    return Promise.resolve();
   });
 }
 

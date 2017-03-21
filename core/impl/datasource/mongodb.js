@@ -302,7 +302,7 @@ function MongoDs(config) {
                     reject(err);
                   } else if (result.insertedId) {
                     if (options.skipResult) {
-                      resolve();
+                      return resolve(result);
                     }
                     _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
                   } else {
@@ -439,7 +439,7 @@ function MongoDs(config) {
                         return reject(err);
                       }
                       if (options.skipResult) {
-                        resolve();
+                        return resolve();
                       }
                       _this._get(type, conditions).then(function (r) {
                         if (upsert) {
@@ -455,7 +455,7 @@ function MongoDs(config) {
                         return reject(err);
                       }
                       if (options.skipResult) {
-                        resolve();
+                        return resolve(result);
                       }
                       options.filter = conditions;
                       _this._fetch(type, options).then(resolve).catch(reject);
