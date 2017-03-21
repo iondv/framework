@@ -506,16 +506,22 @@ function CachedDataRepository(options) {
   };
 
   /**
-   * @param {String} className
+   * @param {String} classname
    * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
    * @param {{}} data
-   * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this._bulkUpdate = function (className, options, data, changeLogger) {
-    return dataRepo.bulkUpdate(className, options, data, changeLogger);
+  this._bulkUpdate = function (classname, options, data) {
+    return dataRepo.bulkUpdate(classname, options, data);
   };
 }
 

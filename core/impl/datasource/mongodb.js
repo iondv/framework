@@ -394,7 +394,7 @@ function MongoDs(config) {
     return conditions;
   }
 
-  function doUpdate(type, conditions, data, upsert, multi, skipResult) {
+  function doUpdate(type, conditions, data, upsert, multi, options) {
     var hasData = false;
     if (data) {
       for (var nm in data) {
@@ -435,7 +435,7 @@ function MongoDs(config) {
                       if (err) {
                         return reject(err);
                       }
-                      if (!skipResult) {
+                      if (!options.skipResult) {
                         _this._get(type, conditions).then(function (r) {
                           if (upsert) {
                             return adjustAutoInc(type, r);
@@ -452,8 +452,9 @@ function MongoDs(config) {
                       if (err) {
                         return reject(err);
                       }
-                      if (!skipResult) {
-                        _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
+                      if (!options.skipResult) {
+                        options.filter = conditions;
+                        _this._fetch(type, options).then(resolve).catch(reject);
                       } else {
                         resolve();
                       }
@@ -466,15 +467,15 @@ function MongoDs(config) {
   }
 
   this._update = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, false, false, options.skipResult);
+    return doUpdate(type, conditions, data, false, false, options);
   };
 
   this._upsert = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, true, false, options.skipResult);
+    return doUpdate(type, conditions, data, true, false, options);
   };
 
   this._updateMany = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, false, true, options.skipResult);
+    return doUpdate(type, conditions, data, false, true, options);
   };
 
   this._delete = function (type, conditions) {

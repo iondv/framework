@@ -1470,14 +1470,75 @@ function IonDataRepository(options) {
   /**
    * @param {String} classname
    * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
    * @param {{}} data
-   * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this._bulkUpdate = function (classname, options, data, changeLogger) {
-    return _this.ds.updateMany(type, conditions, data, {skipResult: options.skipResult});
+  this._bulkUpdate = function (classname, options, data) {
+    options = options || {};
+
+    var cm = _this.meta.getMeta(classname);
+    var rcm = getRootType(cm);
+
+    var refUpdates = {};
+    var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+    if (cm.getChangeTracker()) {
+      updates[cm.getChangeTracker()] = new Date();
+    }
+    var fileSavers = [];
+    prepareFileSavers(cm, fileSavers, updates);
+    var chr = checkRequired(cm, updates, true);
+    if (chr !== true) {
+      throw chr;
+    }
+
+    return Promise.all(fileSavers).
+    then(function () {
+      options.filter = addDiscriminatorFilter(options.filter, cm);
+      return prepareFilterValues(cm, options.filter).then(function (filter) {
+        if (options.uid) {
+          updates._editor = options.uid;
+        }
+        return _this.ds.updateMany(tn(rcm), filter, updates, options);
+      });
+    }).then(function (data) {
+      if (options.skipResult) {
+        return Promise.resolve();
+      }
+      var res = [];
+      var fl = [];
+      try {
+        for (var i = 0; i < data.length; i++) {
+          res[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+          fl.push(loadFiles(res[i], _this.fileStorage, _this.imageStorage));
+        }
+      } catch (err) {
+        return Promise.reject(err);
+      }
+
+      if (typeof data.total !== 'undefined' && data.total !== null) {
+        res.total = data.total;
+      }
+
+      return Promise.all(fl).then(function () {
+        return res;
+      }).then(function (result) {
+        return enrich(
+          result,
+          options.nestingDepth ? options.nestingDepth : 0,
+          options.forceEnrichment,
+          options.___loaded
+        );
+      }).then(calcItemsProperties);
+    });
   };
 
   /**

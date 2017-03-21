@@ -574,19 +574,25 @@ function SecuredDataRepository(options) {
   /**
    * @param {String} classname
    * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
    * @param {{}} data
-   * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this._bulkUpdate = function (classname, options, data, changeLogger) {
+  this._bulkUpdate = function (classname, options, data) {
     return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
         if (
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE]
         ) {
-          return dataRepo.bulkUpdate(classname, options, data, changeLogger);
+          return dataRepo.bulkUpdate(classname, options, data);
         }
         return rejectByClass(classname);
       });

@@ -214,16 +214,22 @@ function DataRepository() {
   };
 
   /**
-   * @param {String} className
+   * @param {String} classname
    * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
    * @param {{}} data
-   * @param {ChangeLogger} [changeLogger]
    * @returns {Promise}
    */
-  this.bulkUpdate = function (className, options, data, changeLogger) {
-    return this._bulkUpdate(className, options || {}, data, changeLogger);
+  this.bulkUpdate = function (classname, options, data) {
+    return this._bulkUpdate(classname, options || {}, data);
   };
 }
 
