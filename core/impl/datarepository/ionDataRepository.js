@@ -949,7 +949,7 @@ function IonDataRepository(options) {
      * @returns {Promise.<TResult>}
      */
     function setBrLink(rcm, conds, ups) {
-      return _this._getItem(rcm.getCanonicalName(), updates[pm.name], {forcedEnrichment: [[pm.backRef]]})
+      return _this._getItem(rcm.getCanonicalName(), String(updates[pm.name]), {forcedEnrichment: [[pm.backRef]]})
         .then(function (bro) {
           var lost = bro.property(pm.backRef).evaluate();
           if (lost) {
@@ -966,16 +966,22 @@ function IonDataRepository(options) {
       if (!rpm.nullable) {
         if (options.log) {
           options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
-            '" не может быть отвязан. Обратная ссылка не была присвоена.');
+              '" не может быть отвязан. Обратная ссылка не была присвоена.');
         }
         return Promise.resolve();
       } else {
+        if (!updates[pm.name]) {
+          return options.dataSource.update(tn(rcm), clrf, clr);
+        }
         return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
           return setBrLink(rcm, conds, ups);
         });
       }
     }
 
+    if (!updates[pm.name]) {
+      return Promise.resolve();
+    }
     return setBrLink(rcm, conds, ups);
   }
 
