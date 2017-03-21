@@ -40,10 +40,12 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
-  this.insert = function (type, data) {
-    return this._insert(type, data);
+  this.insert = function (type, data, options) {
+    return this._insert(type, data, options);
   };
 
   /**

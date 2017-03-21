@@ -286,7 +286,7 @@ function MongoDs(config) {
     return data;
   }
 
-  this._insert = function (type, data) {
+  this._insert = function (type, data, options) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
@@ -301,6 +301,9 @@ function MongoDs(config) {
                   if (err) {
                     reject(err);
                   } else if (result.insertedId) {
+                    if (options.skipResult) {
+                      resolve();
+                    }
                     _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
                   } else {
                     reject(new Error('Inser failed'));
@@ -435,16 +438,15 @@ function MongoDs(config) {
                       if (err) {
                         return reject(err);
                       }
-                      if (!options.skipResult) {
-                        _this._get(type, conditions).then(function (r) {
-                          if (upsert) {
-                            return adjustAutoInc(type, r);
-                          }
-                          return Promise.resolve(r);
-                        }).then(resolve).catch(reject);
-                      } else {
+                      if (options.skipResult) {
                         resolve();
                       }
+                      _this._get(type, conditions).then(function (r) {
+                        if (upsert) {
+                          return adjustAutoInc(type, r);
+                        }
+                        return Promise.resolve(r);
+                      }).then(resolve).catch(reject);
                     });
                 } else {
                   c.updateMany(conditions, updates,
@@ -452,12 +454,11 @@ function MongoDs(config) {
                       if (err) {
                         return reject(err);
                       }
-                      if (!options.skipResult) {
-                        options.filter = conditions;
-                        _this._fetch(type, options).then(resolve).catch(reject);
-                      } else {
+                      if (options.skipResult) {
                         resolve();
                       }
+                      options.filter = conditions;
+                      _this._fetch(type, options).then(resolve).catch(reject);
                     });
                 }
               });

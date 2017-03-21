@@ -1207,32 +1207,35 @@ function IonDataRepository(options) {
           if (options.uid) {
             updates._creator = options.uid;
           }
-          return _this.ds.insert(tn(rcm), updates);
+          return _this.ds.insert(tn(rcm), updates, options);
         }).then(function (data) {
+          if (options.skipResult) {
+            return Promise.resolve();
+          }
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
           delete updates._creator;
-          return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
-        }).then(function (item) {
-          return updateBackRefs(item, cm, data);
-        }).then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
-        }).then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item,
-            data: data
-          });
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
-            return calcProperties(item, options.skipResult);
-          }
-        ).then(resolve).catch(reject);
+          return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates}).
+          then(function (item) {
+            return updateBackRefs(item, cm, data);
+          }).then(function (item) {
+            return refUpdator(item, refUpdates, changeLogger);
+          }).then(function (item) {
+            return loadFiles(item, _this.fileStorage, _this.imageStorage);
+          }).then(function (item) {
+            return _this.trigger({
+              type: item.getMetaClass().getCanonicalName() + '.create',
+              item: item,
+              data: data
+            });
+          }).then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
+          then(
+            function (item) {
+              return calcProperties(item, options.skipResult);
+            }
+          ).then(resolve).catch(reject);
+        });
       } catch (err) {
         reject(err);
       }
@@ -1287,8 +1290,11 @@ function IonDataRepository(options) {
             if (options.uid) {
               updates._editor = options.uid;
             }
-            return _this.ds.update(tn(rcm), conditions, updates, {skipResult: options.skipResult});
+            return _this.ds.update(tn(rcm), conditions, updates, options);
           }).then(function (data) {
+            if (options.skipResult) {
+              resolve();
+            }
             if (!data) {
               return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
             }
@@ -1383,7 +1389,7 @@ function IonDataRepository(options) {
                 }
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates, {skipResult: options.skipResult}); // TODO передавать игнорирование целостности
+              return chr !== true ? Promise.reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates, options); // TODO передавать игнорирование целостности
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1394,41 +1400,44 @@ function IonDataRepository(options) {
                 }
                 chr = true;// Если задано игнорировать целостность - игнорируем
               }
-              return chr !== true ? Promise.reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
+              return chr !== true ? Promise.reject(chr) : _this.ds.insert(tn(rcm), updates, options); // TODO передавать игнорирование целостности
             }
           } catch (err) {
             return Promise.reject(err);
           }
         }).then(function (data) {
+          if (options.skipResult) {
+            return Promise.resolve();
+          }
           var item = _this._wrap(data._class, data, data._classVer);
-          return logChanges(changeLogger, {type: event, item: item, updates: updates});
-        }).then(function (item) {
-          if (!options.ignoreIntegrityCheck) {
-            return updateBackRefs(item, cm, data, id || item.getItemId());
-          } else {
-            return Promise.resolve(item);
-          }
-        }).then(function (item) {
-          if (!options.ignoreIntegrityCheck) {
-            return refUpdator(item, refUpdates, changeLogger);
-          } else {
-            return Promise.resolve(item);
-          }
-        }).then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item,
-            updates: data
-          });
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
-            return calcProperties(item, options.skipResult);
-          }
-        );
+          return logChanges(changeLogger, {type: event, item: item, updates: updates}).
+          then(function (item) {
+            if (!options.ignoreIntegrityCheck) {
+              return updateBackRefs(item, cm, data, id || item.getItemId());
+            } else {
+              return Promise.resolve(item);
+            }
+          }).then(function (item) {
+            if (!options.ignoreIntegrityCheck) {
+              return refUpdator(item, refUpdates, changeLogger);
+            } else {
+              return Promise.resolve(item);
+            }
+          }).then(function (item) {
+            return loadFiles(item, _this.fileStorage, _this.imageStorage);
+          }).then(function (item) {
+            return _this.trigger({
+              type: item.getMetaClass().getCanonicalName() + '.save',
+              item: item,
+              updates: data
+            });
+          }).then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
+          then(
+            function (item) {
+              return calcProperties(item, options.skipResult);
+            }
+          );
+        });
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1583,7 +1592,7 @@ function IonDataRepository(options) {
             }
             if (act) {
               mrcm = getRootType(m[i].getMetaClass());
-              writers.push(_this.ds.update(tn(mrcm), cond, updates));
+              writers.push(_this.ds.update(tn(mrcm), cond, updates, {skipResult: true}));
             }
           }
         }
