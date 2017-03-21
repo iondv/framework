@@ -1009,7 +1009,10 @@ function IonDataRepository(options) {
       }
       p = changeLogger.LogChange(
         record.type,
-        record.item.getMetaClass().getCanonicalName(),
+        {
+          name: record.item.getMetaClass().getCanonicalName(),
+          version: record.item.getMetaClass().getVersion()
+        },
         record.item.getItemId(),
         record.updates,
         base

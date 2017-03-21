@@ -22,7 +22,9 @@ function DsChangeLogger(ds, authCallback) {
 
   /**
    * @param {String} type
-   * @param {String} objectClass
+   * @param {String | {}} objectClass
+   * @param {String} objectClass.name
+   * @param {String} objectClass.version
    * @param {String} objectId
    * @param {Object} updates
    * @param {{}} base
@@ -37,7 +39,8 @@ function DsChangeLogger(ds, authCallback) {
     return _this.ds.insert('ion_changelog', {
         timestamp: new Date(),
         type: type,
-        className: objectClass,
+        className: typeof objectClass === 'string' ? objectClass : objectClass.name,
+        classVersion: typeof objectClass === 'string' ? null : objectClass.version,
         id: objectId,
         author: author,
         base: base,
@@ -47,8 +50,11 @@ function DsChangeLogger(ds, authCallback) {
           new ChangeLogger.Change(
             item.timestamp,
             item.type,
-            item.className,
-            item.id,
+            {
+              className: item.className,
+              classVersion: item.classVersion,
+              id: item.id
+            },
             item.author,
             item.updates,
             item.base
@@ -80,8 +86,11 @@ function DsChangeLogger(ds, authCallback) {
           result.push(new ChangeLogger.Change(
             typeof changes[i].timestamp === 'string' ? Date.parse(changes[i].timestamp) : changes[i].timestamp,
             changes[i].type,
-            changes[i].className,
-            changes[i].id,
+            {
+              className: changes[i].className,
+              classVersion: changes[i].classVersion,
+              id: changes[i].id
+            },
             changes[i].author,
             changes[i].data,
             changes[i].base

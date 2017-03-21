@@ -3,7 +3,7 @@
  */
 'use strict';
 
-var logRecordTypes = {
+const logRecordTypes = {
   CREATE: 'CREATE',
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
@@ -11,17 +11,21 @@ var logRecordTypes = {
   EJECT: 'EJECT'
 };
 
+// jshint maxparams: 10
+
 /**
  * @param {Date} time
  * @param {String} type
- * @param {String} className
- * @param {String} id
+ * @param {{}} obj
+ * @param {String} obj.className
+ * @param {String} obj.classVersion
+ * @param {String} obj.id
  * @param {String} author
  * @param {{}} updates
  * @param {{}} base
  * @constructor
  */
-function Change(time, type, className, id, author, updates, base) {
+function Change(time, type, obj, author, updates, base) {
 
   /**
    * @type {Date}
@@ -36,12 +40,17 @@ function Change(time, type, className, id, author, updates, base) {
   /**
    * @type {String}
    */
-  this.className = className;
+  this.className = obj.className;
 
   /**
    * @type {String}
    */
-  this.id = id;
+  this.classVersion = obj.classVersion;
+
+  /**
+   * @type {String}
+   */
+  this.id = obj.id;
 
   /**
    * @type {String}
@@ -65,7 +74,9 @@ function Change(time, type, className, id, author, updates, base) {
 function ChangeLogger() {
   /**
    * @param {String} type
-   * @param {String} objectClass
+   * @param {{} | String} objectClass
+   * @param {String} objectClass.name
+   * @param {String} objectClass.version
    * @param {String} objectId
    * @param {{}} updates
    * @param {{}} [base]
