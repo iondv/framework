@@ -18,9 +18,10 @@ var logRecordTypes = {
  * @param {String} id
  * @param {String} author
  * @param {{}} updates
+ * @param {{}} base
  * @constructor
  */
-function Change(time, type, className, id, author, updates) {
+function Change(time, type, className, id, author, updates, base) {
 
   /**
    * @type {Date}
@@ -51,6 +52,11 @@ function Change(time, type, className, id, author, updates) {
    * @type {Object}
    */
   this.updates = updates;
+
+  /**
+   * @type {{}}
+   */
+  this.base = base;
 }
 
 /**
@@ -62,13 +68,14 @@ function ChangeLogger() {
    * @param {String} objectClass
    * @param {String} objectId
    * @param {{}} updates
+   * @param {{}} [base]
    * @returns {Promise}
    */
-  this.LogChange = function (type, objectClass, objectId, updates) {
+  this.LogChange = function (type, objectClass, objectId, updates, base) {
     if (!logRecordTypes.hasOwnProperty(type.toUpperCase())) {
       throw new Error('Неверно указан тип записи журнала изменений!');
     }
-    return this._log(type.toUpperCase(), objectClass, objectId, updates);
+    return this._log(type.toUpperCase(), objectClass, objectId, updates, base || {});
   };
 
   /**
