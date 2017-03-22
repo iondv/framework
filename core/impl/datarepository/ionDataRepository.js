@@ -200,8 +200,9 @@ function IonDataRepository(options) {
   function prepareRefEnrichment(item, property, attrs, loaded) {
     var refc = property.meta._refClass;
     if (refc) {
-      if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
-        attrs[item.classMeta.getName() + '.' + property.getName()] = {
+      let pn = item.classMeta.getName() + '.' + property.getName();
+      if (!attrs.hasOwnProperty(pn)) {
+        attrs[pn] = {
           type: PropertyTypes.REFERENCE,
           refClass: refc,
           attrName: property.getName(),
@@ -210,11 +211,11 @@ function IonDataRepository(options) {
           filter: []
         };
       }
-      var v;
+      let v;
       if (property.meta.backRef) {
         v = item.getItemId();
-        attrs[item.classMeta.getName() + '.' + property.getName()].key = property.meta.backRef;
-        attrs[item.classMeta.getName() + '.' + property.getName()].backRef = true;
+        attrs[pn].key = property.meta.backRef;
+        attrs[pn].backRef = true;
       } else {
         v = item.get(property.getName());
       }
@@ -227,7 +228,9 @@ function IonDataRepository(options) {
           item.references[property.getName()] =
             _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
         } else {
-          attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
+          if (attrs[pn].filter.indexOf(v) < 0) {
+            attrs[pn].filter.push(v);
+          }
         }
       }
     }
@@ -243,8 +246,9 @@ function IonDataRepository(options) {
     var refc = property.meta._refClass;
     item.collections = item.collections || {};
     if (refc) {
-      if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
-        attrs[item.classMeta.getName() + '.' + property.getName()] = {
+      let pn = item.classMeta.getName() + '.' + property.getName();
+      if (!attrs.hasOwnProperty(pn)) {
+        attrs[pn] = {
           type: PropertyTypes.COLLECTION,
           colClass: refc,
           attrName: property.getName(),
@@ -255,21 +259,14 @@ function IonDataRepository(options) {
       }
 
       if (property.meta.backRef && !property.meta.backColl) {
+        let v = null;
         if (property.meta.binding) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.get(property.meta.binding));
+          v = item.get(property.meta.binding);
         } else {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.getItemId());
+          v = item.getItemId();
         }
-        if (property.meta.selConditions) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colFilter =
-            ConditionParser(property.meta.selConditions, property.meta._refClass, item);
-          if (!attrs[item.classMeta.getName() + '.' + property.getName()].colFilter) {
-            delete attrs[item.classMeta.getName() + '.' + property.getName()].colFilter;
-          }
-        }
-        if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].sort =
-            SortingParser(property.meta.selSorting);
+        if (attrs[pn].colItems.indexOf(v) < 0) {
+          attrs[pn].colItems.push(v);
         }
       } else {
         var v = item.get(property.getName());
@@ -281,10 +278,24 @@ function IonDataRepository(options) {
                 _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
               );
             } else {
-              attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(v);
+              if (attrs[pn].colItems.indexOf(v) < 0) {
+                attrs[pn].colItems.push(v);
+              }
             }
           });
         }
+      }
+
+      if (property.meta.selConditions) {
+        attrs[pn].colFilter = ConditionParser(property.meta.selConditions, property.meta._refClass, item);
+        if (!attrs[pn].colFilter) {
+          delete attrs[pn].colFilter;
+        }
+      }
+
+      if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
+        attrs[pn].sort =
+          SortingParser(property.meta.selSorting);
       }
     }
   }
@@ -419,25 +430,25 @@ function IonDataRepository(options) {
 
     return Promise.all(promises).then(
       function (results) {
-        var nm, items, itemsByKey, srcByKey, ids, i, j, v;
-        for (nm in attrs) {
+        var srcByKey;
+        for (let nm in attrs) {
           if (attrs.hasOwnProperty(nm)) {
-            items = results[attrs[nm].pIndex];
+            let items = results[attrs[nm].pIndex];
             if (!items || items.length === 0) {
               continue;
             }
             if (attrs[nm].type === PropertyTypes.REFERENCE) {
-              itemsByKey = {};
+              let itemsByKey = {};
               if (attrs[nm].backRef) {
-                for (i = 0; i < items.length; i++) {
-                  v = items[i].get(attrs[nm].key);
+                for (let i = 0; i < items.length; i++) {
+                  let v = items[i].get(attrs[nm].key);
                   if (!itemsByKey.hasOwnProperty(v)) {
                     itemsByKey[v] = [];
                   }
                   itemsByKey[v].push(items[i]);
                 }
 
-                for (i = 0; i < src.length; i++) {
+                for (let i = 0; i < src.length; i++) {
                   if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
                     if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
                       options.log.warn('Обратной ссылке "' +
@@ -450,11 +461,11 @@ function IonDataRepository(options) {
                   }
                 }
               } else {
-                for (i = 0; i < items.length; i++) {
+                for (let i = 0; i < items.length; i++) {
                   itemsByKey[items[i].getItemId()] = items[i];
                 }
 
-                for (i = 0; i < src.length; i++) {
+                for (let i = 0; i < src.length; i++) {
                   if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
                     src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
                   }
@@ -470,7 +481,7 @@ function IonDataRepository(options) {
                   }
                 }
 
-                for (i = 0; i < items.length; i++) {
+                for (let i = 0; i < items.length; i++) {
                   if (srcByKey.hasOwnProperty(items[i].base[attrs[nm].backRef])) {
                     if (typeof srcByKey[items[i].base[attrs[nm].backRef]].
                         collections[attrs[nm].attrName] === 'undefined') {
@@ -480,16 +491,24 @@ function IonDataRepository(options) {
                   }
                 }
               } else {
-                itemsByKey = {};
-                for (i = 0; i < items.length; i++) {
-                  itemsByKey[items[i].getItemId()] = items[i];
+                let itemsByKey = {};
+                for (let i = 0; i < src.length; i++) {
+                  let ids = src[i].get(attrs[nm].attrName) || [];
+                  for (let j = 0; j < ids.length; j++) {
+                    if (!itemsByKey[ids[j]]) {
+                      itemsByKey[ids[j]] = [];
+                    }
+                    itemsByKey[ids[j]].push(src[i]);
+                  }
                 }
-                for (i = 0; i < src.length; i++) {
-                  ids = src[i].get(attrs[nm].attrName) || [];
-                  src[i].collections[attrs[nm].attrName] = [];
-                  for (j = 0; j < ids.length; j++) {
-                    if (itemsByKey.hasOwnProperty(ids[j])) {
-                      src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[j]]);
+                for (let i = 0; i < items.length; i++) {
+                  if (itemsByKey[items[i].getItemId()]) {
+                    for (let j = 0; j < itemsByKey[items[i].getItemId()].length; j++) {
+                      let srcItem = itemsByKey[items[i].getItemId()][j];
+                      if (!srcItem.collections[attrs[nm].attrName]) {
+                        srcItem.collections[attrs[nm].attrName] = [];
+                      }
+                      srcItem.collections[attrs[nm].attrName].push(items[i]);
                     }
                   }
                 }
