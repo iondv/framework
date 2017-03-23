@@ -1003,7 +1003,7 @@ function MongoDs(config) {
   function fetch(c, options, aggregate, resolve, reject) {
     var r, flds;
     if (aggregate) {
-      r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
+      r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {
       if (options.distinct && options.select.length === 1) {
         r = c.distinct(options.select[0], options.filter || {}, {});

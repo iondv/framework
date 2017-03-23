@@ -33,7 +33,6 @@ var start = new Date();
 
 var sysLog = new IonLogger({});
 var scope = null;
-var charset = 'cp866';
 var sourcePath = null;
 var regionFilter = null;
 var isFias = null;
@@ -52,8 +51,6 @@ for (var i = 0; i < process.argv.length; i++) {
       console.error('Фильтр по регионам не соответствует формату.');
       process.exit(130);
     }
-  } else if (process.argv[i] === '--charset') {
-    charset = process.argv[i + 1];
   } else if (process.argv[i] === '--FIAS') {
     isFias = true;
   } else if (process.argv[i] === '--KLADR') {
@@ -87,12 +84,22 @@ di('app', config.di,
   }
 }).then(function () {
   if (isFias === false) {
-    console.log('обработка переподчинений.');
+    console.log('Обработка переподчинений.');
     return importFile(path.join(sourcePath, 'ALTNAMES.DBF'), reassign).
     then(function () {
       console.log('Установка ссылок на контейнеры.');
-      return scope.dataRepo.getIterator(classNames.REGION, {nestingDepth: 0}).then(function (iterator) {
-        return iteratorToChain(iterator, setContainersByItem)();
+      return scope.dataRepo.getIterator(classNames.REGION, {
+        nestingDepth: 0, countTotal: true
+      }).then(function (iterator) {
+        var counter = 0;
+        return iteratorToChain(iterator, function (item) {
+          return setContainersByItem(item).then(function () {
+            counter++;
+            process.stdout.write('\rПрогресс: ' + Math.round(counter / iterator.count() * 100) + '%');
+          });
+        })().then(function () {
+          console.log('\nГотово.');
+        });
       });
     });
   }
@@ -106,7 +113,8 @@ di('app', config.di,
   return scope.dataSources.disconnect();
 }).then(
   function () {
-    console.log(`Импорт справочника адресов успешно завершен. Затрачено ${(new Date() - start) / 1000} секунд.`);
+    console.log(`Импорт справочника адресов успешно завершен. ` +
+      `Затрачено ${Math.round((new Date() - start) / 60000)} мин.`);
     process.exit(0);
   }
 ).catch(function (err) {
@@ -254,7 +262,8 @@ function setContainersByItem(item) {
   ).then(function () {
     return scope.dataRepo.getIterator(classNames.ADDROBJ, {
       nestingDepth: 0,
-      filter: {CONTAINER: {$eq: item.base.KLADR_CODE}}
+      countTotal: true,
+      filter: {CONTAINER: {$eq: item.getItemId()}}
     }).then(function (iterator) {
       return iteratorToChain(iterator, setContainersByItem)();
     });
@@ -262,29 +271,29 @@ function setContainersByItem(item) {
 }
 
 function reassign(record) {
+  if (regionFilter && !fiasRegionFilter(record.OLDCODE)) {
+    return Promise.resolve();
+  }
   var className = classNameByFiasCode(record.NEWCODE);
   return scope.dataRepo.getList(className, {
     count: 1,
     nestingDepth: 0,
-    filter: {KLADR_CODE: {$eq: record.NEWCODE.substring(0, 11)}}
+    filter: {KLADR_CODE: {$eq: record.NEWCODE.substring(0, record.NEWCODE.length - 2)}}
   }).then(function (containers) {
     var container = null;
     if (Array.isArray(containers) && containers.length > 0) {
       container = containers[0];
     }
-    if (container) {
-      return scope.dataRepo.bulkUpdate(
-        classNames.ADDROBJ,
-        {
-          skipResult: true,
-          filter: {CONTAINER: {$eq: record.OLDCODE.substring(0, 11)}}
-        },
-        {
-          CONTAINER: container.getItemId()
-        });
-    } else {
-      return Promise.reject(new Error(`Не удаётся найти переподчиненную запись ${record.NEWCODE}.`));
-    }
+
+    return scope.dataRepo.bulkUpdate(
+      classNames.ADDROBJ,
+      {
+        skipResult: true,
+        filter: {CONTAINER: {$eq: record.OLDCODE.substring(0, record.OLDCODE.length - 2)}}
+      },
+      {
+        CONTAINER: container ? container.getItemId() : record.NEWCODE.substring(0, record.NEWCODE.length - 2)
+      });
   });
 }
 
@@ -351,7 +360,7 @@ function makeCopies() {
     return iteratorToChain(iterator, function (item) {
       var data = {};
       for (var p in item.base) {
-        if (item.base.hasOwnProperty(p) && p[0] === '_') {
+        if (item.base.hasOwnProperty(p) && p[0] !== '_') {
           data[p] = item.base[p];
         }
       }
@@ -362,11 +371,12 @@ function makeCopies() {
         }).then(function (result) {
           if (result) {
             counter++;
+            process.stdout.write('\rПрогресс: ' + Math.round(counter / iterator.count() * 100) + '%');
           }
         });
     })();
   }).then(function () {
-    console.log(`Дублировано ${counter} записей верхнего уровня.`);
+    console.log(`\nДублировано ${counter} записей верхнего уровня.`);
     return Promise.resolve();
   });
 }
@@ -380,7 +390,11 @@ function isActual(record) {
 function isFiltered(record) {
   return !regionFilter ||
     isFias === true && record.REGIONCODE === regionFilter ||
-    isFias === false && record.CODE.substring(0, 2) === regionFilter;
+    isFias === false && fiasRegionFilter(record.CODE);
+}
+
+function fiasRegionFilter(code) {
+  return code.substring(0, 2) === regionFilter;
 }
 
 function getRecordClass(record) {
@@ -450,5 +464,5 @@ function getData(record, className) {
 }
 
 function convertCharset(text) {
-  return encoding.convert(text, 'utf-8', charset).toString();
+  return encoding.convert(text, 'utf-8', 'cp866').toString();
 }
