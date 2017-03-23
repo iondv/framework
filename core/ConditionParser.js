@@ -112,7 +112,7 @@ function produceAggregationOperation(condition, rcm, context) {
     pn = condition.value[1];
     av = condition.value[0];
     an = 'className';
-    if ((pm = rcm.getPropertyMeta(condition.value[0])) !== null) {
+    if ((pm = findPM(rcm, condition.value[0])) !== null) {
       if (pm.type === PropertyTypes.COLLECTION) {
         an = 'collectionName';
       }
@@ -242,7 +242,7 @@ function ConditionParser(condition, rcm, context) {
         result = {};
         switch (condition.operation) {
           case OperationTypes.DATE: result.$date = toScalar(condition.value, context); break;
-          case OperationTypes.DATEADD: result.$dateadd = toScalar(condition.value, context); break;
+          case OperationTypes.DATEADD: result.$dateAdd = toScalar(condition.value, context); break;
         }
         return result;
       }

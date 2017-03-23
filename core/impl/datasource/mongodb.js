@@ -493,7 +493,15 @@ function MongoDs(config) {
           } else if (nm === '$dateAdd') {
             let args = [];
             for (let k = 0; k < conditions[nm].length; k++) {
-              args.push(conditions[nm][k].replace(/^$/, 'this.'));
+              if (conditions[nm][k][0] === '$') {
+                args.push(conditions[nm][k].replace(/^\$/, 'this.'));
+              } else {
+                if (isNaN(conditions[nm][k])) {
+                  args.push('"' + conditions[nm][k] + '"');
+                } else {
+                  args.push(conditions[nm][k]);
+                }
+              }
             }
             if (parent2) {
               delete parent2[part2];
@@ -512,6 +520,10 @@ function MongoDs(config) {
               parent.$where = 'this.' + part + ' = dateAdd(' + args.join(', ') + ')';
             } else {
               throw new Error('Ошибка в синтаксисе условий запроса.');
+            }
+          } else if (nm === '$joinExists') {
+            if (conditions[nm].filter) {
+              prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false, part, parent);
             }
           } else {
             prepareConditions(conditions[nm], nm, conditions, true, part, parent);
@@ -1027,7 +1039,9 @@ function MongoDs(config) {
         if (postfilter) {
           result.push({$match: postfilter});
         }
-        Array.prototype.push.apply(result, wind(resultAttrs));
+        if (resultAttrs.length) {
+          Array.prototype.push.apply(result, wind(resultAttrs));
+        }
       }
 
       if (forcedStages.length) {
