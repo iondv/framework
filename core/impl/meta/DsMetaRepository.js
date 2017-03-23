@@ -605,38 +605,8 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    */
   function produceSemantics(cm) {
-    var i, propertyMetas;
-
-    if (cm) {
-      propertyMetas = cm.getPropertyMetas();
-
-      for (i = 0; i < propertyMetas.length; i++) {
-        if (
-          (
-            propertyMetas[i].type === PropertyTypes.REFERENCE ||
-            propertyMetas[i].type === PropertyTypes.COLLECTION
-          ) && propertyMetas[i].semantic) {
-          var refcm = getFromMeta(
-            propertyMetas[i].type === PropertyTypes.COLLECTION ?
-              propertyMetas[i].itemsClass : propertyMetas[i].refClass,
-            cm.getVersion(),
-            cm.getNamespace()
-          );
-          if (refcm) {
-            propertyMetas[i].semanticGetter = createSemanticFunc(
-              propertyMetas[i].semantic,
-              refcm,
-              cm._forcedEnrichment,
-              null,
-              propertyMetas[i].name
-            );
-          }
-        }
-      }
-
-      if (cm.plain.semantic) {
-        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
-      }
+    if (cm && cm.plain.semantic) {
+      cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
     }
   }
 
@@ -831,7 +801,7 @@ function DsMetaRepository(options) {
             wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
             options.calc
           ) {
-            wf.transitions[j].assignments[k].formula =
+            wf.transitions[j].assignments[k]._formula =
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
           }
         }
