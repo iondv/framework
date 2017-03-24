@@ -1413,21 +1413,25 @@ function MongoDs(config) {
         return checkAggregation(type, options, plan);
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
-          c.aggregate(plan, function (err, result) {
-            if (err) {
-              return reject(err);
-            }
-            if (tmpApp) {
-              copyColl(tmpApp, options.append, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve();
-              });
-              return;
-            }
-            resolve(result);
-          });
+          try {
+            c.aggregate(plan, function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              if (tmpApp) {
+                copyColl(tmpApp, options.append, function (err) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+                return;
+              }
+              resolve(result);
+            });
+          } catch (err) {
+            reject(err);
+          }
         });
       }
     );
