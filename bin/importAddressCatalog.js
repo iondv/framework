@@ -29,13 +29,13 @@ di('app', config.di,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(function (s) {
   scope = s;
-  return worker(sourcePath, regionFilter, scope.dataRepo);
+  return worker.start(sourcePath, regionFilter, scope.dataRepo, sysLog);
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(function () {
   process.exit(0);
 }).catch(function (err) {
-  console.error(err);
+  sysLog.error(err);
   var exit = function () { process.exit(130); };
   scope.dataSources.disconnect().then(exit).catch(exit);
 });
