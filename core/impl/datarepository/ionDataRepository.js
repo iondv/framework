@@ -1486,7 +1486,7 @@ function IonDataRepository(options) {
             return Promise.resolve(true);
           }
           var item = _this._wrap(data._class, data, data._classVer);
-          return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
+          return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates}).
           then(function (item) {
             if (!options.ignoreIntegrityCheck) {
               return updateBackRefs(item, cm, data, id || item.getItemId());
