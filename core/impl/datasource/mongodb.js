@@ -746,7 +746,9 @@ function MongoDs(config) {
       var pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$joinExists' || name === '$joinNotExists') {
+          if (name.indexOf('.') > 0) {
+            result = true;
+          } else if (name === '$joinExists' || name === '$joinNotExists') {
             jid = joinId(find[name]);
             if (explicitJoins.hasOwnProperty(jid)) {
               j = explicitJoins[jid];
@@ -805,8 +807,12 @@ function MongoDs(config) {
                   result.$nor = [tmp];
                 }
               } else {
-                result = result || {};
-                result[name] = tmp;
+                if (typeof tmp === 'string' && tmp.indexOf('.') > 0) {
+                  result = true;
+                } else {
+                  result = result || {};
+                  result[name] = tmp;
+                }
               }
             }
           }
