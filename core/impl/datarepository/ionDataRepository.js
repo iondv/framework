@@ -1357,37 +1357,36 @@ function IonDataRepository(options) {
           }
             return _this.ds.update(tn(rcm), conditions, updates, options);
         }).then(function (data) {
-            if (options.skipResult) {
-              return resolve(true);
-            }
+          if (options.skipResult) {
+            return Promise.resolve(true);
+          }
           if (!data) {
             return Promise.reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
           }
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._editor;
-          return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
-        }).then(function (item) {
-          return updateBackRefs(item, cm, data, id);
-        }).then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
-        }).then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          if (!suppresEvent) {
-            return _this.trigger({
-              type: item.getMetaClass().getCanonicalName() + '.edit',
-              item: item,
-              updates: data
-            });
-          }
-          return new Promise(function (resolve) {resolve({item: item});});
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
+          return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates}).
+          then(function (item) {
+            return updateBackRefs(item, cm, data, id);
+          }).then(function (item) {
+            return refUpdator(item, refUpdates, changeLogger);
+          }).then(function (item) {
+            return loadFiles(item, _this.fileStorage, _this.imageStorage);
+          }).then(function (item) {
+            if (!suppresEvent) {
+              return _this.trigger({
+                type: item.getMetaClass().getCanonicalName() + '.edit',
+                item: item,
+                updates: data
+              });
+            }
+            return new Promise(function (resolve) {resolve({item: item});});
+          }).
+          then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
+          then(function (item) {
             return calcProperties(item, options.skipResult);
-          }
-        );
+          });
+        });
       } else {
         return Promise.reject(new Error('Не указан идентификатор объекта!'));
       }

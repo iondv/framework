@@ -286,7 +286,8 @@ function MongoDs(config) {
     return data;
   }
 
-  this._insert = function (type, data, options) {
+  this._insert = function (type, data, opts) {
+    var options = opts || {};
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
