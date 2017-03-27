@@ -747,6 +747,7 @@ function MongoDs(config) {
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name.indexOf('.') > 0) {
+            attributes.push(name.substring(0, name.indexOf('.')));
             result = true;
           } else if (name === '$joinExists' || name === '$joinNotExists') {
             jid = joinId(find[name]);
@@ -807,7 +808,10 @@ function MongoDs(config) {
                   result.$nor = [tmp];
                 }
               } else {
-                if (typeof tmp === 'string' && tmp.indexOf('.') > 0) {
+                if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                  attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
+                  result = true;
+                } else if (typeof tmp === 'string' && tmp[0] === '$') {
                   result = true;
                 } else {
                   result = result || {};
@@ -878,36 +882,42 @@ function MongoDs(config) {
    * @returns {*}
    */
   function producePostfilter(find, explicitJoins, prefix) {
-    var result, tmp, i;
     if (Array.isArray(find)) {
-      result = [];
-      for (i = 0; i < find.length; i++) {
-        tmp = producePostfilter(find[i], explicitJoins, prefix);
+      let result = [];
+      for (let i = 0; i < find.length; i++) {
+        let tmp = producePostfilter(find[i], explicitJoins, prefix);
         if (tmp) {
           result.push(tmp);
         }
       }
       return result.length ? result : null;
     } else if (typeof find === 'object') {
-      result = null;
-      for (var name in find) {
+      let result = [];
+      for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
             return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
           } else if (name === '$text') {
             return null;
+          } if (name[0] === '$') {
+            return producePostfilter(find[name], explicitJoins, prefix);
           } else {
-            tmp = producePostfilter(find[name], explicitJoins, prefix);
-            result = result || {};
-            if (name[0] !== '$') {
-              result[prefix ? addPrefix(name, prefix) : name] = tmp;
+            let nm = prefix ? addPrefix(name, prefix) : name;
+            if (typeof find[name] === 'object' && find[name]) {
+              for (let oper in find[name]) {
+                if (find[name].hasOwnProperty(oper)) {
+                  result.push({[oper]: ['$' + nm, producePostfilter(find[name][oper], explicitJoins, prefix)]});
+                }
+              }
             } else {
-              result[name] = tmp;
+              result.push({$eq: ['$' + nm, find[name]]});
             }
           }
         }
       }
-      return result;
+      if (result.length) {
+        return result.length === 1 ? result[0] : {$and: result};
+      }
     }
     return find;
   }
@@ -1006,12 +1016,13 @@ function MongoDs(config) {
       if (options.filter) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
-        if (joins.length > jl) {
+        if (joins.length > jl || attributes.length > resultAttrs.length) {
           postfilter = producePostfilter(options.filter, lookups);
         }
       }
 
-      if (prefilter && typeof prefilter === 'object' && (joins.length || options.to || forcedStages.length)) {
+      if (prefilter && typeof prefilter === 'object' &&
+        (joins.length || attributes.length > resultAttrs.length || options.to || forcedStages.length)) {
         result.push({$match: prefilter});
       }
     } catch (err) {
@@ -1043,7 +1054,7 @@ function MongoDs(config) {
       if (joins.length) {
         processJoins(attributes, joins, result);
         if (postfilter) {
-          result.push({$match: postfilter});
+          result.push({$redact: {$cond: [postfilter, '$$KEEP', '$PRUNE']}});
         }
         if (resultAttrs.length) {
           Array.prototype.push.apply(result, wind(resultAttrs));
