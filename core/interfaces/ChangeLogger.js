@@ -3,7 +3,7 @@
  */
 'use strict';
 
-var logRecordTypes = {
+const logRecordTypes = {
   CREATE: 'CREATE',
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
@@ -11,16 +11,21 @@ var logRecordTypes = {
   EJECT: 'EJECT'
 };
 
+// jshint maxparams: 10
+
 /**
  * @param {Date} time
  * @param {String} type
- * @param {String} className
- * @param {String} id
+ * @param {{}} obj
+ * @param {String} obj.className
+ * @param {String} obj.classVersion
+ * @param {String} obj.id
  * @param {String} author
  * @param {{}} updates
+ * @param {{}} base
  * @constructor
  */
-function Change(time, type, className, id, author, updates) {
+function Change(time, type, obj, author, updates, base) {
 
   /**
    * @type {Date}
@@ -35,12 +40,17 @@ function Change(time, type, className, id, author, updates) {
   /**
    * @type {String}
    */
-  this.className = className;
+  this.className = obj.className;
 
   /**
    * @type {String}
    */
-  this.id = id;
+  this.classVersion = obj.classVersion;
+
+  /**
+   * @type {String}
+   */
+  this.id = obj.id;
 
   /**
    * @type {String}
@@ -51,6 +61,11 @@ function Change(time, type, className, id, author, updates) {
    * @type {Object}
    */
   this.updates = updates;
+
+  /**
+   * @type {{}}
+   */
+  this.base = base;
 }
 
 /**
@@ -59,16 +74,19 @@ function Change(time, type, className, id, author, updates) {
 function ChangeLogger() {
   /**
    * @param {String} type
-   * @param {String} objectClass
+   * @param {{} | String} objectClass
+   * @param {String} objectClass.name
+   * @param {String} objectClass.version
    * @param {String} objectId
    * @param {{}} updates
+   * @param {{}} [base]
    * @returns {Promise}
    */
-  this.LogChange = function (type, objectClass, objectId, updates) {
+  this.LogChange = function (type, objectClass, objectId, updates, base) {
     if (!logRecordTypes.hasOwnProperty(type.toUpperCase())) {
       throw new Error('Неверно указан тип записи журнала изменений!');
     }
-    return this._log(type.toUpperCase(), objectClass, objectId, updates);
+    return this._log(type.toUpperCase(), objectClass, objectId, updates, base || {});
   };
 
   /**
