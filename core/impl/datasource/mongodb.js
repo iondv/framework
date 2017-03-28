@@ -18,6 +18,8 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
+const excludeFormPostfilter = ['$text', '$geoIntersects', '$geoWithin'];
+
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
 /**
@@ -865,12 +867,9 @@ function MongoDs(config) {
         }
       }
     } else {
-      f = {};
-      f[j.alias + '_size'] = 0;
+      f = {$eq: [j.alias + '_size', 0]};
       j.passSize = true;
-      if (!not) {
-        f[j.alias + '_size'] = {$ne: 0};
-      }
+      f = {[not ? '$eq' : '$ne']: [j.alias + '_size', 0]};
     }
     return f;
   }
@@ -895,22 +894,42 @@ function MongoDs(config) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$joinExists' || name === '$joinNotExists') {
-            return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
-          } else if (name === '$text') {
-            return null;
-          } if (name[0] === '$') {
-            return producePostfilter(find[name], explicitJoins, prefix);
+          if (name[0] === '$') {
+            if (name === '$joinExists' || name === '$joinNotExists') {
+              result.push(joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists'));
+            } else {
+              let tmp = producePostfilter(find[name], explicitJoins, prefix);
+              let nm = name;
+              if (name === '$nor') {
+                nm = '$not';
+                if (Array.isArray(tmp)) {
+                  if (tmp.length > 1) {
+                    tmp = {$and: tmp};
+                  }
+                } else {
+                  tmp = [tmp];
+                }
+              }
+              result.push({[nm]: tmp});
+            }
           } else {
             let nm = prefix ? addPrefix(name, prefix) : name;
+            let loperand = '$' + nm;
+
             if (typeof find[name] === 'object' && find[name]) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  result.push({[oper]: ['$' + nm, producePostfilter(find[name][oper], explicitJoins, prefix)]});
+                  if (excludeFormPostfilter.indexOf(oper) < 0) {
+                    if (oper === '$exists') {
+                      result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
+                    } else {
+                      result.push({[oper]: [loperand, producePostfilter(find[name][oper], explicitJoins, prefix)]});
+                    }
+                  }
                 }
               }
             } else {
-              result.push({$eq: ['$' + nm, find[name]]});
+              result.push({$eq: [loperand, find[name]]});
             }
           }
         }
@@ -918,6 +937,7 @@ function MongoDs(config) {
       if (result.length) {
         return result.length === 1 ? result[0] : {$and: result};
       }
+      return null;
     }
     return find;
   }
@@ -1054,7 +1074,7 @@ function MongoDs(config) {
       if (joins.length) {
         processJoins(attributes, joins, result);
         if (postfilter) {
-          result.push({$redact: {$cond: [postfilter, '$$KEEP', '$PRUNE']}});
+          result.push({$redact: {$cond: [postfilter, '$$KEEP', '$$PRUNE']}});
         }
         if (resultAttrs.length) {
           Array.prototype.push.apply(result, wind(resultAttrs));
