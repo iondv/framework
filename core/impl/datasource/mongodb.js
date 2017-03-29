@@ -748,10 +748,7 @@ function MongoDs(config) {
       var pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name.indexOf('.') > 0) {
-            attributes.push(name.substring(0, name.indexOf('.')));
-            result = true;
-          } else if (name === '$joinExists' || name === '$joinNotExists') {
+          if (name === '$joinExists' || name === '$joinNotExists') {
             jid = joinId(find[name]);
             if (explicitJoins.hasOwnProperty(jid)) {
               j = explicitJoins[jid];
@@ -880,11 +877,11 @@ function MongoDs(config) {
    * @param {String} [prefix]
    * @returns {*}
    */
-  function producePostfilter(find, explicitJoins, prefix) {
+  function produceRedactFilter(find, explicitJoins, prefix) {
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePostfilter(find[i], explicitJoins, prefix);
+        let tmp = produceRedactFilter(find[i], explicitJoins, prefix);
         if (tmp) {
           result.push(tmp);
         }
@@ -898,7 +895,7 @@ function MongoDs(config) {
             if (name === '$joinExists' || name === '$joinNotExists') {
               result.push(joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists'));
             } else {
-              let tmp = producePostfilter(find[name], explicitJoins, prefix);
+              let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
               let nm = name;
               if (name === '$nor') {
                 nm = '$not';
@@ -923,7 +920,7 @@ function MongoDs(config) {
                     if (oper === '$exists') {
                       result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
                     } else {
-                      result.push({[oper]: [loperand, producePostfilter(find[name][oper], explicitJoins, prefix)]});
+                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                     }
                   }
                 }
@@ -1031,13 +1028,13 @@ function MongoDs(config) {
       }
 
       var resultAttrs = attributes.slice(0);
-      var prefilter, postfilter, jl;
+      var prefilter, postfilter, redactFilter, jl;
 
       if (options.filter) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
         if (joins.length > jl || attributes.length > resultAttrs.length) {
-          postfilter = producePostfilter(options.filter, lookups);
+          redactFilter = produceRedactFilter(options.filter, lookups);
         }
       }
 
@@ -1073,8 +1070,8 @@ function MongoDs(config) {
     return p.then(function () {
       if (joins.length) {
         processJoins(attributes, joins, result);
-        if (postfilter) {
-          result.push({$redact: {$cond: [postfilter, '$$KEEP', '$$PRUNE']}});
+        if (redactFilter) {
+          result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
         if (resultAttrs.length) {
           Array.prototype.push.apply(result, wind(resultAttrs));
