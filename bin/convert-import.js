@@ -1,6 +1,7 @@
 /**
  * Created by akumidv on 24.08.2016.
  * Конвертор импорта портала в файлы импорта платформы
+ * Если не нужно сохранение в режиме отладки, нужно задать переменную окружения IMPORT = DONTSAVE
  */
 
 // Уточняем параметры jsHint.
@@ -41,12 +42,19 @@ function importApplications(appPathItem) {
   return new Promise(function (resolve, reject) {
     const importedBeforeReference = require(path.join(appPathItem, 'convert-import-app')).importedBeforeReference || {};
     const importedAfterReference = require(path.join(appPathItem, 'convert-import-app')).importedAfterReference || {};
-    const config = require(path.join(appPathItem, 'convert-import-app')).config || {};
+    /** Параметры importOptions
+      saveAll - Сохранять все объекты сразу, а не каждую итерацию и соответственно не очищать
+      skipClassName - пропускаемы в итерационном сохранении классы - сохраняются только по итогу импорта (занимают память)
+      zip - архивировать выдачу
+      zipIgnore: /(declaration@khv-childzem)/ - regexp значение игнрируемых для архивирования файлов - сохранять их как есть (нужно например для пост обработки)
+    */
+    const importOptions = require(path.join(appPathItem, 'convert-import-app')).options || {};
     let importedFolders = require(path.join(appPathItem, 'convert-import-app')).importedFolders || [];
     importedFolders = typeof importedFolders === 'string' ? [importedFolders] : importedFolders;
     const getImportedFiles = require(path.join(appPathItem, 'convert-import-app')).getImportedFiles || empty;
     const convertImportedFiles = require(path.join(appPathItem, 'convert-import-app')).convertImportedFiles || empty;
     const postImportProcessing = require(path.join(appPathItem, 'convert-import-app')).postImportProcessing || empty;
+    const afterSaveProcessing = require(path.join(appPathItem, 'convert-import-app')).afterSaveProcessing || empty;
 
     console.info('Импортируемые папки', importedFolders.toString());
 
@@ -72,7 +80,7 @@ function importApplications(appPathItem) {
         function (res) {
           console.info('Считали мету, импортируем данные приложения', appPathItem);
           let importedData = {meta: res, parsed: {}, verify: {},
-            result: {}, pathData: pathToData};  // Сформировали объект импорта
+            result: {}, pathData: pathToData, config: importOptions};  // Сформировали объект импорта
           if (importedBeforeReference) {
             importedData.reference = importedBeforeReference;
           }
@@ -80,6 +88,11 @@ function importApplications(appPathItem) {
         })
       .then(getBeforeReference)
       .then((importedData) => {
+        /**
+         * Импорт и сохранение партии данных из пути импортируемой базы
+         * @param {String} importPath импортируемый путь
+         * @param {Function} callback
+         */
         function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
@@ -91,15 +104,19 @@ function importApplications(appPathItem) {
               return importedData;
             })
             .then((res) => {
-              if (!config.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
-                return saveImportedFiles(res);
+              if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                return saveImportedFiles(res, importOptions.skipClassName);
               } else {
                 return 0;
               }
             })
-            .then((qntSaved) => {
-              console.log('Сохранили и очистили память после импорта папки', importedPath);
-              callback(null, qntSaved);
+            .then((res) => {
+              if (!importOptions.saveAll) {
+                console.info('Сохранили и очистили память после импорта папки', importedPath);
+              } else {
+                console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
+              }
+              callback(null, res);
             })
             .catch((err)=> {
               callback(err);
@@ -108,7 +125,7 @@ function importApplications(appPathItem) {
 
         /**
          * Итератор импорта
-         * @param {Array} importedFolders
+         * @param {Array} importedFolders - список импортируемых дирректорий
          * @param {Number} i
          * @param {Function} callback
          */
@@ -117,8 +134,8 @@ function importApplications(appPathItem) {
             callback (null);
           } else {
             console.info('Импортируем', importedFolders[i]);
-            importAppBase(importedFolders[i], (err, qntSaved) => {
-              console.info('Закончили импорт %s, сохранено %s объектов', importedFolders[i], qntSaved);
+            importAppBase(importedFolders[i], (err, res) => {
+              console.info('Закончили импорт %s', importedFolders[i]);
               if (err) {
                 callback (err);
               } else {
@@ -156,6 +173,7 @@ function importApplications(appPathItem) {
         return importedData;
       })
       .then(saveImportedFiles)
+      .then(afterSaveProcessing) // Обработка после сохранения (чаще всего самих сохраненных объектов, например проставление единого автоинкремента для объединенной базы)
       .then((res) => {
         resolve(appPathItem);
       })

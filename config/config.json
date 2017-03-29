@@ -229,7 +229,8 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "ion://dataRepo",
+          "calc": "ion://calculator"
         }
       }
     }
