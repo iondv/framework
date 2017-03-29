@@ -18,7 +18,7 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex'];
+const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options'];
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -864,9 +864,12 @@ function MongoDs(config) {
         }
       }
     } else {
-      f = {$eq: [j.alias + '_size', 0]};
+      f = {};
+      f[j.alias + '_size'] = 0;
       j.passSize = true;
-      f = {[not ? '$eq' : '$ne']: [j.alias + '_size', 0]};
+      if (!not) {
+        f[j.alias + '_size'] = {$ne: 0};
+      }
     }
     return f;
   }
@@ -934,18 +937,20 @@ function MongoDs(config) {
         if (find.hasOwnProperty(name)) {
           if (name[0] === '$') {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
-            let nm = name;
-            if (name === '$nor') {
-              nm = '$not';
-              if (Array.isArray(tmp)) {
-                if (tmp.length > 1) {
-                  tmp = {$and: tmp};
+            if (tmp !== null) {
+              let nm = name;
+              if (name === '$nor') {
+                nm = '$not';
+                if (Array.isArray(tmp)) {
+                  if (tmp.length > 1) {
+                    tmp = {$and: tmp};
+                  }
+                } else {
+                  tmp = [tmp];
                 }
-              } else {
-                tmp = [tmp];
               }
+              result.push({[nm]: tmp});
             }
-            result.push({[nm]: tmp});
           } else {
             let nm = prefix ? addPrefix(name, prefix) : name;
             let loperand = '$' + nm;
@@ -1072,7 +1077,8 @@ function MongoDs(config) {
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
         if (joins.length > jl || attributes.length > resultAttrs.length) {
           postfilter = producePostfilter(options.filter, lookups);
-          redactFilter = produceRedactFilter(options.filter, lookups);
+          redactFilter = produceRedactFilter(postfilter, lookups);
+          postfilter = producePrefilter([], postfilter, [], []);
         }
       }
 
