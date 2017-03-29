@@ -18,7 +18,7 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-const excludeFormPostfilter = ['$text', '$geoIntersects', '$geoWithin'];
+const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex'];
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -877,6 +877,47 @@ function MongoDs(config) {
    * @param {String} [prefix]
    * @returns {*}
    */
+  function producePostfilter(find, explicitJoins, prefix) {
+    var result, tmp, i;
+    if (Array.isArray(find)) {
+      result = [];
+      for (i = 0; i < find.length; i++) {
+        tmp = producePostfilter(find[i], explicitJoins, prefix);
+        if (tmp) {
+          result.push(tmp);
+        }
+      }
+      return result.length ? result : null;
+    } else if (typeof find === 'object') {
+      result = null;
+      for (var name in find) {
+        if (find.hasOwnProperty(name)) {
+          if (name === '$joinExists' || name === '$joinNotExists') {
+            return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
+          } else if (name === '$text') {
+            return null;
+          } else {
+            tmp = producePostfilter(find[name], explicitJoins, prefix);
+            result = result || {};
+            if (name[0] !== '$') {
+              result[prefix ? addPrefix(name, prefix) : name] = tmp;
+            } else {
+              result[name] = tmp;
+            }
+          }
+        }
+      }
+      return result;
+    }
+    return find;
+  }
+
+  /**
+   * @param {{}} find
+   * @param {{}} explicitJoins
+   * @param {String} [prefix]
+   * @returns {*}
+   */
   function produceRedactFilter(find, explicitJoins, prefix) {
     if (Array.isArray(find)) {
       let result = [];
@@ -892,23 +933,19 @@ function MongoDs(config) {
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name[0] === '$') {
-            if (name === '$joinExists' || name === '$joinNotExists') {
-              result.push(joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists'));
-            } else {
-              let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
-              let nm = name;
-              if (name === '$nor') {
-                nm = '$not';
-                if (Array.isArray(tmp)) {
-                  if (tmp.length > 1) {
-                    tmp = {$and: tmp};
-                  }
-                } else {
-                  tmp = [tmp];
+            let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
+            let nm = name;
+            if (name === '$nor') {
+              nm = '$not';
+              if (Array.isArray(tmp)) {
+                if (tmp.length > 1) {
+                  tmp = {$and: tmp};
                 }
+              } else {
+                tmp = [tmp];
               }
-              result.push({[nm]: tmp});
             }
+            result.push({[nm]: tmp});
           } else {
             let nm = prefix ? addPrefix(name, prefix) : name;
             let loperand = '$' + nm;
@@ -916,7 +953,7 @@ function MongoDs(config) {
             if (typeof find[name] === 'object' && find[name]) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFormPostfilter.indexOf(oper) < 0) {
+                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
                     if (oper === '$exists') {
                       result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
                     } else {
@@ -1034,6 +1071,7 @@ function MongoDs(config) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
         if (joins.length > jl || attributes.length > resultAttrs.length) {
+          postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(options.filter, lookups);
         }
       }
@@ -1070,6 +1108,9 @@ function MongoDs(config) {
     return p.then(function () {
       if (joins.length) {
         processJoins(attributes, joins, result);
+        if (postfilter) {
+          result.push({$match: postfilter});
+        }
         if (redactFilter) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
