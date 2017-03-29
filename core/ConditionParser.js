@@ -58,7 +58,7 @@ function findPM(cm, name) {
 function produceContainsFilter(rcm, condition, context) {
   var pm = findPM(rcm, condition.property);
   if (pm) {
-    if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+    if (pm.type === PropertyTypes.COLLECTION && pm._refClass) {
       if (condition.value && condition.value.length) {
         var tmp = {};
         tmp[pm._refClass.getKeyProperties()[0]] = {$in: condition.value};
