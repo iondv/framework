@@ -902,6 +902,10 @@ function MongoDs(config) {
         Array.prototype.push.apply(result, wind(resultAttrs));
       }
 
+      if (options.distinct && options.select.length && (result.length || options.select.length > 1)) {
+        Array.prototype.push.apply(result, wind(options.select));
+      }
+
       if (forcedStages.length) {
         Array.prototype.push.apply(result, forcedStages);
       }
