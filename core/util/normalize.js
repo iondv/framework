@@ -11,7 +11,8 @@ const clone = require('clone');
  * @param {*} data
  * @param {Function} dateCallback
  * @param {{}} [options]
- * @param {Boolean} [options.greedy]
+ * @param {Boolean | Number} [options.greedy]
+ * @param {Boolean} [options.byRef]
  * @param {{}} [processed]
  * @returns {{} | null}
  * @private
@@ -29,13 +30,21 @@ function normalize(data, dateCallback, options, processed) {
 
   if (data instanceof Item) {
     if (processed.hasOwnProperty(data.getClassName() + '@' + data.getItemId())) {
-      if (options.greedy) {
-        return clone(processed[data.getClassName() + '@' + data.getItemId()], true, 1);
+      if (options.byRef) {
+        return processed[data.getClassName() + '@' + data.getItemId()];
+      } else {
+        if (options.greedy) {
+          return clone(
+            processed[data.getClassName() + '@' + data.getItemId()],
+            true,
+            isNaN(options.greedy) ? 1 : options.greedy
+          );
+        }
+        return {
+          className: processed[data.getClassName() + '@' + data.getItemId()].className,
+          _id: processed[data.getClassName() + '@' + data.getItemId()]._id
+        };
       }
-      return {
-        className: processed[data.getClassName() + '@' + data.getItemId()].className,
-        _id: processed[data.getClassName() + '@' + data.getItemId()]._id
-      };
     }
     /**
      * @type {{}}
