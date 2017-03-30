@@ -992,7 +992,12 @@ function MongoDs(config) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
     } else {
       if (options.distinct && options.select.length === 1) {
-        r = c.distinct(options.select[0], options.filter || {}, {});
+        return c.distinct(options.select[0], options.filter || {}, {}, function (err, collection) {
+          if (err) {
+            return reject(err);
+          }
+          resolve(collection);
+        });
       } else {
         flds = null;
         r = c.find(options.filter || {});
@@ -1107,17 +1112,25 @@ function MongoDs(config) {
                 return;
               }
 
-              r.toArray(function (err, docs) {
-                r.close();
-                if (err) {
-                  return reject(err);
+              return new Promise(function (res, rej) {
+                if (Array.isArray(r)) {
+                  res(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return rej(err);
+                    }
+                    resolve(docs);
+                  });
                 }
+              }).then(function (docs) {
                 docs.forEach(mergeGeoJSON);
                 if (amount !== null) {
                   docs.total = amount;
                 }
-                resolve(docs);
-              });
+                return resolve(docs);
+              }).catch(reject);
             },
             reject
           );
