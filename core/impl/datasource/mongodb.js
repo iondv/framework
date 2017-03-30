@@ -996,11 +996,31 @@ function MongoDs(config) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
     } else {
       if (options.distinct && options.select.length === 1) {
-        return c.distinct(options.select[0], options.filter || {}, {}, function (err, collection) {
+        return c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
           if (err) {
             return reject(err);
           }
-          resolve(collection);
+          if (options.sort && options.sort[options.select[0]]) {
+            var direction = options.sort[options.select[0]];
+            data = data.sort(function compare(a, b) {
+              if (a < b) {
+                return -1 * direction;
+              } else if (a > b) {
+                return 1 * direction;
+              }
+              return 0;
+            });
+          }
+          var res, stPos, endPos;
+          res = [];
+          stPos = options.offset || 0;
+          endPos = options.count ? stPos + options.count : data.length;
+          for (var i = stPos; i < endPos && i < data.length; i++) {
+            var tmp = {};
+            tmp[options.select[0]] = data[i];
+            res.push(tmp);
+          }
+          resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
         });
       } else {
         flds = null;
