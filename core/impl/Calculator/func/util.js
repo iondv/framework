@@ -5,19 +5,31 @@
 
 // jshint maxstatements: 50, maxcomplexity: 20
 function passValue(v) {
-  var val = v;
-  return Promise.resolve(val);
+  return Promise.resolve(v);
+}
+
+function argCalc(context, args, argCount, sync) {
+  let calc = [];
+  let tmp;
+  let n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
+  for (let i = 0; i < n; i++) {
+    tmp = typeof args[i] === 'function' ? args[i].apply(context, [sync]) : args[i];
+    calc.push(tmp);
+  }
+  return calc;
 }
 
 function argCalcPromise(context, args, argCount) {
-  var calc = [];
-  var tmp;
-  var n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
-  for (var i = 0; i < n; i++) {
-    tmp = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
-    calc.push(tmp instanceof Promise ? tmp : passValue(tmp));
+  let calc = argCalc(context, args, argCount);
+  let promises = [];
+  for (let i = 0; i < calc.length; i++) {
+    promises.push(calc[i] instanceof Promise ? calc[i] : passValue(calc[i]));
   }
-  return Promise.all(calc);
+  return Promise.all(promises);
+}
+
+function argCalcSync(context, args, argCount) {
+  return argCalc(context, args, argCount, true);
 }
 
 function seqPromiseConstructor(context, v) {
@@ -59,4 +71,5 @@ function sequence(context, args, interrupt) {
 }
 
 module.exports.argCalcPromise = argCalcPromise;
+module.exports.argCalcSync = argCalcSync;
 module.exports.argCalcChain = sequence;

@@ -4,10 +4,12 @@
 'use strict';
 
 module.exports = function () {
-  return function () {
-    return new Promise(function (resolve) {
-      resolve(new Date());
-    });
+  return function (sync) {
+    let now = new Date();
+    if (sync) {
+      return now;
+    }
+    return Promise.resolve(now);
   };
 };
 
