@@ -3,18 +3,22 @@
  */
 'use strict';
 const ac = require('../util').argCalcPromise;
+const acSync = require('../util').argCalcSync;
+
+function operation(args) {
+  var result = false;
+  if (args.length === 1) {
+    result = !args[0];
+  }
+  return result;
+}
 
 module.exports = function (args) {
-  return function () {
-    var _this = this;
-    return new Promise(function (resolve, reject) {
-      ac(_this, args, 1).then(function (args) {
-        var result = false;
-        if (args.length === 1) {
-          result = !args[0];
-        }
-        resolve(result);
-      }).catch(reject);
-    });
+  return function (sync) {
+    if (sync) {
+      let cArgs = acSync(this, args, 1);
+      return operation(cArgs);
+    }
+    return ac(this, args, 1).then(args => operation(args));
   };
 };

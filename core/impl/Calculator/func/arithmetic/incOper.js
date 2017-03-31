@@ -16,16 +16,11 @@ function countResult(args, start, cb) {
 module.exports = function (cb, start) {
   return function (args) {
     return function (sync) {
-      var _this = this;
       if (sync) {
         let cArgs = acSync(this, args);
         return countResult(cArgs, start, cb);
       } else {
-        return ac(_this, args)
-          .then(function (args) {
-            let result = countResult(args, start, cb);
-            return Promise.resolve(result);
-          });
+        return ac(this, args).then(cArgs => countResult(cArgs, start, cb));
       }
     };
   };

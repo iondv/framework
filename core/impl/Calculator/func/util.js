@@ -70,6 +70,21 @@ function sequence(context, args, interrupt) {
   return p;
 }
 
+function sequenceSync(context, args, interrupt) {
+  let result;
+  if (!args.length) {
+    return false;
+  }
+  for (var i = 0; i < args.length; i++) {
+    result = typeof args[i] === 'function' ? args[i].apply(context, [true]) : args[i];
+    if (result === interrupt) {
+      return result;
+    }
+  }
+  return result;
+}
+
 module.exports.argCalcPromise = argCalcPromise;
 module.exports.argCalcSync = argCalcSync;
 module.exports.argCalcChain = sequence;
+module.exports.argCalcChainSync = sequenceSync;

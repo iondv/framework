@@ -3,9 +3,13 @@
  */
 'use strict';
 const chain = require('../util').argCalcChain;
+const chainSync = require('../util').argCalcChainSync;
 
 module.exports = function (args) {
-  return function () {
+  return function (sync) {
+    if (sync) {
+      return chainSync(this, args, true);
+    }
     return chain(this, args, true);
   };
 };
