@@ -3,6 +3,7 @@
  */
 'use strict';
 const ac = require('../util').argCalcPromise;
+const acSync = require('../util').argCalcSync;
 
 module.exports = function (collFunc, af) {
   /**
@@ -11,7 +12,10 @@ module.exports = function (collFunc, af) {
    */
   return function (dataRepo) {
     return function (args) {
-      return function () {
+      return function (sync) {
+        if (sync) {
+          return null;
+        }
         var _this = this;
         return new Promise(function (resolve, reject) {
           ac(_this, args, 3).then(function (args) {

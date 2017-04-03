@@ -5,7 +5,7 @@
 const ac = require('../util').argCalcPromise;
 const acSync = require('../util').argCalcSync;
 
-function countResult(args, cb){
+function countResult(args, cb) {
   if (!args.length) {
     return 0;
   }
