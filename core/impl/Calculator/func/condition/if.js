@@ -18,8 +18,7 @@ module.exports = function (args) {
       let cArgs = acSync(this, args, 3);
       return ifStatetement(cArgs);
     } else {
-      return ac(this, args, 3)
-        .then(cArgs => ifStatetement(cArgs));
+      return ac(this, args, 3).then(ifStatetement);
     }
   };
 };

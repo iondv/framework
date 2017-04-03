@@ -28,7 +28,7 @@ module.exports = function (args) {
       let cArgs = acSync(this, args, 3);
       return countResult(cArgs);
     }
-    return ac(this, args, 3).then(cArgs => countResult(cArgs));
+    return ac(this, args, 3).then(countResult);
   };
 };
 

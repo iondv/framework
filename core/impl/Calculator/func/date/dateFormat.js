@@ -16,11 +16,9 @@ function formatDate([date, format]) {
 module.exports = function (args) {
   return function (sync) {
     if (sync) {
-      console.log('sync');
       let cArgs = acSync(this, args, 2);
       return formatDate(cArgs);
     } else {
-      console.log('async');
       return ac(this, args, 2).then(formatDate);
     }
   };

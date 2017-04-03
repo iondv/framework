@@ -23,7 +23,7 @@ module.exports = function (cb) {
         let cArgs = acSync(this, args, 2);
         return operation(cArgs, cb);
       }
-      return ac(this, args, 2).then(cArgs => operation(cArgs));
+      return ac(this, args, 2).then(operation);
     };
   };
 };
