@@ -54,22 +54,11 @@ function DataSource() {
    * @param {{}} data
    * @param {{}} [options]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.bulk]
    * @returns {Promise}
    */
   this.update = function (type, conditions, data, options) {
     return this._update(type, conditions, data, options || {});
-  };
-
-  /**
-   * @param {String} type
-   * @param {{}} conditions
-   * @param {{}} data
-   * @param {{}} [options]
-   * @param {Boolean} [options.skipResult]
-   * @returns {Promise}
-   */
-  this.updateMany = function (type, conditions, data, options) {
-    return this._updateMany(type, conditions, data, options || {});
   };
 
   /**

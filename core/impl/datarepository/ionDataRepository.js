@@ -1562,18 +1562,32 @@ function IonDataRepository(options) {
    * @param {String} classname
    * @param {{}} [options]
    * @param {Object} [options.filter]
-   * @param {Number} [options.offset]
-   * @param {Number} [options.count]
-   * @param {Object} [options.sort]
-   * @param {Boolean} [options.countTotal]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkDelete = function (classname, options) {
+    options = options || {};
+
+    var cm = _this.meta.getMeta(classname);
+    var rcm = getRootType(cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      return _this.ds.delete(tn(rcm), filter);
+    });
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
    * @param {String} [options.uid]
-   * @param {{}} data
    * @returns {Promise}
    */
-  this._bulkUpdate = function (classname, options, data) {
+  this._bulkEdit = function (classname, data, options) {
     options = options || {};
 
     var cm = _this.meta.getMeta(classname);
@@ -1598,37 +1612,13 @@ function IonDataRepository(options) {
         if (options.uid) {
           updates._editor = options.uid;
         }
-        return _this.ds.updateMany(tn(rcm), filter, updates, options);
+        return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
       });
-    }).then(function (data) {
+    }).then(function (matched) {
       if (options.skipResult) {
-        return Promise.resolve(true);
+        return Promise.resolve(matched);
       }
-      var res = [];
-      var fl = [];
-      try {
-        for (var i = 0; i < data.length; i++) {
-          res[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-          fl.push(loadFiles(res[i], _this.fileStorage, _this.imageStorage));
-        }
-      } catch (err) {
-        return Promise.reject(err);
-      }
-
-      if (typeof data.total !== 'undefined' && data.total !== null) {
-        res.total = data.total;
-      }
-
-      return Promise.all(fl).then(function () {
-        return res;
-      }).then(function (result) {
-        return enrich(
-          result,
-          options.nestingDepth ? options.nestingDepth : 0,
-          options.forceEnrichment,
-          options.___loaded
-        );
-      }).then(calcItemsProperties);
+      return _this._getIterator(classname, options);
     });
   };
 

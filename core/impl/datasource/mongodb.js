@@ -398,7 +398,17 @@ function MongoDs(config) {
     return conditions;
   }
 
-  function doUpdate(type, conditions, data, upsert, multi, options) {
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} options
+   * @param {Boolean} options.upsert
+   * @param {Boolean} options.bulk
+   * @param {Boolean} options.skipResult
+   * @returns {Promise}
+     */
+  function doUpdate(type, conditions, data, options) {
     var hasData = false;
     if (data) {
       for (var nm in data) {
@@ -413,6 +423,9 @@ function MongoDs(config) {
     }
 
     if (!hasData) {
+      if (options.skipResult) {
+        return Promise.resolve();
+      }
       return _this._get(type, conditions);
     }
 
@@ -430,24 +443,30 @@ function MongoDs(config) {
                   updates.$unset = data.unset;
                 }
                 prepareConditions(conditions);
-                if (!multi) {
+                if (!options.bulk) {
                   c.updateOne(
                     conditions,
                     updates,
-                    {upsert: upsert},
+                    {upsert: options.upsert || false},
                     function (err) {
                       if (err) {
                         return reject(err);
                       }
+                      var p;
                       if (options.skipResult) {
-                        return resolve();
-                      }
-                      _this._get(type, conditions).then(function (r) {
-                        if (upsert) {
-                          return adjustAutoInc(type, r);
+                        if (options.upsert) {
+                          p = adjustAutoInc(type, data);
                         }
-                        return Promise.resolve(r);
-                      }).then(resolve).catch(reject);
+                        p = Promise.resolve();
+                      } else {
+                        p = _this._get(type, conditions).then(function (r) {
+                          if (options.upsert) {
+                            return adjustAutoInc(type, r);
+                          }
+                          return Promise.resolve(r);
+                        });
+                      }
+                      p.then(resolve).catch(reject);
                     });
                 } else {
                   c.updateMany(conditions, updates,
@@ -456,10 +475,10 @@ function MongoDs(config) {
                         return reject(err);
                       }
                       if (options.skipResult) {
-                        return resolve(result);
+                        return resolve(result.matchedCount);
                       }
                       options.filter = conditions;
-                      _this._fetch(type, options).then(resolve).catch(reject);
+                      _this._iterator(type, options).then(resolve).catch(reject);
                     });
                 }
               });
@@ -469,15 +488,11 @@ function MongoDs(config) {
   }
 
   this._update = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, false, false, options);
+    return doUpdate(type, conditions, data, {bulk: options.bulk, skipResult: options.skipResult});
   };
 
   this._upsert = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, true, false, options);
-  };
-
-  this._updateMany = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, false, true, options);
+    return doUpdate(type, conditions, data, {upsert: true, skipResult: options.skipResult});
   };
 
   this._delete = function (type, conditions) {

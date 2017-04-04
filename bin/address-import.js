@@ -5,7 +5,7 @@
 
 /* jshint maxstatements: 100, maxcomplexity: 100*/
 
-var worker = require('lib/importAddressCatalog');
+var worker = require('address-import.js');
 const config = require('../config');
 const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');

@@ -215,21 +215,28 @@ function DataRepository() {
 
   /**
    * @param {String} classname
+   * @param {{}} data
    * @param {{}} [options]
    * @param {Object} [options.filter]
-   * @param {Number} [options.offset]
-   * @param {Number} [options.count]
-   * @param {Object} [options.sort]
-   * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
    * @param {String} [options.uid]
-   * @param {{}} data
    * @returns {Promise}
    */
-  this.bulkUpdate = function (classname, options, data) {
-    return this._bulkUpdate(classname, options || {}, data);
+  this.bulkEdit = function (classname, data, options) {
+    return this._bulkEdit(classname, data, options || {});
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this.bulkDelete = function (classname, options) {
+    return this._bulkDelete(classname, options || {});
   };
 }
 
