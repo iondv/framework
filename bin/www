@@ -9,6 +9,7 @@ const express = require('express');
 const ejsLocals = require('ejs-locals');
 const flash = require('connect-flash');
 const fs = require('fs');
+const extendDi = require('core/extendDi');
 
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
@@ -110,7 +111,8 @@ function moduleLoader(name, module) {
 }
 
 // Связываем приложение
-di('app', config.di,
+di('app',
+  extendDi(null, config.di),
   {
     server: server,
     application: app,
@@ -132,7 +134,7 @@ then(
         path.normalize(path.join(__dirname, '..')),
         scope.settings.get('theme') || config.theme || 'default', sysLog
       );
-
+      
       scope.auth.setTopLevelAuth();
 
       // Редирект на дефолтный модуль

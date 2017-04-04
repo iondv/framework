@@ -6,7 +6,7 @@ const di = require('./di');
 const extend = require('extend');
 
 /**
- * @param {String} moduleName
+ * @param {String | null} moduleName
  * @param {{}} config
  * @param {{}} [rootScope]
  * @returns {*}
@@ -20,7 +20,8 @@ module.exports = function (moduleName, config, rootScope) {
   }
 
   if (rootScope.settings) {
-    var extDi = rootScope.settings.get(moduleName + '.di');
+    let name = moduleName ? `${moduleName}.di` : 'di';
+    let extDi = rootScope.settings.get(name);
     if (extDi) {
       return extend(true, config, extDi);
     }
