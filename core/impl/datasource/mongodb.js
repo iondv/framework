@@ -477,8 +477,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         return resolve(result.matchedCount);
                       }
-                      options.filter = conditions;
-                      _this._iterator(type, options).then(resolve).catch(reject);
+                      _this._iterator(type, {filter: conditions}).then(resolve).catch(reject);
                     });
                 }
               });
