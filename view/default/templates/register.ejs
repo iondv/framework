@@ -23,6 +23,20 @@
       <div><input type="text" name="username" placeholder="логин" class="input user"></div>
       <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
       <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
+
+      <% Object.keys(fields).forEach(function(fieldName){ %>
+        <% if (fieldsParams[`${fieldName}_selection`]) { %>
+        <div>
+          <select name="<% fieldName %>"></select>
+        </div>
+        <% } else { %>
+        <div>
+          <input type="text" name="<% fieldName %>" class="input"
+                 placeholder="<%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>">
+        </div>
+        <% } %>
+      <% }) %>
+
       <div class="buttons">
         <button type="submit">Регистрация</button>
       </div>

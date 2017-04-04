@@ -20,8 +20,7 @@ module.exports = function (moduleName, config, rootScope) {
   }
 
   if (rootScope.settings) {
-    let name = moduleName ? `${moduleName}.di` : 'di';
-    let extDi = rootScope.settings.get(name);
+    let extDi = rootScope.settings.get(`${moduleName}.di`);
     if (extDi) {
       return extend(true, config, extDi);
     }
