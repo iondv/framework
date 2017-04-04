@@ -14,12 +14,15 @@ var sysLog = new IonLogger({});
 var scope = null;
 var sourcePath = null;
 var regionFilter = null;
+var ns = null;
 
 for (var i = 0; i < process.argv.length; i++) {
   if (process.argv[i] === '--sourcePath') {
     sourcePath = process.argv[i + 1];
   } else if (process.argv[i] === '--regionFilter') {
     regionFilter = process.argv[i + 1];
+  } else if (process.argv[i] === '--ns') {
+    ns = process.argv[i + 1];
   }
 }
 
@@ -29,7 +32,7 @@ di('app', config.di,
   ['auth', 'rtEvents', 'sessionHandler']
 ).then(function (s) {
   scope = s;
-  return worker.start(sourcePath, regionFilter, scope.dataRepo, sysLog);
+  return worker.start(sourcePath, scope.dataRepo, sysLog, {regionFilter: regionFilter, namespace: ns});
 }).then(function () {
   return scope.dataSources.disconnect();
 }).then(function () {
