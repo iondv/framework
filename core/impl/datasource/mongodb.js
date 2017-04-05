@@ -18,8 +18,8 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options'];
-const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin'];
+const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where'];
+const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -890,7 +890,7 @@ function MongoDs(config) {
           result.push(tmp);
         }
       }
-      return result.length ? result : null;
+      return result.length ? result : undefined;
     } else if (typeof find === 'object' && find !== null) {
       let result;
       for (var name in find) {
