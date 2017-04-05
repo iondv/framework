@@ -3,23 +3,12 @@
  */
 'use strict';
 const moment = require('moment');
-const ac = require('../util').argCalcPromise;
-const acSync = require('../util').argCalcSync;
-
-function formatDate([date, format]) {
-  if (date && format) {
-    return moment(date).format(format);
-  }
-  return null;
-}
+const calc = require('../util').calculate;
 
 module.exports = function (args) {
-  return function (sync) {
-    if (sync) {
-      let cArgs = acSync(this, args, 2);
-      return formatDate(cArgs);
-    } else {
-      return ac(this, args, 2).then(formatDate);
-    }
+  return function () {
+    return calc(this, args, 2, function ([date, format]) {
+      return moment(date).format(format);
+    });
   };
 };

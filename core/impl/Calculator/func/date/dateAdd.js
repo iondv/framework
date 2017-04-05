@@ -3,8 +3,7 @@
  */
 'use strict';
 const moment = require('moment');
-const ac = require('../util').argCalcPromise;
-const acSync = require('../util').argCalcSync;
+const calc = require('../util').calculate;
 
 function countResult(args) {
   var v1, v2, v3;
@@ -26,11 +25,7 @@ function countResult(args) {
 }
 
 module.exports = function (args) {
-  return function (sync) {
-    if (sync) {
-      let cArgs = acSync(this, args, 3);
-      return countResult(cArgs);
-    }
-    return ac(this, args, 3).then(countResult);
+  return function () {
+    return calc(this, args, 3, countResult);
   };
 };

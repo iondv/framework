@@ -1,24 +1,15 @@
 /**
  * Created by Vasiliy Ermilov (ermilov.work@yandex.ru) on 3/30/17.
  */
-
-const ac = require('../util').argCalcPromise;
-const acSync = require('../util').argCalcSync;
+'use strict';
+const calc = require('../util').calculate;
 
 function ifStatetement([expression, trueCase, falseCase]) {
-  if (expression) {
-    return trueCase;
-  }
-  return falseCase;
+  return expression ? trueCase : falseCase;
 }
 
 module.exports = function (args) {
-  return function (sync) {
-    if (sync) {
-      let cArgs = acSync(this, args, 3);
-      return ifStatetement(cArgs);
-    } else {
-      return ac(this, args, 3).then(ifStatetement);
-    }
+  return function () {
+    return calc(this, args, 3, ifStatetement);
   };
 };

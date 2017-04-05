@@ -2,8 +2,7 @@
  * Created by kras on 03.11.16.
  */
 'use strict';
-const ac = require('../util').argCalcPromise;
-const acSync = require('../util').argCalcSync;
+const calc = require('../util').calculate;
 
 function operation(args, cb) {
   let result = false;
@@ -18,12 +17,8 @@ function operation(args, cb) {
 
 module.exports = function (cb) {
   return function (args) {
-    return function (sync) {
-      if (sync) {
-        let cArgs = acSync(this, args, 2);
-        return operation(cArgs, cb);
-      }
-      return ac(this, args, 2).then(operation);
+    return function () {
+      return calc(this, args, 2, function (args) {return operation(args, cb);});
     };
   };
 };
