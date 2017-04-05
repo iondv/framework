@@ -27,12 +27,16 @@
       <% Object.keys(fields).forEach(function(fieldName){ %>
         <% if (fieldsParams[`${fieldName}_selection`]) { %>
         <div>
-          <select name="<% fieldName %>"></select>
+          <select name="<%= fieldName %>">
+            <% for (let option of fieldsParams[`${fieldName}_selection`]){ %>
+              <option value="<%= option.value %>"><%= option.key %></option>
+            <% } %>
+          </select>
         </div>
         <% } else { %>
         <div>
-          <input type="text" name="<% fieldName %>" class="input"
-                 placeholder="<%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>">
+          <input type="text" name="<%= fieldName %>" class="input"
+                 placeholder="<%= fields[fieldName].required ? '*' : '' %><%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>">
         </div>
         <% } %>
       <% }) %>
