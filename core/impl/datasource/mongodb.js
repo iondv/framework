@@ -13,6 +13,7 @@ const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
 const Iterator = require('core/interfaces/Iterator');
+const moment = require('moment');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
@@ -40,6 +41,57 @@ function MongoDs(config) {
 
   var excludeNullsFor = {};
 
+  function registerFunction(c, nm, f) {
+    return function () {
+      return new Promise(function (resolve, reject) {
+        c.updateOne(
+          {
+            _id: nm
+          },
+          {
+            value: new mongo.Code(f)
+          },
+          {
+            upsert: true
+          },
+          function (err) {
+            return err ? reject(err) : resolve();
+          }
+        );
+      });
+    };
+  }
+
+  /**
+   * @param {{}} funcs
+   * @returns {Promise}
+   */
+  function registerFunctions(funcs) {
+    return new Promise(function (resolve, reject) {
+      _this.db.collection('system.js', {}, function (err, c) {
+        if (err) {
+          return reject(err);
+        }
+
+        var p;
+        for (let nm in funcs) {
+          if (funcs.hasOwnProperty(nm)) {
+            if (p) {
+              p = p.then(registerFunction(c, nm, funcs[nm]));
+            } else {
+              p = registerFunction(c, nm, funcs[nm])();
+            }
+          }
+        }
+        if (p) {
+          p.then(resolve).catch(reject);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
   /**
    * @returns {Promise}
    */
@@ -66,6 +118,31 @@ function MongoDs(config) {
                 .then(
                   function () {
                     return _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true});
+                  }
+                )
+                .then(
+                  function () {
+                    return registerFunctions({
+                      dateAdd: function (d, v, p) {
+                        p = p || 'd';
+                        var result = new Date(d);
+                        switch (p) {
+                          case 'd': result.setDate(d.getDate() + v); break;
+                          case 'm': result.setMonth(d.getMonth() + v); break;
+                          case 'y': result.setFullYear(d.getFullYear() + v); break;
+                          case 'h': result.setHours(d.getHours()); break;
+                          case 'min': result.setMinutes(d.getMinutes() + v); break;
+                          case 'sec': result.setSeconds(d.getSeconds() + v); break;
+                        }
+                        return result;
+                      },
+                      date: function () {
+                        if (!arguments.length) {
+                          return Date();
+                        }
+                        return new Function.prototype.bind.apply(Date, arguments.slice(0).unshift(null));
+                      }
+                    });
                   }
                 )
                 .then(
@@ -355,27 +432,26 @@ function MongoDs(config) {
     });
   }
 
-  function prepareConditions(conditions, part, parent, nottop) {
+  function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
-      for (var i = 0; i < conditions.length; i++) {
-        prepareConditions(conditions[i], i, conditions);
+      for (let i = 0; i < conditions.length; i++) {
+        prepareConditions(conditions[i], i, conditions, false, part, parent);
       }
     } else if (typeof conditions === 'object' && conditions) {
-      var tmp, tmp2;
-      for (var nm in conditions) {
+      for (let nm in conditions) {
         if (conditions.hasOwnProperty(nm)) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
           } else if (nm === '$not' && nottop !== true) {
-            tmp = prepareConditions(conditions[nm], nm, conditions, true);
+            let tmp = prepareConditions(conditions[nm], nm, conditions, true, part, parent);
             conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
             delete conditions[nm];
           } else if (nm === '$empty') {
             if (parent && part) {
-              tmp = conditions[nm] ? '$or' : '$nor';
+              let tmp = conditions[nm] ? '$or' : '$nor';
               delete parent[part];
               parent[tmp] = [];
-              tmp2 = {};
+              let tmp2 = {};
               tmp2[part] = {$eq: ''};
               parent[tmp].push(tmp2);
               tmp2 = {};
@@ -384,8 +460,73 @@ function MongoDs(config) {
               tmp2[part] = {$exists: false};
               parent[tmp].push(tmp2);
             }
+          } else if (nm === '$date') {
+            let v = '';
+            let f = '';
+            if (Array.isArray(conditions[nm])) {
+              if (conditions[nm].length > 2) {
+                v =  conditions[nm];
+              } else {
+                if (conditions[nm].length > 0) {
+                  v = conditions[nm][0];
+                }
+                if (typeof v === 'string' && conditions[nm].length > 1) {
+                  f = conditions[nm][1];
+                }
+              }
+            } else {
+              v = conditions[nm];
+            }
+
+            if (!v) {
+              parent[part] = new Date();
+            } else if (Array.isArray(v)) {
+              parent[part] = new Function.prototype.bind.apply(Date, v.slice(0).unshift(null));
+            } else {
+              if (f) {
+                parent[part] = moment(v, f).toDate();
+              } else {
+                parent[part] = moment(v).toDate();
+              }
+            }
+            break;
+          } else if (nm === '$dateAdd') {
+            let args = [];
+            for (let k = 0; k < conditions[nm].length; k++) {
+              if (conditions[nm][k][0] === '$') {
+                args.push(conditions[nm][k].replace(/^\$/, 'this.'));
+              } else {
+                if (isNaN(conditions[nm][k])) {
+                  args.push('"' + conditions[nm][k] + '"');
+                } else {
+                  args.push(conditions[nm][k]);
+                }
+              }
+            }
+            if (parent2) {
+              delete parent2[part2];
+              parent2.$where = 'this.' + part2;
+              switch (part) {
+                case '$eq': parent2.$where = parent2.$where + ' == '; break;
+                case '$ne': parent2.$where = parent2.$where + ' != '; break;
+                case '$lt': parent2.$where = parent2.$where + ' < '; break;
+                case '$gt': parent2.$where = parent2.$where + ' > '; break;
+                case '$lte': parent2.$where = parent2.$where + ' <= '; break;
+                case '$gte': parent2.$where = parent2.$where + ' >= '; break;
+              }
+              parent2.$where = parent2.$where + 'dateAdd(' + args.join(', ') + ')';
+            } else if (parent) {
+              delete parent[part];
+              parent.$where = 'this.' + part + ' = dateAdd(' + args.join(', ') + ')';
+            } else {
+              throw new Error('Ошибка в синтаксисе условий запроса.');
+            }
+          } else if (nm === '$joinExists') {
+            if (conditions[nm].filter) {
+              prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false, part, parent);
+            }
           } else {
-            prepareConditions(conditions[nm], nm, conditions, true);
+            prepareConditions(conditions[nm], nm, conditions, true, part, parent);
           }
         }
       }
@@ -898,7 +1039,9 @@ function MongoDs(config) {
         if (postfilter) {
           result.push({$match: postfilter});
         }
-        Array.prototype.push.apply(result, wind(resultAttrs));
+        if (resultAttrs.length) {
+          Array.prototype.push.apply(result, wind(resultAttrs));
+        }
       }
 
       if (forcedStages.length) {
@@ -1270,21 +1413,25 @@ function MongoDs(config) {
         return checkAggregation(type, options, plan);
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
-          c.aggregate(plan, function (err, result) {
-            if (err) {
-              return reject(err);
-            }
-            if (tmpApp) {
-              copyColl(tmpApp, options.append, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve();
-              });
-              return;
-            }
-            resolve(result);
-          });
+          try {
+            c.aggregate(plan, function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              if (tmpApp) {
+                copyColl(tmpApp, options.append, function (err) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+                return;
+              }
+              resolve(result);
+            });
+          } catch (err) {
+            reject(err);
+          }
         });
       }
     );
