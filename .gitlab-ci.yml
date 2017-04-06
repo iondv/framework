@@ -23,6 +23,24 @@ Compile:
         name: "$CI_BUILD_STAGE_$CI_BUILD_REF_NAME"
         expire_in: 20 min
         untracked: true
+GenerateDocs:
+    type: compile
+    tags:
+        - build-02
+    only:
+        - develop
+    script:
+    - npm install -g jsdoc-to-markdown
+    - git clone http://jenkins:$JENKINS_PASS@git.iondv.ru/ION/platform.wiki.git
+    - mkdir platform.wiki/developer_reference
+    - find * -type d -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'mkdir "platform.wiki/developer_reference/${0}"' {} \;
+    - find * -type d -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'jsdoc2md ${0}/*.js > "platform.wiki/developer_reference/${0}.md"' {} \;
+    - git config --global user.email "jenkins@example.com"
+    - git config --global user.name "Jenkins"
+    - cd platform.wiki
+    - git add .
+    - git commit -m "develop ref"
+    - git push
 Testing:
   type: test
   tags:
