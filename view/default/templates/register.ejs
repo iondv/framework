@@ -25,15 +25,15 @@
       <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
 
       <% Object.keys(fields).forEach(function(fieldName){ %>
-        <% if (fieldsParams[`${fieldName}_selection`]) { %>
+        <% if (Array.isArray(fields[fieldName])) { %>
         <div>
           <select name="<%= fieldName %>">
-            <% for (let option of fieldsParams[`${fieldName}_selection`]){ %>
+            <% for (let option of fields[fieldName]){ %>
               <option value="<%= option.value %>"><%= option.key %></option>
             <% } %>
           </select>
         </div>
-        <% } else { %>
+        <% } else if (fields[fieldName]){ %>
         <div>
           <input type="text" name="<%= fieldName %>" class="input"
                  placeholder="<%= fields[fieldName].required ? '*' : '' %><%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>">
