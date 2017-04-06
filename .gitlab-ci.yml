@@ -38,7 +38,7 @@ GenerateDocs:
     - git config --global user.name "Jenkins"
     - cd platform.wiki
     - git add .
-    - git commit -m "develop ref"
+    - git commit -m "develop ref" || true
     - git push
 Testing:
   type: test
