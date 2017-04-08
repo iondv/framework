@@ -1294,7 +1294,7 @@ function IonDataRepository(options) {
       prepareFileSavers(cm, fileSavers, updates);
       var chr = checkRequired(cm, updates, false);
       if (chr !== true) {
-        return reject(chr);
+        return Promise.reject(chr);
       }
 
       return Promise.all(fileSavers)
