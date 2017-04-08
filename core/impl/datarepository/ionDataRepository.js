@@ -1281,44 +1281,48 @@ function IonDataRepository(options) {
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
     options = options || {};
-    // jshint maxcomplexity: 30
-    return new Promise(function (resolve, reject) {
-      try {
-        var cm = _this.meta.getMeta(classname, version);
-        var rcm = getRootType(cm);
+    try {
+      var cm = _this.meta.getMeta(classname, version);
+      var rcm = getRootType(cm);
 
-        var refUpdates = {};
-        var updates = formUpdatedData(cm, data, true, refUpdates) || {};
+      var refUpdates = {};
+      var updates = formUpdatedData(cm, data, true, refUpdates) || {};
 
-        var fileSavers = [];
+      var fileSavers = [];
 
-        autoAssign(cm, updates);
-        prepareFileSavers(cm, fileSavers, updates);
-        var chr = checkRequired(cm, updates, false);
-        if (chr !== true) {
-          return reject(chr);
-        }
+      autoAssign(cm, updates);
+      prepareFileSavers(cm, fileSavers, updates);
+      var chr = checkRequired(cm, updates, false);
+      if (chr !== true) {
+        return reject(chr);
+      }
 
-        Promise.all(fileSavers).then(function () {
+      return Promise.all(fileSavers)
+        .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (options.uid) {
             updates._creator = options.uid;
           }
           return _this.ds.insert(tn(rcm), updates);
-        }).then(function (data) {
+        })
+        .then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
           delete updates._creator;
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return updateBackRefs(item, cm, data);
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return trigger(
             'create',
             item.getMetaClass(),
@@ -1327,17 +1331,16 @@ function IonDataRepository(options) {
               data: data
             }
           );
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
+        })
+        .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+        .then(
           function (item) {
             return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(reject);
-      } catch (err) {
-        reject(err);
-      }
-    });
+        );
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
