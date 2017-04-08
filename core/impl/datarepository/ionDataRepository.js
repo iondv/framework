@@ -23,6 +23,7 @@ const ConditionParser = require('core/ConditionParser');
 const Iterator = require('core/interfaces/Iterator');
 const SortingParser = require('core/SortingParser');
 const clone = require('clone');
+const merge = require('merge');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -1193,6 +1194,48 @@ function IonDataRepository(options) {
     });
   }
 
+  function bubble(c, eventType, data) {
+    return function (e) {
+      var bd = merge({}, data);
+      bd.type = c.getCanonicalName() + '.' + eventType;
+      bd.origin = e;
+      return _this.trigger(bd)
+        .then(function (e2) {
+          if (Array.isArray(e.results)) {
+            e2.results = e.results.concat(Array.isArray(e2.results) ? e2.results : []);
+          }
+          return Promise.resolve(e2);
+        });
+    };
+  }
+
+  /**
+   * @param {String} eventType
+   * @param {ClassMeta} cm
+   * @param {{}} data
+   * @returns {Promise}
+   */
+  function trigger(eventType, cm, data) {
+    var c = cm;
+    var p = null;
+    while (c) {
+      if (p) {
+        p = p.then(bubble(c, eventType, data));
+      } else {
+        p = _this.trigger({
+          type: c.getCanonicalName() + '.' + eventType,
+          item: data.item,
+          data: data.data
+        });
+      }
+      c = cm.getAncestor();
+    }
+    if (p) {
+      return p;
+    }
+    return Promise.reject(new Error('Не передан класс объекта события.'));
+  }
+
   function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
@@ -1276,11 +1319,14 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item,
-            data: data
-          });
+          return trigger(
+            'create',
+            item.getMetaClass(),
+            {
+              item: item,
+              data: data
+            }
+          );
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
@@ -1368,11 +1414,14 @@ function IonDataRepository(options) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
           if (!suppresEvent) {
-            return _this.trigger({
-              type: item.getMetaClass().getCanonicalName() + '.edit',
-              item: item,
-              updates: data
-            });
+            return trigger(
+              'edit',
+              item.getMetaClass(),
+              {
+                item: item,
+                updates: data
+              }
+            );
           }
           return new Promise(function (resolve) {resolve({item: item});});
         }).
@@ -1493,11 +1542,14 @@ function IonDataRepository(options) {
         }).then(function (item) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item,
-            updates: data
-          });
+          return _this.trigger(
+            'save',
+            item.getMetaClass(),
+            {
+              item: item,
+              updates: data
+            }
+          );
         }).
         then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
@@ -1539,10 +1591,13 @@ function IonDataRepository(options) {
       }).
       then(
         function () {
-          return _this.trigger({
-            type: classname + '.delete',
-            id: id
-          });
+          return trigger(
+            'delete',
+            cm,
+            {
+              id: id
+            }
+          );
         }
       ).
       then(function () {
