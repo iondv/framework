@@ -71,7 +71,7 @@ function RedisRepository(config) {
         return resolve();
       }
       try {
-        log.log('Инициализация Redis');
+        log.info('Инициализация Redis');
         var redisOptions = {host: rHost, port: rPort};
         if (config.connectOptions) {
           for (var p in config.connectOptions) {
@@ -82,13 +82,15 @@ function RedisRepository(config) {
         }
         client = redis.createClient(redisOptions);
         client.on('ready', function () {
+          log.info('Redis подключен');
           available = true;
+          resolve();
         });
         client.on('error', function (err) {
           available = false;
           log.error('Redis error: ' + err);
+          resolve();
         });
-        resolve();
       } catch (err) {
         reject(err);
       }
