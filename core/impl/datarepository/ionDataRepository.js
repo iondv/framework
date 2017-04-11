@@ -1455,7 +1455,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, base ? true : false);
+              chr = checkRequired(cm, updates, true);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1470,7 +1470,6 @@ function IonDataRepository(options) {
             if (chr !== true) {
               return Promise.reject(chr);
             }
-
             return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
           } catch (err) {
             return Promise.reject(err);
