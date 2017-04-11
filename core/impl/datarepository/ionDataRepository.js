@@ -1434,7 +1434,7 @@ function IonDataRepository(options) {
 
       var p;
       if (changeLogger && conditions) {
-        p = _this.ds.get(classname, conditions).then(function (b) {
+        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
           return Promise.all(fileSavers);
         });
@@ -1447,7 +1447,7 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions && base) {
+            if (conditions) {
               if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
