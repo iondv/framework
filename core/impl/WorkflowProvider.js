@@ -176,9 +176,11 @@ function WorkflowProvider(options) {
    * @param {String} workflow
    * @param {String} name
    * @param {String} user
+   * @param {{}} tOptions
+   * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name, user) {
+  this._performTransition = function (item, workflow, name, user, tOptions) {
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
@@ -249,7 +251,7 @@ function WorkflowProvider(options) {
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),
                           updates,
-                          null,
+                          tOptions.changeLogger,
                           {uid: user}
                         );
                       }
