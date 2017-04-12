@@ -1354,7 +1354,7 @@ function IonDataRepository(options) {
           if (options.uid) {
             updates._editor = options.uid;
           }
-            return _this.ds.update(tn(rcm), conditions, updates, options);
+          return _this.ds.update(tn(rcm), conditions, updates, options);
         }).then(function (data) {
           if (options.skipResult) {
             return Promise.resolve(true);
@@ -1474,7 +1474,9 @@ function IonDataRepository(options) {
             if (chr !== true) {
               return Promise.reject(chr);
             }
-            return conditions ? _this.ds.upsert(tn(rcm), conditions, updates, options) : _this.ds.insert(tn(rcm), updates, options);
+            return conditions ?
+              _this.ds.upsert(tn(rcm), conditions, updates, options) :
+              _this.ds.insert(tn(rcm), updates, options);
           } catch (err) {
             return Promise.reject(err);
           }
