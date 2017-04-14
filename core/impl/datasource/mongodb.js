@@ -792,7 +792,11 @@ function MongoDs(config) {
                     result.push(tmp[i]);
                   }
                 }
-                result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                if (name === '$and') {
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                } else {
+                  result = result.length ? {$nor: result} : true;
+                }
               }
             } else {
               if (name === '$not') {
