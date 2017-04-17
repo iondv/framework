@@ -23,6 +23,7 @@ const ConditionParser = require('core/ConditionParser');
 const Iterator = require('core/interfaces/Iterator');
 const SortingParser = require('core/SortingParser');
 const clone = require('clone');
+const Operations = require('core/DataRepoOperations');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -124,9 +125,9 @@ function IonDataRepository(options) {
     }
 
     if (!filter) {
-      return {_class: {$in: cnFilter}};
+      return {[Operations.IN]: ['_class', cnFilter]};
     } else {
-      return {$and: [{_class: {$in: cnFilter}}, filter]};
+      return {[Operations.AND]: [{[Operations.IN]: ['_class', cnFilter]}, filter]};
     }
   }
 
@@ -137,18 +138,32 @@ function IonDataRepository(options) {
    * @private
    */
   function addFilterByItem(filter, item) {
-    if (typeof item === 'object' && item.constructor.name === 'Item') {
-      var conditions, props;
-      conditions = [filter];
-      props = item.getProperties();
-      for (var nm in props) {
-        if (props.hasOwnProperty(nm) && item.base.hasOwnProperty(nm)) {
-          var c = {};
-          c[nm] = item.base[nm];
-          conditions.push(c);
+    if (typeof item === 'object') {
+      let conditions;
+      conditions = [];
+      if (item instanceof Item) {
+        let props = item.getProperties();
+        for (let nm in props) {
+          if (props.hasOwnProperty(nm)) {
+            let v = item.get(nm);
+            if (v !== null) {
+              conditions.push({[Operations.EQUAL]: [nm, v]});
+            }
+          }
+        }
+      } else {
+        for (let nm in item) {
+          if (item.hasOwnProperty(nm)) {
+            conditions.push({[Operations.EQUAL]: [nm, item[nm]]});
+          }
         }
       }
-      return {$and: conditions};
+      if (conditions.length) {
+        if (filter) {
+          conditions.unshift(filter);
+        }
+        return {[Operations.AND]: conditions};
+      }
     }
     return filter;
   }
@@ -182,12 +197,12 @@ function IonDataRepository(options) {
     }
     var cm = getMeta(obj);
     var rcm = getRootType(cm);
-    options.filter = addFilterByItem(options.filter, obj);
-    options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter)
+    var f = clone(options.filter);
+    f = addFilterByItem(f, obj);
+    f = addDiscriminatorFilter(f, cm);
+    return prepareFilterValues(cm, f)
       .then(function (filter) {
-        options.filter = filter;
-        return _this.ds.count(tn(rcm), options);
+        return _this.ds.count(tn(rcm), {filter: filter});
       });
   };
 
@@ -641,25 +656,23 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getIterator = function (obj, options) {
-    if (!options) {
-      options = {};
-    }
+    var opts = clone(options) || {};
     var cm = getMeta(obj);
     var rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.fields[props[i].name] = '$' + props[i].name;
+      opts.fields[props[i].name] = '$' + props[i].name;
     }
-    options.filter = addFilterByItem(options.filter, obj);
-    options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).
+    opts.filter = addFilterByItem(opts.filter, obj);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    return prepareFilterValues(cm, opts.filter).
     then(function (filter) {
-      options.filter = filter;
-      return _this.ds.iterator(tn(rcm), options);
+      opts.filter = filter;
+      return _this.ds.iterator(tn(rcm), opts);
     }).
     then(function (iter) {
-      return Promise.resolve(new ItemIterator(iter, options));
+      return Promise.resolve(new ItemIterator(iter, opts));
     });
   };
 
@@ -672,16 +685,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
-    if (!options) {
-      options = {};
-    }
+    var opts = clone(options) || {};
     var cm = getMeta(className);
     var rcm = getRootType(cm);
-    options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).
+    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    return prepareFilterValues(cm, opts.filter).
     then(function (filter) {
-        options.filter = filter;
-        return _this.ds.aggregate(tn(rcm), options);
+        opts.filter = filter;
+        return _this.ds.aggregate(tn(rcm), opts);
       }
     );
   };
@@ -700,19 +711,18 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._rawData = function (className, options) {
-    if (!options) {
-      options = {};
-    }
+    var opts = clone(options) || {};
     var cm = getMeta(className);
     var rcm = getRootType(cm);
-    options.attributes = [];
+    opts.attributes = [];
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.attributes.push(props[i].name);
+      opts.attributes.push(props[i].name);
     }
-    options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).then(function (filter) {
-      return _this.ds.fetch(tn(rcm), options);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    return prepareFilterValues(cm, opts.filter).then(function (filter) {
+      opts.filter = filter;
+      return _this.ds.fetch(tn(rcm), opts);
     });
   };
 
@@ -730,42 +740,54 @@ function IonDataRepository(options) {
       cm = getMeta(obj);
       rcm = getRootType(cm);
       var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
-      if (conditions  === null) {
+      if (conditions === null) {
         return Promise.resolve(null);
       }
-      return _this.ds.get(tn(rcm), conditions)
-        .then(function (data) {
-          var item = null;
-          if (data) {
-            try {
-              item = _this._wrap(data._class, data, data._classVer);
-              return loadFiles(item, _this.fileStorage, _this.imageStorage).
-              then(
-                function (item) {
-                  return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
-                }
-              ).
-              then(
-                function (item) {
-                  return calcProperties(item);
-                }
-              );
-            } catch (err) {
-              return Promise.reject(err);
-            }
+      conditions = addFilterByItem(null, conditions);
+      return prepareFilterValues(cm, conditions)
+        .then(
+          function (filter) {
+            return _this.ds.get(tn(rcm), filter);
           }
-          return Promise.resolve(null);
-        });
+        )
+        .then(
+          function (data) {
+            var item = null;
+            if (data) {
+              try {
+                item = _this._wrap(data._class, data, data._classVer);
+                return loadFiles(item, _this.fileStorage, _this.imageStorage).
+                then(
+                  function (item) {
+                    return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
+                  }
+                ).
+                then(
+                  function (item) {
+                    return calcProperties(item);
+                  }
+                );
+              } catch (err) {
+                return Promise.reject(err);
+              }
+            }
+            return Promise.resolve(null);
+          }
+        );
     } else if (obj instanceof Item) {
       opts = {};
       cm = obj.getMetaClass();
       var fetcher = null;
       if (obj.getItemId()) {
         rcm = getRootType(cm);
-        opts.filter = addFilterByItem({}, obj);
+        opts.filter = addFilterByItem(null, obj);
         opts.filter = addDiscriminatorFilter(opts.filter, cm);
         opts.count = 1;
-        fetcher = _this.ds.fetch(tn(rcm), opts)
+        fetcher = prepareFilterValues(cm, opts.filter)
+          .then(function (filter) {
+            opts.filter = filter;
+            return _this.ds.fetch(tn(rcm), opts);
+          })
           .then(function (data) {
             var item;
             for (var i = 0; i < data.length; i++) {
@@ -1306,51 +1328,61 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
-    options = options || {};
+    options = clone(options) || {};
     if (!id) {
       return Promise.reject(new Error('Не передан идентификатор объекта!'));
     }
     try {
-      var cm = _this.meta.getMeta(classname);
-      var rcm = getRootType(cm);
+      let cm = _this.meta.getMeta(classname);
+      let rcm = getRootType(cm);
 
       /**
        * @var {{}}
        */
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
 
       if (conditions) {
-        var base;
-        var refUpdates = {};
-        var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+        let base;
+        let refUpdates = {};
+        let updates = formUpdatedData(cm, data, false, refUpdates) || {};
 
-        var fileSavers = [];
+        let fileSavers = [];
 
         if (cm.getChangeTracker()) {
           updates[cm.getChangeTracker()] = new Date();
         }
 
         prepareFileSavers(cm, fileSavers, updates);
-        var chr = checkRequired(cm, updates, true);
+        let chr = checkRequired(cm, updates, true);
         if (chr !== true) {
           return Promise.reject(chr);
         }
 
-        var p;
+        conditions = addFilterByItem(null, conditions);
+        let p = prepareFilterValues(cm, conditions);
+        let filter;
         if (changeLogger) {
-          p = _this.ds.get(tn(rcm), conditions).then(function (b) {
-            base = b;
+          p = p
+            .then(function (f) {
+              filter = f;
+              return _this.ds.get(tn(rcm), filter);
+            })
+            .then(function (b) {
+              base = b;
+              return Promise.all(fileSavers);
+            });
+        } else {
+          p = p.then(function (f) {
+            filter = f;
             return Promise.all(fileSavers);
           });
-        } else {
-          p = Promise.all(fileSavers);
         }
 
         return p.then(function () {
           if (options.uid) {
             updates._editor = options.uid;
           }
-          return _this.ds.update(tn(rcm), conditions, updates);
+          return _this.ds.update(tn(rcm), filter, updates);
         }).then(function (data) {
           if (!data) {
             return Promise.reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
@@ -1403,15 +1435,15 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
-    options = options || {};
-    var fileSavers = [];
+    options = clone(options) || {};
+    let fileSavers = [];
     try {
-      var cm = _this.meta.getMeta(classname, version);
-      var rcm = getRootType(cm);
+      let cm = _this.meta.getMeta(classname, version);
+      let rcm = getRootType(cm);
 
-      var refUpdates = {};
-      var updates = formUpdatedData(cm, data, true, refUpdates) || {};
-      var conditionsData;
+      let refUpdates = {};
+      let updates = formUpdatedData(cm, data, true, refUpdates) || {};
+      let conditionsData;
 
       if (id) {
         conditionsData = _this.keyProvider.keyToData(rcm, id);
@@ -1421,21 +1453,27 @@ function IonDataRepository(options) {
 
       var event = EventType.UPDATE;
 
-      var conditions = null;
+      let conditions = null;
       if (conditionsData) {
         conditions = formUpdatedData(rcm, conditionsData);
       }
 
-      var base = null;
-
+      let base = null;
+      let filter = null;
+      let p = null;
       prepareFileSavers(cm, fileSavers, updates);
 
-      var p;
       if (changeLogger && conditions) {
-        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
-          base = b;
-          return Promise.all(fileSavers);
-        });
+        conditions = addFilterByItem(null, conditions);
+        p = prepareFilterValues(cm, conditions)
+          .then(function (f) {
+            filter = f;
+            return _this.ds.get(tn(rcm), conditions);
+          })
+          .then(function (b) {
+            base = b;
+            return Promise.all(fileSavers);
+          });
       } else {
         p = Promise.all(fileSavers);
       }
@@ -1445,7 +1483,7 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions) {
+            if (filter) {
               if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
@@ -1468,7 +1506,7 @@ function IonDataRepository(options) {
             if (chr !== true) {
               return Promise.reject(chr);
             }
-            return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
+            return filter ? _this.ds.upsert(tn(rcm), filter, updates) : _this.ds.insert(tn(rcm), updates);
           } catch (err) {
             return Promise.reject(err);
           }
@@ -1520,15 +1558,18 @@ function IonDataRepository(options) {
     var base = null;
     var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
     var item = _this._wrap(classname, conditions);
-    var p;
+    conditions = addFilterByItem(null, conditions);
+    var filter;
+    var p = prepareFilterValues(cm, conditions);
     if (changeLogger) {
-      p = _this.ds.get(tn(rcm), conditions)
+      p = p
+        .then(function (f) {filter = f; return _this.ds.get(tn(rcm), f);})
         .then(function (b) {
           base = b;
-          return _this.ds.delete(tn(rcm), conditions);
+          return _this.ds.delete(tn(rcm), filter);
         });
     } else {
-      p = _this.ds.delete(tn(rcm), conditions);
+      p = p.then(function (f) {return _this.ds.delete(tn(rcm), f);});
     }
     return p.
       then(function () {
@@ -1541,10 +1582,7 @@ function IonDataRepository(options) {
             id: id
           });
         }
-      ).
-      then(function () {
-        return Promise.resolve();
-      });
+      );
   };
 
   /**

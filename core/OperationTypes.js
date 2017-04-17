@@ -13,5 +13,15 @@ module.exports = {
   SUM: 6,
   COUNT: 7,
   DATE: 8,
-  DATEADD: 9
+  DATEADD: 9,
+  DATEDIFF: 10,
+  ADD: 11,
+  SUB: 12,
+  MUL: 13,
+  DIV: 14,
+  ROUND: 15,
+  CONCAT: 16,
+  SUBSTR: 17,
+  MOD: 18,
+  ABS: 19
 };
