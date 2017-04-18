@@ -261,11 +261,10 @@ function prepareLinked(cm, path, filter, nm, fetchers, ds, keyProvider, nsSep) {
       }
     };
 
-    var fo;
     if (path.length === 2) {
-      fo = {};
-      fo[path[1]] = prepareFilterOption(rMeta, filter[nm], fetchers, ds, keyProvider, nsSep, fo, path[1]);
-      lc.$joinExists.filter = fo;
+      let f = {};
+      f[path[1]] = filter[nm];
+      lc.$joinExists.filter = prepareFilterOption(rMeta, f, fetchers, ds, keyProvider, nsSep);
     } else {
       var je = prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, ds, keyProvider, nsSep);
       if (je) {

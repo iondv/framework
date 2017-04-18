@@ -13,9 +13,13 @@ const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
 const Iterator = require('core/interfaces/Iterator');
+const moment = require('moment');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
+
+const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where'];
+const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -39,6 +43,57 @@ function MongoDs(config) {
   var log = config.logger || new LoggerProxy();
 
   var excludeNullsFor = {};
+
+  function registerFunction(c, nm, f) {
+    return function () {
+      return new Promise(function (resolve, reject) {
+        c.updateOne(
+          {
+            _id: nm
+          },
+          {
+            value: new mongo.Code(f)
+          },
+          {
+            upsert: true
+          },
+          function (err) {
+            return err ? reject(err) : resolve();
+          }
+        );
+      });
+    };
+  }
+
+  /**
+   * @param {{}} funcs
+   * @returns {Promise}
+   */
+  function registerFunctions(funcs) {
+    return new Promise(function (resolve, reject) {
+      _this.db.collection('system.js', {}, function (err, c) {
+        if (err) {
+          return reject(err);
+        }
+
+        var p;
+        for (let nm in funcs) {
+          if (funcs.hasOwnProperty(nm)) {
+            if (p) {
+              p = p.then(registerFunction(c, nm, funcs[nm]));
+            } else {
+              p = registerFunction(c, nm, funcs[nm])();
+            }
+          }
+        }
+        if (p) {
+          p.then(resolve).catch(reject);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
 
   /**
    * @returns {Promise}
@@ -66,6 +121,31 @@ function MongoDs(config) {
                 .then(
                   function () {
                     return _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true});
+                  }
+                )
+                .then(
+                  function () {
+                    return registerFunctions({
+                      dateAdd: function (d, v, p) {
+                        p = p || 'd';
+                        var result = new Date(d);
+                        switch (p) {
+                          case 'd': result.setDate(d.getDate() + v); break;
+                          case 'm': result.setMonth(d.getMonth() + v); break;
+                          case 'y': result.setFullYear(d.getFullYear() + v); break;
+                          case 'h': result.setHours(d.getHours()); break;
+                          case 'min': result.setMinutes(d.getMinutes() + v); break;
+                          case 'sec': result.setSeconds(d.getSeconds() + v); break;
+                        }
+                        return result;
+                      },
+                      date: function () {
+                        if (!arguments.length) {
+                          return Date();
+                        }
+                        return new Function.prototype.bind.apply(Date, arguments.slice(0).unshift(null));
+                      }
+                    });
                   }
                 )
                 .then(
@@ -314,8 +394,10 @@ function MongoDs(config) {
   };
 
   function adjustAutoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    if (!data) {
+      return Promise.resolve();
+    }
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
@@ -326,7 +408,7 @@ function MongoDs(config) {
             var counters = result.c.counters;
             for (var nm in counters) {
               if (counters.hasOwnProperty(nm)) {
-                if (counters[nm] < data[nm]) {
+                if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
                   act = true;
                 }
@@ -335,57 +417,118 @@ function MongoDs(config) {
           }
 
           if (!act) {
-            return resolve(data);
+            return Promise.resolve(data);
           }
-
-          result.ai.findOneAndUpdate(
-            {type: type},
-            {$set: up},
-            {returnOriginal: false, upsert: false},
-            function (err) {
-              if (err) {
-                return reject(err);
+          return new Promise(function (resolve, reject) {
+            result.ai.findOneAndUpdate(
+              {type: type},
+              {$set: up},
+              {returnOriginal: false, upsert: false},
+              function (err) {
+                return err ? reject(err) : resolve(data);
               }
-              resolve(data);
-            }
-          );
-          return;
+            );
+          });
         }
-      ).catch(reject);
-    });
+      );
   }
 
-  function prepareConditions(conditions, part, parent, nottop) {
+  function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
-      for (var i = 0; i < conditions.length; i++) {
-        prepareConditions(conditions[i], i, conditions);
+      for (let i = 0; i < conditions.length; i++) {
+        prepareConditions(conditions[i], i, conditions, false, part, parent);
       }
     } else if (typeof conditions === 'object' && conditions) {
-      var tmp, tmp2;
-      for (var nm in conditions) {
+      for (let nm in conditions) {
         if (conditions.hasOwnProperty(nm)) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
           } else if (nm === '$not' && nottop !== true) {
-            tmp = prepareConditions(conditions[nm], nm, conditions, true);
+            let tmp = prepareConditions(conditions[nm], nm, conditions, true, part, parent);
             conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
             delete conditions[nm];
           } else if (nm === '$empty') {
             if (parent && part) {
-              tmp = conditions[nm] ? '$or' : '$nor';
+              let tmp = conditions[nm] ? '$or' : '$nor';
               delete parent[part];
               parent[tmp] = [];
-              tmp2 = {};
+              let tmp2 = {};
               tmp2[part] = {$eq: ''};
               parent[tmp].push(tmp2);
               tmp2 = {};
               tmp2[part] = {$eq: null};
               parent[tmp].push(tmp2);
+              tmp2 = {};
               tmp2[part] = {$exists: false};
               parent[tmp].push(tmp2);
             }
+          } else if (nm === '$date') {
+            let v = '';
+            let f = '';
+            if (Array.isArray(conditions[nm])) {
+              if (conditions[nm].length > 2) {
+                v =  conditions[nm];
+              } else {
+                if (conditions[nm].length > 0) {
+                  v = conditions[nm][0];
+                }
+                if (typeof v === 'string' && conditions[nm].length > 1) {
+                  f = conditions[nm][1];
+                }
+              }
+            } else {
+              v = conditions[nm];
+            }
+
+            if (!v) {
+              parent[part] = new Date();
+            } else if (Array.isArray(v)) {
+              parent[part] = new Function.prototype.bind.apply(Date, v.slice(0).unshift(null));
+            } else {
+              if (f) {
+                parent[part] = moment(v, f).toDate();
+              } else {
+                parent[part] = moment(v).toDate();
+              }
+            }
+            break;
+          } else if (nm === '$dateAdd') {
+            let args = [];
+            for (let k = 0; k < conditions[nm].length; k++) {
+              if (conditions[nm][k][0] === '$') {
+                args.push(conditions[nm][k].replace(/^\$/, 'this.'));
+              } else {
+                if (isNaN(conditions[nm][k])) {
+                  args.push('"' + conditions[nm][k] + '"');
+                } else {
+                  args.push(conditions[nm][k]);
+                }
+              }
+            }
+            if (parent2) {
+              delete parent2[part2];
+              parent2.$where = 'this.' + part2;
+              switch (part) {
+                case '$eq': parent2.$where = parent2.$where + ' == '; break;
+                case '$ne': parent2.$where = parent2.$where + ' != '; break;
+                case '$lt': parent2.$where = parent2.$where + ' < '; break;
+                case '$gt': parent2.$where = parent2.$where + ' > '; break;
+                case '$lte': parent2.$where = parent2.$where + ' <= '; break;
+                case '$gte': parent2.$where = parent2.$where + ' >= '; break;
+              }
+              parent2.$where = parent2.$where + 'dateAdd(' + args.join(', ') + ')';
+            } else if (parent) {
+              delete parent[part];
+              parent.$where = 'this.' + part + ' = dateAdd(' + args.join(', ') + ')';
+            } else {
+              throw new Error('Ошибка в синтаксисе условий запроса.');
+            }
+          } else if (nm === '$joinExists') {
+            if (conditions[nm].filter) {
+              prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false, part, parent);
+            }
           } else {
-            prepareConditions(conditions[nm], nm, conditions, true);
+            prepareConditions(conditions[nm], nm, conditions, true, part, parent);
           }
         }
       }
@@ -587,26 +730,25 @@ function MongoDs(config) {
    * @returns {*}
    */
   function producePrefilter(attributes, find, joins, explicitJoins, counter) {
-    var result, tmp, i;
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
-      result = [];
-      for (i = 0; i < find.length; i++) {
-        tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
+      let result = [];
+      for (let i = 0; i < find.length; i++) {
+        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
         if (tmp) {
           result.push(tmp);
         }
       }
       return result.length ? result : null;
     } else if (typeof find === 'object') {
-      result = null;
-      var j, jid, ja;
-      var jsrc = {};
-      var pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
-      for (var name in find) {
+      let result;
+      let jsrc = {};
+      let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+      for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
-            jid = joinId(find[name]);
+            let jid = joinId(find[name]);
+            let j;
             if (explicitJoins.hasOwnProperty(jid)) {
               j = explicitJoins[jid];
             } else {
@@ -619,7 +761,7 @@ function MongoDs(config) {
             find[name].alias = j.alias;
             pj(find[name]);
 
-            for (ja in jsrc) {
+            for (let ja in jsrc) {
               if (jsrc.hasOwnProperty(ja)) {
                 joins.push(jsrc[ja]);
               }
@@ -630,10 +772,10 @@ function MongoDs(config) {
             }
             result = true;
           } else {
-            tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
-              if (tmp) {
-                for (i = 0; i < tmp.length; i++) {
+              if (Array.isArray(tmp)) {
+                for (let i = 0; i < tmp.length; i++) {
                   if (tmp[i] === true) {
                     result = true;
                   }
@@ -642,10 +784,10 @@ function MongoDs(config) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
               }
-            } else if (name === '$and') {
-              if (tmp) {
+            } else if (name === '$and' || name === '$nor') {
+              if (Array.isArray(tmp)) {
                 result = [];
-                for (i = 0; i < tmp.length; i++) {
+                for (let i = 0; i < tmp.length; i++) {
                   if (tmp[i] !== true) {
                     result.push(tmp[i]);
                   }
@@ -653,7 +795,7 @@ function MongoDs(config) {
                 result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
               }
             } else {
-              if (name === '$nor') {
+              if (name === '$not') {
                 if (Array.isArray(tmp)) {
                   tmp = tmp.length ? tmp[0] : true;
                 }
@@ -664,14 +806,21 @@ function MongoDs(config) {
                   result.$nor = [tmp];
                 }
               } else {
-                result = result || {};
-                result[name] = tmp;
+                if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                  attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
+                  result = true;
+                } else if (typeof tmp === 'string' && tmp[0] === '$') {
+                  result = true;
+                } else {
+                  result = result || {};
+                  result[name] = tmp;
+                }
               }
             }
           }
         }
       }
-      if (result !== null) {
+      if (result !== undefined) {
         return result;
       }
     }
@@ -692,7 +841,7 @@ function MongoDs(config) {
         f = producePostfilter(join.filter, explicitJoins, join.alias);
         if (f !== null) {
           if (not) {
-            f = {$not: f};
+            f = {$nor: f};
           }
         }
       }
@@ -731,36 +880,107 @@ function MongoDs(config) {
    * @returns {*}
    */
   function producePostfilter(find, explicitJoins, prefix) {
-    var result, tmp, i;
     if (Array.isArray(find)) {
-      result = [];
-      for (i = 0; i < find.length; i++) {
-        tmp = producePostfilter(find[i], explicitJoins, prefix);
+      let result = [];
+      for (let i = 0; i < find.length; i++) {
+        let tmp = producePostfilter(find[i], explicitJoins, prefix);
         if (tmp) {
           result.push(tmp);
         }
       }
-      return result.length ? result : null;
-    } else if (typeof find === 'object') {
-      result = null;
+      return result.length ? result : undefined;
+    } else if (typeof find === 'object' && find !== null) {
+      let result;
       for (var name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
             return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
-          } else if (name === '$text') {
-            return null;
+          } else if (excludeFromPostfilter.indexOf(name) >= 0) {
+            return undefined;
           } else {
-            tmp = producePostfilter(find[name], explicitJoins, prefix);
-            result = result || {};
-            if (name[0] !== '$') {
-              result[prefix ? addPrefix(name, prefix) : name] = tmp;
-            } else {
-              result[name] = tmp;
+            let tmp = producePostfilter(find[name], explicitJoins, prefix);
+            if (tmp !== undefined) {
+              result = result || {};
+              if (name[0] !== '$') {
+                result[prefix ? addPrefix(name, prefix) : name] = tmp;
+              } else {
+                result[name] = tmp;
+              }
             }
           }
         }
       }
       return result;
+    }
+    return find;
+  }
+
+  /**
+   * @param {{}} find
+   * @param {{}} explicitJoins
+   * @param {String} [prefix]
+   * @returns {*}
+   */
+  function produceRedactFilter(find, explicitJoins, prefix) {
+    if (Array.isArray(find)) {
+      let result = [];
+      for (let i = 0; i < find.length; i++) {
+        let tmp = produceRedactFilter(find[i], explicitJoins, prefix);
+        if (tmp) {
+          result.push(tmp);
+        }
+      }
+      return result.length ? result : null;
+    } else if (typeof find === 'object' && find !== null) {
+      let result = [];
+      for (let name in find) {
+        if (find.hasOwnProperty(name)) {
+          if (name[0] === '$') {
+            let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
+            if (tmp !== null) {
+              let nm = name;
+              if (name === '$nor') {
+                nm = '$not';
+                if (Array.isArray(tmp)) {
+                  if (tmp.length > 1) {
+                    tmp = {$or: tmp};
+                  }
+                } else {
+                  tmp = [tmp];
+                }
+              }
+              result.push({[nm]: tmp});
+            }
+          } else {
+            let nm = prefix ? addPrefix(name, prefix) : name;
+            let loperand = '$' + nm;
+
+            if (typeof find[name] === 'object' && find[name]) {
+              for (let oper in find[name]) {
+                if (find[name].hasOwnProperty(oper)) {
+                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
+                    if (oper === '$exists') {
+                      if (find[name][oper]) {
+                        result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
+                      } else {
+                        result.push({$eq: [{$type: '$' + nm}, 'missing']});
+                      }
+                    } else {
+                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                    }
+                  }
+                }
+              }
+            } else {
+              result.push({$eq: [loperand, find[name]]});
+            }
+          }
+        }
+      }
+      if (result.length) {
+        return result.length === 1 ? result[0] : {$and: result};
+      }
+      return null;
     }
     return find;
   }
@@ -854,17 +1074,20 @@ function MongoDs(config) {
       }
 
       var resultAttrs = attributes.slice(0);
-      var prefilter, postfilter, jl;
+      var prefilter, postfilter, redactFilter, jl;
 
       if (options.filter) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
-        if (joins.length > jl) {
+        if (joins.length > jl || attributes.length > resultAttrs.length) {
           postfilter = producePostfilter(options.filter, lookups);
+          redactFilter = produceRedactFilter(postfilter, lookups);
+          postfilter = producePrefilter([], postfilter, [], []);
         }
       }
 
-      if (prefilter && typeof prefilter === 'object' && (joins.length || options.to || forcedStages.length)) {
+      if (prefilter && typeof prefilter === 'object' &&
+        (joins.length || attributes.length > resultAttrs.length || options.to || forcedStages.length)) {
         result.push({$match: prefilter});
       }
     } catch (err) {
@@ -898,7 +1121,12 @@ function MongoDs(config) {
         if (postfilter) {
           result.push({$match: postfilter});
         }
-        Array.prototype.push.apply(result, wind(resultAttrs));
+        if (redactFilter) {
+          result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
+        }
+        if (resultAttrs.length) {
+          Array.prototype.push.apply(result, wind(resultAttrs));
+        }
       }
 
       if (forcedStages.length) {
@@ -1270,21 +1498,25 @@ function MongoDs(config) {
         return checkAggregation(type, options, plan);
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
-          c.aggregate(plan, function (err, result) {
-            if (err) {
-              return reject(err);
-            }
-            if (tmpApp) {
-              copyColl(tmpApp, options.append, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve();
-              });
-              return;
-            }
-            resolve(result);
-          });
+          try {
+            c.aggregate(plan, function (err, result) {
+              if (err) {
+                return reject(err);
+              }
+              if (tmpApp) {
+                copyColl(tmpApp, options.append, function (err) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                });
+                return;
+              }
+              resolve(result);
+            });
+          } catch (err) {
+            reject(err);
+          }
         });
       }
     );
