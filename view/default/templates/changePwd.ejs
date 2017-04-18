@@ -4,12 +4,14 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/auth.css">
   <meta name="robots" content="noindex,nofollow">
+  <script src="/vendor/jquery/jquery.min.js" type="application/javascript"></script>
 </head>
 <body>
 <div class="demo">
   <h3>Смена пароля</h3>
 
   <div class="auth-form">
+    <div class="msg-container">
     <%
     if (errors.length) {
       errors.forEach(function (error) {
@@ -19,15 +21,61 @@
       });
     }
     %>
-    <form action="/chpwd" method="post">
+    </div>
+    <form action="/chpwd" method="post" id="reg-form">
       <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
       <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
-
       <div class="buttons">
-        <button type="submit">Изменить пароль</button>
+        <button id="submit-btn" type="button">Изменить пароль</button>
       </div>
     </form>
   </div>
 </div>
 </body>
+<script>
+  jQuery(function(){
+    function parseJSON(json) {
+      var result;
+      try {
+        result = JSON.parse(json);
+      } catch (err) {
+        result = {};
+      }
+      return result;
+    }
+
+    var options = parseJSON('<%- JSON.stringify(options)%>');
+    var $msgContainer = $('div.msg-container');
+    var $submit = $('button#submit-btn');
+    var $regForm = $('form#reg-form');
+    var $pwd = $regForm.find('input[name="password"]');
+    var $pwd2 = $regForm.find('input[name="password2"]');
+    $submit.click(function(){
+      $msgContainer.empty();
+      var pwd = $pwd.val();
+      var pwd2 = $pwd2.val();
+      var valid = true;
+      var messages = [];
+      if (pwd && pwd2 && pwd === pwd2) {
+        if (options.pwdMinLength) {
+           if (pwd.length < options.pwdMinLength) {
+             valid = false;
+             messages.push('Минимальная длинна пароля ' + options.pwdMinLength);
+           }
+        }
+      } else {
+        valid = false;
+        messages.push('Пароли должны совпадать');
+      }
+      if (valid) {
+        $regForm.submit();
+        $msgContainer.empty();
+      } else if (messages.length) {
+        for (var i = 0; i < messages.length; i++) {
+          $('<div/>').addClass('error-msg').html(messages[i]).appendTo($msgContainer);
+        }
+      }
+    });
+  });
+</script>
 </html>

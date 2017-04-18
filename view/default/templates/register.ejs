@@ -40,7 +40,8 @@
         <% } else if (fields[fieldName]){ %>
         <div>
           <input type="text" name="<%= fieldName %>" class="input"
-                 placeholder="<%= fields[fieldName].required ? '*' : '' %><%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>">
+                 placeholder="<%= fields[fieldName].required ? '*' : '' %><%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>"
+              <% if (fields[fieldName].required) { %>required<% } %> >
         </div>
         <% } %>
       <% }) %>
@@ -70,7 +71,6 @@
 
     var options = parseJSON('<%- JSON.stringify(options)%>');
     var fields = parseJSON('<%- JSON.stringify(fields)%>');
-    console.log(options, fields);
     var $msgContainer = $('div.msg-container');
     var $submit = $('button#submit-btn');
     var $regForm = $('form#reg-form');
@@ -78,10 +78,11 @@
     var $pwd = $regForm.find('input[name="password"]');
     var $pwd2 = $regForm.find('input[name="password2"]');
     $submit.click(function(){
+      $msgContainer.empty();
       var username = $username.val();
       var pwd = $pwd.val();
       var pwd2 = $pwd2.val();
-      var valid = false;
+      var valid = true;
       var messages = [];
       var field;
       if (!username) {
@@ -89,33 +90,29 @@
       }
       if (pwd && pwd2 && pwd === pwd2) {
         if (options.pwdMinLength) {
-           if (pwd.length >= options.pwdMinLength) {
-             valid = true;
-           } else {
+           if (pwd.length < options.pwdMinLength) {
+             valid = false;
              messages.push('Минимальная длинна пароля ' + options.pwdMinLength);
            }
-        } else {
-          valid = true;
         }
       } else {
+        valid = false;
         messages.push('Пароли должны совпадать');
       }
       for (fieldName in fields) {
         if (fields.hasOwnProperty(fieldName)) {
           if (fields[fieldName] && fields[fieldName].required) {
             field = $regForm.find('[name='+fieldName+']');
-            if (field.val()) {
-              valid = true;
-            } else {
+            if (!field.val()) {
+              valid = false;
               messages.push('Поле ' + (fields[fieldName].caption ? fields[fieldName].caption : fieldName )
-                + 'обязательно для заполнения');
+                + ' обязательно для заполнения');
             }
           }
         }
       }
-
       if (valid) {
-        //$regForm.submit();
+        $regForm.submit();
         $msgContainer.empty();
       } else if (messages.length) {
         for (var i = 0; i < messages.length; i++) {
