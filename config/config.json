@@ -75,7 +75,8 @@
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
-          "exclude": "[[auth.exclude]]"
+          "exclude": "[[auth.exclude]]",
+          "acl": "ion://aclProvider"
         }
       },
       "calculator": {
