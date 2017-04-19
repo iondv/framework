@@ -228,7 +228,7 @@ function IonDataRepository(options) {
           item.references[property.getName()] =
             _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
         } else {
-          if (attrs[pn].filter.indexOf(v) < 0) {
+          if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
             attrs[pn].filter.push(v);
           }
         }
@@ -265,7 +265,7 @@ function IonDataRepository(options) {
         } else {
           v = item.getItemId();
         }
-        if (attrs[pn].colItems.indexOf(v) < 0) {
+        if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
           attrs[pn].colItems.push(v);
         }
       } else {
@@ -278,7 +278,7 @@ function IonDataRepository(options) {
                 _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
               );
             } else {
-              if (attrs[pn].colItems.indexOf(v) < 0) {
+              if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
                 attrs[pn].colItems.push(v);
               }
             }
@@ -427,7 +427,6 @@ function IonDataRepository(options) {
     if (promises.length === 0) {
       return Promise.resolve(src2);
     }
-
     return Promise.all(promises).then(
       function (results) {
         var srcByKey;

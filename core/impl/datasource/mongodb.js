@@ -813,7 +813,7 @@ function MongoDs(config) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
               }
-            } else if (name === '$and') {
+            } else if (name === '$and' || name === '$nor') {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
