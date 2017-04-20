@@ -129,7 +129,7 @@ function OwnCloudStorage(config) {
             streamGetter(id)
           ));
         } else {
-          reject(err || new Error('Status code: ' + res.statusCode));
+          reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
         }
       }));
     });
@@ -152,7 +152,7 @@ function OwnCloudStorage(config) {
         if (!err && res.statusCode === 204) {
           return resolve(id);
         } else {
-          return reject(err || new Error('Status code: ' + res.statusCode));
+          return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
         }
       });
     });
@@ -213,7 +213,7 @@ function OwnCloudStorage(config) {
     if (result) {
       return result;
     } else {
-      throw new Error('передан не правильный путь до директории');
+      throw new Error('Передан неправильный путь до директории');
     }
   }
 
@@ -321,7 +321,7 @@ function OwnCloudStorage(config) {
             resolve(null);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
@@ -360,7 +360,7 @@ function OwnCloudStorage(config) {
         if (!err && res.statusCode === 201) {
           resolve(urlResolver(slashChecker(dirId, fileName)));
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
