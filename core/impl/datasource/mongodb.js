@@ -394,8 +394,10 @@ function MongoDs(config) {
   };
 
   function adjustAutoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    if (!data) {
+      return Promise.resolve();
+    }
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
@@ -406,7 +408,7 @@ function MongoDs(config) {
             var counters = result.c.counters;
             for (var nm in counters) {
               if (counters.hasOwnProperty(nm)) {
-                if (counters[nm] < data[nm]) {
+                if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
                   act = true;
                 }
@@ -415,24 +417,20 @@ function MongoDs(config) {
           }
 
           if (!act) {
-            return resolve(data);
+            return Promise.resolve(data);
           }
-
-          result.ai.findOneAndUpdate(
-            {type: type},
-            {$set: up},
-            {returnOriginal: false, upsert: false},
-            function (err) {
-              if (err) {
-                return reject(err);
+          return new Promise(function (resolve, reject) {
+            result.ai.findOneAndUpdate(
+              {type: type},
+              {$set: up},
+              {returnOriginal: false, upsert: false},
+              function (err) {
+                return err ? reject(err) : resolve(data);
               }
-              resolve(data);
-            }
-          );
-          return;
+            );
+          });
         }
-      ).catch(reject);
-    });
+      );
   }
 
   function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
@@ -786,7 +784,7 @@ function MongoDs(config) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
               }
-            } else if (name === '$and') {
+            } else if (name === '$and' || name === '$nor') {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
@@ -794,7 +792,11 @@ function MongoDs(config) {
                     result.push(tmp[i]);
                   }
                 }
-                result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                if (name === '$and') {
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                } else {
+                  result = result.length ? {$nor: result} : true;
+                }
               }
             } else {
               if (name === '$not') {

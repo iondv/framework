@@ -187,8 +187,10 @@ function ConditionParser(condition, rcm, context) {
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
         case ConditionTypes.LIKE: result[condition.property] = {
-            $regex: String(toScalar(condition.value, context)).
-              replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+')
+            $regex: String(toScalar(condition.value, context))
+              .replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$&')
+              .replace(/\s+/g, '\\s+'),
+            $options: 'i'
           }; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
