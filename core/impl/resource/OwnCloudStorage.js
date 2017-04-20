@@ -397,6 +397,9 @@ function OwnCloudStorage(config) {
         qs: {
           format: 'json'
         },
+        headers: {
+          'OCS-APIRequest': true
+        },
         auth: {
           user: config.login,
           password: config.password
@@ -415,7 +418,7 @@ function OwnCloudStorage(config) {
           }
           resolve(body.ocs && body.ocs.data.url);
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
@@ -470,6 +473,9 @@ function OwnCloudStorage(config) {
           promises.push(new Promise(function (resolve, reject) {
             var reqObject = {
               uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId),
+              headers: {
+                'OCS-APIRequest': true
+              },
               auth: {
                 user: config.login,
                 password: config.password
@@ -482,7 +488,7 @@ function OwnCloudStorage(config) {
               if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
                 resolve(true);
               } else {
-                return reject(err || new Error('Status code:' + res.statusCode));
+                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
               }
             });
           }));
