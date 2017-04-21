@@ -228,7 +228,7 @@ function IonDataRepository(options) {
           item.references[property.getName()] =
             _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
         } else {
-          if (attrs[pn].filter.indexOf(v) < 0) {
+          if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
             attrs[pn].filter.push(v);
           }
         }
@@ -265,7 +265,7 @@ function IonDataRepository(options) {
         } else {
           v = item.getItemId();
         }
-        if (attrs[pn].colItems.indexOf(v) < 0) {
+        if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
           attrs[pn].colItems.push(v);
         }
       } else {
@@ -278,7 +278,7 @@ function IonDataRepository(options) {
                 _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
               );
             } else {
-              if (attrs[pn].colItems.indexOf(v) < 0) {
+              if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
                 attrs[pn].colItems.push(v);
               }
             }
@@ -427,7 +427,6 @@ function IonDataRepository(options) {
     if (promises.length === 0) {
       return Promise.resolve(src2);
     }
-
     return Promise.all(promises).then(
       function (results) {
         var srcByKey;
@@ -680,8 +679,8 @@ function IonDataRepository(options) {
     var rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).
-    then(
-      function () {
+    then(function (filter) {
+        options.filter = filter;
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
@@ -704,16 +703,15 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = this._getMeta(className);
-    var rcm = this._getRootType(cm);
+    var cm = getMeta(className);
+    var rcm = getRootType(cm);
     options.attributes = [];
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
       options.attributes.push(props[i].name);
     }
-    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).then(function (filter) {
-      options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     });
   };
@@ -1434,7 +1432,7 @@ function IonDataRepository(options) {
 
       var p;
       if (changeLogger && conditions) {
-        p = _this.ds.get(classname, conditions).then(function (b) {
+        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
           return Promise.all(fileSavers);
         });
@@ -1447,7 +1445,7 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions && base) {
+            if (conditions) {
               if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
@@ -1455,7 +1453,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, base ? true : false);
+              chr = checkRequired(cm, updates, true);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1470,7 +1468,6 @@ function IonDataRepository(options) {
             if (chr !== true) {
               return Promise.reject(chr);
             }
-
             return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
           } catch (err) {
             return Promise.reject(err);
