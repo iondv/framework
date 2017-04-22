@@ -58,9 +58,10 @@ module.exports.castValue = castValue;
  * @param {Object} data
  * @param {Boolean} [setCollections]
  * @param {{}} [refUpdates]
+ * @param {{}} [opts]
  * @return {Object | null}
  */
-function formUpdatedData(cm, data, setCollections, refUpdates) {
+function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
   var updates, pm, nm, dot, tmp;
   updates = {};
   var empty = true;
@@ -69,6 +70,9 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
       empty = false;
       if ((dot = nm.indexOf('.')) >= 0) {
         if (refUpdates) {
+          if (opts) {
+            opts.refUpdates = true;
+          }
           tmp = nm.substring(0, dot);
           pm = cm.getPropertyMeta(tmp);
           if (pm) {
@@ -87,6 +91,11 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
               updates[nm] = data[nm];
+            }
+            if (pm.type === PropertyTypes.REFERENCE && pm.backRef) {
+              if (opts) {
+                opts.backRefUpdates = true;
+              }
             }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];

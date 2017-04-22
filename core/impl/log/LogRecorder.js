@@ -36,7 +36,7 @@ function LogRecorder(options) {
    */
   this._info = function (message) {
     if (recording) {
-      buf.push({type: 'info', message: message});
+      buf.push({type: 'info', message: message && (message.message || message)});
     }
   };
 
@@ -45,7 +45,7 @@ function LogRecorder(options) {
    */
   this._log = function (message) {
     if (recording) {
-      buf.push({type: 'log', message: message});
+      buf.push({type: 'log', message: message && (message.message || message)});
     }
   };
 
@@ -54,7 +54,7 @@ function LogRecorder(options) {
    */
   this._warn = function (message) {
     if (recording) {
-      buf.push({type: 'warn', message: message});
+      buf.push({type: 'warn', message: message && (message.message || message)});
     }
   };
 
@@ -63,7 +63,7 @@ function LogRecorder(options) {
    */
   this._error = function (message) {
     if (recording) {
-      buf.push({type: 'error', message: message});
+      buf.push({type: 'error', message: message && (message.message || message)});
     }
   };
 }
