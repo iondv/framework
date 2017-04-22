@@ -60,12 +60,12 @@
         if (options.pwdMinLength) {
            if (pwd.length < options.pwdMinLength) {
              valid = false;
-             messages.push('Минимальная длинна пароля ' + options.pwdMinLength);
+             messages.push('Минимальная длина пароля ' + options.pwdMinLength + ' символов');
            }
         }
       } else {
         valid = false;
-        messages.push('Пароли должны совпадать');
+        messages.push('Неверный повтор пароля');
       }
       if (valid) {
         $regForm.submit();

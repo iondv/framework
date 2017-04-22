@@ -6,7 +6,7 @@ const di = require('./di');
 const extend = require('extend');
 
 /**
- * @param {String | null} moduleName
+ * @param {String} moduleName
  * @param {{}} config
  * @param {{}} [rootScope]
  * @returns {*}

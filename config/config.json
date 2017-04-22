@@ -3,9 +3,9 @@
     "parametrised": true,
     "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
-    "theme": "[[module.theme]]",
     "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",
+    "theme": "[[ui.theme]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },
@@ -76,7 +76,16 @@
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
           "exclude": "[[auth.exclude]]",
-          "acl": "ion://aclProvider"
+          "acl": "ion://[[auth.aclProvider]]",
+          "inactiveTimeout": "[[auth.inactivityTimeout]]",
+          "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinLength": "[[auth.passwordMinLength]]",
+          "attemptTimeOut": "[[auth.attemptTimeOut]]",
+          "attemptLimit": "[[auth.attemptLimit]]",
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
+          "tempBlockLimit": "[[auth.tempBlockLimit]]",
+          "tempBlockInterval": "[[auth.tempBlockInterval]]",
+          "blockPeriod": "[[auth.blockPeriod]]"
         }
       },
       "calculator": {

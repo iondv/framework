@@ -115,8 +115,8 @@ di('app', config.di,
     server: server,
     application: app,
     sysLog: sysLog
-  }).
-then(
+  })
+  .then(
   // Подключаем модули
   /**
    * @param {{}} scope
@@ -124,107 +124,109 @@ then(
    * @returns {Promise}
      */
   function (scope) {
-    return di('plugins',  scope.settings.get('plugins'), {}, 'app')
-      .then(function (plugins) {
-        var moduleTitles = {};
-        try {
-          // Тема оформления страниц аутентификации и регистрации
-          theme(
-            app, '',
-            path.normalize(path.join(__dirname, '..')),
-            scope.settings.get('theme') || config.theme || 'default', sysLog
-          );
+    return di('plugins', scope.settings.get('plugins') || {}, {}, 'app')
+      .then(() => {return scope;});
+  })
+  .then(function (scope) {
+    var moduleTitles = {};
+    try {
+      // Тема оформления страниц аутентификации и регистрации
+      theme(
+        app, '',
+        path.normalize(path.join(__dirname, '..')),
+        scope.settings.get('theme') || config.theme || 'default', sysLog
+      );
 
-          scope.auth.setTopLevelAuth();
+      scope.auth.setTopLevelAuth();
 
-          // Редирект на дефолтный модуль
-          var defaultModule = null;
-          if (scope.settings && scope.settings instanceof SettingsRepository) {
-            defaultModule = scope.settings.get('defaultModule');
-            moduleTitles = scope.settings.get('moduleTitles') || {};
-          }
+      // Редирект на дефолтный модуль
+      var defaultModule = null;
+      if (scope.settings && scope.settings instanceof SettingsRepository) {
+        defaultModule = scope.settings.get('defaultModule');
+        moduleTitles = scope.settings.get('moduleTitles') || {};
+      }
 
-          if (!defaultModule && config.defaultModule) {
-            defaultModule = config.defaultModule;
-          }
+      if (!defaultModule && config.defaultModule) {
+        defaultModule = config.defaultModule;
+      }
 
-          if (defaultModule) {
-            app.get('/', function (req, res) { res.redirect('/' + defaultModule); });
-          } else {
-            throw new Error('Не указан модуль по умолчанию!');
-          }
+      if (defaultModule) {
+        app.get('/', function (req, res) { res.redirect('/' + defaultModule); });
+      } else {
+        throw new Error('Не указан модуль по умолчанию!');
+      }
 
-          if (scope.fileStorage) {
-            app.use(scope.fileStorage.middle());
-          }
-        } catch (err) {
-          return Promise.reject(err);
-        }
+      if (scope.fileStorage) {
+        app.use(scope.fileStorage.middle());
+      }
+    } catch (err) {
+      return Promise.reject(err);
+    }
 
-        var i, moduleInitiators;
-        sysLog.info('Загрузка веб-модулей.');
-        app.locals.sysMenu = [];
-        moduleInitiators = null;
-        try {
-          var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-          var skipModules = config.skipModules || [];
-          for (i = 0; i < candidates.length; i++) {
-            if (
-              fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
-              skipModules.indexOf(candidates[i]) < 0
-            ) {
-              var module = require('modules/' + candidates[i] + '/web');
-              if (typeof module === 'function') {
-                var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
-                if (title) {
-                  app.locals.sysMenu.push(
-                    {
-                      name: candidates[i],
-                      description: title
-                    }
-                  );
-                  module.locals.sysTitle = title;
+    var i, moduleInitiators;
+    sysLog.info('Загрузка веб-модулей.');
+    app.locals.sysMenu = [];
+    moduleInitiators = null;
+    try {
+      var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+      var skipModules = config.skipModules || [];
+      for (i = 0; i < candidates.length; i++) {
+        if (
+          fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
+          skipModules.indexOf(candidates[i]) < 0
+        ) {
+          var module = require('modules/' + candidates[i] + '/web');
+          if (typeof module === 'function') {
+            var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            if (title) {
+              app.locals.sysMenu.push(
+                {
+                  name: candidates[i],
+                  description: title
                 }
-                module.locals.sysMenu = app.locals.sysMenu;
-                app.use(module);
-                if (typeof module._init === 'function') {
-                  if (moduleInitiators) {
-                    moduleInitiators = moduleInitiators.then(moduleLoader(candidates[i], module));
-                  } else {
-                    moduleInitiators = moduleLoader(candidates[i], module)();
-                  }
-                }
+              );
+              module.locals.sysTitle = title;
+            }
+            module.locals.sysMenu = app.locals.sysMenu;
+            app.use(module);
+            if (typeof module._init === 'function') {
+              if (moduleInitiators) {
+                moduleInitiators = moduleInitiators.then(moduleLoader(candidates[i], module));
               } else {
-                sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
+                moduleInitiators = moduleLoader(candidates[i], module)();
               }
             }
+          } else {
+            sysLog.warn('Модуль ' + candidates[i] + ' не является приложением express.');
           }
-        } catch (err) {
-          return Promise.reject(err);
         }
-        if (moduleInitiators) {
-          return moduleInitiators.then(function () {
-            sysLog.info('Все модули загружены.');
-            return Promise.resolve();
-          });
-        }
+      }
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    if (moduleInitiators) {
+      return moduleInitiators.then(function () {
+        sysLog.info('Все модули загружены.');
         return Promise.resolve();
       });
-  }
-).then(
+    }
+    return Promise.resolve();
+  })
+  .then(
   // Запускаем приложение
-  function () {
+    function () {
       var ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
       return start(ports, 0);
     }
-).then(
-  function () {
+  )
+  .then(
+    function () {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
-    }
-).catch(onError);
+    })
+  .catch(onError);
