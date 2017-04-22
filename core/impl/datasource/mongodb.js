@@ -369,26 +369,26 @@ function MongoDs(config) {
   this._insert = function (type, data) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
-          autoInc(type, data)
+        return autoInc(type, data)
             .then(
               function (data) {
                 return cleanNulls(c, type, prepareGeoJSON(data));
               }
             ).then(
               function (data) {
-                c.insertOne(clone(data.data), function (err, result) {
-                  if (err) {
-                    reject(err);
-                  } else if (result.insertedId) {
-                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
-                  } else {
-                    reject(new Error('Inser failed'));
-                  }
+                return Promise(function (resolve, reject) {
+                  c.insertOne(clone(data.data), function (err, result) {
+                    if (err) {
+                      reject(err);
+                    } else if (result.insertedId) {
+                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                    } else {
+                      reject(new Error('Insert failed'));
+                    }
+                  });
                 });
               }
-            ).catch(reject);
-        });
+            );
       }
     );
   };
