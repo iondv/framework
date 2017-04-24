@@ -69,13 +69,12 @@ function normalize(data, dateCallback, options, processed) {
         let p = props[nm];
 
         if (p.getType() === PropertyTypes.REFERENCE) {
-          if (typeof item[p.getName()] === 'undefined') {
-            item[p.getName()] = true;
-            item[p.getName()] = normalize(data.getAggregate(p.getName()), dateCallback, options, processed);
+          let refItem = data.getAggregate(p.getName());
+          if (refItem && typeof item[p.getName()] === 'undefined') {
+            item[p.getName()] = normalize(refItem, dateCallback, options, processed);
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           if (typeof item[p.getName()] === 'undefined') {
-            item[p.getName()] = true;
             item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
           }
         } else {
