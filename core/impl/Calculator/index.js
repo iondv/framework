@@ -156,6 +156,10 @@ function Calculator(options) {
       return false;
     }
 
+    if (formula[0] === '\'' && formula[formula.length - 1] === '\'') {
+      return formula.substring(1, formula.length - 1);
+    }
+
     if ((pos = formula.indexOf('(')) > -1) {
       args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
       func = formula.substring(0, pos).trim();

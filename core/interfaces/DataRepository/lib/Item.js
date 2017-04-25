@@ -37,6 +37,8 @@ function Item(id, base, classMeta) {
 
   this.references = {};
 
+  this.collections = {};
+
   this.calculated = {};
 
   this.files = {};
@@ -85,15 +87,15 @@ function Item(id, base, classMeta) {
 
   /**
    * @param {String} name
-   * @returns {Array}
+   * @returns {Array | null}
    */
   this.getAggregates = function (name) {
     var props = this.getProperties();
     var p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
-      return this.collections[name] || [];
+      return this.collections[name] || null;
     }
-    return [];
+    return null;
   };
 
   function getFromBase(name) {
@@ -223,11 +225,16 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function (semanticGetter, dateCallback) {
-  if (typeof semanticGetter === 'function') {
-    return semanticGetter.call(this, dateCallback);
+Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
+  circular = typeof circular !== 'undefined' && circular !== null ? circular : {};
+  if (circular[this.getClassName() + '@' + this.getItemId()]) {
+    return '';
   }
-  return this.classMeta.getSemantics(this, dateCallback);
+  circular[this.getClassName() + '@' + this.getItemId()] = true;
+  if (typeof semanticGetter === 'function') {
+    return semanticGetter.call(this, dateCallback, circular);
+  }
+  return this.classMeta.getSemantics(this, dateCallback, circular);
 };
 
 module.exports = Item;

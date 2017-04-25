@@ -162,8 +162,8 @@ function WorkflowProvider(options) {
     });
   };
 
-  function move(item, workflow, nextState, resolve, reject) {
-    options.dataSource.upsert(tableName,
+  function move(item, workflow, nextState) {
+    return options.dataSource.upsert(tableName,
       {
         item: item.getClassName() + '@' + item.getItemId(),
         workflow: workflow
@@ -174,7 +174,7 @@ function WorkflowProvider(options) {
       }
     ).then(
       function () {
-        resolve(item);
+        return Promise.resolve(item);
       }
     ).catch(e => reject(errorHandle(e, item)));
   }
@@ -193,15 +193,13 @@ function WorkflowProvider(options) {
 
   function calcAssignmentValue(updates, item, key, formula) {
     return formula.apply(item, [{}]).then(function (v) {
-      return new Promise(function (resolve, reject) {
-        try {
-          updates[key] = v;
-          item.set(key, v);
-          resolve(v);
-        } catch (err) {
-          reject(err);
-        }
-      });
+      try {
+        updates[key] = v;
+        item.set(key, v);
+        return Promise.resolve(v);
+      } catch (err) {
+        return Promise.reject(err);
+      }
     });
   }
 
@@ -215,7 +213,6 @@ function WorkflowProvider(options) {
   this._performTransition = function (item, workflow, name, user) {
     var transition;
     return _this._getStatus(item).then(function (status) {
-      return new Promise(function (resolve, reject) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             var wf = options.metaRepo.getWorkflow(
@@ -230,44 +227,39 @@ function WorkflowProvider(options) {
                 transition = wf.transitionsByName[name];
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
-                  return reject(new IonError(IonError.ERR_WF_P, null, 'Не найдено конечное состояние перехода.'));
+                  return Promise.reject(new IonError(IonError.ERR_WF_P, null, 'Не найдено конечное состояние перехода.'));
                 }
 
                 var updates = {};
                 var calculations = [];
+
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
-                  for (var i = 0; i < transition.assignments.length; i++) {
-                    if (transition.assignments[i].formula) {
+                  for (let i = 0; i < transition.assignments.length; i++) {
+                    if (transition.assignments[i]._formula) {
                       calculations.push(
                         calcAssignmentValue(
                           updates,
                           item,
                           transition.assignments[i].key,
-                          transition.assignments[i].formula
+                          transition.assignments[i]._formula
                         )
                       );
                     } else {
-                      calculations.push(
-                        passAssignmentValue(
-                          updates,
-                          item,
-                          transition.assignments[i].key,
-                          transition.assignments[i].value
-                        )
-                      );
+                      updates[transition.assignments[i].key] = transition.assignments[i].value;
+                      item.set(transition.assignments[i].key, transition.assignments[i].value);
                     }
                   }
                 }
 
-                Promise.all(calculations).then(function () {
+                return Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
-                      return reject(new IonError(IonError.ERR_WF_P, null, 'Объект не удовлетворяет условиям конечного состояния перехода.'));
+                      return Promise.reject(new IonError(IonError.ERR_WF_P, null, 'Объект не удовлетворяет условиям конечного состояния перехода.'));
                     }
                   }
 
-                  _this.trigger({
+                  return _this.trigger({
                     type: workflow + '.' + nextState.name,
                     item: item
                   }).then(
@@ -294,25 +286,22 @@ function WorkflowProvider(options) {
                           {uid: user}
                         );
                       }
-                      return new Promise(function (resolve) {
-                        resolve(item);
-                      });
+                      return Promise.resolve(item);
                     }
                   ).then(
                     function (item) {
-                      move(item, workflow, nextState, resolve, reject);
+                      return move(item, workflow, nextState);
                     }
                   ).catch(e => reject(errorHandle(e, item, transition)));
                 }).catch(e => reject(errorHandle(e, item, transition)));
                 return;
               }
             }
-            return reject(new IonError(IonError.ERR_WF_P, null, `Невозможно выполнить переход ${name} рабочего процесса ${workflow}`));
+            return Promise.reject(new IonError(IonError.ERR_WF_P, null, `Невозможно выполнить переход ${name} рабочего процесса ${workflow}`));
           }
-          return reject(new IonError(IonError.ERR_WF_P, null, `Объект не участвует в рабочем процессе ${workflow}`));
+          return Promise.reject(new IonError(IonError.ERR_WF_P, null, `Объект не участвует в рабочем процессе ${workflow}`));
         }
       });
-    });
   };
 
   /**

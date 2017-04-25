@@ -4,86 +4,83 @@
 'use strict';
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository').Item;
+const clone = require('clone');
 
 // jshint maxstatements: 50, maxcomplexity: 30, maxdepth: 20
 /**
  * @param {*} data
  * @param {Function} dateCallback
  * @param {{}} [options]
+ * @param {Boolean | Number} [options.greedy]
+ * @param {Boolean} [options.byRef]
  * @param {{}} [processed]
  * @returns {{} | null}
  * @private
  */
 function normalize(data, dateCallback, options, processed) {
-  var i;
   options = options || {};
   processed = processed || {};
   if (Array.isArray(data)) {
-    var result = [];
-    for (i = 0; i < data.length; i++) {
+    let result = [];
+    for (let i = 0; i < data.length; i++) {
       result.push(normalize(data[i], dateCallback, options, processed));
     }
     return result;
   }
 
   if (data instanceof Item) {
+    if (processed.hasOwnProperty(data.getClassName() + '@' + data.getItemId())) {
+      if (options.byRef) {
+        return processed[data.getClassName() + '@' + data.getItemId()];
+      } else {
+        if (options.greedy) {
+          return clone(
+            processed[data.getClassName() + '@' + data.getItemId()],
+            true,
+            isNaN(options.greedy) ? 1 : options.greedy
+          );
+        }
+        return {
+          className: processed[data.getClassName() + '@' + data.getItemId()].className,
+          _id: processed[data.getClassName() + '@' + data.getItemId()]._id
+        };
+      }
+    }
     /**
      * @type {{}}
      */
-    var item;
-    var nm, p, refItem;
-    var props = data.getProperties();
-    if (!options.greedy) {
-      if (processed.hasOwnProperty(data.getClassName() + '@' + data.getItemId())) {
-        item = processed[data.getClassName() + '@' + data.getItemId()];
-        for (nm in props) {
-          if (props.hasOwnProperty(nm)) {
-            /**
-             * @type {Property}
-             */
-            p = props[nm];
-
-            if (p.getType() === PropertyTypes.REFERENCE) {
-              if (typeof item[p.getName()] !== 'object') {
-                refItem = data.getAggregate(p.getName());
-                if (refItem) {
-                  item[p.getName()] = normalize(refItem, dateCallback, options, processed);
-                }
-              }
-            } else if (p.getType() === PropertyTypes.COLLECTION) {
-              if (!Array.isArray(item[p.getName()])) {
-                item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
-              }
-            }
-          }
-        }
-        return item;
-      }
-    }
+    let item;
+    let props = data.getProperties();
 
     item = {};
 
     item.className = data.getMetaClass().getCanonicalName();
     item._creator = data.getCreator();
     item._editor = data.getEditor();
+    item._id = data.getItemId();
+    item.__string = data.toString(null, dateCallback);
     processed[data.getClassName() + '@' + data.getItemId()] = item;
 
-    for (nm in props) {
+    for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
         /**
          * @type {Property}
          */
-        p = props[nm];
+        let p = props[nm];
 
         if (p.getType() === PropertyTypes.REFERENCE) {
-          refItem = data.getAggregate(p.getName());
-          if (refItem) {
+          let refItem = data.getAggregate(p.getName());
+          if (refItem && typeof item[p.getName()] === 'undefined') {
+            item[p.getName()] = true;
             item[p.getName()] = normalize(refItem, dateCallback, options, processed);
           } else if (item[p.getName()]) {
             delete item[p.getName()];
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
+          if (typeof item[p.getName()] === 'undefined') {
+            item[p.getName()] = true;
+            item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
+          }
         } else {
           item[p.getName()] = p.getValue();
         }
@@ -93,9 +90,6 @@ function normalize(data, dateCallback, options, processed) {
         }
       }
     }
-
-    item._id = data.getItemId();
-    item.__string = data.toString(null, dateCallback);
     return item;
   }
 
