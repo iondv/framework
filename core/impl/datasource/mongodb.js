@@ -13,6 +13,7 @@ const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
 const IonError = require('core/IonError');
+const Errors = require('core/errors/data-source');
 const Iterator = require('core/interfaces/Iterator');
 const moment = require('moment');
 
@@ -45,23 +46,20 @@ function MongoDs(config) {
 
   var excludeNullsFor = {};
 
-  function errorHandle(err, type) {
-    if (!err) {
-      return null;
-    }
-
-    if (err.name === 'IonError') {
-      return err;
-    }
-
-    log.error(err);
+  function wrapError(err, oper, coll) {
     if (err.name === 'MongoError') {
-      if (err.code === 11000) {
-        let key = err.message.match(/.*index: (.*)_.*{/i)[1] || '';  // jshint ignore:line
-        return new IonError(IonError.ERR_DS_UNIQ_KEY, err, `Нарушена уникальность ключа ${key} в коллекции ${type}`);
+      if (err.code === 11000 || err.code === 11001) {
+        let p = err.message.match(/\s+index:\s+([^\s_]+)_\d+\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
+        let key = p && p[1] || '';
+        let v = p && p[2] || null;
+        if (v) {
+          v = v.trim().replace(/^"/, '').replace(/"$/, '');
+        }
+        let params = {key: key, table: coll, value: v};
+        return new IonError(Errors.UNIQUENESS_VIOLATION, params, err);
       }
     }
-    return new IonError(IonError.ERR_DS_REQUEST, err, `Ошибка запроса в коллекции ${type}`);
+    return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, err);
   }
 
   function registerFunction(c, nm, f) {
@@ -203,7 +201,7 @@ function MongoDs(config) {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
-            reject(errorHandle(err));
+            reject(wrapError(err));
           } else {
             resolve();
           }
@@ -219,27 +217,28 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function getCollection(type) {
-    return new Promise(function (resolve, reject) {
-      openDb().then(function () {
+    return openDb()
+      .then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        _this.db.collection(type, {strict: true}, function (err, c) {
-          if (!c) {
-            try {
-              _this.db.createCollection(type)
-                .then(resolve)
-                .catch(e => reject(errorHandle(e, type)));
-            } catch (e) {
-              return reject(errorHandle(e, type));
+        return new Promise(function (resolve, reject) {
+          _this.db.collection(type, {strict: true}, function (err, c) {
+            if (!c) {
+              try {
+                _this.db.createCollection(type)
+                  .then(resolve)
+                  .catch(e => reject(wrapError(err, 'create', type)));
+              } catch (e) {
+                return reject(e);
+              }
+            } else {
+              if (err) {
+                return reject(wrapError(err, 'open', type));
+              }
+              resolve(c);
             }
-          } else {
-            if (err) {
-              return reject(errorHandle(err, type));
-            }
-            resolve(c);
-          }
+          });
         });
-      }).catch(e => reject(errorHandle(e, type)));
-    });
+      });
   }
 
   function getAutoInc(type) {
@@ -330,7 +329,7 @@ function MongoDs(config) {
       } else {
         c.indexes(function (err, indexes) {
           if (err) {
-            return reject(errorHandle(err, type));
+            return reject(err);
           }
           var excludes = {};
           var i, nm;
@@ -399,15 +398,15 @@ function MongoDs(config) {
               function (data) {
                 c.insertOne(clone(data.data), function (err, result) {
                   if (err) {
-                    reject(errorHandle(err, type));
+                    reject(wrapError(err, 'insert', type));
                   } else if (result.insertedId) {
-                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(e => reject(errorHandle(e, type)));
+                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
                   } else {
-                    reject(new IonError(1, null, 'Insert failed'));
+                    reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                   }
                 });
               }
-            ).catch(e => reject(errorHandle(e, type)));
+            );
         });
       }
     );
@@ -595,22 +594,22 @@ function MongoDs(config) {
                     {upsert: upsert},
                     function (err) {
                       if (err) {
-                        return reject(errorHandle(err, type));
+                        return reject(wrapError(err, upsert ? 'upsert' : 'update', type));
                       }
                       _this._get(type, conditions).then(function (r) {
                         if (upsert) {
                           return adjustAutoInc(type, r);
                         }
-                        return Promise.resolve(r);
-                      }).then(resolve).catch(e => reject(errorHandle(e, type)));
+                        resolve(r);
+                      }).catch(reject);
                     });
                 } else {
                   c.updateMany(conditions, updates,
                     function (err, result) {
                       if (err) {
-                        return reject(errorHandle(err, type));
+                        return reject(wrapError(err, 'update', type));
                       }
-                      _this._fetch(type, {filter: conditions}).then(resolve).catch(e => reject(errorHandle(e, type)));
+                      _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
                     });
                 }
               });
@@ -635,7 +634,7 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                return reject(errorHandle(err, type));
+                return reject(wrapError(err, 'delete', type));
               }
               resolve(result.deletedCount);
             });
@@ -1115,7 +1114,7 @@ function MongoDs(config) {
         result.push({$match: prefilter});
       }
     } catch (err) {
-      return Promise.reject(errorHandle(err, type));
+      return Promise.reject(wrapError(err, 'aggregate', type));
     }
 
     var p = null;
@@ -1351,7 +1350,7 @@ function MongoDs(config) {
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(errorHandle(err));
+                    return reject(wrapError(err, 'fetch', type));
                   }
                   resolve();
                 });
@@ -1370,7 +1369,7 @@ function MongoDs(config) {
                 resolve(docs);
               });
             },
-            function (e) {reject(errorHandle(e, type));}
+            function (e) {reject(wrapError(e, 'fetch', type));}
           );
         });
       }
@@ -1434,10 +1433,10 @@ function MongoDs(config) {
               function (r, amount) {
                 resolve(new DsIterator(r, amount));
               },
-              function (e) {reject(errorHandle(e, type));}
+              function (e) {reject(wrapError(e, 'iterate', type));}
             );
           } catch (err) {
-            reject(errorHandle(err, type));
+            reject(err);
           }
         });
       }
@@ -1525,12 +1524,12 @@ function MongoDs(config) {
           try {
             c.aggregate(plan, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'aggregate', type));
               }
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(errorHandle(err, type));
+                    return reject(wrapError(err, 'aggregate', type));
                   }
                   resolve();
                 });
@@ -1539,7 +1538,7 @@ function MongoDs(config) {
               resolve(result);
             });
           } catch (err) {
-            reject(errorHandle(err, type));
+            reject(err);
           }
         });
       }
@@ -1566,7 +1565,7 @@ function MongoDs(config) {
           if (agreg) {
             c.aggregate(agreg, function (err, result) {
               if (err) {
-                return reject(errorHandle(err, type));
+                return reject(wrapError(err, 'count', type));
               }
               var cnt = 0;
               if (result.length) {
@@ -1584,7 +1583,7 @@ function MongoDs(config) {
             }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
-                return reject(errorHandle(err, type));
+                return reject(wrapError(err, 'count', type));
               }
               resolve(cnt);
             });
@@ -1601,7 +1600,7 @@ function MongoDs(config) {
           prepareConditions(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              return reject(errorHandle(err, type));
+              return reject(wrapError(err, 'get', type));
             }
             resolve(mergeGeoJSON(result));
           });
@@ -1650,7 +1649,7 @@ function MongoDs(config) {
             function (c) {
               c.findOne({__type: type}, function (err, r) {
                 if (err) {
-                  return reject(errorHandle(err, type));
+                  return reject(err);
                 }
 
                 if (r && r.counters) {
@@ -1667,14 +1666,14 @@ function MongoDs(config) {
                   {upsert: true},
                   function (err) {
                     if (err) {
-                      return reject(errorHandle(err, type));
+                      return reject(err);
                     }
                     resolve();
                   }
                 );
               });
             }
-          ).catch(e => reject(errorHandle(e, type)));
+          ).catch(e => reject(e));
         });
       }
     }

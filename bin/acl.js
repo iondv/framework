@@ -9,6 +9,8 @@ const path = require('path');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger({});
 const Permissions = require('core/Permissions');
+const errorSetup = require('core/error-setup');
+errorSetup(config.lang || 'ru');
 
 var params = {
   permissions: [],

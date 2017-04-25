@@ -8,6 +8,7 @@ const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
 const IonError = require('core/IonError');
+const Errors = require('core/errors/workflow');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -23,24 +24,6 @@ function WorkflowProvider(options) {
   EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
-
-  function errorHandle(err, item, transition) {
-    if (!err) {
-      return null;
-    }
-
-    if (options.log) {
-      options.log.error(err);
-    }
-
-    if (err.name === 'IonError') {
-      return err;
-    }
-
-    let transitionName = transition ? transition.caption : '';
-    let itemId = item ? `"${item.getMetaClass().getCaption()}"@${item.getItemId()}` : '';
-    return new IonError(IonError.ERR_WF_P, err, `Ошибка в БП "${transitionName}" объекта ${itemId}`);
-  }
 
   /**
    * @param {Item} item
@@ -158,7 +141,7 @@ function WorkflowProvider(options) {
             selectionProviders: selectionProviders
           });
         }
-      ).catch(e => reject(errorHandle(e, item)));
+      ).catch(reject);
     });
   };
 
@@ -176,19 +159,7 @@ function WorkflowProvider(options) {
       function () {
         return Promise.resolve(item);
       }
-    ).catch(e => reject(errorHandle(e, item)));
-  }
-
-  function passAssignmentValue(updates, item, key, value) {
-    return new Promise(function (resolve, reject) {
-      try {
-        updates[key] = value;
-        item.set(key, value);
-        resolve(value);
-      } catch (err) {
-        reject(err);
-      }
-    });
+    );
   }
 
   function calcAssignmentValue(updates, item, key, formula) {
@@ -227,7 +198,9 @@ function WorkflowProvider(options) {
                 transition = wf.transitionsByName[name];
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
-                  return Promise.reject(new IonError(IonError.ERR_WF_P, null, 'Не найдено конечное состояние перехода.'));
+                  return Promise.reject(
+                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                  );
                 }
 
                 var updates = {};
@@ -255,7 +228,16 @@ function WorkflowProvider(options) {
                 return Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
-                      return Promise.reject(new IonError(IonError.ERR_WF_P, null, 'Объект не удовлетворяет условиям конечного состояния перехода.'));
+                      return Promise.reject(
+                        new IonError(
+                          Errors.CONDITION_VIOLATION,
+                          {
+                            info: item.getClassName() + '@' + item.getItemId(),
+                            state: nextState.caption,
+                            workflow: wf.caption
+                          }
+                        )
+                      );
                     }
                   }
 
@@ -292,14 +274,23 @@ function WorkflowProvider(options) {
                     function (item) {
                       return move(item, workflow, nextState);
                     }
-                  ).catch(e => reject(errorHandle(e, item, transition)));
-                }).catch(e => reject(errorHandle(e, item, transition)));
-                return;
+                  );
+                });
               }
             }
-            return Promise.reject(new IonError(IonError.ERR_WF_P, null, `Невозможно выполнить переход ${name} рабочего процесса ${workflow}`));
+            return Promise.reject(
+              new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
+            );
           }
-          return Promise.reject(new IonError(IonError.ERR_WF_P, null, `Объект не участвует в рабочем процессе ${workflow}`));
+          return Promise.reject(
+            new IonError(
+              Errors.NOT_IN_WORKFLOW,
+              {
+                workflow: workflow,
+                info: item.getClassName() + '@' + item.getItemId()
+              }
+            )
+          );
         }
       });
   };
@@ -308,12 +299,8 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this.init = function () {
-    return new Promise(function (resolve, reject) {
-      options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
-        .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); })
-        .then(function () {resolve();})
-        .catch(reject);
-    });
+    return options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
+      .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); });
   };
 }
 
