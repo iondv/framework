@@ -33,8 +33,6 @@ const clone = require('clone');
  * @param {Logger} [options.log]
  * @param {String} [options.namespaceSeparator]
  * @param {Number} [options.maxEagerDepth]
- * @param {ResourceStorage} [options.fileStorage]
- * @param {ImageStorage} [options.imageStorage]
  * @constructor
  */
 function IonDataRepository(options) {
@@ -230,7 +228,7 @@ function IonDataRepository(options) {
           item.references[property.getName()] =
             _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
         } else {
-          if (attrs[pn].filter.indexOf(v) < 0) {
+          if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
             attrs[pn].filter.push(v);
           }
         }
@@ -240,22 +238,19 @@ function IonDataRepository(options) {
 
   /**
    * @param {Item} item
-   * @param {Object} [item.collections]
    * @param {Property} property
-   * @param {Object} [property.meta]
-   * @param {String} [property.meta.backColl]
    * @param {{}} attrs
    * @param {{}} loaded
    */
   function prepareColEnrichment(item, property, attrs, loaded) {
-    var refClass = property.meta._refClass;
+    var refc = property.meta._refClass;
     item.collections = item.collections || {};
-    if (refClass) {
+    if (refc) {
       let pn = item.classMeta.getName() + '.' + property.getName();
       if (!attrs.hasOwnProperty(pn)) {
         attrs[pn] = {
           type: PropertyTypes.COLLECTION,
-          colClass: refClass,
+          colClass: refc,
           attrName: property.getName(),
           backRef: property.meta.backRef,
           pIndex: 0,
@@ -270,7 +265,7 @@ function IonDataRepository(options) {
         } else {
           v = item.getItemId();
         }
-        if (attrs[pn].colItems.indexOf(v) < 0) {
+        if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
           attrs[pn].colItems.push(v);
         }
       } else {
@@ -278,12 +273,12 @@ function IonDataRepository(options) {
         if (Array.isArray(v)) {
           item.collections[property.getName()] = [];
           v.forEach(function (v) {
-            if (loaded.hasOwnProperty(refClass.getCanonicalName() + '@' + v)) {
+            if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
               item.collections[property.getName()].push(
-                _this._wrap(refClass.getCanonicalName(), loaded[refClass.getCanonicalName() + '@' + v].base)
+                _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
               );
             } else {
-              if (attrs[pn].colItems.indexOf(v) < 0) {
+              if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
                 attrs[pn].colItems.push(v);
               }
             }
@@ -432,7 +427,6 @@ function IonDataRepository(options) {
     if (promises.length === 0) {
       return Promise.resolve(src2);
     }
-
     return Promise.all(promises).then(
       function (results) {
         var srcByKey;
@@ -685,8 +679,8 @@ function IonDataRepository(options) {
     var rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).
-    then(
-      function () {
+    then(function (filter) {
+        options.filter = filter;
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
@@ -700,6 +694,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
    * @param {Boolean} [options.countTotal]
+   * @param {String[]} [options.attributes]
    * @param {String[]} [options.select]
    * @param {Boolean} [options.distinct]
    * @returns {Promise}
@@ -1438,7 +1433,7 @@ function IonDataRepository(options) {
 
       var p;
       if (changeLogger && conditions) {
-        p = _this.ds.get(classname, conditions).then(function (b) {
+        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
           return Promise.all(fileSavers);
         });
@@ -1451,7 +1446,7 @@ function IonDataRepository(options) {
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditions && base) {
+            if (conditions) {
               if (options && options.autoAssign) {
                 autoAssign(cm, updates);
               } else {
@@ -1459,7 +1454,7 @@ function IonDataRepository(options) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, base ? true : false);
+              chr = checkRequired(cm, updates, true);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
@@ -1474,7 +1469,6 @@ function IonDataRepository(options) {
             if (chr !== true) {
               return Promise.reject(chr);
             }
-
             return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
           } catch (err) {
             return Promise.reject(err);

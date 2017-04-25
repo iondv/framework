@@ -11,6 +11,7 @@ const OperationTypes = require('core/OperationTypes');
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
+const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
 
 // jshint maxstatements: 40, maxcomplexity: 40
 /**
@@ -19,19 +20,34 @@ const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
  * @returns {*}
  */
 function toScalar(v, context) {
-  var result = v;
-  var p;
-  if (Array.isArray(v) && v.length) {
-    result = v.length ? v[0] : null;
+  if (!Array.isArray(v)) {
+    return v;
   }
+  var result = v.slice(0);
 
-  if (typeof result === 'string' && result[0] === '$' && context) {
-    if ((p = context.property(result.substring(1))) !== null) {
-      return p.getValue();
+  for (let i = 0; i < result.length; i++) {
+    if (typeof result[i] === 'string' && result[i][0] === '$' && context) {
+      let p;
+      if ((p = context.property(result[i].substring(1))) !== null) {
+        return p.getValue();
+      }
     }
   }
 
-  return result;
+  return result.length === 1 ? result[0] : result;
+}
+
+function findPM(cm, name) {
+  var dot = name.indexOf('.');
+  if (dot === -1) {
+    return cm.getPropertyMeta(name);
+  }
+
+  var pm = cm.getPropertyMeta(name.substring(0, dot));
+  if (pm && pm._refClass) {
+    return findPM(pm._refClass, name.substring(dot + 1));
+  }
+  return null;
 }
 
 /**
@@ -40,9 +56,9 @@ function toScalar(v, context) {
  * @param {Item} [context]
  */
 function produceContainsFilter(rcm, condition, context) {
-  var pm = rcm.getPropertyMeta(condition.property);
+  var pm = findPM(rcm, condition.property);
   if (pm) {
-    if (pm.type === PropertyTypes.COLLECTION && pm.itemsClass) {
+    if (pm.type === PropertyTypes.COLLECTION && pm._refClass) {
       if (condition.value && condition.value.length) {
         var tmp = {};
         tmp[pm._refClass.getKeyProperties()[0]] = {$in: condition.value};
@@ -96,7 +112,7 @@ function produceAggregationOperation(condition, rcm, context) {
     pn = condition.value[1];
     av = condition.value[0];
     an = 'className';
-    if ((pm = rcm.getPropertyMeta(condition.value[0])) !== null) {
+    if ((pm = findPM(rcm, condition.value[0])) !== null) {
       if (pm.type === PropertyTypes.COLLECTION) {
         an = 'collectionName';
       }
@@ -171,8 +187,10 @@ function ConditionParser(condition, rcm, context) {
         case ConditionTypes.MORE_OR_EQUAL:
           result[condition.property] = produceFilter(condition, '$gte', rcm, context); break;
         case ConditionTypes.LIKE: result[condition.property] = {
-            $regex: String(toScalar(condition.value, context)).
-              replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+')
+            $regex: String(toScalar(condition.value, context))
+              .replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$&')
+              .replace(/\s+/g, '\\s+'),
+            $options: 'i'
           }; break;
         case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
       }
@@ -222,6 +240,13 @@ function ConditionParser(condition, rcm, context) {
           }
           return result;
         }
+      } else if (Funcs.indexOf(condition.operation) !== -1) {
+        result = {};
+        switch (condition.operation) {
+          case OperationTypes.DATE: result.$date = toScalar(condition.value, context); break;
+          case OperationTypes.DATEADD: result.$dateAdd = toScalar(condition.value, context); break;
+        }
+        return result;
       }
     }
   }
