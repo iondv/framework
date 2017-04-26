@@ -193,16 +193,12 @@ function MongoDbSync(options) {
   }
 
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').
+    return getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
         then(function () {return getMetaTable('user_type');}).
         then(function () {return getSysColl(AUTOINC_COLL);}).
-        then(function () {return getSysColl(GEOFLD_COLL);}).
-        then(resolve).
-        catch(reject);
-    });
+        then(function () {return getSysColl(GEOFLD_COLL);});
   };
 
   /**
@@ -211,7 +207,7 @@ function MongoDbSync(options) {
    * @returns {Promise}
    * @private
    */
-  this._createCollection = function (cm, namespace) {
+  function createCollection(cm, namespace) {
     return new Promise(function (resolve, reject) {
       var cn = (namespace ? namespace + '_' : '') + cm.name;
       db().collection(
@@ -229,13 +225,13 @@ function MongoDbSync(options) {
         }
       );
     });
-  };
+  }
 
   /**
    * @param {{}} cm
    * @private
    */
-  this._addIndexes = function (cm, rcm, namespace) {
+  function addIndexes(cm, rcm, namespace) {
     /**
      * @param {Collection} collection
      */
@@ -374,9 +370,9 @@ function MongoDbSync(options) {
         catch(reject);
       });
     };
-  };
+  }
 
-  this._addAutoInc = function (cm) {
+  function addAutoInc(cm) {
     var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
     /**
      * @param {Collection} collection
@@ -418,7 +414,7 @@ function MongoDbSync(options) {
         resolve(collection);
       });
     };
-  };
+  }
 
   /**
    * @param {{}} classMeta
@@ -434,9 +430,9 @@ function MongoDbSync(options) {
           if (err) {
             return reject(err);
           }
-          _this._createCollection(cm, namespace).
-          then(_this._addAutoInc(classMeta)).
-          then(_this._addIndexes(classMeta, cm, namespace)).
+          createCollection(cm, namespace).
+          then(addAutoInc(classMeta)).
+          then(addIndexes(classMeta, cm, namespace)).
           then(function () {
             delete classMeta._id;
             log.log('Регистрируем класс ' + classMeta.name);

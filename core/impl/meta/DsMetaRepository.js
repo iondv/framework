@@ -910,8 +910,7 @@ function DsMetaRepository(options) {
   }
 
   function init() {
-    return new Promise(function (resolve, reject) {
-      Promise.all(
+    return Promise.all(
         [
           _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
@@ -927,13 +926,12 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
-            resolve();
+            return Promise.resolve();
           } catch (err) {
-            reject(err);
+            return Promise.reject(err);
           }
         }
-      ).catch(reject);
-    });
+      );
   }
 
   /**
