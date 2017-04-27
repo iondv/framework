@@ -219,8 +219,10 @@ function WorkflowProvider(options) {
                         )
                       );
                     } else {
-                      updates[transition.assignments[i].key] = transition.assignments[i].value;
-                      item.set(transition.assignments[i].key, transition.assignments[i].value);
+                      let v = transition.assignments[i].value;
+                      v = v && typeof v === 'string' && v[0] === '$' ? item.get(v.substring(1)) : v;
+                      updates[transition.assignments[i].key] = v;
+                      item.set(transition.assignments[i].key, v);
                     }
                   }
                 }
