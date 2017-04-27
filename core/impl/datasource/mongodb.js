@@ -388,14 +388,14 @@ function MongoDs(config) {
   this._insert = function (type, data) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
-          autoInc(type, data)
-            .then(
-              function (data) {
-                return cleanNulls(c, type, prepareGeoJSON(data));
-              }
-            ).then(
-              function (data) {
+        return autoInc(type, data)
+          .then(
+            function (data) {
+              return cleanNulls(c, type, prepareGeoJSON(data));
+            }
+          ).then(
+            function (data) {
+              return new Promise(function (resolve, reject) {
                 c.insertOne(clone(data.data), function (err, result) {
                   if (err) {
                     reject(wrapError(err, 'insert', type));
@@ -405,9 +405,9 @@ function MongoDs(config) {
                     reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                   }
                 });
-              }
-            );
-        });
+              });
+            }
+        );
       }
     );
   };
@@ -600,9 +600,10 @@ function MongoDs(config) {
                         if (upsert) {
                           return adjustAutoInc(type, r);
                         }
-                        resolve(r);
-                      }).catch(reject);
-                    });
+                        return Promise.resolve(r);
+                      }).then(resolve).catch(reject);
+                    }
+                  );
                 } else {
                   c.updateMany(conditions, updates,
                     function (err, result) {
@@ -610,7 +611,8 @@ function MongoDs(config) {
                         return reject(wrapError(err, 'update', type));
                       }
                       _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
-                    });
+                    }
+                  );
                 }
               });
             }
