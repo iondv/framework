@@ -248,3 +248,12 @@ module.exports.scheduleToString = function (value) {
     return scheduleToString(value);
   }
 };
+
+/**
+*
+* @param {Object} value
+* @returns {Boolean}
+*/
+module.exports.isSchedule = function (value) {
+	return value.hasOwnProperty('occurs') && typeof value.occurs === 'object' && value.hasOwnProperty('skipped') && typeof value.skipped === 'object';
+}
