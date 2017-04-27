@@ -583,7 +583,7 @@ function DsMetaRepository(options) {
             if (prefix) {
               ppath.unshift(prefix);
             }
-            if (pm.type !== PropertyTypes.REFERENCE) {
+            if (pm.type !== PropertyTypes.REFERENCE && pm.type !== PropertyTypes.COLLECTION) {
               ppath.pop();
             }
             if (ppath.length) {
@@ -605,8 +605,27 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    */
   function produceSemantics(cm) {
-    if (cm && cm.plain.semantic) {
-      cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
+    var i, propertyMetas;
+
+    if (cm) {
+      propertyMetas = cm.getPropertyMetas();
+
+      for (i = 0; i < propertyMetas.length; i++) {
+        if ((propertyMetas[i].type === PropertyTypes.REFERENCE ||
+          propertyMetas[i].type === PropertyTypes.COLLECTION) &&
+          propertyMetas[i].semantic) {
+          propertyMetas[i].semanticGetter = createSemanticFunc(
+            propertyMetas[i].semantic,
+            propertyMetas[i]._refClass,
+            [],
+            null,
+            propertyMetas[i].name
+          );
+        }
+      }
+      if (cm.plain.semantic) {
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
+      }
     }
   }
 

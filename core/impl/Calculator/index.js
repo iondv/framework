@@ -122,11 +122,7 @@ function Calculator(options) {
   function propertyGetter(nm) {
     return function () {
       if (this instanceof Item) {
-        let p = this.property(nm);
-        if (!p) {
-          return null;
-        }
-        return p.evaluate();
+        return this.get(nm);
       }
       return objProp(this, nm);
     };
@@ -154,6 +150,10 @@ function Calculator(options) {
 
     if (formula === 'false') {
       return false;
+    }
+
+    if (formula[0] === '\'' && formula[formula.length - 1] === '\'') {
+      return formula.substring(1, formula.length - 1);
     }
 
     if ((pos = formula.indexOf('(')) > -1) {
