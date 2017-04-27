@@ -596,16 +596,10 @@ function MongoDs(config) {
                       }
                       var p;
                       if (options.skipResult) {
-                        if (options.upsert) {
-                          p = adjustAutoInc(type, data);
-                        }
-                        p = Promise.resolve();
+                        p = options.upsert ? adjustAutoInc(type, data) : Promise.resolve();
                       } else {
                         p = _this._get(type, conditions).then(function (r) {
-                          if (options.upsert) {
-                            return adjustAutoInc(type, r);
-                          }
-                          return Promise.resolve(r);
+                          return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
                         });
                       }
                       p.then(resolve).catch(reject);
