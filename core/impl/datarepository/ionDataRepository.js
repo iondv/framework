@@ -1447,7 +1447,7 @@ function IonDataRepository(options) {
             updates._classVer = cm.getVersion();
             if (conditions) {
               if (options && options.autoAssign) {
-                autoAssign(cm, updates);
+                autoAssign(cm, updates, true);
               } else {
                 if (cm.getChangeTracker()) {
                   updates[cm.getChangeTracker()] = new Date();
