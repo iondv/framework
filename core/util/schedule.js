@@ -255,5 +255,37 @@ module.exports.scheduleToString = function (value) {
 * @returns {Boolean}
 */
 module.exports.isSchedule = function (value) {
-	return value.hasOwnProperty('occurs') && typeof value.occurs === 'object' && value.hasOwnProperty('skipped') && typeof value.skipped === 'object';
+	if (value.hasOwnProperty('occurs') && typeof Array.isArray(value.occurs)
+		&& value.hasOwnProperty('skipped') && typeof Array.isArray(value.skipped)) {
+		for (let i = 0; i < value.occurs.length; i++) {
+			let oc = value.occurs[i];
+			if(!(oc.duration && !isNaN(oc.duration) && (
+					(oc.second && !isNaN(oc.second) && oc.second >= 0 && oc.second <= 60) ||
+					(oc.minute && !isNaN(oc.minute) && oc.minute >= 0 && oc.minute <= 60) ||
+					(oc.hour && !isNaN(oc.hour) && oc.hour >= 0 && oc.hour <= 24) ||
+					(oc.day && !isNaN(oc.day) && oc.day >= 0 && oc.day <= 31) ||
+					(oc.weekday && !isNaN(oc.weekday) && oc.weekday >= 0 && oc.weekday <= 7) ||
+					(oc.month && !isNaN(oc.month) && oc.month >= 0 && oc.month <= 12) ||
+					(oc.year && !isNaN(oc.year))
+				))){
+				return false;
+			}
+		}
+		for (let i = 0; i < value.skipped.length; i++) {
+			let oc = value.skipped[i];
+			if(!(oc.duration && !isNaN(oc.duration) && (
+					(oc.second && !isNaN(oc.second) && oc.second >= 0 && oc.second <= 60) ||
+					(oc.minute && !isNaN(oc.minute) && oc.minute >= 0 && oc.minute <= 60) ||
+					(oc.hour && !isNaN(oc.hour) && oc.hour >= 0 && oc.hour <= 24) ||
+					(oc.day && !isNaN(oc.day) && oc.day >= 0 && oc.day <= 31) ||
+					(oc.weekday && !isNaN(oc.weekday) && oc.weekday >= 0 && oc.weekday <= 7) ||
+					(oc.month && !isNaN(oc.month) && oc.month >= 0 && oc.month <= 12) ||
+					(oc.year && !isNaN(oc.year))
+				))){
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
 }
