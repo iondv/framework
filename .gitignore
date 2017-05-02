@@ -85,3 +85,8 @@
 \.project
 
 \.settings/
+node_modules/
+view/default/static/vendor/
+view/default/vendor/
+view/static/
+view/vendor/
