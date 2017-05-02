@@ -9,6 +9,7 @@
 #*.log
 #*.pdf
 #*.xls
+*.swp
 
 # Игнорирование файла во ВСЕХ директориях
 # Например /params/db/config.php, /config.php

@@ -552,7 +552,7 @@ function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
       }
     );
   }
-
+  console.log(tmp);
   Array.prototype.push.apply(or, tmp);
 }
 
