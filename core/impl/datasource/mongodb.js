@@ -304,19 +304,19 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function cleanNulls(c, type, data) {
-    return new Promise(function (resolve, reject) {
-      if (excludeNullsFor.hasOwnProperty(type)) {
-        resolve(excludeNulls(data, excludeNullsFor[type]));
-      } else {
+    if (excludeNullsFor.hasOwnProperty(type)) {
+      return Promise.resolve(excludeNulls(data, excludeNullsFor[type]));
+    }
+    return new Promise(
+      function (resolve, reject) {
         c.indexes(function (err, indexes) {
           if (err) {
             return reject(err);
           }
           var excludes = {};
-          var i, nm;
-          for (i = 0; i < indexes.length; i++) {
+          for (let i = 0; i < indexes.length; i++) {
             if (indexes[i].unique && indexes[i].sparse) {
-              for (nm in indexes[i].key) {
+              for (let nm in indexes[i].key) {
                 if (indexes[i].key.hasOwnProperty(nm)) {
                   excludes[nm] = true;
                 }
@@ -328,7 +328,7 @@ function MongoDs(config) {
           resolve(excludeNulls(data, excludeNullsFor[type]));
         });
       }
-    });
+    );
   }
 
   function prepareGeoJSON(data) {
@@ -369,26 +369,26 @@ function MongoDs(config) {
   this._insert = function (type, data) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
-          autoInc(type, data)
+        return autoInc(type, data)
             .then(
               function (data) {
                 return cleanNulls(c, type, prepareGeoJSON(data));
               }
             ).then(
               function (data) {
-                c.insertOne(clone(data.data), function (err, result) {
-                  if (err) {
-                    reject(err);
-                  } else if (result.insertedId) {
-                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
-                  } else {
-                    reject(new Error('Inser failed'));
-                  }
+                return new Promise(function (resolve, reject) {
+                  c.insertOne(clone(data.data), function (err, result) {
+                    if (err) {
+                      reject(err);
+                    } else if (result.insertedId) {
+                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                    } else {
+                      reject(new Error('Insert failed'));
+                    }
+                  });
                 });
               }
-            ).catch(reject);
-        });
+            );
       }
     );
   };

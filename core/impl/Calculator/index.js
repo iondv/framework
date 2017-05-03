@@ -122,11 +122,7 @@ function Calculator(options) {
   function propertyGetter(nm) {
     return function () {
       if (this instanceof Item) {
-        let p = this.property(nm);
-        if (!p) {
-          return null;
-        }
-        return p.evaluate();
+        return this.get(nm);
       }
       return objProp(this, nm);
     };
