@@ -2,19 +2,18 @@
  * Created by kras on 03.11.16.
  */
 'use strict';
-const ac = require('../util').argCalcPromise;
+const calc = require('../util').calculate;
+
+function operation(args) {
+  var result = false;
+  if (args.length === 1) {
+    result = !args[0];
+  }
+  return result;
+}
 
 module.exports = function (args) {
   return function () {
-    var _this = this;
-    return new Promise(function (resolve, reject) {
-      ac(_this, args, 1).then(function (args) {
-        var result = false;
-        if (args.length === 1) {
-          result = !args[0];
-        }
-        resolve(result);
-      }).catch(reject);
-    });
+    return calc(this, args, 1, operation);
   };
 };
