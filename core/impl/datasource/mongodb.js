@@ -596,7 +596,9 @@ function MongoDs(config) {
                       }
                       var p;
                       if (options.skipResult) {
-                        p = options.upsert ? adjustAutoInc(type, data) : Promise.resolve();
+                        p = options.upsert ?
+                          adjustAutoInc(type, data.$set).then(()=>Promise.resolve()) :
+                          Promise.resolve();
                       } else {
                         p = _this._get(type, conditions).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
