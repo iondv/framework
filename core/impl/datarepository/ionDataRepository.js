@@ -1043,34 +1043,37 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function logChanges(changeLogger, record) {
-    var p;
-    if (changeLogger instanceof ChangeLogger) {
-      let base = {};
-      if (record.base) {
-        base = clone(record.base);
-        delete base._id;
-        delete base._class;
-        delete base._classVer;
-      }
-      p = changeLogger.LogChange(
-        record.type,
-        {
-          name: record.item.getMetaClass().getCanonicalName(),
-          version: record.item.getMetaClass().getVersion()
-        },
-        record.item.getItemId(),
-        record.updates,
-        base
-      );
-    } else if (typeof changeLogger === 'function') {
-      p = changeLogger(record);
-    }
+	var cm = record.cm || record.item.getMetaClass();
+	if (cm.isJournaling()) {
+		var p;
+	    if (changeLogger instanceof ChangeLogger) {
+	      let base = {};
+	      if (record.base) {
+	        base = clone(record.base);
+	        delete base._id;
+	        delete base._class;
+	        delete base._classVer;
+	      }
+	      p = changeLogger.LogChange(
+	        record.type,
+	        {
+	          name: record.item.getMetaClass().getCanonicalName(),
+	          version: record.item.getMetaClass().getVersion()
+	        },
+	        record.item.getItemId(),
+	        record.updates,
+	        base
+	      );
+	    } else if (typeof changeLogger === 'function') {
+	      p = changeLogger(record);
+	    }
 
-    if (p instanceof Promise) {
-      return p.then(function () {
-        return Promise.resolve(record.item);
-      });
-    }
+	    if (p instanceof Promise) {
+	      return p.then(function () {
+	        return Promise.resolve(record.item);
+	      });
+	    }
+	}
     return Promise.resolve(record.item);
   }
 
