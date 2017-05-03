@@ -31,11 +31,7 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "server": {
-                    "socketOptions":{
-                      "keepAlive": 1
-                    }
-                  }
+                  "keepAlive": 1
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",
@@ -146,7 +142,6 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "[[cache.module]]",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
@@ -234,7 +229,8 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo"
+          "dataRepo": "ion://dataRepo",
+          "calc": "ion://calculator"
         }
       }
     }
