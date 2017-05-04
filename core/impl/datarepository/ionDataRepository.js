@@ -11,7 +11,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const ChangeLogger = require('core/interfaces/ChangeLogger');
 const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const EventManager = require('core/impl/EventManager');
 const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
@@ -1518,7 +1518,7 @@ function IonDataRepository(options) {
             updates._classVer = cm.getVersion();
             if (conditions) {
               if (options && options.autoAssign) {
-                autoAssign(cm, updates);
+                autoAssign(cm, updates, true);
               } else {
                 if (cm.getChangeTracker()) {
                   updates[cm.getChangeTracker()] = new Date();
