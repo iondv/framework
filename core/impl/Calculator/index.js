@@ -182,7 +182,11 @@ function Calculator(options) {
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    return evaluate(formula.trim());
+    var result = evaluate(formula.trim());
+    if (typeof result !== 'function') {
+      return () => result;
+    }
+    return result;
   };
 }
 
