@@ -1,12 +1,9 @@
 {
     "log_level": "notice",
     "parametrised": true,
-    "port": [
-        "[[server.port1]]",
-        "[[server.port2]]",
-        "[[server.port3]]"
-    ],
+    "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
+    "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",
     "log": {
       "logDestinations": ["console", "./log"]
@@ -34,11 +31,7 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "server": {
-                    "socketOptions":{
-                      "keepAlive": 1
-                    }
-                  }
+                  "keepAlive": 1
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",
@@ -81,7 +74,7 @@
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
-          "exclude": ["[[auth.exclude1]]", "[[auth.exclude2]]", "[[auth.exclude3]]"]
+          "exclude": "[[auth.exclude]]"
         }
       },
       "calculator": {
@@ -149,7 +142,6 @@
           "dataSource": "ion://Db",
           "metaRepository": "ion://metaRepo",
           "fileStorage": "ion://fileStorage",
-          "cacheRepository": "[[cache.module]]",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
           "keyProvider": {
@@ -172,9 +164,24 @@
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
           "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
-          "connectOptions": {},
-          "lifetime": "[[cache.memcached.timeout]]",
-          "log": "ion://sysLog"
+          "connectOptions": {
+            "maxKeySize": "[[cache.memcached.maxKeySize]]",
+            "maxExpiration": "[[cache.memcached.maxExpiration]]",
+            "maxValue": "[[cache.memcached.maxValue]]",
+            "poolSize": "[[cache.memcached.poolSize]]",
+            "algorithm": "[[cache.memcached.algorithm]]",
+            "reconnect": "[[cache.memcached.reconnect]]",
+            "retries": "[[cache.memcached.retries]]",
+            "failures": "[[cache.memcached.failures]]",
+            "retry": "[[cache.memcached.retry]]",
+            "remove": "[[cache.memcached.remove]]",
+            "keyCompression": "[[cache.memcached.keyCompression]]",
+            "idle": "[[cache.memcached.idle]]",
+            "timeout": "[[cache.memcached.timeout]]"
+          },
+          "lifetime": "[[cache.memcached.lifetime]]",
+          "reconnectTimeout": "[[cache.memcached.reconnectTimeout]]",
+          "logger": "ion://sysLog"
         }
       },
       "redis": {
@@ -185,14 +192,26 @@
           "enabled": "[[cache.redis.enabled]]",
           "host": "[[cache.redis.host]]",
           "port": "[[cache.redis.port]]",
-          "log": "ion://sysLog"
-        }
-      },
-      "cachedDataRepo": {
-        "module": "core/impl/datarepository/CachedDataRepository",
-        "options": {
-          "data": "lazy://dataRepo",
-          "cache": "[[cache.module]]"
+          "connectOptions": {
+            "path": "[[cache.redis.path]]",
+            "url": "[[cache.redis.url]]",
+            "string_numbers": "[[cache.redis.string_numbers]]",
+            "return_buffers": "[[cache.redis.return_buffers]]",
+            "detect_buffers": "[[cache.redis.detect_buffers]]",
+            "socket_keepalive": "[[cache.redis.socket_keepalive]]",
+            "no_ready_check": "[[cache.redis.no_ready_check]]",
+            "enable_offline_queue": "[[cache.redis.enable_offline_queue]]",
+            "retry_unfulfilled_commands": "[[cache.redis.retry_unfulfilled_commands]]",
+            "password": "[[cache.redis.password]]",
+            "db": "[[cache.redis.db]]",
+            "family": "[[cache.redis.family]]",
+            "disable_resubscribing": "[[cache.redis.disable_resubscribing]]",
+            "rename_commands": "[[cache.redis.rename_commands]]",
+            "tls": "[[cache.redis.tls]]",
+            "prefix": "[[cache.redis.prefix]]",
+            "retry_strategy": {}
+          },
+          "logger": "ion://sysLog"
         }
       },
       "aclProvider":{
@@ -203,14 +222,6 @@
           "dataSource": "ion://Db"
         }
       },
-      "securedDataRepo": {
-        "module": "core/impl/datarepository/SecuredDataRepository",
-        "options": {
-          "data": "ion://cachedDataRepo",
-          "meta": "ion://metaRepo",
-          "acl": "ion://aclProvider"
-        }
-      },
       "workflows": {
         "module": "core/impl/WorkflowProvider",
         "initMethod": "init",
@@ -218,7 +229,8 @@
         "options": {
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://securedDataRepo"
+          "dataRepo": "ion://dataRepo",
+          "calc": "ion://calculator"
         }
       }
     }

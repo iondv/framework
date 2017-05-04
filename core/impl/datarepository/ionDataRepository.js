@@ -11,8 +11,18 @@ const PropertyTypes = require('core/PropertyTypes');
 const ChangeLogger = require('core/interfaces/ChangeLogger');
 const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const EventManager = require('core/impl/EventManager');
+const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
+const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
+const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
+const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
+const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
+const ConditionParser = require('core/ConditionParser');
+const Iterator = require('core/interfaces/Iterator');
+const SortingParser = require('core/SortingParser');
+const clone = require('clone');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -58,16 +68,6 @@ function IonDataRepository(options) {
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
 
-  const geoOperations = ['$geoWithin', '$geoIntersects'];
-
-  /**
-   * @param {ClassMeta} cm
-   * @returns {String}
-   */
-  function tn(cm) {
-    return (cm.getNamespace() ? cm.getNamespace() + _this.namespaceSeparator : '') + cm.getName();
-  }
-
   /**
    *
    * @param {Object[]} validators
@@ -77,39 +77,47 @@ function IonDataRepository(options) {
     return new Promise(function (resolve) { resolve(); });
   };
 
+  function tn(cm) {
+    return ctn(cm, _this.namespaceSeparator);
+  }
+
+  function prepareFilterValues(cm, filter) {
+    return prepareDsFilterValues(cm, filter, _this.ds, _this.keyProvider, _this.namespaceSeparator);
+  }
+
   /**
    * @param {String | Item} obj
    * @private
    * @returns {ClassMeta | null}
    */
-  this._getMeta = function (obj) {
+  function getMeta(obj) {
     if (typeof obj === 'string') {
-      return this.meta.getMeta(obj);
+      return _this.meta.getMeta(obj);
     } else if (typeof obj === 'object' && obj.constructor.name === 'Item') {
       return obj.classMeta;
     }
     return null;
-  };
+  }
 
   /**
    * @param {ClassMeta} cm
    * @private
    * @returns {ClassMeta}
    */
-  this._getRootType = function (cm) {
+  function getRootType(cm) {
     if (cm.ancestor) {
-      return this._getRootType(cm.ancestor);
+      return getRootType(cm.ancestor);
     }
     return cm;
-  };
+  }
 
   /**
    * @param {Object} filter
    * @param {ClassMeta} cm
    * @private
    */
-  this._addDiscriminatorFilter = function (filter, cm) {
-    var descendants = this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
+  function addDiscriminatorFilter(filter, cm) {
+    var descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
     var cnFilter = [cm.getCanonicalName()];
     for (var i = 0; i < descendants.length; i++) {
       cnFilter.push(descendants[i].getCanonicalName());
@@ -120,7 +128,7 @@ function IonDataRepository(options) {
     } else {
       return {$and: [{_class: {$in: cnFilter}}, filter]};
     }
-  };
+  }
 
   /**
    * @param {Object} filter
@@ -128,7 +136,7 @@ function IonDataRepository(options) {
    * @returns {Object}
    * @private
    */
-  this._addFilterByItem = function (filter, item) {
+  function addFilterByItem(filter, item) {
     if (typeof item === 'object' && item.constructor.name === 'Item') {
       var conditions, props;
       conditions = [filter];
@@ -143,7 +151,7 @@ function IonDataRepository(options) {
       return {$and: conditions};
     }
     return filter;
-  };
+  }
 
   /**
    * @param {String} className
@@ -159,7 +167,7 @@ function IonDataRepository(options) {
     if (options && options.autoassign) {
       autoAssign(acm, data, true);
     }
-    return new Item(this.keyProvider.formKey(acm.getName(), data, acm.getNamespace()), data, acm);
+    return new Item(this.keyProvider.formKey(acm, data), data, acm);
   };
 
   /**
@@ -172,44 +180,57 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = this._getMeta(obj);
-    var rcm = this._getRootType(cm);
-    options.filter = this._addFilterByItem(options.filter, obj);
-    options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    return this.ds.count(tn(rcm), options);
+    var cm = getMeta(obj);
+    var rcm = getRootType(cm);
+    options.filter = addFilterByItem(options.filter, obj);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter)
+      .then(function (filter) {
+        options.filter = filter;
+        return _this.ds.count(tn(rcm), options);
+      });
   };
 
   /**
    * @param {Item} item
    * @param {Property} property
    * @param {{}} attrs
+   * @param {{}} loaded
    */
-  function prepareRefEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.refClass, null, item.classMeta.getNamespace());
+  function prepareRefEnrichment(item, property, attrs, loaded) {
+    var refc = property.meta._refClass;
     if (refc) {
-      if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
-        attrs[item.classMeta.getName() + '.' + property.getName()] = {
+      let pn = item.classMeta.getName() + '.' + property.getName();
+      if (!attrs.hasOwnProperty(pn)) {
+        attrs[pn] = {
           type: PropertyTypes.REFERENCE,
-          refClassName: refc.getCanonicalName(),
+          refClass: refc,
           attrName: property.getName(),
           key: refc.getKeyProperties()[0],
           pIndex: 0,
           filter: []
         };
       }
-      var v;
+      let v;
       if (property.meta.backRef) {
         v = item.getItemId();
-        attrs[item.classMeta.getName() + '.' + property.getName()].key = property.meta.backRef;
-        attrs[item.classMeta.getName() + '.' + property.getName()].backRef = true;
+        attrs[pn].key = property.meta.backRef;
+        attrs[pn].backRef = true;
       } else {
         v = item.get(property.getName());
       }
 
       if (v) {
-        attrs[item.classMeta.getName() + '.' + property.getName()].filter.push(v);
         if (typeof item.references === 'undefined') {
           item.references = {};
+        }
+        if (!property.meta.backRef && loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+          item.references[property.getName()] =
+            _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
+        } else {
+          if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
+            attrs[pn].filter.push(v);
+          }
         }
       }
     }
@@ -219,16 +240,18 @@ function IonDataRepository(options) {
    * @param {Item} item
    * @param {Property} property
    * @param {{}} attrs
+   * @param {{}} loaded
    */
-  function prepareColEnrichment(item, property, attrs) {
-    var refc = _this.meta.getMeta(property.meta.itemsClass, null, item.classMeta.getNamespace());
+  function prepareColEnrichment(item, property, attrs, loaded) {
+    var refc = property.meta._refClass;
+    item.collections = item.collections || {};
     if (refc) {
-      if (!attrs.hasOwnProperty(item.classMeta.getName() + '.' + property.getName())) {
-        attrs[item.classMeta.getName() + '.' + property.getName()] = {
+      let pn = item.classMeta.getName() + '.' + property.getName();
+      if (!attrs.hasOwnProperty(pn)) {
+        attrs[pn] = {
           type: PropertyTypes.COLLECTION,
-          colClassName: refc.getCanonicalName(),
+          colClass: refc,
           attrName: property.getName(),
-          key: refc.getKeyProperties()[0],
           backRef: property.meta.backRef,
           pIndex: 0,
           colItems: []
@@ -236,20 +259,43 @@ function IonDataRepository(options) {
       }
 
       if (property.meta.backRef && !property.meta.backColl) {
+        let v = null;
         if (property.meta.binding) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.get(property.meta.binding));
+          v = item.get(property.meta.binding);
         } else {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems.push(item.getItemId());
+          v = item.getItemId();
+        }
+        if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
+          attrs[pn].colItems.push(v);
         }
       } else {
         var v = item.get(property.getName());
-        if (v) {
-          attrs[item.classMeta.getName() + '.' + property.getName()].colItems =
-            attrs[item.classMeta.getName() + '.' + property.getName()].colItems.concat(v);
+        if (Array.isArray(v)) {
+          item.collections[property.getName()] = [];
+          v.forEach(function (v) {
+            if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+              item.collections[property.getName()].push(
+                _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
+              );
+            } else {
+              if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
+                attrs[pn].colItems.push(v);
+              }
+            }
+          });
         }
       }
-      if (typeof item.collections === 'undefined') {
-        item.collections = [];
+
+      if (property.meta.selConditions) {
+        attrs[pn].colFilter = ConditionParser(property.meta.selConditions, property.meta._refClass, item);
+        if (!attrs[pn].colFilter) {
+          delete attrs[pn].colFilter;
+        }
+      }
+
+      if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
+        attrs[pn].sort =
+          SortingParser(property.meta.selSorting);
       }
     }
   }
@@ -268,533 +314,223 @@ function IonDataRepository(options) {
   }
 
   /**
-   * @param {Item[]} src
+   * @param {Item[]|Item} src2
    * @param {Number} depth
    * @param {String[][]} [forced]
+   * @param {{}} [loaded]
    * @returns {Promise}
    */
-  function enrich(src, depth, forced) {
-    return new Promise(function (resolve, reject) {
-      var i, nm, attrs, item, props, promises, filter, cn, cm, forced2, pcl;
+  function enrich(src2, depth, forced, loaded) {
+    var i, nm, attrs, item, promises, filter, sort, cn, forced2, pcl;
+    var src = Array.isArray(src2) ? src2 : [src2];
+    depth = depth || 0;
 
-      forced2 = {};
-      formForced(forced, forced2);
-      attrs = {};
+    forced2 = {};
+    formForced(forced, forced2);
+    attrs = {};
+    promises = [];
+    loaded = loaded || {};
+    try {
+      pcl = {};
+      for (i = 0; i < src.length; i++) {
+        if (src[i]) {
+          loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+        }
+      }
+
+      for (i = 0; i < src.length; i++) {
+        item = src[i];
+        if (item && item instanceof Item) {
+          let cm = item.getMetaClass();
+          let props = item.getProperties();
+          if (!pcl.hasOwnProperty(cm.getName())) {
+            pcl[cm.getName()] = true;
+            formForced(cm.getForcedEnrichment(), forced2);
+          }
+          for (nm in props) {
+            if (props.hasOwnProperty(nm)) {
+              if (
+                depth > 0 ||
+                (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
+              ) {
+                if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                  prepareRefEnrichment(item, props[nm], attrs, loaded);
+                } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
+                  prepareColEnrichment(item, props[nm], attrs, loaded);
+                }
+              }
+            }
+          }
+        }
+      }
+
       promises = [];
 
-      try {
-        pcl = {};
-        for (i = 0; i < src.length; i++) {
-          item = src[i];
-          if (item && item.constructor.name === 'Item') {
-            cm = item.getMetaClass();
-            if (!pcl.hasOwnProperty(cm.getName())) {
-              pcl[cm.getName()] = true;
-              formForced(cm.getForcedEnrichment(), forced2);
-            }
-            props = item.getProperties();
-            for (nm in props) {
-              if (props.hasOwnProperty(nm)) {
-                if (
-                  depth > 0 ||
-                  (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
-                ) {
-                  if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                    prepareRefEnrichment(item, props[nm], attrs);
-                  } else if (props[nm].getType() === PropertyTypes.COLLECTION && props[nm].eagerLoading()) {
-                    prepareColEnrichment(item, props[nm], attrs);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        promises = [];
-
-        i = 0;
-        for (nm in attrs) {
-          if (attrs.hasOwnProperty(nm)) {
-            filter = null;
-            if (
-              attrs[nm].type  === PropertyTypes.REFERENCE &&
-              Array.isArray(attrs[nm].filter) &&
-              attrs[nm].filter.length
-            ) {
+      i = 0;
+      for (nm in attrs) {
+        if (attrs.hasOwnProperty(nm)) {
+          filter = null;
+          sort = null;
+          if (
+            attrs[nm].type  === PropertyTypes.REFERENCE &&
+            Array.isArray(attrs[nm].filter) &&
+            attrs[nm].filter.length
+          ) {
+            if (attrs[nm].backRef) {
               filter = {};
               filter[attrs[nm].key] = {$in: attrs[nm].filter};
-              cn = attrs[nm].refClassName;
-            } else if (
-              attrs[nm].type  === PropertyTypes.COLLECTION &&
-              Array.isArray(attrs[nm].colItems) &&
-              attrs[nm].colItems.length
-            ) {
+            } else {
+              filter = filterByItemIds(_this.keyProvider, attrs[nm].refClass, attrs[nm].filter);
+            }
+            cn = attrs[nm].refClass.getCanonicalName();
+          } else if (
+            attrs[nm].type  === PropertyTypes.COLLECTION &&
+            Array.isArray(attrs[nm].colItems) &&
+            attrs[nm].colItems.length
+          ) {
+            if (attrs[nm].sort) {
+              sort = attrs[nm].sort;
+            }
+            if (attrs[nm].backRef) {
               filter = {};
-              filter[attrs[nm].backRef ? attrs[nm].backRef : attrs[nm].key] = {$in: attrs[nm].colItems};
-              cn = attrs[nm].colClassName;
+              filter[attrs[nm].backRef] = {$in: attrs[nm].colItems};
+            } else {
+              filter = filterByItemIds(_this.keyProvider, attrs[nm].colClass, attrs[nm].colItems);
             }
-
-            if (filter) {
-              attrs[nm].pIndex = i;
-              i++;
-              promises.push(
-                _this._getList(cn,
-                  {
-                    filter: filter,
-                    nestingDepth: depth - 1,
-                    forceEnrichment: forced2[attrs[nm].attrName]
-                  }
-                )
-              );
+            if (attrs[nm].colFilter) {
+              filter = {$and: [filter, attrs[nm].colFilter]};
             }
+            cn = attrs[nm].colClass.getCanonicalName();
           }
-        }
-      } catch (err) {
-        reject(err);
-      }
 
-      if (promises.length === 0) {
-        resolve(src);
-      }
-
-      Promise.all(promises).then(
-        function (results) {
-          var nm, items, itemsByKey, srcByKey, ids, i, j, v;
-          for (nm in attrs) {
-            if (attrs.hasOwnProperty(nm)) {
-              items = results[attrs[nm].pIndex];
-              if (!items || items.length === 0) {
-                continue;
-              }
-              if (attrs[nm].type === PropertyTypes.REFERENCE) {
-                itemsByKey = {};
-                if (attrs[nm].backRef) {
-                  for (i = 0; i < items.length; i++) {
-                    v = items[i].get(attrs[nm].key);
-                    if (!itemsByKey.hasOwnProperty(v)) {
-                      itemsByKey[v] = [];
-                    }
-                    itemsByKey[v].push(items[i]);
-                  }
-
-                  for (i = 0; i < src.length; i++) {
-                    if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
-                      if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
-                        options.log.warn('Обратной ссылке "' +
-                          src[i].property(attrs[nm].attrName).getCaption() +
-                          '" соответствует несколько объектов '
-                        );
-                      }
-                      src[i].base[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
-                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0];
-                    }
-                  }
-                } else {
-                  for (i = 0; i < items.length; i++) {
-                    itemsByKey[items[i].getItemId()] = items[i];
-                  }
-
-                  for (i = 0; i < src.length; i++) {
-                    if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
-                      src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
-                    }
-                  }
+          if (filter) {
+            attrs[nm].pIndex = i;
+            i++;
+            promises.push(
+              _this._getList(cn,
+                {
+                  sort: sort,
+                  filter: filter,
+                  nestingDepth: depth - 1,
+                  forceEnrichment: forced2[attrs[nm].attrName],
+                  ___loaded: loaded
                 }
-              } else if (attrs[nm].type === PropertyTypes.COLLECTION) {
-                if (attrs[nm].backRef) {
-                  if (!srcByKey) {
-                    srcByKey = {};
-
-                    for (i = 0; i < src.length; i++) {
-                      srcByKey[src[i].getItemId()] = src[i];
-                    }
-                  }
-
-                  for (i = 0; i < items.length; i++) {
-                    if (srcByKey.hasOwnProperty(items[i].base[attrs[nm].backRef])) {
-                      if (typeof srcByKey[items[i].base[attrs[nm].backRef]].
-                          collections[attrs[nm].attrName] === 'undefined') {
-                        srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName] = [];
-                      }
-                      srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName].push(items[i]);
-                    }
-                  }
-                } else {
-                  itemsByKey = {};
-                  for (i = 0; i < items.length; i++) {
-                    itemsByKey[items[i].getItemId()] = items[i];
-                  }
-                  for (i = 0; i < src.length; i++) {
-                    ids = src[i].get(attrs[nm].attrName) || [];
-                    src[i].collections[attrs[nm].attrName] = [];
-                    for (j = 0; j < ids.length; j++) {
-                      if (itemsByKey.hasOwnProperty(ids[j])) {
-                        src[i].collections[attrs[nm].attrName].push(itemsByKey[ids[j]]);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          resolve(src);
-        }
-      ).catch(reject);
-    });
-  }
-
-  /**
-   * @param {Item} item
-   * @returns {Promise}
-   */
-  function loadFiles(item) {
-    var pm;
-    var fids = [];
-    var iids = [];
-    var attrs = {};
-    for (var nm in item.base) {
-      if (item.base.hasOwnProperty(nm) && item.base[nm]) {
-        pm = item.classMeta.getPropertyMeta(nm);
-        if (pm) {
-          if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-            fids.push(item.base[nm]);
-            if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
-              attrs['f_' + item.base[nm]] = [];
-            }
-            attrs['f_' + item.base[nm]].push(nm);
-            if (pm.type === PropertyTypes.FILE) {
-              fids.push(item.base[nm]);
-            } else if (pm.type === PropertyTypes.IMAGE) {
-              iids.push(item.base[nm]);
-            }
-          } else if (pm.type === PropertyTypes.FILE_LIST) {
-            if (Array.isArray(item.base[nm])) {
-              for (var i = 0; i < item.base[nm].length; i++) {
-                fids.push(item.base[nm][i]);
-                if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
-                  attrs['f_' + item.base[nm][i]] = [];
-                }
-                attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
-              }
-            }
+              )
+            );
           }
         }
       }
-    }
-    return new Promise(function (resolve, reject) {
-      if (fids.length === 0 && iids.length === 0) {
-        resolve(item);
-        return;
-      }
-
-      var loaders = [];
-      loaders.push(_this.fileStorage.fetch(fids));
-      loaders.push(_this.imageStorage.fetch(iids));
-
-      Promise.all(loaders).then(function (files) {
-        var tmp, i, j, k;
-        for (k = 0; k < files.length; k++) {
-          for (i = 0; i < files[k].length; i++) {
-            if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
-              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
-                tmp = attrs['f_' + files[k][i].id][j];
-                if (typeof tmp === 'object') {
-                  if (!Array.isArray(item.files[tmp.attr])) {
-                    item.files[tmp.attr] = [];
-                  }
-                  item.files[tmp.attr][tmp.index] = files[k][i];
-                } else if (typeof tmp === 'string') {
-                  item.files[tmp] = files[k][i];
-                }
-              }
-            }
-          }
-        }
-        resolve(item);
-      }).catch(reject);
-    });
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {{}} context
-   * @param {String} attr
-   * @param {String} operation
-   * @param {{className: String, collectionName: String, property: String, filter: {}}} options
-   * @param {Array} fetchers
-   */
-  function prepareAgregOperation(cm, context, attr, operation, options, fetchers) {
-    var cn;
-    if (options.className) {
-      cn = options.className;
-    } else if (options.collectionName) {
-      cn = _this.meta.getMeta(cm.getPropertyMeta(options.collectionName), null, cm.getNamespace()).
-      getCanonicalName();
+    } catch (err) {
+      return Promise.reject(err);
     }
 
-    var oper = {};
-    oper[operation.substring(1)] = options.property;
+    if (promises.length === 0) {
+      return Promise.resolve(src2);
+    }
+    return Promise.all(promises).then(
+      function (results) {
+        var srcByKey;
+        for (let nm in attrs) {
+          if (attrs.hasOwnProperty(nm)) {
+            let items = results[attrs[nm].pIndex];
+            if (!items || items.length === 0) {
+              continue;
+            }
+            if (attrs[nm].type === PropertyTypes.REFERENCE) {
+              let itemsByKey = {};
+              if (attrs[nm].backRef) {
+                for (let i = 0; i < items.length; i++) {
+                  let v = items[i].get(attrs[nm].key);
+                  if (!itemsByKey.hasOwnProperty(v)) {
+                    itemsByKey[v] = [];
+                  }
+                  itemsByKey[v].push(items[i]);
+                }
 
-    var result = new Promise(
-      function (resolve, reject) {
-        _this._aggregate(cn,
-          {
-            filter: options.filter,
-            expressions: {
-              val: oper
+                for (let i = 0; i < src.length; i++) {
+                  if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
+                    if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
+                      options.log.warn('Обратной ссылке "' +
+                        src[i].property(attrs[nm].attrName).getCaption() +
+                        '" соответствует несколько объектов '
+                      );
+                    }
+                    src[i].base[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
+                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0];
+                  }
+                }
+              } else {
+                for (let i = 0; i < items.length; i++) {
+                  itemsByKey[items[i].getItemId()] = items[i];
+                }
+
+                for (let i = 0; i < src.length; i++) {
+                  if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
+                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
+                  }
+                }
+              }
+            } else if (attrs[nm].type === PropertyTypes.COLLECTION) {
+              if (attrs[nm].backRef) {
+                if (!srcByKey) {
+                  srcByKey = {};
+
+                  for (i = 0; i < src.length; i++) {
+                    srcByKey[src[i].getItemId()] = src[i];
+                  }
+                }
+
+                for (let i = 0; i < items.length; i++) {
+                  if (srcByKey.hasOwnProperty(items[i].base[attrs[nm].backRef])) {
+                    if (typeof srcByKey[items[i].base[attrs[nm].backRef]].
+                        collections[attrs[nm].attrName] === 'undefined') {
+                      srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName] = [];
+                    }
+                    srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName].push(items[i]);
+                  }
+                }
+              } else {
+                let itemsByKey = {};
+                for (let i = 0; i < src.length; i++) {
+                  let ids = src[i].get(attrs[nm].attrName) || [];
+                  for (let j = 0; j < ids.length; j++) {
+                    if (!itemsByKey[ids[j]]) {
+                      itemsByKey[ids[j]] = [];
+                    }
+                    itemsByKey[ids[j]].push(src[i]);
+                  }
+                }
+                for (let i = 0; i < items.length; i++) {
+                  if (itemsByKey[items[i].getItemId()]) {
+                    for (let j = 0; j < itemsByKey[items[i].getItemId()].length; j++) {
+                      let srcItem = itemsByKey[items[i].getItemId()][j];
+                      if (!srcItem.collections[attrs[nm].attrName]) {
+                        srcItem.collections[attrs[nm].attrName] = [];
+                      }
+                      srcItem.collections[attrs[nm].attrName].push(items[i]);
+                    }
+                  }
+                }
+              }
             }
           }
-        ).
-        then(
-          function (result) {
-            context[attr] = result.val;
-            resolve();
-          }
-        ).
-        catch(reject);
+        }
+        return Promise.resolve(src2);
       }
     );
-
-    fetchers.push(result);
-    return result;
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {{type: Number}} pm
-   * @param {{}} filter
-   * @param {String} nm
-   * @param {Array} fetchers
-   * @param {Array} containCheckers
-   */
-  function prepareContains(cm, pm, filter, nm, fetchers, containCheckers) {
-    var colMeta = _this.meta.getMeta(pm.itemsClass, null, cm.getNamespace());
-    var tmp = prepareFilterOption(colMeta, filter[nm].$contains, fetchers, filter, nm);
-    if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
-    }
-    containCheckers.push({
-      $joinExists: {
-        table: tn(colMeta),
-        many: !pm.backRef,
-        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
-        right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
-        filter: tmp
-      }
-    });
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {String[]} path
-   * @param {{}} filter
-   * @param {String} nm
-   * @param {Array} fetchers
-   * @param {{}} linkedCheckers
-   */
-  function prepareLinked(cm, path, filter, nm, fetchers, linkedCheckers) {
-    var i, lc, rMeta, n;
-    var pm = cm.getPropertyMeta(path[0]);
-    if (pm && pm.type === PropertyTypes.REFERENCE && path.length > 1) {
-      rMeta = pm._refClass;
-      if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
-        throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
-      }
-      if (linkedCheckers.hasOwnProperty(path[0])) {
-        lc = linkedCheckers[path[0]];
-      } else {
-        lc = {
-          $joinExists: {
-            table: tn(rMeta),
-            many: false,
-            left: pm.backRef ? cm.getKeyProperties()[0] : pm.name,
-            right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-            filter: null,
-            forAttr: pm.name
-          }
-        };
-        linkedCheckers[path[0]] = lc;
-      }
-
-      var f = lc.$joinExists.filter || {$and: []};
-      var fo;
-      if (path.length === 2) {
-        fo = {};
-        fo[path[1]] = prepareFilterOption(rMeta, filter[nm], fetchers, fo, path[1]);
-        f.$and.push(fo);
-      } else {
-        var joins = {};
-        for (i = 0; i < f.$and.length; i++) {
-          if (f.$and[i].hasOwnProperty('$joinExists')) {
-            joins[f.$and[i].$joinExists.forAttr] = f.$and[i];
-          }
-        }
-        prepareLinked(rMeta, path.slice(1), filter, nm, fetchers, joins);
-        for (n in joins) {
-          if (joins.hasOwnProperty(n)) {
-            if (f.$and.indexOf(joins[n]) < 0) {
-              f.$and.push(joins[n]);
-            }
-          }
-        }
-      }
-      if (f.$and.length) {
-        lc.$joinExists.filter = f;
-      }
-    }
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {{}} filter
-   * @param {Array} fetchers
-   * @param {{}} [parent]
-   * @param {String} [part]
-   * @param {{}} [propertyMeta]
-   * @returns {*}
-   */
-  function prepareFilterOption(cm, filter, fetchers, parent, part, propertyMeta) {
-    var i, knm, nm, keys, pm, emptyResult, result, containCheckers, linkedCheckers;
-    if (geoOperations.indexOf(part) !== -1) {
-      return filter;
-    } else if (filter && Array.isArray(filter)) {
-      result = [];
-      for (i = 0; i < filter.length; i++) {
-        result.push(prepareFilterOption(cm, filter[i], fetchers, result, i));
-      }
-      return result;
-    } else if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
-      result = {};
-      containCheckers = [];
-      linkedCheckers = {};
-      emptyResult = true;
-      for (nm in filter) {
-        if (filter.hasOwnProperty(nm)) {
-          if ((pm = cm.getPropertyMeta(nm)) !== null) {
-            if (pm.type === PropertyTypes.COLLECTION) {
-              for (knm in filter[nm]) {
-                if (filter[nm].hasOwnProperty(knm) && knm === '$contains') {
-                  prepareContains(cm, pm, filter, nm, fetchers, containCheckers);
-                  break;
-                }
-              }
-            } else {
-              result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, pm);
-              emptyResult = false;
-            }
-          } else if (nm === '$ItemId') {
-            if (typeof filter[nm] === 'string') {
-              keys = formUpdatedData(cm, _this.keyProvider.keyToData(cm.getName(), filter[nm], cm.getNamespace()));
-              for (knm in keys) {
-                if (keys.hasOwnProperty(knm)) {
-                  result[knm] = keys[knm];
-                  emptyResult = false;
-                }
-              }
-            } else {
-              result[cm.getKeyProperties()[0]] = filter[nm];
-              emptyResult = false;
-            }
-          } else if (['$min', '$max', '$avg', '$sum', '$count'].indexOf(nm) >= 0) {
-            result[nm] = prepareAgregOperation(cm, parent, part, nm, filter[nm], fetchers);
-            emptyResult = false;
-          } else if (nm === '$exists') {
-            result[nm] = filter[nm];
-            emptyResult = false;
-          } else if (nm.indexOf('.') > 0) {
-            prepareLinked(cm, nm.split('.'), filter, nm, fetchers, linkedCheckers);
-          } else {
-            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, result, nm, propertyMeta);
-            emptyResult = false;
-          }
-        }
-      }
-
-      for (nm in linkedCheckers) {
-        if (linkedCheckers.hasOwnProperty(nm)) {
-          containCheckers.push(linkedCheckers[nm]);
-        }
-      }
-
-      if (containCheckers.length) {
-        if (!emptyResult) {
-          containCheckers.push(result);
-        }
-        return {
-          $and: containCheckers
-        };
-      }
-
-      if (emptyResult) {
-        return null;
-      }
-
-      return result;
-    }
-
-    if (propertyMeta) {
-      return castValue(filter, propertyMeta, cm.getNamespace());
-    }
-
-    return filter;
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {{}} filter
-   */
-  function prepareFilterValues(cm, filter) {
-    return new Promise(function (resolve, reject) {
-      var fetchers = [];
-      var result = prepareFilterOption(cm, filter, fetchers);
-      Promise.all(fetchers).
-      then(function () {resolve(result);}).
-      catch(reject);
-    });
-  }
-
-  /**
-   * @param {Item} item
-   * @returns {Promise}
-     */
-  function calcProperties(item) {
-    return new Promise(function (resolve, reject) {
-      var calculations = [];
-      var calcNames = [];
-      var props = item.getMetaClass().getPropertyMetas();
-      for (var i = 0; i < props.length; i++) {
-        if (props[i]._formula) {
-          calculations.push(props[i]._formula.apply(item, [{}]));
-          calcNames.push(props[i].name);
-        }
-      }
-
-      if (calculations.length === 0) {
-        return resolve(item);
-      }
-
-      Promise.all(calculations).
-      then(function (results) {
-        var p;
-        for (var i = 0; i < results.length; i++) {
-          p = item.property(calcNames[i]);
-          item.calculated[calcNames[i]] = results[i];
-        }
-        resolve(item);
-      }).catch(reject);
-    });
   }
 
   function calcItemsProperties(items) {
-    return new Promise(function (resolve, reject) {
-      var calcs = [];
-      for (var i = 0; i < items.length; i++) {
+    var calcs = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i]) {
         calcs.push(calcProperties(items[i]));
       }
-      Promise.all(calcs).then(function () {
-        resolve(items);
-      }).catch(reject);
-    });
+    }
+    return Promise.all(calcs)
+      .then(function () {
+        return Promise.resolve(items);
+      });
   }
 
   /**
@@ -807,21 +543,22 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
+   * @param {{}} [options.___loaded]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
     if (!options) {
       options = {};
     }
-    var cm = this._getMeta(obj);
-    var rcm = this._getRootType(cm);
-    options.attributes = ['_class', '_classVer'];
+    var cm = getMeta(obj);
+    var rcm = getRootType(cm);
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.attributes.push(props[i].name);
+      options.fields[props[i].name] = '$' + props[i].name;
     }
-    options.filter = this._addFilterByItem(options.filter, obj);
-    options.filter = this._addDiscriminatorFilter(options.filter, cm);
+    options.filter = addFilterByItem(options.filter, obj);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).
     then(function (filter) {
       options.filter = filter;
@@ -834,7 +571,7 @@ function IonDataRepository(options) {
         try {
           for (var i = 0; i < data.length; i++) {
             result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            fl.push(loadFiles(result[i]));
+            fl.push(loadFiles(result[i], _this.fileStorage, _this.imageStorage));
           }
         } catch (err) {
           return Promise.reject(err);
@@ -850,10 +587,80 @@ function IonDataRepository(options) {
     ).
     then(
       function (result) {
-        return enrich(result, options.nestingDepth ? options.nestingDepth : 0, options.forceEnrichment);
+        return enrich(
+          result,
+          options.nestingDepth ? options.nestingDepth : 0,
+          options.forceEnrichment,
+          options.___loaded
+        );
       }
     ).
     then(calcItemsProperties);
+  };
+
+  function ItemIterator(iterator, options) {
+    this._next = function () {
+      return iterator.next().then(function (data) {
+        if (data) {
+          let item = _this._wrap(data._class, data, data._classVer);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage).
+          then(
+            function (item) {
+              return enrich(
+                item,
+                options.nestingDepth ? options.nestingDepth : 0,
+                options.forceEnrichment,
+                options.___loaded
+              );
+            }
+          ).
+          then(calcItemsProperties);
+        }
+        return Promise.resolve(null);
+      });
+    };
+
+    this._count = function () {
+      return iterator.count();
+    };
+  }
+
+  ItemIterator.prototype = new Iterator();
+
+  /**
+   * @param {String | Item} obj
+   * @param {Object} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {{}} [options.___loaded]
+   * @returns {Promise}
+   */
+  this._getIterator = function (obj, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = getMeta(obj);
+    var rcm = getRootType(cm);
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.fields[props[i].name] = '$' + props[i].name;
+    }
+    options.filter = addFilterByItem(options.filter, obj);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).
+    then(function (filter) {
+      options.filter = filter;
+      return _this.ds.iterator(tn(rcm), options);
+    }).
+    then(function (iter) {
+      return Promise.resolve(new ItemIterator(iter, options));
+    });
   };
 
   /**
@@ -868,15 +675,45 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = this._getMeta(className);
-    var rcm = this._getRootType(cm);
-    options.filter = this._addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(options.filter).
-    then(
-      function () {
+    var cm = getMeta(className);
+    var rcm = getRootType(cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).
+    then(function (filter) {
+        options.filter = filter;
         return _this.ds.aggregate(tn(rcm), options);
       }
     );
+  };
+
+  /**
+   * @param {String} className
+   * @param {Object} options
+   * @param {Object} [options.filter]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
+   * @param {Boolean} [options.countTotal]
+   * @param {String[]} [options.attributes]
+   * @param {String[]} [options.select]
+   * @param {Boolean} [options.distinct]
+   * @returns {Promise}
+   */
+  this._rawData = function (className, options) {
+    if (!options) {
+      options = {};
+    }
+    var cm = getMeta(className);
+    var rcm = getRootType(cm);
+    options.attributes = [];
+    var props = cm.getPropertyMetas();
+    for (var i = 0; i < props.length; i++) {
+      options.attributes.push(props[i].name);
+    }
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      return _this.ds.fetch(tn(rcm), options);
+    });
   };
 
   /**
@@ -885,156 +722,72 @@ function IonDataRepository(options) {
    * @param {String} [id]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
+    var cm, rcm, opts;
     if (id && typeof obj === 'string') {
-      return new Promise(function (resolve, reject) {
-        var cm = _this._getMeta(obj);
-        var rcm = _this._getRootType(cm);
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-        if (conditions  === null) {
-          return resolve(null);
-        }
-        _this.ds.get(tn(rcm), conditions).then(function (data) {
+      cm = getMeta(obj);
+      rcm = getRootType(cm);
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      if (conditions  === null) {
+        return Promise.resolve(null);
+      }
+      return _this.ds.get(tn(rcm), conditions)
+        .then(function (data) {
           var item = null;
           if (data) {
             try {
               item = _this._wrap(data._class, data, data._classVer);
-              loadFiles(item).
+              return loadFiles(item, _this.fileStorage, _this.imageStorage).
               then(
                 function (item) {
-                  return enrich([item], options.nestingDepth || 0);
+                  return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
                 }
               ).
               then(
-                function (items) {
-                  return calcProperties(items[0]);
+                function (item) {
+                  return calcProperties(item);
                 }
-              ).
-              then(resolve).
-              catch(reject);
-              return;
+              );
             } catch (err) {
-              return reject(err);
+              return Promise.reject(err);
             }
           }
-          resolve(null);
-        }).catch(reject);
-      });
+          return Promise.resolve(null);
+        });
     } else if (obj instanceof Item) {
-      return new Promise(function (resolve, reject) {
-        var options = {};
-        var cm = obj.getMetaClass();
-        var rcm = _this._getRootType(cm);
-        options.filter = _this._addFilterByItem({}, obj);
-        options.filter = _this._addDiscriminatorFilter(options.filter, cm);
-        options.count = 1;
-        _this.ds.fetch(tn(rcm), options).then(function (data) {
-          var item;
-          for (var i = 0; i < data.length; i++) {
-            item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            return loadFiles(item);
-          }
-          resolve(null);
-        }).
-        then(function (item) {
-          return enrich([item]);
-        }).
-        then(function (items) {
-          return calcProperties(items[0]);
-        }).
-        then(resolve).
-        catch(reject);
-      });
+      opts = {};
+      cm = obj.getMetaClass();
+      var fetcher = null;
+      if (obj.getItemId()) {
+        rcm = getRootType(cm);
+        opts.filter = addFilterByItem({}, obj);
+        opts.filter = addDiscriminatorFilter(opts.filter, cm);
+        opts.count = 1;
+        fetcher = _this.ds.fetch(tn(rcm), opts)
+          .then(function (data) {
+            var item;
+            for (var i = 0; i < data.length; i++) {
+              item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+              return loadFiles(item, _this.fileStorage, _this.imageStorage);
+            }
+            return Promise.resolve(null);
+          });
+      } else {
+        fetcher = Promise.resolve(obj);
+      }
+      return fetcher
+        .then(function (item) {
+          return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
+        })
+        .then(function (item) {
+          return calcProperties(item);
+        });
     } else {
       throw new Error('Переданы некорректные параметры метода getItem');
     }
   };
-
-  /* jshint maxcomplexity: 20 */
-  /**
-   * @param {*} value
-   * @param {{ type: Number, refClass: String }} pm
-   * @param {String} ns
-   * @returns {*}
-   */
-  function castValue(value, pm, ns) {
-    if (value === null) {
-      return value;
-    }
-    if (pm.type === PropertyTypes.REFERENCE) {
-      if (!value) {
-        return null;
-      }
-
-      var refkey = pm._refClass.getPropertyMeta(pm._refClass.getKeyProperties()[0]);
-
-      if (refkey) {
-        return castValue(value, refkey, ns);
-      }
-      return value;
-    } else if (pm.type === PropertyTypes.BOOLEAN) {
-      if (value === null) {
-        if (pm.nullable) {
-          return null;
-        } else {
-          return false;
-        }
-      }
-    } else if (value === null) {
-      return value;
-    }
-
-    return cast(value, pm.type);
-  }
-
-  /**
-   * @param {ClassMeta} cm
-   * @param {Object} data
-   * @param {Boolean} setCollections
-   * @param {{}} refUpdates
-   * @return {Object | null}
-   */
-  function formUpdatedData(cm, data, setCollections, refUpdates) {
-    var updates, pm, nm, dot, tmp;
-    updates = {};
-    var empty = true;
-    for (nm in data) {
-      if (data.hasOwnProperty(nm)) {
-        empty = false;
-        if ((dot = nm.indexOf('.')) >= 0) {
-          if (refUpdates) {
-            tmp = nm.substring(0, dot);
-            pm = cm.getPropertyMeta(tmp);
-            if (pm) {
-              if (pm.type === PropertyTypes.REFERENCE) {
-                if (!refUpdates.hasOwnProperty(tmp)) {
-                  refUpdates[tmp] = {};
-                }
-                refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
-              }
-            }
-          }
-        } else {
-          pm = cm.getPropertyMeta(nm);
-          if (pm) {
-            if (pm.type !== PropertyTypes.COLLECTION) {
-              data[nm] = castValue(data[nm], pm, cm.namespace);
-              if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
-                updates[nm] = data[nm];
-              }
-            } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
-              updates[nm] = data[nm];
-            }
-          }
-        }
-      }
-    }
-    if (empty) {
-      return null;
-    }
-    return updates;
-  }
 
   function fileSaver(updates, pm) {
     return new Promise(function (resolve, reject) {
@@ -1179,49 +932,75 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function backRefUpdater(itemId, pm, updates, cm, oldId) {
-    return new Promise(function (resolve, reject) {
-      var rcm = _this.meta.getMeta(pm.refClass, cm.getVersion(), cm.getNamespace());
-      var rpm = rcm.getPropertyMeta(pm.backRef);
+    var rcm = pm._refClass;
+    var rpm = rcm.getPropertyMeta(pm.backRef);
 
-      if (!rpm) {
-        return reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
-          ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
-      }
+    if (!rpm) {
+      return Promise.reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
+        ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
+    }
 
-      var clr = {};
-      var clrf = {$and: []};
-      var ups = {};
-      var conds = {};
-      var tmp;
+    var clr = {};
+    var clrf = {$and: []};
+    var ups = {};
+    var conds = {};
+    var tmp;
 
-      conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+    conds[rcm.getKeyProperties()[0]] = updates[pm.name];
 
-      tmp = {};
-      tmp[pm.backRef] = oldId || itemId;
-      clrf.$and.push(tmp);
+    tmp = {};
+    tmp[pm.backRef] = oldId || itemId;
+    clrf.$and.push(tmp);
 
-      tmp = {};
-      tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
-      clrf.$and.push(tmp);
+    tmp = {};
+    tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
+    clrf.$and.push(tmp);
 
-      clrf[pm.backRef] = oldId || itemId;
-      clr[pm.backRef] = null;
-      ups[pm.backRef] = itemId;
+    clrf[pm.backRef] = oldId || itemId;
+    clr[pm.backRef] = null;
+    ups[pm.backRef] = itemId;
 
-      if (oldId) {
-        if (!rpm.nullable) {
-          if (options.log) {
-            options.log.warn('Невозможно отвязать объект по ссылке "' + pm.caption + '"');
+    /**
+     * @param {ClassMeta} rcm
+     * @param {{}} conds
+     * @param {{}} ups
+     * @returns {Promise.<TResult>}
+     */
+    function setBrLink(rcm, conds, ups) {
+      return _this._getItem(rcm.getCanonicalName(), String(updates[pm.name]), {forcedEnrichment: [[pm.backRef]]})
+        .then(function (bro) {
+          var lost = bro.property(pm.backRef).evaluate();
+          if (lost) {
+            if (options.log) {
+              options.log.warn('Объект "' + bro.toString() +
+                '" был отвязан от "' + lost.toString() + '".');
+            }
           }
-        } else {
-          return options.dataSource.update(tn(rcm), clrf, clr, false, true).then(function (r) {
-            return options.dataSource.update(tn(rcm), conds, ups);
-          }).then(resolve).catch(reject);
-        }
-      }
+          return options.dataSource.update(tn(rcm), conds, ups);
+        });
+    }
 
-      options.dataSource.update(tn(rcm), conds, ups).then(resolve).catch(reject);
-    });
+    if (oldId) {
+      if (!rpm.nullable) {
+        if (options.log) {
+          options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
+              '" не может быть отвязан. Обратная ссылка не была присвоена.');
+        }
+        return Promise.resolve();
+      } else {
+        if (!updates[pm.name]) {
+          return options.dataSource.update(tn(rcm), clrf, clr);
+        }
+        return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
+          return setBrLink(rcm, conds, ups);
+        });
+      }
+    }
+
+    if (!updates[pm.name]) {
+      return Promise.resolve();
+    }
+    return setBrLink(rcm, conds, ups);
   }
 
   /**
@@ -1264,28 +1043,85 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function logChanges(changeLogger, record) {
-    return new Promise(function (resolve, reject) {
-      var p;
-      if (changeLogger instanceof ChangeLogger) {
-        p = changeLogger.LogChange(
-          record.type,
-          record.item.getMetaClass().getCanonicalName(),
-          record.item.getItemId(),
-          record.updates
-        );
-      } else if (typeof changeLogger === 'function') {
-        p = changeLogger(record);
+    var p;
+    if (changeLogger instanceof ChangeLogger) {
+      let base = {};
+      if (record.base) {
+        base = clone(record.base);
+        delete base._id;
+        delete base._class;
+        delete base._classVer;
       }
+      p = changeLogger.LogChange(
+        record.type,
+        {
+          name: record.item.getMetaClass().getCanonicalName(),
+          version: record.item.getMetaClass().getVersion()
+        },
+        record.item.getItemId(),
+        record.updates,
+        base
+      );
+    } else if (typeof changeLogger === 'function') {
+      p = changeLogger(record);
+    }
 
-      if (p instanceof Promise) {
-        p.then(function () {
-          resolve(record.item);
-        }).catch(reject);
-        return;
-      }
+    if (p instanceof Promise) {
+      return p.then(function () {
+        return Promise.resolve(record.item);
+      });
+    }
+    return Promise.resolve(record.item);
+  }
 
-      resolve(record.item);
-    });
+  function saveBackrefItem(meta, id, updates, changeLogger) {
+    return function () {
+      return _this._saveItem(meta.getCanonicalName(), id, updates, meta.getVersion(), changeLogger);
+    };
+  }
+
+  /**
+   * @param {ClassMeta} meta
+   * @param {String} backRef
+   * @param {String} id
+   * @param {{}} updates
+   * @param {ChangeLogger} changeLogger
+     * @returns {Function}
+     */
+  function fetchNSaveBackRefs(meta, backRef, id, updates, changeLogger) {
+    return function () {
+      var f = {};
+      f[backRef] = id;
+      return _this._getList(meta.getCanonicalName(), {filter: f})
+        .then(function (found) {
+          var saver = null;
+          for (let i = 0; i < found.length; i++) {
+            if (found[i] instanceof Item) {
+              if (saver) {
+                saver = saver.then(saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger));
+              } else {
+                saver = saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger)();
+              }
+            }
+          }
+          if (!saver) {
+            return Promise.resolve();
+          }
+          return saver;
+        });
+    };
+  }
+
+  function saveDirectRefItem(nm, meta, id, updates, changeLogger, needSetRef) {
+    return function () {
+      return _this._saveItem(meta.getCanonicalName(), id, updates, meta.getVersion(), changeLogger)
+        .then(function (item) {
+          if (needSetRef && (!id || id !== item.getItemId())) {
+            needSetRef[nm] = item.getItemId();
+          }
+          return Promise.resolve(item);
+        });
+    };
   }
 
   /**
@@ -1293,63 +1129,69 @@ function IonDataRepository(options) {
    * @param {{}} refUpdates
    */
   function refUpdator(item, refUpdates, changeLogger) {
-    return new Promise(function (resolve, reject) {
-      var savers = [];
-      var p, rm, id;
-      var needSetRef = {};
-      for (var nm in refUpdates) {
-        if (refUpdates.hasOwnProperty(nm)) {
-          p = item.property(nm);
-          if (p) {
-            rm = _this.meta.getMeta(
-              p.meta.refClass,
-              item.getMetaClass().getVersion(),
-              item.getMetaClass().getNamespace()
-            );
-            id = item.get(nm);
-            if (!id) {
-              needSetRef[nm] = savers.length;
+    var saver = null;
+    var needSetRef = {};
+    for (var nm in refUpdates) {
+      if (refUpdates.hasOwnProperty(nm)) {
+        let p = item.property(nm);
+        if (p && p.meta._refClass) {
+          let rm = p.meta._refClass;
+          if (p.meta.backRef) {
+            let refItems = item.property(nm).evaluate();
+            if (Array.isArray(refItems)) {
+              for (let i = 0; i < refItems.length; i++) {
+                if (refItems[i] instanceof Item) {
+                  if (saver) {
+                    saver = saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger));
+                  } else {
+                    saver = saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
+                  }
+                }
+              }
+            } else if (refItems instanceof Item) {
+              if (saver) {
+                saver = saver.then(saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger));
+              } else {
+                saver = saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)();
+              }
+            } else {
+              if (saver) {
+                saver = saver
+                  .then(fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger));
+              } else {
+                saver = fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)();
+              }
             }
-            savers.push(
-              _this._saveItem(
-                rm.getCanonicalName(),
-                id,
-                refUpdates[nm],
-                rm.getVersion(),
-                changeLogger
-              )
-            );
+          } else {
+            if (saver) {
+              saver = saver.then(saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef));
+            } else {
+              saver = saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)();
+            }
           }
         }
       }
-      if (savers.length === 0) {
-        return resolve(item);
-      }
+    }
+    if (!saver) {
+      return Promise.resolve(item);
+    }
 
-      Promise.all(savers).then(function (savedRefs) {
-        var setRefs = false;
-        for (var nm in needSetRef) {
-          if (needSetRef.hasOwnProperty(nm)) {
-            needSetRef[nm] = savedRefs[needSetRef[nm]].getItemId();
-            setRefs = true;
-          }
-        }
-        if (setRefs) {
-          _this._editItem(
+    return saver.then(function () {
+      for (let nm in needSetRef) {
+        if (needSetRef.hasOwnProperty(nm)) {
+          return _this._editItem(
             item.getMetaClass().getCanonicalName(),
             item.getItemId(),
             needSetRef,
             changeLogger
-          ).then(resolve).catch(reject);
-          return;
+          );
         }
-        resolve(item);
-      }).
-      catch(reject);
+      }
+      return Promise.resolve(item);
     });
   }
 
-  function writeEventHandler(nestingDepth, changeLogger) {
+  function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
       var data = {};
@@ -1373,7 +1215,10 @@ function IonDataRepository(options) {
           true
         );
       }
-      return enrich(e.item, nestingDepth);
+      if (skip) {
+        return Promise.resolve(e.item);
+      }
+      return enrich(e.item, nestingDepth || 0);
     };
   }
 
@@ -1384,7 +1229,9 @@ function IonDataRepository(options) {
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
+   * @param {String} [options.uid]
    * @param {Number} [options.nestingDepth]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1393,7 +1240,7 @@ function IonDataRepository(options) {
     return new Promise(function (resolve, reject) {
       try {
         var cm = _this.meta.getMeta(classname, version);
-        var rcm = _this._getRootType(cm);
+        var rcm = getRootType(cm);
 
         var refUpdates = {};
         var updates = formUpdatedData(cm, data, true, refUpdates) || {};
@@ -1410,16 +1257,22 @@ function IonDataRepository(options) {
         Promise.all(fileSavers).then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
+          if (options.uid) {
+            updates._creator = options.uid;
+          }
           return _this.ds.insert(tn(rcm), updates);
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
+          delete updates._class;
+          delete updates._classVer;
+          delete updates._creator;
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         }).then(function (item) {
           return updateBackRefs(item, cm, data);
         }).then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
-          return loadFiles(item);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.create',
@@ -1427,10 +1280,10 @@ function IonDataRepository(options) {
             data: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
         ).then(resolve).catch(reject);
       } catch (err) {
@@ -1447,78 +1300,92 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {String} [options.uid]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
     options = options || {};
-    return new Promise(function (resolve, reject) {
-      if (!id) {
-        return reject(new Error('Не передан идентификатор объекта!'));
-      }
-      try {
-        var cm = _this.meta.getMeta(classname);
-        var rcm = _this._getRootType(cm);
+    if (!id) {
+      return Promise.reject(new Error('Не передан идентификатор объекта!'));
+    }
+    try {
+      var cm = _this.meta.getMeta(classname);
+      var rcm = getRootType(cm);
 
-        /**
-         * @var {{}}
-         */
-        var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getCanonicalName(), id));
+      /**
+       * @var {{}}
+       */
+      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
 
-        if (conditions) {
-          var refUpdates = {};
-          var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+      if (conditions) {
+        var base;
+        var refUpdates = {};
+        var updates = formUpdatedData(cm, data, false, refUpdates) || {};
 
-          var fileSavers = [];
+        var fileSavers = [];
 
-          if (cm.getChangeTracker()) {
-            updates[cm.getChangeTracker()] = new Date();
-          }
-
-          prepareFileSavers(cm, fileSavers, updates);
-          var chr = checkRequired(cm, updates, true);
-          if (chr !== true) {
-            return reject(chr);
-          }
-
-          Promise.all(fileSavers).then(function () {
-            return _this.ds.update(tn(rcm), conditions, updates);
-          }).then(function (data) {
-            if (!data) {
-              return reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
-            }
-            var item = _this._wrap(data._class, data, data._classVer);
-            return logChanges(changeLogger, {type: EventType.UPDATE, item: item, updates: updates});
-          }).then(function (item) {
-            return updateBackRefs(item, cm, data, id);
-          }).then(function (item) {
-            return refUpdator(item, refUpdates, changeLogger);
-          }).then(function (item) {
-            return loadFiles(item);
-          }).then(function (item) {
-            if (!suppresEvent) {
-              return _this.trigger({
-                type: item.getMetaClass().getCanonicalName() + '.edit',
-                item: item,
-                updates: data
-              });
-            }
-            return new Promise(function (resolve) {resolve({item: item});});
-          }).
-          then(writeEventHandler(options.nestingDepth, changeLogger)).
-          then(
-            function (item) {
-              return calcProperties(item);
-            }
-          ).
-          then(resolve).catch(reject);
-        } else {
-          reject({Error: 'Не указан идентификатор объекта!'});
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
         }
-      } catch (err) {
-        reject(err);
+
+        prepareFileSavers(cm, fileSavers, updates);
+        var chr = checkRequired(cm, updates, true);
+        if (chr !== true) {
+          return Promise.reject(chr);
+        }
+
+        var p;
+        if (changeLogger) {
+          p = _this.ds.get(tn(rcm), conditions).then(function (b) {
+            base = b;
+            return Promise.all(fileSavers);
+          });
+        } else {
+          p = Promise.all(fileSavers);
+        }
+
+        return p.then(function () {
+          if (options.uid) {
+            updates._editor = options.uid;
+          }
+          return _this.ds.update(tn(rcm), conditions, updates);
+        }).then(function (data) {
+          if (!data) {
+            return Promise.reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
+          }
+          var item = _this._wrap(data._class, data, data._classVer);
+          delete updates._editor;
+          return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
+        }).then(function (item) {
+          return updateBackRefs(item, cm, data, id);
+        }).then(function (item) {
+          return refUpdator(item, refUpdates, changeLogger);
+        }).then(function (item) {
+          return loadFiles(item, _this.fileStorage, _this.imageStorage);
+        }).then(function (item) {
+          if (!suppresEvent) {
+            return _this.trigger({
+              type: item.getMetaClass().getCanonicalName() + '.edit',
+              item: item,
+              updates: data
+            });
+          }
+          return new Promise(function (resolve) {resolve({item: item});});
+        }).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
+        then(
+          function (item) {
+            return calcProperties(item, options.skipResult);
+          }
+        );
+      } else {
+        return Promise.reject(new Error('Не указан идентификатор объекта!'));
       }
-    });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -1531,81 +1398,97 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
+   * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
     options = options || {};
-    return new Promise(function (resolve, reject) {
-      var fileSavers = [];
-      try {
-        var cm = _this.meta.getMeta(classname, version);
-        var rcm = _this._getRootType(cm);
+    var fileSavers = [];
+    try {
+      var cm = _this.meta.getMeta(classname, version);
+      var rcm = getRootType(cm);
 
-        var refUpdates = {};
-        var updates = formUpdatedData(cm, data, true, refUpdates) || {};
-        var conditionsData;
+      var refUpdates = {};
+      var updates = formUpdatedData(cm, data, true, refUpdates) || {};
+      var conditionsData;
 
-        if (id) {
-          conditionsData = _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace());
-        } else {
-          conditionsData = _this.keyProvider.keyData(rcm.getName(), updates, rcm.getNamespace());
-        }
+      if (id) {
+        conditionsData = _this.keyProvider.keyToData(rcm, id);
+      } else {
+        conditionsData = _this.keyProvider.keyData(rcm, updates);
+      }
 
-        var event = EventType.UPDATE;
+      var event = EventType.UPDATE;
 
-        prepareFileSavers(cm, fileSavers, updates);
+      var conditions = null;
+      if (conditionsData) {
+        conditions = formUpdatedData(rcm, conditionsData);
+      }
 
-        Promise.all(fileSavers).then(function () {
+      var base = null;
+
+      prepareFileSavers(cm, fileSavers, updates);
+
+      var p;
+      if (changeLogger && conditions) {
+        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
+          base = b;
+          return Promise.all(fileSavers);
+        });
+      } else {
+        p = Promise.all(fileSavers);
+      }
+
+      return p.then(function () {
           var chr;
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
-            if (conditionsData) {
-              var conditions = formUpdatedData(rcm, conditionsData);
+            if (conditions) {
               if (options && options.autoAssign) {
-                autoAssign(cm, updates);
+                autoAssign(cm, updates, true);
               } else {
                 if (cm.getChangeTracker()) {
                   updates[cm.getChangeTracker()] = new Date();
                 }
               }
-              chr = checkRequired(cm, updates, false);
-              if (chr !== true && options.ignoreIntegrityCheck) {
-                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
-                chr = true;// Если задано игнорировать целостность - игнорируем
-              }
-              return chr !== true ? reject(chr) : _this.ds.upsert(tn(rcm), conditions, updates); // TODO передавать игнорирование целостности
+              chr = checkRequired(cm, updates, true);
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
               chr = checkRequired(cm, updates, false);
-              if (chr !== true && options.ignoreIntegrityCheck) {
-                console.error('Ошибка контроля целостности сохраняемого объекта', chr.message);
-                chr = true;// Если задано игнорировать целостность - игнорируем
-              }
-              return chr !== true ? reject(chr) : _this.ds.insert(tn(rcm), updates); // TODO передавать игнорирование целостности
             }
+            if (chr !== true && options.ignoreIntegrityCheck) {
+              if (options.log) {
+                options.log.warn('Ошибка контроля целостности сохраняемого объекта', chr.message);
+              }
+              chr = true;// Если задано игнорировать целостность - игнорируем
+            }
+            if (chr !== true) {
+              return Promise.reject(chr);
+            }
+            return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
           } catch (err) {
-            reject(err);
+            return Promise.reject(err);
           }
         }).then(function (data) {
           var item = _this._wrap(data._class, data, data._classVer);
-          return logChanges(changeLogger, {type: event, item: item, updates: updates});
+          return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
         }).then(function (item) {
           if (!options.ignoreIntegrityCheck) {
             return updateBackRefs(item, cm, data, id || item.getItemId());
           } else {
-            return item;
+            return Promise.resolve(item);
           }
         }).then(function (item) {
           if (!options.ignoreIntegrityCheck) {
             return refUpdator(item, refUpdates, changeLogger);
           } else {
-            return item;
+            return Promise.resolve(item);
           }
         }).then(function (item) {
-          return loadFiles(item);
+          return loadFiles(item, _this.fileStorage, _this.imageStorage);
         }).then(function (item) {
           return _this.trigger({
             type: item.getMetaClass().getCanonicalName() + '.save',
@@ -1613,16 +1496,15 @@ function IonDataRepository(options) {
             updates: data
           });
         }).
-        then(writeEventHandler(options.nestingDepth, changeLogger)).
+        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
         then(
           function (item) {
-            return calcProperties(item);
+            return calcProperties(item, options.skipResult);
           }
-        ).then(resolve).catch(reject);
-      } catch (err) {
-        return reject(err);
-      }
-    });
+        );
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -1634,14 +1516,23 @@ function IonDataRepository(options) {
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
-    var rcm = _this._getRootType(cm);
-    // TODO Каким-то образом реализовать извлечение из всех возможных коллекций
-    return new Promise(function (resolve, reject) {
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm.getName(), id, rcm.getNamespace()));
-      var item = _this._wrap(classname, conditions);
-      _this.ds.delete(tn(rcm), conditions).
+    var rcm = getRootType(cm);
+    var base = null;
+    var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+    var item = _this._wrap(classname, conditions);
+    var p;
+    if (changeLogger) {
+      p = _this.ds.get(tn(rcm), conditions)
+        .then(function (b) {
+          base = b;
+          return _this.ds.delete(tn(rcm), conditions);
+        });
+    } else {
+      p = _this.ds.delete(tn(rcm), conditions);
+    }
+    return p.
       then(function () {
-        return logChanges(changeLogger, {type: EventType.DELETE, item: item, updates: {}});
+        return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: base, updates: {}});
       }).
       then(
         function () {
@@ -1652,10 +1543,8 @@ function IonDataRepository(options) {
         }
       ).
       then(function () {
-        resolve();
-      }).
-      catch(reject);
-    });
+        return Promise.resolve();
+      });
   };
 
   /**
@@ -1680,10 +1569,7 @@ function IonDataRepository(options) {
           if (m[i]) {
             cond = formUpdatedData(
               m[i].getMetaClass(),
-              _this.keyProvider.keyToData(
-                m[i].getMetaClass().getName(),
-                m[i].getItemId(),
-                m[i].getMetaClass().getNamespace())
+              _this.keyProvider.keyToData(m[i].getMetaClass(), m[i].getItemId())
             );
             updates = {};
             act = false;
@@ -1702,7 +1588,7 @@ function IonDataRepository(options) {
               act = true;
             }
             if (act) {
-              mrcm = _this._getRootType(m[i].getMetaClass());
+              mrcm = getRootType(m[i].getMetaClass());
               writers.push(_this.ds.update(tn(mrcm), cond, updates));
             }
           }
@@ -1848,51 +1734,54 @@ function IonDataRepository(options) {
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
-    return new Promise(function (resolve, reject) {
-      if (!options) {
-        options = {};
-      }
+    var filter;
 
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
-      }
+    if (!options) {
+      options = {};
+    }
 
-      var detailCm = _this.meta.getMeta(pm.itemsClass, null, master.getMetaClass().getNamespace());
-      if (!detailCm) {
-        return reject(new Error('Не найден класс элементов коллекции!'));
-      }
+    var pm = master.getMetaClass().getPropertyMeta(collection);
+    if (!pm) {
+      return Promise.reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+    }
 
-      if (pm.backRef) {
-        var filter = {};
-        filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
-        options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
-        _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
-      } else {
-        var key = null;
-        var kp = detailCm.getKeyProperties();
-        if (kp.length > 1) {
-          reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+    var detailCm = pm._refClass;
+    if (!detailCm) {
+      return Promise.reject(new Error('Не найден класс элементов коллекции!'));
+    }
+
+    if (pm.backRef) {
+      filter = {};
+      filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
+      if (pm.selConditions) {
+        var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
+        if (tmp) {
+          filter = {$and: [filter, tmp]};
         }
+      }
+      options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
+      return _this._getList(detailCm.getCanonicalName(), options);
+    } else {
+      var kp = detailCm.getKeyProperties();
+      if (kp.length > 1) {
+        return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+      }
 
-        key = kp[0];
-
-        _this._getItem(master.getClassName(), master.getItemId(), 0).then(function (m) {
+      return _this._getItem(master.getClassName(), master.getItemId(), 0)
+        .then(function (m) {
           if (m) {
-            var filter = {};
-            filter[key] = {$in: m.base[collection] || []};
+            var filter = filterByItemIds(_this.keyProvider, detailCm, m.base[collection] || []);
             options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
             if (onlyCount) {
-              _this._getCount(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+              return _this._getCount(detailCm.getCanonicalName(), options);
             } else {
-              _this._getList(detailCm.getCanonicalName(), options).then(resolve).catch(reject);
+              return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            reject(new Error('Не найден контейнер коллекции!'));
+            return Promise.reject(new Error('Не найден контейнер коллекции!'));
           }
-        }).catch(reject);
-      }
-    });
+        });
+    }
   }
 
   /**

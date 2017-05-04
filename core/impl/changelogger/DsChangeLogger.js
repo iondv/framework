@@ -22,69 +22,83 @@ function DsChangeLogger(ds, authCallback) {
 
   /**
    * @param {String} type
-   * @param {String} objectClass
+   * @param {String | {}} objectClass
+   * @param {String} objectClass.name
+   * @param {String} objectClass.version
    * @param {String} objectId
    * @param {Object} updates
+   * @param {{}} base
    * @return {Promise}
    * @private
    */
-  this._log = function (type, objectClass, objectId, updates) {
+  this._log = function (type, objectClass, objectId, updates, base) {
     var author = null;
     if (typeof authCallback === 'function') {
       author = authCallback();
     }
-    return new Promise(function (resolve, reject) {
-      _this.ds.insert('ion_changelog', {
-        timestamp: new Date().toISOString(),
+    return _this.ds.insert('ion_changelog', {
+        timestamp: new Date(),
         type: type,
-        className: objectClass,
+        className: typeof objectClass === 'string' ? objectClass : objectClass.name,
+        classVersion: typeof objectClass === 'string' ? null : objectClass.version,
         id: objectId,
         author: author,
+        base: base,
         data: updates
       }).then(function (item) {
-        resolve(
+        return Promise.resolve(
           new ChangeLogger.Change(
-            Date.parse(item.timestamp),
+            item.timestamp,
             item.type,
-            item.className,
-            item.id,
+            {
+              className: item.className,
+              classVersion: item.classVersion,
+              id: item.id
+            },
             item.author,
-            item.updates
+            item.updates,
+            item.base
           )
         );
-      }).catch(reject);
-    });
+      });
   };
 
   /**
+   * @param {String} className
+   * @param {String} id
    * @param {Date} since
    * @param {Date} till
    * @return {Promise}
    * @private
    */
-  this._getChanges = function (since, till) {
-    return new Promise(function (resolve, reject) {
-      var opts = {timestamp: {$gte: since.toISOString()}};
-      if (till) {
-        opts = {$and: [opts, {timestamp: {$lt: till.toISOString()}}]};
-      }
-      _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
-        function (changes) {
-          var result = [];
-          for (var i = 0; i < changes.length; i++) {
-            result.push(new ChangeLogger.Change(
-              Date.parse(changes[i].timestamp),
-              changes[i].type,
-              changes[i].className,
-              changes[i].id,
-              changes[i].author,
-              changes[i].data
-            ));
-          }
-          resolve(result);
+  this._getChanges = function (className, id, since, till) {
+    var opts = {$and: [{className: className}, {id: id}]};
+    if (since) {
+      opts.$and.push({timestamp: {$gte: since}});
+    }
+    if (till) {
+      opts.$and.push({timestamp: {$lt: till}});
+    }
+    return _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
+      function (changes) {
+        var result = [];
+        for (var i = 0; i < changes.length; i++) {
+          result.push(new ChangeLogger.Change(
+            typeof changes[i].timestamp === 'string' ? Date.parse(changes[i].timestamp) : changes[i].timestamp,
+            changes[i].type,
+            {
+              className: changes[i].className,
+              classVersion: changes[i].classVersion,
+              id: changes[i].id
+            },
+            changes[i].author,
+            changes[i].data,
+            changes[i].base
+          ));
         }
-      ).catch(reject);
-    });
+        return Promise.resolve(result);
+      }
+    );
   };
 }
 

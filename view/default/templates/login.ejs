@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Платформа ION: Вход</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+  <link href="/css/essentials.min.css" rel="stylesheet" type="text/css"/>
+  <link href="/css/layout.min.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body>
+
+<div class="padding-15">
+  <div class="login-box">
+    <% if(errors.length) { %>
+    <div id="error" class="alert alert-danger">
+      <% errors.forEach(function(error){ %>
+      <p><%= error %></p>
+      <% }); %>
+    </div>
+    <% } %>
+    <!-- login form -->
+    <form action="/auth" method="post" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Вход в систему</header>
+      <fieldset>
+        <section>
+          <label class="label">Логин</label>
+          <label class="input">
+            <i class="icon-append fa fa-user"></i>
+            <input id="username" type="login" name="username">
+            <span class="tooltip tooltip-top-right">Логин</span>
+          </label>
+        </section>
+
+        <section>
+          <label class="label">Пароль</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input id="password" type="password" name="password">
+            <b class="tooltip tooltip-top-right">Пароль</b>
+          </label>
+        </section>
+      </fieldset>
+
+      <footer>
+        <button id="authbutton" type="submit" class="btn btn-primary pull-right">Войти</button>
+        <div class="forgot-password pull-left">
+          <% if (canRegister) { %><a href="/register"><b>Зарегистрироваться</b></a><% } %>
+        </div>
+      </footer>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

@@ -7,6 +7,8 @@ const ICalculator = require('core/interfaces/Calculator');
 const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
+const Item = require('core/interfaces/DataRepository').Item;
+const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 
 // jshint maxstatements: 50, maxcomplexity: 20
 /**
@@ -21,8 +23,8 @@ function Calculator(options) {
 
   this.init = function (scope) {
     return new Promise(function (resolve) {
-      var dataRepo = typeof options.dataRepo === String ? scope[options.dataRepo] : options.dataRepo;
-      if (dataRepo) {
+      var dataRepo = typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo;
+      if (dataRepo instanceof DataRepository) {
         funcLib.sum = aggreg.sum(dataRepo);
         funcLib.count = aggreg.count(dataRepo);
         funcLib.avg = aggreg.avg(dataRepo);
@@ -94,13 +96,35 @@ function Calculator(options) {
     return result;
   }
 
+  function objProp(obj, nm) {
+    if (!nm) {
+      return null;
+    }
+    if (nm.indexOf('.') < 0) {
+      return obj[nm];
+    }
+
+    var pth = nm.split('.');
+    var ctx = obj;
+    for (var i = 0; i < pth.length; i++) {
+      ctx = ctx[pth[i]];
+      if (typeof ctx !== 'object' || !ctx) {
+        return ctx;
+      }
+    }
+    return ctx;
+  }
+
   /**
    * @param {{name: String}} nm
    * @returns {Function}
    */
   function propertyGetter(nm) {
     return function () {
-      return this.property(nm).evaluate();
+      if (this instanceof Item) {
+        return this.get(nm);
+      }
+      return objProp(this, nm);
     };
   }
 
@@ -126,6 +150,10 @@ function Calculator(options) {
 
     if (formula === 'false') {
       return false;
+    }
+
+    if (formula[0] === '\'' && formula[formula.length - 1] === '\'') {
+      return formula.substring(1, formula.length - 1);
     }
 
     if ((pos = formula.indexOf('(')) > -1) {

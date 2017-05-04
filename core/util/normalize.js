@@ -2,78 +2,90 @@
  * Created by kras on 16.11.16.
  */
 'use strict';
-const merge = require('merge');
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository').Item;
+const clone = require('clone');
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 30, maxdepth: 20
 /**
  * @param {*} data
+ * @param {Function} dateCallback
+ * @param {{}} [options]
+ * @param {Boolean | Number} [options.greedy]
+ * @param {Boolean} [options.byRef]
+ * @param {{}} [processed]
  * @returns {{} | null}
  * @private
  */
-function normalize(data, dateCallback) {
-  var i;
+function normalize(data, dateCallback, options, processed) {
+  options = options || {};
+  processed = processed || {};
   if (Array.isArray(data)) {
-    var result = [];
-    for (i = 0; i < data.length; i++) {
-      result.push(normalize(data[i], dateCallback));
+    let result = [];
+    for (let i = 0; i < data.length; i++) {
+      result.push(normalize(data[i], dateCallback, options, processed));
     }
     return result;
   }
 
   if (data instanceof Item) {
+    if (processed.hasOwnProperty(data.getClassName() + '@' + data.getItemId())) {
+      if (options.byRef) {
+        return processed[data.getClassName() + '@' + data.getItemId()];
+      } else {
+        if (options.greedy) {
+          return clone(
+            processed[data.getClassName() + '@' + data.getItemId()],
+            true,
+            isNaN(options.greedy) ? 1 : options.greedy
+          );
+        }
+        return {
+          className: processed[data.getClassName() + '@' + data.getItemId()].className,
+          _id: processed[data.getClassName() + '@' + data.getItemId()]._id
+        };
+      }
+    }
     /**
      * @type {{}}
      */
-    var item;
-    item = merge(true, data.base, data.calculated);
+    let item;
+    let props = data.getProperties();
 
-    delete item._id;
-    delete item._classVer;
-    delete item._class;
+    item = {};
 
     item.className = data.getMetaClass().getCanonicalName();
-    var propertyMetas, pm, p;
-    propertyMetas = data.getMetaClass().getPropertyMetas();
-    for (i = 0; i < propertyMetas.length; i++) {
-      pm = propertyMetas[i];
-      if (!item.hasOwnProperty(pm.name)) {
-        item[pm.name] = null;
-      }
-
-      if (pm.type === PropertyTypes.STRUCT) {
-        continue;
-      }
-
-      p = data.property(pm.name);
-
-      if (!p) {
-        continue;
-      }
-
-      if (pm.type === PropertyTypes.REFERENCE) {
-        var refItem = data.getAggregate(pm.name);
-        if (refItem) {
-          item[pm.name] = normalize(refItem);
-        } else if (item[pm.name]) {
-          delete item[pm.name];
-        }
-      } else if (pm.type === PropertyTypes.COLLECTION) {
-        item[pm.name] = normalize(data.getAggregates(pm.name));
-      } else if (
-        pm.type === PropertyTypes.FILE ||
-        pm.type === PropertyTypes.IMAGE ||
-        pm.type === PropertyTypes.FILE_LIST
-      ) {
-        item[pm.name] = p.getValue();
-      } else if (pm.selectionProvider) {
-        item[pm.name + '_str'] = p.getDisplayValue(dateCallback);
-      }
-    }
-
+    item._creator = data.getCreator();
+    item._editor = data.getEditor();
     item._id = data.getItemId();
     item.__string = data.toString(null, dateCallback);
+    processed[data.getClassName() + '@' + data.getItemId()] = item;
+
+    for (let nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        /**
+         * @type {Property}
+         */
+        let p = props[nm];
+
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          let refItem = data.getAggregate(p.getName());
+          if (refItem && typeof item[p.getName()] === 'undefined') {
+            item[p.getName()] = normalize(refItem, dateCallback, options, processed);
+          }
+        } else if (p.getType() === PropertyTypes.COLLECTION) {
+          if (typeof item[p.getName()] === 'undefined') {
+            item[p.getName()] = normalize(data.getAggregates(p.getName()), dateCallback, options, processed);
+          }
+        } else {
+          item[p.getName()] = p.getValue();
+        }
+
+        if (p.meta.selectionProvider) {
+          item[p.getName() + '_str'] = p.getDisplayValue(dateCallback);
+        }
+      }
+    }
     return item;
   }
 

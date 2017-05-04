@@ -181,12 +181,13 @@ function FsStorage(options) {
 
   function streamGetter(file) {
     return function (callback) {
-      try {
+      fs.access(path.join(_options.storageBase, file.path), fs.constants.R_OK, function (err) {
+        if (err) {
+          return callback(err, null);
+        }
         var s = fs.createReadStream(path.join(_options.storageBase, file.path));
         return callback(null, s);
-      } catch (err) {
-        return callback(err, null);
-      }
+      });
     };
   }
 
@@ -281,7 +282,7 @@ function FsStorage(options) {
             f.getContents()
               .then(respondFile(req, res))
               .catch(
-                function () {
+                function (err) {
                   res.status(404).send('File not found!');
                 }
               );

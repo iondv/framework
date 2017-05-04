@@ -3,8 +3,8 @@
  */
 'use strict';
 
-var Property = require('./Property');
-var PropertyTypes = require('core/PropertyTypes');
+const Property = require('./Property');
+const PropertyTypes = require('core/PropertyTypes');
 
 // jshint maxstatements: 30
 
@@ -37,6 +37,8 @@ function Item(id, base, classMeta) {
 
   this.references = {};
 
+  this.collections = {};
+
   this.calculated = {};
 
   this.files = {};
@@ -57,6 +59,20 @@ function Item(id, base, classMeta) {
   };
 
   /**
+   * @returns {String}
+   */
+  this.getCreator = function () {
+    return this.base._creator;
+  };
+
+  /**
+   * @returns {String}
+   */
+  this.getEditor = function () {
+    return this.base._editor;
+  };
+
+  /**
    * @param {String} name
    * @returns {Item | null}
    */
@@ -64,22 +80,22 @@ function Item(id, base, classMeta) {
     var props = this.getProperties();
     var p = props[name];
     if (p && p.getType() === PropertyTypes.REFERENCE) {
-      return this.references[name];
+      return this.references[name] || null;
     }
     return null;
   };
 
   /**
    * @param {String} name
-   * @returns {Array}
+   * @returns {Array | null}
    */
   this.getAggregates = function (name) {
     var props = this.getProperties();
     var p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
-      return this.collections[name] || [];
+      return this.collections[name] || null;
     }
-    return [];
+    return null;
   };
 
   function getFromBase(name) {
@@ -120,10 +136,26 @@ function Item(id, base, classMeta) {
   this.get = function (name) {
     var dot = name.indexOf('.');
     if (dot > -1) {
-      var i = this.getAggregate(name.substring(0, dot));
-      if (i) {
-        return i.get(name.substring(dot + 1));
+      let pn = name.substring(0, dot);
+      let props = this.getProperties();
+      if (props.hasOwnProperty(pn)) {
+        if (props[pn].getType() === PropertyTypes.REFERENCE) {
+          let i = this.getAggregate(pn);
+          if (i) {
+            return i.get(name.substring(dot + 1));
+          }
+        } else if (props[pn].getType() === PropertyTypes.COLLECTION) {
+          let is = this.getAggregates(pn);
+          if (Array.isArray(is)) {
+            let result = [];
+            for (let i = 0; i < is.length; i++) {
+              result.push(is[i].get(name.substring(dot + 1)));
+            }
+            return result;
+          }
+        }
       }
+      return null;
     }
     return getFromBase(name);
   };
@@ -148,7 +180,7 @@ function Item(id, base, classMeta) {
     var dot, pm;
     if ((dot = nm.lastIndexOf('.')) > -1) {
       pm = cm.getPropertyMeta(nm.substring(0, dot));
-      if (pm.type === PropertyTypes.REFERENCE) {
+      if (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) {
         return findPropertyMeta(nm.substring(dot + 1), pm._refClass);
       } else {
         return null;
@@ -162,12 +194,11 @@ function Item(id, base, classMeta) {
    * @returns {Property | null}
    */
   this.property = function (name) {
-    var pm;
     var props = this.getProperties();
     if (props.hasOwnProperty(name)) {
       return props[name];
     } else {
-      pm = findPropertyMeta(name, this.classMeta);
+      let pm = findPropertyMeta(name, this.classMeta);
       if (pm) {
         return new Property(this, pm, name);
       }
@@ -199,11 +230,16 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function (semanticGetter, dateCallback) {
-  if (typeof semanticGetter === 'function') {
-    return semanticGetter.call(this, dateCallback);
+Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
+  circular = typeof circular !== 'undefined' && circular !== null ? circular : {};
+  if (circular[this.getClassName() + '@' + this.getItemId()]) {
+    return '';
   }
-  return this.classMeta.getSemantics(this, dateCallback);
+  circular[this.getClassName() + '@' + this.getItemId()] = true;
+  if (typeof semanticGetter === 'function') {
+    return semanticGetter.call(this, dateCallback, circular);
+  }
+  return this.classMeta.getSemantics(this, dateCallback, circular);
 };
 
 module.exports = Item;

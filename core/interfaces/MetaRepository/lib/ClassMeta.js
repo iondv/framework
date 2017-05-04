@@ -62,6 +62,8 @@ function ClassMeta(metaObject) {
 
   this._forcedEnrichment = [];
 
+  this._semanticAttrs = [];
+
   this._semanticFunc = null;
 
   loadPropertyMetas(_this, metaObject);
@@ -86,11 +88,15 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.namespace ? '@' + this.namespace : '');
   };
 
-  this.getSemantics = function (item, dateCallback) {
+  this.getSemantics = function (item, dateCallback, circular) {
     if (typeof this._semanticFunc === 'function') {
-      return this._semanticFunc.call(item, dateCallback);
+      return this._semanticFunc.call(item, dateCallback, circular);
     }
     return item.getItemId();
+  };
+
+  this.getSemanticAttrs = function () {
+    return this._semanticAttrs || [];
   };
 
   this.getForcedEnrichment = function () {

@@ -170,6 +170,18 @@ function MetaRepository() {
 
   /**
    * @param {String} className
+   * @param {String} workflow
+   * @param {String} state
+   * @param {String} [namespace]
+   * @param {String} [version]
+   * @returns {Object[] | null}
+   */
+  this.getWorkflowView = function (className, workflow, state, namespace, version) {
+    return this._getWorkflowView(className, workflow, state, namespace, version);
+  };
+
+  /**
+   * @param {String} className
    * @param {String} name
    * @param {String} [namespace]
    * @param {String} [version]
