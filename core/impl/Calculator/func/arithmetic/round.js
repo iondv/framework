@@ -3,27 +3,39 @@
  */
 'use strict';
 const ac = require('../util').argCalcPromise;
+const acSync = require('../util').argCalcSync;
+
+function round(args) {
+  var v1, v2;
+  if (!args.length) {
+    return 0;
+  }
+  v1 = parseFloat(args[0]);
+  v2 = 0;
+  if (args.length > 1 && !isNaN(args[1])) {
+    v2 = args[1];
+  }
+  return v1.toFixed(v2);
+}
 
 module.exports = function (args) {
-  return function () {
-    var _this = this;
-    return ac(_this, args, 2)
-      .then(function (args) {
-        var v1, v2;
-        v1 = null;
-        if (args.length) {
-          try {
-            v1 = parseFloat(args[0]);
-            v2 = 0;
-            if (args.length > 1 && !isNaN(args[1])) {
-              v2 = args[1];
-            }
-          } catch (err) {
-            return Promise.reject(err);
-          }
-          return Promise.resolve(v1.toFixed(v2));
-        } else {
-          return Promise.resolve(0);
+  return function (sync) {
+    if (sync) {
+      try {
+        let cArgs = acSync(this, args, 2);
+        let result = round(cArgs);
+        return result;
+      } catch (err) {
+        return null;
+      }
+    }
+    return ac(this, args, 2)
+      .then(cArgs => {
+        try {
+          let result = round(cArgs);
+          return Promise.resolve(result);
+        } catch (err) {
+          return Promise.reject(err);
         }
       });
   };
