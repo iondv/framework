@@ -2,20 +2,22 @@
  * Created by kras on 03.11.16.
  */
 'use strict';
-const ac = require('../util').argCalcPromise;
+const calc = require('../util').calculate;
+
+function countResult(args, start, cb) {
+  var result = start;
+  for (var i = 0; i < args.length; i++) {
+    result = cb(result, args[i]);
+  }
+  return result;
+}
 
 module.exports = function (cb, start) {
   return function (args) {
     return function () {
-      var _this = this;
-      return ac(_this, args)
-        .then(function (args) {
-          var result = start;
-          for (var i = 0; i < args.length; i++) {
-            result = cb(result, args[i]);
-          }
-          return Promise.resolve(result);
-        });
+      return calc(this, args, null, function (args) {
+        return countResult(args, start, cb);
+      });
     };
   };
 };
