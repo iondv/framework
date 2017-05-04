@@ -82,7 +82,7 @@ function SecuredDataRepository(options) {
     resources.push(classPrefix + cm.getCanonicalName());
     var descendants = cm.getDescendants();
     for (var i = 0; i < descendants.length; i++) {
-      classResources(resources, descendants[i]);
+      classResources(check, resources, descendants[i]);
     }
   }
 
