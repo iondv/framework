@@ -1096,14 +1096,18 @@ function IonDataRepository(options) {
       return _this._getList(meta.getCanonicalName(), {filter: f})
         .then(function (found) {
           var saver = null;
-          for (let i = 0; i < found.length; i++) {
-            if (found[i] instanceof Item) {
-              if (saver) {
-                saver = saver.then(saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger));
-              } else {
-                saver = saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger)();
+          if (found.length) {
+            for (let i = 0; i < found.length; i++) {
+              if (found[i] instanceof Item) {
+                if (saver) {
+                  saver = saver.then(saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger));
+                } else {
+                  saver = saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger)();
+                }
               }
             }
+          } else {
+            saver = saveBackrefItem(meta, null, updates, changeLogger)();
           }
           if (!saver) {
             return Promise.resolve();
@@ -1138,37 +1142,34 @@ function IonDataRepository(options) {
         if (p && p.meta._refClass) {
           let rm = p.meta._refClass;
           if (p.meta.backRef) {
-            let refItems = item.property(nm).evaluate();
-            if (Array.isArray(refItems)) {
-              for (let i = 0; i < refItems.length; i++) {
-                if (refItems[i] instanceof Item) {
-                  if (saver) {
-                    saver = saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger));
-                  } else {
-                    saver = saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
+            if (p.meta.eagerLoading) {
+              let refItems = item.property(nm).evaluate();
+              if (Array.isArray(refItems) && refItems.length) {
+                for (let i = 0; i < refItems.length; i++) {
+                  if (refItems[i] instanceof Item) {
+                    saver = saver ?
+                      saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)):
+                      saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
                   }
                 }
-              }
-            } else if (refItems instanceof Item) {
-              if (saver) {
-                saver = saver.then(saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger));
+              } else if (refItems instanceof Item) {
+                saver = saver ?
+                  saver.then(saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)) :
+                  saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)();
               } else {
-                saver = saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)();
+                saver = saver ?
+                  saver.then(saveBackrefItem(rm, null, refUpdates[nm], changeLogger)) :
+                  saveBackrefItem(rm, null, refUpdates[nm], changeLogger)();
               }
             } else {
-              if (saver) {
-                saver = saver
-                  .then(fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger));
-              } else {
-                saver = fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)();
-              }
+              saver = saver ?
+                saver.then(fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)) :
+                fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)();
             }
           } else {
-            if (saver) {
-              saver = saver.then(saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef));
-            } else {
-              saver = saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)();
-            }
+            saver = saver ?
+              saver.then(saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)) :
+              saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)();
           }
         }
       }
@@ -1360,7 +1361,7 @@ function IonDataRepository(options) {
           delete updates._editor;
           return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
         }).then(function (item) {
-          return updateBackRefs(item, cm, data, id);
+          return updateBackRefs(item, cm, updates, id);
         }).then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
