@@ -308,11 +308,9 @@ function MongoDbSync(options) {
           });
       }
 
-      return new Promise(function (resolve, reject) {
-        var i, j, promises, tmp;
-        promises = [];
-        promises.push(createIndexPromise(cm.key, true));
-        promises.push(createIndexPromise('_class', false));
+        var i, j, promise, tmp;
+        promise = createIndexPromise(cm.key, true);
+        promise.then(createIndexPromise('_class', false));
 
         var fullText = [];
         var props = {};
@@ -323,7 +321,7 @@ function MongoDbSync(options) {
             cm.properties[i].indexed ||
             cm.properties[i].unique
           ) {
-            promises.push(
+            promise.then(
               createIndexPromise(
                 cm.properties[i].name,
                 cm.properties[i].unique,
@@ -346,7 +344,7 @@ function MongoDbSync(options) {
           }
 
           if (cm.properties[i].type === PropertyTypes.GEO) {
-            promises.push(registerGeoField(cm.properties[i]));
+            promise.then(registerGeoField(cm.properties[i]));
           }
         }
 
@@ -359,20 +357,15 @@ function MongoDbSync(options) {
                 break;
               }
             }
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
+            promise.then(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
           }
         }
 
         if (fullText.length) {
-          promises.push(createFullText(fullText));
+          promise.then(createFullText(fullText));
         }
-
-        Promise.all(promises).
-        then(function () {
-          resolve(collection);
-        }).
-        catch(reject);
-      });
+        
+        return promise;
     };
   };
 
