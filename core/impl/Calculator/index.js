@@ -144,6 +144,10 @@ function Calculator(options) {
       return Number(formula);
     }
 
+    if (formula === 'null') {
+      return null;
+    }
+
     if (formula === 'true') {
       return true;
     }
@@ -178,12 +182,11 @@ function Calculator(options) {
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    var f = evaluate(formula.trim());
-    if (typeof f === 'function') {
-      return f;
+    var result = evaluate(formula.trim());
+    if (typeof result !== 'function') {
+      return () => result;
     }
-    warn('Не удалось распознать формулу: ' + formula);
-    return null;
+    return result;
   };
 }
 
