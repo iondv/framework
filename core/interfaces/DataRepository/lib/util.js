@@ -647,7 +647,7 @@ function calcProperties(item, skip) {
   var props = item.getMetaClass().getPropertyMetas();
   for (var i = 0; i < props.length; i++) {
     if (props[i]._formula) {
-      calculations.push(props[i]._formula.apply(item));
+      calculations.push(Promise.resolve(props[i]._formula.apply(item)));
       calcNames.push(props[i].name);
     }
   }

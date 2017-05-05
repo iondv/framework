@@ -160,7 +160,7 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, key, formula) {
-    return formula.apply(item, [{}]).then(function (v) {
+    return Promise.resolve(formula.apply(item, [{}])).then(function (v) {
       try {
         updates[key] = v;
         item.set(key, v);
