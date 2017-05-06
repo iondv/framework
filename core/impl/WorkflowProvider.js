@@ -163,15 +163,13 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, key, formula) {
-    return formula.apply(item, [{}]).then(function (v) {
-      try {
+    return Promise.resolve()
+      .then(() => formula.apply(item, [{}]))
+      .then(function (v) {
         updates[key] = v;
         item.set(key, v);
-        return Promise.resolve(v);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    });
+        return v;
+      });
   }
 
   /**
