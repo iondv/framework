@@ -981,20 +981,31 @@ function IonDataRepository(options) {
     }
 
     if (oldId) {
+      let p;
       if (!rpm.nullable) {
-        if (options.log) {
-          options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
-              '" не может быть отвязан. Обратная ссылка не была присвоена.');
-        }
-        return Promise.resolve();
+        p = options.dataSource.get(tn(rcm), clrf).then(function (bri) {
+          if (bri) {
+            if (options.log) {
+              options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
+                '" не может быть отвязан. Обратная ссылка не была присвоена.');
+            }
+            return Promise.reject('_NOT_UNLINKED_');
+          }
+          return Promise.resolve();
+        });
       } else {
+        p = Promise.resolve();
+      }
+      return p.then(function () {
         if (!updates[pm.name]) {
           return options.dataSource.update(tn(rcm), clrf, clr);
         }
         return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
           return setBrLink(rcm, conds, ups);
         });
-      }
+      }).catch(function (err) {
+        return err === '_NOT_UNLINKED_' ? Promise.resolve() : Promise.reject(err);
+      });
     }
 
     if (!updates[pm.name]) {
@@ -1360,7 +1371,7 @@ function IonDataRepository(options) {
           delete updates._editor;
           return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
         }).then(function (item) {
-          return updateBackRefs(item, cm, updates, id);
+          return updateBackRefs(item, cm, data, id);
         }).then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
         }).then(function (item) {
