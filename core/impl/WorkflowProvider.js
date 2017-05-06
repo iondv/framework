@@ -7,6 +7,8 @@ const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/workflow');
 const Permissions = require('core/Permissions');
 
 const MetaPermissions  = {
@@ -23,6 +25,7 @@ const MetaPermissions  = {
  * @param {MetaRepository} options.metaRepo
  * @param {DataRepository} options.dataRepo
  * @param {DataSource} options.dataSource
+ * @param {Logger} options.log
  * @constructor
  */
 function WorkflowProvider(options) {
@@ -223,6 +226,7 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, user) {
+    var transition;
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
@@ -251,7 +255,9 @@ function WorkflowProvider(options) {
 
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
-                  return Promise.reject(new Error('Не найдено конечное состояние перехода.'));
+                  return Promise.reject(
+                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                  );
                 }
 
                 var updates = {};
@@ -282,7 +288,14 @@ function WorkflowProvider(options) {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
                       return Promise.reject(
-                        new Error('Объект не удовлетворяет условиям конечного состояния перехода.')
+                        new IonError(
+                          Errors.CONDITION_VIOLATION,
+                          {
+                            info: item.getClassName() + '@' + item.getItemId(),
+                            state: nextState.caption,
+                            workflow: wf.caption
+                          }
+                        )
                       );
                     }
                   }
@@ -324,9 +337,19 @@ function WorkflowProvider(options) {
                 });
               }
             }
-            return Promise.reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+            return Promise.reject(
+              new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
+            );
           }
-          return Promise.reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
+          return Promise.reject(
+            new IonError(
+              Errors.NOT_IN_WORKFLOW,
+              {
+                workflow: workflow,
+                info: item.getClassName() + '@' + item.getItemId()
+              }
+            )
+          );
         }
       });
   };
@@ -335,12 +358,8 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this.init = function () {
-    return new Promise(function (resolve, reject) {
-      options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
-        .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); })
-        .then(function () {resolve();})
-        .catch(reject);
-    });
+    return options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
+      .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); });
   };
 }
 

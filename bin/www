@@ -20,6 +20,9 @@ const theme = require('lib/util/theme');
 const IonLogger = require('core/impl/log/IonLogger');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
+const errorSetup = require('core/error-setup');
+errorSetup(config.lang || 'ru');
+
 var sysLog = new IonLogger(config.log || {});
 
 /** Сервер http
