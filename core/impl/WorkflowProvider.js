@@ -19,7 +19,7 @@ const MetaPermissions  = {
   FULL: 31
 };
 
-// jshint maxcomplexity: 20, maxstatements: 50, bitwise: false
+// jshint maxcomplexity: 30, maxstatements: 60, bitwise: false
 /**
  * @param {{}} options
  * @param {MetaRepository} options.metaRepo
@@ -33,6 +33,20 @@ function WorkflowProvider(options) {
   EventManager.apply(this);
 
   var tableName = options.tableName || 'ion_wf_state';
+
+  function addPermission(arr, flags, flag, perm) {
+    if (flags & flag === flag) {
+      arr[perm] = true;
+    }
+  }
+
+  function addPermissions(arr, flags) {
+    addPermission(arr, flags, MetaPermissions.READ, Permissions.READ);
+    addPermission(arr, flags, MetaPermissions.WRITE, Permissions.WRITE);
+    addPermission(arr, flags, MetaPermissions.DELETE, Permissions.DELETE);
+    addPermission(arr, flags, MetaPermissions.USE, Permissions.USE);
+    addPermission(arr, flags, MetaPermissions.FULL, Permissions.FULL);
+  }
 
   /**
    * @param {Item} item
@@ -95,28 +109,22 @@ function WorkflowProvider(options) {
               }
 
               for (let j = 0; j < stage.itemPermissions.length; j++) {
-                if (!itemPermissions.hasOwnProperty(stage.itemPermissions[j].role)) {
-                  itemPermissions[stage.itemPermissions[j].role] = 0;
+                if (item.get(stage.itemPermissions[j].role) === user) {
+                  addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
                 }
-                itemPermissions[stage.itemPermissions[j].role] |= stage.itemPermissions[j].permissions;
               }
 
               for (let j = 0; j < stage.propertyPermissions.length; j++) {
-                if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
-                  propertyPermissions[stage.propertyPermissions[j].property] = {};
-                }
                 for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
-                  if (!propertyPermissions[stage.propertyPermissions[j].property].
-                    hasOwnProperty(stage.propertyPermissions[j].permissions[k].role)) {
-                    propertyPermissions
-                      [stage.propertyPermissions[j].property]
-                      [stage.propertyPermissions[j].permissions[k].role] = 0;
+                  if (item.get(stage.propertyPermissions[j].permissions[k].role) === user) {
+                    if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
+                      propertyPermissions[stage.propertyPermissions[j].property] = {};
+                    }
+                    addPermissions(
+                      propertyPermissions[stage.propertyPermissions[j].property],
+                      stage.propertyPermissions[j].permissions[k].permissions
+                    );
                   }
-
-                  propertyPermissions
-                    [stage.propertyPermissions[j].property]
-                    [stage.propertyPermissions[j].permissions[k].role] |=
-                    stage.propertyPermissions[j].permissions[k].permissions;
                 }
               }
 
@@ -226,7 +234,6 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, user) {
-    var transition;
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {

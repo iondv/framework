@@ -92,70 +92,35 @@ function SecuredDataRepository(options) {
     }
   }
 
-  function getWfItems(workflow, status, wfFilter) {
-    return function () {
-      return wfProvider.itemsInStatus(workflow, status)
-        .then(function (results) {
-          wfFilter.push();
-        });
-    }
-  }
-
-
   /**
    * @param {String} uid
    * @param {String} cn
    * @param {{} | null} filter
    * @private
    */
-  function exclude(uid, cn, filter, classPermissions, uid) {
+  function exclude(uid, cn, filter, classPermissions) {
     var cm = metaRepo.getMeta(cn);
     var check = [];
     var resources = [];
     classResources(check, resources, cm);
     return aclProvider.getPermissions(uid, resources).then(function (permissions) {
-      return new Promise(function (resolve) {
-        var exc = [];
-        var filterStates = [];
-
-        var wfItems = null;
-
-        for (let i = 0; i < check.length; i++) {
-          if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
-            exc.push(check[i]);
-          }
-
-          if (wfProvider) {
-            let workflows = metaRepo.getWorkflows(check[i]);
-            for (let j = 0; j < workflows.length; j++) {
-              let wf = workflows[j];
-              for (let k = 0; k < wf.states.length; k++) {
-                let wfs = wf.states[k];
-                let denyRoles = [];
-                let allowRoles = [];
-                for (let role in wfs.itemPermissions) {
-                  if (wfs.itemPermissions.hasOwnProperty(role)) {
-                    if (wfs.itemPermissions[role].indexOf(Permissions.READ) === -1) {
-                      denyRoles.push({});
-                    }
-                  }
-                }
-              }
-            }
-          }
+      var exc = [];
+      for (let i = 0; i < check.length; i++) {
+        if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
+          exc.push(check[i]);
         }
+      }
 
-        if (exc.length) {
-          if (!filter) {
-            filter = {_class: {$not: {$in: exc}}};
-          } else {
-            filter = {$and: [{_class: {$not: {$in: exc}}}, filter]};
-          }
+      if (exc.length) {
+        if (!filter) {
+          filter = {_class: {$not: {$in: exc}}};
+        } else {
+          filter = {$and: [{_class: {$not: {$in: exc}}}, filter]};
         }
+      }
 
-        merge(classPermissions || {}, permissions[classPrefix + cm.getCanonicalName()] || {});
-        resolve(filter);
-      });
+      merge(classPermissions || {}, permissions[classPrefix + cm.getCanonicalName()] || {});
+      return Promise.resolve(filter);
     });
   }
 
