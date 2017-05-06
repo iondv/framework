@@ -7,8 +7,17 @@ const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
+const Permissions = require('core/Permissions');
 
-// jshint maxcomplexity: 20, maxstatements: 50
+const MetaPermissions  = {
+  READ: 1,
+  WRITE: 2,
+  DELETE: 4,
+  USE: 8,
+  FULL: 31
+};
+
+// jshint maxcomplexity: 20, maxstatements: 50, bitwise: false
 /**
  * @param {{}} options
  * @param {MetaRepository} options.metaRepo
@@ -26,7 +35,7 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @returns {Promise}
    */
-  this._getStatus = function (item) {
+  this._getStatus = function (item, user) {
     return new Promise(function (resolve, reject) {
       var workflows = options.metaRepo.getWorkflows(
         item.getMetaClass().getName(),
@@ -43,14 +52,13 @@ function WorkflowProvider(options) {
       ).
       then(
         function (states) {
-          var i, j, k, state, stage, transition;
           var result = {};
 
           var itemPermissions = {};
           var propertyPermissions = {};
           var selectionProviders = {};
 
-          for (i = 0; i < states.length; i++) {
+          for (let i = 0; i < states.length; i++) {
             result[states[i].workflow] = {
               stage: states[i].stage,
               since: states[i].since,
@@ -58,16 +66,16 @@ function WorkflowProvider(options) {
             };
           }
 
-          for (i = 0; i < workflows.length; i++) {
+          for (let i = 0; i < workflows.length; i++) {
             if (!result.hasOwnProperty(workflows[i].name)) {
               result[workflows[i].name] = {
                 next: {}
               };
             }
-            state = result[workflows[i].name];
+            let state = result[workflows[i].name];
             state.workflowCaption = workflows[i].caption;
 
-            stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
+            let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
                 if (!checker(item, stage.conditions, item)) {
@@ -83,19 +91,18 @@ function WorkflowProvider(options) {
                 state.expired = state.expires.getTime() < new Date().getTime();
               }
 
-              for (j = 0; j < stage.itemPermissions.length; j++) {
+              for (let j = 0; j < stage.itemPermissions.length; j++) {
                 if (!itemPermissions.hasOwnProperty(stage.itemPermissions[j].role)) {
                   itemPermissions[stage.itemPermissions[j].role] = 0;
                 }
-                itemPermissions[stage.itemPermissions[j].role] =
-                  itemPermissions[stage.itemPermissions[j].role] | stage.itemPermissions[j].permissions;  // jshint ignore:line
+                itemPermissions[stage.itemPermissions[j].role] |= stage.itemPermissions[j].permissions;
               }
 
-              for (j = 0; j < stage.propertyPermissions.length; j++) {
+              for (let j = 0; j < stage.propertyPermissions.length; j++) {
                 if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
                   propertyPermissions[stage.propertyPermissions[j].property] = {};
                 }
-                for (k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
+                for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
                   if (!propertyPermissions[stage.propertyPermissions[j].property].
                     hasOwnProperty(stage.propertyPermissions[j].permissions[k].role)) {
                     propertyPermissions
@@ -105,23 +112,32 @@ function WorkflowProvider(options) {
 
                   propertyPermissions
                     [stage.propertyPermissions[j].property]
-                    [stage.propertyPermissions[j].permissions[k].role] =
-                   propertyPermissions
-                    [stage.propertyPermissions[j].property]
-                    [stage.propertyPermissions[j].permissions[k].role] | // jshint ignore:line
+                    [stage.propertyPermissions[j].permissions[k].role] |=
                     stage.propertyPermissions[j].permissions[k].permissions;
                 }
               }
 
               if (Array.isArray(workflows[i].transitionsBySrc[stage.name])) {
-                for (j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
-                  transition = workflows[i].transitionsBySrc[stage.name][j];
+                for (let j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
+                  let transition = workflows[i].transitionsBySrc[stage.name][j];
                   if (Array.isArray(transition.conditions) && transition.conditions.length) {
                     if (!checker(item, transition.conditions, item)) {
                       continue;
                     }
                   }
 
+                  if (Array.isArray(transition.roles) && transition.roles.length) {
+                    let available = false;
+                    for (let k = 0; k < transition.roles.length; k++) {
+                      if (item.get(transition.roles[k]) === user) {
+                        available = true;
+                        break;
+                      }
+                    }
+                    if (!available) {
+                      continue;
+                    }
+                  }
                   state.next[transition.name] = {
                     name: transition.name,
                     caption: transition.caption,
@@ -210,7 +226,7 @@ function WorkflowProvider(options) {
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
-            var wf = options.metaRepo.getWorkflow(
+            let wf = options.metaRepo.getWorkflow(
               item.getMetaClass().getName(),
               workflow,
               item.getMetaClass().getNamespace(),
@@ -219,7 +235,20 @@ function WorkflowProvider(options) {
 
             if (wf) {
               if (wf.transitionsByName.hasOwnProperty(name)) {
-                var transition = wf.transitionsByName[name];
+                let transition = wf.transitionsByName[name];
+                if (Array.isArray(transition.roles) && transition.roles.length) {
+                  let allowed = false;
+                  for (let i = 0; i < transition.roles.length; i++) {
+                    if (item.get(transition.roles[i]) === user) {
+                      allowed = true;
+                      break;
+                    }
+                  }
+                  if (!allowed) {
+                    return Promise.reject(new Error('Пользователь не имеет прав на выполнение перехода.'));
+                  }
+                }
+
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
                   return Promise.reject(new Error('Не найдено конечное состояние перехода.'));
@@ -252,7 +281,9 @@ function WorkflowProvider(options) {
                 return Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
-                      return Promise.reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                      return Promise.reject(
+                        new Error('Объект не удовлетворяет условиям конечного состояния перехода.')
+                      );
                     }
                   }
 

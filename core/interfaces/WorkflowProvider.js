@@ -8,8 +8,8 @@ function WorkflowProvider() {
    * @param {Item} item
    * @returns {Promise}
    */
-  this.getStatus = function (item) {
-    return this._getStatus(item);
+  this.getStatus = function (item, user) {
+    return this._getStatus(item, user);
   };
 
   /**
