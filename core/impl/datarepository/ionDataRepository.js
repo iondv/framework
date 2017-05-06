@@ -1158,7 +1158,7 @@ function IonDataRepository(options) {
                 for (let i = 0; i < refItems.length; i++) {
                   if (refItems[i] instanceof Item) {
                     saver = saver ?
-                      saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)):
+                      saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)) :
                       saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
                   }
                 }
