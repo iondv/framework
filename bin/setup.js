@@ -1,10 +1,12 @@
 /**
  * Created by kras on 22.08.16.
  */
-var worker = require('../lib/deploy');
-var config = require('../config');
-var di = require('core/di');
-var path = require('path');
+const worker = require('../lib/deploy');
+const config = require('../config');
+const di = require('core/di');
+const path = require('path');
+const errorSetup = require('core/error-setup');
+errorSetup(config.lang || 'ru');
 
 var IonLogger = require('core/impl/log/IonLogger');
 

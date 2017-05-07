@@ -25,7 +25,7 @@ function Logger() {
   };
 
   /**
-   * @param {String} message
+   * @param {String | Error | IonError} message
    */
   this.error = function (message) {
     this._error(message);

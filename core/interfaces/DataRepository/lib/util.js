@@ -645,12 +645,12 @@ function calcProperties(item, skip) {
   var calculations = [];
   var calcNames = [];
   var props = item.getMetaClass().getPropertyMetas();
-  for (var i = 0; i < props.length; i++) {
-    if (props[i]._formula) {
-      calculations.push(props[i]._formula.apply(item));
-      calcNames.push(props[i].name);
+  props.forEach((p)=> {
+    if (p._formula) {
+      calculations.push(Promise.resolve().then(()=>p._formula.apply(item)));
+      calcNames.push(p.name);
     }
-  }
+  });
 
   if (calculations.length === 0) {
     return Promise.resolve(item);
