@@ -425,31 +425,37 @@ function spFilter(cm, pm, or, svre, prefix) {
 
 /**
  * @param {String} search
+ * @param {Boolean} [splitWords]
  * @param {Boolean} [asString]
  * @returns {RegExp | String}
  */
-function createSearchRegexp(search, asString) {
-  var result = search.replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+');
+function createSearchRegexp(search, splitWords, asString) {
+  var result;
+  if (splitWords) {
+    result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '|');
+  } else {
+    result = search.replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+');
+  }
   if (asString) {
     return result;
   }
   return new RegExp(result);
 }
 
-function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
+function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, splitWords) {
   var cond, aname, floatv, datev;
 
   if (pm.selectionProvider) {
-    spFilter(cm, pm, or, createSearchRegexp(sv), prefix);
+    spFilter(cm, pm, or, createSearchRegexp(sv, splitWords), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
       searchFilter(pm._refClass, or, pm._refClass.getSemanticAttrs(), sv, lang, false,
-        (prefix || '') + pm.name + '.', depth - 1);
+        (prefix || '') + pm.name + '.', depth - 1, splitWords);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
     if (depth > 0) {
       var cor = [];
-      searchFilter(pm._refClass, cor, pm._refClass.getSemanticAttrs(), sv, lang, false, depth - 1);
+      searchFilter(pm._refClass, cor, pm._refClass.getSemanticAttrs(), sv, lang, false, depth - 1, splitWords);
       if (cor.length) {
         cond = {};
         aname = (prefix || '') + pm.name;
@@ -468,7 +474,7 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          cond[aname] = {$regex: createSearchRegexp(sv, true), $options: 'i'};
+          cond[aname] = {$regex: createSearchRegexp(sv, splitWords, true), $options: 'i'};
           or.push(cond);
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
@@ -500,7 +506,7 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth) {
  * @param {String} lang
  * @param {Boolean} [useFullText]
  */
-function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
+function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth, splitWords) {
   var fullText = false;
 
   var tmp = [];
@@ -519,14 +525,14 @@ function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
         }
       }
       if (p) {
-        attrSearchFilter(cm, p, tmp, sv, lang, (prefix || '') + path.slice(0, path.length - 1).join('.') + '.', depth);
+        attrSearchFilter(cm, p, tmp, sv, lang, (prefix || '') + path.slice(0, path.length - 1).join('.') + '.', depth, splitWords);
       }
     } else {
       var pm = cm.getPropertyMeta(nm);
       if (pm.indexSearch && useFullText) {
         fullText = true;
       }
-      attrSearchFilter(cm, pm, tmp, sv, lang, prefix, depth);
+      attrSearchFilter(cm, pm, tmp, sv, lang, prefix, depth, splitWords);
     }
   });
 
@@ -552,7 +558,6 @@ function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth) {
       }
     );
   }
-  console.log(tmp);
   Array.prototype.push.apply(or, tmp);
 }
 
