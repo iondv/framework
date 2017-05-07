@@ -3,11 +3,13 @@
  * Created by kras on 20.07.16.
  */
 
-var Logger = require('core/interfaces/Logger');
-var moment = require('moment');
-var FileStreamRotator = require('file-stream-rotator');
-var fs = require('fs');
-var path = require('path');
+const Logger = require('core/interfaces/Logger');
+const IonError = require('core/IonError');
+const moment = require('moment');
+const FileStreamRotator = require('file-stream-rotator');
+const fs = require('fs');
+const path = require('path');
+
 
 // jshint maxcomplexity: 20
 
@@ -139,9 +141,12 @@ function IonLogger(options) {
   };
 
   /**
-   * @param {String} message
+   * @param {String | Error | IonError} message
    */
   this._error = function (message) {
+    if (message instanceof IonError && message.cause) {
+      this._error(message.cause);
+    }
     writeToDest(errDestinations, message, 'ERROR', console.error);
   };
 }
