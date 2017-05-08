@@ -216,14 +216,23 @@ function WorkflowProvider(options) {
     );
   }
 
-  function calcAssignmentValue(updates, item, key, formula) {
-    return Promise.resolve()
-      .then(() => formula.apply(item, [{}]))
-      .then(function (v) {
-        updates[key] = v;
-        item.set(key, v);
-        return v;
-      });
+  function calcAssignmentValue(updates, item, assignment, uid) {
+    if (typeof assignment._formula === 'function') {
+      return Promise.resolve()
+        .then(() => assignment._formula.apply({$context: item, $uid: uid}))
+        .then(function (v) {
+          updates[assignment.key] = v;
+          item.set(assignment.key, v);
+          return v;
+        });
+    } else {
+      let v = assignment.value;
+      v = v && typeof v === 'string' && v[0] === '$' ?
+        v === '$$uid' ? uid : item.get(v.substring(1)) : v;
+      updates[assignment.key] = v;
+      item.set(assignment.key, v);
+      return Promise.resolve(v);
+    }
   }
 
   /**
@@ -268,30 +277,18 @@ function WorkflowProvider(options) {
                 }
 
                 var updates = {};
-                var calculations = [];
+                var calculations = null;
 
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
-                  for (let i = 0; i < transition.assignments.length; i++) {
-                    if (transition.assignments[i]._formula) {
-                      calculations.push(
-                        calcAssignmentValue(
-                          updates,
-                          item,
-                          transition.assignments[i].key,
-                          transition.assignments[i]._formula
-                        )
-                      );
-                    } else {
-                      let v = transition.assignments[i].value;
-                      v = v && typeof v === 'string' && v[0] === '$' ? item.get(v.substring(1)) : v;
-                      updates[transition.assignments[i].key] = v;
-                      item.set(transition.assignments[i].key, v);
-                    }
-                  }
+                  transition.assignments.forEach((assignment) => {
+                    calculations = calculations ?
+                      calculations.then(() => calcAssignmentValue(updates, item, assignment, user)) :
+                      calcAssignmentValue(updates, item, assignment, user);
+                  });
                 }
 
-                return Promise.all(calculations).then(function () {
+                return calculations.then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
                       return Promise.reject(
@@ -326,6 +323,7 @@ function WorkflowProvider(options) {
                       }
 
                       if (updates) {
+                        console.log(item.getItemId(), JSON.stringify(updates));
                         return options.dataRepo.editItem(
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),

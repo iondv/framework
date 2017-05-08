@@ -233,12 +233,6 @@
           "dataRepo": "ion://dataRepo",
           "calc": "ion://calculator"
         }
-      },
-      "accessChecker":{
-        "module": "core/impl/access/ionAccessChecker",
-        "options": {
-          "aclProvider": "ion://aclProvider"
-        }
       }
     }
 }

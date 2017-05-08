@@ -292,18 +292,11 @@ function SecuredDataRepository(options) {
     id = id || '';
     return aclProvider.getPermissions(options.uid, [classPrefix + cname, itemPrefix + cname + '@' + id])
       .then(function (permissions) {
-        if (
-          permissions[classPrefix + cname] &&
-          permissions[classPrefix + cname][Permissions.READ] ||
-          permissions[itemPrefix + cname + '@' + id] &&
-          permissions[itemPrefix + cname + '@' + id][Permissions.READ]) {
-          itemPermissions = merge(
-            permissions[itemPrefix + cname + '@' + id] || {},
-            permissions[classPrefix + cname] || {}
-          );
-          return dataRepo.getItem(obj, id, options);
-        }
-        return rejectByItem(cname, id);
+        itemPermissions = merge(
+          permissions[itemPrefix + cname + '@' + id] || {},
+          permissions[classPrefix + cname] || {}
+        );
+        return dataRepo.getItem(obj, id, options);
       }).then(function (item) {
         if (!item) {
           return Promise.resolve(null);
