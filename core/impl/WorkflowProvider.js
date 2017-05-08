@@ -323,7 +323,6 @@ function WorkflowProvider(options) {
                       }
 
                       if (updates) {
-                        console.log(item.getItemId(), JSON.stringify(updates));
                         return options.dataRepo.editItem(
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),
