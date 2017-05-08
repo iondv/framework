@@ -961,7 +961,9 @@ function IonDataRepository(options) {
           }
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
-          if (pm._dvFormula) {
+          if (v === '$$uid') {
+            v = options.uid;
+          } else if (pm._dvFormula) {
             v = pm._dvFormula.apply({$context: updates, $uid: uid});
             if (v instanceof Promise) {
               throw new IonError(Errors.UNEXPECTED_ASYNC, {info: cm.getCaption() + '.' + pm.caption});
