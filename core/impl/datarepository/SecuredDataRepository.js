@@ -128,6 +128,8 @@ function SecuredDataRepository(options) {
           if (exc.length) {
             let cf = {_class: {$not: {$in: exc}}};
             if (items.length) {
+              permissions[classPrefix + cm.getCanonicalName()] = permissions[classPrefix + cm.getCanonicalName()] || {};
+              permissions[classPrefix + cm.getCanonicalName()][Permissions.READ] = true;
               cf = {$or: [cf, filterByItemIds(options.keyProvider, cm, items)]};
             }
             if (!filter) {
