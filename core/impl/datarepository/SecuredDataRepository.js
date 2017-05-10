@@ -10,6 +10,7 @@ const Item = DataRepositoryModule.Item;
 const Permissions = require('core/Permissions');
 const merge = require('merge');
 const PropertyTypes = require('core/PropertyTypes');
+const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -49,7 +50,6 @@ function AclMock() {
  * @param {DataRepository} options.data
  * @param {MetaRepository} options.meta
  * @param {AclProvider} [options.acl]
- * @param {WorkflowProvider} [options.workflows]
  * @constructor
  */
 function SecuredDataRepository(options) {
@@ -69,14 +69,10 @@ function SecuredDataRepository(options) {
    */
   var aclProvider = options.acl || new AclMock();
 
-  /**
-   * @type {WorkflowProvider}
-   */
-  var wfProvider = options.workflows;
-
   var classPrefix = options.classPrefix || 'c:::';
   var itemPrefix = options.itemPrefix || 'i:::';
   var attrPrefix = options.attrPrefix || 'a:::';
+  var globalMarker = options.globalMarker || '*';
 
   /**
    * @param {String[]} check
@@ -99,29 +95,52 @@ function SecuredDataRepository(options) {
    * @private
    */
   function exclude(uid, cn, filter, classPermissions) {
-    var cm = metaRepo.getMeta(cn);
-    var check = [];
-    var resources = [];
-    classResources(check, resources, cm);
-    return aclProvider.getPermissions(uid, resources).then(function (permissions) {
-      var exc = [];
-      for (let i = 0; i < check.length; i++) {
-        if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
-          exc.push(check[i]);
+    return aclProvider.getResources(uid, Permissions.READ)
+      .then(function (explicit) {
+        if (explicit.indexOf(globalMarker) >= 0) {
+          return Promise.resolve(filter);
         }
-      }
 
-      if (exc.length) {
-        if (!filter) {
-          filter = {_class: {$not: {$in: exc}}};
-        } else {
-          filter = {$and: [{_class: {$not: {$in: exc}}}, filter]};
+        var cm = metaRepo.getMeta(cn);
+        var check = [];
+        var resources = [];
+        classResources(check, resources, cm);
+        var items = [];
+        for (let i = 0; i < explicit.length; i++) {
+          if (explicit[i].substr(0, itemPrefix.length) === itemPrefix) {
+            let tmp = explicit[i].replace(itemPrefix, '').split('@');
+            if (tmp.length > 1) {
+              if (check.indexOf(tmp[0]) >= 0) {
+                items.push(tmp[1]);
+              }
+            }
+          }
         }
-      }
 
-      merge(classPermissions || {}, permissions[classPrefix + cm.getCanonicalName()] || {});
-      return Promise.resolve(filter);
-    });
+        return aclProvider.getPermissions(uid, resources).then(function (permissions) {
+          var exc = [];
+          for (let i = 0; i < check.length; i++) {
+            if (!permissions[resources[i]] || !permissions[resources[i]][Permissions.READ]) {
+              exc.push(check[i]);
+            }
+          }
+
+          if (exc.length) {
+            let cf = {_class: {$not: {$in: exc}}};
+            if (items.length) {
+              cf = {$or: [cf, filterByItemIds(options.keyProvider, cm, items)]};
+            }
+            if (!filter) {
+              filter = cf;
+            } else {
+              filter = {$and: [cf, filter]};
+            }
+          }
+
+          merge(classPermissions || {}, permissions[classPrefix + cm.getCanonicalName()] || {});
+          return Promise.resolve(filter);
+        });
+      });
   }
 
   function rejectByClass(className) {
