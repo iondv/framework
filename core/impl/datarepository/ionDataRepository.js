@@ -1559,8 +1559,13 @@ function IonDataRepository(options) {
           }
         })
         .catch(wrapDsError('saveItem', classname, null, null, cm))
-        .then(function (data) {
-          var item = _this._wrap(data._class, data, data._classVer);
+        .then(function (d) {
+          var item;
+          if (d) {
+            item = _this._wrap(d._class, d, d._classVer);
+          } else {
+            item = _this._wrap(classname, conditionsData || updates, null);
+          }
           return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
         })
         .then(function (item) {
