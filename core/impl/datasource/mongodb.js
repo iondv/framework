@@ -12,6 +12,8 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/data-source');
 const Iterator = require('core/interfaces/Iterator');
 const moment = require('moment');
 
@@ -43,6 +45,22 @@ function MongoDs(config) {
   var log = config.logger || new LoggerProxy();
 
   var excludeNullsFor = {};
+
+  function wrapError(err, oper, coll) {
+    if (err.name === 'MongoError') {
+      if (err.code === 11000 || err.code === 11001) {
+        let p = err.message.match(/\s+index:\s+([^\s_]+)_\d+\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
+        let key = p && p[1] || '';
+        let v = p && p[2] || null;
+        if (v) {
+          v = v.trim().replace(/^"/, '').replace(/"$/, '');
+        }
+        let params = {key: key, table: coll, value: v};
+        return new IonError(Errors.UNIQUENESS_VIOLATION, params, err);
+      }
+    }
+    return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, err);
+  }
 
   function registerFunction(c, nm, f) {
     return function () {
@@ -183,7 +201,7 @@ function MongoDs(config) {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
-            reject(err);
+            reject(wrapError(err));
           } else {
             resolve();
           }
@@ -199,27 +217,28 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function getCollection(type) {
-    return new Promise(function (resolve, reject) {
-      openDb().then(function () {
+    return openDb()
+      .then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        _this.db.collection(type, {strict: true}, function (err, c) {
-          if (!c) {
-            try {
-              _this.db.createCollection(type)
-                .then(resolve)
-                .catch(reject);
-            } catch (e) {
-              return reject(err);
+        return new Promise(function (resolve, reject) {
+          _this.db.collection(type, {strict: true}, function (err, c) {
+            if (!c) {
+              try {
+                _this.db.createCollection(type)
+                  .then(resolve)
+                  .catch(e => reject(wrapError(err, 'create', type)));
+              } catch (e) {
+                return reject(e);
+              }
+            } else {
+              if (err) {
+                return reject(wrapError(err, 'open', type));
+              }
+              resolve(c);
             }
-          } else {
-            if (err) {
-              return reject(err);
-            }
-            resolve(c);
-          }
+          });
         });
-      }).catch(reject);
-    });
+      });
   }
 
   function getAutoInc(type) {
@@ -380,14 +399,14 @@ function MongoDs(config) {
                 return new Promise(function (resolve, reject) {
                   c.insertOne(clone(data.data), function (err, result) {
                     if (err) {
-                      reject(err);
+                      reject(wrapError(err, 'insert', type));
                     } else if (result.insertedId) {
                       if (options.skipResult) {
                         return resolve(result);
                       }
                       _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
                     } else {
-                      reject(new Error('Insert failed'));
+                      reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                     }
                   });
                 });
@@ -592,7 +611,7 @@ function MongoDs(config) {
                     {upsert: options.upsert || false},
                     function (err) {
                       if (err) {
-                        return reject(err);
+                        return reject(wrapError(err, upsert ? 'upsert' : 'update', type));
                       }
                       var p;
                       if (options.skipResult) {
@@ -610,7 +629,7 @@ function MongoDs(config) {
                   c.updateMany(conditions, updates,
                     function (err, result) {
                       if (err) {
-                        return reject(err);
+                        return reject(wrapError(err, 'update', type));
                       }
                       if (options.skipResult) {
                         return resolve(result.matchedCount);
@@ -640,7 +659,7 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'delete', type));
               }
               resolve(result.deletedCount);
             });
@@ -1120,7 +1139,7 @@ function MongoDs(config) {
         result.push({$match: prefilter});
       }
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(wrapError(err, 'aggregate', type));
     }
 
     var p = null;
@@ -1356,7 +1375,7 @@ function MongoDs(config) {
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(err);
+                    return reject(wrapError(err, 'fetch', type));
                   }
                   resolve();
                 });
@@ -1375,7 +1394,7 @@ function MongoDs(config) {
                 resolve(docs);
               });
             },
-            reject
+            function (e) {reject(wrapError(e, 'fetch', type));}
           );
         });
       }
@@ -1439,7 +1458,7 @@ function MongoDs(config) {
               function (r, amount) {
                 resolve(new DsIterator(r, amount));
               },
-              reject
+              function (e) {reject(wrapError(e, 'iterate', type));}
             );
           } catch (err) {
             reject(err);
@@ -1530,12 +1549,12 @@ function MongoDs(config) {
           try {
             c.aggregate(plan, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'aggregate', type));
               }
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(err);
+                    return reject(wrapError(err, 'aggregate', type));
                   }
                   resolve();
                 });
@@ -1571,7 +1590,7 @@ function MongoDs(config) {
           if (agreg) {
             c.aggregate(agreg, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'count', type));
               }
               var cnt = 0;
               if (result.length) {
@@ -1589,7 +1608,7 @@ function MongoDs(config) {
             }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'count', type));
               }
               resolve(cnt);
             });
@@ -1606,7 +1625,7 @@ function MongoDs(config) {
           prepareConditions(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              return reject(err);
+              return reject(wrapError(err, 'get', type));
             }
             resolve(mergeGeoJSON(result));
           });
@@ -1679,7 +1698,7 @@ function MongoDs(config) {
                 );
               });
             }
-          ).catch(reject);
+          ).catch(e => reject(e));
         });
       }
     }
