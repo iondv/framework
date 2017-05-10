@@ -4,5 +4,7 @@
 'use strict';
 
 module.exports = function () {
-  return new Date();
+  return function () {
+    return new Date();
+  };
 };
