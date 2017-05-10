@@ -1341,6 +1341,9 @@ function IonDataRepository(options) {
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
         .then(function (data) {
+          if (!data) {
+            return Promise.resolve();
+          }
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
