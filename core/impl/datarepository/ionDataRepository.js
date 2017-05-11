@@ -71,6 +71,21 @@ function IonDataRepository(options) {
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
 
+  function getAttrs(key, cm) {
+    if (cm) {
+      if (Array.isArray(key)) {
+        let result = [];
+        key.forEach(k => result.push(getAttrs(k, cm)));
+        return result;
+      }
+      let attr = cm.getPropertyMeta(key);
+      if (attr) {
+        return attr.caption;
+      }
+    }
+    return null;
+  }
+
   /**
    *
    * @param {String} oper
@@ -90,13 +105,7 @@ function IonDataRepository(options) {
               new IonError(Errors.EXISTS_IN_COL, {info: `${className}@${id}`, col: collection}, err)
             );
           }
-          let attr = err.params.key;
-          if (cm) {
-            attr = cm.getPropertyMeta(attr);
-            if (attr) {
-              attr = attr.caption;
-            }
-          }
+          let attr = getAttrs(err.params.key, cm);
           return Promise.reject(
             new IonError(
               Errors.ITEM_EXISTS,
@@ -1688,7 +1697,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     var pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-      return reject(
+      return Promise.reject(
         new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
       );
     }

@@ -70,7 +70,6 @@ function MongoDs(config) {
           valueMatch.match(/"(\S*)"/ig).forEach(v => value.push(v.trim().replace(/^"/, '').replace(/"$/, '')));
         }
         let params = {key: key, table: coll, value};
-        console.log('raps:', params);
         return new IonError(Errors.UNIQUENESS_VIOLATION, params, err);
       }
     }
