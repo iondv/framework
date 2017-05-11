@@ -50,12 +50,27 @@ function MongoDs(config) {
     if (err.name === 'MongoError') {
       if (err.code === 11000 || err.code === 11001) {
         let p = err.message.match(/\s+index:\s+([^\s_]+)_\d+\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
-        let key = p && p[1] || '';
-        let v = p && p[2] || null;
-        if (v) {
-          v = v.trim().replace(/^"/, '').replace(/"$/, '');
+        if (!p) {
+          p = err.message.match(/\s+index:\s+([\w_]+)\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
         }
-        let params = {key: key, table: coll, value: v};
+        let key = [];
+        let keyMatch = p && p[1] || '';
+        if (keyMatch) {
+          keyMatch = keyMatch.split('_');
+          keyMatch.forEach(k => {
+            k = k.trim();
+            if (!/^\d+$/i.test(k)) {
+              key.push(k);
+            }
+          });
+        }
+        let value = [];
+        let valueMatch = p && p[2] || null;
+        if (valueMatch) {
+          valueMatch.match(/"(\S*)"/ig).forEach(v => value.push(v.trim().replace(/^"/, '').replace(/"$/, '')));
+        }
+        let params = {key: key, table: coll, value};
+        console.log('raps:', params);
         return new IonError(Errors.UNIQUENESS_VIOLATION, params, err);
       }
     }
