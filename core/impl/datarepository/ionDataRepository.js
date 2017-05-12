@@ -1698,7 +1698,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     var pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-      return reject(
+      return Promise.reject(
         new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
       );
     }
