@@ -32,6 +32,7 @@
 /.hg/*
 /.idea/*
 /.git/*
+/.settings/*
 /.tmp/*
 /distr/*
 /docker/*
@@ -80,3 +81,4 @@
 # Например /images/h4/user.jpg, /images/h/company.jpeg
 #/images/h?/*.jp?g
 
+/.project
