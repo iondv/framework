@@ -106,9 +106,10 @@ function IonDataRepository(options) {
             );
           }
           let attr = getAttrs(err.params.key, cm);
+          let errType = attr.length > 1 ? Errors.ITEM_EXISTS_MULTI : Errors.ITEM_EXISTS;
           return Promise.reject(
             new IonError(
-              Errors.ITEM_EXISTS,
+              errType,
               {
                 info: `${className}@${id}`,
                 class: cm ? cm.getCaption() : '',

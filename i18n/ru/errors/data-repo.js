@@ -4,7 +4,8 @@
 const codes = require('core/errors/data-repo');
 
 module.exports = {
-  [codes.ITEM_EXISTS]: `%class c '%attr' равным '%value' уже существует.`,
+  [codes.ITEM_EXISTS]: `%class c таким атрибутом '%attr' уже существует.`,
+  [codes.ITEM_EXISTS_MULTI]: `%class c такими атрибутами '%attr' уже существует.`,
   [codes.ITEM_NOT_FOUND]: `Объект '%info' не найден.`,
   [codes.EXISTS_IN_COL]: `Объект '%info' уже присутствует в коллекции '%col'.`,
   [codes.BAD_PARAMS]: `Некорректные параметры переданы методу '%method'.`,
