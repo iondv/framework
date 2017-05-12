@@ -26,7 +26,6 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
-const merge = require('merge');
 
 const EVENT_CANCELED = '____CANCELED___';
 
@@ -613,15 +612,17 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return trigger(
+
+    return bubble(
       'pre-fetch',
       cm,
       {
         options: options
       }).
-    then(()=>prepareFilterValues(cm, options.filter)).
+    then(() => prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
+      console.log(JSON.stringify(options.filter));
       return _this.ds.fetch(tn(rcm), options);
     }).
     catch(wrapDsError('getList', obj)).
@@ -1307,9 +1308,10 @@ function IonDataRepository(options) {
     });
   }
 
-  function bubble(c, eventType, data) {
+  function trgr(c, eventType, data) {
     return function (e) {
-      var bd = merge({}, data);
+      var bd = {data: clone(data) || {}};
+      bd.item = data.item;
       bd.type = c.getCanonicalName() + '.' + eventType;
       bd.origin = e;
       return _this.trigger(bd)
@@ -1328,20 +1330,20 @@ function IonDataRepository(options) {
    * @param {{}} data
    * @returns {Promise}
    */
-  function trigger(eventType, cm, data) {
+  function bubble(eventType, cm, data) {
     var c = cm;
     var p = null;
     while (c) {
       if (p) {
-        p = p.then(bubble(c, eventType, data));
+        p = p.then(trgr(c, eventType, data));
       } else {
         p = _this.trigger({
           type: c.getCanonicalName() + '.' + eventType,
           item: data.item,
-          data: data.data
+          data: clone(data) || {}
         });
       }
-      c = cm.getAncestor();
+      c = c.getAncestor();
     }
     if (p) {
       return p;
@@ -1420,7 +1422,7 @@ function IonDataRepository(options) {
       let refUpdates = {};
       let updates = formUpdatedData(cm, data, true, refUpdates) || {};
 
-      return trigger(
+      return bubble(
         'pre-create',
         cm,
         {
@@ -1442,6 +1444,7 @@ function IonDataRepository(options) {
           if (options.uid) {
             updates._creator = options.uid;
           }
+          console.log(JSON.stringify(updates));
           return _this.ds.insert(tn(rcm), updates);
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
@@ -1462,7 +1465,7 @@ function IonDataRepository(options) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         })
         .then(function (item) {
-          return trigger(
+          return bubble(
             'create',
             item.getMetaClass(),
             {
@@ -1527,7 +1530,7 @@ function IonDataRepository(options) {
             if (suppresEvent) {
               return Promise.resolve();
             }
-            return trigger(
+            return bubble(
               'pre-edit',
               cm,
               {
@@ -1540,7 +1543,7 @@ function IonDataRepository(options) {
           });
         } else {
           p = suppresEvent ? Promise.resolve() :
-            trigger(
+            bubble(
               'pre-edit',
               cm,
               {
@@ -1586,7 +1589,7 @@ function IonDataRepository(options) {
           })
           .then(function (item) {
             if (!suppresEvent) {
-              return trigger(
+              return bubble(
                 'edit',
                 item.getMetaClass(),
                 {
@@ -1656,7 +1659,7 @@ function IonDataRepository(options) {
       if (changeLogger) {
         p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
-          return trigger(
+          return bubble(
             'pre-save',
             cm,
             {
@@ -1668,7 +1671,7 @@ function IonDataRepository(options) {
             });
         });
       } else {
-        p = trigger(
+        p = bubble(
             'pre-save',
             cm,
             {
@@ -1729,7 +1732,7 @@ function IonDataRepository(options) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         })
         .then(function (item) {
-          return trigger(
+          return bubble(
             'save',
             item.getMetaClass(),
             {
@@ -1769,7 +1772,7 @@ function IonDataRepository(options) {
       p = _this.ds.get(tn(rcm), conditions)
         .then(function (b) {
           base = b;
-          return trigger(
+          return bubble(
             'pre-delete',
             cm,
             {
@@ -1781,7 +1784,7 @@ function IonDataRepository(options) {
           );
         });
     } else {
-      p = trigger(
+      p = bubble(
         'pre-delete',
         cm,
         {
@@ -1810,7 +1813,7 @@ function IonDataRepository(options) {
           if (result === EVENT_CANCELED) {
             return Promise.resolve();
           }
-          return trigger(
+          return bubble(
             'delete',
             cm,
             {

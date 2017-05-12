@@ -166,9 +166,9 @@ function produceArray(conditions, rcm, context) {
  * @returns {{} | null}
  */
 function ConditionParser(condition, rcm, context) {
-  var result, tmp;
+  var result;
   if (Array.isArray(condition)) {
-    tmp = produceArray(condition, rcm);
+    let tmp = produceArray(condition, rcm);
     if (tmp) {
       return {$and: tmp};
     }
@@ -202,7 +202,13 @@ function ConditionParser(condition, rcm, context) {
               .replace(/\s+/g, '\\s+'),
             $options: 'i'
           }; break;
-        case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
+        case ConditionTypes.IN: {
+          let tmp = toScalar(condition.value, context);
+          if (!Array.isArray(tmp)) {
+            tmp = [tmp];
+          }
+          result[condition.property] = {$in: tmp};
+        } break;
       }
       if (result.hasOwnProperty(condition.property)) {
         return result;

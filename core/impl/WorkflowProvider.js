@@ -216,10 +216,13 @@ function WorkflowProvider(options) {
     );
   }
 
-  function calcAssignmentValue(updates, item, assignment, uid) {
+  function calcAssignmentValue(updates, item, assignment, options) {
+    var ctx = options.env || {};
+    ctx.$uid = options.uid;
     if (typeof assignment._formula === 'function') {
+      ctx.$context = item;
       return Promise.resolve()
-        .then(() => assignment._formula.apply({$context: item, $uid: uid}))
+        .then(() => assignment._formula.apply(ctx))
         .then(function (v) {
           updates[assignment.key] = v;
           item.set(assignment.key, v);
@@ -228,7 +231,8 @@ function WorkflowProvider(options) {
     } else {
       let v = assignment.value;
       v = v && typeof v === 'string' && v[0] === '$' ?
-        v === '$$uid' ? uid : item.get(v.substring(1)) : v;
+        ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
+        v;
       updates[assignment.key] = v;
       item.set(assignment.key, v);
       return Promise.resolve(v);
@@ -261,7 +265,7 @@ function WorkflowProvider(options) {
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
-                    if (item.get(transition.roles[i]) === user) {
+                    if (item.get(transition.roles[i]) === options.uid) {
                       allowed = true;
                       break;
                     }
@@ -285,8 +289,8 @@ function WorkflowProvider(options) {
                   updates = {};
                   transition.assignments.forEach((assignment) => {
                     calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, user)) :
-                      calcAssignmentValue(updates, item, assignment, user);
+                      calculations.then(() => calcAssignmentValue(updates, item, assignment, options)) :
+                      calcAssignmentValue(updates, item, assignment, options);
                   });
                 }
 
@@ -330,7 +334,10 @@ function WorkflowProvider(options) {
                           item.getItemId(),
                           updates,
                           null,
-                          {uid: user}
+                          {
+                            uid: options.uid,
+                            env: options.env
+                          }
                         );
                       }
                       return Promise.resolve(item);
