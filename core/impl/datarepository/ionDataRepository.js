@@ -1684,7 +1684,7 @@ function IonDataRepository(options) {
       updates[cm.getChangeTracker()] = new Date();
     }
     var fileSavers = [];
-    prepareFileSavers(cm, fileSavers, updates);
+    prepareFileSavers('bulk', cm, fileSavers, updates);
     var chr = checkRequired(cm, updates, true);
     if (chr !== true) {
       throw chr;
