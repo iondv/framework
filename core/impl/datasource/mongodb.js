@@ -134,7 +134,7 @@ function MongoDs(config) {
             _this.db = db;
             _this.busy = false;
             _this.isOpen = true;
-            log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
+            log.info('Получено соединение с базой: ' + db.s.databaseName);
             _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                 .then(
                   function () {
