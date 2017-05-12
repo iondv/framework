@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const Item = require('core/interfaces/DataRepository/Item');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -22,14 +23,23 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
 function toScalar(v, context) {
   if (!Array.isArray(v)) {
     return v;
-  }  
+  }
+
   var result = v.slice(0);
 
   for (let i = 0; i < result.length; i++) {
     if (typeof result[i] === 'string' && result[i][0] === '$' && context) {
-      let p;
-      if ((p = context.property(result[i].substring(1))) !== null) {
-        return p.getValue();
+      let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+      let nm = result[i].substring(1);
+      if (item) {
+        let p;
+        if ((p = item.property(nm)) !== null) {
+          return p.getValue();
+        }
+      }
+
+      if (context.hasOwnProperty(nm)) {
+        return context[nm];
       }
     }
   }

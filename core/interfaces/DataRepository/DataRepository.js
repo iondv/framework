@@ -95,6 +95,7 @@ function DataRepository() {
    * @param {String | Item} obj
    * @param {String} [id]
    * @param {{}} [options]
+   * @param {{}} [options.filter]
    * @param {Number} [options.nestingDepth]
    * @returns {Promise}
    */

@@ -774,6 +774,7 @@ function IonDataRepository(options) {
    * @param {String} [id]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
+   * @param {{}} [options.filter]
    * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
@@ -785,7 +786,16 @@ function IonDataRepository(options) {
       if (conditions  === null) {
         return Promise.resolve(null);
       }
-      return _this.ds.get(tn(rcm), conditions)
+
+      var fp = null;
+      if (options.filter) {
+        fp = prepareFilterValues(cm, options.filter)
+          .then((filter) => { return {$and: [conditions, filter]}; });
+      } else {
+        fp = Promise.resolve(conditions);
+      }
+
+      return fp.then((f)=>_this.ds.get(tn(rcm), f))
         .then(function (data) {
           var item = null;
           if (data) {
