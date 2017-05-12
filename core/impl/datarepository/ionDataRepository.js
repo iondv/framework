@@ -1674,37 +1674,37 @@ function IonDataRepository(options) {
    */
   this._bulkEdit = function (classname, data, options) {
     options = options || {};
+    try {
+      var cm = _this.meta.getMeta(classname);
+      var rcm = getRootType(cm);
 
-    var cm = _this.meta.getMeta(classname);
-    var rcm = getRootType(cm);
-
-    var refUpdates = {};
-    var updates = formUpdatedData(cm, data, false, refUpdates) || {};
-    if (cm.getChangeTracker()) {
-      updates[cm.getChangeTracker()] = new Date();
-    }
-    var fileSavers = [];
-    prepareFileSavers('bulk', cm, fileSavers, updates);
-    var chr = checkRequired(cm, updates, true);
-    if (chr !== true) {
-      throw chr;
-    }
-
-    return Promise.all(fileSavers).
-    then(function () {
-      options.filter = addDiscriminatorFilter(options.filter, cm);
-      return prepareFilterValues(cm, options.filter).then(function (filter) {
-        if (options.uid) {
-          updates._editor = options.uid;
-        }
-        return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
-      });
-    }).then(function (matched) {
-      if (options.skipResult) {
-        return Promise.resolve(matched);
+      var refUpdates = {};
+      var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+      if (cm.getChangeTracker()) {
+        updates[cm.getChangeTracker()] = new Date();
       }
-      return _this._getIterator(classname, options);
-    });
+      var fileSavers = [];
+      prepareFileSavers('bulk', cm, fileSavers, updates);
+      checkRequired(cm, updates, true, true);
+      return Promise.all(fileSavers)
+        .then(function () {
+          return prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm));
+        })
+        .then(function (filter) {
+          if (options.uid) {
+            updates._editor = options.uid;
+          }
+          return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
+        })
+        .then(function (matched) {
+          if (options.skipResult) {
+            return Promise.resolve(matched);
+          }
+          return _this._getIterator(classname, options);
+        });
+    } catch (err) {
+
+    }
   };
 
   /**
@@ -1771,7 +1771,7 @@ function IonDataRepository(options) {
   function _editCollection(master, collection, details, changeLogger, operation) {
     var pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-      return reject(
+      return Promise.reject(
         new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
       );
     }
