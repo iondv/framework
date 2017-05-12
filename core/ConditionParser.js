@@ -7,7 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
-const Item = require('core/interfaces/DataRepository/Item');
+const Item = require('core/interfaces/DataRepository/lib/Item');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
