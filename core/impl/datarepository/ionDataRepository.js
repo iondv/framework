@@ -113,6 +113,7 @@ function IonDataRepository(options) {
               {
                 info: `${className}@${id}`,
                 class: cm ? cm.getCaption() : '',
+                key: err.params.key,
                 attr: attr,
                 value: err.params.value
               },
