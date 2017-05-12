@@ -28,6 +28,8 @@ const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
 const merge = require('merge');
 
+const EVENT_CANCELED = '____CANCELED___';
+
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
  * @param {{}} options
@@ -610,7 +612,13 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).
+    return trigger(
+      'pre-fetch',
+      cm,
+      {
+        options: options
+      }).
+    then(()=>prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
@@ -705,7 +713,13 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).
+    return trigger(
+      'pre-iterate',
+      cm,
+      {
+        options: options
+      }).
+    then(()=>prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
       return _this.ds.iterator(tn(rcm), options);
@@ -1323,6 +1337,23 @@ function IonDataRepository(options) {
     return Promise.reject(new Error('Не передан класс объекта события.'));
   }
 
+  function preWriteEventHandler(updates) {
+    return function (e) {
+      if (e) {
+        if (Array.isArray(e.results) && e.results.length) {
+          for (var i = 0; i < e.results.length; i++) {
+            for (var nm in e.results[i]) {
+              if (e.results[i].hasOwnProperty(nm)) {
+                updates[nm] = e.results[i][nm];
+              }
+            }
+          }
+        }
+      }
+      return Promise.resolve(updates);
+    };
+  }
+
   function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       var up = false;
@@ -1361,10 +1392,11 @@ function IonDataRepository(options) {
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
    * @param {{}} [options]
-   * @param {String} [options.uid]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
+   * @param {{}} [options.env]
+   * @param {String} [options.uid]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1376,13 +1408,22 @@ function IonDataRepository(options) {
       let refUpdates = {};
       let updates = formUpdatedData(cm, data, true, refUpdates) || {};
 
-      let fileSavers = [];
-
-      autoAssign(cm, updates);
-      prepareFileSavers('new', cm, fileSavers, updates);
-      checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
-
-      return Promise.all(fileSavers)
+      return trigger(
+        'pre-create',
+        cm,
+        {
+          data: updates,
+          env: options.env,
+          uid: options.uid
+        })
+        .then(preWriteEventHandler(updates))
+        .then(function () {
+          autoAssign(cm, updates);
+          checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
+          let fileSavers = [];
+          prepareFileSavers('new', cm, fileSavers, updates);
+          return Promise.all(fileSavers);
+        })
         .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
@@ -1414,7 +1455,9 @@ function IonDataRepository(options) {
             item.getMetaClass(),
             {
               item: item,
-              data: data
+              data: data,
+              env: options.env,
+              uid: options.uid
             }
           );
         })
@@ -1435,9 +1478,10 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
-   * @param {String} [options.uid]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
+   * @param {{}} [options.env]
+   * @param {String} [options.uid]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1460,26 +1504,50 @@ function IonDataRepository(options) {
         let refUpdates = {};
         let updates = formUpdatedData(cm, data, false, refUpdates) || {};
 
-        let fileSavers = [];
-
         if (cm.getChangeTracker()) {
           updates[cm.getChangeTracker()] = new Date();
         }
-
-        prepareFileSavers(id, cm, fileSavers, updates);
-        checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
 
         let p;
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
             base = b;
-            return Promise.all(fileSavers);
+            if (suppresEvent) {
+              return Promise.resolve();
+            }
+            return trigger(
+              'pre-edit',
+              cm,
+              {
+                id: id,
+                item: b && _this._wrap(b._class, b, b._classVer),
+                data: updates,
+                env: options.env,
+                uid: options.uid
+              });
           });
         } else {
-          p = Promise.all(fileSavers);
+          p = suppresEvent ? Promise.resolve() :
+            trigger(
+              'pre-edit',
+              cm,
+              {
+                id: id,
+                data: updates,
+                env: options.env,
+                uid: options.uid
+              }
+            );
         }
 
         return p
+          .then(preWriteEventHandler(updates))
+          .then(function () {
+            checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
+            let fileSavers = [];
+            prepareFileSavers(id, cm, fileSavers, updates);
+            return Promise.all(fileSavers);
+          })
           .then(function () {
             if (options.uid) {
               updates._editor = options.uid;
@@ -1511,7 +1579,9 @@ function IonDataRepository(options) {
                 item.getMetaClass(),
                 {
                   item: item,
-                  updates: data
+                  updates: data,
+                  env: options.env,
+                  uid: options.uid
                 }
               );
             }
@@ -1541,6 +1611,8 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.autoAssign]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
+   * @param {{}} [options.env]
+   * @param {String} [options.uid]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -1568,43 +1640,59 @@ function IonDataRepository(options) {
 
       let base = null;
 
-      let fileSavers = [];
-      prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
-
       let p;
-      if (changeLogger && conditions) {
+      if (changeLogger) {
         p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
-          return Promise.all(fileSavers);
+          return trigger(
+            'pre-save',
+            cm,
+            {
+              id: id,
+              item: b && _this._wrap(b._class, b, b._classVer),
+              data: updates,
+              env: options.env,
+              uid: options.uid
+            });
         });
       } else {
-        p = Promise.all(fileSavers);
+        p = trigger(
+            'pre-save',
+            cm,
+            {
+              id: id,
+              data: updates,
+              env: options.env,
+              uid: options.uid
+            }
+          );
       }
 
       return p
+        .then(preWriteEventHandler(updates))
         .then(function () {
-          var chr;
-          try {
-            updates._class = cm.getCanonicalName();
-            updates._classVer = cm.getVersion();
-            if (conditions) {
-              if (options && options.autoAssign) {
-                autoAssign(cm, updates, true);
-              } else {
-                if (cm.getChangeTracker()) {
-                  updates[cm.getChangeTracker()] = new Date();
-                }
-              }
-              chr = checkRequired(cm, updates, true);
+          let fileSavers = [];
+          prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
+          return Promise.all(fileSavers);
+        })
+        .then(function () {
+          updates._class = cm.getCanonicalName();
+          updates._classVer = cm.getVersion();
+          if (conditions) {
+            if (options && options.autoAssign) {
+              autoAssign(cm, updates, true);
             } else {
-              autoAssign(cm, updates);
-              event = EventType.CREATE;
-              chr = checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
+              if (cm.getChangeTracker()) {
+                updates[cm.getChangeTracker()] = new Date();
+              }
             }
-            return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
-          } catch (err) {
-            return Promise.reject(err);
+            checkRequired(cm, updates, true);
+          } else {
+            autoAssign(cm, updates);
+            event = EventType.CREATE;
+            checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           }
+          return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
         })
         .catch(wrapDsError('saveItem', classname, null, null, cm))
         .then(function (data) {
@@ -1634,7 +1722,9 @@ function IonDataRepository(options) {
             item.getMetaClass(),
             {
               item: item,
-              updates: data
+              updates: data,
+              env: options.env,
+              uid: options.uid
             }
           );
         })
@@ -1653,6 +1743,8 @@ function IonDataRepository(options) {
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
+   * @param {{}} [options.env]
+   * @param {String} [options.uid]
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
@@ -1665,28 +1757,58 @@ function IonDataRepository(options) {
       p = _this.ds.get(tn(rcm), conditions)
         .then(function (b) {
           base = b;
-          return _this.ds.delete(tn(rcm), conditions);
+          return trigger(
+            'pre-delete',
+            cm,
+            {
+              id: id,
+              item: b && _this._wrap(cm.getCanonicalName(), b, cm.getVersion()),
+              env: options.env,
+              uid: options.uid
+            }
+          );
         });
     } else {
-      p = _this.ds.delete(tn(rcm), conditions);
+      p = trigger(
+        'pre-delete',
+        cm,
+        {
+          id: id,
+          env: options.env,
+          uid: options.uid
+        }
+      );
     }
     return p
+      .then((e)=> {
+        if (e && e.canceled) {
+          return Promise.resolve(EVENT_CANCELED);
+        }
+        return _this.ds.delete(tn(rcm), conditions);
+      })
       .catch(wrapDsError('deleteItem', classname, id))
-      .then(function () {
+      .then(function (result) {
+        if (result === EVENT_CANCELED) {
+          return Promise.resolve(EVENT_CANCELED);
+        }
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: base, updates: {}});
       })
       .then(
-        function () {
+        function (result) {
+          if (result === EVENT_CANCELED) {
+            return Promise.resolve();
+          }
           return trigger(
             'delete',
             cm,
             {
-              id: id
+              id: id,
+              env: options.env,
+              uid: options.uid
             }
           );
         }
-      )
-      .then(() => Promise.resolve());
+      );
   };
 
   /**

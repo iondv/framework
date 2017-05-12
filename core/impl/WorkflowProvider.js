@@ -176,10 +176,12 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
-   * @param {String} user
+   * @param {{}} [options]
+   * @param {String} [options.uid]
+   * @param {{}} [options.env]
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name, user) {
+  this._performTransition = function (item, workflow, name, options) {
     var transition;
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
