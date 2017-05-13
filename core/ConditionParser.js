@@ -37,7 +37,6 @@ function toScalar(v, context) {
           return p.getValue();
         }
       }
-
       if (context.hasOwnProperty(nm)) {
         return context[nm];
       }
@@ -168,7 +167,7 @@ function produceArray(conditions, rcm, context) {
 function ConditionParser(condition, rcm, context) {
   var result;
   if (Array.isArray(condition)) {
-    let tmp = produceArray(condition, rcm);
+    let tmp = produceArray(condition, rcm, context);
     if (tmp) {
       return {$and: tmp};
     }
@@ -215,7 +214,7 @@ function ConditionParser(condition, rcm, context) {
       }
     } else {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
-        tmp = produceArray(condition.nestedConditions, rcm, context);
+        let tmp = produceArray(condition.nestedConditions, rcm, context);
         if (tmp) {
           if (tmp.length > 1) {
             result = {};
@@ -244,7 +243,7 @@ function ConditionParser(condition, rcm, context) {
           return result;
         }
       } else if (AgregOpers.indexOf(condition.operation) !== -1) {
-        tmp =  produceAggregationOperation(condition, rcm, context);
+        let tmp =  produceAggregationOperation(condition, rcm, context);
         if (tmp) {
           result = {};
           switch (condition.operation) {

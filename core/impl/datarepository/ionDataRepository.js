@@ -26,6 +26,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
+const merge = require('merge');
 
 const EVENT_CANCELED = '____CANCELED___';
 
@@ -622,7 +623,6 @@ function IonDataRepository(options) {
     then(() => prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
-      console.log(JSON.stringify(options.filter));
       return _this.ds.fetch(tn(rcm), options);
     }).
     catch(wrapDsError('getList', obj)).
@@ -715,7 +715,7 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return trigger(
+    return bubble(
       'pre-iterate',
       cm,
       {
@@ -1308,15 +1308,35 @@ function IonDataRepository(options) {
     });
   }
 
+  function cloneEventData(data) {
+    if (data instanceof Item) {
+      return data;
+    } else if (Array.isArray(data)) {
+      let arr = [];
+      for (let i = 0; i < data.length; i++) {
+        arr.push(cloneEventData(data[i]));
+      }
+      return arr;
+    } else if (data && typeof data === 'object') {
+      let result = {};
+      for (let nm in data) {
+        if (data.hasOwnProperty(nm)) {
+          result[nm] = cloneEventData(data[nm]);
+        }
+      }
+      return result;
+    }
+    return data;
+  }
+
   function trgr(c, eventType, data) {
     return function (e) {
-      var bd = {data: clone(data) || {}};
-      bd.item = data.item;
+      var bd = cloneEventData(data);
       bd.type = c.getCanonicalName() + '.' + eventType;
       bd.origin = e;
       return _this.trigger(bd)
         .then(function (e2) {
-          if (Array.isArray(e.results)) {
+          if (e && Array.isArray(e.results)) {
             e2.results = e.results.concat(Array.isArray(e2.results) ? e2.results : []);
           }
           return Promise.resolve(e2);
@@ -1337,11 +1357,7 @@ function IonDataRepository(options) {
       if (p) {
         p = p.then(trgr(c, eventType, data));
       } else {
-        p = _this.trigger({
-          type: c.getCanonicalName() + '.' + eventType,
-          item: data.item,
-          data: clone(data) || {}
-        });
+        p = trgr(c, eventType, data)();
       }
       c = c.getAncestor();
     }
@@ -1444,7 +1460,6 @@ function IonDataRepository(options) {
           if (options.uid) {
             updates._creator = options.uid;
           }
-          console.log(JSON.stringify(updates));
           return _this.ds.insert(tn(rcm), updates);
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
