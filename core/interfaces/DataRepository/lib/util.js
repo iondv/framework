@@ -574,7 +574,6 @@ function loadFiles(item, fileStorage, imageStorage) {
       pm = item.classMeta.getPropertyMeta(nm);
       if (pm) {
         if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-          fids.push(item.base[nm]);
           if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
             attrs['f_' + item.base[nm]] = [];
           }
@@ -585,13 +584,17 @@ function loadFiles(item, fileStorage, imageStorage) {
             iids.push(item.base[nm]);
           }
         } else if (pm.type === PropertyTypes.FILE_LIST) {
-          if (Array.isArray(item.base[nm])) {
-            for (var i = 0; i < item.base[nm].length; i++) {
-              fids.push(item.base[nm][i]);
-              if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
-                attrs['f_' + item.base[nm][i]] = [];
+          let v = item.base[nm];
+          if (!Array.isArray(v)) {
+            v = [v];
+          }
+          for (var i = 0; i < v.length; i++) {
+            if (v[i]) {
+              fids.push(v[i]);
+              if (!attrs.hasOwnProperty('f_' + v[i])) {
+                attrs['f_' + v[i]] = [];
               }
-              attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+              attrs['f_' + v[i]].push({attr: nm, index: i});
             }
           }
         }
