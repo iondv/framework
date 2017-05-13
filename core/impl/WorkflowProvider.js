@@ -243,12 +243,12 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
-   * @param {{}} [options]
-   * @param {String} [options.uid]
-   * @param {{}} [options.env]
+   * @param {{}} [tOptions]
+   * @param {String} [tOptions.uid]
+   * @param {{}} [tOptions.env]
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name, options) {
+  this._performTransition = function (item, workflow, name, tOptions) {
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
@@ -265,7 +265,7 @@ function WorkflowProvider(options) {
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
-                    if (item.get(transition.roles[i]) === options.uid) {
+                    if (item.get(transition.roles[i]) === tOptions.uid) {
                       allowed = true;
                       break;
                     }
@@ -289,8 +289,8 @@ function WorkflowProvider(options) {
                   updates = {};
                   transition.assignments.forEach((assignment) => {
                     calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, options)) :
-                      calcAssignmentValue(updates, item, assignment, options);
+                      calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
+                      calcAssignmentValue(updates, item, assignment, tOptions);
                   });
                 }
 
@@ -335,8 +335,8 @@ function WorkflowProvider(options) {
                           updates,
                           null,
                           {
-                            uid: options.uid,
-                            env: options.env
+                            uid: tOptions.uid,
+                            env: tOptions.env
                           }
                         );
                       }
