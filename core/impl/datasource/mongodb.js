@@ -799,6 +799,7 @@ function MongoDs(config) {
                 for (let i = 0; i < tmp.length; i++) {
                   if (tmp[i] === true) {
                     result = true;
+                    break;
                   }
                 }
                 if (!result && tmp.length) {
@@ -1154,6 +1155,10 @@ function MongoDs(config) {
         }
       }
 
+      if (options.distinct && options.select.length && (result.length || options.select.length > 1)) {
+        Array.prototype.push.apply(result, wind(options.select));
+      }
+
       if (forcedStages.length) {
         Array.prototype.push.apply(result, forcedStages);
       }
@@ -1244,7 +1249,32 @@ function MongoDs(config) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
     } else {
       if (options.distinct && options.select.length === 1) {
-        r = c.distinct(options.select[0], options.filter || {}, {});
+        return c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
+          if (err) {
+            return reject(err);
+          }
+          if (options.sort && options.sort[options.select[0]]) {
+            var direction = options.sort[options.select[0]];
+            data = data.sort(function compare(a, b) {
+              if (a < b) {
+                return -1 * direction;
+              } else if (a > b) {
+                return 1 * direction;
+              }
+              return 0;
+            });
+          }
+          var res, stPos, endPos;
+          res = [];
+          stPos = options.offset || 0;
+          endPos = options.count ? stPos + options.count : data.length;
+          for (var i = stPos; i < endPos && i < data.length; i++) {
+            var tmp = {};
+            tmp[options.select[0]] = data[i];
+            res.push(tmp);
+          }
+          resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
+        });
       } else {
         flds = null;
         r = c.find(options.filter || {});
@@ -1359,17 +1389,25 @@ function MongoDs(config) {
                 return;
               }
 
-              r.toArray(function (err, docs) {
-                r.close();
-                if (err) {
-                  return reject(err);
+              return new Promise(function (res, rej) {
+                if (Array.isArray(r)) {
+                  res(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return rej(err);
+                    }
+                    resolve(docs);
+                  });
                 }
+              }).then(function (docs) {
                 docs.forEach(mergeGeoJSON);
                 if (amount !== null) {
                   docs.total = amount;
                 }
-                resolve(docs);
-              });
+                return resolve(docs);
+              }).catch(reject);
             },
             function (e) {reject(wrapError(e, 'fetch', type));}
           );

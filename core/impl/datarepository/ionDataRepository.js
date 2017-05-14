@@ -755,15 +755,16 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var cm = getMeta(className);
     var rcm = getRootType(cm);
-    options.attributes = [];
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.attributes.push(props[i].name);
+      options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).then(function (filter) {
+      options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).catch(wrapDsError('rawData', className));
   };
