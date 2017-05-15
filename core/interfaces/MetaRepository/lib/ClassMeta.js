@@ -24,12 +24,16 @@ function loadPropertyMetas(cm, plain) {
      * @param {Item} item
      */
     return function (item) {
+      var result = [];
       for (var j = 0; j < this.matrix.length; j++) {
-        if (checkConditions(item, this.matrix[j].conditions)) {
-          return this.matrix[j].result || [];
+        if (
+          !Array.isArray(this.matrix[j].conditions) ||
+          this.matrix[j].conditions.length === 0 ||
+          checkConditions(item, this.matrix[j].conditions)) {
+          Array.prototype.push.apply(result, this.matrix[j].result || []);
         }
       }
-      return [];
+      return result;
     };
   }
   var pm;
@@ -171,7 +175,7 @@ function ClassMeta(metaObject) {
     }
     return result;
   };
-  
+
   this.isJournaling = function () {
 	  return this.plain.journaling;
   };
