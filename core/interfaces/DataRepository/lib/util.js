@@ -443,9 +443,9 @@ function createSearchRegexp(search, mode, asString) {
   if (mode === 'contains') {
     result = result.replace(/\s+/g, '\\s+');
   } else if (mode === 'starts') {
-    result = '^' + result.replace(/\s+/g, '\\s+') + '\\.*';
+    result = '^' + result.replace(/\s+/g, '\\s+');
   } else if (mode === 'ends') {
-    result = '\\.*' + result.replace(/\s+/g, '\\s+') + '$';
+    result = result.replace(/\s+/g, '\\s+') + '$';
   } else {
     result = result.replace(/\s+/g, '\\s.*');
   }
@@ -531,9 +531,10 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
   var smodes = opts.mode || [];
   var start = 0;
   if (opts.splitBy) {
-    svals = sv.split(new RegExp(opts.spliBy));
+    svals = sv.split(new RegExp(opts.splitBy));
     start = svals.length;
   }
+
   for (let i = 0; i < opts.searchBy.length; i++) {
     if (i >= start) {
       svals.push(false);
@@ -544,31 +545,33 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
   }
 
   for (let i = 0; i < opts.searchBy.length; i++) {
-    let nm = opts.searchBy[i];
-    if (nm.indexOf('.') >= 0) {
-      var path = nm.split('.');
-      var p = null;
-      var cm2 = cm;
-      for (let j = 0; j < path.length; i++) {
-        p = cm2.getPropertyMeta(path[j]);
-        if (p && p.type === PropertyTypes.REFERENCE) {
-          cm2 = p._refClass;
-        } else if (j < path.length - 1) {
-          p = null;
-          break;
+    if (svals[i]) {
+      let nm = opts.searchBy[i];
+      if (nm.indexOf('.') >= 0) {
+        var path = nm.split('.');
+        var p = null;
+        var cm2 = cm;
+        for (let j = 0; j < path.length; i++) {
+          p = cm2.getPropertyMeta(path[j]);
+          if (p && p.type === PropertyTypes.REFERENCE) {
+            cm2 = p._refClass;
+          } else if (j < path.length - 1) {
+            p = null;
+            break;
+          }
         }
+        if (p) {
+          attrSearchFilter(cm, p, tmp, svals[i], lang,
+            (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+            depth, smodes[i]);
+        }
+      } else {
+        var pm = cm.getPropertyMeta(nm);
+        if (pm.indexSearch && useFullText) {
+          fullText = true;
+        }
+        attrSearchFilter(cm, pm, tmp, svals[i], lang, prefix, depth, smodes[i]);
       }
-      if (p) {
-        attrSearchFilter(cm, p, tmp, svals[i], lang,
-          (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-          depth, smodes[i]);
-      }
-    } else {
-      var pm = cm.getPropertyMeta(nm);
-      if (pm.indexSearch && useFullText) {
-        fullText = true;
-      }
-      attrSearchFilter(cm, pm, tmp, svals[i], lang, prefix, depth, smodes[i]);
     }
   }
 
