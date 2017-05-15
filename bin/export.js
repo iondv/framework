@@ -12,7 +12,7 @@ var sysLog = new IonLogger({});
 
 var params = {
   dst: '../out',
-  ver: '',
+  ver: null,
   ns: '',
   skipData: false,
   fileDir: false
@@ -52,9 +52,10 @@ di('app', config.di,
       scope.dataRepo,
       {
         namespace: params.ns,
-        version: params.version,
+        version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
-        fileDir: params.fileDir
+        fileDir: params.fileDir,
+        lastVersion: params.ver === '-last'
       });
   }
 ).then(
