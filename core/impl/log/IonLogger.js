@@ -10,7 +10,6 @@ const FileStreamRotator = require('file-stream-rotator');
 const fs = require('fs');
 const path = require('path');
 
-
 // jshint maxcomplexity: 20
 
 function IonLogger(options) {
@@ -97,21 +96,21 @@ function IonLogger(options) {
      */
   function writeToDest(dest, message, type, consoleMethod) {
     var d = moment().format('DD.MM HH:mm');
-    var m = message instanceof Error ? message.message : message;
+    var m = (message instanceof Error ? message.message : message)  || 'Empty error data';
     for (var i = 0; i < dest.length; i++) {
       if (dest[i] === 'console') {
         if (consoleMethod === console.error && message instanceof Error) {
-          console.error(message);
+          console.error(message || 'Empty error data');
         } else {
           consoleMethod.call(console, d + ' ' + type + ' ' + prefix + ' ' + m);
         }
       } else if (dest[i] instanceof Logger) {
-        dest[i][type.toLowerCase()](message);
+        dest[i][type.toLowerCase()](message || 'Empty error data');
       } else if (typeof dest[i].info === 'function') {
         dest[i].info(prefix + ' ' + m);
       } else if (typeof dest[i].write === 'function') {
         if (type === 'ERROR') {
-          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n' + (message.stack || ''));
+          dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n' + (message ? message.stack || '' : ''));
         } else {
           dest[i].write(d + ' ' + type + ' ' + prefix + ' ' + m + '\r\n');
         }

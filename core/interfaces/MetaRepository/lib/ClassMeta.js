@@ -104,7 +104,7 @@ function ClassMeta(metaObject) {
   };
 
   this.getKeyProperties = function () {
-    if (!this.plain.key) {
+    if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
       var anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
@@ -170,6 +170,10 @@ function ClassMeta(metaObject) {
       result = result.concat(this.getAncestor().getPropertyMetas());
     }
     return result;
+  };
+  
+  this.isJournaling = function () {
+	  return this.plain.journaling;
   };
 }
 
