@@ -1412,14 +1412,14 @@ function MongoDs(config) {
                 return;
               }
 
-              return new Promise(function (res, rej) {
+              return new Promise(function (resolve, reject) {
                 if (Array.isArray(r)) {
-                  res(r);
+                  resolve(r);
                 } else {
                   r.toArray(function (err, docs) {
                     r.close();
                     if (err) {
-                      return rej(err);
+                      return reject(err);
                     }
                     resolve(docs);
                   });
