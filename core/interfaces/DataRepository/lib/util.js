@@ -58,9 +58,10 @@ module.exports.castValue = castValue;
  * @param {Object} data
  * @param {Boolean} [setCollections]
  * @param {{}} [refUpdates]
+ * @param {{}} [opts]
  * @return {Object | null}
  */
-function formUpdatedData(cm, data, setCollections, refUpdates) {
+function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
   var updates, pm, nm, dot, tmp;
   updates = {};
   var empty = true;
@@ -69,6 +70,9 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
       empty = false;
       if ((dot = nm.indexOf('.')) >= 0) {
         if (refUpdates) {
+          if (opts) {
+            opts.refUpdates = true;
+          }
           tmp = nm.substring(0, dot);
           pm = cm.getPropertyMeta(tmp);
           if (pm) {
@@ -87,6 +91,11 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
               updates[nm] = data[nm];
+            }
+            if (pm.type === PropertyTypes.REFERENCE && pm.backRef) {
+              if (opts) {
+                opts.backRefUpdates = true;
+              }
             }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];
@@ -425,16 +434,20 @@ function spFilter(cm, pm, or, svre, prefix) {
 
 /**
  * @param {String} search
- * @param {Boolean} [splitWords]
+ * @param {String} [mode]
  * @param {Boolean} [asString]
  * @returns {RegExp | String}
  */
-function createSearchRegexp(search, splitWords, asString) {
-  var result;
-  if (splitWords) {
-    result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '|');
+function createSearchRegexp(search, mode, asString) {
+  var result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
+  if (mode === 'contains') {
+    result = result.replace(/\s+/g, '\\s+');
+  } else if (mode === 'starts') {
+    result = '^' + result.replace(/\s+/g, '\\s+') + '\\.*';
+  } else if (mode === 'ends') {
+    result = '\\.*' + result.replace(/\s+/g, '\\s+') + '$';
   } else {
-    result = search.replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0').replace(/\s+/g, '\\s+');
+    result = result.replace(/\s+/g, '\\s.*');
   }
   if (asString) {
     return result;
@@ -442,20 +455,23 @@ function createSearchRegexp(search, splitWords, asString) {
   return new RegExp(result);
 }
 
-function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, splitWords) {
+function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, mode) {
   var cond, aname, floatv, datev;
 
   if (pm.selectionProvider) {
-    spFilter(cm, pm, or, createSearchRegexp(sv, splitWords), prefix);
+    spFilter(cm, pm, or, createSearchRegexp(sv, mode), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
-      searchFilter(pm._refClass, or, pm._refClass.getSemanticAttrs(), sv, lang, false,
-        (prefix || '') + pm.name + '.', depth - 1, splitWords);
+      searchFilter(pm._refClass, or, {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
+        (prefix || '') + pm.name + '.', depth - 1, mode);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
     if (depth > 0) {
       var cor = [];
-      searchFilter(pm._refClass, cor, pm._refClass.getSemanticAttrs(), sv, lang, false, depth - 1, splitWords);
+      searchFilter(pm._refClass, cor,
+        {
+          searchBy: pm._refClass.getSemanticAttrs()
+        }, sv, lang, false, depth - 1);
       if (cor.length) {
         cond = {};
         aname = (prefix || '') + pm.name;
@@ -474,7 +490,7 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, splitWords) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          cond[aname] = {$regex: createSearchRegexp(sv, splitWords, true), $options: 'i'};
+          cond[aname] = {$regex: createSearchRegexp(sv, mode, true), $options: 'i'};
           or.push(cond);
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
@@ -501,40 +517,60 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, splitWords) {
 /**
  * @param {ClassMeta} cm
  * @param {Array} or
- * @param {Array} attrs
+ * @param {{searchBy: String[], splitBy: String, mode: String[]}} opts
  * @param {String} sv
  * @param {String} lang
  * @param {Boolean} [useFullText]
  */
-function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth, splitWords) {
+function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
   var fullText = false;
 
   var tmp = [];
-  attrs.forEach(function (nm) {
+
+  var svals = [];
+  var smodes = opts.mode || [];
+  var start = 0;
+  if (opts.splitBy) {
+    svals = sv.split(new RegExp(opts.spliBy));
+    start = svals.length;
+  }
+  for (let i = 0; i < opts.searchBy.length; i++) {
+    if (i >= start) {
+      svals.push(false);
+    }
+    if (i + 1 > smodes.length) {
+      smodes.push('like');
+    }
+  }
+
+  for (let i = 0; i < opts.searchBy.length; i++) {
+    let nm = opts.searchBy[i];
     if (nm.indexOf('.') >= 0) {
       var path = nm.split('.');
       var p = null;
       var cm2 = cm;
-      for (var i = 0; i < path.length; i++) {
-        p = cm2.getPropertyMeta(path[i]);
+      for (let j = 0; j < path.length; i++) {
+        p = cm2.getPropertyMeta(path[j]);
         if (p && p.type === PropertyTypes.REFERENCE) {
           cm2 = p._refClass;
-        } else if (i < path.length - 1) {
+        } else if (j < path.length - 1) {
           p = null;
           break;
         }
       }
       if (p) {
-        attrSearchFilter(cm, p, tmp, sv, lang, (prefix || '') + path.slice(0, path.length - 1).join('.') + '.', depth, splitWords);
+        attrSearchFilter(cm, p, tmp, svals[i], lang,
+          (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+          depth, smodes[i]);
       }
     } else {
       var pm = cm.getPropertyMeta(nm);
       if (pm.indexSearch && useFullText) {
         fullText = true;
       }
-      attrSearchFilter(cm, pm, tmp, sv, lang, prefix, depth, splitWords);
+      attrSearchFilter(cm, pm, tmp, svals[i], lang, prefix, depth, smodes[i]);
     }
-  });
+  }
 
   if (fullText) {
     var tmp2 = tmp.slice(0);
@@ -558,6 +594,7 @@ function searchFilter(cm, or, attrs, sv, lang, useFullText, prefix, depth, split
       }
     );
   }
+
   Array.prototype.push.apply(or, tmp);
 }
 
@@ -579,7 +616,6 @@ function loadFiles(item, fileStorage, imageStorage) {
       pm = item.classMeta.getPropertyMeta(nm);
       if (pm) {
         if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-          fids.push(item.base[nm]);
           if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
             attrs['f_' + item.base[nm]] = [];
           }
@@ -590,13 +626,17 @@ function loadFiles(item, fileStorage, imageStorage) {
             iids.push(item.base[nm]);
           }
         } else if (pm.type === PropertyTypes.FILE_LIST) {
-          if (Array.isArray(item.base[nm])) {
-            for (var i = 0; i < item.base[nm].length; i++) {
-              fids.push(item.base[nm][i]);
-              if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
-                attrs['f_' + item.base[nm][i]] = [];
+          let v = item.base[nm];
+          if (!Array.isArray(v)) {
+            v = [v];
+          }
+          for (var i = 0; i < v.length; i++) {
+            if (v[i]) {
+              fids.push(v[i]);
+              if (!attrs.hasOwnProperty('f_' + v[i])) {
+                attrs['f_' + v[i]] = [];
               }
-              attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+              attrs['f_' + v[i]].push({attr: nm, index: i});
             }
           }
         }
