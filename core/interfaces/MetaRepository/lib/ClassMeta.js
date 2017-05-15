@@ -171,6 +171,10 @@ function ClassMeta(metaObject) {
     }
     return result;
   };
+  
+  this.isJournaling = function () {
+	  return this.plain.journaling;
+  };
 }
 
 module.exports = ClassMeta;
