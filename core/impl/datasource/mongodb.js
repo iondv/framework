@@ -997,8 +997,40 @@ function MongoDs(config) {
                 } else {
                   tmp = [tmp];
                 }
+              } else if (name === '$or') {
+                let skip = !(Array.isArray(tmp) && tmp.length);
+                if (!skip) {
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] === true) {
+                      skip = true;
+                      break;
+                    }
+                  }
+                }
+                if (skip) {
+                  tmp = null;
+                }
+              } else if (name === '$and') {
+                let skip = !(Array.isArray(tmp) && tmp.length);
+                let tmp2 = [];
+                if (!skip) {
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] !== true) {
+                      tmp2.push(tmp[i]);
+                    }
+                    if (tmp[i] === false) {
+                      skip = true;
+                      break;
+                    }
+                  }
+                }
+                if (skip || tmp2.length === 0) {
+                  tmp = null;
+                }
               }
-              result.push({[nm]: tmp});
+              if (tmp) {
+                result.push({[nm]: tmp});
+              }
             }
           } else {
             let nm = prefix ? addPrefix(name, prefix) : name;
@@ -1007,7 +1039,7 @@ function MongoDs(config) {
             if (typeof find[name] === 'object' && find[name]) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
+                  if (excludeFromRedactfilter.indexOf(oper)) {
                     if (oper === '$exists') {
                       if (find[name][oper]) {
                         result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
@@ -1015,8 +1047,18 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      let roperand = find[name][oper];
+                      if (
+                        typeof roperand === 'object' ||
+                        typeof roperand === 'string' && roperand && roperand[0] === '$'
+                      ) {
+                        result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      } else {
+                        result.push(true);
+                      }
                     }
+                  } else {
+                    result.push(true);
                   }
                 }
               }
