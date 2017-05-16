@@ -537,7 +537,7 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
 
   for (let i = 0; i < opts.searchBy.length; i++) {
     if (i >= start) {
-      svals.push(false);
+      svals.push(opts.splitBy ? false : sv);
     }
     if (i + 1 > smodes.length) {
       smodes.push('like');
@@ -601,7 +601,30 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
   Array.prototype.push.apply(or, tmp);
 }
 
-module.exports.textSearchFilter = searchFilter;
+/**
+ * @param {ClassMeta} cm
+ * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String}} opts
+ * @param {String} sv
+ * @param {String} lang
+ * @param {Boolean} [useFullText]
+ */
+module.exports.textSearchFilter = function (cm, opts, sv, lang, useFullText, prefix, depth) {
+  var conds = [];
+  searchFilter(cm, conds, opts, sv, lang, true, null, 1);
+  if (conds.length) {
+    if (conds.length === 1) {
+      conds = conds[0];
+    } else {
+      if (opts.joinBy === 'and') {
+        conds = {$and: conds};
+      } else {
+        conds = {$or: conds};
+      }
+    }
+    return conds;
+  }
+  return null;
+};
 
 /**
  * @param {Item} item
