@@ -7,6 +7,8 @@ const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
 const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/workflow');
 
 // jshint maxcomplexity: 20, maxstatements: 50
 /**
@@ -14,6 +16,7 @@ const EventManager = require('core/impl/EventManager');
  * @param {MetaRepository} options.metaRepo
  * @param {DataRepository} options.dataRepo
  * @param {DataSource} options.dataSource
+ * @param {Logger} options.log
  * @constructor
  */
 function WorkflowProvider(options) {
@@ -160,15 +163,13 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, key, formula) {
-    return formula.apply(item, [{}]).then(function (v) {
-      try {
+    return Promise.resolve()
+      .then(() => formula.apply(item, [{}]))
+      .then(function (v) {
         updates[key] = v;
         item.set(key, v);
-        return Promise.resolve(v);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    });
+        return v;
+      });
   }
 
   /**
@@ -193,10 +194,12 @@ function WorkflowProvider(options) {
 
             if (wf) {
               if (wf.transitionsByName.hasOwnProperty(name)) {
-                var transition = wf.transitionsByName[name];
+                transition = wf.transitionsByName[name];
                 var nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
-                  return Promise.reject(new Error('Не найдено конечное состояние перехода.'));
+                  return Promise.reject(
+                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                  );
                 }
 
                 var updates = {};
@@ -215,8 +218,10 @@ function WorkflowProvider(options) {
                         )
                       );
                     } else {
-                      updates[transition.assignments[i].key] = transition.assignments[i].value;
-                      item.set(transition.assignments[i].key, transition.assignments[i].value);
+                      let v = transition.assignments[i].value;
+                      v = v && typeof v === 'string' && v[0] === '$' ? item.get(v.substring(1)) : v;
+                      updates[transition.assignments[i].key] = v;
+                      item.set(transition.assignments[i].key, v);
                     }
                   }
                 }
@@ -224,7 +229,16 @@ function WorkflowProvider(options) {
                 return Promise.all(calculations).then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
                     if (!checker(item, nextState.conditions, item)) {
-                      return Promise.reject(new Error('Объект не удовлетворяет условиям конечного состояния перехода.'));
+                      return Promise.reject(
+                        new IonError(
+                          Errors.CONDITION_VIOLATION,
+                          {
+                            info: item.getClassName() + '@' + item.getItemId(),
+                            state: nextState.caption,
+                            workflow: wf.caption
+                          }
+                        )
+                      );
                     }
                   }
 
@@ -265,9 +279,19 @@ function WorkflowProvider(options) {
                 });
               }
             }
-            return Promise.reject(new Error('Невозможно выполнить переход ' + name + ' рабочего процесса ' + workflow));
+            return Promise.reject(
+              new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
+            );
           }
-          return Promise.reject(new Error('Объект не участвует в рабочем процессе ' + workflow));
+          return Promise.reject(
+            new IonError(
+              Errors.NOT_IN_WORKFLOW,
+              {
+                workflow: workflow,
+                info: item.getClassName() + '@' + item.getItemId()
+              }
+            )
+          );
         }
       });
   };
@@ -276,12 +300,8 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this.init = function () {
-    return new Promise(function (resolve, reject) {
-      options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
-        .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); })
-        .then(function () {resolve();})
-        .catch(reject);
-    });
+    return options.dataSource.ensureIndex(tableName, {item: 1, workflow: 1}, {unique: true})
+      .then(function () { return options.dataSource.ensureIndex(tableName, {item: 1}); });
   };
 }
 

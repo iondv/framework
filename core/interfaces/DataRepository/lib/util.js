@@ -58,9 +58,10 @@ module.exports.castValue = castValue;
  * @param {Object} data
  * @param {Boolean} [setCollections]
  * @param {{}} [refUpdates]
+ * @param {{}} [opts]
  * @return {Object | null}
  */
-function formUpdatedData(cm, data, setCollections, refUpdates) {
+function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
   var updates, pm, nm, dot, tmp;
   updates = {};
   var empty = true;
@@ -69,6 +70,9 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
       empty = false;
       if ((dot = nm.indexOf('.')) >= 0) {
         if (refUpdates) {
+          if (opts) {
+            opts.refUpdates = true;
+          }
           tmp = nm.substring(0, dot);
           pm = cm.getPropertyMeta(tmp);
           if (pm) {
@@ -87,6 +91,11 @@ function formUpdatedData(cm, data, setCollections, refUpdates) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
               updates[nm] = data[nm];
+            }
+            if (pm.type === PropertyTypes.REFERENCE && pm.backRef) {
+              if (opts) {
+                opts.backRefUpdates = true;
+              }
             }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
             updates[nm] = data[nm];
@@ -574,7 +583,6 @@ function loadFiles(item, fileStorage, imageStorage) {
       pm = item.classMeta.getPropertyMeta(nm);
       if (pm) {
         if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
-          fids.push(item.base[nm]);
           if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
             attrs['f_' + item.base[nm]] = [];
           }
@@ -585,13 +593,17 @@ function loadFiles(item, fileStorage, imageStorage) {
             iids.push(item.base[nm]);
           }
         } else if (pm.type === PropertyTypes.FILE_LIST) {
-          if (Array.isArray(item.base[nm])) {
-            for (var i = 0; i < item.base[nm].length; i++) {
-              fids.push(item.base[nm][i]);
-              if (!attrs.hasOwnProperty('f_' + item.base[nm][i])) {
-                attrs['f_' + item.base[nm][i]] = [];
+          let v = item.base[nm];
+          if (!Array.isArray(v)) {
+            v = [v];
+          }
+          for (var i = 0; i < v.length; i++) {
+            if (v[i]) {
+              fids.push(v[i]);
+              if (!attrs.hasOwnProperty('f_' + v[i])) {
+                attrs['f_' + v[i]] = [];
               }
-              attrs['f_' + item.base[nm][i]].push({attr: nm, index: i});
+              attrs['f_' + v[i]].push({attr: nm, index: i});
             }
           }
         }
@@ -645,12 +657,12 @@ function calcProperties(item, skip) {
   var calculations = [];
   var calcNames = [];
   var props = item.getMetaClass().getPropertyMetas();
-  for (var i = 0; i < props.length; i++) {
-    if (props[i]._formula) {
-      calculations.push(props[i]._formula.apply(item, [{}]));
-      calcNames.push(props[i].name);
+  props.forEach((p)=> {
+    if (p._formula) {
+      calculations.push(Promise.resolve().then(()=>p._formula.apply(item)));
+      calcNames.push(p.name);
     }
-  }
+  });
 
   if (calculations.length === 0) {
     return Promise.resolve(item);
