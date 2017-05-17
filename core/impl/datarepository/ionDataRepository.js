@@ -11,7 +11,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const ChangeLogger = require('core/interfaces/ChangeLogger');
 const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const EventManager = require('core/impl/EventManager');
 const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
@@ -22,7 +22,11 @@ const calcProperties = require('core/interfaces/DataRepository/lib/util').calcPr
 const ConditionParser = require('core/ConditionParser');
 const Iterator = require('core/interfaces/Iterator');
 const SortingParser = require('core/SortingParser');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/data-repo');
+const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
+const merge = require('merge');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -67,6 +71,64 @@ function IonDataRepository(options) {
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
+
+  function getAttrs(key, cm) {
+    if (cm) {
+      if (Array.isArray(key)) {
+        let result = [];
+        key.forEach(k => result.push(getAttrs(k, cm)));
+        return result;
+      }
+      let attr = cm.getPropertyMeta(key);
+      if (attr) {
+        return attr.caption;
+      }
+    }
+    return null;
+  }
+
+  /**
+   *
+   * @param {String} oper
+   * @param {String} className
+   * @param {String | null} [id]
+   * @param {String | null} [collection]
+   * @param {ClassMeta} [cm]
+   * @returns {Function}
+   */
+  function wrapDsError(oper, className, id, collection, cm) {
+    return function (err) {
+      if (err instanceof IonError) {
+        if (err.code === DsErrors.UNIQUENESS_VIOLATION) {
+          id = id || err.params.value || JSON.stringify(err.params.values);
+          if (collection) {
+            return Promise.reject(
+              new IonError(Errors.EXISTS_IN_COL, {info: `${className}@${id}`, col: collection}, err)
+            );
+          }
+          let attr = getAttrs(err.params.key, cm);
+          let errType = attr.length > 1 ? Errors.ITEM_EXISTS_MULTI : Errors.ITEM_EXISTS;
+          return Promise.reject(
+            new IonError(
+              errType,
+              {
+                info: `${className}@${id}`,
+                class: cm ? cm.getCaption() : '',
+                key: err.params.key,
+                attr: attr,
+                value: err.params.value
+              },
+              err)
+          );
+        }
+      }
+      let info  = className;
+      if (id) {
+        info = info + '@' + id;
+      }
+      return Promise.reject(new IonError(Errors.FAIL, {operation: oper, info: info}, err));
+    };
+  }
 
   /**
    *
@@ -188,7 +250,7 @@ function IonDataRepository(options) {
       .then(function (filter) {
         options.filter = filter;
         return _this.ds.count(tn(rcm), options);
-      });
+      }).catch(wrapDsError('getCount', obj, ''));
   };
 
   /**
@@ -564,6 +626,7 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
     }).
+    catch(wrapDsError('getList', obj)).
     then(
       function (data) {
         var result = [];
@@ -658,6 +721,7 @@ function IonDataRepository(options) {
       options.filter = filter;
       return _this.ds.iterator(tn(rcm), options);
     }).
+    catch(wrapDsError('getIterator', obj)).
     then(function (iter) {
       return Promise.resolve(new ItemIterator(iter, options));
     });
@@ -683,7 +747,7 @@ function IonDataRepository(options) {
         options.filter = filter;
         return _this.ds.aggregate(tn(rcm), options);
       }
-    );
+    ).catch(wrapDsError('aggregate', className));
   };
 
   /**
@@ -703,17 +767,18 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
+    options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var cm = getMeta(className);
     var rcm = getRootType(cm);
-    options.attributes = [];
     var props = cm.getPropertyMetas();
     for (var i = 0; i < props.length; i++) {
-      options.attributes.push(props[i].name);
+      options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = addDiscriminatorFilter(options.filter, cm);
     return prepareFilterValues(cm, options.filter).then(function (filter) {
+      options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
-    });
+    }).catch(wrapDsError('rawData', className));
   };
 
   /**
@@ -755,7 +820,8 @@ function IonDataRepository(options) {
             }
           }
           return Promise.resolve(null);
-        });
+        })
+        .catch(wrapDsError('getItem', cm.getCanonicalName(), id));
     } else if (obj instanceof Item) {
       opts = {};
       cm = obj.getMetaClass();
@@ -778,6 +844,7 @@ function IonDataRepository(options) {
         fetcher = Promise.resolve(obj);
       }
       return fetcher
+        .catch(wrapDsError('getItem', cm.getCanonicalName(), obj.getItemId()))
         .then(function (item) {
           return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
         })
@@ -785,55 +852,59 @@ function IonDataRepository(options) {
           return calcProperties(item);
         });
     } else {
-      throw new Error('Переданы некорректные параметры метода getItem');
+      throw new IonError(Errors.BAD_PARAMS, {method: 'getItem'});
     }
   };
 
-  function fileSaver(updates, pm) {
-    return new Promise(function (resolve, reject) {
-      var rej = function (err) {
-        reject(new Error('Ошибка присвоения файлового атрибута ' + pm.name + ': ' + err.message));
-      };
-      if (Array.isArray(updates[pm.name])) {
-        var savers = [];
-        for (var i = 0; i < updates[pm.name].length; i++) {
-          if (typeof updates[pm.name][i] !== 'string') {
-            savers.push(_this.fileStorage.accept(updates[pm.name][i]));
-          }
+  function fileSaver(updates, id, cm, pm) {
+    if (Array.isArray(updates[pm.name])) {
+      var savers = [];
+      for (var i = 0; i < updates[pm.name].length; i++) {
+        if (typeof updates[pm.name][i] !== 'string') {
+          savers.push(_this.fileStorage.accept(updates[pm.name][i]));
         }
-        if (savers.length) {
-          Promise.all(savers).then(
-            function (files) {
-              if (Array.isArray(files)) {
-                updates[pm.name] = [];
-                for (var i = 0; i < files.length; i++) {
-                  updates[pm.name].push(files[i].id);
-                }
-              }
-              resolve();
-            }
-          ).catch(rej);
-        } else {
-          resolve();
-        }
-      } else {
-        var storage = _this.fileStorage;
-        if (pm.type === PropertyTypes.IMAGE) {
-          storage = _this.imageStorage;
-        }
-        storage.accept(updates[pm.name]).then(function (f) {
-          updates[pm.name] = f.id;
-          resolve();
-        }).catch(rej);
       }
-    });
+      if (savers.length) {
+        return Promise.all(savers).then(
+          function (files) {
+            if (Array.isArray(files)) {
+              updates[pm.name] = [];
+              for (var i = 0; i < files.length; i++) {
+                updates[pm.name].push(files[i].id);
+              }
+            }
+            return Promise.resolve();
+          }
+        );
+      } else {
+        return Promise.resolve();
+      }
+    } else {
+      var storage = _this.fileStorage;
+      if (pm.type === PropertyTypes.IMAGE) {
+        storage = _this.imageStorage;
+      }
+      return storage.accept(updates[pm.name]).then(function (f) {
+        updates[pm.name] = f.id;
+        return Promise.resolve();
+      }).catch(err => Promise.reject(
+        new IonError(
+          Errors.FILE_ATTR_SAVE,
+          {
+            attr: pm.caption,
+            info: `${cm.getCanonicalName()}@${id}`
+          },
+          err
+        )
+      ));
+    }
   }
 
   /**
    * @param {ClassMeta} cm
    * @param {{}} data
    */
-  function checkRequired(cm, data, lazy) {
+  function checkRequired(cm, data, lazy, warn) {
     var props = cm.getPropertyMetas();
     var invalidAttrs = [];
     for (var i = 0; i < props.length; i++) {
@@ -846,9 +917,14 @@ function IonDataRepository(options) {
       }
     }
     if (invalidAttrs.length) {
-      return new Error('Не заполнены обязательные атрибуты: ' + invalidAttrs.join(', '));
+      let err = new IonError(Errors.MISSING_REQUIRED, {info: invalidAttrs.join(', ')});
+      if (!warn) {
+        throw err;
+      }
+      if (options.log) {
+        options.log.warn('Ошибка контроля целостности сохраняемого объекта', err.message);
+      }
     }
-    return true;
   }
 
   /**
@@ -899,13 +975,13 @@ function IonDataRepository(options) {
           } catch (err) {
           }
         } else if (keys.indexOf(pm.name) >= 0 && !onlyDefaults) {
-          throw new Error('Не указано значение ключевого атрибута ' + cm.getCaption() + '.' + pm.caption);
+          throw new IonError(Errors.NO_KEY_SPEC, {info: cm.getCaption() + '.' + pm.caption});
         }
       }
     }
   }
 
-  function prepareFileSavers(cm, fileSavers, updates) {
+  function prepareFileSavers(id, cm, fileSavers, updates) {
     var properties = cm.getPropertyMetas();
     var pm;
     for (var i = 0;  i < properties.length; i++) {
@@ -918,7 +994,7 @@ function IonDataRepository(options) {
           pm.type === PropertyTypes.FILE_LIST && Array.isArray(updates[pm.name])
         )
       ) {
-        fileSavers.push(fileSaver(updates, pm));
+        fileSavers.push(fileSaver(updates, id, cm, pm));
       }
     }
   }
@@ -936,8 +1012,12 @@ function IonDataRepository(options) {
     var rpm = rcm.getPropertyMeta(pm.backRef);
 
     if (!rpm) {
-      return Promise.reject(new Error('По обратной ссылке ' + cm.getCaption() + '.' + pm.caption +
-        ' не найден атрибут ' + rcm.getCaption() + '.' + pm.backRef));
+      return Promise.reject(new IonError(Errors.NO_BACK_REF,
+        {
+          backRef: cm.getCaption() + '.' + pm.caption,
+          backAttr: rcm.getCaption() + '.' + pm.backRef
+        }
+      ));
     }
 
     var clr = {};
@@ -981,20 +1061,31 @@ function IonDataRepository(options) {
     }
 
     if (oldId) {
+      let p;
       if (!rpm.nullable) {
-        if (options.log) {
-          options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
-              '" не может быть отвязан. Обратная ссылка не была присвоена.');
-        }
-        return Promise.resolve();
+        p = options.dataSource.get(tn(rcm), clrf).then(function (bri) {
+          if (bri) {
+            if (options.log) {
+              options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
+                '" не может быть отвязан. Обратная ссылка не была присвоена.');
+            }
+            return Promise.reject('_NOT_UNLINKED_');
+          }
+          return Promise.resolve();
+        });
       } else {
+        p = Promise.resolve();
+      }
+      return p.then(function () {
         if (!updates[pm.name]) {
           return options.dataSource.update(tn(rcm), clrf, clr);
         }
         return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
           return setBrLink(rcm, conds, ups);
         });
-      }
+      }).catch(function (err) {
+        return err === '_NOT_UNLINKED_' ? Promise.resolve() : Promise.reject(err);
+      });
     }
 
     if (!updates[pm.name]) {
@@ -1010,27 +1101,20 @@ function IonDataRepository(options) {
    * @param {String} oldId
    */
   function updateBackRefs(item, cm, updates, oldId) {
-    return new Promise(function (resolve, reject) {
-      var properties = cm.getPropertyMetas();
-      var workers = [];
-      var pm, i;
-      for (i = 0;  i < properties.length; i++) {
-        pm = properties[i];
-        if (
-          updates.hasOwnProperty(pm.name) &&
-          pm.type === PropertyTypes.REFERENCE &&
-          pm.backRef
-        ) {
-          workers.push(backRefUpdater(item.getItemId(), pm, updates, cm, oldId));
-        }
+    var properties = cm.getPropertyMetas();
+    var workers = [];
+    var pm, i;
+    for (i = 0;  i < properties.length; i++) {
+      pm = properties[i];
+      if (
+        updates.hasOwnProperty(pm.name) &&
+        pm.type === PropertyTypes.REFERENCE &&
+        pm.backRef
+      ) {
+        workers.push(backRefUpdater(pm.binding ? item.get(pm.binding) : item.getItemId(), pm, updates, cm, oldId));
       }
-      Promise.all(workers).
-      then(
-        function () {
-          resolve(item);
-        }
-      ).catch(reject);
-    });
+    }
+    return Promise.all(workers).then(() => Promise.resolve(item));
   }
 
   /**
@@ -1043,33 +1127,36 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function logChanges(changeLogger, record) {
-    var p;
-    if (changeLogger instanceof ChangeLogger) {
-      let base = {};
-      if (record.base) {
-        base = clone(record.base);
-        delete base._id;
-        delete base._class;
-        delete base._classVer;
+    var cm = record.cm || record.item.getMetaClass();
+    if (cm.isJournaling()) {
+      var p;
+      if (changeLogger instanceof ChangeLogger) {
+        let base = {};
+        if (record.base) {
+          base = clone(record.base);
+          delete base._id;
+          delete base._class;
+          delete base._classVer;
+        }
+        p = changeLogger.LogChange(
+          record.type,
+          {
+            name: record.item.getMetaClass().getCanonicalName(),
+            version: record.item.getMetaClass().getVersion()
+          },
+          record.item.getItemId(),
+          record.updates,
+          base
+        );
+      } else if (typeof changeLogger === 'function') {
+        p = changeLogger(record);
       }
-      p = changeLogger.LogChange(
-        record.type,
-        {
-          name: record.item.getMetaClass().getCanonicalName(),
-          version: record.item.getMetaClass().getVersion()
-        },
-        record.item.getItemId(),
-        record.updates,
-        base
-      );
-    } else if (typeof changeLogger === 'function') {
-      p = changeLogger(record);
-    }
 
-    if (p instanceof Promise) {
-      return p.then(function () {
-        return Promise.resolve(record.item);
-      });
+      if (p instanceof Promise) {
+        return p.then(function () {
+          return Promise.resolve(record.item);
+        });
+      }
     }
     return Promise.resolve(record.item);
   }
@@ -1095,14 +1182,18 @@ function IonDataRepository(options) {
       return _this._getList(meta.getCanonicalName(), {filter: f})
         .then(function (found) {
           var saver = null;
-          for (let i = 0; i < found.length; i++) {
-            if (found[i] instanceof Item) {
-              if (saver) {
-                saver = saver.then(saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger));
-              } else {
-                saver = saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger)();
+          if (found.length) {
+            for (let i = 0; i < found.length; i++) {
+              if (found[i] instanceof Item) {
+                if (saver) {
+                  saver = saver.then(saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger));
+                } else {
+                  saver = saveBackrefItem(meta, found[i].getItemId(), updates, changeLogger)();
+                }
               }
             }
+          } else {
+            saver = saveBackrefItem(meta, null, updates, changeLogger)();
           }
           if (!saver) {
             return Promise.resolve();
@@ -1129,6 +1220,9 @@ function IonDataRepository(options) {
    * @param {{}} refUpdates
    */
   function refUpdator(item, refUpdates, changeLogger) {
+    if (!item) {
+      return Promise.resolve();
+    }
     var saver = null;
     var needSetRef = {};
     for (var nm in refUpdates) {
@@ -1137,37 +1231,34 @@ function IonDataRepository(options) {
         if (p && p.meta._refClass) {
           let rm = p.meta._refClass;
           if (p.meta.backRef) {
-            let refItems = item.property(nm).evaluate();
-            if (Array.isArray(refItems)) {
-              for (let i = 0; i < refItems.length; i++) {
-                if (refItems[i] instanceof Item) {
-                  if (saver) {
-                    saver = saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger));
-                  } else {
-                    saver = saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
+            if (p.meta.eagerLoading) {
+              let refItems = item.property(nm).evaluate();
+              if (Array.isArray(refItems) && refItems.length) {
+                for (let i = 0; i < refItems.length; i++) {
+                  if (refItems[i] instanceof Item) {
+                    saver = saver ?
+                      saver.then(saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)) :
+                      saveBackrefItem(rm, refItems[i].getItemId(), refUpdates[nm], changeLogger)();
                   }
                 }
-              }
-            } else if (refItems instanceof Item) {
-              if (saver) {
-                saver = saver.then(saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger));
+              } else if (refItems instanceof Item) {
+                saver = saver ?
+                  saver.then(saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)) :
+                  saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)();
               } else {
-                saver = saveBackrefItem(rm, refItems.getItemId(), refUpdates[nm], changeLogger)();
+                saver = saver ?
+                  saver.then(saveBackrefItem(rm, null, refUpdates[nm], changeLogger)) :
+                  saveBackrefItem(rm, null, refUpdates[nm], changeLogger)();
               }
             } else {
-              if (saver) {
-                saver = saver
-                  .then(fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger));
-              } else {
-                saver = fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)();
-              }
+              saver = saver ?
+                saver.then(fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)) :
+                fetchNSaveBackRefs(rm, p.meta.backRef, item.getItemId(), refUpdates[nm], changeLogger)();
             }
           } else {
-            if (saver) {
-              saver = saver.then(saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef));
-            } else {
-              saver = saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)();
-            }
+            saver = saver ?
+              saver.then(saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)) :
+              saveDirectRefItem(nm, rm, item.get(nm), refUpdates[nm], changeLogger, needSetRef)();
           }
         }
       }
@@ -1191,8 +1282,53 @@ function IonDataRepository(options) {
     });
   }
 
+  function bubble(c, eventType, data) {
+    return function (e) {
+      var bd = merge({}, data);
+      bd.type = c.getCanonicalName() + '.' + eventType;
+      bd.origin = e;
+      return _this.trigger(bd)
+        .then(function (e2) {
+          if (Array.isArray(e.results)) {
+            e2.results = e.results.concat(Array.isArray(e2.results) ? e2.results : []);
+          }
+          return Promise.resolve(e2);
+        });
+    };
+  }
+
+  /**
+   * @param {String} eventType
+   * @param {ClassMeta} cm
+   * @param {{}} data
+   * @returns {Promise}
+   */
+  function trigger(eventType, cm, data) {
+    var c = cm;
+    var p = null;
+    while (c) {
+      if (p) {
+        p = p.then(bubble(c, eventType, data));
+      } else {
+        p = _this.trigger({
+          type: c.getCanonicalName() + '.' + eventType,
+          item: data.item,
+          data: data.data
+        });
+      }
+      c = c.getAncestor();
+    }
+    if (p) {
+      return p;
+    }
+    return Promise.reject(new Error('Не передан класс объекта события.'));
+  }
+
   function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
+      if (!e || skip) {
+        return Promise.resolve();
+      }
       var up = false;
       var data = {};
       if (Array.isArray(e.results) && e.results.length) {
@@ -1215,9 +1351,6 @@ function IonDataRepository(options) {
           true
         );
       }
-      if (skip) {
-        return Promise.resolve(e.item);
-      }
       return enrich(e.item, nestingDepth || 0);
     };
   }
@@ -1232,64 +1365,75 @@ function IonDataRepository(options) {
    * @param {String} [options.uid]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.ignoreIntegrityCheck]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
     options = options || {};
-    // jshint maxcomplexity: 30
-    return new Promise(function (resolve, reject) {
-      try {
-        var cm = _this.meta.getMeta(classname, version);
-        var rcm = getRootType(cm);
+    try {
+      let cm = _this.meta.getMeta(classname, version);
+      let rcm = getRootType(cm);
 
-        var refUpdates = {};
-        var updates = formUpdatedData(cm, data, true, refUpdates) || {};
+      let refUpdates = {};
+      let da = {};
+      let updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
 
-        var fileSavers = [];
+      let fileSavers = [];
 
-        autoAssign(cm, updates);
-        prepareFileSavers(cm, fileSavers, updates);
-        var chr = checkRequired(cm, updates, false);
-        if (chr !== true) {
-          return reject(chr);
-        }
+      autoAssign(cm, updates);
+      prepareFileSavers('new', cm, fileSavers, updates);
+      checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
 
-        Promise.all(fileSavers).then(function () {
+      return Promise.all(fileSavers)
+        .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (options.uid) {
             updates._creator = options.uid;
           }
-          return _this.ds.insert(tn(rcm), updates);
-        }).then(function (data) {
+          return _this.ds.insert(
+            tn(rcm),
+            updates,
+            {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)}
+          );
+        })
+        .catch(wrapDsError('createItem', classname, null, null, cm))
+        .then(function (data) {
+          if (!data) {
+            return Promise.resolve();
+          }
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
           delete updates._creator;
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return updateBackRefs(item, cm, data);
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return refUpdator(item, refUpdates, changeLogger);
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item,
-            data: data
-          });
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
-            return calcProperties(item, options.skipResult);
-          }
-        ).then(resolve).catch(reject);
-      } catch (err) {
-        reject(err);
-      }
-    });
+        })
+        .then(function (item) {
+          return trigger(
+            'create',
+            item.getMetaClass(),
+            {
+              item: item,
+              data: data
+            }
+          );
+        })
+        .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+        .then(function (item) {
+          return calcProperties(item, options.skipResult);
+        });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -1302,41 +1446,40 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String} [options.uid]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
     options = options || {};
     if (!id) {
-      return Promise.reject(new Error('Не передан идентификатор объекта!'));
+      return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
     }
     try {
-      var cm = _this.meta.getMeta(classname);
-      var rcm = getRootType(cm);
+      let cm = _this.meta.getMeta(classname);
+      let rcm = getRootType(cm);
 
       /**
        * @var {{}}
        */
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
 
       if (conditions) {
-        var base;
-        var refUpdates = {};
-        var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+        let base;
+        let refUpdates = {};
+        let da = {};
+        let updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
 
-        var fileSavers = [];
+        let fileSavers = [];
 
         if (cm.getChangeTracker()) {
           updates[cm.getChangeTracker()] = new Date();
         }
 
-        prepareFileSavers(cm, fileSavers, updates);
-        var chr = checkRequired(cm, updates, true);
-        if (chr !== true) {
-          return Promise.reject(chr);
-        }
+        prepareFileSavers(id, cm, fileSavers, updates);
+        checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
 
-        var p;
+        let p;
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
             base = b;
@@ -1346,42 +1489,55 @@ function IonDataRepository(options) {
           p = Promise.all(fileSavers);
         }
 
-        return p.then(function () {
-          if (options.uid) {
-            updates._editor = options.uid;
-          }
-          return _this.ds.update(tn(rcm), conditions, updates);
-        }).then(function (data) {
-          if (!data) {
-            return Promise.reject(new Error('Не найден объект для редактирования ' + cm.getName() + '@' + id));
-          }
-          var item = _this._wrap(data._class, data, data._classVer);
-          delete updates._editor;
-          return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
-        }).then(function (item) {
-          return updateBackRefs(item, cm, data, id);
-        }).then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
-        }).then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          if (!suppresEvent) {
-            return _this.trigger({
-              type: item.getMetaClass().getCanonicalName() + '.edit',
-              item: item,
-              updates: data
-            });
-          }
-          return new Promise(function (resolve) {resolve({item: item});});
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
+        return p
+          .then(function () {
+            if (options.uid) {
+              updates._editor = options.uid;
+            }
+            return _this.ds.update(
+              tn(rcm),
+              conditions,
+              updates,
+              {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)}
+            );
+          })
+          .catch(wrapDsError('editItem', classname, null, null, cm))
+          .then(function (data) {
+            if (!data) {
+              return Promise.reject(new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`}));
+            }
+            var item = _this._wrap(data._class, data, data._classVer);
+            delete updates._editor;
+            return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
+          })
+          .then(function (item) {
+            return updateBackRefs(item, cm, data, id);
+          })
+          .then(function (item) {
+            return refUpdator(item, refUpdates, changeLogger);
+          })
+          .then(function (item) {
+            return loadFiles(item, _this.fileStorage, _this.imageStorage);
+          })
+          .then(function (item) {
+            if (!suppresEvent) {
+              return trigger(
+                'edit',
+                item.getMetaClass(),
+                {
+                  item: item,
+                  updates: data
+                }
+              );
+            }
+            return Promise.resolve({item: item});
+          })
+          .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+          .then(function (item) {
             return calcProperties(item, options.skipResult);
-          }
-        );
+          });
       } else {
-        return Promise.reject(new Error('Не указан идентификатор объекта!'));
+        return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
       }
     } catch (err) {
       return Promise.reject(err);
@@ -1404,14 +1560,14 @@ function IonDataRepository(options) {
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
     options = options || {};
-    var fileSavers = [];
     try {
-      var cm = _this.meta.getMeta(classname, version);
-      var rcm = getRootType(cm);
+      let cm = _this.meta.getMeta(classname, version);
+      let rcm = getRootType(cm);
 
-      var refUpdates = {};
-      var updates = formUpdatedData(cm, data, true, refUpdates) || {};
-      var conditionsData;
+      let refUpdates = {};
+      let da = {};
+      let updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
+      let conditionsData;
 
       if (id) {
         conditionsData = _this.keyProvider.keyToData(rcm, id);
@@ -1419,18 +1575,19 @@ function IonDataRepository(options) {
         conditionsData = _this.keyProvider.keyData(rcm, updates);
       }
 
-      var event = EventType.UPDATE;
+      let event = EventType.UPDATE;
 
-      var conditions = null;
+      let conditions = null;
       if (conditionsData) {
         conditions = formUpdatedData(rcm, conditionsData);
       }
 
-      var base = null;
+      let base = null;
 
-      prepareFileSavers(cm, fileSavers, updates);
+      let fileSavers = [];
+      prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
 
-      var p;
+      let p;
       if (changeLogger && conditions) {
         p = _this.ds.get(tn(rcm), conditions).then(function (b) {
           base = b;
@@ -1440,14 +1597,15 @@ function IonDataRepository(options) {
         p = Promise.all(fileSavers);
       }
 
-      return p.then(function () {
+      return p
+        .then(function () {
           var chr;
           try {
             updates._class = cm.getCanonicalName();
             updates._classVer = cm.getVersion();
             if (conditions) {
               if (options && options.autoAssign) {
-                autoAssign(cm, updates);
+                autoAssign(cm, updates, true);
               } else {
                 if (cm.getChangeTracker()) {
                   updates[cm.getChangeTracker()] = new Date();
@@ -1457,51 +1615,57 @@ function IonDataRepository(options) {
             } else {
               autoAssign(cm, updates);
               event = EventType.CREATE;
-              chr = checkRequired(cm, updates, false);
+              chr = checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
             }
-            if (chr !== true && options.ignoreIntegrityCheck) {
-              if (options.log) {
-                options.log.warn('Ошибка контроля целостности сохраняемого объекта', chr.message);
-              }
-              chr = true;// Если задано игнорировать целостность - игнорируем
-            }
-            if (chr !== true) {
-              return Promise.reject(chr);
-            }
-            return conditions ? _this.ds.upsert(tn(rcm), conditions, updates) : _this.ds.insert(tn(rcm), updates);
+            let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
+            return conditions ?
+              _this.ds.upsert(tn(rcm), conditions, updates, opts) :
+              _this.ds.insert(tn(rcm), updates, opts);
           } catch (err) {
             return Promise.reject(err);
           }
-        }).then(function (data) {
-          var item = _this._wrap(data._class, data, data._classVer);
+        })
+        .catch(wrapDsError('saveItem', classname, null, null, cm))
+        .then(function (d) {
+          var item;
+          if (d) {
+            item = _this._wrap(d._class, d, d._classVer);
+          } else {
+            item = _this._wrap(classname, conditionsData || updates, null);
+          }
           return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
-        }).then(function (item) {
+        })
+        .then(function (item) {
           if (!options.ignoreIntegrityCheck) {
             return updateBackRefs(item, cm, data, id || item.getItemId());
           } else {
             return Promise.resolve(item);
           }
-        }).then(function (item) {
+        })
+        .then(function (item) {
           if (!options.ignoreIntegrityCheck) {
             return refUpdator(item, refUpdates, changeLogger);
           } else {
             return Promise.resolve(item);
           }
-        }).then(function (item) {
+        })
+        .then(function (item) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        }).then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item,
-            updates: data
-          });
-        }).
-        then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult)).
-        then(
-          function (item) {
-            return calcProperties(item, options.skipResult);
-          }
-        );
+        })
+        .then(function (item) {
+          return trigger(
+            'save',
+            item.getMetaClass(),
+            {
+              item: item,
+              updates: data
+            }
+          );
+        })
+        .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+        .then(function (item) {
+          return calcProperties(item, options.skipResult);
+        });
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1530,21 +1694,87 @@ function IonDataRepository(options) {
     } else {
       p = _this.ds.delete(tn(rcm), conditions);
     }
-    return p.
-      then(function () {
+    return p
+      .catch(wrapDsError('deleteItem', classname, id))
+      .then(function () {
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: base, updates: {}});
-      }).
-      then(
+      })
+      .then(
         function () {
-          return _this.trigger({
-            type: classname + '.delete',
-            id: id
-          });
+          return trigger(
+            'delete',
+            cm,
+            {
+              id: id
+            }
+          );
         }
-      ).
-      then(function () {
-        return Promise.resolve();
-      });
+      )
+      .then(() => Promise.resolve());
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkDelete = function (classname, options) {
+    options = options || {};
+
+    var cm = _this.meta.getMeta(classname);
+    var rcm = getRootType(cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm);
+    return prepareFilterValues(cm, options.filter).then(function (filter) {
+      return _this.ds.delete(tn(rcm), filter);
+    });
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkEdit = function (classname, data, options) {
+    options = options || {};
+    try {
+      var cm = _this.meta.getMeta(classname);
+      var rcm = getRootType(cm);
+
+      var refUpdates = {};
+      var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+      if (cm.getChangeTracker()) {
+        updates[cm.getChangeTracker()] = new Date();
+      }
+      var fileSavers = [];
+      prepareFileSavers('bulk', cm, fileSavers, updates);
+      checkRequired(cm, updates, true, true);
+      return Promise.all(fileSavers)
+        .then(function () {
+          return prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm));
+        })
+        .then(function (filter) {
+          if (options.uid) {
+            updates._editor = options.uid;
+          }
+          return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
+        })
+        .then(function (matched) {
+          if (options.skipResult) {
+            return Promise.resolve(matched);
+          }
+          return _this._getIterator(classname, options);
+        });
+    } catch (err) {
+
+    }
   };
 
   /**
@@ -1589,7 +1819,7 @@ function IonDataRepository(options) {
             }
             if (act) {
               mrcm = getRootType(m[i].getMetaClass());
-              writers.push(_this.ds.update(tn(mrcm), cond, updates));
+              writers.push(_this.ds.update(tn(mrcm), cond, updates, {skipResult: true}));
             }
           }
         }
@@ -1609,33 +1839,35 @@ function IonDataRepository(options) {
    * @private
    */
   function _editCollection(master, collection, details, changeLogger, operation) {
-    return new Promise(function (resolve, reject) {
-      var pm = master.getMetaClass().getPropertyMeta(collection);
-      if (!pm || pm.type !== PropertyTypes.COLLECTION) {
-        return reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+    var pm = master.getMetaClass().getPropertyMeta(collection);
+    if (!pm || pm.type !== PropertyTypes.COLLECTION) {
+      return Promise.reject(
+        new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
+      );
+    }
+
+    var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
+
+    if (pm.backRef) {
+      var update = {};
+      update[pm.backRef] = operation ? (pm.binding ? master.get(pm.binding) : master.getItemId()) : null;
+
+      var writers = [];
+      for (var i = 0; i < details.length; i++) {
+        writers.push(_this._editItem(details[i].getMetaClass().getCanonicalName(), details[i].getItemId(), update));
       }
 
-      var event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
-
-      if (pm.backRef) {
-        var update = {};
-        update[pm.backRef] = operation ? (pm.binding ? master.get(pm.binding) : master.getItemId()) : null;
-
-        var writers = [];
-        for (var i = 0; i < details.length; i++) {
-          writers.push(_this._editItem(details[i].getMetaClass().getCanonicalName(), details[i].getItemId(), update));
-        }
-
-        Promise.all(writers).then(function () {
+      return Promise.all(writers)
+        .then(function () {
           return _this.trigger({
             type: event,
             master: master,
             details: details
           });
-        }).then(function () {resolve();}).catch(reject);
-      } else {
-        editCollections([master], [collection], details, operation ? 'put' : 'eject').
-        then(function () {
+        });
+    } else {
+      return editCollections([master], [collection], details, operation ? 'put' : 'eject')
+        .then(function () {
           var i;
           if (pm.backColl) {
             var colls = [];
@@ -1693,11 +1925,8 @@ function IonDataRepository(options) {
         }).
         then(function () {
           return _this.trigger({type: event, master: master, details: details});
-        }).
-        then(function () {resolve();}).
-        catch(reject);
-      }
-    });
+        });
+    }
   }
 
   /**
@@ -1742,12 +1971,16 @@ function IonDataRepository(options) {
 
     var pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm) {
-      return Promise.reject(new Error('Не найден атрибут коллекции ' + master.getClassName() + '.' + collection));
+      return Promise.reject(
+        new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
+      );
     }
 
     var detailCm = pm._refClass;
     if (!detailCm) {
-      return Promise.reject(new Error('Не найден класс элементов коллекции!'));
+      return Promise.reject(
+        new IonError(Errors.INVALID_META, {info: `${master.getClassName()}@${master.getItemId()}`})
+      );
     }
 
     if (pm.backRef) {
@@ -1764,7 +1997,9 @@ function IonDataRepository(options) {
     } else {
       var kp = detailCm.getKeyProperties();
       if (kp.length > 1) {
-        return Promise.reject(new Error('Коллекции многие-ко-многим на составных ключах не поддерживаются!'));
+        return Promise.reject(
+          new IonError(Errors.COMPOSITE_KEY, {oper: 'getCollection'})
+        );
       }
 
       return _this._getItem(master.getClassName(), master.getItemId(), 0)
@@ -1778,7 +2013,9 @@ function IonDataRepository(options) {
               return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            return Promise.reject(new Error('Не найден контейнер коллекции!'));
+            return Promise.reject(
+              new IonError(Errors.ITEM_NOT_FOUND, {info: `${master.getClassName()}@${master.getItemId()}`})
+            );
           }
         });
     }

@@ -22,7 +22,7 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
 function toScalar(v, context) {
   if (!Array.isArray(v)) {
     return v;
-  }
+  }  
   var result = v.slice(0);
 
   for (let i = 0; i < result.length; i++) {

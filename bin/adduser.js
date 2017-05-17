@@ -1,10 +1,11 @@
 /**
  * Created by kras on 24.08.16.
  */
-var config = require('../config');
-var di = require('core/di');
-
-var IonLogger = require('core/impl/log/IonLogger');
+const config = require('../config');
+const di = require('core/di');
+const IonLogger = require('core/impl/log/IonLogger');
+const errorSetup = require('core/error-setup');
+errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger({});
 
