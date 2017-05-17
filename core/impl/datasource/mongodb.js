@@ -611,7 +611,7 @@ function MongoDs(config) {
                     {upsert: options.upsert || false},
                     function (err) {
                       if (err) {
-                        return reject(wrapError(err, upsert ? 'upsert' : 'update', type));
+                        return reject(wrapError(err, options.upsert ? 'upsert' : 'update', type));
                       }
                       var p;
                       if (options.skipResult) {
