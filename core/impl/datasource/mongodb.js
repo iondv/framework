@@ -22,6 +22,7 @@ const GEOFLD_COLLECTION = '__geofields';
 
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
+const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
 // jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
 
@@ -988,20 +989,11 @@ function MongoDs(config) {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
             if (tmp !== null) {
               let nm = name;
-              if (name === '$nor') {
-                nm = '$not';
-                if (Array.isArray(tmp)) {
-                  if (tmp.length > 1) {
-                    tmp = {$or: tmp};
-                  }
-                } else {
-                  tmp = [tmp];
-                }
-              } else if (name === '$or') {
+              if (name === '$nor' || name === '$or') {
                 let skip = !(Array.isArray(tmp) && tmp.length);
                 if (!skip) {
                   for (let i = 0; i < tmp.length; i++) {
-                    if (tmp[i] === true) {
+                    if (tmp[i] === IGNORE) {
                       skip = true;
                       break;
                     }
@@ -1009,23 +1001,28 @@ function MongoDs(config) {
                 }
                 if (skip) {
                   tmp = null;
+                } else {
+                  if (name === '$nor') {
+                    nm = '$not';
+                    if (tmp.length > 1) {
+                      tmp = {$or: tmp};
+                    }
+                  }
                 }
               } else if (name === '$and') {
                 let skip = !(Array.isArray(tmp) && tmp.length);
                 let tmp2 = [];
                 if (!skip) {
                   for (let i = 0; i < tmp.length; i++) {
-                    if (tmp[i] !== true) {
+                    if (tmp[i] !== IGNORE) {
                       tmp2.push(tmp[i]);
-                    }
-                    if (tmp[i] === false) {
-                      skip = true;
-                      break;
                     }
                   }
                 }
                 if (skip || tmp2.length === 0) {
                   tmp = null;
+                } else {
+                  tmp = tmp2;
                 }
               }
               if (tmp) {
@@ -1054,11 +1051,11 @@ function MongoDs(config) {
                       ) {
                         result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                       } else {
-                        result.push(true);
+                        result.push(IGNORE);
                       }
                     }
                   } else {
-                    result.push(true);
+                    result.push(IGNORE);
                   }
                 }
               }
@@ -1627,7 +1624,7 @@ function MongoDs(config) {
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
           try {
-            c.aggregate(plan, function (err, result) {
+            c.aggregate(plan, {allowDiskUse: true},function (err, result) {
               if (err) {
                 return reject(wrapError(err, 'aggregate', type));
               }
