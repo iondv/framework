@@ -255,37 +255,35 @@ module.exports.scheduleToString = function (value) {
 * @returns {Boolean}
 */
 module.exports.isSchedule = function (value) {
-	if (value.hasOwnProperty('occurs') && typeof Array.isArray(value.occurs)
-		&& value.hasOwnProperty('skipped') && typeof Array.isArray(value.skipped)) {
-		for (let i = 0; i < value.occurs.length; i++) {
-			let oc = value.occurs[i];
-			if(!(oc.duration && !isNaN(oc.duration) && (
-					(oc.second && !isNaN(oc.second) && oc.second >= 0 && oc.second <= 60) ||
-					(oc.minute && !isNaN(oc.minute) && oc.minute >= 0 && oc.minute <= 60) ||
-					(oc.hour && !isNaN(oc.hour) && oc.hour >= 0 && oc.hour <= 24) ||
-					(oc.day && !isNaN(oc.day) && oc.day >= 0 && oc.day <= 31) ||
-					(oc.weekday && !isNaN(oc.weekday) && oc.weekday >= 0 && oc.weekday <= 7) ||
-					(oc.month && !isNaN(oc.month) && oc.month >= 0 && oc.month <= 12) ||
-					(oc.year && !isNaN(oc.year))
-				))){
-				return false;
-			}
-		}
-		for (let i = 0; i < value.skipped.length; i++) {
-			let oc = value.skipped[i];
-			if(!(oc.duration && !isNaN(oc.duration) && (
-					(oc.second && !isNaN(oc.second) && oc.second >= 0 && oc.second <= 60) ||
-					(oc.minute && !isNaN(oc.minute) && oc.minute >= 0 && oc.minute <= 60) ||
-					(oc.hour && !isNaN(oc.hour) && oc.hour >= 0 && oc.hour <= 24) ||
-					(oc.day && !isNaN(oc.day) && oc.day >= 0 && oc.day <= 31) ||
-					(oc.weekday && !isNaN(oc.weekday) && oc.weekday >= 0 && oc.weekday <= 7) ||
-					(oc.month && !isNaN(oc.month) && oc.month >= 0 && oc.month <= 12) ||
-					(oc.year && !isNaN(oc.year))
-				))){
-				return false;
-			}
-		}
-		return true;
-	}
-	return false;
+  if (value.hasOwnProperty('description') && typeof value.description === 'string' &&
+    value.hasOwnProperty('item') && typeof value.item === 'string' &&
+    value.hasOwnProperty('occurs') && Array.isArray(value.occurs) &&
+    value.hasOwnProperty('skipped') && Array.isArray(value.skipped)) {
+    for (let i = 0; i < value.occurs.length; i++) {
+      if (!checkScheduleRule(value.occurs[i])) {
+        return false;
+      }
+    }
+    for (let i = 0; i < value.skipped.length; i++) {
+      if (!checkScheduleRule(value.skipped[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+};
+
+/*jshint maxcomplexity:15 */
+
+function checkScheduleRule(rule) {
+  return (!rule.duration || !isNaN(rule.duration)) &&
+    (!rule.second   || !isNaN(rule.second) && rule.second >= 1 && rule.second <= 60) &&
+    (!rule.minute   || !isNaN(rule.minute) && rule.minute >= 1 && rule.minute <= 60) &&
+    (!rule.hour     || !isNaN(rule.hour) && rule.hour >= 0 && rule.hour <= 23) &&
+    (!rule.day      || !isNaN(rule.day) && rule.day >= 1 && rule.day <= 31) &&
+    (!rule.weekday  || !isNaN(rule.weekday) && rule.weekday >= 1 && rule.weekday <= 7) &&
+    (!rule.month    || !isNaN(rule.month) && rule.month >= 1 && rule.month <= 12) &&
+    (!rule.year     || !isNaN(rule.year)) &&
+    (rule.second || rule.minute || rule.hour || rule.day || rule.weekday || rule.month || rule.year);
 }
