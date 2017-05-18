@@ -1650,7 +1650,7 @@ function MongoDs(config) {
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
           try {
-            c.aggregate(plan, {allowDiskUse: true},function (err, result) {
+            c.aggregate(plan, {allowDiskUse: true}, function (err, result) {
               if (err) {
                 return reject(wrapError(err, 'aggregate', type));
               }
