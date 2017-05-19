@@ -22,7 +22,7 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
 function toScalar(v, context) {
   if (!Array.isArray(v)) {
     return v;
-  }  
+  }
   var result = v.slice(0);
 
   for (let i = 0; i < result.length; i++) {
@@ -149,6 +149,24 @@ function produceArray(conditions, rcm, context) {
   return result.length ? result : null;
 }
 
+function castInValue(value, property, rcm) {
+  let result = [];
+  if (!Array.isArray(value)) {
+    value = [value];
+  }
+  let pm = findPM(rcm, property);
+  if (pm) {
+    if (pm.type === PropertyTypes.INT) {
+      value.forEach(v => result.push(parseInt(v)));
+    } else if (pm.type === PropertyTypes.REAL || pm.type === PropertyTypes.DECIMAL) {
+      value.forEach(v => result.push(parseFloat(v)));
+    } else {
+      result = value;
+    }
+  }
+  return result;
+}
+
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
@@ -192,7 +210,7 @@ function ConditionParser(condition, rcm, context) {
               .replace(/\s+/g, '\\s+'),
             $options: 'i'
           }; break;
-        case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
+        case ConditionTypes.IN: result[condition.property] = {$in: castInValue(condition.value, condition.property, rcm)}; break;
       }
       if (result.hasOwnProperty(condition.property)) {
         return result;
