@@ -96,11 +96,16 @@ function ClassMeta(metaObject) {
     if (typeof this._semanticFunc === 'function') {
       return this._semanticFunc.call(item, dateCallback, circular);
     }
+
+    if (this.getAncestor()) {
+      return this.getAncestor().getSemantics(item, dateCallback, circular);
+    }
+
     return item.getItemId();
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || [];
+    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
   };
 
   this.getForcedEnrichment = function () {
@@ -177,7 +182,7 @@ function ClassMeta(metaObject) {
   };
 
   this.isJournaling = function () {
-	  return this.plain.journaling;
+    return this.plain.journaling;
   };
 }
 
