@@ -72,6 +72,21 @@ function IonDataRepository(options) {
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
 
+  function getAttrs(key, cm) {
+    if (cm) {
+      if (Array.isArray(key)) {
+        let result = [];
+        key.forEach(k => result.push(getAttrs(k, cm)));
+        return result;
+      }
+      let attr = cm.getPropertyMeta(key);
+      if (attr) {
+        return attr.caption;
+      }
+    }
+    return null;
+  }
+
   /**
    *
    * @param {String} oper
@@ -91,19 +106,15 @@ function IonDataRepository(options) {
               new IonError(Errors.EXISTS_IN_COL, {info: `${className}@${id}`, col: collection}, err)
             );
           }
-          let attr = err.params.key;
-          if (cm) {
-            attr = cm.getPropertyMeta(attr);
-            if (attr) {
-              attr = attr.caption;
-            }
-          }
+          let attr = getAttrs(err.params.key, cm);
+          let errType = attr.length > 1 ? Errors.ITEM_EXISTS_MULTI : Errors.ITEM_EXISTS;
           return Promise.reject(
             new IonError(
-              Errors.ITEM_EXISTS,
+              errType,
               {
                 info: `${className}@${id}`,
                 class: cm ? cm.getCaption() : '',
+                key: err.params.key,
                 attr: attr,
                 value: err.params.value
               },

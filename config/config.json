@@ -32,7 +32,9 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "keepAlive": 1
+                  "keepAlive": 1,
+                  "connectTimeoutMS": "[[db.connectTimeOut]]",
+                  "socketTimeoutMS": "[[db.operTimeOut]]"
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",
