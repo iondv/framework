@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
   <link rel="shortcut icon" href="/favicon.ico">
+  <meta name="robots" content="noindex,nofollow">
+  <script src="/vendor/jquery/jquery.min.js" type="application/javascript"></script>
   <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
   <link href="/css/essentials.min.css" rel="stylesheet" type="text/css"/>
   <link href="/css/layout.min.css" rel="stylesheet" type="text/css"/>
@@ -21,7 +23,7 @@
       <% }); %>
     </div>
     <% } %>
-    <form action="/register" method="post" class="sky-form boxed">
+    <form id="reg-form" action="/register" method="post" class="sky-form boxed">
       <header><i class="fa fa-users"></i> Регистрация в системе</header>
       <fieldset>
         <section>
@@ -50,8 +52,27 @@
             <b class="tooltip tooltip-top-right">Повтор пароля</b>
           </label>
         </section>
-      </fieldset>
 
+        <% Object.keys(fields).forEach(function(fieldName){ %>
+        <section>
+          <label class="label">
+            <%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>
+            <%= fields[fieldName].required ? '*' : '' %>
+          </label>
+          <label class="input">
+        <% if (Array.isArray(fields[fieldName])) { %>
+          <select name="<%= fieldName %>">
+            <% for (let option of fields[fieldName]){ %>
+            <option value="<%= option.value %>"><%= option.key %></option>
+            <% } %>
+          </select>
+        <% } else if (fields[fieldName]){ %>
+          <input type="text" name="<%= fieldName %>" class="input" <% if (fields[fieldName].required) { %>required<% } %> />
+        <% } %>
+          </label>
+        </section>
+        <% }) %>
+      </fieldset>
       <footer>
         <button id="authbutton" type="submit" class="btn btn-primary pull-right">Регистрация</button>
         <div class="forgot-password pull-left">
@@ -62,4 +83,59 @@
   </div>
 </div>
 </body>
+<script>
+  jQuery(function(){
+    var options = <%- JSON.stringify(options || {})%>;
+    var fields = <%- JSON.stringify(fields || {})%>;
+    var $msgContainer = $('div#error');
+    var $submit = $('button#authbutton');
+    var $regForm = $('form#reg-form');
+    var $username = $regForm.find('input[name="username"]');
+    var $pwd = $regForm.find('input[name="password"]');
+    var $pwd2 = $regForm.find('input[name="password2"]');
+    $submit.click(function(){
+      $msgContainer.empty();
+      var username = $username.val();
+      var pwd = $pwd.val();
+      var pwd2 = $pwd2.val();
+      var valid = true;
+      var messages = [];
+      var field;
+      if (!username) {
+        messages.push('Поле логина обязательно для заполнения');
+      }
+      if (pwd && pwd2 && pwd === pwd2) {
+        if (options.pwdMinLength) {
+           if (pwd.length < options.pwdMinLength) {
+             valid = false;
+             messages.push('Минимальная длина пароля ' + options.pwdMinLength + ' символов');
+           }
+        }
+      } else {
+        valid = false;
+        messages.push('Неверный повтор пароля');
+      }
+      for (fieldName in fields) {
+        if (fields.hasOwnProperty(fieldName)) {
+          if (fields[fieldName] && fields[fieldName].required) {
+            field = $regForm.find('[name='+fieldName+']');
+            if (!field.val()) {
+              valid = false;
+              messages.push('Поле ' + (fields[fieldName].caption ? fields[fieldName].caption : fieldName )
+                + ' обязательно для заполнения');
+            }
+          }
+        }
+      }
+      if (valid) {
+        $regForm.submit();
+        $msgContainer.empty();
+      } else if (messages.length) {
+        for (var i = 0; i < messages.length; i++) {
+          $('<p/>').html(messages[i]).appendTo($msgContainer);
+        }
+      }
+    });
+  });
+</script>
 </html>
