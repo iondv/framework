@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const Item = require('core/interfaces/DataRepository/lib/Item');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -22,14 +23,22 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
 function toScalar(v, context) {
   if (!Array.isArray(v)) {
     return v;
-  }  
+  }
+
   var result = v.slice(0);
 
   for (let i = 0; i < result.length; i++) {
     if (typeof result[i] === 'string' && result[i][0] === '$' && context) {
-      let p;
-      if ((p = context.property(result[i].substring(1))) !== null) {
-        return p.getValue();
+      let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+      let nm = result[i].substring(1);
+      if (item) {
+        let p;
+        if ((p = item.property(nm)) !== null) {
+          return p.getValue();
+        }
+      }
+      if (context.hasOwnProperty(nm)) {
+        return context[nm];
       }
     }
   }
@@ -156,9 +165,9 @@ function produceArray(conditions, rcm, context) {
  * @returns {{} | null}
  */
 function ConditionParser(condition, rcm, context) {
-  var result, tmp;
+  var result;
   if (Array.isArray(condition)) {
-    tmp = produceArray(condition, rcm);
+    let tmp = produceArray(condition, rcm, context);
     if (tmp) {
       return {$and: tmp};
     }
@@ -192,14 +201,20 @@ function ConditionParser(condition, rcm, context) {
               .replace(/\s+/g, '\\s+'),
             $options: 'i'
           }; break;
-        case ConditionTypes.IN: result[condition.property] = {$in: condition.value}; break;
+        case ConditionTypes.IN: {
+          let tmp = toScalar(condition.value, context);
+          if (!Array.isArray(tmp)) {
+            tmp = [tmp];
+          }
+          result[condition.property] = {$in: tmp};
+        } break;
       }
       if (result.hasOwnProperty(condition.property)) {
         return result;
       }
     } else {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
-        tmp = produceArray(condition.nestedConditions, rcm, context);
+        let tmp = produceArray(condition.nestedConditions, rcm, context);
         if (tmp) {
           if (tmp.length > 1) {
             result = {};
@@ -228,7 +243,7 @@ function ConditionParser(condition, rcm, context) {
           return result;
         }
       } else if (AgregOpers.indexOf(condition.operation) !== -1) {
-        tmp =  produceAggregationOperation(condition, rcm, context);
+        let tmp =  produceAggregationOperation(condition, rcm, context);
         if (tmp) {
           result = {};
           switch (condition.operation) {
