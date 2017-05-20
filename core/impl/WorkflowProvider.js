@@ -185,7 +185,7 @@ function WorkflowProvider(options) {
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
-            var wf = options.metaRepo.getWorkflow(
+            let wf = options.metaRepo.getWorkflow(
               item.getMetaClass().getName(),
               workflow,
               item.getMetaClass().getNamespace(),
@@ -194,16 +194,16 @@ function WorkflowProvider(options) {
 
             if (wf) {
               if (wf.transitionsByName.hasOwnProperty(name)) {
-                transition = wf.transitionsByName[name];
-                var nextState = wf.statesByName[transition.finishState];
+                let transition = wf.transitionsByName[name];
+                let nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
                   return Promise.reject(
                     new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
                   );
                 }
 
-                var updates = {};
-                var calculations = [];
+                let updates = {};
+                let calculations = [];
 
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
@@ -248,13 +248,15 @@ function WorkflowProvider(options) {
                   }).then(
                     function (e) {
                       if (Array.isArray(e.results) && e.results.length) {
-                        for (var i = 0; i < e.results.length; i++) {
-                          for (var nm in e.results[i]) {
-                            if (e.results[i].hasOwnProperty(nm)) {
-                              if (!updates) {
-                                updates = {};
+                        for (let i = 0; i < e.results.length; i++) {
+                          if (e.results[i] && typeof e.results[i] === 'object') {
+                            for (let nm in e.results[i]) {
+                              if (e.results[i].hasOwnProperty(nm)) {
+                                if (!updates) {
+                                  updates = {};
+                                }
+                                updates[nm] = e.results[i][nm];
                               }
-                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
