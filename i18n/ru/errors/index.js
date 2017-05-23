@@ -9,5 +9,6 @@ module.exports = merge(
   require('./di'),
   require('./file-storage'),
   require('./meta-repo'),
-  require('./workflow')
+  require('./workflow'),
+  require('./validation')
 );
