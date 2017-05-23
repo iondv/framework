@@ -842,6 +842,7 @@ function MongoDs(config) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
             result = true;
+            break;
           } else {
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
@@ -885,8 +886,10 @@ function MongoDs(config) {
                 if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
                   attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
                   result = true;
+                  break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
                   result = true;
+                  break;
                 } else {
                   result = result || {};
                   result[name] = tmp;
