@@ -424,6 +424,36 @@ function OwnCloudStorage(config) {
     });
   };
 
+  this._deleteShare = function (share) {
+    return requestShareIds(parseDirId(share))
+      .then(ids => {
+        let promises = [];
+        ids.forEach(id => {
+          promises.push(new Promise(function (resolve, reject) {
+            let reqObject = {
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), id),
+              headers: {
+                'OCS-APIRequest': true
+              },
+              auth: {
+                user: config.login,
+                password: config.password
+              }
+            };
+            request.delete(reqObject, function (err, res) {
+              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+                resolve(true);
+              } else {
+                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+              }
+            });
+          }));
+        });
+        return Promise.all(promises);
+      })
+      .then(result => true);
+  };
+
   function requestShareIds(id) {
     return new Promise(function (resolve, reject) {
       var reqObject = {
