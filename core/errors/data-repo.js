@@ -6,6 +6,7 @@ const PREFIX = 'data-repo';
 
 module.exports = {
   ITEM_EXISTS: `${PREFIX}.exists`,
+  ITEM_EXISTS_MULTI: `${PREFIX}.iem`,
   ITEM_NOT_FOUND: `${PREFIX}.inf`,
   EXISTS_IN_COL: `${PREFIX}.eic`,
   BAD_PARAMS: `${PREFIX}.bp`,

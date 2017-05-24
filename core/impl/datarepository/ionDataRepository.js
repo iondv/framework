@@ -26,6 +26,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
+const merge = require('merge');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 /**
@@ -71,6 +72,21 @@ function IonDataRepository(options) {
 
   this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
 
+  function getAttrs(key, cm) {
+    if (cm) {
+      if (Array.isArray(key)) {
+        let result = [];
+        key.forEach(k => result.push(getAttrs(k, cm)));
+        return result;
+      }
+      let attr = cm.getPropertyMeta(key);
+      if (attr) {
+        return attr.caption;
+      }
+    }
+    return null;
+  }
+
   /**
    *
    * @param {String} oper
@@ -90,19 +106,15 @@ function IonDataRepository(options) {
               new IonError(Errors.EXISTS_IN_COL, {info: `${className}@${id}`, col: collection}, err)
             );
           }
-          let attr = err.params.key;
-          if (cm) {
-            attr = cm.getPropertyMeta(attr);
-            if (attr) {
-              attr = attr.caption;
-            }
-          }
+          let attr = getAttrs(err.params.key, cm);
+          let errType = attr.length > 1 ? Errors.ITEM_EXISTS_MULTI : Errors.ITEM_EXISTS;
           return Promise.reject(
             new IonError(
-              Errors.ITEM_EXISTS,
+              errType,
               {
                 info: `${className}@${id}`,
                 class: cm ? cm.getCaption() : '',
+                key: err.params.key,
                 attr: attr,
                 value: err.params.value
               },
@@ -1115,37 +1127,37 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function logChanges(changeLogger, record) {
-	var cm = record.cm || record.item.getMetaClass();
-	if (cm.isJournaling()) {
-		var p;
-	    if (changeLogger instanceof ChangeLogger) {
-	      let base = {};
-	      if (record.base) {
-	        base = clone(record.base);
-	        delete base._id;
-	        delete base._class;
-	        delete base._classVer;
-	      }
-	      p = changeLogger.LogChange(
-	        record.type,
-	        {
-	          name: record.item.getMetaClass().getCanonicalName(),
-	          version: record.item.getMetaClass().getVersion()
-	        },
-	        record.item.getItemId(),
-	        record.updates,
-	        base
-	      );
-	    } else if (typeof changeLogger === 'function') {
-	      p = changeLogger(record);
-	    }
+    var cm = record.cm || record.item.getMetaClass();
+    if (cm.isJournaling()) {
+      var p;
+      if (changeLogger instanceof ChangeLogger) {
+        let base = {};
+        if (record.base) {
+          base = clone(record.base);
+          delete base._id;
+          delete base._class;
+          delete base._classVer;
+        }
+        p = changeLogger.LogChange(
+          record.type,
+          {
+            name: record.item.getMetaClass().getCanonicalName(),
+            version: record.item.getMetaClass().getVersion()
+          },
+          record.item.getItemId(),
+          record.updates,
+          base
+        );
+      } else if (typeof changeLogger === 'function') {
+        p = changeLogger(record);
+      }
 
-	    if (p instanceof Promise) {
-	      return p.then(function () {
-	        return Promise.resolve(record.item);
-	      });
-	    }
-	}
+      if (p instanceof Promise) {
+        return p.then(function () {
+          return Promise.resolve(record.item);
+        });
+      }
+    }
     return Promise.resolve(record.item);
   }
 
@@ -1270,6 +1282,48 @@ function IonDataRepository(options) {
     });
   }
 
+  function bubble(c, eventType, data) {
+    return function (e) {
+      var bd = merge({}, data);
+      bd.type = c.getCanonicalName() + '.' + eventType;
+      bd.origin = e;
+      return _this.trigger(bd)
+        .then(function (e2) {
+          if (Array.isArray(e.results)) {
+            e2.results = e.results.concat(Array.isArray(e2.results) ? e2.results : []);
+          }
+          return Promise.resolve(e2);
+        });
+    };
+  }
+
+  /**
+   * @param {String} eventType
+   * @param {ClassMeta} cm
+   * @param {{}} data
+   * @returns {Promise}
+   */
+  function trigger(eventType, cm, data) {
+    var c = cm;
+    var p = null;
+    while (c) {
+      if (p) {
+        p = p.then(bubble(c, eventType, data));
+      } else {
+        p = _this.trigger({
+          type: c.getCanonicalName() + '.' + eventType,
+          item: data.item,
+          data: data.data
+        });
+      }
+      c = c.getAncestor();
+    }
+    if (p) {
+      return p;
+    }
+    return Promise.reject(new Error('Не передан класс объекта события.'));
+  }
+
   function writeEventHandler(nestingDepth, changeLogger, skip) {
     return function (e) {
       if (!e || skip) {
@@ -1364,11 +1418,14 @@ function IonDataRepository(options) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         })
         .then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.create',
-            item: item,
-            data: data
-          });
+          return trigger(
+            'create',
+            item.getMetaClass(),
+            {
+              item: item,
+              data: data
+            }
+          );
         })
         .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
         .then(function (item) {
@@ -1464,11 +1521,14 @@ function IonDataRepository(options) {
           })
           .then(function (item) {
             if (!suppresEvent) {
-              return _this.trigger({
-                type: item.getMetaClass().getCanonicalName() + '.edit',
-                item: item,
-                updates: data
-              });
+              return trigger(
+                'edit',
+                item.getMetaClass(),
+                {
+                  item: item,
+                  updates: data
+                }
+              );
             }
             return Promise.resolve({item: item});
           })
@@ -1593,11 +1653,14 @@ function IonDataRepository(options) {
           return loadFiles(item, _this.fileStorage, _this.imageStorage);
         })
         .then(function (item) {
-          return _this.trigger({
-            type: item.getMetaClass().getCanonicalName() + '.save',
-            item: item,
-            updates: data
-          });
+          return trigger(
+            'save',
+            item.getMetaClass(),
+            {
+              item: item,
+              updates: data
+            }
+          );
         })
         .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
         .then(function (item) {
@@ -1638,10 +1701,13 @@ function IonDataRepository(options) {
       })
       .then(
         function () {
-          return _this.trigger({
-            type: classname + '.delete',
-            id: id
-          });
+          return trigger(
+            'delete',
+            cm,
+            {
+              id: id
+            }
+          );
         }
       )
       .then(() => Promise.resolve());
