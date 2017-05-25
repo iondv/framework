@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
+// jshint maxstatements: 70, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -806,7 +806,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
-        if (tmp) {
+        if (tmp && tmp !== IGNORE) {
           result.push(tmp);
         }
       }
@@ -842,13 +842,14 @@ function MongoDs(config) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
             result = true;
+            break;
           } else {
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] === true) {
-                    result = true;
+                  if (tmp[i] === true || tmp[i] === IGNORE) {
+                    result = IGNORE;
                     break;
                   }
                 }
@@ -860,7 +861,7 @@ function MongoDs(config) {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] !== true) {
+                  if (tmp[i] !== true && tmp[i] !== IGNORE) {
                     result.push(tmp[i]);
                   }
                 }
@@ -882,11 +883,16 @@ function MongoDs(config) {
                   result.$nor = tmp;
                 }
               } else {
-                if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
+                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
                   attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else {
                   result = result || {};
                   result[name] = tmp;
@@ -1232,10 +1238,10 @@ function MongoDs(config) {
     return p.then(function () {
       if (joins.length) {
         processJoins(attributes, joins, result);
-        if (postfilter) {
+        if (postfilter && postfilter !== IGNORE) {
           result.push({$match: postfilter});
         }
-        if (redactFilter) {
+        if (redactFilter && redactFilter !== IGNORE) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
         if (resultAttrs.length) {
