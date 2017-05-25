@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
+// jshint maxstatements: 70, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -269,31 +269,32 @@ function MongoDs(config) {
   }
 
   function getAutoInc(type) {
-    return new Promise(function (resolve, reject) {
-      getCollection(AUTOINC_COLLECTION).then(
-        /**
-         * @param {Collection} autoinc
-         */
-        function (autoinc) {
-          autoinc.find({__type: type}).limit(1).next(function (err, counters) {
-            if (err) {
-              return reject(err);
-            }
-            resolve({ai: autoinc, c: counters});
-          });
-        }
-      ).catch(reject);
-    });
+    return getCollection(AUTOINC_COLLECTION).then(
+      /**
+       * @param {Collection} autoinc
+       */
+      function (autoinc) {
+        return new Promise((resolve, reject) => {
+          autoinc.find({__type: type})
+            .limit(1)
+            .next((err, counters) => {
+              if (err) {
+                return reject(err);
+              }
+              resolve({ai: autoinc, c: counters});
+            });
+        });
+      }
+    );
   }
 
   function autoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var inc = {};
             var act = false;
             var counters = result.c.counters;
@@ -306,29 +307,28 @@ function MongoDs(config) {
             }
 
             if (act) {
-              result.ai.findOneAndUpdate(
-                {__type: type},
-                {$inc: inc},
-                {returnOriginal: false, upsert: false},
-                function (err, result) {
-                  if (err) {
-                    return reject(err);
-                  }
-                  for (var nm in result.value.counters) {
-                    if (result.value.counters.hasOwnProperty(nm)) {
-                      data[nm] = result.value.counters[nm];
+              return new Promise((resolve, reject) => {
+                result.ai.findOneAndUpdate(
+                  {__type: type},
+                  {$inc: inc},
+                  {returnOriginal: false, upsert: false},
+                  function (err, result) {
+                    if (err) {
+                      return reject(err);
                     }
-                  }
-                  resolve(data);
-                }
-              );
-              return;
+                    for (var nm in result.value.counters) {
+                      if (result.value.counters.hasOwnProperty(nm)) {
+                        data[nm] = result.value.counters[nm];
+                      }
+                    }
+                    resolve(data);
+                  });
+              });
             }
           }
-          resolve(data);
+          return Promise.resolve(data);
         }
-      ).catch(reject);
-    });
+      );
   }
 
   function excludeNulls(data, excludes) {
@@ -454,9 +454,9 @@ function MongoDs(config) {
         function (result) {
           var act = false;
           var up = {};
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var counters = result.c.counters;
-            for (var nm in counters) {
+            for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
@@ -465,13 +465,12 @@ function MongoDs(config) {
               }
             }
           }
-
           if (!act) {
             return Promise.resolve(data);
           }
-          return new Promise(function (resolve, reject) {
+          return new Promise((resolve, reject) => {
             result.ai.findOneAndUpdate(
-              {type: type},
+              {__type: type},
               {$set: up},
               {returnOriginal: false, upsert: false},
               function (err) {
@@ -642,9 +641,7 @@ function MongoDs(config) {
                       }
                       var p;
                       if (options.skipResult) {
-                        p = options.upsert ?
-                          adjustAutoInc(type, data.$set).then(()=>Promise.resolve()) :
-                          Promise.resolve();
+                        p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
                         p = _this._get(type, conditions).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
@@ -806,7 +803,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
-        if (tmp) {
+        if (tmp && tmp !== IGNORE) {
           result.push(tmp);
         }
       }
@@ -842,13 +839,14 @@ function MongoDs(config) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
             result = true;
+            break;
           } else {
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] === true) {
-                    result = true;
+                  if (tmp[i] === true || tmp[i] === IGNORE) {
+                    result = IGNORE;
                     break;
                   }
                 }
@@ -860,7 +858,7 @@ function MongoDs(config) {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] !== true) {
+                  if (tmp[i] !== true && tmp[i] !== IGNORE) {
                     result.push(tmp[i]);
                   }
                 }
@@ -882,11 +880,16 @@ function MongoDs(config) {
                   result.$nor = tmp;
                 }
               } else {
-                if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
+                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
                   attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else {
                   result = result || {};
                   result[name] = tmp;
@@ -1232,10 +1235,10 @@ function MongoDs(config) {
     return p.then(function () {
       if (joins.length) {
         processJoins(attributes, joins, result);
-        if (postfilter) {
+        if (postfilter && postfilter !== IGNORE) {
           result.push({$match: postfilter});
         }
-        if (redactFilter) {
+        if (redactFilter && redactFilter !== IGNORE) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
         if (resultAttrs.length) {
