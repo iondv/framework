@@ -269,31 +269,32 @@ function MongoDs(config) {
   }
 
   function getAutoInc(type) {
-    return new Promise(function (resolve, reject) {
-      getCollection(AUTOINC_COLLECTION).then(
-        /**
-         * @param {Collection} autoinc
-         */
-        function (autoinc) {
-          autoinc.find({__type: type}).limit(1).next(function (err, counters) {
-            if (err) {
-              return reject(err);
-            }
-            resolve({ai: autoinc, c: counters});
-          });
-        }
-      ).catch(reject);
-    });
+    return getCollection(AUTOINC_COLLECTION).then(
+      /**
+       * @param {Collection} autoinc
+       */
+      function (autoinc) {
+        return new Promise((resolve, reject) => {
+          autoinc.find({__type: type})
+            .limit(1)
+            .next((err, counters) => {
+              if (err) {
+                return reject(err);
+              }
+              resolve({ai: autoinc, c: counters});
+            });
+        });
+      }
+    );
   }
 
   function autoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var inc = {};
             var act = false;
             var counters = result.c.counters;
@@ -306,29 +307,28 @@ function MongoDs(config) {
             }
 
             if (act) {
-              result.ai.findOneAndUpdate(
-                {__type: type},
-                {$inc: inc},
-                {returnOriginal: false, upsert: false},
-                function (err, result) {
-                  if (err) {
-                    return reject(err);
-                  }
-                  for (var nm in result.value.counters) {
-                    if (result.value.counters.hasOwnProperty(nm)) {
-                      data[nm] = result.value.counters[nm];
+              return new Promise((resolve, reject) => {
+                result.ai.findOneAndUpdate(
+                  {__type: type},
+                  {$inc: inc},
+                  {returnOriginal: false, upsert: false},
+                  function (err, result) {
+                    if (err) {
+                      return reject(err);
                     }
-                  }
-                  resolve(data);
-                }
-              );
-              return;
+                    for (var nm in result.value.counters) {
+                      if (result.value.counters.hasOwnProperty(nm)) {
+                        data[nm] = result.value.counters[nm];
+                      }
+                    }
+                    resolve(data);
+                  });
+              });
             }
           }
-          resolve(data);
+          return Promise.resolve(data);
         }
-      ).catch(reject);
-    });
+      );
   }
 
   function excludeNulls(data, excludes) {
@@ -454,9 +454,9 @@ function MongoDs(config) {
         function (result) {
           var act = false;
           var up = {};
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var counters = result.c.counters;
-            for (var nm in counters) {
+            for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
@@ -465,13 +465,12 @@ function MongoDs(config) {
               }
             }
           }
-
           if (!act) {
             return Promise.resolve(data);
           }
-          return new Promise(function (resolve, reject) {
+          return new Promise((resolve, reject) => {
             result.ai.findOneAndUpdate(
-              {type: type},
+              {__type: type},
               {$set: up},
               {returnOriginal: false, upsert: false},
               function (err) {
@@ -642,9 +641,7 @@ function MongoDs(config) {
                       }
                       var p;
                       if (options.skipResult) {
-                        p = options.upsert ?
-                          adjustAutoInc(type, data.$set).then(()=>Promise.resolve()) :
-                          Promise.resolve();
+                        p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
                         p = _this._get(type, conditions).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
