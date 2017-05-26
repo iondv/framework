@@ -27,6 +27,9 @@
       <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
       <div class="buttons">
         <button id="submit-btn" type="button">Изменить пароль</button>
+        <div class="forgot-password pull-left">
+          <a href="/"><b>Вернуться в приложение</b></a>
+        </div>
       </div>
     </form>
   </div>
@@ -34,17 +37,7 @@
 </body>
 <script>
   jQuery(function(){
-    function parseJSON(json) {
-      var result;
-      try {
-        result = JSON.parse(json);
-      } catch (err) {
-        result = {};
-      }
-      return result;
-    }
-
-    var options = parseJSON('<%- JSON.stringify(options)%>');
+    var options = <%- JSON.stringify(options)%>;
     var $msgContainer = $('div.msg-container');
     var $submit = $('button#submit-btn');
     var $regForm = $('form#reg-form');
