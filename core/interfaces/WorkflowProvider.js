@@ -28,6 +28,7 @@ function WorkflowProvider() {
    * @param {{}} [options]
    * @param {String} [options.uid]
    * @param {{}} [options.env]
+   * @param {ChangeLogger} [options.changeLogger]
    * @returns {Promise}
    */
   this.performTransition = function (item, workflow, name, options) {

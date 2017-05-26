@@ -1727,31 +1727,31 @@ function IonDataRepository(options) {
       return p
         .then(preWriteEventHandler(updates))
         .then(function () {
-          var chr;
-          try {
-            updates._class = cm.getCanonicalName();
-            updates._classVer = cm.getVersion();
-            if (conditions) {
-              if (options && options.autoAssign) {
-                autoAssign(cm, updates, true, options.uid);
-              } else {
-                if (cm.getChangeTracker()) {
-                  updates[cm.getChangeTracker()] = new Date();
-                }
-              }
-              chr = checkRequired(cm, updates, true);
+          let fileSavers = [];
+          prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
+          return Promise.all(fileSavers);
+        })
+        .then(function () {
+          updates._class = cm.getCanonicalName();
+          updates._classVer = cm.getVersion();
+          if (conditions) {
+            if (options && options.autoAssign) {
+              autoAssign(cm, updates, true, options.uid);
             } else {
-              autoAssign(cm, updates, false, options.uid);
-              event = EventType.CREATE;
-              chr = checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
+              if (cm.getChangeTracker()) {
+                updates[cm.getChangeTracker()] = new Date();
+              }
             }
-            let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
-            return conditions ?
-              _this.ds.upsert(tn(rcm), conditions, updates, opts) :
-              _this.ds.insert(tn(rcm), updates, opts);
-          } catch (err) {
-            return Promise.reject(err);
+            checkRequired(cm, updates, true);
+          } else {
+            autoAssign(cm, updates, false, options.uid);
+            event = EventType.CREATE;
+            checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           }
+          let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
+          return conditions ?
+            _this.ds.upsert(tn(rcm), conditions, updates, opts) :
+            _this.ds.insert(tn(rcm), updates, opts);
         })
         .catch(wrapDsError('saveItem', classname, null, null, cm))
         .then(function (d) {

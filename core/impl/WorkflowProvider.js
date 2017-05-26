@@ -246,6 +246,7 @@ function WorkflowProvider(options) {
    * @param {{}} [tOptions]
    * @param {String} [tOptions.uid]
    * @param {{}} [tOptions.env]
+   * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, tOptions) {
@@ -275,15 +276,15 @@ function WorkflowProvider(options) {
                   }
                 }
 
-                var nextState = wf.statesByName[transition.finishState];
+                let nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
                   return Promise.reject(
                     new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
                   );
                 }
 
-                var updates = {};
-                var calculations = null;
+                let updates = {};
+                let calculations = null;
 
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
@@ -316,13 +317,15 @@ function WorkflowProvider(options) {
                   }).then(
                     function (e) {
                       if (Array.isArray(e.results) && e.results.length) {
-                        for (var i = 0; i < e.results.length; i++) {
-                          for (var nm in e.results[i]) {
-                            if (e.results[i].hasOwnProperty(nm)) {
-                              if (!updates) {
-                                updates = {};
+                        for (let i = 0; i < e.results.length; i++) {
+                          if (e.results[i] && typeof e.results[i] === 'object') {
+                            for (let nm in e.results[i]) {
+                              if (e.results[i].hasOwnProperty(nm)) {
+                                if (!updates) {
+                                  updates = {};
+                                }
+                                updates[nm] = e.results[i][nm];
                               }
-                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
@@ -333,7 +336,7 @@ function WorkflowProvider(options) {
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),
                           updates,
-                          null,
+                          tOptions.changeLogger,
                           {
                             uid: tOptions.uid,
                             env: tOptions.env
