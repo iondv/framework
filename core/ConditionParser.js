@@ -30,7 +30,7 @@ function toScalar(v, context, type, lang) {
 
   if (typeof v === 'string' && v[0] === '$' && context) {
     let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
-    let nm = result[i].substring(1);
+    let nm = v.substring(1);
     if (item) {
       let p;
       if ((p = item.property(nm)) !== null) {
@@ -41,7 +41,7 @@ function toScalar(v, context, type, lang) {
     }
     if (Array.isArray(v)) {
       let result = [];
-      v.forEach((v) => {result.push(toScalar(v));});
+      v.forEach((v) => {result.push(toScalar(v, context, type, lang));});
       return result;
     }
   }
@@ -105,7 +105,16 @@ function produceContainsFilter(rcm, condition, context, lang) {
  */
 function vt(cm, property) {
   let pm = findPM(cm, property);
-  return pm ? pm.type : PropertyTypes.STRING;
+  if (pm) {
+    if (pm.type === PropertyTypes.REFERENCE) {
+      if (pm._refClass.getKeyProperties().length === 1) {
+        return vt(pm._refClass, pm._refClass.getKeyProperties()[0]);
+      }
+      return PropertyTypes.STRING;
+    }
+    return pm.type;
+  }
+  return PropertyTypes.STRING;
 }
 
 /**
@@ -198,7 +207,14 @@ function castInValue(value, property, rcm, context, lang) {
   if (!Array.isArray(value)) {
     value = [value];
   }
-  value.forEach(v => result.push(toScalar(v, context, vt(rcm, property), lang)));
+  value.forEach((v) => {
+    let sv = toScalar(v, context, vt(rcm, property), lang);
+    if (Array.isArray(sv)) {
+      Array.prototype.push.apply(result, sv);
+    } else {
+      result.push(sv);
+    }
+  });
   return result;
 }
 

@@ -26,7 +26,6 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
-const merge = require('merge');
 
 const EVENT_CANCELED = '____CANCELED___';
 
@@ -634,6 +633,7 @@ function IonDataRepository(options) {
     then(() => prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
+
       return _this.ds.fetch(tn(rcm), options);
     }).
     catch(wrapDsError('getList', obj)).
@@ -1448,7 +1448,7 @@ function IonDataRepository(options) {
 
       let refUpdates = {};
       let da = {};
-      let updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
+      let updates = data || {};
 
       return bubble(
         'pre-create',
@@ -1460,6 +1460,7 @@ function IonDataRepository(options) {
         })
         .then(preWriteEventHandler(updates))
         .then(function () {
+          updates = formUpdatedData(cm, data, true, refUpdates, da);
           autoAssign(cm, updates, false, options.uid);
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
@@ -1552,7 +1553,7 @@ function IonDataRepository(options) {
         let base;
         let refUpdates = {};
         let da = {};
-        let updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
+        let updates = data || {};
 
         if (cm.getChangeTracker()) {
           updates[cm.getChangeTracker()] = new Date();
@@ -1593,6 +1594,7 @@ function IonDataRepository(options) {
         return p
           .then(preWriteEventHandler(updates))
           .then(function () {
+            updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
             checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
             let fileSavers = [];
             prepareFileSavers(id, cm, fileSavers, updates);
@@ -1678,7 +1680,7 @@ function IonDataRepository(options) {
 
       let refUpdates = {};
       let da = {};
-      let updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
+      let updates = data || {};
       let conditionsData;
 
       if (id) {
@@ -1728,6 +1730,7 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(updates))
         .then(function () {
           let fileSavers = [];
+          updates = formUpdatedData(cm, data, true, refUpdates, da)
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
