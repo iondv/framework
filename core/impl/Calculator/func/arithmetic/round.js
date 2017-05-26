@@ -2,8 +2,7 @@
  * Created by krasilneg on 10.02.17.
  */
 'use strict';
-const ac = require('../util').argCalcPromise;
-const acSync = require('../util').argCalcSync;
+const calc = require('../util').calculate;
 
 function round(args) {
   var v1, v2;
@@ -19,24 +18,9 @@ function round(args) {
 }
 
 module.exports = function (args) {
-  return function (sync) {
-    if (sync) {
-      try {
-        let cArgs = acSync(this, args, 2);
-        let result = round(cArgs);
-        return result;
-      } catch (err) {
-        return null;
-      }
-    }
-    return ac(this, args, 2)
-      .then(cArgs => {
-        try {
-          let result = round(cArgs);
-          return Promise.resolve(result);
-        } catch (err) {
-          return Promise.reject(err);
-        }
-      });
+  return function () {
+    return calc(this, args, null, function (args) {
+      return round(args);
+    });
   };
 };

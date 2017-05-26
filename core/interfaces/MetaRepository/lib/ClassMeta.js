@@ -24,12 +24,16 @@ function loadPropertyMetas(cm, plain) {
      * @param {Item} item
      */
     return function (item) {
+      var result = [];
       for (var j = 0; j < this.matrix.length; j++) {
-        if (checkConditions(item, this.matrix[j].conditions)) {
-          return this.matrix[j].result || [];
+        if (
+          !Array.isArray(this.matrix[j].conditions) ||
+          this.matrix[j].conditions.length === 0 ||
+          checkConditions(item, this.matrix[j].conditions)) {
+          Array.prototype.push.apply(result, this.matrix[j].result || []);
         }
       }
-      return [];
+      return result;
     };
   }
   var pm;
@@ -92,11 +96,16 @@ function ClassMeta(metaObject) {
     if (typeof this._semanticFunc === 'function') {
       return this._semanticFunc.call(item, dateCallback, circular);
     }
+
+    if (this.getAncestor()) {
+      return this.getAncestor().getSemantics(item, dateCallback, circular);
+    }
+
     return item.getItemId();
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || [];
+    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
   };
 
   this.getForcedEnrichment = function () {
@@ -104,7 +113,7 @@ function ClassMeta(metaObject) {
   };
 
   this.getKeyProperties = function () {
-    if (!this.plain.key) {
+    if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
       var anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
@@ -170,6 +179,10 @@ function ClassMeta(metaObject) {
       result = result.concat(this.getAncestor().getPropertyMetas());
     }
     return result;
+  };
+
+  this.isJournaling = function () {
+    return this.plain.journaling;
   };
 }
 

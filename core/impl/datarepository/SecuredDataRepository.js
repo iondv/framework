@@ -84,7 +84,7 @@ function SecuredDataRepository(options) {
     resources.push(classPrefix + cm.getCanonicalName());
     var descendants = cm.getDescendants();
     for (var i = 0; i < descendants.length; i++) {
-      classResources(resources, descendants[i]);
+      classResources(check, resources, descendants[i]);
     }
   }
 
@@ -587,6 +587,48 @@ function SecuredDataRepository(options) {
         options.filter = filter;
         return dataRepo.getAssociationsCount(master, collection, options);
       });
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkEdit = function (classname, data, options) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
+        if (
+          permissions[classPrefix + classname] &&
+          permissions[classPrefix + classname][Permissions.WRITE]
+        ) {
+          return dataRepo.bulkEdit(classname, data, options);
+        }
+        return rejectByClass(classname);
+      });
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkDelete = function (classname, options) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
+      if (
+        permissions[classPrefix + classname] &&
+        permissions[classPrefix + classname][Permissions.DELETE]
+      ) {
+        return dataRepo.bulkDelete(classname, options);
+      }
+      return rejectByClass(classname);
+    });
   };
 }
 

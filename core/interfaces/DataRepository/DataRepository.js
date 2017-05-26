@@ -235,6 +235,32 @@ function DataRepository() {
   this.getAssociationsCount = function (master, collection, options) {
     return this._getAssociationsCount(master, collection, options || {});
   };
+
+  /**
+   * @param {String} classname
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this.bulkEdit = function (classname, data, options) {
+    return this._bulkEdit(classname, data, options || {});
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this.bulkDelete = function (classname, options) {
+    return this._bulkDelete(classname, options || {});
+  };
 }
 
 module.exports = DataRepository;
