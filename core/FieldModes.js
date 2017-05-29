@@ -3,6 +3,9 @@
  */
 'use strict';
 module.exports = {
+  TEXT_SIMPLE: 0,
+  TEXT_AUTOCOMPLETE: 1,
+
   COLLECTION_LIST: 0,
   COLLECTION_LINK: 1,
   COLLECTION_LINKS: 2,

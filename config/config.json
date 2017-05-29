@@ -5,6 +5,7 @@
     "defaultModule":"[[module.default]]",
     "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",
+    "theme": "[[ui.theme]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },
@@ -31,7 +32,9 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "keepAlive": 1
+                  "keepAlive": 1,
+                  "connectTimeoutMS": "[[db.connectTimeOut]]",
+                  "socketTimeoutMS": "[[db.operTimeOut]]"
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",
@@ -74,7 +77,17 @@
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
-          "exclude": "[[auth.exclude]]"
+          "exclude": "[[auth.exclude]]",
+          "acl": "ion://[[auth.aclProvider]]",
+          "inactiveTimeout": "[[auth.inactivityTimeout]]",
+          "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinLength": "[[auth.passwordMinLength]]",
+          "attemptTimeOut": "[[auth.attemptTimeOut]]",
+          "attemptLimit": "[[auth.attemptLimit]]",
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
+          "tempBlockLimit": "[[auth.tempBlockLimit]]",
+          "tempBlockInterval": "[[auth.tempBlockInterval]]",
+          "blockPeriod": "[[auth.blockPeriod]]"
         }
       },
       "calculator": {
@@ -136,6 +149,13 @@
           }
         }
       },
+      "keyProv": {
+        "name": "keyProvider",
+        "module": "core/impl/meta/keyProvider",
+        "options": {
+          "metaRepo": "ion://metaRepo"
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {
@@ -144,13 +164,7 @@
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
-          "keyProvider": {
-            "name": "keyProvider",
-            "module": "core/impl/meta/keyProvider",
-            "options": {
-              "metaRepo": "ion://metaRepo"
-            }
-          }
+          "keyProvider": "ion://keyProv"
         }
       },
       "innerCache": {

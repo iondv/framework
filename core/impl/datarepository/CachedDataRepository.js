@@ -504,6 +504,32 @@ function CachedDataRepository(options) {
   this._getAssociationsCount = function (master, collection, options) {
     return dataRepo.getAssociationsCount(master, collection, options);
   };
+
+  /**
+   * @param {String} classname
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {Number} [options.nestingDepth]
+   * @param {String[][]} [options.forceEnrichment]
+   * @param {Boolean} [options.skipResult]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkEdit = function (classname, data, options) {
+    return dataRepo.bulkEdit(classname, data, options);
+  };
+
+  /**
+   * @param {String} classname
+   * @param {{}} [options]
+   * @param {Object} [options.filter]
+   * @param {String} [options.uid]
+   * @returns {Promise}
+   */
+  this._bulkDelete = function (classname, options) {
+    return dataRepo.bulkDelete(classname, options);
+  };
 }
 
 CachedDataRepository.prototype = new DataRepository();

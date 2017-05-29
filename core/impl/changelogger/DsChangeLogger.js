@@ -72,14 +72,21 @@ function DsChangeLogger(ds, authCallback) {
    * @private
    */
   this._getChanges = function (className, id, since, till) {
-    var opts = {$and: [{className: className}, {id: id}]};
+    var and = [];
+    if (className) {
+      and.push({className: className});
+    }
+    if (id) {
+      and.push({id: id});
+    }
     if (since) {
-      opts.$and.push({timestamp: {$gte: since}});
+      and.push({timestamp: {$gte: since}});
     }
     if (till) {
-      opts.$and.push({timestamp: {$lt: till}});
+      and.push({timestamp: {$lt: till}});
     }
-    return _this.ds.fetch('ion_changelog', {filter: opts, sort: {timestamp: 1}}).then(
+
+    return _this.ds.fetch('ion_changelog', {filter: {$and: and}, sort: {timestamp: 1}}).then(
       function (changes) {
         var result = [];
         for (var i = 0; i < changes.length; i++) {
@@ -101,8 +108,6 @@ function DsChangeLogger(ds, authCallback) {
     );
   };
 }
-
-// Util.inherits(DsChangeLogger, ChangeLogger);// jscs:ignore requireSpaceAfterLineComment
 
 DsChangeLogger.prototype = new ChangeLogger();
 

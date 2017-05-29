@@ -12,6 +12,8 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
 const clone = require('clone');
 const cuid = require('cuid');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/data-source');
 const Iterator = require('core/interfaces/Iterator');
 const moment = require('moment');
 
@@ -20,8 +22,9 @@ const GEOFLD_COLLECTION = '__geofields';
 
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
+const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 70, maxcomplexity: 40, maxdepth: 10
+// jshint maxstatements: 70, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -43,6 +46,48 @@ function MongoDs(config) {
   var log = config.logger || new LoggerProxy();
 
   var excludeNullsFor = {};
+
+  function wrapError(err, oper, coll) {
+    if (err.name === 'MongoError') {
+      if (err.code === 11000 || err.code === 11001) {
+        try {
+          let p = err.message.match(/\s+index:\s+([^\s_]+)_\d+\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
+          if (!p) {
+            p = err.message.match(/\s+index:\s+([\w_]+)\s+dup key:\s*{\s*:\s*([^}]*)\s*}/i);
+          }
+          let key = [];
+          let keyMatch = p && p[1] || '';
+          if (keyMatch) {
+            keyMatch = keyMatch.split('_');
+            keyMatch.forEach(k => {
+              k = k.trim();
+              if (!/^\d+$/i.test(k)) {
+                key.push(k);
+              }
+            });
+          }
+          let value = [];
+          let valueMatch = p && p[2] || null;
+          if (valueMatch) {
+            let vm = valueMatch.match(/"(\S*)"/ig);
+            if (vm) {
+              vm.forEach(v => value.push(v.trim().replace(/^"/, '').replace(/"$/, '')));
+            } else {
+              vm = valueMatch.match(/(\S*)/ig);
+              if (vm) {
+                vm.forEach(v => value.push(v));
+              }
+            }
+          }
+          let params = {key: key, table: coll, value};
+          return new IonError(Errors.UNIQUENESS_VIOLATION, params, err);
+        } catch (e) {
+          return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, e);
+        }
+      }
+    }
+    return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, err);
+  }
 
   function registerFunction(c, nm, f) {
     return function () {
@@ -116,7 +161,7 @@ function MongoDs(config) {
             _this.db = db;
             _this.busy = false;
             _this.isOpen = true;
-            log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
+            log.info('Получено соединение с базой: ' + db.s.databaseName);
             _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                 .then(
                   function () {
@@ -183,7 +228,7 @@ function MongoDs(config) {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
-            reject(err);
+            reject(wrapError(err));
           } else {
             resolve();
           }
@@ -199,55 +244,57 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function getCollection(type) {
-    return new Promise(function (resolve, reject) {
-      openDb().then(function () {
+    return openDb()
+      .then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        _this.db.collection(type, {strict: true}, function (err, c) {
-          if (!c) {
-            try {
-              _this.db.createCollection(type)
-                .then(resolve)
-                .catch(reject);
-            } catch (e) {
-              return reject(err);
+        return new Promise(function (resolve, reject) {
+          _this.db.collection(type, {strict: true}, function (err, c) {
+            if (!c) {
+              try {
+                _this.db.createCollection(type)
+                  .then(resolve)
+                  .catch(e => reject(wrapError(err, 'create', type)));
+              } catch (e) {
+                return reject(e);
+              }
+            } else {
+              if (err) {
+                return reject(wrapError(err, 'open', type));
+              }
+              resolve(c);
             }
-          } else {
-            if (err) {
-              return reject(err);
-            }
-            resolve(c);
-          }
+          });
         });
-      }).catch(reject);
-    });
+      });
   }
 
   function getAutoInc(type) {
-    return new Promise(function (resolve, reject) {
-      getCollection(AUTOINC_COLLECTION).then(
-        /**
-         * @param {Collection} autoinc
-         */
-        function (autoinc) {
-          autoinc.find({__type: type}).limit(1).next(function (err, counters) {
-            if (err) {
-              return reject(err);
-            }
-            resolve({ai: autoinc, c: counters});
-          });
-        }
-      ).catch(reject);
-    });
+    return getCollection(AUTOINC_COLLECTION).then(
+      /**
+       * @param {Collection} autoinc
+       */
+      function (autoinc) {
+        return new Promise((resolve, reject) => {
+          autoinc.find({__type: type})
+            .limit(1)
+            .next((err, counters) => {
+              if (err) {
+                return reject(err);
+              }
+              resolve({ai: autoinc, c: counters});
+            });
+        });
+      }
+    );
   }
 
   function autoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var inc = {};
             var act = false;
             var counters = result.c.counters;
@@ -260,29 +307,28 @@ function MongoDs(config) {
             }
 
             if (act) {
-              result.ai.findOneAndUpdate(
-                {__type: type},
-                {$inc: inc},
-                {returnOriginal: false, upsert: false},
-                function (err, result) {
-                  if (err) {
-                    return reject(err);
-                  }
-                  for (var nm in result.value.counters) {
-                    if (result.value.counters.hasOwnProperty(nm)) {
-                      data[nm] = result.value.counters[nm];
+              return new Promise((resolve, reject) => {
+                result.ai.findOneAndUpdate(
+                  {__type: type},
+                  {$inc: inc},
+                  {returnOriginal: false, upsert: false},
+                  function (err, result) {
+                    if (err) {
+                      return reject(err);
                     }
-                  }
-                  resolve(data);
-                }
-              );
-              return;
+                    for (var nm in result.value.counters) {
+                      if (result.value.counters.hasOwnProperty(nm)) {
+                        data[nm] = result.value.counters[nm];
+                      }
+                    }
+                    resolve(data);
+                  });
+              });
             }
           }
-          resolve(data);
+          return Promise.resolve(data);
         }
-      ).catch(reject);
-    });
+      );
   }
 
   function excludeNulls(data, excludes) {
@@ -304,19 +350,19 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function cleanNulls(c, type, data) {
-    return new Promise(function (resolve, reject) {
-      if (excludeNullsFor.hasOwnProperty(type)) {
-        resolve(excludeNulls(data, excludeNullsFor[type]));
-      } else {
+    if (excludeNullsFor.hasOwnProperty(type)) {
+      return Promise.resolve(excludeNulls(data, excludeNullsFor[type]));
+    }
+    return new Promise(
+      function (resolve, reject) {
         c.indexes(function (err, indexes) {
           if (err) {
             return reject(err);
           }
           var excludes = {};
-          var i, nm;
-          for (i = 0; i < indexes.length; i++) {
+          for (let i = 0; i < indexes.length; i++) {
             if (indexes[i].unique && indexes[i].sparse) {
-              for (nm in indexes[i].key) {
+              for (let nm in indexes[i].key) {
                 if (indexes[i].key.hasOwnProperty(nm)) {
                   excludes[nm] = true;
                 }
@@ -328,7 +374,7 @@ function MongoDs(config) {
           resolve(excludeNulls(data, excludeNullsFor[type]));
         });
       }
-    });
+    );
   }
 
   function prepareGeoJSON(data) {
@@ -366,73 +412,74 @@ function MongoDs(config) {
     return data;
   }
 
-  this._insert = function (type, data) {
+  this._insert = function (type, data, opts) {
+    var options = opts || {};
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
-          autoInc(type, data)
+        return autoInc(type, data)
             .then(
               function (data) {
                 return cleanNulls(c, type, prepareGeoJSON(data));
               }
             ).then(
               function (data) {
-                c.insertOne(clone(data.data), function (err, result) {
-                  if (err) {
-                    reject(err);
-                  } else if (result.insertedId) {
-                    _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
-                  } else {
-                    reject(new Error('Inser failed'));
-                  }
+                return new Promise(function (resolve, reject) {
+                  c.insertOne(clone(data.data), function (err, result) {
+                    if (err) {
+                      reject(wrapError(err, 'insert', type));
+                    } else if (result.insertedId) {
+                      if (options.skipResult) {
+                        return resolve(result);
+                      }
+                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                    } else {
+                      reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
+                    }
+                  });
                 });
               }
-            ).catch(reject);
-        });
+            );
       }
     );
   };
 
   function adjustAutoInc(type, data) {
-    return new Promise(function (resolve, reject) {
-      getAutoInc(type).then(
+    if (!data) {
+      return Promise.resolve();
+    }
+    return getAutoInc(type).then(
         /**
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
           var act = false;
           var up = {};
-          if (result.c && result.c.counters) {
+          if (result && result.c && result.c.counters) {
             var counters = result.c.counters;
-            for (var nm in counters) {
+            for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
-                if (counters[nm] < data[nm]) {
+                if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
                   up['counters.' + nm] = data[nm];
                   act = true;
                 }
               }
             }
           }
-
           if (!act) {
-            return resolve(data);
+            return Promise.resolve(data);
           }
-
-          result.ai.findOneAndUpdate(
-            {type: type},
-            {$set: up},
-            {returnOriginal: false, upsert: false},
-            function (err) {
-              if (err) {
-                return reject(err);
+          return new Promise((resolve, reject) => {
+            result.ai.findOneAndUpdate(
+              {__type: type},
+              {$set: up},
+              {returnOriginal: false, upsert: false},
+              function (err) {
+                return err ? reject(err) : resolve(data);
               }
-              resolve(data);
-            }
-          );
-          return;
+            );
+          });
         }
-      ).catch(reject);
-    });
+      );
   }
 
   function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
@@ -538,7 +585,17 @@ function MongoDs(config) {
     return conditions;
   }
 
-  function doUpdate(type, conditions, data, upsert, multi) {
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} options
+   * @param {Boolean} options.upsert
+   * @param {Boolean} options.bulk
+   * @param {Boolean} options.skipResult
+   * @returns {Promise}
+     */
+  function doUpdate(type, conditions, data, options) {
     var hasData = false;
     if (data) {
       for (var nm in data) {
@@ -553,6 +610,9 @@ function MongoDs(config) {
     }
 
     if (!hasData) {
+      if (options.skipResult) {
+        return Promise.resolve();
+      }
       return _this._get(type, conditions);
     }
 
@@ -570,29 +630,35 @@ function MongoDs(config) {
                   updates.$unset = data.unset;
                 }
                 prepareConditions(conditions);
-                if (!multi) {
+                if (!options.bulk) {
                   c.updateOne(
                     conditions,
                     updates,
-                    {upsert: upsert},
+                    {upsert: options.upsert || false},
                     function (err) {
                       if (err) {
-                        return reject(err);
+                        return reject(wrapError(err, options.upsert ? 'upsert' : 'update', type));
                       }
-                      _this._get(type, conditions).then(function (r) {
-                        if (upsert) {
-                          return adjustAutoInc(type, r);
-                        }
-                        return Promise.resolve(r);
-                      }).then(resolve).catch(reject);
+                      var p;
+                      if (options.skipResult) {
+                        p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
+                      } else {
+                        p = _this._get(type, conditions).then(function (r) {
+                          return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
+                        });
+                      }
+                      p.then(resolve).catch(reject);
                     });
                 } else {
                   c.updateMany(conditions, updates,
                     function (err, result) {
                       if (err) {
-                        return reject(err);
+                        return reject(wrapError(err, 'update', type));
                       }
-                      _this._fetch(type, {filter: conditions}).then(resolve).catch(reject);
+                      if (options.skipResult) {
+                        return resolve(result.matchedCount);
+                      }
+                      _this._iterator(type, {filter: conditions}).then(resolve).catch(reject);
                     });
                 }
               });
@@ -601,12 +667,12 @@ function MongoDs(config) {
       });
   }
 
-  this._update = function (type, conditions, data) {
-    return doUpdate(type, conditions, data, false, false);
+  this._update = function (type, conditions, data, options) {
+    return doUpdate(type, conditions, data, {bulk: options.bulk, skipResult: options.skipResult});
   };
 
-  this._upsert = function (type, conditions, data) {
-    return doUpdate(type, conditions, data, true, false);
+  this._upsert = function (type, conditions, data, options) {
+    return doUpdate(type, conditions, data, {upsert: true, skipResult: options.skipResult});
   };
 
   this._delete = function (type, conditions) {
@@ -617,7 +683,7 @@ function MongoDs(config) {
           c.deleteMany(conditions,
             function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'delete', type));
               }
               resolve(result.deletedCount);
             });
@@ -737,7 +803,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
-        if (tmp) {
+        if (tmp && tmp !== IGNORE) {
           result.push(tmp);
         }
       }
@@ -773,46 +839,57 @@ function MongoDs(config) {
               producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
             }
             result = true;
+            break;
           } else {
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] === true) {
-                    result = true;
+                  if (tmp[i] === true || tmp[i] === IGNORE) {
+                    result = IGNORE;
+                    break;
                   }
                 }
                 if (!result && tmp.length) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
               }
-            } else if (name === '$and') {
+            } else if (name === '$and' || name === '$nor') {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] !== true) {
+                  if (tmp[i] !== true && tmp[i] !== IGNORE) {
                     result.push(tmp[i]);
                   }
                 }
-                result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                if (name === '$and') {
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                } else {
+                  result = result.length ? {$nor: result} : true;
+                }
               }
             } else {
               if (name === '$not') {
                 if (Array.isArray(tmp)) {
-                  tmp = tmp.length ? tmp[0] : true;
+                  tmp = tmp.length ? tmp : true;
                 }
                 if (tmp === true) {
                   result = true;
                 } else {
                   result = {};
-                  result.$nor = [tmp];
+                  result.$nor = tmp;
                 }
               } else {
-                if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
+                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
                   attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
-                  result = true;
+                  result = IGNORE;
+                  break;
                 } else {
                   result = result || {};
                   result[name] = tmp;
@@ -941,17 +1018,45 @@ function MongoDs(config) {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
             if (tmp !== null) {
               let nm = name;
-              if (name === '$nor') {
-                nm = '$not';
-                if (Array.isArray(tmp)) {
-                  if (tmp.length > 1) {
-                    tmp = {$or: tmp};
+              if (name === '$nor' || name === '$or') {
+                let skip = !(Array.isArray(tmp) && tmp.length);
+                if (!skip) {
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] === IGNORE) {
+                      skip = true;
+                      break;
+                    }
                   }
+                }
+                if (skip) {
+                  tmp = null;
                 } else {
-                  tmp = [tmp];
+                  if (name === '$nor') {
+                    nm = '$not';
+                    if (tmp.length > 1) {
+                      tmp = {$or: tmp};
+                    }
+                  }
+                }
+              } else if (name === '$and') {
+                let skip = !(Array.isArray(tmp) && tmp.length);
+                let tmp2 = [];
+                if (!skip) {
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] !== IGNORE) {
+                      tmp2.push(tmp[i]);
+                    }
+                  }
+                }
+                if (skip || tmp2.length === 0) {
+                  tmp = null;
+                } else {
+                  tmp = tmp2;
                 }
               }
-              result.push({[nm]: tmp});
+              if (tmp) {
+                result.push({[nm]: tmp});
+              }
             }
           } else {
             let nm = prefix ? addPrefix(name, prefix) : name;
@@ -960,7 +1065,7 @@ function MongoDs(config) {
             if (typeof find[name] === 'object' && find[name]) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
+                  if (excludeFromRedactfilter.indexOf(oper)) {
                     if (oper === '$exists') {
                       if (find[name][oper]) {
                         result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
@@ -968,8 +1073,18 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      let roperand = find[name][oper];
+                      if (
+                        typeof roperand === 'object' ||
+                        typeof roperand === 'string' && roperand && roperand[0] === '$'
+                      ) {
+                        result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      } else {
+                        result.push(IGNORE);
+                      }
                     }
+                  } else {
+                    result.push(IGNORE);
                   }
                 }
               }
@@ -1093,7 +1208,7 @@ function MongoDs(config) {
         result.push({$match: prefilter});
       }
     } catch (err) {
-      return Promise.reject(err);
+      return Promise.reject(wrapError(err, 'aggregate', type));
     }
 
     var p = null;
@@ -1120,15 +1235,19 @@ function MongoDs(config) {
     return p.then(function () {
       if (joins.length) {
         processJoins(attributes, joins, result);
-        if (postfilter) {
+        if (postfilter && postfilter !== IGNORE) {
           result.push({$match: postfilter});
         }
-        if (redactFilter) {
+        if (redactFilter && redactFilter !== IGNORE) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
         if (resultAttrs.length) {
           Array.prototype.push.apply(result, wind(resultAttrs));
         }
+      }
+
+      if (options.distinct && options.select.length && (result.length || options.select.length > 1)) {
+        Array.prototype.push.apply(result, wind(options.select));
       }
 
       if (forcedStages.length) {
@@ -1218,10 +1337,35 @@ function MongoDs(config) {
   function fetch(c, options, aggregate, resolve, reject) {
     var r, flds;
     if (aggregate) {
-      r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}});
+      r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {
       if (options.distinct && options.select.length === 1) {
-        r = c.distinct(options.select[0], options.filter || {}, {});
+        return c.distinct(options.select[0], options.filter || {}, {}, function (err, data) {
+          if (err) {
+            return reject(err);
+          }
+          if (options.sort && options.sort[options.select[0]]) {
+            var direction = options.sort[options.select[0]];
+            data = data.sort(function compare(a, b) {
+              if (a < b) {
+                return -1 * direction;
+              } else if (a > b) {
+                return 1 * direction;
+              }
+              return 0;
+            });
+          }
+          var res, stPos, endPos;
+          res = [];
+          stPos = options.offset || 0;
+          endPos = options.count ? stPos + options.count : data.length;
+          for (var i = stPos; i < endPos && i < data.length; i++) {
+            var tmp = {};
+            tmp[options.select[0]] = data[i];
+            res.push(tmp);
+          }
+          resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
+        });
       } else {
         flds = null;
         r = c.find(options.filter || {});
@@ -1329,26 +1473,34 @@ function MongoDs(config) {
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(err);
+                    return reject(wrapError(err, 'fetch', type));
                   }
                   resolve();
                 });
                 return;
               }
 
-              r.toArray(function (err, docs) {
-                r.close();
-                if (err) {
-                  return reject(err);
+              return new Promise(function (resolve, reject) {
+                if (Array.isArray(r)) {
+                  resolve(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return reject(err);
+                    }
+                    resolve(docs);
+                  });
                 }
+              }).then(function (docs) {
                 docs.forEach(mergeGeoJSON);
                 if (amount !== null) {
                   docs.total = amount;
                 }
-                resolve(docs);
-              });
+                return resolve(docs);
+              }).catch(reject);
             },
-            reject
+            function (e) {reject(wrapError(e, 'fetch', type));}
           );
         });
       }
@@ -1412,7 +1564,7 @@ function MongoDs(config) {
               function (r, amount) {
                 resolve(new DsIterator(r, amount));
               },
-              reject
+              function (e) {reject(wrapError(e, 'iterate', type));}
             );
           } catch (err) {
             reject(err);
@@ -1501,14 +1653,14 @@ function MongoDs(config) {
       }).then(function (plan) {
         return new Promise(function (resolve, reject) {
           try {
-            c.aggregate(plan, function (err, result) {
+            c.aggregate(plan, {allowDiskUse: true}, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'aggregate', type));
               }
               if (tmpApp) {
                 copyColl(tmpApp, options.append, function (err) {
                   if (err) {
-                    return reject(err);
+                    return reject(wrapError(err, 'aggregate', type));
                   }
                   resolve();
                 });
@@ -1544,7 +1696,7 @@ function MongoDs(config) {
           if (agreg) {
             c.aggregate(agreg, function (err, result) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'count', type));
               }
               var cnt = 0;
               if (result.length) {
@@ -1562,7 +1714,7 @@ function MongoDs(config) {
             }
             c.count(options.filter || {}, opts, function (err, cnt) {
               if (err) {
-                return reject(err);
+                return reject(wrapError(err, 'count', type));
               }
               resolve(cnt);
             });
@@ -1579,7 +1731,7 @@ function MongoDs(config) {
           prepareConditions(conditions);
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
-              return reject(err);
+              return reject(wrapError(err, 'get', type));
             }
             resolve(mergeGeoJSON(result));
           });
@@ -1652,7 +1804,7 @@ function MongoDs(config) {
                 );
               });
             }
-          ).catch(reject);
+          ).catch(e => reject(e));
         });
       }
     }

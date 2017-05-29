@@ -166,7 +166,7 @@ function importApplications(appPathItem) {
         }
         return importedData;
       })
-      .then(postImportProcessing) // Переводим справочники для сохранения
+      .then(postImportProcessing) // Обработка всех данных после импорта, но до сохранения
       .then(importReference) // Переводим справочники для сохранения
       .then((importedData) => {
         delete importedData.reference; // Может бесполезно их уже удалять

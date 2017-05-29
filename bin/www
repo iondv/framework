@@ -20,6 +20,9 @@ const theme = require('lib/util/theme');
 const IonLogger = require('core/impl/log/IonLogger');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
+const errorSetup = require('core/error-setup');
+errorSetup(config.lang || 'ru');
+
 var sysLog = new IonLogger(config.log || {});
 
 /** Сервер http
@@ -115,8 +118,8 @@ di('app', config.di,
     server: server,
     application: app,
     sysLog: sysLog
-  }).
-then(
+  })
+  .then(
   // Подключаем модули
   /**
    * @param {{}} scope
@@ -124,6 +127,10 @@ then(
    * @returns {Promise}
      */
   function (scope) {
+    return di('plugins', scope.settings.get('plugins') || {}, {}, 'app')
+      .then(() => {return scope;});
+  })
+  .then(function (scope) {
     var moduleTitles = {};
     try {
       // Тема оформления страниц аутентификации и регистрации
@@ -207,21 +214,22 @@ then(
       });
     }
     return Promise.resolve();
-  }
-).then(
+  })
+  .then(
   // Запускаем приложение
-  function () {
+    function () {
       var ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
       return start(ports, 0);
     }
-).then(
-  function () {
+  )
+  .then(
+    function () {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
-    }
-).catch(onError);
+    })
+  .catch(onError);

@@ -583,7 +583,7 @@ function DsMetaRepository(options) {
             if (prefix) {
               ppath.unshift(prefix);
             }
-            if (pm.type !== PropertyTypes.REFERENCE) {
+            if (pm.type !== PropertyTypes.REFERENCE && pm.type !== PropertyTypes.COLLECTION) {
               ppath.pop();
             }
             if (ppath.length) {
@@ -605,8 +605,27 @@ function DsMetaRepository(options) {
    * @param {ClassMeta} cm
    */
   function produceSemantics(cm) {
-    if (cm && cm.plain.semantic) {
-      cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
+    var i, propertyMetas;
+
+    if (cm) {
+      propertyMetas = cm.getPropertyMetas();
+
+      for (i = 0; i < propertyMetas.length; i++) {
+        if ((propertyMetas[i].type === PropertyTypes.REFERENCE ||
+          propertyMetas[i].type === PropertyTypes.COLLECTION) &&
+          propertyMetas[i].semantic) {
+          propertyMetas[i].semanticGetter = createSemanticFunc(
+            propertyMetas[i].semantic,
+            propertyMetas[i]._refClass,
+            [],
+            null,
+            propertyMetas[i].name
+          );
+        }
+      }
+      if (cm.plain.semantic) {
+        cm._semanticFunc = createSemanticFunc(cm.plain.semantic, cm, cm._forcedEnrichment, cm._semanticAttrs);
+      }
     }
   }
 
@@ -654,18 +673,26 @@ function DsMetaRepository(options) {
               pms = cm.getPropertyMetas();
               for (j = 0; j < pms.length; j++) {
                 pm = pms[j];
-                try {
-                  if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
+                  try {
                     pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
-                  } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
-                    pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                  } catch (e) {
+                    throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
+                      cm.getCanonicalName() + '.' + pm.name + '.');
                   }
-                } catch (e) {
-                  throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
-                    cm.getCanonicalName() + '.' + pm.name + '.');
+                } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
+                  try {
+                    pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
+                  } catch (e) {
+                    throw new Error('Не найден класс "' + pm.itemsClass + '" по ссылке атрибута ' +
+                      cm.getCanonicalName() + '.' + pm.name + '.');
+                  }
                 }
                 if (pm.formula && options.calc instanceof Calculator) {
                   pm._formula = options.calc.parseFormula(pm.formula);
+                }
+                if (pm.defaultValue && pm.defaultValue.indexOf('(') > 0 && options.calc instanceof Calculator) {
+                  pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                 }
               }
             }
@@ -891,8 +918,7 @@ function DsMetaRepository(options) {
   }
 
   function init() {
-    return new Promise(function (resolve, reject) {
-      Promise.all(
+    return Promise.all(
         [
           _this.ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           _this.ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
@@ -908,13 +934,12 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
-            resolve();
+            return Promise.resolve();
           } catch (err) {
-            reject(err);
+            return Promise.reject(err);
           }
         }
-      ).catch(reject);
-    });
+      );
   }
 
   /**
