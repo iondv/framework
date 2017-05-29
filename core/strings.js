@@ -11,7 +11,7 @@ const strBase = {};
  */
 module.exports.registerBase = function (prefix, base) {
   if (prefix && base) {
-    strBase[prefix] = merge(base, strBase[prefix] || {})
+    strBase[prefix] = merge(base, strBase[prefix] || {});
   }
 };
 

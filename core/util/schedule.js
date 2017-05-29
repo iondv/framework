@@ -248,3 +248,42 @@ module.exports.scheduleToString = function (value) {
     return scheduleToString(value);
   }
 };
+
+/**
+*
+* @param {Object} value
+* @returns {Boolean}
+*/
+module.exports.isSchedule = function (value) {
+  if (value.hasOwnProperty('description') && typeof value.description === 'string' &&
+    value.hasOwnProperty('item') && typeof value.item === 'string' &&
+    value.hasOwnProperty('occurs') && Array.isArray(value.occurs) &&
+    value.hasOwnProperty('skipped') && Array.isArray(value.skipped)) {
+    for (let i = 0; i < value.occurs.length; i++) {
+      if (!checkScheduleRule(value.occurs[i])) {
+        return false;
+      }
+    }
+    for (let i = 0; i < value.skipped.length; i++) {
+      if (!checkScheduleRule(value.skipped[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+};
+
+/*jshint maxcomplexity:15 */
+
+function checkScheduleRule(rule) {
+  return (!rule.duration || !isNaN(rule.duration)) &&
+    (!rule.second   || !isNaN(rule.second) && rule.second >= 1 && rule.second <= 60) &&
+    (!rule.minute   || !isNaN(rule.minute) && rule.minute >= 1 && rule.minute <= 60) &&
+    (!rule.hour     || !isNaN(rule.hour) && rule.hour >= 0 && rule.hour <= 23) &&
+    (!rule.day      || !isNaN(rule.day) && rule.day >= 1 && rule.day <= 31) &&
+    (!rule.weekday  || !isNaN(rule.weekday) && rule.weekday >= 1 && rule.weekday <= 7) &&
+    (!rule.month    || !isNaN(rule.month) && rule.month >= 1 && rule.month <= 12) &&
+    (!rule.year     || !isNaN(rule.year)) &&
+    (rule.second || rule.minute || rule.hour || rule.day || rule.weekday || rule.month || rule.year);
+}

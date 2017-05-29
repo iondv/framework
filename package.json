@@ -42,6 +42,7 @@
     "gm": "latest",
     "memcached": "latest",
     "jszip": "latest",
+    "locale": "latest",
     "merge": "latest",
     "method-override": "latest",
     "mkdirp": "latest",
