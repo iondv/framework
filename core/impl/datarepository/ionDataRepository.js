@@ -26,6 +26,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
+const isEmpty = require('core/empty');
 
 const EVENT_CANCELED = '____CANCELED___';
 
@@ -1540,6 +1541,12 @@ function IonDataRepository(options) {
     if (!id) {
       return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
     }
+    if (isEmpty(data)) {
+      return options.skipResult ?
+        Promise.resolve() :
+        this._getItem(classname, id, {nestingDepth: options.nestingDepth});
+    }
+
     try {
       let cm = _this.meta.getMeta(classname);
       let rcm = getRootType(cm);
@@ -1674,6 +1681,13 @@ function IonDataRepository(options) {
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
     options = options || {};
+
+    if (isEmpty(data)) {
+      return options.skipResult ?
+        Promise.resolve() :
+        this._getItem(classname, id, {nestingDepth: options.nestingDepth});
+    }
+
     try {
       let cm = _this.meta.getMeta(classname, version);
       let rcm = getRootType(cm);
@@ -1730,7 +1744,7 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(updates))
         .then(function () {
           let fileSavers = [];
-          updates = formUpdatedData(cm, data, true, refUpdates, da)
+          updates = formUpdatedData(cm, data, true, refUpdates, da);
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
