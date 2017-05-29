@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
@@ -28,9 +29,20 @@ function toScalar(v, context, type, lang) {
   }
 
   if (typeof v === 'string' && v[0] === '$' && context) {
-    let p;
-    if ((p = context.property(v.substring(1))) !== null) {
-      return p.getValue();
+    let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+    let nm = v.substring(1);
+    if (item) {
+      let p;
+      if ((p = item.property(nm)) !== null) {
+        v = p.getValue();
+      }
+    } else if (context.hasOwnProperty(nm)) {
+      v = context[nm];
+    }
+    if (Array.isArray(v)) {
+      let result = [];
+      v.forEach((v) => {result.push(toScalar(v, context, type, lang));});
+      return result;
     }
   }
 
@@ -93,7 +105,16 @@ function produceContainsFilter(rcm, condition, context, lang) {
  */
 function vt(cm, property) {
   let pm = findPM(cm, property);
-  return pm ? pm.type : PropertyTypes.STRING;
+  if (pm) {
+    if (pm.type === PropertyTypes.REFERENCE) {
+      if (pm._refClass.getKeyProperties().length === 1) {
+        return vt(pm._refClass, pm._refClass.getKeyProperties()[0]);
+      }
+      return PropertyTypes.STRING;
+    }
+    return pm.type;
+  }
+  return PropertyTypes.STRING;
 }
 
 /**
@@ -186,7 +207,14 @@ function castInValue(value, property, rcm, context, lang) {
   if (!Array.isArray(value)) {
     value = [value];
   }
-  value.forEach(v => result.push(toScalar(v, context, vt(rcm, property), lang)));
+  value.forEach((v) => {
+    let sv = toScalar(v, context, vt(rcm, property), lang);
+    if (Array.isArray(sv)) {
+      Array.prototype.push.apply(result, sv);
+    } else {
+      result.push(sv);
+    }
+  });
   return result;
 }
 
@@ -198,9 +226,9 @@ function castInValue(value, property, rcm, context, lang) {
  * @returns {{} | null}
  */
 function ConditionParser(condition, rcm, context, lang) {
-  var result, tmp;
+  var result;
   if (Array.isArray(condition)) {
-    tmp = produceArray(condition, rcm, context, lang);
+    let tmp = produceArray(condition, rcm, context, lang);
     if (tmp) {
       return {$and: tmp};
     }
@@ -244,7 +272,7 @@ function ConditionParser(condition, rcm, context, lang) {
       }
     } else {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
-        tmp = produceArray(condition.nestedConditions, rcm, context, lang);
+        let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
           if (tmp.length > 1) {
             result = {};
@@ -273,7 +301,7 @@ function ConditionParser(condition, rcm, context, lang) {
           return result;
         }
       } else if (AgregOpers.indexOf(condition.operation) !== -1) {
-        tmp =  produceAggregationOperation(condition, rcm, context, lang);
+        let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
           result = {};
           switch (condition.operation) {

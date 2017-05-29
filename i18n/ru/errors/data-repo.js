@@ -17,5 +17,6 @@ module.exports = {
   [codes.FAIL]: `Действие '%operation' не было выполнено для объекта '%info'.`,
   [codes.MISSING_REQUIRED]: `Не заполнены обязательные атрибуты %info.`,
   [codes.NO_KEY_SPEC]: `Не указано значение ключевого атрибута %info.`,
-  [codes.NO_BACK_REF]: `По обратной ссылке %backRef не найден атрибут %backAttr.`
+  [codes.NO_BACK_REF]: `По обратной ссылке %backRef не найден атрибут %backAttr.`,
+  [codes.UNEXPECTED_ASYNC]: `При расчете значения по умолчанию атрибута %info выполнена асинхронная операция.`
 };
