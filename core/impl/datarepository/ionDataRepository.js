@@ -808,24 +808,21 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    */
   this._getItem = function (obj, id, options) {
-    var cm, rcm, opts;
+    let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
+    let rcm = getRootType(cm);
+    let opts = {};
+    opts.fields = {_class: '$_class', _classVer: '$_classVer'};
+    let props = cm.getPropertyMetas();
+    for (let i = 0; i < props.length; i++) {
+      opts.fields[props[i].name] = '$' + props[i].name;
+    }
     if (id && typeof obj === 'string') {
-      cm = getMeta(obj);
-      rcm = getRootType(cm);
-      var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
       if (conditions  === null) {
         return Promise.resolve(null);
       }
 
-      var opts = {};
-      opts.fields = {_class: '$_class', _classVer: '$_classVer'};
-      var props = cm.getPropertyMetas();
-      for (var i = 0; i < props.length; i++) {
-        opts.fields[props[i].name] = '$' + props[i].name;
-      }
-
-
-      var fp = null;
+      let fp = null;
       if (options.filter) {
         fp = prepareFilterValues(cm, options.filter)
           .then((filter) => {return {$and: [conditions, filter]};});
@@ -858,11 +855,8 @@ function IonDataRepository(options) {
         })
         .catch(wrapDsError('getItem', cm.getCanonicalName(), id));
     } else if (obj instanceof Item) {
-      opts = {};
-      cm = obj.getMetaClass();
-      var fetcher = null;
+      let fetcher = null;
       if (obj.getItemId()) {
-        rcm = getRootType(cm);
         opts.filter = addFilterByItem({}, obj);
         opts.filter = addDiscriminatorFilter(opts.filter, cm);
         opts.count = 1;
@@ -1328,20 +1322,22 @@ function IonDataRepository(options) {
     });
   }
 
-  function cloneEventData(data) {
-    if (data instanceof Item) {
-      return data;
-    } else if (Array.isArray(data)) {
+  function cloneEventData(data, depth) {
+    depth  = depth || 10;
+    if (depth < 0) {
+      return undefined;
+    }
+    if (Array.isArray(data)) {
       let arr = [];
       for (let i = 0; i < data.length; i++) {
-        arr.push(cloneEventData(data[i]));
+        arr.push(cloneEventData(data[i], depth - 1));
       }
       return arr;
-    } else if (data && typeof data === 'object') {
+    } else if (data && typeof data === 'object' && data.constructor === Object) {
       let result = {};
       for (let nm in data) {
         if (data.hasOwnProperty(nm)) {
-          result[nm] = cloneEventData(data[nm]);
+          result[nm] = cloneEventData(data[nm], depth - 1);
         }
       }
       return result;
