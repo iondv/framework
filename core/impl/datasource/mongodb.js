@@ -431,7 +431,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         return resolve(result);
                       }
-                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                      _this._get(type, {_id: result.insertedId}, {}).then(resolve).catch(reject);
                     } else {
                       reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                     }
