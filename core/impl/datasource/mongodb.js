@@ -1724,11 +1724,50 @@ function MongoDs(config) {
     );
   };
 
-  this._get = function (type, conditions) {
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{fields: {}}} options
+   * @returns {Promise.<{}>}
+   * @private
+   */
+  this._get = function (type, conditions, options) {
+    let c;
+    let opts = {filter: conditions, fields: options.fields};
     return getCollection(type).then(
-      function (c) {
+      function (col) {
+        c = col;
+        prepareConditions(opts.filter);
+        return checkAggregation(type, opts);
+      }).then(function (aggregation) {
+      if (aggregation) {
         return new Promise(function (resolve, reject) {
-          prepareConditions(conditions);
+          fetch(c, opts, aggregation,
+            function (r, amount) {
+              return new Promise(function (resolve, reject) {
+                if (Array.isArray(r)) {
+                  resolve(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return reject(err);
+                    }
+                    resolve(docs);
+                  });
+                }
+              }).then(function (docs) {
+                docs.forEach(mergeGeoJSON);
+                resolve(docs.length ? docs[0] : null);
+              }).catch(reject);
+            },
+            function (e) {
+              reject(wrapError(e, 'get', type));
+            }
+          );
+        });
+      } else {
+        return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
               return reject(wrapError(err, 'get', type));
@@ -1736,7 +1775,8 @@ function MongoDs(config) {
             resolve(mergeGeoJSON(result));
           });
         });
-      });
+      }
+    });
   };
 
   /**

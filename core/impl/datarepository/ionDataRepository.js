@@ -817,15 +817,23 @@ function IonDataRepository(options) {
         return Promise.resolve(null);
       }
 
+      var opts = {};
+      opts.fields = {_class: '$_class', _classVer: '$_classVer'};
+      var props = cm.getPropertyMetas();
+      for (var i = 0; i < props.length; i++) {
+        opts.fields[props[i].name] = '$' + props[i].name;
+      }
+
+
       var fp = null;
       if (options.filter) {
         fp = prepareFilterValues(cm, options.filter)
-          .then((filter) => { return {$and: [conditions, filter]}; });
+          .then((filter) => {return {$and: [conditions, filter]};});
       } else {
         fp = Promise.resolve(conditions);
       }
 
-      return fp.then((f)=>_this.ds.get(tn(rcm), f))
+      return fp.then((f)=>_this.ds.get(tn(rcm), f, opts))
         .then(function (data) {
           var item = null;
           if (data) {
