@@ -157,7 +157,10 @@ function DsMetaRepository(options) {
         namespace = parts[1];
       }
       var ns = formNS(namespace);
-      if (_this.classMeta[ns] && _this.classMeta[ns].hasOwnProperty(name)) {
+      if (!_this.classMeta[ns]) {
+        throw new Error('Пространство имен ' + namespace + ' не найдено.'); 
+      }
+      if (_this.classMeta[ns].hasOwnProperty(name)) {
         if (version) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
@@ -171,8 +174,6 @@ function DsMetaRepository(options) {
         if (_this.classMeta[ns][name][defaultVersion]) {
           return _this.classMeta[ns][name][defaultVersion];
         }
-      } else {
-        throw new Error('Пространство имен ' + namespace + 'не найдено.');
       }
     } catch (err) {
       throw err;
