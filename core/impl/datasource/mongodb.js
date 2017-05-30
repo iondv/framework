@@ -613,7 +613,7 @@ function MongoDs(config) {
       if (options.skipResult) {
         return Promise.resolve();
       }
-      return _this._get(type, conditions);
+      return _this._get(type, conditions, {});
     }
 
     return getCollection(type).then(
@@ -1733,7 +1733,7 @@ function MongoDs(config) {
    */
   this._get = function (type, conditions, options) {
     let c;
-    let opts = {filter: conditions, fields: options.fields};
+    let opts = {filter: conditions, fields: options.fields || {}};
     return getCollection(type).then(
       function (col) {
         c = col;
