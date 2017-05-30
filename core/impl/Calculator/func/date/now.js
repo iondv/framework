@@ -5,9 +5,6 @@
 
 module.exports = function () {
   return function () {
-    return new Promise(function (resolve) {
-      resolve(new Date());
-    });
+    return new Date();
   };
 };
-

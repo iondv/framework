@@ -97,6 +97,10 @@ function ChangeLogger() {
    * @returns {Promise}
    */
   this.getChanges = function (className, id, since, till) {
+    if (!(className || id || since || till)) {
+      throw new Error('Не указаны критерии выборки записей лога изменений');
+    }
+
     if (
       since && Object.prototype.toString.call(since) !== '[object Date]' ||
       till && Object.prototype.toString.call(till) !== '[object Date]'

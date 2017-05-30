@@ -100,8 +100,19 @@ function Calculator(options) {
     if (!nm) {
       return null;
     }
+
+    if (obj instanceof Item) {
+      return obj.get(nm);
+    }
+
     if (nm.indexOf('.') < 0) {
-      return obj[nm];
+      if (obj.hasOwnProperty(nm)) {
+        return obj[nm];
+      }
+
+      if (obj.$context) {
+        return objProp(obj.$context, nm);
+      }
     }
 
     var pth = nm.split('.');
@@ -121,13 +132,6 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      if (this instanceof Item) {
-        let p = this.property(nm);
-        if (!p) {
-          return null;
-        }
-        return p.evaluate();
-      }
       return objProp(this, nm);
     };
   }
@@ -148,12 +152,20 @@ function Calculator(options) {
       return Number(formula);
     }
 
+    if (formula === 'null') {
+      return null;
+    }
+
     if (formula === 'true') {
       return true;
     }
 
     if (formula === 'false') {
       return false;
+    }
+
+    if (formula[0] === '\'' && formula[formula.length - 1] === '\'') {
+      return formula.substring(1, formula.length - 1);
     }
 
     if ((pos = formula.indexOf('(')) > -1) {
@@ -178,12 +190,11 @@ function Calculator(options) {
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    var f = evaluate(formula.trim());
-    if (typeof f === 'function') {
-      return f;
+    var result = evaluate(formula.trim());
+    if (typeof result !== 'function') {
+      return () => result;
     }
-    warn('Не удалось распознать формулу: ' + formula);
-    return null;
+    return result;
   };
 }
 
