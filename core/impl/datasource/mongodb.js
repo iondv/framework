@@ -643,7 +643,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
-                        p = _this._get(type, conditions).then(function (r) {
+                        p = _this._get(type, conditions, {}).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
                         });
                       }
