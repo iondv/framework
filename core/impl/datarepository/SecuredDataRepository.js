@@ -98,6 +98,7 @@ function SecuredDataRepository(options) {
     return aclProvider.getResources(uid, Permissions.READ)
       .then(function (explicit) {
         if (explicit.indexOf(globalMarker) >= 0) {
+          merge(classPermissions || {}, {[Permissions.READ]: true});
           return Promise.resolve(filter);
         }
 
