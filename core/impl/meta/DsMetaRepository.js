@@ -14,7 +14,7 @@ const clone = require('clone');
 
 const defaultVersion = '___default';
 
-/* jshint maxstatements: 60, maxcomplexity: 20, maxdepth: 20 */
+/* jshint maxstatements: 60, maxcomplexity: 25, maxdepth: 20 */
 
 function viewPath(nodeCode,className) {
   return (nodeCode ? nodeCode + '/' : '') + className;
@@ -157,6 +157,9 @@ function DsMetaRepository(options) {
         namespace = parts[1];
       }
       var ns = formNS(namespace);
+      if (!_this.classMeta[ns]) {
+        throw new Error('Пространство имен ' + namespace + ' не найдено.'); 
+      }
       if (_this.classMeta[ns].hasOwnProperty(name)) {
         if (version) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
