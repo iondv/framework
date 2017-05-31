@@ -219,7 +219,7 @@ function Item(id, base, classMeta) {
   }
 
   /**
-   * @returns {Property[]}
+   * @returns {Property{}}
    */
   this.getProperties = function () {
     if (this.properties === null) {

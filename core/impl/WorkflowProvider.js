@@ -216,10 +216,13 @@ function WorkflowProvider(options) {
     );
   }
 
-  function calcAssignmentValue(updates, item, assignment, uid) {
+  function calcAssignmentValue(updates, item, assignment, options) {
+    var ctx = options.env || {};
+    ctx.$uid = options.uid;
     if (typeof assignment._formula === 'function') {
+      ctx.$context = item;
       return Promise.resolve()
-        .then(() => assignment._formula.apply({$context: item, $uid: uid}))
+        .then(() => assignment._formula.apply(ctx))
         .then(function (v) {
           updates[assignment.key] = v;
           item.set(assignment.key, v);
@@ -228,7 +231,8 @@ function WorkflowProvider(options) {
     } else {
       let v = assignment.value;
       v = v && typeof v === 'string' && v[0] === '$' ?
-        v === '$$uid' ? uid : item.get(v.substring(1)) : v;
+        ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
+        v;
       updates[assignment.key] = v;
       item.set(assignment.key, v);
       return Promise.resolve(v);
@@ -239,10 +243,13 @@ function WorkflowProvider(options) {
    * @param {Item} item
    * @param {String} workflow
    * @param {String} name
-   * @param {String} user
+   * @param {{}} [tOptions]
+   * @param {String} [tOptions.uid]
+   * @param {{}} [tOptions.env]
+   * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
-  this._performTransition = function (item, workflow, name, user) {
+  this._performTransition = function (item, workflow, name, tOptions) {
     return _this._getStatus(item).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
@@ -259,7 +266,7 @@ function WorkflowProvider(options) {
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
-                    if (item.get(transition.roles[i]) === user) {
+                    if (item.get(transition.roles[i]) === tOptions.uid) {
                       allowed = true;
                       break;
                     }
@@ -269,22 +276,22 @@ function WorkflowProvider(options) {
                   }
                 }
 
-                var nextState = wf.statesByName[transition.finishState];
+                let nextState = wf.statesByName[transition.finishState];
                 if (!nextState) {
                   return Promise.reject(
                     new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
                   );
                 }
 
-                var updates = {};
-                var calculations = null;
+                let updates = {};
+                let calculations = null;
 
                 if (Array.isArray(transition.assignments) && transition.assignments.length) {
                   updates = {};
                   transition.assignments.forEach((assignment) => {
                     calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, user)) :
-                      calcAssignmentValue(updates, item, assignment, user);
+                      calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
+                      calcAssignmentValue(updates, item, assignment, tOptions);
                   });
                 }
 
@@ -310,13 +317,15 @@ function WorkflowProvider(options) {
                   }).then(
                     function (e) {
                       if (Array.isArray(e.results) && e.results.length) {
-                        for (var i = 0; i < e.results.length; i++) {
-                          for (var nm in e.results[i]) {
-                            if (e.results[i].hasOwnProperty(nm)) {
-                              if (!updates) {
-                                updates = {};
+                        for (let i = 0; i < e.results.length; i++) {
+                          if (e.results[i] && typeof e.results[i] === 'object') {
+                            for (let nm in e.results[i]) {
+                              if (e.results[i].hasOwnProperty(nm)) {
+                                if (!updates) {
+                                  updates = {};
+                                }
+                                updates[nm] = e.results[i][nm];
                               }
-                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
@@ -327,8 +336,11 @@ function WorkflowProvider(options) {
                           item.getMetaClass().getCanonicalName(),
                           item.getItemId(),
                           updates,
-                          null,
-                          {uid: user}
+                          tOptions.changeLogger,
+                          {
+                            uid: tOptions.uid,
+                            env: tOptions.env
+                          }
                         );
                       }
                       return Promise.resolve(item);

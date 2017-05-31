@@ -102,7 +102,7 @@ function Calculator(options) {
     }
 
     if (obj instanceof Item) {
-      return obj.get(nm);
+      return obj.property(nm).evaluate();
     }
 
     if (nm.indexOf('.') < 0) {
