@@ -29,16 +29,16 @@ const Permissions = {
       addVal(result, Permissions.READ);
     }
     if ((mask & 2) === 2) {
-      addVal(result, Permissions.READ);
+      addVal(result, Permissions.WRITE);
     }
     if ((mask & 4) === 4) {
-      addVal(result, Permissions.READ);
+      addVal(result, Permissions.DELETE);
     }
     if ((mask & 8) === 8) {
-      addVal(result, Permissions.READ);
+      addVal(result, Permissions.USE);
     }
     if ((mask & 31) === 31) {
-      addVal(result, Permissions.READ);
+      addVal(result, Permissions.FULL);
     }
     return result;
   }

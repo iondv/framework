@@ -100,8 +100,19 @@ function Calculator(options) {
     if (!nm) {
       return null;
     }
+
+    if (obj instanceof Item) {
+      return obj.property(nm).evaluate();
+    }
+
     if (nm.indexOf('.') < 0) {
-      return obj[nm];
+      if (obj.hasOwnProperty(nm)) {
+        return obj[nm];
+      }
+
+      if (obj.$context) {
+        return objProp(obj.$context, nm);
+      }
     }
 
     var pth = nm.split('.');
@@ -121,9 +132,6 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      if (this instanceof Item) {
-        return this.get(nm);
-      }
       return objProp(this, nm);
     };
   }

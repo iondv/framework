@@ -31,10 +31,20 @@ function AclProvider() {
   /**
    * @param {String} subject
    * @param {String | String[]} resources
+   * @param {Boolean} [skipGlobals]
    * @returns {Promise}
    */
   this.getPermissions = function (subject, resources, skipGlobals) {
     return this._getPermissions(subject, resources, skipGlobals);
+  };
+
+  /**
+   * @param {String} subject
+   * @param {String | String[]} permissions
+   * @returns {Promise}
+   */
+  this.getResources = function (subject, permissions) {
+    return this._getResources(subject, permissions);
   };
 }
 

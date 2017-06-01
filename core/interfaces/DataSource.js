@@ -132,10 +132,11 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} conditions
+   * @param {{fields: {}}} [options]
    * @returns {Promise}
    */
-  this.get = function (type, conditions) {
-    return this._get(type, conditions);
+  this.get = function (type, conditions, options) {
+    return this._get(type, conditions, options || {});
   };
 
   /**

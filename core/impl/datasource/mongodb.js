@@ -161,7 +161,7 @@ function MongoDs(config) {
             _this.db = db;
             _this.busy = false;
             _this.isOpen = true;
-            log.info('Получено соединение с базой: ' + db.s.databaseName + '. URI: ' + db.s.options.url);
+            log.info('Получено соединение с базой: ' + db.s.databaseName);
             _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                 .then(
                   function () {
@@ -431,7 +431,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         return resolve(result);
                       }
-                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                      _this._get(type, {_id: result.insertedId}, {}).then(resolve).catch(reject);
                     } else {
                       reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                     }
@@ -613,7 +613,7 @@ function MongoDs(config) {
       if (options.skipResult) {
         return Promise.resolve();
       }
-      return _this._get(type, conditions);
+      return _this._get(type, conditions, {});
     }
 
     return getCollection(type).then(
@@ -643,7 +643,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
-                        p = _this._get(type, conditions).then(function (r) {
+                        p = _this._get(type, conditions, {}).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
                         });
                       }
@@ -1724,11 +1724,50 @@ function MongoDs(config) {
     );
   };
 
-  this._get = function (type, conditions) {
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{fields: {}}} options
+   * @returns {Promise.<{}>}
+   * @private
+   */
+  this._get = function (type, conditions, options) {
+    let c;
+    let opts = {filter: conditions, fields: options.fields || {}};
     return getCollection(type).then(
-      function (c) {
+      function (col) {
+        c = col;
+        prepareConditions(opts.filter);
+        return checkAggregation(type, opts);
+      }).then(function (aggregation) {
+      if (aggregation) {
         return new Promise(function (resolve, reject) {
-          prepareConditions(conditions);
+          fetch(c, opts, aggregation,
+            function (r, amount) {
+              return new Promise(function (resolve, reject) {
+                if (Array.isArray(r)) {
+                  resolve(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return reject(err);
+                    }
+                    resolve(docs);
+                  });
+                }
+              }).then(function (docs) {
+                docs.forEach(mergeGeoJSON);
+                resolve(docs.length ? docs[0] : null);
+              }).catch(reject);
+            },
+            function (e) {
+              reject(wrapError(e, 'get', type));
+            }
+          );
+        });
+      } else {
+        return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
               return reject(wrapError(err, 'get', type));
@@ -1736,7 +1775,8 @@ function MongoDs(config) {
             resolve(mergeGeoJSON(result));
           });
         });
-      });
+      }
+    });
   };
 
   /**

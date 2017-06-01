@@ -149,6 +149,13 @@
           }
         }
       },
+      "keyProv": {
+        "name": "keyProvider",
+        "module": "core/impl/meta/keyProvider",
+        "options": {
+          "metaRepo": "ion://metaRepo"
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {
@@ -157,13 +164,7 @@
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
-          "keyProvider": {
-            "name": "keyProvider",
-            "module": "core/impl/meta/keyProvider",
-            "options": {
-              "metaRepo": "ion://metaRepo"
-            }
-          }
+          "keyProvider": "ion://keyProv"
         }
       },
       "innerCache": {
