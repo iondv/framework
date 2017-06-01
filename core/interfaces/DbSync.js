@@ -17,11 +17,10 @@ function DbSync() {
 
   /**
    * @param {{}} classMeta
-   * @param {String} [namespace]
    * @returns {Promise}
    */
-  this.defineClass = function (classMeta, namespace) {
-    return this._defineClass(classMeta, namespace);
+  this.defineClass = function (classMeta) {
+    return this._defineClass(classMeta);
   };
 
   /**
