@@ -817,7 +817,7 @@ function IonDataRepository(options) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
     if (id && typeof obj === 'string') {
-      let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      let conditions = formUpdatedData(cm, _this.keyProvider.keyToData(cm, id));
       if (conditions  === null) {
         return Promise.resolve(null);
       }
