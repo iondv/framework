@@ -977,7 +977,6 @@ function IonDataRepository(options) {
 
     for (var i = 0;  i < properties.length; i++) {
       pm = properties[i];
-
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
@@ -1003,7 +1002,7 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = options.uid;
+            v = uid;
           } else if (pm._dvFormula) {
             v = pm._dvFormula.apply({$context: updates, $uid: uid});
             if (v instanceof Promise) {
