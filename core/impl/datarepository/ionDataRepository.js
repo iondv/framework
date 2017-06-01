@@ -1464,7 +1464,7 @@ function IonDataRepository(options) {
         })
         .then(preWriteEventHandler(updates))
         .then(function () {
-          updates = formUpdatedData(cm, data, true, refUpdates, da);
+          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           autoAssign(cm, updates, false, options.uid);
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
@@ -1747,7 +1747,7 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(updates))
         .then(function () {
           let fileSavers = [];
-          updates = formUpdatedData(cm, data, true, refUpdates, da);
+          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
