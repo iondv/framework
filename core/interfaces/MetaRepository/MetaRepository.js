@@ -14,11 +14,10 @@ function MetaRepository() {
    *
    * @param {String} name
    * @param {String} [version]
-   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  this.getMeta = function (name, version, namespace) {
-    return this._getMeta(name, version, namespace);
+  this.getMeta = function (name, version) {
+    return this._getMeta(name, version);
   };
 
   /**

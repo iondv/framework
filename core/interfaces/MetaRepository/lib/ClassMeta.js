@@ -54,8 +54,6 @@ function ClassMeta(metaObject) {
 
   var _this = this;
 
-  this.namespace = '';
-
   this.plain = metaObject;
 
   this.ancestor = null;
@@ -85,11 +83,11 @@ function ClassMeta(metaObject) {
   };
 
   this.getNamespace = function () {
-    return this.namespace;
+    return this.plain.namespace;
   };
 
   this.getCanonicalName = function () {
-    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
+    return this.plain.name + (this.plain.namespace ? '@' + this.plain.namespace : '');
   };
 
   this.getSemantics = function (item, dateCallback, circular) {

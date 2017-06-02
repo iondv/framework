@@ -167,16 +167,15 @@ function MongoDbSync(options) {
 
   /**
    * @param {{}} cm
-   * @param {String} namespace
    * @returns {Promise}
    */
-  function findClassRoot(cm, namespace, metaCollection, done) {
+  function findClassRoot(cm, metaCollection, done) {
     if (!cm.ancestor) {
       return done(null, cm);
     }
     var query = {name: cm.ancestor};
-    if (namespace) {
-      query.namespace = namespace;
+    if (cm.namespace) {
+      query.namespace = cm.namespace;
     } else {
       query.$or = [{namespace: {$exists: false}}, {namespace: null}];
     }
@@ -185,7 +184,7 @@ function MongoDbSync(options) {
         return done(err);
       }
       if (anc) {
-        findClassRoot(anc, namespace, metaCollection, done);
+        findClassRoot(anc, metaCollection, done);
       } else {
         done(new Error('Класс ' + cm.ancestor + ' не найден!'));
       }
@@ -203,13 +202,12 @@ function MongoDbSync(options) {
 
   /**
    * @param {{}} cm
-   * @param {String} namespace
    * @returns {Promise}
    * @private
    */
-  function createCollection(cm, namespace) {
+  function createCollection(cm) {
     return new Promise(function (resolve, reject) {
-      var cn = (namespace ? namespace + '_' : '') + cm.name;
+      var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
       db().collection(
         cn,
         {strict: true},
@@ -231,7 +229,7 @@ function MongoDbSync(options) {
    * @param {{}} cm
    * @private
    */
-  function addIndexes(cm, rcm, namespace) {
+  function addIndexes(cm, rcm) {
     /**
      * @param {Collection} collection
      */
@@ -289,7 +287,7 @@ function MongoDbSync(options) {
           return getSysColl(GEOFLD_COLL)
             .then(function (coll) {
               return new Promise(function (resolve, reject) {
-                var cn = (namespace ? namespace + '_' : '') + rcm.name;
+                var cn = (rcm.namespace ? rcm.namespace + '_' : '') + rcm.name;
                 var d = {};
                 d[property.name] = true;
                 coll.updateOne(
@@ -368,7 +366,7 @@ function MongoDbSync(options) {
       return promise;
     };
   }
-  
+
   function addAutoInc(cm) {
     /**
      * @param {Collection} collection
@@ -414,22 +412,20 @@ function MongoDbSync(options) {
 
   /**
    * @param {{}} classMeta
-   * @param {String} [namespace]
    * @returns {Promise}
    * @private
    */
-  this._defineClass = function (classMeta, namespace) {
+  this._defineClass = function (classMeta) {
     return getMetaTable('meta')
       .then(function (metaCollection) {
-        classMeta.namespace = namespace || null;
         return new Promise(function (resolve, reject) {
-          findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
+          findClassRoot(classMeta, metaCollection, function (err, cm) {
             if (err) {
               return reject(err);
             }
-            createCollection(cm, namespace).
+            createCollection(cm).
             then(addAutoInc(classMeta)).
-            then(addIndexes(classMeta, cm, namespace)).
+            then(addIndexes(classMeta, cm)).
             then(function () {
               delete classMeta._id;
               log.log('Регистрируем класс ' + classMeta.name);
@@ -437,7 +433,7 @@ function MongoDbSync(options) {
                 {
                   name: classMeta.name,
                   version: classMeta.version,
-                  namespace: namespace
+                  namespace: classMeta.namespace
                 },
                 classMeta,
                 {upsert: true},
@@ -445,7 +441,7 @@ function MongoDbSync(options) {
                   if (err) {
                     return reject(err);
                   }
-                  log.log('Класс ' + classMeta.name + ' зарегистрирован.');
+                  log.log(`Класс ${classMeta.name}@${classMeta.namespace} зарегистрирован.`);
                   resolve(result);
                 }
               );
@@ -455,15 +451,16 @@ function MongoDbSync(options) {
       });
   };
 
-  this._undefineClass = function (className, version, namespace) {
+  this._undefineClass = function (className, version) {
     return new Promise(function (resolve, reject) {
       getMetaTable('meta').then(function (collection) {
-        var query = {name: className};
+        let parts = className.split('@');
+        let query = {name: parts[0]};
         if (version) {
           query.version = version;
         }
-        if (namespace) {
-          query.namespace = namespace;
+        if (parts[1]) {
+          query.namespace = parts[1];
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
