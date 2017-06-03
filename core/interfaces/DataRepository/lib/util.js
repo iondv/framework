@@ -327,7 +327,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
               }
             }
           } else {
-            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
+            result[nm === '__class' ? '_class' : nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
             emptyResult = false;
           }
         } else if (nm === '$ItemId') {

@@ -50,16 +50,16 @@ function WorkflowProvider(options) {
 
   /**
    * @param {Item} item
+   * @param {{uid: String, env: {}, lang: String}} tOptions
    * @returns {Promise}
    */
-  this._getStatus = function (item, user) {
+  this._getStatus = function (item, tOptions) {
     return new Promise(function (resolve, reject) {
-      var workflows = options.metaRepo.getWorkflows(
+      let workflows = options.metaRepo.getWorkflows(
         item.getMetaClass().getName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
-
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -69,11 +69,21 @@ function WorkflowProvider(options) {
       ).
       then(
         function (states) {
-          var result = {};
+          let result = {};
 
-          var itemPermissions = {};
-          var propertyPermissions = {};
-          var selectionProviders = {};
+          let itemPermissions = {};
+          let propertyPermissions = {};
+          let selectionProviders = {};
+
+          let context = {$item: item, $uid: tOptions.uid};
+          if (tOptions.env) {
+            for (let nm in tOptions.env) {
+              if (tOptions.env.hasOwnProperty(nm)) {
+                context[nm] = tOptions.env[nm];
+              }
+            }
+          }
+
 
           for (let i = 0; i < states.length; i++) {
             result[states[i].workflow] = {
@@ -95,7 +105,7 @@ function WorkflowProvider(options) {
             let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
-                if (!checker(item, stage.conditions, item)) {
+                if (!checker(item, stage.conditions, context, tOptions.lang)) {
                   delete result[workflows[i].name];
                   continue;
                 }
@@ -109,14 +119,14 @@ function WorkflowProvider(options) {
               }
 
               for (let j = 0; j < stage.itemPermissions.length; j++) {
-                if (item.get(stage.itemPermissions[j].role) === user) {
+                if (item.get(stage.itemPermissions[j].role) === tOptions.uid) {
                   addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
                 }
               }
 
               for (let j = 0; j < stage.propertyPermissions.length; j++) {
                 for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
-                  if (item.get(stage.propertyPermissions[j].permissions[k].role) === user) {
+                  if (item.get(stage.propertyPermissions[j].permissions[k].role) === tOptions.uid) {
                     if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
                       propertyPermissions[stage.propertyPermissions[j].property] = {};
                     }
@@ -132,7 +142,7 @@ function WorkflowProvider(options) {
                 for (let j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
                   let transition = workflows[i].transitionsBySrc[stage.name][j];
                   if (Array.isArray(transition.conditions) && transition.conditions.length) {
-                    if (!checker(item, transition.conditions, item)) {
+                    if (!checker(item, transition.conditions, context, tOptions.lang)) {
                       continue;
                     }
                   }
@@ -140,7 +150,7 @@ function WorkflowProvider(options) {
                   if (Array.isArray(transition.roles) && transition.roles.length) {
                     let available = false;
                     for (let k = 0; k < transition.roles.length; k++) {
-                      if (item.get(transition.roles[k]) === user) {
+                      if (item.get(transition.roles[k]) === tOptions.uid) {
                         available = true;
                         break;
                       }
