@@ -474,11 +474,10 @@ function MongoDbSync(options) {
     });
   };
 
-  this._defineView = function (viewMeta, className, type, path, namespace) {
+  this._defineView = function (viewMeta, className, type, path) {
     return new Promise(function (resolve, reject) {
       viewMeta.type = type;
       viewMeta.className = className;
-      viewMeta.namespace = namespace || null;
       viewMeta.path = path || '';
       delete viewMeta._id;
 
@@ -488,7 +487,6 @@ function MongoDbSync(options) {
             type: viewMeta.type,
             className: viewMeta.className,
             path: viewMeta.path,
-            namespace: viewMeta.namespace,
             version: viewMeta.version
           },
           viewMeta,
@@ -504,7 +502,7 @@ function MongoDbSync(options) {
     });
   };
 
-  this._undefineView = function (className, type, path, version, namespace) {
+  this._undefineView = function (className, type, path, version) {
     return new Promise(function (resolve, reject) {
       getMetaTable('view').then(function (collection) {
         var query = {
@@ -514,12 +512,6 @@ function MongoDbSync(options) {
         };
         if (version) {
           query.version = version;
-        }
-
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
 
         collection.remove(query, function (err,vm) {
@@ -532,18 +524,16 @@ function MongoDbSync(options) {
     });
   };
 
-  this._defineNavSection = function (navSection, namespace) {
+  this._defineNavSection = function (navSection) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
         navSection.itemType = 'section';
-        navSection.namespace = namespace || null;
         delete navSection._id;
 
         collection.updateOne(
           {
             name: navSection.name,
-            itemType: navSection.itemType,
-            namespace: navSection.namespace
+            itemType: navSection.itemType
           },
           navSection,
           {upsert: true},
@@ -557,17 +547,10 @@ function MongoDbSync(options) {
     });
   };
 
-  this._undefineNavSection = function (sectionName, namespace) {
+  this._undefineNavSection = function (sectionName) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
-        var query = {name: sectionName, itemType: 'section'};
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
-        }
-
-        collection.remove(query, function (err,nsm) {
+        collection.remove({name: sectionName, itemType: 'section'}, function (err,nsm) {
           if (err) {
             return reject(err);
           }
@@ -577,19 +560,17 @@ function MongoDbSync(options) {
     });
   };
 
-  this._defineNavNode = function (navNode,navSectionName, namespace) {
+  this._defineNavNode = function (navNode, navSectionName) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
-        navNode.namespace = namespace || null;
         delete navNode._id;
 
         collection.updateOne(
           {
             code: navNode.code,
-            itemType: navNode.itemType,
-            namespace: navNode.namespace
+            itemType: navNode.itemType
           }, navNode, {upsert: true}, function (err, ns) {
           if (err) {
             return reject(err);
@@ -601,16 +582,10 @@ function MongoDbSync(options) {
     });
   };
 
-  this._undefineNavNode = function (navNodeName, namespace) {
+  this._undefineNavNode = function (navNodeName) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
-        var query = {code: navNodeName, itemType: 'node'};
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
-        }
-        collection.remove(query, function (err,nnm) {
+        collection.remove({code: navNodeName, itemType: 'node'}, function (err,nnm) {
           if (err) {
             return reject(err);
           }

@@ -146,26 +146,26 @@ function DsMetaRepository(options) {
   /**
    * @param {String} name
    * @param {String} [version]
-   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  function getFromMeta(name, version, namespace) {
+  function getFromMeta(name, version) {
+    let namespace = '';
     try {
-      var parts = name.split('@');
+      let parts = name.split('@');
       if (parts.length > 1) {
         name = parts[0];
         namespace = parts[1];
       }
-      var ns = formNS(namespace);
+      let ns = formNS(namespace);
       if (!_this.classMeta[ns]) {
-        throw new Error('Пространство имен ' + namespace + ' не найдено.'); 
+        throw new Error('Пространство имен ' + namespace + ' не найдено.');
       }
       if (_this.classMeta[ns].hasOwnProperty(name)) {
         if (version) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
           } else {
-            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            let cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
             if (cm) {
               return cm;
             }
@@ -181,15 +181,15 @@ function DsMetaRepository(options) {
     throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
-  this._getMeta = function (name, version, namespace) {
-    return getFromMeta(name, version, namespace);
+  this._getMeta = function (name, version) {
+    return getFromMeta(name, version);
   };
 
   this._listMeta = function (ancestor, version, direct, namespace) {
     var cm, result, ns;
     result = [];
     if (ancestor) {
-      cm = getFromMeta(ancestor, version, namespace);
+      cm = getFromMeta(ancestor, version);
       if (direct) {
         return cm.getDescendants();
       } else {
@@ -227,13 +227,13 @@ function DsMetaRepository(options) {
     }
   };
 
-  this._ancestor = function (classname,version, namespace) {
-    var cm = getFromMeta(classname, version, namespace);
+  this._ancestor = function (classname, version) {
+    var cm = getFromMeta(classname, version);
     return cm.getAncestor();
   };
 
-  this._propertyMetas = function (classname,version, namespace) {
-    var cm = getFromMeta(classname, version, namespace);
+  this._propertyMetas = function (classname, version) {
+    var cm = getFromMeta(classname, version);
     return cm.getPropertyMetas();
   };
 
@@ -323,25 +323,25 @@ function DsMetaRepository(options) {
     return null;
   }
 
-  this._getListViewModel = function (classname, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+  this._getListViewModel = function (classname, node, version) {
+    var meta = this._getMeta(classname, version);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
+      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node);
     }
     return vm;
   };
 
-  this._getCollectionViewModel = function (classname, collection, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+  this._getCollectionViewModel = function (classname, collection, node, version) {
+    var meta = this._getMeta(classname, version);
     return getViewModel(node, meta, this.viewMeta.collectionModels);
   };
 
-  this._getItemViewModel = function (classname, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+  this._getItemViewModel = function (classname, node, version) {
+    var meta = this._getMeta(classname, version);
     var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, namespace, version);
+      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, version);
     }
     return vm;
   };
@@ -357,13 +357,13 @@ function DsMetaRepository(options) {
     return vm;
   }
 
-  this._getCreationViewModel = function (classname, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+  this._getCreationViewModel = function (classname, node, version) {
+    var meta = this._getMeta(classname, version);
     return getCVM(node, meta);
   };
 
-  this._getDetailViewModel = function (classname, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+  this._getDetailViewModel = function (classname, node, version) {
+    var meta = this._getMeta(classname, version);
     return getViewModel(node, meta, this.viewMeta.detailModels);
   };
 
@@ -407,24 +407,22 @@ function DsMetaRepository(options) {
 
   /**
    * @param {String} className
-   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflows = function (className, namespace, version) {
-    var meta = this._getMeta(className, version, namespace);
+  this._getWorkflows = function (className, version) {
+    var meta = this._getMeta(className, version);
     return getWorkflows(meta);
   };
 
   /**
    * @param {String} className
    * @param {String} name
-   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflow = function (className, name, namespace, version) {
-    var meta = this._getMeta(className, version, namespace);
+  this._getWorkflow = function (className, name, version) {
+    var meta = this._getMeta(className, version);
     var wfs = getWorkflows(meta, name);
     if (wfs.length > 0) {
       return wfs[0];
@@ -436,12 +434,11 @@ function DsMetaRepository(options) {
    * @param {String} className
    * @param {String} workflow
    * @param {String} state
-   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflowView = function (className, workflow, state, namespace, version) {
-    var cm = this._getMeta(className, version, namespace);
+  this._getWorkflowView = function (className, workflow, state, version) {
+    var cm = this._getMeta(className, version);
     if (cm) {
       if (_this.viewMeta.workflowModels[workflow] &&
         _this.viewMeta.workflowModels[workflow][state] &&
@@ -472,7 +469,7 @@ function DsMetaRepository(options) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
         var structClass;
         try {
-          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
+          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version);
         } catch (err) {
           throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
             '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
