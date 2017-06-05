@@ -47,7 +47,7 @@ function loadPropertyMetas(cm, plain) {
       decimals: 0,
       allowedFileTypes: null,
       maxFileCount: 0,
-      nullable: false,
+      nullable: true,
       readonly: true,
       indexed: false,
       unique: false,
