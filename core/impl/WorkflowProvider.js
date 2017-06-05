@@ -260,7 +260,7 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, tOptions) {
-    return _this._getStatus(item).then(function (status) {
+    return _this._getStatus(item, tOptions).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             let wf = options.metaRepo.getWorkflow(
