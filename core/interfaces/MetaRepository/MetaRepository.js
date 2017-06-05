@@ -35,21 +35,19 @@ function MetaRepository() {
   /**
    * @param {String} classname
    * @param {String} [version]
-   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  this.ancestor = function (classname, version, namespace) {
-    return this._ancestor(classname, version, namespace);
+  this.ancestor = function (classname, version) {
+    return this._ancestor(classname, version);
   };
 
   /**
    * @param {String} classname
    * @param {String} [version]
-   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.propertyMetas = function (classname, version, namespace) {
-    return this._propertyMetas(classname, version, namespace);
+  this.propertyMetas = function (classname, version) {
+    return this._propertyMetas(classname, version);
   };
 
   // NavigationRepository
