@@ -597,13 +597,11 @@ function MongoDbSync(options) {
 
   /**
    * @param {{wfClass: String, name: String, version: String}} wfMeta
-   * @param {String} [namespace]
    * @returns {Promise}
    * @private
    */
-  this._defineWorkflow = function (wfMeta, namespace) {
+  this._defineWorkflow = function (wfMeta) {
     return new Promise(function (resolve, reject) {
-      wfMeta.namespace = namespace || null;
       delete wfMeta._id;
 
       getMetaTable('workflow').then(function (collection) {
@@ -611,7 +609,6 @@ function MongoDbSync(options) {
           {
             wfClass: wfMeta.wfClass,
             name: wfMeta.name,
-            namespace: wfMeta.namespace,
             version: wfMeta.version
           },
           wfMeta,
@@ -630,12 +627,11 @@ function MongoDbSync(options) {
   /**
    * @param {String} className
    * @param {String} name
-   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Promise}
    * @private
    */
-  this._undefineWorkflow = function (className, name, namespace, version) {
+  this._undefineWorkflow = function (className, name, version) {
     return new Promise(function (resolve, reject) {
       getMetaTable('view').then(function (collection) {
         var query = {
@@ -644,12 +640,6 @@ function MongoDbSync(options) {
         };
         if (version) {
           query.version = version;
-        }
-
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
 
         collection.remove(query, function (err, wf) {

@@ -55,7 +55,7 @@ function WorkflowProvider(options) {
   this._getStatus = function (item, user) {
     return new Promise(function (resolve, reject) {
       var workflows = options.metaRepo.getWorkflows(
-        item.getMetaClass().getName(),
+        item.getMetaClass().getCanonicalName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
