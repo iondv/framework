@@ -86,7 +86,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
         }
       } else {
         pm = cm.getPropertyMeta(nm);
-        if (pm) {
+        if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {

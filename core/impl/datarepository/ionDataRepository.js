@@ -937,8 +937,11 @@ function IonDataRepository(options) {
     var props = cm.getPropertyMetas();
     var invalidAttrs = [];
     for (var i = 0; i < props.length; i++) {
-      if (props[i].type !== PropertyTypes.COLLECTION &&
-          !props[i].nullable && (
+      if (
+        props[i].type !== PropertyTypes.COLLECTION &&
+        props[i].name !== '__class' &&
+        props[i].name !== '__classTitle' &&
+        !props[i].nullable && (
           lazy && data.hasOwnProperty(props[i].name) && data[props[i].name] === null ||
           !lazy && !props[i].autoassigned && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
         )) {
