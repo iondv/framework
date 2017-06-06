@@ -9,6 +9,7 @@ const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
+const cast = require('core/cast');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -31,11 +32,9 @@ function toScalar(v, context, type, lang) {
   if (typeof v === 'string' && v[0] === '$' && context) {
     let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
     let nm = v.substring(1);
-    if (item) {
-      let p;
-      if ((p = item.property(nm)) !== null) {
+    let p;
+    if (item && (p = item.property(nm)) !== null) {
         v = p.getValue();
-      }
     } else if (context.hasOwnProperty(nm)) {
       v = context[nm];
     }
@@ -47,14 +46,11 @@ function toScalar(v, context, type, lang) {
   }
 
   switch (type) {
-    case PropertyTypes.INT: return parseInt(v);
-    case PropertyTypes.REAL:
-    case PropertyTypes.DECIMAL: return parseFloat(v);
     case PropertyTypes.DATETIME: {
       v = strToDate(v, lang);
       return v;
     }break;
-    default: return v;
+    default: return cast(v, type);
   }
 }
 

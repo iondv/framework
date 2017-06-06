@@ -158,7 +158,7 @@ function DsMetaRepository(options) {
       }
       var ns = formNS(namespace);
       if (!_this.classMeta[ns]) {
-        throw new Error('Пространство имен ' + namespace + ' не найдено.'); 
+        throw new Error('Пространство имен ' + namespace + ' не найдено.');
       }
       if (_this.classMeta[ns].hasOwnProperty(name)) {
         if (version) {
@@ -662,15 +662,15 @@ function DsMetaRepository(options) {
               /**
                * @type {ClassMeta}
                */
-              try {
-                cm = _this.classMeta[ns][name].byOrder[i];
-                if (cm.plain.ancestor) {
+              cm = _this.classMeta[ns][name].byOrder[i];
+              if (cm.plain.ancestor) {
+                try {
                   cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
                   cm.ancestor.descendants.push(cm);
+                } catch (e) {
+                  throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
+                    cm.getCanonicalName() + '.');
                 }
-              } catch (e) {
-                throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
-                  cm.getCanonicalName() + '.');
               }
 
               pms = cm.getPropertyMetas();

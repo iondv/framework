@@ -86,7 +86,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
         }
       } else {
         pm = cm.getPropertyMeta(nm);
-        if (pm) {
+        if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
@@ -327,7 +327,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
               }
             }
           } else {
-            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
+            result[nm === '__class' ? '_class' : nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
             emptyResult = false;
           }
         } else if (nm === '$ItemId') {

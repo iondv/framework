@@ -6,10 +6,11 @@
 function WorkflowProvider() {
   /**
    * @param {Item} item
+   * @param {{uid: String, env: {}, lang: String}} options
    * @returns {Promise}
    */
-  this.getStatus = function (item, user) {
-    return this._getStatus(item, user);
+  this.getStatus = function (item, options) {
+    return this._getStatus(item, options || {});
   };
 
   /**

@@ -817,7 +817,7 @@ function IonDataRepository(options) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
     if (id && typeof obj === 'string') {
-      let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+      let conditions = formUpdatedData(cm, _this.keyProvider.keyToData(cm, id));
       if (conditions  === null) {
         return Promise.resolve(null);
       }
@@ -937,8 +937,11 @@ function IonDataRepository(options) {
     var props = cm.getPropertyMetas();
     var invalidAttrs = [];
     for (var i = 0; i < props.length; i++) {
-      if (props[i].type !== PropertyTypes.COLLECTION &&
-          !props[i].nullable && (
+      if (
+        props[i].type !== PropertyTypes.COLLECTION &&
+        props[i].name !== '__class' &&
+        props[i].name !== '__classTitle' &&
+        !props[i].nullable && (
           lazy && data.hasOwnProperty(props[i].name) && data[props[i].name] === null ||
           !lazy && !props[i].autoassigned && (!data.hasOwnProperty(props[i].name) || data[props[i].name] === null)
         )) {
@@ -977,7 +980,6 @@ function IonDataRepository(options) {
 
     for (var i = 0;  i < properties.length; i++) {
       pm = properties[i];
-
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
@@ -1003,7 +1005,7 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = options.uid;
+            v = uid;
           } else if (pm._dvFormula) {
             v = pm._dvFormula.apply({$context: updates, $uid: uid});
             if (v instanceof Promise) {
@@ -1465,7 +1467,7 @@ function IonDataRepository(options) {
         })
         .then(preWriteEventHandler(updates))
         .then(function () {
-          updates = formUpdatedData(cm, data, true, refUpdates, da);
+          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           autoAssign(cm, updates, false, options.uid);
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
@@ -1748,7 +1750,7 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(updates))
         .then(function () {
           let fileSavers = [];
-          updates = formUpdatedData(cm, data, true, refUpdates, da);
+          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })

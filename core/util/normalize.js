@@ -41,7 +41,7 @@ function normalize(data, dateCallback, options, processed) {
           );
         }
         return {
-          className: processed[data.getClassName() + '@' + data.getItemId()].className,
+          __class: processed[data.getClassName() + '@' + data.getItemId()].className,
           _id: processed[data.getClassName() + '@' + data.getItemId()]._id
         };
       }
@@ -54,7 +54,6 @@ function normalize(data, dateCallback, options, processed) {
 
     item = {};
 
-    item.className = data.getMetaClass().getCanonicalName();
     item._creator = data.getCreator();
     item._editor = data.getEditor();
     item._id = data.getItemId();
