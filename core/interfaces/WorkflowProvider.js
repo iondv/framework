@@ -35,6 +35,10 @@ function WorkflowProvider() {
   this.performTransition = function (item, workflow, name, options) {
     return this._performTransition(item, workflow, name, options || {});
   };
+
+  this.pushToState = function (item, workflow, state, options) {
+    return this._pushToState(item, workflow, state, options || {});
+  };
 }
 
 module.exports = WorkflowProvider;

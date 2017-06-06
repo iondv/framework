@@ -219,11 +219,7 @@ function WorkflowProvider(options) {
         stage: nextState.name,
         since: new Date()
       }
-    ).then(
-      function () {
-        return Promise.resolve(item);
-      }
-    );
+    ).then(()=>item);
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
@@ -260,18 +256,21 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, tOptions) {
+    let wf = options.metaRepo.getWorkflow(
+      item.getMetaClass().getName(),
+      workflow,
+      item.getMetaClass().getNamespace(),
+      item.getMetaClass().getVersion()
+    );
+
+    if (!wf) {
+      return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
+    }
+
     return _this._getStatus(item, tOptions).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
-            let wf = options.metaRepo.getWorkflow(
-              item.getMetaClass().getName(),
-              workflow,
-              item.getMetaClass().getNamespace(),
-              item.getMetaClass().getVersion()
-            );
-
-            if (wf) {
-              if (wf.transitionsByName.hasOwnProperty(name)) {
+            if (wf.transitionsByName.hasOwnProperty(name)) {
                 let transition = wf.transitionsByName[name];
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
@@ -282,7 +281,9 @@ function WorkflowProvider(options) {
                     }
                   }
                   if (!allowed) {
-                    return Promise.reject(new Error('Пользователь не имеет прав на выполнение перехода.'));
+                    return Promise.reject(
+                      new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                    );
                   }
                 }
 
@@ -362,22 +363,108 @@ function WorkflowProvider(options) {
                   );
                 });
               }
-            }
-            return Promise.reject(
-              new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
-            );
           }
           return Promise.reject(
+            new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
+          );
+        }
+        return Promise.reject(
+          new IonError(
+            Errors.NOT_IN_WORKFLOW,
+            {workflow: workflow, info: item.getClassName() + '@' + item.getItemId()}
+          )
+        );
+      });
+  };
+
+  /**
+   * @param {Item} item
+   * @param {String} workflow
+   * @param {String} state
+   * @param {{}} [tOptions]
+   * @param {String} [tOptions.uid]
+   * @param {{}} [tOptions.env]
+   * @param {ChangeLogger} [tOptions.changeLogger]
+   * @returns {Promise}
+   */
+  this._pushToState = function (item, workflow, state, tOptions) {
+    let wf = options.metaRepo.getWorkflow(
+      item.getMetaClass().getName(),
+      workflow,
+      item.getMetaClass().getNamespace(),
+      item.getMetaClass().getVersion()
+    );
+    if (!wf) {
+      return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
+    }
+    return _this._getStatus(item, tOptions).then(function (status) {
+      if (status.stages.hasOwnProperty(workflow)) {
+        return Promise.reject(new IonError(Errors.IN_WORKFLOW, {workflow: wf.caption}));
+      }
+      if (!wf.statesByName.hasOwnProperty(state)) {
+        return Promise.reject(
+          new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption})
+        );
+      }
+
+      let target = wf.statesByName[state];
+
+      if (Array.isArray(target.conditions) && target.conditions.length) {
+        if (!checker(item, target.conditions, item)) {
+          return Promise.reject(
             new IonError(
-              Errors.NOT_IN_WORKFLOW,
+              Errors.CONDITION_VIOLATION,
               {
-                workflow: workflow,
-                info: item.getClassName() + '@' + item.getItemId()
+                info: item.getClassName() + '@' + item.getItemId(),
+                state: target.caption,
+                workflow: wf.caption
               }
             )
           );
         }
-      });
+      }
+
+      return _this.trigger({
+        type: workflow + '.' + target.name,
+        item: item
+      }).then(
+        function (e) {
+          let updates;
+          if (Array.isArray(e.results) && e.results.length) {
+            for (let i = 0; i < e.results.length; i++) {
+              if (e.results[i] && typeof e.results[i] === 'object') {
+                for (let nm in e.results[i]) {
+                  if (e.results[i].hasOwnProperty(nm)) {
+                    if (!updates) {
+                      updates = {};
+                    }
+                    updates[nm] = e.results[i][nm];
+                  }
+                }
+              }
+            }
+          }
+
+          if (updates) {
+            return options.dataRepo.editItem(
+              item.getMetaClass().getCanonicalName(),
+              item.getItemId(),
+              updates,
+              tOptions.changeLogger,
+              {
+                uid: tOptions.uid,
+                env: tOptions.env
+              }
+            );
+          }
+          return Promise.resolve(item);
+        }
+      ).then(
+        function (item) {
+          return move(item, workflow, target);
+        }
+      );
+    });
   };
 
   /**
