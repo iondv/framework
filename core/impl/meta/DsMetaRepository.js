@@ -146,17 +146,17 @@ function DsMetaRepository(options) {
   /**
    * @param {String} name
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  function getFromMeta(name, version) {
-    let namespace = '';
+  function getFromMeta(name, version, namespace) {
     try {
-      let parts = name.split('@');
+      var parts = name.split('@');
       if (parts.length > 1) {
         name = parts[0];
         namespace = parts[1];
       }
-      let ns = formNS(namespace);
+      var ns = formNS(namespace);
       if (!_this.classMeta[ns]) {
         throw new Error('Пространство имен ' + namespace + ' не найдено.');
       }
@@ -165,7 +165,7 @@ function DsMetaRepository(options) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
           } else {
-            let cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
             if (cm) {
               return cm;
             }
@@ -181,15 +181,15 @@ function DsMetaRepository(options) {
     throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
   }
 
-  this._getMeta = function (name, version) {
-    return getFromMeta(name, version);
+  this._getMeta = function (name, version, namespace) {
+    return getFromMeta(name, version, namespace);
   };
 
   this._listMeta = function (ancestor, version, direct, namespace) {
     var cm, result, ns;
     result = [];
     if (ancestor) {
-      cm = getFromMeta(ancestor, version);
+      cm = getFromMeta(ancestor, version, namespace);
       if (direct) {
         return cm.getDescendants();
       } else {
@@ -227,43 +227,35 @@ function DsMetaRepository(options) {
     }
   };
 
-  this._ancestor = function (classname, version) {
-    var cm = getFromMeta(classname, version);
+  this._ancestor = function (classname,version, namespace) {
+    var cm = getFromMeta(classname, version, namespace);
     return cm.getAncestor();
   };
 
-  this._propertyMetas = function (classname, version) {
-    var cm = getFromMeta(classname, version);
+  this._propertyMetas = function (classname,version, namespace) {
+    var cm = getFromMeta(classname, version, namespace);
     return cm.getPropertyMetas();
   };
 
-  this._getNavigationSections = function (namespace) {
-    var ns = formNS(namespace);
-    if (_this.navMeta.sections.hasOwnProperty(ns)) {
-      return _this.navMeta.sections[ns];
-    }
-    return [];
+  this._getNavigationSections = function () {
+    return _this.navMeta.sections;
   };
 
-  this._getNavigationSection = function (code, namespace) {
-    var ns = formNS(namespace);
-    if (this.navMeta.sections.hasOwnProperty(ns) && this.navMeta.sections[ns].hasOwnProperty(code)) {
-      return this.navMeta.sections[ns][code];
+  this._getNavigationSection = function (code) {
+    if (this.navMeta.sections.hasOwnProperty(code)) {
+      return this.navMeta.sections[code];
     }
     return null;
   };
 
-  this._getNodes = function (section, parent, namespace) {
-    var ns = formNS(namespace);
+  this._getNodes = function (section, parent) {
     var result = [];
     var src = {};
 
-    if (this.navMeta.roots.hasOwnProperty(ns)) {
-      src = this.navMeta.roots[ns];
-    }
+    src = this.navMeta.roots;
 
-    if (section && this.navMeta.sections.hasOwnProperty(ns) && this.navMeta.sections[ns].hasOwnProperty(section)) {
-      src = this.navMeta.sections[ns][section].nodes;
+    if (section && this.navMeta.sections.hasOwnProperty(section)) {
+      src = this.navMeta.sections[section].nodes;
     }
 
     if (parent) {
@@ -285,18 +277,16 @@ function DsMetaRepository(options) {
     return result;
   };
 
-  this._getNode = function (code, namespace) {
-    var ns = formNS(namespace);
-    if (this.navMeta.nodes.hasOwnProperty(ns) && this.navMeta.nodes[ns].hasOwnProperty(code)) {
-      return this.navMeta.nodes[ns][code];
+  this._getNode = function (code) {
+    if (this.navMeta.nodes.hasOwnProperty(code)) {
+      return this.navMeta.nodes[code];
     }
     return null;
   };
 
-  this._getNodeForClassname = function (className, namespace) {
-    var ns = formNS(namespace);
-    if (this.navMeta.classnames.hasOwnProperty(ns) && this.navMeta.classnames[ns].hasOwnProperty(className)) {
-      return this.navMeta.classnames[ns][className];
+  this._getNodeForClassname = function (className) {
+    if (this.navMeta.classnames.hasOwnProperty(className)) {
+      return this.navMeta.classnames[className];
     }
     return null;
   };
@@ -323,25 +313,25 @@ function DsMetaRepository(options) {
     return null;
   }
 
-  this._getListViewModel = function (classname, node, version) {
-    var meta = this._getMeta(classname, version);
+  this._getListViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
-      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node);
+      return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
     }
     return vm;
   };
 
-  this._getCollectionViewModel = function (classname, collection, node, version) {
-    var meta = this._getMeta(classname, version);
+  this._getCollectionViewModel = function (classname, collection, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getViewModel(node, meta, this.viewMeta.collectionModels);
   };
 
-  this._getItemViewModel = function (classname, node, version) {
-    var meta = this._getMeta(classname, version);
+  this._getItemViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     var vm = getViewModel(node, meta, this.viewMeta.itemModels);
     if (!vm && meta.getAncestor()) {
-      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, version);
+      return this._getItemViewModel(meta.getAncestor().getCanonicalName(), node, namespace, version);
     }
     return vm;
   };
@@ -357,13 +347,13 @@ function DsMetaRepository(options) {
     return vm;
   }
 
-  this._getCreationViewModel = function (classname, node, version) {
-    var meta = this._getMeta(classname, version);
+  this._getCreationViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getCVM(node, meta);
   };
 
-  this._getDetailViewModel = function (classname, node, version) {
-    var meta = this._getMeta(classname, version);
+  this._getDetailViewModel = function (classname, node, namespace, version) {
+    var meta = this._getMeta(classname, version, namespace);
     return getViewModel(node, meta, this.viewMeta.detailModels);
   };
 
@@ -407,22 +397,24 @@ function DsMetaRepository(options) {
 
   /**
    * @param {String} className
+   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflows = function (className, version) {
-    var meta = this._getMeta(className, version);
+  this._getWorkflows = function (className, namespace, version) {
+    var meta = this._getMeta(className, version, namespace);
     return getWorkflows(meta);
   };
 
   /**
    * @param {String} className
    * @param {String} name
+   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflow = function (className, name, version) {
-    var meta = this._getMeta(className, version);
+  this._getWorkflow = function (className, name, namespace, version) {
+    var meta = this._getMeta(className, version, namespace);
     var wfs = getWorkflows(meta, name);
     if (wfs.length > 0) {
       return wfs[0];
@@ -434,11 +426,12 @@ function DsMetaRepository(options) {
    * @param {String} className
    * @param {String} workflow
    * @param {String} state
+   * @param {String} [namespace]
    * @param {String} [version]
    * @returns {Object[] | null}
    */
-  this._getWorkflowView = function (className, workflow, state, version) {
-    var cm = this._getMeta(className, version);
+  this._getWorkflowView = function (className, workflow, state, namespace, version) {
+    var cm = this._getMeta(className, version, namespace);
     if (cm) {
       if (_this.viewMeta.workflowModels[workflow] &&
         _this.viewMeta.workflowModels[workflow][state] &&
@@ -469,7 +462,7 @@ function DsMetaRepository(options) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
         var structClass;
         try {
-          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version);
+          structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
         } catch (err) {
           throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
             '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
@@ -659,15 +652,15 @@ function DsMetaRepository(options) {
               /**
                * @type {ClassMeta}
                */
-              try {
-                cm = _this.classMeta[ns][name].byOrder[i];
-                if (cm.plain.ancestor) {
+              cm = _this.classMeta[ns][name].byOrder[i];
+              if (cm.plain.ancestor) {
+                try {
                   cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
                   cm.ancestor.descendants.push(cm);
+                } catch (e) {
+                  throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
+                    cm.getCanonicalName() + '.');
                 }
-              } catch (e) {
-                throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
-                  cm.getCanonicalName() + '.');
               }
 
               pms = cm.getPropertyMetas();
@@ -858,61 +851,43 @@ function DsMetaRepository(options) {
     };
 
     for (i = 0; i < navs.length; i++) {
-      ns = formNS(navs[i].namespace);
       if (navs[i].itemType === 'section') {
-        if (!_this.navMeta.sections.hasOwnProperty(ns)) {
-          _this.navMeta.sections[ns] = {};
-        }
-        _this.navMeta.sections[ns][navs[i].name] = navs[i];
-        _this.navMeta.sections[ns][navs[i].name].nodes = {};
+        _this.navMeta.sections[navs[i].name] = navs[i];
+        _this.navMeta.sections[navs[i].name].nodes = {};
       } else if (navs[i].itemType === 'node') {
-        if (!_this.navMeta.nodes.hasOwnProperty(ns)) {
-          _this.navMeta.nodes[ns] = {};
-        }
-        _this.navMeta.nodes[ns][navs[i].code] = navs[i];
-        _this.navMeta.nodes[ns][navs[i].code].children = [];
+        _this.navMeta.nodes[navs[i].code] = navs[i];
+        _this.navMeta.nodes[navs[i].code].children = [];
         if (navs[i].code.indexOf('.') === -1) {
-          if (!_this.navMeta.roots.hasOwnProperty(ns)) {
-            _this.navMeta.roots[ns] = {};
-          }
-          _this.navMeta.roots[ns][navs[i].code] = _this.navMeta.nodes[ns][navs[i].code];
+          _this.navMeta.roots[navs[i].code] = _this.navMeta.nodes[navs[i].code];
         }
         if (navs[i].type === 1) {
-          if (!_this.navMeta.classnames.hasOwnProperty(ns)) {
-            _this.navMeta.classnames[ns] = {};
-          }
-          _this.navMeta.classnames[ns][navs[i].classname] = navs[i].code;
+          _this.navMeta.classnames[navs[i].classname] = navs[i].code;
         }
       }
     }
 
-    for (ns in _this.navMeta.nodes) {
-      if (_this.navMeta.nodes.hasOwnProperty(ns)) {
-        for (name in _this.navMeta.nodes[ns]) {
-          if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
-            var n = _this.navMeta.nodes[ns][name];
-            if (_this.navMeta.sections.hasOwnProperty(ns) &&
-              _this.navMeta.sections[ns].hasOwnProperty(n.section) &&
-              n.code.indexOf('.') === -1) {
-              _this.navMeta.sections[ns][n.section].nodes[n.code] = n;
-            }
-
-            if (n.code.indexOf('.') !== -1) {
-              var p = n.code.substring(0, n.code.lastIndexOf('.'));
-              if (_this.navMeta.nodes[ns].hasOwnProperty(p)) {
-                _this.navMeta.nodes[ns][p].children.push(n);
-              }
-            }
-          }
+    for (name in _this.navMeta.nodes) {
+      if (_this.navMeta.nodes.hasOwnProperty(name)) {
+        var n = _this.navMeta.nodes[name];
+        if (_this.navMeta.sections.hasOwnProperty(n.section) &&
+          n.code.indexOf('.') === -1) {
+          _this.navMeta.sections[n.section].nodes[n.code] = n;
         }
 
-        for (name in _this.navMeta.nodes[ns]) {
-          if (_this.navMeta.nodes[ns].hasOwnProperty(name)) {
-            _this.navMeta.nodes[ns][name].children.sort(function (a, b) {
-              return a.orderNumber - b.orderNumber;
-            });
+        if (n.code.indexOf('.') !== -1) {
+          var p = n.code.substring(0, n.code.lastIndexOf('.'));
+          if (_this.navMeta.nodes.hasOwnProperty(p)) {
+            _this.navMeta.nodes[p].children.push(n);
           }
         }
+      }
+    }
+
+    for (name in _this.navMeta.nodes[ns]) {
+      if (_this.navMeta.nodes.hasOwnProperty(name)) {
+        _this.navMeta.nodes[name].children.sort(function (a, b) {
+          return a.orderNumber - b.orderNumber;
+        });
       }
     }
   }

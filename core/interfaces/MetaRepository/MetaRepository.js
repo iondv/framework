@@ -14,10 +14,11 @@ function MetaRepository() {
    *
    * @param {String} name
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  this.getMeta = function (name, version) {
-    return this._getMeta(name, version);
+  this.getMeta = function (name, version, namespace) {
+    return this._getMeta(name, version, namespace);
   };
 
   /**
@@ -35,66 +36,63 @@ function MetaRepository() {
   /**
    * @param {String} classname
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {ClassMeta}
    */
-  this.ancestor = function (classname, version) {
-    return this._ancestor(classname, version);
+  this.ancestor = function (classname, version, namespace) {
+    return this._ancestor(classname, version, namespace);
   };
 
   /**
    * @param {String} classname
    * @param {String} [version]
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.propertyMetas = function (classname, version) {
-    return this._propertyMetas(classname, version);
+  this.propertyMetas = function (classname, version, namespace) {
+    return this._propertyMetas(classname, version, namespace);
   };
 
   // NavigationRepository
 
   /**
-   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.getNavigationSections = function (namespace) {
-    return this._getNavigationSections(namespace);
+  this.getNavigationSections = function () {
+    return this._getNavigationSections();
   };
 
   /**
    * @param {String} code
-   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNavigationSection = function (code, namespace) {
-    return this._getNavigationSection(code, namespace);
+  this.getNavigationSection = function (code) {
+    return this._getNavigationSection(code);
   };
 
   /**
    * @param {String} code
-   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNode = function (code, namespace) {
-    return this._getNode(code, namespace);
+  this.getNode = function (code) {
+    return this._getNode(code);
   };
 
   /**
    * @param {String} sections
    * @param {String} [parent]
-   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.getNodes = function (sections, parent, namespace) {
-    return this._getNodes(sections, parent, namespace);
+  this.getNodes = function (sections, parent) {
+    return this._getNodes(sections, parent);
   };
 
   /**
    * @param {String} className
-   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNodeForClassname = function (className, namespace) {
-    return this._getNodeForClassname(className, namespace);
+  this.getNodeForClassname = function (className) {
+    return this._getNodeForClassname(className);
   };
 
   // ViewModelRepository
