@@ -222,7 +222,7 @@ function IonDataRepository(options) {
    * @param {Object} data
    * @param {String} [version]
    * @param {{autoassign: Boolean}} [options]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @private
    * @returns {Item | null}
    */
@@ -230,7 +230,7 @@ function IonDataRepository(options) {
     var acm = this.meta.getMeta(className, version);
     delete data._id;
     if (options && options.autoassign) {
-      autoAssign(acm, data, true, options.uid);
+      autoAssign(acm, data, true, options.user);
     }
     return new Item(this.keyProvider.formKey(acm, data), data, acm);
   };
@@ -965,7 +965,7 @@ function IonDataRepository(options) {
    * @param {Boolean} onlyDefaults
    * @param {String} uid
    */
-  function autoAssign(cm, updates, onlyDefaults, uid) {
+  function autoAssign(cm, updates, onlyDefaults, user) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
     }
@@ -1005,9 +1005,9 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = uid;
+            v = user.id();
           } else if (pm._dvFormula) {
-            v = pm._dvFormula.apply({$context: updates, $uid: uid});
+            v = pm._dvFormula.apply({$context: updates, $uid: user.id()});
             if (v instanceof Promise) {
               throw new IonError(Errors.UNEXPECTED_ASYNC, {info: cm.getCaption() + '.' + pm.caption});
             }
@@ -1443,8 +1443,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1462,13 +1461,12 @@ function IonDataRepository(options) {
         cm,
         {
           data: updates,
-          env: options.env,
-          uid: options.uid
+          user: options.user
         })
         .then(preWriteEventHandler(updates))
         .then(function () {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
-          autoAssign(cm, updates, false, options.uid);
+          autoAssign(cm, updates, false, options.user);
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
           prepareFileSavers('new', cm, fileSavers, updates);
@@ -1477,8 +1475,8 @@ function IonDataRepository(options) {
         .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
-          if (options.uid) {
-            updates._creator = options.uid;
+          if (options.user) {
+            updates._creator = options.user.id();
           }
           return _this.ds.insert(
             tn(rcm),
@@ -1513,8 +1511,7 @@ function IonDataRepository(options) {
             {
               item: item,
               data: data,
-              env: options.env,
-              uid: options.uid
+              user: options.user
             }
           );
         })
@@ -1537,8 +1534,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1586,8 +1582,7 @@ function IonDataRepository(options) {
                 id: id,
                 item: b && _this._wrap(b._class, b, b._classVer),
                 data: updates,
-                env: options.env,
-                uid: options.uid
+                user: options.user
               });
           });
         } else {
@@ -1598,8 +1593,7 @@ function IonDataRepository(options) {
               {
                 id: id,
                 data: updates,
-                env: options.env,
-                uid: options.uid
+                user: options.user
               }
             );
         }
@@ -1614,8 +1608,8 @@ function IonDataRepository(options) {
             return Promise.all(fileSavers);
           })
           .then(function () {
-            if (options.uid) {
-              updates._editor = options.uid;
+            if (options.user) {
+              updates._editor = options.user.id();
             }
             return _this.ds.update(
               tn(rcm),
@@ -1650,8 +1644,7 @@ function IonDataRepository(options) {
                 {
                   item: item,
                   updates: data,
-                  env: options.env,
-                  uid: options.uid
+                  user: options.user
                 }
               );
             }
@@ -1681,8 +1674,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.autoAssign]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -1729,8 +1721,7 @@ function IonDataRepository(options) {
               id: id,
               item: b && _this._wrap(b._class, b, b._classVer),
               data: updates,
-              env: options.env,
-              uid: options.uid
+              user: options.user
             });
         });
       } else {
@@ -1740,8 +1731,7 @@ function IonDataRepository(options) {
             {
               id: id,
               data: updates,
-              env: options.env,
-              uid: options.uid
+              user: options.user
             }
           );
       }
@@ -1759,7 +1749,7 @@ function IonDataRepository(options) {
           updates._classVer = cm.getVersion();
           if (conditions) {
             if (options && options.autoAssign) {
-              autoAssign(cm, updates, true, options.uid);
+              autoAssign(cm, updates, true, options.user);
             } else {
               if (cm.getChangeTracker()) {
                 updates[cm.getChangeTracker()] = new Date();
@@ -1767,7 +1757,7 @@ function IonDataRepository(options) {
             }
             checkRequired(cm, updates, true);
           } else {
-            autoAssign(cm, updates, false, options.uid);
+            autoAssign(cm, updates, false, options.user);
             event = EventType.CREATE;
             checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           }
@@ -1810,8 +1800,7 @@ function IonDataRepository(options) {
             {
               item: item,
               updates: data,
-              env: options.env,
-              uid: options.uid
+              user: options.user
             }
           );
         })
@@ -1830,8 +1819,7 @@ function IonDataRepository(options) {
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
     var cm = _this.meta.getMeta(classname);
@@ -1850,8 +1838,7 @@ function IonDataRepository(options) {
             {
               id: id,
               item: b && _this._wrap(cm.getCanonicalName(), b, cm.getVersion()),
-              env: options.env,
-              uid: options.uid
+              user: options.user
             }
           );
         });
@@ -1861,8 +1848,7 @@ function IonDataRepository(options) {
         cm,
         {
           id: id,
-          env: options.env,
-          uid: options.uid
+          user: options.user
         }
       );
     }
@@ -1890,8 +1876,7 @@ function IonDataRepository(options) {
             cm,
             {
               id: id,
-              env: options.env,
-              uid: options.uid
+              user: options.user
             }
           );
         }
@@ -1902,7 +1887,7 @@ function IonDataRepository(options) {
    * @param {String} classname
    * @param {{}} [options]
    * @param {Object} [options.filter]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
@@ -1924,7 +1909,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
@@ -1946,8 +1931,8 @@ function IonDataRepository(options) {
           return prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm));
         })
         .then(function (filter) {
-          if (options.uid) {
-            updates._editor = options.uid;
+          if (options.user) {
+            updates._editor = options.user.id();
           }
           return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
         })

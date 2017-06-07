@@ -184,12 +184,12 @@ function SecuredDataRepository(options) {
   /**
    *
    * @param {String | Item} obj
-   * @param {{filter: Object, uid: String}} options
+   * @param {{filter: Object, user: User}} options
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
     var cname = cn(obj);
-    return exclude(options.uid, cname, options.filter).then(
+    return exclude(options.user.id(), cname, options.filter).then(
       function (filter) {
         options.filter = filter;
         return dataRepo.getCount(obj, options);
@@ -199,7 +199,7 @@ function SecuredDataRepository(options) {
 
   /**
    * @param {String | Item} obj
-   * @param {{uid: String}} [options]
+   * @param {{user: User}} [options]
    * @param {Object} [options.filter]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -212,7 +212,7 @@ function SecuredDataRepository(options) {
   this._getList = function (obj, options) {
     var cname = cn(obj);
     var listPermissions = {};
-    return exclude(options.uid, cname, options.filter, listPermissions)
+    return exclude(options.user.id(), cname, options.filter, listPermissions)
       .then(
         function (filter) {
           options.filter = filter;
@@ -234,7 +234,7 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
-    return exclude(options.uid, className, options.filter).then(
+    return exclude(options.user, className, options.filter).then(
       function (filter) {
         options.filter = filter;
         return dataRepo.aggregate(className, options);
@@ -305,13 +305,13 @@ function SecuredDataRepository(options) {
 
   /**
    * @param {Item} item
-   * @param {{uid: String}} options
+   * @param {{user: User}} options
    * @returns {Promise.<TResult>}
    */
   function setItemPermissions(options) {
     return function (item) {
       return aclProvider.getPermissions(
-        options.uid, [
+        options.user.id(), [
           classPrefix + item.getClassName(),
           itemPrefix + item.getClassName() + '@' + item.getItemId()
         ])
@@ -320,7 +320,7 @@ function SecuredDataRepository(options) {
             permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
             permissions[classPrefix + item.getClassName()] || {}
           );
-          return aclProvider.getPermissions(options.uid, attrResources(item));
+          return aclProvider.getPermissions(options.user.id(), attrResources(item));
         }).then(function (ap) {
           item.attrPermissions = attrPermissions(item, ap);
           if (!workflow) {
@@ -351,11 +351,11 @@ function SecuredDataRepository(options) {
    * @param {Object} data
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
-   * @param {{uid: String}} options
+   * @param {{user: User}} options
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
-    return aclProvider.checkAccess(options.uid, classPrefix + classname, [Permissions.USE])
+    return aclProvider.checkAccess(options.user.id(), classPrefix + classname, [Permissions.USE])
       .then(function (accessible) {
         if (accessible) {
           return dataRepo.createItem(classname, data, version, changeLogger, options);
@@ -365,7 +365,7 @@ function SecuredDataRepository(options) {
   };
 
   function checkWritePermission(classname, id, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then(function (permissions) {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE] ||
@@ -426,7 +426,7 @@ function SecuredDataRepository(options) {
   };
 
   function checkDeletePermission(classname, id, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then(function (permissions) {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE] ||
@@ -533,7 +533,7 @@ function SecuredDataRepository(options) {
   /**
    * @param {Item} master
    * @param {String} collection
-   * @param {{uid: String}} options
+   * @param {{user: User}} options
    * @param {Object} [options.filter]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -548,7 +548,7 @@ function SecuredDataRepository(options) {
     return setItemPermissions(options)(master)
       .then(function (m) {
         if (m.permissions[Permissions.READ]) {
-          return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter, collectionPermissions);
+          return exclude(options.user.id(), p.meta._refClass.getCanonicalName(), options.filter, collectionPermissions);
         }
         throw new IonError(Errors.PERMISSION_LACK);
       }).then(function (filter) {
@@ -564,7 +564,7 @@ function SecuredDataRepository(options) {
    *
    * @param {Item} master
    * @param {String} collection
-   * @param {{uid: String}} options
+   * @param {{user: User}} options
    * @param {{}} [options.filter]
    * @returns {Promise}
    */
@@ -573,7 +573,7 @@ function SecuredDataRepository(options) {
     return setItemPermissions(options)(master)
       .then(function (m) {
         if (m.permissions[Permissions.READ]) {
-          return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);
+          return exclude(options.user.id(), p.meta._refClass.getCanonicalName(), options.filter);
         }
         throw new IonError(Errors.PERMISSION_LACK);
       }).then(function (filter) {
@@ -590,11 +590,11 @@ function SecuredDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname])
+    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
       .then(function (permissions) {
         if (
           permissions[classPrefix + classname] &&
@@ -610,11 +610,11 @@ function SecuredDataRepository(options) {
    * @param {String} classname
    * @param {{}} [options]
    * @param {Object} [options.filter]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname])
+    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
       .then(function (permissions) {
         if (
           permissions[classPrefix + classname] &&

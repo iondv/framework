@@ -20,7 +20,7 @@ function User(data, coactors) {
   };
 
   this.isMe = function (sid) {
-    return coactors && coactors.hasOwnProperty(sid) && coactors[sid];
+    return this.id() === sid || coactors && coactors.hasOwnProperty(sid) && coactors[sid];
   };
 }
 

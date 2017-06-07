@@ -49,8 +49,25 @@ function WorkflowProvider(options) {
   }
 
   /**
+   *
    * @param {Item} item
-   * @param {{uid: String, env: {}, lang: String}} tOptions
+   * @param {{user: User}} options
+   * @returns {{}}
+   */
+  function buildContext(item, options) {
+    let context = {$item: item, $uid: options.user.id()};
+    let props = options.user.properties();
+    for (let nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        context[nm] = props[nm];
+      }
+    }
+    return context;
+  }
+
+  /**
+   * @param {Item} item
+   * @param {{user: User, lang: String}} tOptions
    * @returns {Promise}
    */
   this._getStatus = function (item, tOptions) {
@@ -75,15 +92,7 @@ function WorkflowProvider(options) {
           let propertyPermissions = {};
           let selectionProviders = {};
 
-          let context = {$item: item, $uid: tOptions.uid};
-          if (tOptions.env) {
-            for (let nm in tOptions.env) {
-              if (tOptions.env.hasOwnProperty(nm)) {
-                context[nm] = tOptions.env[nm];
-              }
-            }
-          }
-
+          let context = buildContext(item, tOptions);
 
           for (let i = 0; i < states.length; i++) {
             result[states[i].workflow] = {
@@ -119,14 +128,20 @@ function WorkflowProvider(options) {
               }
 
               for (let j = 0; j < stage.itemPermissions.length; j++) {
-                if (item.get(stage.itemPermissions[j].role) === tOptions.uid) {
+                if (
+                  tOptions.user.isMe(stage.itemPermissions[j].role) ||
+                  tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
+                ) {
                   addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
                 }
               }
 
               for (let j = 0; j < stage.propertyPermissions.length; j++) {
                 for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
-                  if (item.get(stage.propertyPermissions[j].permissions[k].role) === tOptions.uid) {
+                  if (
+                    tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
+                    tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
+                  ) {
                     if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
                       propertyPermissions[stage.propertyPermissions[j].property] = {};
                     }
@@ -150,7 +165,10 @@ function WorkflowProvider(options) {
                   if (Array.isArray(transition.roles) && transition.roles.length) {
                     let available = false;
                     for (let k = 0; k < transition.roles.length; k++) {
-                      if (item.get(transition.roles[k]) === tOptions.uid) {
+                      if (
+                        tOptions.user.isMe(transition.roles[k]) ||
+                        tOptions.user.isMe(item.get(transition.roles[k]))
+                      ) {
                         available = true;
                         break;
                       }
@@ -223,8 +241,8 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
-    var ctx = options.env || {};
-    ctx.$uid = options.uid;
+    var ctx = options.user.properties() || {};
+    ctx.$uid = options.user.id();
     if (typeof assignment._formula === 'function') {
       ctx.$context = item;
       return Promise.resolve()
@@ -250,8 +268,8 @@ function WorkflowProvider(options) {
    * @param {String} workflow
    * @param {String} name
    * @param {{}} [tOptions]
-   * @param {String} [tOptions.uid]
-   * @param {{}} [tOptions.env]
+   * @param {User} [tOptions.user]
+   * @param {String} [tOptions.lang]
    * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
@@ -275,7 +293,10 @@ function WorkflowProvider(options) {
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
-                    if (item.get(transition.roles[i]) === tOptions.uid) {
+                    if (
+                      tOptions.user.isMe(transition.roles[i]) ||
+                      tOptions.user.isMe(item.get(transition.roles[i]))
+                    ) {
                       allowed = true;
                       break;
                     }
@@ -306,9 +327,10 @@ function WorkflowProvider(options) {
                   });
                 }
 
+                let context = buildContext(item, tOptions);
                 return calculations.then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions, item)) {
+                    if (!checker(item, nextState.conditions, context, tOptions.lang)) {
                       return Promise.reject(
                         new IonError(
                           Errors.CONDITION_VIOLATION,
@@ -349,8 +371,7 @@ function WorkflowProvider(options) {
                           updates,
                           tOptions.changeLogger,
                           {
-                            uid: tOptions.uid,
-                            env: tOptions.env
+                            user: tOptions.user
                           }
                         );
                       }
@@ -382,8 +403,8 @@ function WorkflowProvider(options) {
    * @param {String} workflow
    * @param {String} state
    * @param {{}} [tOptions]
-   * @param {String} [tOptions.uid]
-   * @param {{}} [tOptions.env]
+   * @param {User} [tOptions.user]
+   * @param {String} [tOptions.lang]
    * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
@@ -410,7 +431,8 @@ function WorkflowProvider(options) {
       let target = wf.statesByName[state];
 
       if (Array.isArray(target.conditions) && target.conditions.length) {
-        if (!checker(item, target.conditions, item)) {
+        let context = buildContext(item, tOptions);
+        if (!checker(item, target.conditions, context, tOptions.lang)) {
           return Promise.reject(
             new IonError(
               Errors.CONDITION_VIOLATION,
@@ -452,8 +474,7 @@ function WorkflowProvider(options) {
               updates,
               tOptions.changeLogger,
               {
-                uid: tOptions.uid,
-                env: tOptions.env
+                user: tOptions.user
               }
             );
           }
