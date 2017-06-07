@@ -11,6 +11,8 @@ const Permissions = require('core/Permissions');
 const merge = require('merge');
 const PropertyTypes = require('core/PropertyTypes');
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const IonError = require('core/IonError');
+const Errors = require('core/errors/data-repo');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -50,9 +52,12 @@ function AclMock() {
  * @param {DataRepository} options.data
  * @param {MetaRepository} options.meta
  * @param {AclProvider} [options.acl]
+ * @param {WorkflowProvider} [options.workflow]
  * @constructor
  */
 function SecuredDataRepository(options) {
+
+  var _this = this;
 
   /**
    * @type {DataRepository}
@@ -69,9 +74,14 @@ function SecuredDataRepository(options) {
    */
   var aclProvider = options.acl || new AclMock();
 
+  /**
+   * @type {WorkflowProvider}
+   */
+  var workflow = options.workflow;
+
   var classPrefix = options.classPrefix || 'c:::';
   var itemPrefix = options.itemPrefix || 'i:::';
-  var attrPrefix = options.attrPrefix || 'a:::';
+  // var attrPrefix = options.attrPrefix || 'a:::';
   var globalMarker = options.globalMarker || '*';
 
   /**
@@ -146,14 +156,6 @@ function SecuredDataRepository(options) {
       });
   }
 
-  function rejectByClass(className) {
-    return Promise.reject(new Error('Нет прав на использование класса ' + className));
-  }
-
-  function rejectByItem(className, id) {
-    return Promise.reject(new Error('Недостаточно прав на объект ' + className + '@' + id));
-  }
-
   /**
    * @param {String} className
    * @param {Object} data
@@ -174,7 +176,7 @@ function SecuredDataRepository(options) {
       cn = obj.getClassName();
     }
     if (!cn) {
-      throw new Error('Не передана информация о классе.');
+      throw new Error('No class info passed');
     }
     return cn;
   }
@@ -302,6 +304,38 @@ function SecuredDataRepository(options) {
   }
 
   /**
+   * @param {Item} item
+   * @param {{uid: String}} options
+   * @returns {Promise.<TResult>}
+   */
+  function setItemPermissions(options) {
+    return function (item) {
+      return aclProvider.getPermissions(
+        options.uid, [
+          classPrefix + item.getClassName(),
+          itemPrefix + item.getClassName() + '@' + item.getItemId()
+        ])
+        .then(function (permissions) {
+          item.permissions = merge(
+            permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+            permissions[classPrefix + item.getClassName()] || {}
+          );
+          return aclProvider.getPermissions(options.uid, attrResources(item));
+        }).then(function (ap) {
+          item.attrPermissions = attrPermissions(item, ap);
+          if (!workflow) {
+            return item;
+          }
+          return workflow.getStatus(item, options).then(function (status) {
+            item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+            item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
+            return item;
+          });
+        });
+    };
+  }
+
+  /**
    *
    * @param {String | Item} obj
    * @param {String} [id]
@@ -309,31 +343,10 @@ function SecuredDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    */
   this._getItem = function (obj, id, options) {
-    var cname = cn(obj);
-    var itemPermissions = {};
-    id = id || '';
-    return aclProvider.getPermissions(options.uid, [classPrefix + cname, itemPrefix + cname + '@' + id])
-      .then(function (permissions) {
-        itemPermissions = merge(
-          permissions[itemPrefix + cname + '@' + id] || {},
-          permissions[classPrefix + cname] || {}
-        );
-        return dataRepo.getItem(obj, id, options);
-      }).then(function (item) {
-        if (!item) {
-          return Promise.resolve(null);
-        }
-        return aclProvider.getPermissions(options.uid, attrResources(item))
-          .then(function (ap) {
-            item.permissions = itemPermissions;
-            item.attrPermissions = attrPermissions(item, ap);
-            return Promise.resolve(item);
-          });
-      });
+    return dataRepo.getItem(obj, id || '', options).then(setItemPermissions(options));
   };
 
   /**
-   *
    * @param {String} classname
    * @param {Object} data
    * @param {String} [version]
@@ -347,9 +360,29 @@ function SecuredDataRepository(options) {
         if (accessible) {
           return dataRepo.createItem(classname, data, version, changeLogger, options);
         }
-        return rejectByClass(classname);
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
+
+  function checkWritePermission(classname, id, options) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
+      .then(function (permissions) {
+        let accessible = permissions[classPrefix + classname] &&
+          permissions[classPrefix + classname][Permissions.WRITE] ||
+          permissions[itemPrefix + classname + '@' + id] &&
+          permissions[itemPrefix + classname + '@' + id][Permissions.WRITE];
+        if (accessible || !workflow) {
+          return accessible;
+        }
+        return _this._getItem(classname, id, options)
+          .then((item)=>{
+            if (!item) {
+              return false;
+            }
+            return item.permissions[Permissions.WRITE];
+          });
+      });
+  }
 
   /**
    *
@@ -361,17 +394,12 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
-      .then(function (permissions) {
-        if (
-          permissions[classPrefix + classname] &&
-          permissions[classPrefix + classname][Permissions.WRITE] ||
-          permissions[itemPrefix + classname + '@' + id] &&
-          permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]
-        ) {
+    return checkWritePermission(classname, id, options)
+      .then((writable) => {
+        if (writable) {
           return dataRepo.editItem(classname, id, data, changeLogger, options);
         }
-        return rejectByItem(classname, id);
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
 
@@ -388,18 +416,34 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
-      .then(function (permissions) {
-        if (
-          permissions[classPrefix + classname] && permissions[classPrefix + classname][Permissions.WRITE] ||
-            permissions[itemPrefix + classname + '@' + id] &&
-            permissions[itemPrefix + classname + '@' + id][Permissions.WRITE]
-        ) {
+    return checkWritePermission(classname, id, options)
+      .then(function (writable) {
+        if (writable) {
           return dataRepo.saveItem(classname, id, data, version, changeLogger, options);
         }
-        return rejectByItem(classname, id);
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
+
+  function checkDeletePermission(classname, id, options) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
+      .then(function (permissions) {
+        let accessible = permissions[classPrefix + classname] &&
+          permissions[classPrefix + classname][Permissions.DELETE] ||
+          permissions[itemPrefix + classname + '@' + id] &&
+          permissions[itemPrefix + classname + '@' + id][Permissions.DELETE];
+        if (accessible || !workflow) {
+          return accessible;
+        }
+        return _this._getItem(classname, id, options)
+          .then((item)=>{
+            if (!item) {
+              return false;
+            }
+            return item.permissions[Permissions.DELETE];
+          });
+      });
+  }
 
   /**
    *
@@ -409,59 +453,37 @@ function SecuredDataRepository(options) {
    * @param {{uid: String}} options
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname, itemPrefix + classname + '@' + id])
-      .then(function (permissions) {
-        if (
-          permissions[classPrefix + classname] && permissions[classPrefix + classname][Permissions.DELETE] ||
-            permissions[itemPrefix + classname + '@' + id] &&
-            permissions[itemPrefix + classname + '@' + id][Permissions.DELETE]
-        ) {
+    return checkDeletePermission(classname, id, options)
+      .then((deletable) => {
+        if (deletable) {
           return dataRepo.deleteItem(classname, id, changeLogger);
         }
-        return rejectByItem(classname, id);
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
 
-  function collectionResources(master, collection, details) {
-    var resources = [
-      classPrefix + master.getClassName(),
-      itemPrefix + master.getClassName() + '@' + master.getItemId(),
-      attrPrefix + master.getClassName() + '.' + collection
-    ];
 
-    for (var i = 0; i < details.length; i++) {
-      resources.push(classPrefix + details[i].getClassName());
-      resources.push(itemPrefix + details[i].getClassName() + '@' + details[i].getItemId());
-    }
-    return resources;
-  }
-
-  function checkCollectionWriteAccess(master, collection, details, permissions) {
-    if (
-      !(
-        permissions[classPrefix + master.getClassName()] &&
-        permissions[classPrefix + master.getClassName()][Permissions.WRITE]) &&
-      !(permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
-        permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.WRITE])
-    ) {
-      return false;
-    }
-    /* Контроль доступа к атрибутам пока не используем
-        if (permissions[itemPrefix + master.getClassName() + '.' + collection][Permissions.WRITE]) {
-          return true;
+  function checkCollectionWriteAccess(master, details, options) {
+    return setItemPermissions(options)(master)
+      .then((m) => {
+        if (!m.permissions[Permissions.WRITE]) {
+          return false;
         }
-    */
-    for (var i = 0; i < details.length; i++) {
-      if (
-        !(permissions[classPrefix + details[i].getClassName()] &&
-          permissions[classPrefix + details[i].getClassName()][Permissions.READ]) &&
-        !(permissions[itemPrefix + details[i].getClassName() + '@' + details[i].getItemId()] &&
-          permissions[itemPrefix + details[i].getClassName() + '@' + details[i].getItemId()][Permissions.READ])
-      ) {
-        return false;
-      }
-    }
-    return true;
+        let p;
+        let breaker = '_____UNUSABLE____';
+        details.forEach(function (d) {
+          p = p ? p.then(()=>setItemPermissions(options)(d)) : setItemPermissions(options)(d);
+          p = p.then((di) => {
+            if (!di.permissions[Permissions.USE]) {
+              return Promise.reject(breaker);
+            }
+            return Promise.resolve();
+          });
+        });
+        return p.catch((e) => {
+          return e === breaker ? Promise.resolve(false) : Promise.reject(e);
+        }).then(()=>true);
+      });
   }
 
   /**
@@ -477,14 +499,12 @@ function SecuredDataRepository(options) {
     if (!details.length) {
       return Promise.resolve();
     }
-    return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
-      .then(function (permissions) {
-        if (checkCollectionWriteAccess(master, collection, details, permissions)) {
+    return checkCollectionWriteAccess(master, details, options)
+      .then((writable) => {
+        if (writable) {
           return dataRepo.put(master, collection, details, changeLogger);
         }
-        return Promise.reject(
-          new Error('Недостаточно прав для записи в коллекцию ' + master.getClassName() + '.' + collection)
-        );
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
 
@@ -501,14 +521,12 @@ function SecuredDataRepository(options) {
     if (!details.length) {
       return Promise.resolve();
     }
-    return aclProvider.getPermissions(options.uid, collectionResources(master, collection, details))
-      .then(function (permissions) {
-        if (checkCollectionWriteAccess(master, collection, details, permissions)) {
+    return checkCollectionWriteAccess(master, details, options)
+      .then((writable) => {
+        if (writable) {
           return dataRepo.eject(master, collection, details, changeLogger);
         }
-        return Promise.reject(
-          new Error('Недостаточно прав для записи в коллекцию ' + master.getClassName() + '.' + collection)
-        );
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
 
@@ -525,27 +543,14 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._getAssociationsList = function (master, collection, options) {
-    var p = master.property(collection);
-    var collectionPermissions = {};
-    return aclProvider.getPermissions(
-      options.uid,
-      [
-        classPrefix + master.getClassName(),
-        itemPrefix + master.getClassName() + '@' + master.getItemId(),
-        classPrefix + p.meta._refClass.getCanonicalName()
-      ])
-      .then(function (permissions) {
-        if (
-          permissions[classPrefix + master.getClassName()] &&
-          permissions[classPrefix + master.getClassName()][Permissions.READ] ||
-          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
-          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
-        ) {
+    let p = master.property(collection);
+    let collectionPermissions = {};
+    return setItemPermissions(options)(master)
+      .then(function (m) {
+        if (m.permissions[Permissions.READ]) {
           return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter, collectionPermissions);
         }
-        return Promise.reject(
-          new Error('Недостаточно прав для чтения коллекции ' + master.getClassName() + '.' + collection)
-        );
+        throw new IonError(Errors.PERMISSION_LACK);
       }).then(function (filter) {
         options.filter = filter;
         return dataRepo.getAssociationsList(master, collection, options);
@@ -565,25 +570,12 @@ function SecuredDataRepository(options) {
    */
   this._getAssociationsCount = function (master, collection, options) {
     var p = master.property(collection);
-    return aclProvider.getPermissions(
-      options.uid,
-      [
-        classPrefix + master.getClassName(),
-        itemPrefix + master.getClassName() + '@' + master.getItemId(),
-        classPrefix + p.meta._refClass.getCanonicalName()
-      ])
-      .then(function (permissions) {
-        if (
-          permissions[classPrefix + master.getClassName()] &&
-          permissions[classPrefix + master.getClassName()][Permissions.READ] ||
-          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()] &&
-          permissions[itemPrefix + master.getClassName() + '@' + master.getItemId()][Permissions.READ]
-        ) {
+    return setItemPermissions(options)(master)
+      .then(function (m) {
+        if (m.permissions[Permissions.READ]) {
           return exclude(options.uid, p.meta._refClass.getCanonicalName(), options.filter);
         }
-        Promise.reject(
-          new Error('Недостаточно прав для чтения коллекции ' + master.getClassName() + '.' + collection)
-        );
+        throw new IonError(Errors.PERMISSION_LACK);
       }).then(function (filter) {
         options.filter = filter;
         return dataRepo.getAssociationsCount(master, collection, options);
@@ -602,14 +594,15 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname])
+      .then(function (permissions) {
         if (
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE]
         ) {
           return dataRepo.bulkEdit(classname, data, options);
         }
-        return rejectByClass(classname);
+        throw new IonError(Errors.PERMISSION_LACK);
       });
   };
 
@@ -621,15 +614,16 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
-    return aclProvider.getPermissions(options.uid, [classPrefix + classname]).then(function (permissions) {
-      if (
-        permissions[classPrefix + classname] &&
-        permissions[classPrefix + classname][Permissions.DELETE]
-      ) {
-        return dataRepo.bulkDelete(classname, options);
-      }
-      return rejectByClass(classname);
-    });
+    return aclProvider.getPermissions(options.uid, [classPrefix + classname])
+      .then(function (permissions) {
+        if (
+          permissions[classPrefix + classname] &&
+          permissions[classPrefix + classname][Permissions.DELETE]
+        ) {
+          return dataRepo.bulkDelete(classname, options);
+        }
+        throw new IonError(Errors.PERMISSION_LACK);
+      });
   };
 }
 
