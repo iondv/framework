@@ -25,14 +25,15 @@ function formNS(ns) {
 }
 
 function assignVm(coll, vm) {
-  var ns = formNS(vm.namespace);
+  let parts = vm.className.split('@');
+  let ns = formNS(parts[1]);
   if (!coll.hasOwnProperty(ns)) {
     coll[ns] = {};
   }
   if (!coll[ns].hasOwnProperty(viewPath(vm.path, vm.className))) {
     coll[ns][viewPath(vm.path, vm.className)] = [];
   }
-  var arr = coll[ns][viewPath(vm.path, vm.className)];
+  let arr = coll[ns][viewPath(vm.path, vm.className)];
   arr.push(vm);
 }
 
@@ -842,7 +843,7 @@ function DsMetaRepository(options) {
   }
 
   function acceptNavigation(navs) {
-    var i, ns, name;
+    var i, name;
     _this.navMeta = {
       sections: {},
       nodes: {},
@@ -852,16 +853,18 @@ function DsMetaRepository(options) {
 
     for (i = 0; i < navs.length; i++) {
       if (navs[i].itemType === 'section') {
-        _this.navMeta.sections[navs[i].name] = navs[i];
-        _this.navMeta.sections[navs[i].name].nodes = {};
+        let id = `${navs[i].name}@${navs[i].namespace}`;
+        _this.navMeta.sections[id] = navs[i];
+        _this.navMeta.sections[id].nodes = {};
       } else if (navs[i].itemType === 'node') {
-        _this.navMeta.nodes[navs[i].code] = navs[i];
-        _this.navMeta.nodes[navs[i].code].children = [];
+        let id = `${navs[i].code}@${navs[i].namespace}`;
+        _this.navMeta.nodes[id] = navs[i];
+        _this.navMeta.nodes[id].children = [];
         if (navs[i].code.indexOf('.') === -1) {
-          _this.navMeta.roots[navs[i].code] = _this.navMeta.nodes[navs[i].code];
+          _this.navMeta.roots[id] = _this.navMeta.nodes[id];
         }
         if (navs[i].type === 1) {
-          _this.navMeta.classnames[navs[i].classname] = navs[i].code;
+          _this.navMeta.classnames[navs[i].classname] = id;
         }
       }
     }
@@ -871,11 +874,11 @@ function DsMetaRepository(options) {
         var n = _this.navMeta.nodes[name];
         if (_this.navMeta.sections.hasOwnProperty(n.section) &&
           n.code.indexOf('.') === -1) {
-          _this.navMeta.sections[n.section].nodes[n.code] = n;
+          _this.navMeta.sections[n.section].nodes[`${n.code}@${n.namespace}`] = n;
         }
 
         if (n.code.indexOf('.') !== -1) {
-          var p = n.code.substring(0, n.code.lastIndexOf('.'));
+          var p = `${n.code.substring(0, n.code.lastIndexOf('.'))}@${n.namespace}`;
           if (_this.navMeta.nodes.hasOwnProperty(p)) {
             _this.navMeta.nodes[p].children.push(n);
           }
@@ -883,7 +886,7 @@ function DsMetaRepository(options) {
       }
     }
 
-    for (name in _this.navMeta.nodes[ns]) {
+    for (name in _this.navMeta.nodes) {
       if (_this.navMeta.nodes.hasOwnProperty(name)) {
         _this.navMeta.nodes[name].children.sort(function (a, b) {
           return a.orderNumber - b.orderNumber;

@@ -533,7 +533,8 @@ function MongoDbSync(options) {
         collection.updateOne(
           {
             name: navSection.name,
-            itemType: navSection.itemType
+            itemType: navSection.itemType,
+            namespace: navSection.namespace
           },
           navSection,
           {upsert: true},
@@ -547,10 +548,17 @@ function MongoDbSync(options) {
     });
   };
 
-  this._undefineNavSection = function (sectionName) {
+  this._undefineNavSection = function (sectionName, namespace) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
-        collection.remove({name: sectionName, itemType: 'section'}, function (err,nsm) {
+        var query = {name: sectionName, itemType: 'section'};
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+
+        collection.remove(query, function (err,nsm) {
           if (err) {
             return reject(err);
           }
@@ -570,22 +578,32 @@ function MongoDbSync(options) {
         collection.updateOne(
           {
             code: navNode.code,
-            itemType: navNode.itemType
-          }, navNode, {upsert: true}, function (err, ns) {
-          if (err) {
-            return reject(err);
-          }
-          log.log('Создан узел навигации ' + navNode.code);
-          resolve(ns);
-        });
+            itemType: navNode.itemType,
+            namespace: navNode.namespace
+          },
+          navNode,
+          {upsert: true},
+          function (err, ns) {
+            if (err) {
+              return reject(err);
+            }
+            log.log('Создан узел навигации ' + navNode.code);
+            resolve(ns);
+          });
       }).catch(reject);
     });
   };
 
-  this._undefineNavNode = function (navNodeName) {
+  this._undefineNavNode = function (navNodeName, namespace) {
     return new Promise(function (resolve, reject) {
       getMetaTable('nav').then(function (collection) {
-        collection.remove({code: navNodeName, itemType: 'node'}, function (err,nnm) {
+        var query = {code: navNodeName, itemType: 'node'};
+        if (namespace) {
+          query.namespace = namespace;
+        } else {
+          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
+        }
+        collection.remove(query, function (err,nnm) {
           if (err) {
             return reject(err);
           }
