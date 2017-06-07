@@ -872,9 +872,9 @@ function DsMetaRepository(options) {
     for (name in _this.navMeta.nodes) {
       if (_this.navMeta.nodes.hasOwnProperty(name)) {
         var n = _this.navMeta.nodes[name];
-        if (_this.navMeta.sections.hasOwnProperty(n.section) &&
+        if (_this.navMeta.sections.hasOwnProperty(`${n.section}@${n.namespace}`) &&
           n.code.indexOf('.') === -1) {
-          _this.navMeta.sections[n.section].nodes[`${n.code}@${n.namespace}`] = n;
+          _this.navMeta.sections[`${n.section}@${n.namespace}`].nodes[`${n.code}@${n.namespace}`] = n;
         }
 
         if (n.code.indexOf('.') !== -1) {
@@ -912,6 +912,7 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
+            console.log(JSON.stringify(_this.navMeta));
             return Promise.resolve();
           } catch (err) {
             return Promise.reject(err);
