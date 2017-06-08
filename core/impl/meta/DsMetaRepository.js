@@ -25,15 +25,11 @@ function formNS(ns) {
 }
 
 function assignVm(coll, vm) {
-  let parts = vm.className.split('@');
-  let ns = formNS(parts[1]);
-  if (!coll.hasOwnProperty(ns)) {
-    coll[ns] = {};
+  console.log('rap', vm.path, vm.className);
+  if (!coll.hasOwnProperty(viewPath(vm.path, vm.className))) {
+    coll[viewPath(vm.path, vm.className)] = [];
   }
-  if (!coll[ns].hasOwnProperty(viewPath(vm.path, vm.className))) {
-    coll[ns][viewPath(vm.path, vm.className)] = [];
-  }
-  let arr = coll[ns][viewPath(vm.path, vm.className)];
+  let arr = coll[viewPath(vm.path, vm.className)];
   arr.push(vm);
 }
 
@@ -278,9 +274,10 @@ function DsMetaRepository(options) {
     return result;
   };
 
-  this._getNode = function (code) {
-    if (this.navMeta.nodes.hasOwnProperty(code)) {
-      return this.navMeta.nodes[code];
+  this._getNode = function (code, namespace) {
+    let id = namespace ? `${code}@${namespace}` : code;
+    if (this.navMeta.nodes.hasOwnProperty(id)) {
+      return this.navMeta.nodes[id];
     }
     return null;
   };
@@ -300,22 +297,19 @@ function DsMetaRepository(options) {
      */
   function getViewModel(node, meta, coll) {
     var path = viewPath(node, meta.getName());
-    var ns = formNS(meta.getNamespace());
 
-    if (coll.hasOwnProperty(ns)) {
-      if (coll[ns].hasOwnProperty(path)) {
-        return findByVersion(coll[ns][path], meta.getVersion()); // TODO locate model in parent nodes
-      } else if (coll[ns].hasOwnProperty(meta.getName())) {
-        return findByVersion(coll[ns][meta.getName()], meta.getVersion()); // TODO locate model in parent nodes
-      } else if (meta.getAncestor()) {
-        return getViewModel(node, meta.getAncestor(), coll);
-      }
+    if (coll.hasOwnProperty(path)) {
+      return findByVersion(coll[path], meta.getVersion()); // TODO locate model in parent nodes
+    } else if (coll.hasOwnProperty(meta.getName())) {
+      return findByVersion(coll[meta.getName()], meta.getVersion()); // TODO locate model in parent nodes
+    } else if (meta.getAncestor()) {
+      return getViewModel(node, meta.getAncestor(), coll);
     }
     return null;
   }
 
   this._getListViewModel = function (classname, node, namespace, version) {
-    var meta = this._getMeta(classname, version, namespace);
+    let meta = this._getMeta(classname, version);
     var vm = getViewModel(node, meta, this.viewMeta.listModels);
     if (!vm && meta.getAncestor()) {
       return this._getListViewModel(meta.getAncestor().getCanonicalName(), node, namespace);
@@ -912,7 +906,7 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
-            console.log(JSON.stringify(_this.navMeta));
+            console.log('***', JSON.stringify(_this.viewMeta));
             return Promise.resolve();
           } catch (err) {
             return Promise.reject(err);

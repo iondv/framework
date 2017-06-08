@@ -72,10 +72,11 @@ function MetaRepository() {
 
   /**
    * @param {String} code
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNode = function (code) {
-    return this._getNode(code);
+  this.getNode = function (code, namespace) {
+    return this._getNode(code, namespace);
   };
 
   /**
