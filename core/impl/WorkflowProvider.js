@@ -35,7 +35,7 @@ function WorkflowProvider(options) {
   var tableName = options.tableName || 'ion_wf_state';
 
   function addPermission(arr, flags, flag, perm) {
-    if (flags & flag === flag) {
+    if ((flags & flag) === flag) {
       arr[perm] = true;
     }
   }
