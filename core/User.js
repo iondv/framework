@@ -4,7 +4,7 @@
 
 function User(data, coactors) {
   this.id = function () {
-    return data.id + data.type ? '@' + data.type : '';
+    return data.id + (data.type ? '@' + data.type : '');
   };
 
   this.name = function () {

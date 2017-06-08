@@ -285,11 +285,16 @@ function WorkflowProvider(options) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
 
+    if (!wf.transitionsByName.hasOwnProperty(name)) {
+      return Promise.reject(new IonError(Errors.TRANS_NOT_FOUND, {workflow: wf.caption, trans: name}));
+    }
+
+    let transition = wf.transitionsByName[name];
+
     return _this._getStatus(item, tOptions).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             if (wf.transitionsByName.hasOwnProperty(name)) {
-                let transition = wf.transitionsByName[name];
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
@@ -386,13 +391,13 @@ function WorkflowProvider(options) {
               }
           }
           return Promise.reject(
-            new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
+            new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})
           );
         }
         return Promise.reject(
           new IonError(
             Errors.NOT_IN_WORKFLOW,
-            {workflow: workflow, info: item.getClassName() + '@' + item.getItemId()}
+            {workflow: wf.caption, info: item.getMetaClass().getCaption() + '@' + item.getItemId()}
           )
         );
       });

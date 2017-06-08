@@ -11,6 +11,7 @@ module.exports = {
   CONDITION_VIOLATION: `${PREFIX}.cv`,
   NOT_IN_WORKFLOW: `${PREFIX}.nw`,
   TRANS_IMPOSSIBLE: `${PREFIX}.ti`,
+  TRANS_NOT_FOUND: `${PREFIX}.tnf`,
   IN_WORKFLOW: `${PREFIX}.iw`,
   ACCESS_DENIED: `${PREFIX}.iw`
 };
