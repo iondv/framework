@@ -47,7 +47,7 @@ function DataRepository() {
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.getList = function (obj, options) {
@@ -64,7 +64,7 @@ function DataRepository() {
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.getIterator = function (obj, options) {
@@ -74,6 +74,7 @@ function DataRepository() {
   /**
    * @param {String} className
    * @param {{}} [options]
+   * @param {User} [options.user]
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
@@ -86,6 +87,7 @@ function DataRepository() {
   /**
    * @param {String} className
    * @param {{}} [options]
+   * @param {User} [options.user]
    * @param {{}} [options.filter]
    * @param {String[]} [options.attributes]
    * @param {Boolean} [options.distinct]
@@ -101,8 +103,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {{}} [options.filter]
    * @param {Number} [options.nestingDepth]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.getItem = function (obj, id, options) {
@@ -117,8 +118,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.createItem = function (className, data, version, changeLogger, options) {
@@ -133,8 +133,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.editItem = function (className, id, data, changeLogger, options) {
@@ -151,8 +150,7 @@ function DataRepository() {
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
    * @param {Boolean} [options.skipResult]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.saveItem = function (className, id, data, version, changeLogger, options) {
@@ -164,8 +162,7 @@ function DataRepository() {
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.deleteItem = function (className, id, changeLogger, options) {
@@ -178,8 +175,7 @@ function DataRepository() {
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.put = function (master, collection, details, changeLogger, options) {
@@ -192,8 +188,7 @@ function DataRepository() {
    * @param {Item[]} details
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.eject = function (master, collection, details, changeLogger, options) {
@@ -210,8 +205,7 @@ function DataRepository() {
    * @param {{}} [options.sort]
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.getAssociationsList = function (master, collection, options) {
@@ -228,8 +222,7 @@ function DataRepository() {
    * @param {{}} [options.sort]
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
-   * @param {{}} [options.env]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.getAssociationsCount = function (master, collection, options) {
@@ -243,8 +236,7 @@ function DataRepository() {
    * @param {Object} [options.filter]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
-   * @param {Boolean} [options.skipResult]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.bulkEdit = function (classname, data, options) {
@@ -255,7 +247,7 @@ function DataRepository() {
    * @param {String} classname
    * @param {{}} [options]
    * @param {Object} [options.filter]
-   * @param {String} [options.uid]
+   * @param {User} [options.user]
    * @returns {Promise}
    */
   this.bulkDelete = function (classname, options) {

@@ -46,6 +46,13 @@ function AclProvider() {
   this.getResources = function (subject, permissions) {
     return this._getResources(subject, permissions);
   };
+
+  /**
+   * @param {String} subject
+   */
+  this.getCoactors = function (subject) {
+    return this._getCoactors(subject);
+  };
 }
 
 module.exports = AclProvider;
