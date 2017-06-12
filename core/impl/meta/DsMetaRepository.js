@@ -295,7 +295,7 @@ function DsMetaRepository(options) {
    * @returns {*}
      */
   function getViewModel(node, meta, coll) {
-    var path = viewPath(node, meta.getName());
+    let path = viewPath(node, meta.getCanonicalName());
 
     if (coll.hasOwnProperty(path)) {
       return findByVersion(coll[path], meta.getVersion()); // TODO locate model in parent nodes
@@ -898,6 +898,7 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
+            console.log('*** ', _this.viewMeta);
             return Promise.resolve();
           } catch (err) {
             return Promise.reject(err);
