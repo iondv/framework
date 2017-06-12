@@ -293,6 +293,8 @@ function WorkflowProvider(options) {
                       calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
                       calcAssignmentValue(updates, item, assignment, tOptions);
                   });
+                } else {
+                  calculations = Promise.resolve(null);
                 }
 
                 return calculations.then(function () {

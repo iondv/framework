@@ -25,7 +25,6 @@ function formNS(ns) {
 }
 
 function assignVm(coll, vm) {
-  console.log('rap', vm.path, vm.className);
   if (!coll.hasOwnProperty(viewPath(vm.path, vm.className))) {
     coll[viewPath(vm.path, vm.className)] = [];
   }
@@ -359,33 +358,30 @@ function DsMetaRepository(options) {
    */
   function getWorkflows(meta, name) {
     var tmp, nm;
-    var ns = formNS(meta.getNamespace());
     var result = [];
 
-    if (_this.workflowMeta.hasOwnProperty(ns)) {
-      if (_this.workflowMeta[ns].hasOwnProperty(meta.getName())) {
-        if (name) {
-          if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(name)) {
-            tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][name], meta.getVersion());
+    if (_this.workflowMeta.hasOwnProperty(meta.getCanonicalName())) {
+      if (name) {
+        if (_this.workflowMeta[meta.getCanonicalName()].hasOwnProperty(name)) {
+          tmp = findByVersion(_this.workflowMeta[meta.getCanonicalName()][name], meta.getVersion());
+          if (tmp) {
+            result.push(tmp);
+          }
+        }
+      } else {
+        for (nm in _this.workflowMeta[meta.getCanonicalName()]) {
+          if (_this.workflowMeta[meta.getCanonicalName()].hasOwnProperty(nm)) {
+            tmp = findByVersion(_this.workflowMeta[meta.getCanonicalName()][nm], meta.getVersion());
             if (tmp) {
               result.push(tmp);
             }
           }
-        } else {
-          for (nm in _this.workflowMeta[ns][meta.getName()]) {
-            if (_this.workflowMeta[ns][meta.getName()].hasOwnProperty(nm)) {
-              tmp = findByVersion(_this.workflowMeta[ns][meta.getName()][nm], meta.getVersion());
-              if (tmp) {
-                result.push(tmp);
-              }
-            }
-          }
         }
       }
+    }
 
-      if (meta.getAncestor()) {
-        Array.prototype.push.apply(result, getWorkflows(meta.getAncestor(), name));
-      }
+    if (meta.getAncestor()) {
+      Array.prototype.push.apply(result, getWorkflows(meta.getAncestor(), name));
     }
     return result;
   }
@@ -783,20 +779,16 @@ function DsMetaRepository(options) {
   }
 
   function acceptWorkflows(workflows) {
-    var i, j, k, ns, wf;
+    var i, j, k, wf;
     _this.workflowMeta = {};
 
     for (i = 0; i < workflows.length; i++) {
       wf = workflows[i];
-      ns = formNS(wf.namespace);
-      if (!_this.workflowMeta.hasOwnProperty(ns)) {
-        _this.workflowMeta[ns] = {};
+      if (!_this.workflowMeta.hasOwnProperty(wf.wfClass)) {
+        _this.workflowMeta[wf.wfClass] = {};
       }
-      if (!_this.workflowMeta[ns].hasOwnProperty(wf.wfClass)) {
-        _this.workflowMeta[ns][wf.wfClass] = {};
-      }
-      if (!_this.workflowMeta[ns][wf.wfClass].hasOwnProperty(wf.name)) {
-        _this.workflowMeta[ns][wf.wfClass][wf.name] = [];
+      if (!_this.workflowMeta[wf.wfClass].hasOwnProperty(wf.name)) {
+        _this.workflowMeta[wf.wfClass][wf.name] = [];
       }
 
       wf.statesByName = {};
@@ -832,7 +824,7 @@ function DsMetaRepository(options) {
         wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
       }
 
-      _this.workflowMeta[ns][wf.wfClass][wf.name].push(wf);
+      _this.workflowMeta[wf.wfClass][wf.name].push(wf);
     }
   }
 
@@ -906,7 +898,6 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
-            console.log('***', JSON.stringify(_this.viewMeta));
             return Promise.resolve();
           } catch (err) {
             return Promise.reject(err);
