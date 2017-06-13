@@ -405,8 +405,8 @@ function DsMetaRepository(options) {
    * @returns {Object[] | null}
    */
   this._getWorkflow = function (className, name, namespace, version) {
-    var meta = this._getMeta(className, version, namespace);
-    var wfs = getWorkflows(meta, name);
+    let meta = this._getMeta(className, version, namespace);
+    let wfs = getWorkflows(meta, name);
     if (wfs.length > 0) {
       return wfs[0];
     }
@@ -779,11 +779,11 @@ function DsMetaRepository(options) {
   }
 
   function acceptWorkflows(workflows) {
-    var i, j, k, wf;
     _this.workflowMeta = {};
 
-    for (i = 0; i < workflows.length; i++) {
-      wf = workflows[i];
+    for (let i = 0; i < workflows.length; i++) {
+      let wf = workflows[i];
+      wf.name = `${wf.name}@${wf.namespace}`;
       if (!_this.workflowMeta.hasOwnProperty(wf.wfClass)) {
         _this.workflowMeta[wf.wfClass] = {};
       }
@@ -792,7 +792,7 @@ function DsMetaRepository(options) {
       }
 
       wf.statesByName = {};
-      for (j = 0; j < wf.states.length; j++) {
+      for (let j = 0; j < wf.states.length; j++) {
         wf.statesByName[wf.states[j].name] = wf.states[j];
       }
 
@@ -800,8 +800,8 @@ function DsMetaRepository(options) {
       wf.transitionsBySrc = {};
       wf.transitionsByDest = {};
 
-      for (j = 0; j < wf.transitions.length; j++) {
-        for (k = 0; k < wf.transitions[j].assignments.length; k++) {
+      for (let j = 0; j < wf.transitions.length; j++) {
+        for (let k = 0; k < wf.transitions[j].assignments.length; k++) {
           if (
             wf.transitions[j].assignments[k].value &&
             wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
@@ -898,7 +898,6 @@ function DsMetaRepository(options) {
             acceptViews(results[2]);
             acceptNavigation(results[3]);
             acceptWorkflows(results[4]);
-            console.log('*** ', _this.viewMeta);
             return Promise.resolve();
           } catch (err) {
             return Promise.reject(err);
