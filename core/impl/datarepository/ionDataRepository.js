@@ -221,7 +221,7 @@ function IonDataRepository(options) {
    * @param {String} className
    * @param {Object} data
    * @param {String} [version]
-   * @param {{autoassign: Boolean}} [options]
+   * @param {{}} [options]
    * @param {User} [options.user]
    * @private
    * @returns {Item | null}
@@ -229,9 +229,6 @@ function IonDataRepository(options) {
   this._wrap = function (className, data, version, options) {
     var acm = this.meta.getMeta(className, version);
     delete data._id;
-    if (options && options.autoassign) {
-      autoAssign(acm, data, true, options.user);
-    }
     return new Item(this.keyProvider.formKey(acm, data), data, acm);
   };
 
@@ -802,7 +799,8 @@ function IonDataRepository(options) {
    *
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {{}} [options]
+   * @param {{}} options
+   * @param {User} options.user
    * @param {Number} [options.nestingDepth]
    * @param {{}} [options.filter]
    * @param {String[][]} [options.forceEnrichment]
@@ -870,7 +868,7 @@ function IonDataRepository(options) {
             return Promise.resolve(null);
           });
       } else {
-        fetcher = Promise.resolve(obj);
+        fetcher = autoAssign(cm, obj.base, true, options.user).then(()=>obj);
       }
       return fetcher
         .catch(wrapDsError('getItem', cm.getCanonicalName(), obj.getItemId()))
@@ -959,6 +957,22 @@ function IonDataRepository(options) {
     }
   }
 
+  function calcDefault(pm, updates, user) {
+    return function () {
+      let p = pm._dvFormula.apply({$context: updates, $uid: user.id()});
+      if (!(p instanceof Promise)) {
+        p = Promise.resolve(p);
+      }
+      return p.then((result) => {
+        try {
+          updates[pm.name] = cast(result, pm.type);
+        } catch (err) {
+        }
+        return updates;
+      });
+    };
+  }
+
   /**
    * @param {ClassMeta} cm
    * @param {{}} updates
@@ -974,12 +988,12 @@ function IonDataRepository(options) {
       updates[cm.getChangeTracker()] = new Date();
     }
 
-    var properties = cm.getPropertyMetas();
-    var keys = cm.getKeyProperties();
-    var pm;
+    let properties = cm.getPropertyMetas();
+    let keys = cm.getKeyProperties();
+    let calcs = null;
 
-    for (var i = 0;  i < properties.length; i++) {
-      pm = properties[i];
+    for (let i = 0;  i < properties.length; i++) {
+      let pm = properties[i];
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
@@ -1007,11 +1021,10 @@ function IonDataRepository(options) {
           if (v === '$$uid') {
             v = user.id();
           } else if (pm._dvFormula) {
-            v = pm._dvFormula.apply({$context: updates, $uid: user.id()});
-            if (v instanceof Promise) {
-              throw new IonError(Errors.UNEXPECTED_ASYNC, {info: cm.getCaption() + '.' + pm.caption});
-            }
+            calcs = calcs ? calcs.then(calcDefault(pm, updates, user)) : calcDefault(pm, updates, user)();
+            break;
           }
+
           try {
             updates[pm.name] = cast(v, pm.type);
           } catch (err) {
@@ -1021,6 +1034,8 @@ function IonDataRepository(options) {
         }
       }
     }
+
+    return calcs || Promise.resolve(updates);
   }
 
   function prepareFileSavers(id, cm, fileSavers, updates) {
@@ -1466,7 +1481,9 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(updates))
         .then(function () {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
-          autoAssign(cm, updates, false, options.user);
+          return autoAssign(cm, updates, false, options.user);
+        })
+        .then(function () {
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
           prepareFileSavers('new', cm, fileSavers, updates);
@@ -1747,20 +1764,25 @@ function IonDataRepository(options) {
         .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
+          let p;
           if (conditions) {
             if (options && options.autoAssign) {
-              autoAssign(cm, updates, true, options.user);
+              p = autoAssign(cm, updates, true, options.user);
             } else {
               if (cm.getChangeTracker()) {
                 updates[cm.getChangeTracker()] = new Date();
               }
+              p = Promise.resolve(updates);
             }
-            checkRequired(cm, updates, true);
+            p = p.then(()=>checkRequired(cm, updates, true));
           } else {
-            autoAssign(cm, updates, false, options.user);
             event = EventType.CREATE;
-            checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
+            p = autoAssign(cm, updates, false, options.user)
+              .then(()=>checkRequired(cm, updates, false, options.ignoreIntegrityCheck));
           }
+          return p;
+        })
+        .then(function () {
           let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
           return conditions ?
             _this.ds.upsert(tn(rcm), conditions, updates, opts) :
