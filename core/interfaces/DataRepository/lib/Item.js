@@ -134,6 +134,14 @@ function Item(id, base, classMeta) {
   }
 
   this.get = function (name) {
+    if (name === '__class') {
+      return this.getClassName();
+    }
+    
+    if (name === '__classTitle') {
+      return this.getMetaClass().getCaption();
+    }
+    
     var dot = name.indexOf('.');
     if (dot > -1) {
       let pn = name.substring(0, dot);
@@ -219,7 +227,7 @@ function Item(id, base, classMeta) {
   }
 
   /**
-   * @returns {Property[]}
+   * @returns {Property{}}
    */
   this.getProperties = function () {
     if (this.properties === null) {

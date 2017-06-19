@@ -19,5 +19,7 @@ module.exports = {
   FAIL: `${PREFIX}.fail`,
   MISSING_REQUIRED: `${PREFIX}.mr`,
   NO_KEY_SPEC: `${PREFIX}.nkv`,
-  NO_BACK_REF: `${PREFIX}.nbr`
+  NO_BACK_REF: `${PREFIX}.nbr`,
+  UNEXPECTED_ASYNC: `${PREFIX}.ueasync`,
+  PERMISSION_LACK: `${PREFIX}.noperm`
 };

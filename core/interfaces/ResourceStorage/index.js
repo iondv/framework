@@ -111,6 +111,15 @@ function ResourceStorage() {
 
   /**
    *
+   * @param {String} share
+   * @returns {Promise}
+   */
+  this.deleteShare = function (share) {
+    return this._deleteShare(share);
+  };
+
+  /**
+   *
    * @param {String} id
    * @param {String} access
    * @returns {Promise}

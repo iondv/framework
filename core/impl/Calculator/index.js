@@ -100,8 +100,19 @@ function Calculator(options) {
     if (!nm) {
       return null;
     }
+
+    if (obj instanceof Item) {
+      return obj.property(nm).evaluate();
+    }
+
     if (nm.indexOf('.') < 0) {
-      return obj[nm];
+      if (obj.hasOwnProperty(nm)) {
+        return obj[nm];
+      }
+
+      if (obj.$context) {
+        return objProp(obj.$context, nm);
+      }
     }
 
     var pth = nm.split('.');
@@ -121,9 +132,6 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      if (this instanceof Item) {
-        return this.get(nm);
-      }
       return objProp(this, nm);
     };
   }
@@ -138,8 +146,6 @@ function Calculator(options) {
    * @returns {*}
    */
   function evaluate(formula) {
-    var func, args, pos;
-
     if (!isNaN(formula)) {
       return Number(formula);
     }
@@ -160,11 +166,20 @@ function Calculator(options) {
       return formula.substring(1, formula.length - 1);
     }
 
+    let pos;
     if ((pos = formula.indexOf('(')) > -1) {
-      args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
-      func = formula.substring(0, pos).trim();
+      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
+      let func = formula.substring(0, pos).trim();
+      let byRef = false;
+      if (func[0] === '&') {
+        func = func.substr(1);
+        byRef = true;
+      }
 
       if (funcLib.hasOwnProperty(func)) {
+        if (byRef) {
+          return function () {return funcLib[func](args);};
+        }
         return funcLib[func](args);
       } else {
         warn('Не найдена функция ' + func);

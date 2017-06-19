@@ -86,7 +86,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
         }
       } else {
         pm = cm.getPropertyMeta(nm);
-        if (pm) {
+        if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
             data[nm] = castValue(data[nm], pm, cm.namespace);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
@@ -146,6 +146,9 @@ module.exports.filterByItemIds = filterByItemIds;
  * @returns {String}
  */
 function tn(cm, nsSep) {
+  if (cm.getAncestor()) {
+    return tn(cm.getAncestor(), nsSep);
+  }
   nsSep = nsSep || '_';
   return (cm.getNamespace() ? cm.getNamespace() + nsSep : '') + cm.getName();
 }
@@ -327,7 +330,7 @@ function prepareFilterOption(cm, filter, fetchers, ds, keyProvider, nsSep, paren
               }
             }
           } else {
-            result[nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
+            result[nm === '__class' ? '_class' : nm] = prepareFilterOption(cm, filter[nm], fetchers, ds, keyProvider, nsSep, result, nm, pm);
             emptyResult = false;
           }
         } else if (nm === '$ItemId') {
