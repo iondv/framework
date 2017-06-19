@@ -494,7 +494,7 @@ function DsMetaRepository(options) {
 
   function acceptUserTypes(types) {
     for (var i = 0; i < types.length; i++) {
-      _this.userTypes[types[i].name] = types[i];
+      _this.userTypes[types[i].name + '@' + types[i].namespace] = types[i];
     }
   }
 

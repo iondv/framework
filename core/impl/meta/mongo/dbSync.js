@@ -675,7 +675,8 @@ function MongoDbSync(options) {
       getMetaTable('user_type').then(function (collection) {
         collection.updateOne(
           {
-            name: userType.name
+            name: userType.name,
+            namespace: userType.namespace
           },
           userType,
           {upsert: true},
