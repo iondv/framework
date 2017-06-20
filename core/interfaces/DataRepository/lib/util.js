@@ -146,6 +146,9 @@ module.exports.filterByItemIds = filterByItemIds;
  * @returns {String}
  */
 function tn(cm, nsSep) {
+  if (cm.getAncestor()) {
+    return tn(cm.getAncestor(), nsSep);
+  }
   nsSep = nsSep || '_';
   return (cm.getNamespace() ? cm.getNamespace() + nsSep : '') + cm.getName();
 }
