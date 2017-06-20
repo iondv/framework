@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 70, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 80, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -841,6 +841,21 @@ function MongoDs(config) {
             result = true;
             break;
           } else {
+            if (name.indexOf('.') > 0) {
+              let jalias = name.substr(0, name.indexOf('.'));
+              let i = 0;
+              for (i = 0; i < joins.length; i++) {
+                if (joins[i].alias === jalias) {
+                  break;
+                }
+              }
+              if (i < joins.length) {
+                attributes.push(jalias);
+                result = IGNORE;
+                break;
+              }
+            }
+
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
@@ -853,6 +868,9 @@ function MongoDs(config) {
                 if (!result && tmp.length) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
+              } else {
+                result = IGNORE;
+                break;
               }
             } else if (name === '$and' || name === '$nor') {
               if (Array.isArray(tmp)) {
@@ -867,6 +885,9 @@ function MongoDs(config) {
                 } else {
                   result = result.length ? {$nor: result} : true;
                 }
+              } else {
+                result = IGNORE;
+                break;
               }
             } else {
               if (name === '$not') {
@@ -1195,6 +1216,7 @@ function MongoDs(config) {
 
       if (options.filter) {
         jl = joins.length;
+
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
         if (joins.length > jl || attributes.length > resultAttrs.length) {
           postfilter = producePostfilter(options.filter, lookups);
