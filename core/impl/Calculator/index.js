@@ -7,6 +7,7 @@ const ICalculator = require('core/interfaces/Calculator');
 const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
+const data = require('./func/data');
 const Item = require('core/interfaces/DataRepository').Item;
 const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 
@@ -30,6 +31,7 @@ function Calculator(options) {
         funcLib.avg = aggreg.avg(dataRepo);
         funcLib.max = aggreg.max(dataRepo);
         funcLib.min = aggreg.min(dataRepo);
+        funcLib.get = data.get(dataRepo);
       }
       resolve();
     });
@@ -102,7 +104,7 @@ function Calculator(options) {
     }
 
     if (obj instanceof Item) {
-      return obj.get(nm);
+      return obj.property(nm).evaluate();
     }
 
     if (nm.indexOf('.') < 0) {
@@ -146,8 +148,6 @@ function Calculator(options) {
    * @returns {*}
    */
   function evaluate(formula) {
-    var func, args, pos;
-
     if (!isNaN(formula)) {
       return Number(formula);
     }
@@ -168,11 +168,20 @@ function Calculator(options) {
       return formula.substring(1, formula.length - 1);
     }
 
+    let pos;
     if ((pos = formula.indexOf('(')) > -1) {
-      args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
-      func = formula.substring(0, pos).trim();
+      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
+      let func = formula.substring(0, pos).trim();
+      let byRef = false;
+      if (func[0] === '&') {
+        func = func.substr(1);
+        byRef = true;
+      }
 
       if (funcLib.hasOwnProperty(func)) {
+        if (byRef) {
+          return function () {return funcLib[func](args);};
+        }
         return funcLib[func](args);
       } else {
         warn('Не найдена функция ' + func);

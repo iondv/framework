@@ -18,5 +18,6 @@ module.exports = {
   [codes.MISSING_REQUIRED]: `Не заполнены обязательные атрибуты %info.`,
   [codes.NO_KEY_SPEC]: `Не указано значение ключевого атрибута %info.`,
   [codes.NO_BACK_REF]: `По обратной ссылке %backRef не найден атрибут %backAttr.`,
-  [codes.UNEXPECTED_ASYNC]: `При расчете значения по умолчанию атрибута %info выполнена асинхронная операция.`
+  [codes.UNEXPECTED_ASYNC]: `При расчете значения по умолчанию атрибута %info выполнена асинхронная операция.`,
+  [codes.PERMISSION_LACK]: `Недостаточно прав для выполнения действия`
 };

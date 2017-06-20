@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 70, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 80, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -431,7 +431,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         return resolve(result);
                       }
-                      _this._get(type, {_id: result.insertedId}).then(resolve).catch(reject);
+                      _this._get(type, {_id: result.insertedId}, {}).then(resolve).catch(reject);
                     } else {
                       reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                     }
@@ -613,7 +613,7 @@ function MongoDs(config) {
       if (options.skipResult) {
         return Promise.resolve();
       }
-      return _this._get(type, conditions);
+      return _this._get(type, conditions, {});
     }
 
     return getCollection(type).then(
@@ -643,7 +643,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
-                        p = _this._get(type, conditions).then(function (r) {
+                        p = _this._get(type, conditions, {}).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
                         });
                       }
@@ -841,6 +841,21 @@ function MongoDs(config) {
             result = true;
             break;
           } else {
+            if (name.indexOf('.') > 0) {
+              let jalias = name.substr(0, name.indexOf('.'));
+              let i = 0;
+              for (i = 0; i < joins.length; i++) {
+                if (joins[i].alias === jalias) {
+                  break;
+                }
+              }
+              if (i < joins.length) {
+                attributes.push(jalias);
+                result = IGNORE;
+                break;
+              }
+            }
+
             let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
@@ -853,6 +868,9 @@ function MongoDs(config) {
                 if (!result && tmp.length) {
                   result = tmp.length > 1 ? {$or: tmp} : tmp[0];
                 }
+              } else {
+                result = IGNORE;
+                break;
               }
             } else if (name === '$and' || name === '$nor') {
               if (Array.isArray(tmp)) {
@@ -867,6 +885,9 @@ function MongoDs(config) {
                 } else {
                   result = result.length ? {$nor: result} : true;
                 }
+              } else {
+                result = IGNORE;
+                break;
               }
             } else {
               if (name === '$not') {
@@ -1195,6 +1216,7 @@ function MongoDs(config) {
 
       if (options.filter) {
         jl = joins.length;
+
         prefilter = producePrefilter(attributes, options.filter, joins, lookups);
         if (joins.length > jl || attributes.length > resultAttrs.length) {
           postfilter = producePostfilter(options.filter, lookups);
@@ -1724,11 +1746,50 @@ function MongoDs(config) {
     );
   };
 
-  this._get = function (type, conditions) {
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{fields: {}}} options
+   * @returns {Promise.<{}>}
+   * @private
+   */
+  this._get = function (type, conditions, options) {
+    let c;
+    let opts = {filter: conditions, fields: options.fields || {}};
     return getCollection(type).then(
-      function (c) {
+      function (col) {
+        c = col;
+        prepareConditions(opts.filter);
+        return checkAggregation(type, opts);
+      }).then(function (aggregation) {
+      if (aggregation) {
         return new Promise(function (resolve, reject) {
-          prepareConditions(conditions);
+          fetch(c, opts, aggregation,
+            function (r, amount) {
+              return new Promise(function (resolve, reject) {
+                if (Array.isArray(r)) {
+                  resolve(r);
+                } else {
+                  r.toArray(function (err, docs) {
+                    r.close();
+                    if (err) {
+                      return reject(err);
+                    }
+                    resolve(docs);
+                  });
+                }
+              }).then(function (docs) {
+                docs.forEach(mergeGeoJSON);
+                resolve(docs.length ? docs[0] : null);
+              }).catch(reject);
+            },
+            function (e) {
+              reject(wrapError(e, 'get', type));
+            }
+          );
+        });
+      } else {
+        return new Promise(function (resolve, reject) {
           c.find(conditions).limit(1).next(function (err, result) {
             if (err) {
               return reject(wrapError(err, 'get', type));
@@ -1736,7 +1797,8 @@ function MongoDs(config) {
             resolve(mergeGeoJSON(result));
           });
         });
-      });
+      }
+    });
   };
 
   /**
