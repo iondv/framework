@@ -186,6 +186,7 @@ function Property(item, propertyMeta, name) {
     }
     if (this.meta.selectionProvider) {
       this.selectList = this.meta.selectionProvider.getSelection(this.item);
+      this.item.slCacheClean = false;
       return this.selectList;
     }
     return null;
