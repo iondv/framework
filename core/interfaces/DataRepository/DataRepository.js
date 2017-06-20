@@ -12,7 +12,7 @@ function DataRepository() {
    * @param {String} className
    * @param {{}} data
    * @param {String} [version]
-   * @param {{autoassign: Boolean}} [options]
+   * @param {{}} [options]
    * @returns {Item}
    */
   this.wrap = function (className, data, version, options) {

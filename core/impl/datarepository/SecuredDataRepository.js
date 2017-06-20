@@ -160,7 +160,7 @@ function SecuredDataRepository(options) {
    * @param {String} className
    * @param {Object} data
    * @param {String} [version]
-   * @param {{autoassign: Boolean}} [options]
+   * @param {{}} [options]
    * @private
    * @returns {Item | null}
    */
