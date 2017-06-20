@@ -326,13 +326,13 @@ function SecuredDataRepository(options) {
 
           result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && rcperm[Permissions.WRITE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = iperm[Permissions.WRITE] && rcperm[Permissions.USE];
 
           result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = true;
 
           result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE];
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = iperm[Permissions.WRITE] && rcperm[Permissions.DELETE];
         } else {
           result[p.getName()][Permissions.READ] = iperm[Permissions.READ];
           result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
