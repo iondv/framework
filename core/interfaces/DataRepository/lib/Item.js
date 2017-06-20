@@ -43,6 +43,8 @@ function Item(id, base, classMeta) {
 
   this.files = {};
 
+  this.slCacheClean = true;
+
   this.getItemId = function () {
     return this.id;
   };
@@ -130,6 +132,14 @@ function Item(id, base, classMeta) {
       } else {
         _this.base[name] = value;
       }
+      if (_this.properties && !_this.slCacheClean) {
+        for (let nm in _this.properties) {
+          if (_this.properties.hasOwnProperty(nm)) {
+            _this.properties[nm].selectList = null;
+          }
+        }
+        _this.slCacheClean = true;
+      }
     }
   }
 
@@ -137,11 +147,11 @@ function Item(id, base, classMeta) {
     if (name === '__class') {
       return this.getClassName();
     }
-    
+
     if (name === '__classTitle') {
       return this.getMetaClass().getCaption();
     }
-    
+
     var dot = name.indexOf('.');
     if (dot > -1) {
       let pn = name.substring(0, dot);
