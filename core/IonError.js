@@ -17,7 +17,7 @@ function IonError(code, params, cause) {
 
   this.cause = cause;
 
-  this.params = params;
+  this.params = params || {};
 
   this.message = strings.s('errors', code, params) || cause && cause.message || 'Unknown error';
 

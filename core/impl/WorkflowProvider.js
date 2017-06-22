@@ -35,7 +35,7 @@ function WorkflowProvider(options) {
   var tableName = options.tableName || 'ion_wf_state';
 
   function addPermission(arr, flags, flag, perm) {
-    if (flags & flag === flag) {
+    if ((flags & flag) === flag) {
       arr[perm] = true;
     }
   }
@@ -49,17 +49,34 @@ function WorkflowProvider(options) {
   }
 
   /**
+   *
    * @param {Item} item
+   * @param {{user: User}} options
+   * @returns {{}}
+   */
+  function buildContext(item, options) {
+    let context = {$item: item, $uid: options.user.id()};
+    let props = options.user.properties();
+    for (let nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        context[nm] = props[nm];
+      }
+    }
+    return context;
+  }
+
+  /**
+   * @param {Item} item
+   * @param {{user: User, lang: String}} tOptions
    * @returns {Promise}
    */
-  this._getStatus = function (item, user) {
+  this._getStatus = function (item, tOptions) {
     return new Promise(function (resolve, reject) {
-      var workflows = options.metaRepo.getWorkflows(
+      let workflows = options.metaRepo.getWorkflows(
         item.getMetaClass().getCanonicalName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
-
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -69,11 +86,13 @@ function WorkflowProvider(options) {
       ).
       then(
         function (states) {
-          var result = {};
+          let result = {};
 
-          var itemPermissions = {};
-          var propertyPermissions = {};
-          var selectionProviders = {};
+          let itemPermissions = {};
+          let propertyPermissions = {};
+          let selectionProviders = {};
+
+          let context = buildContext(item, tOptions);
 
           for (let i = 0; i < states.length; i++) {
             result[states[i].workflow] = {
@@ -95,7 +114,7 @@ function WorkflowProvider(options) {
             let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
-                if (!checker(item, stage.conditions, item)) {
+                if (!checker(item, stage.conditions, context, tOptions.lang)) {
                   delete result[workflows[i].name];
                   continue;
                 }
@@ -109,14 +128,20 @@ function WorkflowProvider(options) {
               }
 
               for (let j = 0; j < stage.itemPermissions.length; j++) {
-                if (item.get(stage.itemPermissions[j].role) === user) {
+                if (
+                  tOptions.user.isMe(stage.itemPermissions[j].role) ||
+                  tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
+                ) {
                   addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
                 }
               }
 
               for (let j = 0; j < stage.propertyPermissions.length; j++) {
                 for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
-                  if (item.get(stage.propertyPermissions[j].permissions[k].role) === user) {
+                  if (
+                    tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
+                    tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
+                  ) {
                     if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
                       propertyPermissions[stage.propertyPermissions[j].property] = {};
                     }
@@ -132,7 +157,7 @@ function WorkflowProvider(options) {
                 for (let j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
                   let transition = workflows[i].transitionsBySrc[stage.name][j];
                   if (Array.isArray(transition.conditions) && transition.conditions.length) {
-                    if (!checker(item, transition.conditions, item)) {
+                    if (!checker(item, transition.conditions, context, tOptions.lang)) {
                       continue;
                     }
                   }
@@ -140,7 +165,10 @@ function WorkflowProvider(options) {
                   if (Array.isArray(transition.roles) && transition.roles.length) {
                     let available = false;
                     for (let k = 0; k < transition.roles.length; k++) {
-                      if (item.get(transition.roles[k]) === user) {
+                      if (
+                        tOptions.user.isMe(transition.roles[k]) ||
+                        tOptions.user.isMe(item.get(transition.roles[k]))
+                      ) {
                         available = true;
                         break;
                       }
@@ -209,16 +237,12 @@ function WorkflowProvider(options) {
         stage: nextState.name,
         since: new Date()
       }
-    ).then(
-      function () {
-        return Promise.resolve(item);
-      }
-    );
+    ).then(()=>item);
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
-    var ctx = options.env || {};
-    ctx.$uid = options.uid;
+    var ctx = options.user.properties() || {};
+    ctx.$uid = options.user.id();
     if (typeof assignment._formula === 'function') {
       ctx.$context = item;
       return Promise.resolve()
@@ -244,35 +268,48 @@ function WorkflowProvider(options) {
    * @param {String} workflow
    * @param {String} name
    * @param {{}} [tOptions]
-   * @param {String} [tOptions.uid]
-   * @param {{}} [tOptions.env]
+   * @param {User} [tOptions.user]
+   * @param {String} [tOptions.lang]
    * @param {ChangeLogger} [tOptions.changeLogger]
    * @returns {Promise}
    */
   this._performTransition = function (item, workflow, name, tOptions) {
-    return _this._getStatus(item).then(function (status) {
+    let wf = options.metaRepo.getWorkflow(
+      item.getMetaClass().getName(),
+      workflow,
+      item.getMetaClass().getNamespace(),
+      item.getMetaClass().getVersion()
+    );
+
+    if (!wf) {
+      return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
+    }
+
+    if (!wf.transitionsByName.hasOwnProperty(name)) {
+      return Promise.reject(new IonError(Errors.TRANS_NOT_FOUND, {workflow: wf.caption, trans: name}));
+    }
+
+    let transition = wf.transitionsByName[name];
+
+    return _this._getStatus(item, tOptions).then(function (status) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
-            let wf = options.metaRepo.getWorkflow(
-              item.getMetaClass().getName(),
-              workflow,
-              item.getMetaClass().getNamespace(),
-              item.getMetaClass().getVersion()
-            );
-
-            if (wf) {
-              if (wf.transitionsByName.hasOwnProperty(name)) {
-                let transition = wf.transitionsByName[name];
+            if (wf.transitionsByName.hasOwnProperty(name)) {
                 if (Array.isArray(transition.roles) && transition.roles.length) {
                   let allowed = false;
                   for (let i = 0; i < transition.roles.length; i++) {
-                    if (item.get(transition.roles[i]) === tOptions.uid) {
+                    if (
+                      tOptions.user.isMe(transition.roles[i]) ||
+                      tOptions.user.isMe(item.get(transition.roles[i]))
+                    ) {
                       allowed = true;
                       break;
                     }
                   }
                   if (!allowed) {
-                    return Promise.reject(new Error('Пользователь не имеет прав на выполнение перехода.'));
+                    return Promise.reject(
+                      new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                    );
                   }
                 }
 
@@ -297,9 +334,10 @@ function WorkflowProvider(options) {
                   calculations = Promise.resolve(null);
                 }
 
+                let context = buildContext(item, tOptions);
                 return calculations.then(function () {
                   if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions, item)) {
+                    if (!checker(item, nextState.conditions, context, tOptions.lang)) {
                       return Promise.reject(
                         new IonError(
                           Errors.CONDITION_VIOLATION,
@@ -340,8 +378,7 @@ function WorkflowProvider(options) {
                           updates,
                           tOptions.changeLogger,
                           {
-                            uid: tOptions.uid,
-                            env: tOptions.env
+                            user: tOptions.user
                           }
                         );
                       }
@@ -354,22 +391,108 @@ function WorkflowProvider(options) {
                   );
                 });
               }
-            }
-            return Promise.reject(
-              new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: workflow, trans: name})
-            );
           }
           return Promise.reject(
+            new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})
+          );
+        }
+        return Promise.reject(
+          new IonError(
+            Errors.NOT_IN_WORKFLOW,
+            {workflow: wf.caption, info: item.getMetaClass().getCaption() + '@' + item.getItemId()}
+          )
+        );
+      });
+  };
+
+  /**
+   * @param {Item} item
+   * @param {String} workflow
+   * @param {String} state
+   * @param {{}} [tOptions]
+   * @param {User} [tOptions.user]
+   * @param {String} [tOptions.lang]
+   * @param {ChangeLogger} [tOptions.changeLogger]
+   * @returns {Promise}
+   */
+  this._pushToState = function (item, workflow, state, tOptions) {
+    let wf = options.metaRepo.getWorkflow(
+      item.getMetaClass().getName(),
+      workflow,
+      item.getMetaClass().getNamespace(),
+      item.getMetaClass().getVersion()
+    );
+    if (!wf) {
+      return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
+    }
+    return _this._getStatus(item, tOptions).then(function (status) {
+      if (status.stages.hasOwnProperty(workflow)) {
+        return Promise.reject(new IonError(Errors.IN_WORKFLOW, {workflow: wf.caption}));
+      }
+      if (!wf.statesByName.hasOwnProperty(state)) {
+        return Promise.reject(
+          new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption})
+        );
+      }
+
+      let target = wf.statesByName[state];
+
+      if (Array.isArray(target.conditions) && target.conditions.length) {
+        let context = buildContext(item, tOptions);
+        if (!checker(item, target.conditions, context, tOptions.lang)) {
+          return Promise.reject(
             new IonError(
-              Errors.NOT_IN_WORKFLOW,
+              Errors.CONDITION_VIOLATION,
               {
-                workflow: workflow,
-                info: item.getClassName() + '@' + item.getItemId()
+                info: item.getClassName() + '@' + item.getItemId(),
+                state: target.caption,
+                workflow: wf.caption
               }
             )
           );
         }
-      });
+      }
+
+      return _this.trigger({
+        type: workflow + '.' + target.name,
+        item: item
+      }).then(
+        function (e) {
+          let updates;
+          if (Array.isArray(e.results) && e.results.length) {
+            for (let i = 0; i < e.results.length; i++) {
+              if (e.results[i] && typeof e.results[i] === 'object') {
+                for (let nm in e.results[i]) {
+                  if (e.results[i].hasOwnProperty(nm)) {
+                    if (!updates) {
+                      updates = {};
+                    }
+                    updates[nm] = e.results[i][nm];
+                  }
+                }
+              }
+            }
+          }
+
+          if (updates) {
+            return options.dataRepo.editItem(
+              item.getMetaClass().getCanonicalName(),
+              item.getItemId(),
+              updates,
+              tOptions.changeLogger,
+              {
+                user: tOptions.user
+              }
+            );
+          }
+          return Promise.resolve(item);
+        }
+      ).then(
+        function (item) {
+          return move(item, workflow, target);
+        }
+      );
+    });
   };
 
   /**

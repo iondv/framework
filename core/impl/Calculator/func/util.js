@@ -50,8 +50,9 @@ function sequence(context, args, interrupt) {
   }
   var ps = args.length;
   var p;
+  let result;
   for (let i = 0; i < args.length; i++) {
-    let result = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
+    result = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
     if (result instanceof Promise) {
       ps = i + 1;
       p = result;
@@ -68,7 +69,7 @@ function sequence(context, args, interrupt) {
     }
     return p;
   }
-  return false;
+  return result;
 }
 
 function worker(context, args, argLimit, cb) {

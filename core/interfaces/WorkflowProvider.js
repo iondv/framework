@@ -6,10 +6,11 @@
 function WorkflowProvider() {
   /**
    * @param {Item} item
+   * @param {{uid: User, lang: String}} options
    * @returns {Promise}
    */
-  this.getStatus = function (item, user) {
-    return this._getStatus(item, user);
+  this.getStatus = function (item, options) {
+    return this._getStatus(item, options || {});
   };
 
   /**
@@ -26,13 +27,25 @@ function WorkflowProvider() {
    * @param {String} workflow
    * @param {String} name
    * @param {{}} [options]
-   * @param {String} [options.uid]
-   * @param {{}} [options.env]
+   * @param {User} [options.user]
    * @param {ChangeLogger} [options.changeLogger]
    * @returns {Promise}
    */
   this.performTransition = function (item, workflow, name, options) {
     return this._performTransition(item, workflow, name, options || {});
+  };
+
+  /**
+   * @param {Item} item
+   * @param {String} workflow
+   * @param {String} state
+   * @param {{}} [options]
+   * @param {User} [options.user]
+   * @param {ChangeLogger} [options.changeLogger]
+   * @returns {Promise}
+   */
+  this.pushToState = function (item, workflow, state, options) {
+    return this._pushToState(item, workflow, state, options || {});
   };
 }
 
