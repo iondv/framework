@@ -349,6 +349,9 @@ function SecuredDataRepository(options) {
    */
   function setItemPermissions(options) {
     return function (item) {
+      if (!item) {
+        return Promise.resolve(item);
+      }
       return aclProvider.getPermissions(
         options.user.id(), [
           classPrefix + item.getClassName(),
