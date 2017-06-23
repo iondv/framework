@@ -129,7 +129,7 @@ function OwnCloudStorage(config) {
             streamGetter(id)
           ));
         } else {
-          reject(err || new Error('Status code: ' + res.statusCode));
+          reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
         }
       }));
     });
@@ -152,7 +152,7 @@ function OwnCloudStorage(config) {
         if (!err && res.statusCode === 204) {
           return resolve(id);
         } else {
-          return reject(err || new Error('Status code: ' + res.statusCode));
+          return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
         }
       });
     });
@@ -213,7 +213,7 @@ function OwnCloudStorage(config) {
     if (result) {
       return result;
     } else {
-      throw new Error('передан не правильный путь до директории');
+      throw new Error('Передан неправильный путь до директории');
     }
   }
 
@@ -321,7 +321,7 @@ function OwnCloudStorage(config) {
             resolve(null);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
@@ -360,7 +360,7 @@ function OwnCloudStorage(config) {
         if (!err && res.statusCode === 201) {
           resolve(urlResolver(slashChecker(dirId, fileName)));
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
@@ -397,6 +397,9 @@ function OwnCloudStorage(config) {
         qs: {
           format: 'json'
         },
+        headers: {
+          'OCS-APIRequest': true
+        },
         auth: {
           user: config.login,
           password: config.password
@@ -415,10 +418,40 @@ function OwnCloudStorage(config) {
           }
           resolve(body.ocs && body.ocs.data.url);
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
     });
+  };
+
+  this._deleteShare = function (share) {
+    return requestShareIds(parseDirId(share))
+      .then(ids => {
+        let promises = [];
+        ids.forEach(id => {
+          promises.push(new Promise(function (resolve, reject) {
+            let reqObject = {
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), id),
+              headers: {
+                'OCS-APIRequest': true
+              },
+              auth: {
+                user: config.login,
+                password: config.password
+              }
+            };
+            request.delete(reqObject, function (err, res) {
+              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+                resolve(true);
+              } else {
+                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+              }
+            });
+          }));
+        });
+        return Promise.all(promises);
+      })
+      .then(result => true);
   };
 
   function requestShareIds(id) {
@@ -470,6 +503,9 @@ function OwnCloudStorage(config) {
           promises.push(new Promise(function (resolve, reject) {
             var reqObject = {
               uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId),
+              headers: {
+                'OCS-APIRequest': true
+              },
               auth: {
                 user: config.login,
                 password: config.password
@@ -482,7 +518,7 @@ function OwnCloudStorage(config) {
               if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
                 resolve(true);
               } else {
-                return reject(err || new Error('Status code:' + res.statusCode));
+                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
               }
             });
           }));

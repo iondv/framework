@@ -111,4 +111,7 @@ a:hover {
     margin-top: 10px;
 }
 
-
+.auth-form select {
+  width: 239px;
+  margin-bottom: 9px;
+}

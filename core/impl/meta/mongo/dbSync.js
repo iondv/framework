@@ -193,16 +193,12 @@ function MongoDbSync(options) {
   }
 
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').
+    return getMetaTable('meta').
         then(function () {return getMetaTable('view');}).
         then(function () {return getMetaTable('nav');}).
         then(function () {return getMetaTable('user_type');}).
         then(function () {return getSysColl(AUTOINC_COLL);}).
-        then(function () {return getSysColl(GEOFLD_COLL);}).
-        then(resolve).
-        catch(reject);
-    });
+        then(function () {return getSysColl(GEOFLD_COLL);});
   };
 
   /**
@@ -211,7 +207,7 @@ function MongoDbSync(options) {
    * @returns {Promise}
    * @private
    */
-  this._createCollection = function (cm, namespace) {
+  function createCollection(cm, namespace) {
     return new Promise(function (resolve, reject) {
       var cn = (namespace ? namespace + '_' : '') + cm.name;
       db().collection(
@@ -229,169 +225,166 @@ function MongoDbSync(options) {
         }
       );
     });
-  };
+  }
 
   /**
    * @param {{}} cm
    * @private
    */
-  this._addIndexes = function (cm, rcm, namespace) {
+  function addIndexes(cm, rcm, namespace) {
     /**
      * @param {Collection} collection
      */
     return function (collection) {
       function createIndexPromise(props, unique, nullable, type) {
-        return new Promise(
-          function (resolve) {
-            var opts, i;
-            opts = {};
-            if (unique) {
-              opts.unique = true;
-              if (nullable) {
-                opts.sparse = true;
+        return function () {
+          var opts = {};
+          if (unique) {
+            opts.unique = true;
+            if (nullable) {
+              opts.sparse = true;
+            }
+          }
+
+          var indexDef = {};
+          if (typeof props === 'string') {
+            indexDef = props;
+          } else if (Array.isArray(props)) {
+            for (let i = 0; i < props.length; i++) {
+              if (props[i]) {
+                indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
               }
             }
+          }
 
-            var indexDef = {};
-            if (typeof props === 'string') {
-              indexDef = props;
-            } else if (Array.isArray(props)) {
-              for (i = 0; i < props.length; i++) {
-                if (props[i]) {
-                  indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
-                }
-              }
-            }
+          if (Object.getOwnPropertyNames(indexDef).length === 0) {
+            return Promise.resolve();
+          }
 
-            if (Object.getOwnPropertyNames(indexDef).length === 0) {
-              return resolve();
-            }
-
+          return new Promise(function (resolve) {
             collection.createIndex(indexDef, opts, function (err, iname) {
               resolve(iname);
             });
-          }
-        );
+          });
+        };
       }
 
       function createFullText(props) {
-        return new Promise(function (resolve, reject) {
+        return function () {
           var indexDef = {};
-          for (var i = 0; i < props.length; i++) {
+          for (let i = 0; i < props.length; i++) {
             indexDef[props[i]] = 'text';
           }
           var opts = {};
-          collection.createIndex(indexDef, opts, function (err, iname) {
-            resolve(iname);
+          return new Promise(function (resolve) {
+            collection.createIndex(indexDef, opts, function (err, iname) {
+              resolve(iname);
+            });
           });
-        });
+        };
       }
 
       function registerGeoField(property) {
-        return getSysColl(GEOFLD_COLL)
-          .then(function (coll) {
-            return new Promise(function (resolve, reject) {
-              var cn = (namespace ? namespace + '_' : '') + rcm.name;
-              var d = {};
-              d[property.name] = true;
-              coll.updateOne(
-                {
-                  __type: cn
-                },
-                {$set: d},
-                {upsert: true},
-                function (err) {
-                  return err ? reject(err) : resolve();
-                }
-              );
+        return function () {
+          return getSysColl(GEOFLD_COLL)
+            .then(function (coll) {
+              return new Promise(function (resolve, reject) {
+                var cn = (namespace ? namespace + '_' : '') + rcm.name;
+                var d = {};
+                d[property.name] = true;
+                coll.updateOne(
+                  {
+                    __type: cn
+                  },
+                  {$set: d},
+                  {upsert: true},
+                  function (err) {
+                    return err ? reject(err) : resolve();
+                  }
+                );
+              });
             });
-          });
+        };
       }
 
-      return new Promise(function (resolve, reject) {
-        var i, j, promises, tmp;
-        promises = [];
-        promises.push(createIndexPromise(cm.key, true));
-        promises.push(createIndexPromise('_class', false));
+      var promise = createIndexPromise(cm.key, true)();
+      promise = promise.then(createIndexPromise('_class', false));
 
-        var fullText = [];
-        var props = {};
-        for (i = 0; i < cm.properties.length; i++) {
-          props[cm.properties[i].name] = cm.properties[i];
-          if (
-            cm.properties[i].type === PropertyTypes.REFERENCE ||
-            cm.properties[i].indexed ||
-            cm.properties[i].unique
-          ) {
-            promises.push(
-              createIndexPromise(
-                cm.properties[i].name,
-                cm.properties[i].unique,
-                cm.properties[i].nullable,
-                cm.properties[i].type
-              )
-            );
-          }
-
-          if (
-            cm.properties[i].indexSearch &&
-            (
-              cm.properties[i].type === PropertyTypes.STRING ||
-              cm.properties[i].type === PropertyTypes.URL ||
-              cm.properties[i].type === PropertyTypes.HTML ||
-              cm.properties[i].type === PropertyTypes.TEXT
+      var fullText = [];
+      var props = {};
+      for (let i = 0; i < cm.properties.length; i++) {
+        props[cm.properties[i].name] = cm.properties[i];
+        if (
+          cm.properties[i].type === PropertyTypes.REFERENCE ||
+          cm.properties[i].indexed ||
+          cm.properties[i].unique
+        ) {
+          promise = promise.then(
+            createIndexPromise(
+              cm.properties[i].name,
+              cm.properties[i].unique,
+              cm.properties[i].nullable,
+              cm.properties[i].type
             )
-          ) {
-            fullText.push(cm.properties[i].name);
-          }
-
-          if (cm.properties[i].type === PropertyTypes.GEO) {
-            promises.push(registerGeoField(cm.properties[i]));
-          }
+          );
         }
 
-        if (cm.compositeIndexes) {
-          for (i = 0; i < cm.compositeIndexes.length; i++) {
-            tmp = false;
-            for (j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-              if (props[cm.compositeIndexes[i].properties[j]].nullable) {
-                tmp = true;
-                break;
-              }
+        if (
+          cm.properties[i].indexSearch &&
+          (
+            cm.properties[i].type === PropertyTypes.STRING ||
+            cm.properties[i].type === PropertyTypes.URL ||
+            cm.properties[i].type === PropertyTypes.HTML ||
+            cm.properties[i].type === PropertyTypes.TEXT
+          )
+        ) {
+          fullText.push(cm.properties[i].name);
+        }
+
+        if (cm.properties[i].type === PropertyTypes.GEO) {
+          promise = promise.then(registerGeoField(cm.properties[i]));
+        }
+      }
+
+      if (cm.compositeIndexes) {
+        for (let i = 0; i < cm.compositeIndexes.length; i++) {
+          let tmp = false;
+          for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
+            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+              tmp = true;
+              break;
             }
-            promises.push(createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp));
           }
+          promise = promise.then(
+            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp)
+          );
         }
+      }
 
-        if (fullText.length) {
-          promises.push(createFullText(fullText));
-        }
+      if (fullText.length) {
+        promise = promise.then(createFullText(fullText));
+      }
 
-        Promise.all(promises).
-        then(function () {
-          resolve(collection);
-        }).
-        catch(reject);
-      });
+      return promise;
     };
-  };
-
-  this._addAutoInc = function (cm) {
-    var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
+  }
+  
+  function addAutoInc(cm) {
     /**
      * @param {Collection} collection
      */
     return function (collection) {
-      return new Promise(function (resolve, reject) {
-        var inc = {};
-        for (var i = 0; i < cm.properties.length; i++) {
-          if (cm.properties[i].type === 6 && cm.properties[i].autoassigned === true) {
-            inc[cm.properties[i].name] = 0;
-          }
+      var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
+      var inc = {};
+      for (var i = 0; i < cm.properties.length; i++) {
+        if (cm.properties[i].type === 6 && cm.properties[i].autoassigned === true) {
+          inc[cm.properties[i].name] = 0;
         }
+      }
 
-        if (Object.keys(inc).length > 0) {
-          getSysColl(AUTOINC_COLL).then(function (autoinc) {
+      if (Object.keys(inc).length > 0) {
+        return getSysColl(AUTOINC_COLL).then(function (autoinc) {
+          return new Promise(function (resolve, reject) {
             autoinc.find({__type: cn}).limit(1).next(function (err, c) {
               if (err) {
                 return reject(err);
@@ -412,13 +405,12 @@ function MongoDbSync(options) {
                 resolve(collection);
               });
             });
-          }).catch(reject);
-          return;
-        }
-        resolve(collection);
-      });
+          });
+        });
+      }
+      return Promise.resolve(collection);
     };
-  };
+  }
 
   /**
    * @param {{}} classMeta
@@ -427,39 +419,40 @@ function MongoDbSync(options) {
    * @private
    */
   this._defineClass = function (classMeta, namespace) {
-    classMeta.namespace = namespace || null;
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').then(function (metaCollection) {
-        findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
-          if (err) {
-            return reject(err);
-          }
-          _this._createCollection(cm, namespace).
-          then(_this._addAutoInc(classMeta)).
-          then(_this._addIndexes(classMeta, cm, namespace)).
-          then(function () {
-            delete classMeta._id;
-            log.log('Регистрируем класс ' + classMeta.name);
-            metaCollection.updateOne(
-              {
-                name: classMeta.name,
-                version: classMeta.version,
-                namespace: namespace
-              },
-              classMeta,
-              {upsert: true},
-              function (err, result) {
-                if (err) {
-                  return reject(err);
+    return getMetaTable('meta')
+      .then(function (metaCollection) {
+        classMeta.namespace = namespace || null;
+        return new Promise(function (resolve, reject) {
+          findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
+            if (err) {
+              return reject(err);
+            }
+            createCollection(cm, namespace).
+            then(addAutoInc(classMeta)).
+            then(addIndexes(classMeta, cm, namespace)).
+            then(function () {
+              delete classMeta._id;
+              log.log('Регистрируем класс ' + classMeta.name);
+              metaCollection.updateOne(
+                {
+                  name: classMeta.name,
+                  version: classMeta.version,
+                  namespace: namespace
+                },
+                classMeta,
+                {upsert: true},
+                function (err, result) {
+                  if (err) {
+                    return reject(err);
+                  }
+                  log.log('Класс ' + classMeta.name + ' зарегистрирован.');
+                  resolve(result);
                 }
-                log.log('Класс ' + classMeta.name + ' зарегистрирован.');
-                resolve(result);
-              }
-            );
-          }).catch(reject);
+              );
+            }).catch(reject);
+          });
         });
-      }).catch(reject);
-    });
+      });
   };
 
   this._undefineClass = function (className, version, namespace) {

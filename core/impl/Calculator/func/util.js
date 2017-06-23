@@ -4,59 +4,88 @@
 'use strict';
 
 // jshint maxstatements: 50, maxcomplexity: 20
-function passValue(v) {
-  var val = v;
-  return Promise.resolve(val);
-}
 
-function argCalcPromise(context, args, argCount) {
+function argCalc(context, args, argCount) {
   var calc = [];
-  var tmp;
   var n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
-  for (var i = 0; i < n; i++) {
-    tmp = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
-    calc.push(tmp instanceof Promise ? tmp : passValue(tmp));
+  var async = false;
+  for (let i = 0; i < n; i++) {
+    let tmp = typeof args[i] === 'function' ?
+      args[i].apply(context) :
+        typeof args[i] === 'string' && context[args[i]] ?
+          context[args[i]] :
+          args[i];
+    async = tmp instanceof Promise ? true : async;
+    calc.push(tmp);
   }
-  return Promise.all(calc);
+  if (async) {
+    return Promise.all(calc);
+  }
+  return calc;
 }
 
 function seqPromiseConstructor(context, v) {
-  return new Promise(function (resolve, reject) {
-    var tmp;
-    if (typeof v === 'function') {
-      tmp = v.apply(context);
-    }
-    if (tmp instanceof Promise) {
-      tmp.then(resolve).catch(reject);
-    } else {
-      resolve(tmp);
-    }
-  });
+  var tmp;
+  if (typeof v === 'function') {
+    tmp = v.apply(context);
+  }
+  if (tmp instanceof Promise) {
+    return tmp;
+  }
+  return Promise.resolve(tmp);
 }
 
 function seqChain(context, v, interrupt) {
   return function (result) {
     if (result === interrupt) {
-      return new Promise(function (r) {r(result);});
+      return Promise.resolve(interrupt);
     }
     return seqPromiseConstructor(context, v);
   };
 }
 
 function sequence(context, args, interrupt) {
-  var p = null;
   if (!args.length) {
-    return new Promise(function (r) {r(false);});
+    return false;
   }
-  for (var i = 0; i < args.length; i++) {
-    if (!p) {
-      p = seqPromiseConstructor(context, args[i]);
-    } else {
-      p = p.then(seqChain(context, args[i], interrupt));
+  var ps = args.length;
+  var p;
+  let result;
+  for (let i = 0; i < args.length; i++) {
+    result = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
+    if (result instanceof Promise) {
+      ps = i + 1;
+      p = result;
+      break;
+    }
+    if (result === interrupt) {
+      return result;
     }
   }
-  return p;
+
+  if (p) {
+    for (let i = ps; i < args.length; i++) {
+      p = p.then(seqChain(context, args[i], interrupt));
+    }
+    return p;
+  }
+  return result;
 }
 
-module.exports.argCalcPromise = argCalcPromise;
-module.exports.argCalcChain = sequence;
+function worker(context, args, argLimit, cb) {
+  var args2 = argCalc(context, args, argLimit);
+  if (args2 instanceof Promise) {
+    return args2.then(function (args) {
+      try {
+        return cb(args);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    });
+  }
+  return cb(args2);
+}
+
+module.exports.args = argCalc;
+module.exports.sequenceCheck = sequence;
+module.exports.calculate = worker;

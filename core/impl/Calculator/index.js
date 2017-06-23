@@ -7,6 +7,7 @@ const ICalculator = require('core/interfaces/Calculator');
 const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
+const data = require('./func/data');
 const Item = require('core/interfaces/DataRepository').Item;
 const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 
@@ -30,6 +31,7 @@ function Calculator(options) {
         funcLib.avg = aggreg.avg(dataRepo);
         funcLib.max = aggreg.max(dataRepo);
         funcLib.min = aggreg.min(dataRepo);
+        funcLib.get = data.get(dataRepo);
       }
       resolve();
     });
@@ -100,8 +102,19 @@ function Calculator(options) {
     if (!nm) {
       return null;
     }
+
+    if (obj instanceof Item) {
+      return obj.property(nm).evaluate();
+    }
+
     if (nm.indexOf('.') < 0) {
-      return obj[nm];
+      if (obj.hasOwnProperty(nm)) {
+        return obj[nm];
+      }
+
+      if (obj.$context) {
+        return objProp(obj.$context, nm);
+      }
     }
 
     var pth = nm.split('.');
@@ -121,13 +134,6 @@ function Calculator(options) {
    */
   function propertyGetter(nm) {
     return function () {
-      if (this instanceof Item) {
-        let p = this.property(nm);
-        if (!p) {
-          return null;
-        }
-        return p.evaluate();
-      }
       return objProp(this, nm);
     };
   }
@@ -142,10 +148,12 @@ function Calculator(options) {
    * @returns {*}
    */
   function evaluate(formula) {
-    var func, args, pos;
-
     if (!isNaN(formula)) {
       return Number(formula);
+    }
+
+    if (formula === 'null') {
+      return null;
     }
 
     if (formula === 'true') {
@@ -156,11 +164,24 @@ function Calculator(options) {
       return false;
     }
 
+    if (formula[0] === '\'' && formula[formula.length - 1] === '\'') {
+      return formula.substring(1, formula.length - 1);
+    }
+
+    let pos;
     if ((pos = formula.indexOf('(')) > -1) {
-      args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
-      func = formula.substring(0, pos).trim();
+      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim());
+      let func = formula.substring(0, pos).trim();
+      let byRef = false;
+      if (func[0] === '&') {
+        func = func.substr(1);
+        byRef = true;
+      }
 
       if (funcLib.hasOwnProperty(func)) {
+        if (byRef) {
+          return function () {return funcLib[func](args);};
+        }
         return funcLib[func](args);
       } else {
         warn('Не найдена функция ' + func);
@@ -178,12 +199,11 @@ function Calculator(options) {
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    var f = evaluate(formula.trim());
-    if (typeof f === 'function') {
-      return f;
+    var result = evaluate(formula.trim());
+    if (typeof result !== 'function') {
+      return () => result;
     }
-    warn('Не удалось распознать формулу: ' + formula);
-    return null;
+    return result;
   };
 }
 

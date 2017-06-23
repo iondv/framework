@@ -43,6 +43,8 @@ function Item(id, base, classMeta) {
 
   this.files = {};
 
+  this.slCacheClean = true;
+
   this.getItemId = function () {
     return this.id;
   };
@@ -124,11 +126,32 @@ function Item(id, base, classMeta) {
   function setToBase(name,value) {
     var p = _this.property(name);
     if (p) {
-      _this.base[name] = value;
+      if (value instanceof Item) {
+        _this.references[name] = value;
+        _this.base[name] = value.getItemId();
+      } else {
+        _this.base[name] = value;
+      }
+      if (_this.properties && !_this.slCacheClean) {
+        for (let nm in _this.properties) {
+          if (_this.properties.hasOwnProperty(nm)) {
+            _this.properties[nm].selectList = null;
+          }
+        }
+        _this.slCacheClean = true;
+      }
     }
   }
 
   this.get = function (name) {
+    if (name === '__class') {
+      return this.getClassName();
+    }
+
+    if (name === '__classTitle') {
+      return this.getMetaClass().getCaption();
+    }
+
     var dot = name.indexOf('.');
     if (dot > -1) {
       let pn = name.substring(0, dot);
@@ -214,7 +237,7 @@ function Item(id, base, classMeta) {
   }
 
   /**
-   * @returns {Property[]}
+   * @returns {Property{}}
    */
   this.getProperties = function () {
     if (this.properties === null) {

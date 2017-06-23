@@ -8,6 +8,9 @@ const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
 const Operations = require('core/DataRepoOperations');
+const Item = require('core/interfaces/DataRepository/lib/Item');
+const strToDate = require('core/strToDate');
+const cast = require('core/cast');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [
@@ -18,25 +21,39 @@ const AgregOpers = [
 // jshint maxstatements: 40, maxcomplexity: 50
 /**
  * @param {*} v
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {Number} type
+ * @param {String} lang
  * @returns {*}
  */
-function toScalar(v, context) {
-  if (!Array.isArray(v)) {
-    v = [v];
+function toScalar(v, context, type, lang) {
+  if (Array.isArray(v)) {
+    v = v[0];
   }
-  var result = v.slice(0);
 
-  for (let i = 0; i < result.length; i++) {
-    if (typeof result[i] === 'string' && result[i][0] === '$' && context) {
-      let p;
-      if ((p = context.property(result[i].substring(1))) !== null) {
-        return p.getValue();
-      }
+  if (typeof v === 'string' && v[0] === '$' && context) {
+    let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+    let nm = v.substring(1);
+    let p;
+    if (item && (p = item.property(nm)) !== null) {
+        v = p.getValue();
+    } else if (context.hasOwnProperty(nm)) {
+      v = context[nm];
+    }
+    if (Array.isArray(v)) {
+      let result = [];
+      v.forEach((v) => {result.push(toScalar(v, context, type, lang));});
+      return result;
     }
   }
 
-  return result;
+  switch (type) {
+    case PropertyTypes.DATETIME: {
+      v = strToDate(v, lang);
+      return v;
+    }break;
+    default: return cast(v, type);
+  }
 }
 
 function findPM(cm, name) {
@@ -55,9 +72,10 @@ function findPM(cm, name) {
 /**
  * @param {ClassMeta} rcm
  * @param {{}} condition
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {String} lang
  */
-function produceContainsFilter(rcm, condition, context) {
+function produceContainsFilter(rcm, condition, context, lang) {
   var pm = findPM(rcm, condition.property);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm._refClass) {
@@ -87,17 +105,42 @@ function produceContainsFilter(rcm, condition, context) {
 }
 
 /**
+ * @param {ClassMeta} cm
+ * @param {String} property
+ */
+function vt(cm, property) {
+  let pm = findPM(cm, property);
+  if (pm) {
+    if (pm.type === PropertyTypes.REFERENCE) {
+      if (pm._refClass.getKeyProperties().length === 1) {
+        return vt(pm._refClass, pm._refClass.getKeyProperties()[0]);
+      }
+      return PropertyTypes.STRING;
+    }
+    return pm.type;
+  }
+  return PropertyTypes.STRING;
+}
+
+/**
  * @param {{}} condition
  * @param {String} type
  * @param {ClassMeta} rcm
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {String} lang
  * @returns {{}}
  */
-function produceFilter(condition, type, rcm, context) {
+function produceFilter(condition, type, rcm, context, lang) {
+  var result = {};
+  if (condition.value) {
+    result[type] = toScalar(condition.value, context, vt(rcm, condition.property), lang);
+  } else if (condition.nestedConditions && condition.nestedConditions.length) {
+    result[type] = ConditionParser(condition.nestedConditions[0], rcm, context, lang);
+  }
   var args = [condition.property];
   if (condition.value) {
     args = args.concat(toScalar(condition.value, context));
-  }
+  }  
 
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
     let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
@@ -111,10 +154,11 @@ function produceFilter(condition, type, rcm, context) {
 /**
  * @param {{}} condition
  * @param {ClassMeta} rcm
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {String} lang
  * @returns {{className: String, collectionName: String, property: String, filter: {}} | null}
  */
-function produceAggregationOperation(condition, rcm, context) {
+function produceAggregationOperation(condition, rcm, context, lang) {
   var an, av, pn, pm;
   if (!condition.value || !condition.value.length) {
     throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
@@ -135,7 +179,7 @@ function produceAggregationOperation(condition, rcm, context) {
     }
   }
   var result = [an, av, pn];
-  var filter = ConditionParser(condition.nestedConditions, rcm, context);
+  var filter = ConditionParser(condition.nestedConditions, rcm, context, lang);
   if (!filter) {
     result.push(filter);
   }
@@ -145,14 +189,15 @@ function produceAggregationOperation(condition, rcm, context) {
 /**
  * @param {Object[]} conditions
  * @param {ClassMeta} rcm
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {String} lang
  * @returns {Array | null}
  */
-function produceArray(conditions, rcm, context) {
+function produceArray(conditions, rcm, context, lang) {
   var tmp;
   var result = [];
   for (var i = 0; i < conditions.length; i++) {
-    tmp = ConditionParser(conditions[i], rcm, context);
+    tmp = ConditionParser(conditions[i], rcm, context, lang);
     if (tmp) {
       result.push(tmp);
     }
@@ -161,14 +206,40 @@ function produceArray(conditions, rcm, context) {
 }
 
 /**
+ * @param {String[]} value
+ * @param {String} property
+ * @param {ClassMeta} rcm
+ * @param {Item} context
+ * @param {String} lang
+ * @returns {Array}
+ */
+function castInValue(value, property, rcm, context, lang) {
+  let result = [];
+  if (!Array.isArray(value)) {
+    value = [value];
+  }
+  value.forEach((v) => {
+    let sv = toScalar(v, context, vt(rcm, property), lang);
+    if (Array.isArray(sv)) {
+      Array.prototype.push.apply(result, sv);
+    } else {
+      result.push(sv);
+    }
+  });
+  return result;
+}
+
+/**
  * @param {{}} condition
  * @param {ClassMeta} rcm
- * @param {Item} [context]
+ * @param {Item} context
+ * @param {String} lang
  * @returns {{} | null}
  */
-function ConditionParser(condition, rcm, context) {
+function ConditionParser(condition, rcm, context, lang) {
+  var result;
   if (Array.isArray(condition)) {
-    let tmp = produceArray(condition, rcm);
+    let tmp = produceArray(condition, rcm, context, lang);
     if (tmp) {
       return {[Operations.AND]: tmp};
     }
@@ -201,7 +272,7 @@ function ConditionParser(condition, rcm, context) {
       }
     } else {
       if (BoolOpers.indexOf(condition.operation) !== -1) {
-        let tmp = produceArray(condition.nestedConditions, rcm, context);
+        let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
           switch (condition.operation) {
             case OperationTypes.AND: return {[Operations.AND]: tmp};
@@ -213,7 +284,7 @@ function ConditionParser(condition, rcm, context) {
           throw new Error('Не указаны аргументы операции!');
         }
       } else if (AgregOpers.indexOf(condition.operation) !== -1) {
-        let tmp =  produceAggregationOperation(condition, rcm, context);
+        let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
           switch (condition.operation) {
             case OperationTypes.MIN: return {[Operations.MIN]: tmp};

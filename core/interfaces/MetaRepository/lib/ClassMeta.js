@@ -24,14 +24,56 @@ function loadPropertyMetas(cm, plain) {
      * @param {Item} item
      */
     return function (item) {
+      var result = [];
       for (var j = 0; j < this.matrix.length; j++) {
-        if (checkConditions(item, this.matrix[j].conditions)) {
-          return this.matrix[j].result || [];
+        if (
+          !Array.isArray(this.matrix[j].conditions) ||
+          this.matrix[j].conditions.length === 0 ||
+          checkConditions(item, this.matrix[j].conditions)) {
+          Array.prototype.push.apply(result, this.matrix[j].result || []);
         }
       }
-      return [];
+      return result;
     };
   }
+
+  function sysPm(name) {
+    return {
+      orderNumber: 0,
+      name: name,
+      caption: name,
+      type: 0,
+      size: 500,
+      decimals: 0,
+      allowedFileTypes: null,
+      maxFileCount: 0,
+      nullable: true,
+      readonly: true,
+      indexed: false,
+      unique: false,
+      autoassigned: false,
+      hint: null,
+      defaultValue: null,
+      refClass: "",
+      itemsClass: "",
+      backRef: "",
+      backColl: "",
+      binding: "",
+      semantic: null,
+      selConditions: [],
+      selSorting: [],
+      selectionProvider: null,
+      indexSearch: false,
+      eagerLoading: false,
+      formula: null
+    };
+  }
+
+  if (!plain.ancestor) {
+    cm.propertyMetas.__class = sysPm('__class');
+    cm.propertyMetas.__classTitle = sysPm('__classTitle');
+  }
+
   var pm;
   for (i = 0; i < properties.length; i++) {
     pm = clone(properties[i]);
@@ -92,11 +134,16 @@ function ClassMeta(metaObject) {
     if (typeof this._semanticFunc === 'function') {
       return this._semanticFunc.call(item, dateCallback, circular);
     }
+
+    if (this.getAncestor()) {
+      return this.getAncestor().getSemantics(item, dateCallback, circular);
+    }
+
     return item.getItemId();
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || [];
+    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
   };
 
   this.getForcedEnrichment = function () {
@@ -104,7 +151,7 @@ function ClassMeta(metaObject) {
   };
 
   this.getKeyProperties = function () {
-    if (!this.plain.key) {
+    if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
       var anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
@@ -170,6 +217,10 @@ function ClassMeta(metaObject) {
       result = result.concat(this.getAncestor().getPropertyMetas());
     }
     return result;
+  };
+
+  this.isJournaling = function () {
+    return this.plain.journaling;
   };
 }
 
