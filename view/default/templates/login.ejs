@@ -45,9 +45,17 @@
       </fieldset>
 
       <footer>
-        <button id="authbutton" type="submit" class="btn btn-primary pull-right">Войти</button>
-        <div class="forgot-password pull-left">
-          <% if (canRegister) { %><a href="/register"><b>Зарегистрироваться</b></a><% } %>
+        <button id="authbutton" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
+          Войти
+        </button>
+        <div class="forgot-password pull-right">
+          <% if (canRegister) { %>
+          <a href="/register"><b>Зарегистрироваться</b></a>
+          <% } %>
+          <% if (goHome) { %>
+          &nbsp;&nbsp;
+          <a href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
+          <% } %>
         </div>
       </footer>
     </form>
