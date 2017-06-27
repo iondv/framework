@@ -474,7 +474,7 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, mode) {
       searchFilter(pm._refClass, cor,
         {
           searchBy: pm._refClass.getSemanticAttrs()
-        }, sv, lang, false, depth - 1);
+        }, sv, lang, false, '', depth - 1);
       if (cor.length) {
         cond = {};
         aname = (prefix || '') + pm.name;
@@ -551,9 +551,9 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
     if (svals[i]) {
       let nm = opts.searchBy[i];
       if (nm.indexOf('.') >= 0) {
-        var path = nm.split('.');
-        var p = null;
-        var cm2 = cm;
+        let path = nm.split('.');
+        let p = null;
+        let cm2 = cm;
         for (let j = 0; j < path.length; i++) {
           p = cm2.getPropertyMeta(path[j]);
           if (p && p.type === PropertyTypes.REFERENCE) {
@@ -569,7 +569,7 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
             depth, smodes[i]);
         }
       } else {
-        var pm = cm.getPropertyMeta(nm);
+        let pm = cm.getPropertyMeta(nm);
         if (pm.indexSearch && useFullText) {
           fullText = true;
         }
@@ -613,7 +613,7 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
  */
 module.exports.textSearchFilter = function (cm, opts, sv, lang, useFullText, prefix, depth) {
   var conds = [];
-  searchFilter(cm, conds, opts, sv, lang, true, null, 1);
+  searchFilter(cm, conds, opts, sv, lang, true, null, depth || 1);
   if (conds.length) {
     if (conds.length === 1) {
       conds = conds[0];
