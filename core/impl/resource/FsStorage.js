@@ -43,13 +43,17 @@ function FsStorage(options) {
 
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} [directory]
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this._accept = function (data, options) {
+  this._accept = function (data, directory, options) {
     var opts = clone(options) || {};
     var m = moment();
-    var pth = m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+    var pth = directory ? directory : m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+    if (pth.charAt(0) === path.sep) {
+      pth = pth.slice(1);
+    }
     switch (_options.fragmentation) {
       case 'hour':pth = path.join(pth, m.format('HH'));break;
       case 'minute':pth = path.join(pth, m.format('mm'));break;

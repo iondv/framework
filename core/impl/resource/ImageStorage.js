@@ -57,10 +57,11 @@ function ImageStorage(options) {
 
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} [directory]
    * @param {{}} [opts]
    * @returns {Promise}
    */
-  this._accept = function (data, opts) {
+  this._accept = function (data, directory, opts) {
     return new Promise(function (resolve, reject) {
       var ops = opts || {};
       var o = clone(ops);
@@ -90,7 +91,7 @@ function ImageStorage(options) {
           thumbnails[files[i].options.thumbType] = files[i];
           ops.thumbnails[files[i].options.thumbType] = files[i].id;
         }
-        return options.fileStorage.accept(data, ops);
+        return options.fileStorage.accept(data, directory, ops);
       }).then(
         /**
          * @param {StoredFile} file
