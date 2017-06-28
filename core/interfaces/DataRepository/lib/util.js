@@ -455,7 +455,7 @@ function createSearchRegexp(search, mode, asString) {
   if (asString) {
     return result;
   }
-  return new RegExp(result);
+  return new RegExp(result, 'i');
 }
 
 function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, mode) {
