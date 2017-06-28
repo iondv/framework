@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 80, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -717,8 +717,9 @@ function MongoDs(config) {
     return {$project: tmp};
   }
 
-  function joinId(join) {
-    return join.table + ':' + join.left + ':' + join.right + ':' + (join.many ? 'm' : '1');
+  function joinId(join, context) {
+    return (context ? context + ':' : '') + join.table + ':' + join.left + ':' +
+      join.right + ':' + (join.many ? 'm' : '1');
   }
 
   /**
@@ -760,9 +761,11 @@ function MongoDs(config) {
         if (!join.onlySize || Array.isArray(join.join)) {
           result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
         }
+        /*
         if (Array.isArray(join.join)) {
           processJoins(attributes, join.join, result, join.alias);
         }
+        */
       });
     }
   }
@@ -778,7 +781,7 @@ function MongoDs(config) {
         join.alias = '__j' + counter.v;
         counter.v++;
       }
-      var jid = joinId(join);
+      var jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
         joinedSources[join.alias] = join;
@@ -928,7 +931,7 @@ function MongoDs(config) {
   }
 
   function joinPostFilter(join, explicitJoins, prefix, not) {
-    var jid = joinId(join);
+    var jid = joinId(join, prefix);
     var j = explicitJoins[jid];
 
     if (prefix) {
@@ -1101,11 +1104,11 @@ function MongoDs(config) {
                       ) {
                         result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                       } else {
-                        result.push(IGNORE);
+                        //result.push(IGNORE);
                       }
                     }
                   } else {
-                    result.push(IGNORE);
+                    //result.push(IGNORE);
                   }
                 }
               }
