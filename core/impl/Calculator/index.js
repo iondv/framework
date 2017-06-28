@@ -7,6 +7,7 @@ const ICalculator = require('core/interfaces/Calculator');
 const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
+const data = require('./func/data');
 const Item = require('core/interfaces/DataRepository').Item;
 const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 
@@ -30,6 +31,7 @@ function Calculator(options) {
         funcLib.avg = aggreg.avg(dataRepo);
         funcLib.max = aggreg.max(dataRepo);
         funcLib.min = aggreg.min(dataRepo);
+        funcLib.get = data.get(dataRepo);
       }
       resolve();
     });
