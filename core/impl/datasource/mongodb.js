@@ -800,12 +800,12 @@ function MongoDs(config) {
    * @param {{v:Number}} counter
    * @returns {*}
    */
-  function producePrefilter(attributes, find, joins, explicitJoins, counter) {
+  function producePrefilter(attributes, find, joins, explicitJoins, counter, prefix) {
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
+        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
         if (tmp && tmp !== IGNORE) {
           result.push(tmp);
         }
@@ -814,7 +814,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object') {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
@@ -839,13 +839,14 @@ function MongoDs(config) {
             }
 
             if (find[name].filter) {
-              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
+              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter, j.alias);
             }
             result = true;
             break;
           } else {
+            let jalias = prefix;
             if (name.indexOf('.') > 0) {
-              let jalias = name.substr(0, name.indexOf('.'));
+              jalias = name.substr(0, name.indexOf('.'));
               let i = 0;
               for (i = 0; i < joins.length; i++) {
                 if (joins[i].alias === jalias) {
@@ -859,7 +860,7 @@ function MongoDs(config) {
               }
             }
 
-            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter, jalias);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
