@@ -4,13 +4,18 @@
 'use strict';
 
 /* jshint maxcomplexity: 30, maxstatements: 50 */
-const GLOBAL_NS = '__global';
+
+const NodeTypes = {
+  GROUP: 0,
+  CLASS: 1,
+  CONTAINER: 2,
+  HYPERLINK: 3
+}
 
 const menuTypes = {
   TREE: 'tree',
   COMBO: 'combo'
 };
-
 module.exports.menuTypes = menuTypes;
 
 function typeParser(type) {
@@ -31,139 +36,76 @@ module.exports.nodeAclId = nodeAclId;
 
 /**
  * @param {String} moduleName
- * @param {SettingsRepository} settings
- * @param {MetaRepository} repo
+ * @param {{}} scope
+ * @param {SettingsRepository} scope.settings
+ * @param {MetaRepository} scope.metaRepo
  * @param {String} position
  * @param {String[]} [aclResources]
  * @returns {Promise}
  */
-module.exports.buildMenu = function (moduleName, settings, repo, position, aclResources) {
-  var result, sect, sections, menu, subnodes, subSubnodes;
-  result = [];
-  menu = position || 'left';
+module.exports.buildMenu = function (moduleName, scope, position, aclResources) {
+  position = position || 'left';
+  let result = [];
+  let navigation = scope.settings.get(moduleName + '.navigation');
+  let menus = navigation.menus || {};
+  let types = menus.types && menus.types.hasOwnProperty(position) ? menus.types[position] : null;
 
-  var navigation = settings.get(moduleName + '.navigation') || {};
-  var namespaces = navigation.namespaces || {};
-  var menus = navigation.menus || {};
-  var types = typeof menus.types !== 'undefined' && menus.types.hasOwnProperty(menu) ? menus.types[menu] : null;
-  if (!namespaces.hasOwnProperty(GLOBAL_NS)) {
-    namespaces[GLOBAL_NS] = '';
-  }
-  for (var nm in namespaces) {
-    if (namespaces.hasOwnProperty(nm)) {
-      var nsType = types !== null ?
-        (typeof types.namespaces !== 'undefined' && types.namespaces.hasOwnProperty(nm) ?
-          types.namespaces[nm] : types.type) : menuTypes.TREE;
-      subnodes = [];
-      var secType;
-      var nodesTypes;
-      if (!menus.hasOwnProperty(menu) || menus[menu].length === 0) {
-        sections = repo.getNavigationSections(nm !== GLOBAL_NS ? nm : '');
-        var names = Object.keys(sections);
-        for (var nm2 in sections) {
-          if (sections.hasOwnProperty(nm2)) {
-            secType =
-              types !== null &&
-              typeof types.sections !== 'undefined' &&
-              types.sections.hasOwnProperty(nm2) &&
-              typeof types.sections[nm2].types !== 'undefined' ? types.sections[nm2].type : nsType;
-            nodesTypes =
-              types !== null &&
-              typeof types.sections !== 'undefined' &&
-              types.sections.hasOwnProperty(nm2) && typeof types.sections[nm2].nodes !== 'undefined' ?
-                types.sections[nm2].nodes : {};
-            subSubnodes = buildSubMenu(sections[nm2].nodes, nodesTypes, secType, aclResources, moduleName);
-            if (names.length === 1 && subSubnodes.length > 0) {
-              subnodes = subSubnodes;
-              break;
-            } else {
-              subnodes.push({
-                id: sections[nm2].name,
-                nodes: subSubnodes,
-                hint: sections[nm2].caption,
-                caption: sections[nm2].caption,
-                url: null,
-                itemType: sections[nm2].itemType,
-                orderNumber: sections[nm2].orderNumber,
-                type: typeParser(secType)
-              });
-            }
-          }
-        }
-      } else {
-        for (var i = 0; i < menus[menu].length; i++) {
-          sect = repo.getNavigationSection(menus[menu][i], nm !== GLOBAL_NS ? nm : '');
-          if (sect) {
-            secType =
-              types !== null &&
-              typeof types.sections !== 'undefined' &&
-              types.sections.hasOwnProperty(sect.name) &&
-              typeof types.sections[sect.name].type !== 'undefined' ?
-                types.sections[sect.name].type : nsType;
-            nodesTypes =
-              types !== null &&
-              typeof types.sections !== 'undefined' &&
-              types.sections.hasOwnProperty(sect.name) &&
-              typeof types.sections[sect.name].nodes !== 'undefined' ?
-                types.sections[sect.name].nodes : {};
-            subSubnodes = buildSubMenu(sect.nodes, nodesTypes, secType, aclResources, moduleName);
-            if (menus[menu].length === 1 && subSubnodes.length > 0) {
-              subnodes = subSubnodes;
-              break;
-            } else {
-              subnodes.push({
-                id: sect.name,
-                nodes: subSubnodes,
-                hint: sect.caption,
-                caption: sect.caption,
-                url: null,
-                itemType: sect.itemType,
-                orderNumber: sect.orderNumber,
-                type: typeParser(secType)
-              });
-            }
-          }
-        }
+  if (!menus.hasOwnProperty(position) || menus[position].length === 0) {
+    let sections = scope.metaRepo.getNavigationSections();
+    for (let s in sections) {
+      if (sections.hasOwnProperty(s)) {
+        result.push(processingSection(sections[s], types, aclResources, moduleName));
       }
-      if (Object.keys(namespaces).length === 1 && subnodes.length > 0) {
-        return subnodes;
-      } else {
-        if (subnodes.length > 0) {
-          result.push({
-            id: nm,
-            nodes: subnodes,
-            hint: namespaces[nm],
-            caption: namespaces[nm],
-            url: '',
-            type: typeParser(nsType)
-          });
-        }
+    }
+  } else {
+    for (let i = 0; i < menus[position].length; i++) {
+      let section = scope.metaRepo.getNavigationSection(menus[position][i]);
+      if (section) {
+        result.push(processingSection(section, types, aclResources, moduleName));
       }
     }
   }
-  orderMenuSections(result);
+
+  orderMenu(result);
   return result;
 };
 
-function buildSubMenu(nodes, types, defaultType, aclResources, moduleName) {
-  var result, i, subnodes, url, external;
-  result = [];
-  for (i in nodes) {
+function processingSection(section, types, aclResources, moduleName) {
+  let secType = types.sections && types.sections.hasOwnProperty(section.name) && types.sections[section.name].type ?
+    types.sections[section.name].type : types.type ? types.type : menuTypes.TREE;
+  let nodesTypes = types.sections && types.sections.hasOwnProperty(section.name) && types.sections[section.name].nodes ?
+    types.sections[section.name].nodes : {};
+  return {
+    id: section.name,
+    nodes: processingNodes(section.nodes, nodesTypes, secType, aclResources, moduleName),
+    hint: section.caption,
+    caption: section.caption,
+    url: null,
+    itemType: section.itemType,
+    orderNumber: section.orderNumber,
+    type: typeParser(secType)
+  };
+}
+
+function processingNodes(nodes, types, defaultType, aclResources, moduleName) {
+  let result = [];
+  for (let i in nodes) {
     if (nodes.hasOwnProperty(i)) {
-      var nodeType = types.hasOwnProperty(i) && typeof types[i].type !== 'undefined' ? types[i].type : defaultType;
-      subnodes = buildSubMenu(nodes[i].children,
-        types.hasOwnProperty(i) && typeof types[i].nodes !== 'undefined' ? types[i].nodes : {},
+      let nodeType = types.hasOwnProperty(i) && types[i].type ? types[i].type : defaultType;
+      let subnodes = processingNodes(nodes[i].children,
+        types.hasOwnProperty(i) && types[i].nodes ? types[i].nodes : {},
         nodeType,
         aclResources,
         moduleName);
       if (Object.keys(nodes).length === 1 && subnodes.length > 0) {
         return subnodes;
       } else {
-        var aclId = nodeAclId(nodes[i]);
-        external = false;
+        let aclId = nodeAclId(nodes[i]);
+        let external = false;
+        let url;
         switch (nodes[i].type) {
-          case 0: {url = '';}break;
-          case 3: {
+          case NodeTypes.GROUP: {url = '';}break;
+          case NodeTypes.HYPERLINK: {
             url = nodes[i].url;
             external = nodes[i].external || false;
           }break;
@@ -201,14 +143,4 @@ function orderMenu(nodes) {
     b = b.orderNumber;
     return a === undefined ? b === undefined ? 0 : 1 : b === undefined ? -1 : a - b;
   });
-}
-
-function orderMenuSections(nodes) {
-  var i, subs;
-  for (i = 0; i < nodes.length; ++i) {
-    subs = nodes[i].nodes;
-    if (subs instanceof Array && subs.length && subs[0].itemType === 'section') {
-      orderMenu(subs);
-    }
-  }
 }
