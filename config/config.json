@@ -89,7 +89,8 @@
           "tempBlockInterval": "[[auth.tempBlockInterval]]",
           "blockPeriod": "[[auth.blockPeriod]]",
           "checkSignInAccess": "[[auth.checkSignInAccess]]",
-          "checkUrlAccess": "[[auth.checkUrlAccess]]"
+          "checkUrlAccess": "[[auth.checkUrlAccess]]",
+          "goHome": "[[auth.goHome]]"
         }
       },
       "calculator": {

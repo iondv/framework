@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 80, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -717,8 +717,9 @@ function MongoDs(config) {
     return {$project: tmp};
   }
 
-  function joinId(join) {
-    return join.table + ':' + join.left + ':' + join.right + ':' + (join.many ? 'm' : '1');
+  function joinId(join, context) {
+    return (context ? context + ':' : '') + join.table + ':' + join.left + ':' +
+      join.right + ':' + (join.many ? 'm' : '1');
   }
 
   /**
@@ -760,9 +761,11 @@ function MongoDs(config) {
         if (!join.onlySize || Array.isArray(join.join)) {
           result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
         }
+        /*
         if (Array.isArray(join.join)) {
           processJoins(attributes, join.join, result, join.alias);
         }
+        */
       });
     }
   }
@@ -778,7 +781,7 @@ function MongoDs(config) {
         join.alias = '__j' + counter.v;
         counter.v++;
       }
-      var jid = joinId(join);
+      var jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
         joinedSources[join.alias] = join;
@@ -797,12 +800,12 @@ function MongoDs(config) {
    * @param {{v:Number}} counter
    * @returns {*}
    */
-  function producePrefilter(attributes, find, joins, explicitJoins, counter) {
+  function producePrefilter(attributes, find, joins, explicitJoins, counter, prefix) {
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
+        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
         if (tmp && tmp !== IGNORE) {
           result.push(tmp);
         }
@@ -811,7 +814,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object') {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
@@ -836,13 +839,14 @@ function MongoDs(config) {
             }
 
             if (find[name].filter) {
-              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
+              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter, j.alias);
             }
             result = true;
             break;
           } else {
+            let jalias = prefix;
             if (name.indexOf('.') > 0) {
-              let jalias = name.substr(0, name.indexOf('.'));
+              jalias = name.substr(0, name.indexOf('.'));
               let i = 0;
               for (i = 0; i < joins.length; i++) {
                 if (joins[i].alias === jalias) {
@@ -856,7 +860,7 @@ function MongoDs(config) {
               }
             }
 
-            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter, jalias);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
@@ -928,7 +932,7 @@ function MongoDs(config) {
   }
 
   function joinPostFilter(join, explicitJoins, prefix, not) {
-    var jid = joinId(join);
+    var jid = joinId(join, prefix);
     var j = explicitJoins[jid];
 
     if (prefix) {
@@ -1101,11 +1105,11 @@ function MongoDs(config) {
                       ) {
                         result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                       } else {
-                        result.push(IGNORE);
+                        //result.push(IGNORE);
                       }
                     }
                   } else {
-                    result.push(IGNORE);
+                    //result.push(IGNORE);
                   }
                 }
               }
