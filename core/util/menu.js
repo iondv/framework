@@ -59,7 +59,6 @@ function MenuBuilder(moduleName, scope) {
   let navigation = scope.settings.get(moduleName + '.navigation') || {};
   this.namespaces = navigation.namespaces || {};
   this.menuSettings = navigation.menus || {};
-  this.skipSinglesSubnodes = true;
 }
 
 /**
