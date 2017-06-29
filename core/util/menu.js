@@ -3,6 +3,8 @@
  */
 'use strict';
 
+const GLOBAL_NS = '__global';
+
 const NodeTypes = {
   GROUP: 0,
   CLASS: 1,
@@ -49,12 +51,10 @@ module.exports.orderMenu = orderMenu;
  * @param {{}} scope
  * @param {SettingsRepository} scope.settings
  * @param {MetaRepository} scope.metaRepo
- * @param {String[]} [aclResources]
  */
-function MenuBuilder(moduleName, scope, aclResources) {
-  this.GLOBAL_NS = '__global';
+function MenuBuilder(moduleName, scope) {
   this.moduleName = moduleName;
-  this.aclResources = aclResources;
+  this.aclResources = [];
   this.metaRepo = scope.metaRepo;
   let navigation = scope.settings.get(moduleName + '.navigation') || {};
   this.namespaces = navigation.namespaces || {};
@@ -71,22 +71,22 @@ MenuBuilder.prototype.buildMenu = function (position) {
   let result = [];
   let types = this.menuSettings.types && this.menuSettings.types.hasOwnProperty(position) ?
     this.menuSettings.types[position] : null;
-  if (!this.namespaces.hasOwnProperty(this.GLOBAL_NS)) {
-    this.namespaces[this.GLOBAL_NS] = '';
+  if (!this.namespaces.hasOwnProperty(GLOBAL_NS)) {
+    this.namespaces[GLOBAL_NS] = '';
   }
 
   for (let nm in this.namespaces) {
     if (this.namespaces.hasOwnProperty(nm)) {
       let nmNode = this.processingNamespace(nm, this.namespaces[nm], types, this.menuSettings[position]);
-      if (nmNode.nodes.length > 0) {
+      if (nmNode.nodes.length) {
+        if (nmNode.nodes.length === 1) {
+          nmNode.nodes = nmNode.nodes[0].nodes;
+        }
         result.push(nmNode);
       }
     }
   }
 
-  if (result.length === 1) {
-    return result[0].nodes;
-  }
   return result;
 };
 
@@ -104,25 +104,27 @@ MenuBuilder.prototype.processingNamespace = function (namespace, namespaceTitle,
 
   if (menu && menu.length > 0) {
     for (let i = 0; i < menu.length; i++) {
-      let section = this.metaRepo.getNavigationSection(menu[i], namespace !== this.GLOBAL_NS ? namespace : '');
+      let section = this.metaRepo.getNavigationSection(menu[i], namespace !== GLOBAL_NS ? namespace : '');
       if (section) {
-        subnodes.push(this.processingSection(section, types, nsType));
+        let secNode = this.processingSection(section, types, nsType);
+        if (secNode.nodes.length) {
+          subnodes.push(secNode);
+        }
       }
     }
   } else {
-    let sections = this.metaRepo.getNavigationSections(namespace !== this.GLOBAL_NS ? namespace : '');
+    let sections = this.metaRepo.getNavigationSections(namespace !== GLOBAL_NS ? namespace : '');
     for (let s in sections) {
       if (sections.hasOwnProperty(s)) {
-        subnodes.push(this.processingSection(sections[s], types, nsType));
+        let secNode = this.processingSection(sections[s], types, nsType);
+        if (secNode.nodes.length) {
+          subnodes.push(secNode);
+        }
       }
     }
   }
 
-  if (this.skipSinglesSubnodes && subnodes.length === 1) {
-    subnodes = subnodes[0].nodes;
-  } else {
-    orderMenu(subnodes);
-  }
+  orderMenu(subnodes);
 
   return {
     id: namespace,
@@ -155,8 +157,8 @@ MenuBuilder.prototype.processingNodes = function (nodes, types, defaultType) {
   let result = [];
   for (let i in nodes) {
     if (nodes.hasOwnProperty(i)) {
-      let node = this.processingNode(nodes, types, defaultType);
-      if (node) {
+      let node = this.processingNode(nodes[i], types, defaultType);
+      if (node && !(nodes[i].type === NodeTypes.GROUP && !node.nodes.length)) {
         if (Object.keys(nodes).length === 1 && node.nodes.length > 0) {
           return node.nodes;
         } else {
@@ -183,7 +185,7 @@ MenuBuilder.prototype.processingNode = function (node, types, defaultType) {
     } break;
     case NodeTypes.HYPERLINK: {
       url = node.url;
-      external = node.external || false;
+      external = true;
     } break;
     default: {
       url = '/' + this.moduleName + '/' + (node.namespace ? node.namespace + '@' : '') + node.code;
