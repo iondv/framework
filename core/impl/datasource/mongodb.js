@@ -770,7 +770,7 @@ function MongoDs(config) {
     }
   }
 
-  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter) {
+  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter, joins) {
     counter = counter || {v: 0};
     return function (join) {
       leftPrefix = leftPrefix || '';
@@ -782,12 +782,18 @@ function MongoDs(config) {
         counter.v++;
       }
       var jid = joinId(join, leftPrefix);
+      if (leftPrefix && join.left.substring(0, join.left.indexOf('.')) !== leftPrefix) {
+        join.left = leftPrefix + '.' + join.left;
+      }
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
+        if (Array.isArray(joins)) {
+          joins.push(join);
+        }
         joinedSources[join.alias] = join;
       }
       if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter));
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter, joins));
       }
     };
   }
@@ -1195,8 +1201,8 @@ function MongoDs(config) {
 
     try {
       if (Array.isArray(options.joins)) {
-        joins = options.joins;
-        options.joins.forEach(processJoin(attributes, joinedSources, lookups));
+        joins = [];
+        options.joins.forEach(processJoin(attributes, joinedSources, lookups, null, null, joins));
       }
 
       if (options.fields) {
