@@ -694,6 +694,9 @@ function MongoDs(config) {
 
   function addPrefix(nm, prefix, sep) {
     sep = sep || '.';
+    if (nm.substr(0, nm.indexOf('.')) === prefix) {
+      return nm;
+    }
     return (prefix ? prefix + sep : '') + nm;
   }
 
@@ -781,10 +784,10 @@ function MongoDs(config) {
         join.alias = '__j' + counter.v;
         counter.v++;
       }
-      var jid = joinId(join, leftPrefix);
-      if (leftPrefix && join.left.substring(0, join.left.indexOf('.')) !== leftPrefix) {
+      if (leftPrefix && (join.left.indexOf('.') < 0 || join.left.substr(0, join.left.indexOf('.')) !== leftPrefix)) {
         join.left = leftPrefix + '.' + join.left;
       }
+      let jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
         if (Array.isArray(joins)) {
