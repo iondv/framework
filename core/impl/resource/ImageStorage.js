@@ -248,6 +248,10 @@ function ImageStorage(options) {
   this._share = function (id) {
     return options.fileStorage.share(id);
   };
+
+  this._currentShare = function (id) {
+    return options.fileStorage.currentShare(id);
+  };
 }
 
 ImageStorage.prototype = new ResourceStorage();

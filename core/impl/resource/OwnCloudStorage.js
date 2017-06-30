@@ -528,6 +528,16 @@ function OwnCloudStorage(config) {
     });
   };
 
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this._currentShare = function (id, access) {
+    return Promise.resolve(null);
+  };
+
 }
 
 OwnCloudStorage.prototype = new ResourceStorage();

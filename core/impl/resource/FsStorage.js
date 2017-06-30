@@ -480,6 +480,11 @@ function FsStorage(options) {
       resolve(_options.urlBase + '/' + id);
     });
   };
+
+  this._currentShare  = function (id) {
+    return this._share(id);
+  };
+
 }
 
 FsStorage.prototype = new ResourceStorage();
