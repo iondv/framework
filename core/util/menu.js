@@ -111,16 +111,6 @@ MenuBuilder.prototype.processingNamespace = function (namespace, namespaceTitle,
         }
       }
     }
-  } else {
-    let sections = this.metaRepo.getNavigationSections(namespace !== GLOBAL_NS ? namespace : '');
-    for (let s in sections) {
-      if (sections.hasOwnProperty(s)) {
-        let secNode = this.processingSection(sections[s], types, nsType);
-        if (secNode.nodes.length) {
-          subnodes.push(secNode);
-        }
-      }
-    }
   }
 
   orderMenu(subnodes);
