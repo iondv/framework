@@ -157,8 +157,8 @@ function IonDataRepository(options) {
   function getMeta(obj) {
     if (typeof obj === 'string') {
       return _this.meta.getMeta(obj);
-    } else if (typeof obj === 'object' && obj.constructor.name === 'Item') {
-      return obj.classMeta;
+    } else if (obj instanceof Item) {
+      return obj.getMetaClass();
     }
     return null;
   }
@@ -715,11 +715,11 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = getMeta(obj);
-    var rcm = getRootType(cm);
+    let cm = getMeta(obj);
+    let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
     var props = cm.getPropertyMetas();
-    for (var i = 0; i < props.length; i++) {
+    for (let i = 0; i < props.length; i++) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = addFilterByItem(options.filter, obj);
@@ -753,9 +753,11 @@ function IonDataRepository(options) {
     if (!options) {
       options = {};
     }
-    var cm = getMeta(className);
-    var rcm = getRootType(cm);
+    let cm = getMeta(className);
+    let rcm = getRootType(cm);
+
     options.filter = addDiscriminatorFilter(options.filter, cm);
+
     return prepareFilterValues(cm, options.filter).
     then(function (filter) {
         options.filter = filter;
