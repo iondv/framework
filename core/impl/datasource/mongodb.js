@@ -694,6 +694,9 @@ function MongoDs(config) {
 
   function addPrefix(nm, prefix, sep) {
     sep = sep || '.';
+    if (nm.substr(0, nm.indexOf('.')) === prefix) {
+      return nm;
+    }
     return (prefix ? prefix + sep : '') + nm;
   }
 
@@ -770,7 +773,7 @@ function MongoDs(config) {
     }
   }
 
-  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter) {
+  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter, joins) {
     counter = counter || {v: 0};
     return function (join) {
       leftPrefix = leftPrefix || '';
@@ -781,13 +784,19 @@ function MongoDs(config) {
         join.alias = '__j' + counter.v;
         counter.v++;
       }
-      var jid = joinId(join, leftPrefix);
+      if (leftPrefix && (join.left.indexOf('.') < 0 || join.left.substr(0, join.left.indexOf('.')) !== leftPrefix)) {
+        join.left = leftPrefix + '.' + join.left;
+      }
+      let jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
+        if (Array.isArray(joins)) {
+          joins.push(join);
+        }
         joinedSources[join.alias] = join;
       }
       if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter));
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter, joins));
       }
     };
   }
@@ -1195,8 +1204,8 @@ function MongoDs(config) {
 
     try {
       if (Array.isArray(options.joins)) {
-        joins = options.joins;
-        options.joins.forEach(processJoin(attributes, joinedSources, lookups));
+        joins = [];
+        options.joins.forEach(processJoin(attributes, joinedSources, lookups, null, null, joins));
       }
 
       if (options.fields) {
