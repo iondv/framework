@@ -18,22 +18,24 @@ const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAcces
 // jshint maxstatements: 30, maxcomplexity: 20
 
 function OwnCloudStorage(config) {
+  console.log('OwncloudStorage started');
 
   if (!config.url || !config.login || !config.password) {
     throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
   }
 
-  var _this = this;
+  let _this = this;
 
-  var ownCloudUrl = url.parse(config.url, true);
+  let urlBase = config.urlBase  || '';
+  let ownCloudUrl = url.parse(config.url, true);
 
-  var urlTypes = {
+  let urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
   };
 
-  var resourceType = {
+  let resourceType = {
     FILE: 'file',
     DIR: 'dir'
   };
@@ -82,7 +84,7 @@ function OwnCloudStorage(config) {
    */
   this._accept = function (data, directory, options) {
     return new Promise(function (resolve,reject) {
-
+      console.log('accepting');
       options = options || {};
       var d,fn,reader;
 
@@ -99,7 +101,7 @@ function OwnCloudStorage(config) {
       }
 
       if (!d) {
-        throw new Error('Переданы данные недопустимого типа!');
+        return reject(new Error('Переданы данные недопустимого типа!'));
       }
 
       if (typeof d.pipe === 'function') {
@@ -121,7 +123,7 @@ function OwnCloudStorage(config) {
       };
 
       reader.pipe(request.put(reqParams, function (err, res, body) {
-        if (!err && res.statusCode === 201) {
+        if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
           resolve(new StoredFile(
             id,
             reqParams.uri,
@@ -165,24 +167,71 @@ function OwnCloudStorage(config) {
   this._fetch = function (ids) {
     return new Promise(function (resolve,reject) {
       var result = [];
-      for (var i = 0; i < ids.length; i++) {
-        var parts = ids.split('/');
-        result.push(new StoredFile(
-          ids[i],
-          urlResolver(config.url, urlTypes.WEBDAV, ids[i]),
-          {name: parts[parts.length - 1]},
-          streamGetter(ids[i])
-        ));
+      if (Array.isArray(ids)) {
+        ids.forEach(id => {
+          var parts = id.split('/');
+          result.push(new StoredFile(
+            id,
+            urlResolver(config.url, urlTypes.WEBDAV, id),
+            {name: parts[parts.length - 1]},
+            streamGetter(id)
+          ));
+        });
       }
       resolve(result);
     });
   };
 
+  function respondFile(req, res) {
+    return function (file) {
+      if (file && file.stream) {
+        res.status(200);
+        res.set('Content-Disposition',
+          (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+          '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+        res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
+        if (file.options.size) {
+          res.set('Content-Length', file.options.size);
+        }
+        if (file.options.encoding) {
+          res.set('Content-Encoding', file.options.encoding);
+        }
+        file.stream.pipe(res);
+      } else {
+        res.status(404).send('File not found!');
+      }
+    };
+  }
+
   /**
    * @returns {Function}
    */
   this._middle = function () {
-    return function () {};
+    return function (req, res, next) {
+      let basePath = url.parse(urlBase).path;
+      if (req.path.indexOf(basePath) !== 0) {
+        return next();
+      }
+
+      let fileId = req.path.replace(basePath + '/', '');
+      if (!fileId) {
+        return next();
+      }
+
+      _this.fetch([fileId])
+        .then(files => {
+          if (!files[0]) {
+            return res.status(404).send('File not found!');
+          }
+          return files[0].getContents()
+            .then(respondFile(req, res))
+            .catch(err => res.status(404).send('File not found!'));
+        })
+        .catch(err => {
+          res.status(500).send(err.message);
+        });
+
+    };
   };
 
   /**

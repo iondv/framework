@@ -485,6 +485,10 @@ function FsStorage(options) {
     return this._share(id);
   };
 
+  this._deleteShare = function (share) {
+    return Promise.resolve(true);
+  };
+
 }
 
 FsStorage.prototype = new ResourceStorage();
