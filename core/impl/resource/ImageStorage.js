@@ -47,6 +47,7 @@ function ImageStorage(options) {
             resize(ds[thumb].width, ds[thumb].height).
             setFormat(format).
             stream(),
+            null,
             opts
           )
         );
@@ -78,10 +79,16 @@ function ImageStorage(options) {
           thumbs = createThumbnails(data.buffer, name, o);
         } else if (typeof data.path !== 'undefined') {
           thumbs = createThumbnails(data.path, name, o);
+        } else if (typeof data.stream !== 'undefined') {
+          thumbs = createThumbnails(data.stream, name, o);
         }
       } else {
         name = ops.name || cuid();
         thumbs = createThumbnails(data, name, o);
+      }
+
+      if (!thumbs) {
+        return reject(new Error('Переданные не корректные данные!'));
       }
 
       thumbs.then(function (files) {

@@ -18,7 +18,6 @@ const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAcces
 // jshint maxstatements: 30, maxcomplexity: 20
 
 function OwnCloudStorage(config) {
-  console.log('OwncloudStorage started');
 
   if (!config.url || !config.login || !config.password) {
     throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
@@ -31,7 +30,7 @@ function OwnCloudStorage(config) {
 
   let urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
-    WEBDAV: 'remote.php/webdav/',
+    WEBDAV: `remote.php/dav/files/${config.login}/`,
     OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
   };
 
@@ -84,16 +83,21 @@ function OwnCloudStorage(config) {
    */
   this._accept = function (data, directory, options) {
     return new Promise(function (resolve,reject) {
-      console.log('accepting');
       options = options || {};
       var d,fn,reader;
 
-      if (typeof data === 'object' && (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+      if (typeof data === 'object' && (
+        typeof data.buffer !== 'undefined' ||
+        typeof data.path !== 'undefined' ||
+        typeof data.stream !== 'undefined'
+      )) {
         fn = options.name || data.originalname || data.name || cuid();
         if (typeof data.buffer !== 'undefined') {
           d = data.buffer;
         } else if (typeof data.path !== 'undefined') {
           d = data.path;
+        } else if (typeof data.stream !== 'undefined') {
+          d = data.stream;
         }
       } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
         d = data;
@@ -456,7 +460,7 @@ function OwnCloudStorage(config) {
         form: {
           path: id,
           shareType: '3',
-          publicUpload: 'true',
+          // PublicUpload: 'true',
           permissions: access ? accessLevel(access) : '8'
         }
       };
@@ -474,13 +478,13 @@ function OwnCloudStorage(config) {
   };
 
   this._deleteShare = function (share) {
-    return requestShareIds(parseDirId(share))
-      .then(ids => {
+    return requestShares(parseDirId(share))
+      .then(shares => {
         let promises = [];
-        ids.forEach(id => {
+        shares.forEach(share => {
           promises.push(new Promise(function (resolve, reject) {
             let reqObject = {
-              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), id),
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id),
               headers: {
                 'OCS-APIRequest': true
               },
@@ -503,12 +507,15 @@ function OwnCloudStorage(config) {
       .then(result => true);
   };
 
-  function requestShareIds(id) {
+  function requestShares(id) {
     return new Promise(function (resolve, reject) {
-      var reqObject = {
+      let reqObject = {
         uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
         qs: {
           path: id
+        },
+        headers: {
+          'OCS-APIRequest': true
         },
         auth: {
           user: config.login,
@@ -519,20 +526,25 @@ function OwnCloudStorage(config) {
         if (err) {
           return reject(err);
         }
-        var ids = [];
-        var dom = new Dom();
-        var doc = dom.parseFromString(body);
-        var elements = xpath.select(
-          '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
-          doc
-        );
-        for (var i = 0; i < elements.length; i++) {
-          var shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
-          if (shareId) {
-            ids.push(shareId);
+        try {
+          let result = [];
+          let dom = new Dom();
+          let doc = dom.parseFromString(body);
+          let elements = xpath.select(
+            '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
+            doc
+          );
+          for (var i = 0; i < elements.length; i++) {
+            let shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
+            let shareUrl = xpath.select('*[local-name()="url"]', elements[i])[0].firstChild.nodeValue;
+            if (shareId) {
+              result.push({id: shareId, url: shareUrl});
+            }
           }
+          resolve(result);
+        } catch (err) {
+          reject(err);
         }
-        resolve(ids);
       });
     });
   }
@@ -546,12 +558,12 @@ function OwnCloudStorage(config) {
   this._setShareAccess = function (id, access) {
     id = parseDirId(id);
     return new Promise(function (resolve, reject) {
-      requestShareIds(id).then(function (ids) {
+      requestShares(id).then((shares) => {
         var promises = [];
-        ids.forEach(function (shareId) {
+        shares.forEach((share) => {
           promises.push(new Promise(function (resolve, reject) {
             var reqObject = {
-              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId),
+              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id),
               headers: {
                 'OCS-APIRequest': true
               },
@@ -584,7 +596,13 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._currentShare = function (id, access) {
-    return Promise.resolve(null);
+    return requestShares(parseDirId(id))
+      .then(shares => {
+        if (shares[0]) {
+          return shares[0].url;
+        }
+        return null;
+      });
   };
 
 }
