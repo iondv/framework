@@ -1,254 +1,254 @@
 {
-  "log_level": "notice",
-  "parametrised": true,
-  "port": "[[server.ports]]",
-  "defaultModule":"[[module.default]]",
-  "skipModules": "[[module.skip]]",
-  "requestSizeLimit": "[[server.requestSizeLimit]]",
-  "theme": "[[ui.theme]]",
-  "log": {
-    "logDestinations": ["./log"]
-  },
-  "di" : {
-    "rtEvents": {
-      "module": "core/RuntimeEvents",
-      "options": {
-        "target": "ion://server",
-        "stopEvent": "close"
-      }
+    "log_level": "notice",
+    "parametrised": true,
+    "port": "[[server.ports]]",
+    "defaultModule":"[[module.default]]",
+    "skipModules": "[[module.skip]]",
+    "requestSizeLimit": "[[server.requestSizeLimit]]",
+    "theme": "[[ui.theme]]",
+    "log": {
+      "logDestinations": ["console", "./log"]
     },
-    "dataSources": {
-      "module": "core/datasources",
-      "initMethod": "connect",
-      "initLevel": 0,
-      "options": {
-        "logger": "ion://sysLog",
-        "runtimeEvents": "ion://rtEvents",
-        "sources": [
-          {
-            "name":"Db",
-            "module":"core/impl/datasource/mongodb",
-            "options": {
-              "logger": "ion://sysLog",
-              "uri": "[[db.uri]]",
+    "di" : {
+      "rtEvents": {
+        "module": "core/RuntimeEvents",
+        "options": {
+          "target": "ion://server",
+          "stopEvent": "close"
+        }
+      },
+      "dataSources": {
+        "module": "core/datasources",
+        "initMethod": "connect",
+        "initLevel": 0,
+        "options": {
+          "logger": "ion://sysLog",
+          "runtimeEvents": "ion://rtEvents",
+          "sources": [
+            {
+              "name":"Db",
+              "module":"core/impl/datasource/mongodb",
               "options": {
-                "keepAlive": 1,
-                "connectTimeoutMS": "[[db.connectTimeOut]]",
-                "socketTimeoutMS": "[[db.operTimeOut]]"
-              },
-              "connectionLimit": 10,
-              "user": "[[db.user]]",
-              "password": "[[db.pwd]]"
+                "logger": "ion://sysLog",
+                "uri": "[[db.uri]]",
+                "options": {
+                  "keepAlive": 1,
+                  "connectTimeoutMS": "[[db.connectTimeOut]]",
+                  "socketTimeoutMS": "[[db.operTimeOut]]"
+                },
+                "connectionLimit": 10,
+                "user": "[[db.user]]",
+                "password": "[[db.pwd]]"
+              }
+            }
+          ]
+        }
+      },
+      "sessionHandler": {
+        "module": "lib/session",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
+          "dataSource": "ion://Db",
+          "session": {
+            "secret": "ion:demo:secret",
+            "resave": false,
+            "saveUninitialized": true
+          }
+        }
+      },
+      "settings": {
+        "module": "core/impl/SettingsRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
+      "auth": {
+        "module": "lib/auth",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "app": "ion://application",
+          "logger": "ion://sysLog",
+          "dataSource": "ion://Db",
+          "denyTopLevel": "[[auth.denyTop]]",
+          "authCallbacks": ["[[auth.callback]]"],
+          "publicRegistration": "[[auth.registration]]",
+          "exclude": "[[auth.exclude]]",
+          "acl": "ion://[[auth.aclProvider]]",
+          "inactiveTimeout": "[[auth.inactivityTimeout]]",
+          "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinLength": "[[auth.passwordMinLength]]",
+          "attemptTimeOut": "[[auth.attemptTimeOut]]",
+          "attemptLimit": "[[auth.attemptLimit]]",
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
+          "tempBlockLimit": "[[auth.tempBlockLimit]]",
+          "tempBlockInterval": "[[auth.tempBlockInterval]]",
+          "blockPeriod": "[[auth.blockPeriod]]",
+          "checkSignInAccess": "[[auth.checkSignInAccess]]",
+          "checkUrlAccess": "[[auth.checkUrlAccess]]",
+          "goHome": "[[auth.goHome]]"
+        }
+      },
+      "calculator": {
+        "module": "core/impl/Calculator",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataRepo": "dataRepo"
+        }
+      },
+      "metaRepo": {
+        "module": "core/impl/meta/DsMetaRepository",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "dataSource": "ion://Db",
+          "calc": "ion://calculator",
+          "sync": {
+            "name": "dbSync",
+            "module": "core/impl/meta/mongo/dbSync",
+            "options": {
+              "dataSource": "ion://Db",
+              "log": "ion://sysLog"
             }
           }
-        ]
-      }
-    },
-    "sessionHandler": {
-      "module": "lib/session",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "app": "ion://application",
-        "dataSource": "ion://Db",
-        "session": {
-          "secret": "ion:demo:secret",
-          "resave": false,
-          "saveUninitialized": true
         }
-      }
-    },
-    "settings": {
-      "module": "core/impl/SettingsRepository",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "dataSource": "ion://Db"
-      }
-    },
-    "auth": {
-      "module": "lib/auth",
-      "initMethod": "init",
-      "initLevel": 2,
-      "options": {
-        "app": "ion://application",
-        "logger": "ion://sysLog",
-        "dataSource": "ion://Db",
-        "denyTopLevel": "[[auth.denyTop]]",
-        "authCallbacks": ["[[auth.callback]]"],
-        "publicRegistration": "[[auth.registration]]",
-        "exclude": "[[auth.exclude]]",
-        "acl": "ion://[[auth.aclProvider]]",
-        "inactiveTimeout": "[[auth.inactivityTimeout]]",
-        "passwordLifetime": "[[auth.passwordLifeTime]]",
-        "passwordMinLength": "[[auth.passwordMinLength]]",
-        "attemptTimeOut": "[[auth.attemptTimeOut]]",
-        "attemptLimit": "[[auth.attemptLimit]]",
-        "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
-        "tempBlockLimit": "[[auth.tempBlockLimit]]",
-        "tempBlockInterval": "[[auth.tempBlockInterval]]",
-        "blockPeriod": "[[auth.blockPeriod]]",
-        "checkSignInAccess": "[[auth.checkSignInAccess]]",
-        "checkUrlAccess": "[[auth.checkUrlAccess]]",
-        "goHome": "[[auth.goHome]]"
-      }
-    },
-    "calculator": {
-      "module": "core/impl/Calculator",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "dataRepo": "dataRepo"
-      }
-    },
-    "metaRepo": {
-      "module": "core/impl/meta/DsMetaRepository",
-      "initMethod": "init",
-      "initLevel": 2,
-      "options": {
-        "dataSource": "ion://Db",
-        "calc": "ion://calculator",
-        "sync": {
-          "name": "dbSync",
-          "module": "core/impl/meta/mongo/dbSync",
-          "options": {
-            "dataSource": "ion://Db",
-            "log": "ion://sysLog"
+      },
+      "fileStorage": {
+        "module": "core/impl/resource/FsStorage",
+        "initMethod":"init",
+        "initLevel": 1,
+        "options": {
+          "storageBase": "[[fs.storageRoot]]",
+          "urlBase": "[[fs.urlBase]]",
+          "dataSource": "ion://Db"
+        }
+      },
+      "imageStorage": {
+        "module": "core/impl/resource/ImageStorage",
+        "options": {
+          "fileStorage": "ion://fileStorage",
+          "thumbnails": {
+            "tiny": {
+              "width": 50,
+              "height": 50
+            },
+            "small": {
+              "width": 100,
+              "height": 100
+            },
+            "medium": {
+              "width": 300,
+              "height": 300
+            },
+            "preview": {
+              "width": 500,
+              "height": 500
+            }
           }
         }
-      }
-    },
-    "fileStorage": {
-      "module": "core/impl/resource/FsStorage",
-      "initMethod":"init",
-      "initLevel": 1,
-      "options": {
-        "storageBase": "[[fs.storageRoot]]",
-        "urlBase": "[[fs.urlBase]]",
-        "dataSource": "ion://Db"
-      }
-    },
-    "imageStorage": {
-      "module": "core/impl/resource/ImageStorage",
-      "options": {
-        "fileStorage": "ion://fileStorage",
-        "thumbnails": {
-          "tiny": {
-            "width": 50,
-            "height": 50
-          },
-          "small": {
-            "width": 100,
-            "height": 100
-          },
-          "medium": {
-            "width": 300,
-            "height": 300
-          },
-          "preview": {
-            "width": 500,
-            "height": 500
-          }
+      },
+      "keyProv": {
+        "name": "keyProvider",
+        "module": "core/impl/meta/keyProvider",
+        "options": {
+          "metaRepo": "ion://metaRepo"
         }
-      }
-    },
-    "keyProv": {
-      "name": "keyProvider",
-      "module": "core/impl/meta/keyProvider",
-      "options": {
-        "metaRepo": "ion://metaRepo"
-      }
-    },
-    "dataRepo": {
-      "module": "core/impl/datarepository/ionDataRepository",
-      "options": {
-        "dataSource": "ion://Db",
-        "metaRepository": "ion://metaRepo",
-        "fileStorage": "ion://fileStorage",
-        "imageStorage": "ion://imageStorage",
-        "log": "ion://sysLog",
-        "keyProvider": "ion://keyProv"
-      }
-    },
-    "innerCache": {
-      "module": "core/impl/cache/InnerCacheRepository",
-      "options": {}
-    },
-    "memcached": {
-      "module": "core/impl/cache/memcached/MemcachedRepository",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "enabled": "[[cache.memcached.enabled]]",
-        "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
-        "connectOptions": {
-          "maxKeySize": "[[cache.memcached.maxKeySize]]",
-          "maxExpiration": "[[cache.memcached.maxExpiration]]",
-          "maxValue": "[[cache.memcached.maxValue]]",
-          "poolSize": "[[cache.memcached.poolSize]]",
-          "algorithm": "[[cache.memcached.algorithm]]",
-          "reconnect": "[[cache.memcached.reconnect]]",
-          "retries": "[[cache.memcached.retries]]",
-          "failures": "[[cache.memcached.failures]]",
-          "retry": "[[cache.memcached.retry]]",
-          "remove": "[[cache.memcached.remove]]",
-          "keyCompression": "[[cache.memcached.keyCompression]]",
-          "idle": "[[cache.memcached.idle]]",
-          "timeout": "[[cache.memcached.timeout]]"
-        },
-        "lifetime": "[[cache.memcached.lifetime]]",
-        "reconnectTimeout": "[[cache.memcached.reconnectTimeout]]",
-        "logger": "ion://sysLog"
-      }
-    },
-    "redis": {
-      "module": "core/impl/cache/redis/RedisRepository",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "enabled": "[[cache.redis.enabled]]",
-        "host": "[[cache.redis.host]]",
-        "port": "[[cache.redis.port]]",
-        "connectOptions": {
-          "path": "[[cache.redis.path]]",
-          "url": "[[cache.redis.url]]",
-          "string_numbers": "[[cache.redis.string_numbers]]",
-          "return_buffers": "[[cache.redis.return_buffers]]",
-          "detect_buffers": "[[cache.redis.detect_buffers]]",
-          "socket_keepalive": "[[cache.redis.socket_keepalive]]",
-          "no_ready_check": "[[cache.redis.no_ready_check]]",
-          "enable_offline_queue": "[[cache.redis.enable_offline_queue]]",
-          "retry_unfulfilled_commands": "[[cache.redis.retry_unfulfilled_commands]]",
-          "password": "[[cache.redis.password]]",
-          "db": "[[cache.redis.db]]",
-          "family": "[[cache.redis.family]]",
-          "disable_resubscribing": "[[cache.redis.disable_resubscribing]]",
-          "rename_commands": "[[cache.redis.rename_commands]]",
-          "tls": "[[cache.redis.tls]]",
-          "prefix": "[[cache.redis.prefix]]",
-          "retry_strategy": {}
-        },
-        "logger": "ion://sysLog"
-      }
-    },
-    "aclProvider":{
-      "module": "core/impl/access/aclmongo",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options":{
-        "dataSource": "ion://Db"
-      }
-    },
-    "workflows": {
-      "module": "core/impl/WorkflowProvider",
-      "initMethod": "init",
-      "initLevel": 1,
-      "options": {
-        "dataSource": "ion://Db",
-        "metaRepo": "ion://metaRepo",
-        "dataRepo": "ion://dataRepo",
-        "calc": "ion://calculator"
+      },
+      "dataRepo": {
+        "module": "core/impl/datarepository/ionDataRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepository": "ion://metaRepo",
+          "fileStorage": "ion://fileStorage",
+          "imageStorage": "ion://imageStorage",
+          "log": "ion://sysLog",
+          "keyProvider": "ion://keyProv"
+        }
+      },
+      "innerCache": {
+        "module": "core/impl/cache/InnerCacheRepository",
+        "options": {}
+      },
+      "memcached": {
+        "module": "core/impl/cache/memcached/MemcachedRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.memcached.enabled]]",
+          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "connectOptions": {
+            "maxKeySize": "[[cache.memcached.maxKeySize]]",
+            "maxExpiration": "[[cache.memcached.maxExpiration]]",
+            "maxValue": "[[cache.memcached.maxValue]]",
+            "poolSize": "[[cache.memcached.poolSize]]",
+            "algorithm": "[[cache.memcached.algorithm]]",
+            "reconnect": "[[cache.memcached.reconnect]]",
+            "retries": "[[cache.memcached.retries]]",
+            "failures": "[[cache.memcached.failures]]",
+            "retry": "[[cache.memcached.retry]]",
+            "remove": "[[cache.memcached.remove]]",
+            "keyCompression": "[[cache.memcached.keyCompression]]",
+            "idle": "[[cache.memcached.idle]]",
+            "timeout": "[[cache.memcached.timeout]]"
+          },
+          "lifetime": "[[cache.memcached.lifetime]]",
+          "reconnectTimeout": "[[cache.memcached.reconnectTimeout]]",
+          "logger": "ion://sysLog"
+        }
+      },
+      "redis": {
+        "module": "core/impl/cache/redis/RedisRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "enabled": "[[cache.redis.enabled]]",
+          "host": "[[cache.redis.host]]",
+          "port": "[[cache.redis.port]]",
+          "connectOptions": {
+            "path": "[[cache.redis.path]]",
+            "url": "[[cache.redis.url]]",
+            "string_numbers": "[[cache.redis.string_numbers]]",
+            "return_buffers": "[[cache.redis.return_buffers]]",
+            "detect_buffers": "[[cache.redis.detect_buffers]]",
+            "socket_keepalive": "[[cache.redis.socket_keepalive]]",
+            "no_ready_check": "[[cache.redis.no_ready_check]]",
+            "enable_offline_queue": "[[cache.redis.enable_offline_queue]]",
+            "retry_unfulfilled_commands": "[[cache.redis.retry_unfulfilled_commands]]",
+            "password": "[[cache.redis.password]]",
+            "db": "[[cache.redis.db]]",
+            "family": "[[cache.redis.family]]",
+            "disable_resubscribing": "[[cache.redis.disable_resubscribing]]",
+            "rename_commands": "[[cache.redis.rename_commands]]",
+            "tls": "[[cache.redis.tls]]",
+            "prefix": "[[cache.redis.prefix]]",
+            "retry_strategy": {}
+          },
+          "logger": "ion://sysLog"
+        }
+      },
+      "aclProvider":{
+        "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataSource": "ion://Db"
+        }
+      },
+      "workflows": {
+        "module": "core/impl/WorkflowProvider",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db",
+          "metaRepo": "ion://metaRepo",
+          "dataRepo": "ion://dataRepo",
+          "calc": "ion://calculator"
+        }
       }
     }
-  }
 }
