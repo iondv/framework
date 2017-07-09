@@ -815,7 +815,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
-        if (tmp && tmp !== IGNORE) {
+        if (tmp) {
           result.push(tmp);
         }
       }
@@ -894,10 +894,11 @@ function MongoDs(config) {
                   }
                 }
                 if (name === '$and') {
-                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : IGNORE;
                 } else {
-                  result = result.length ? {$nor: result} : true;
+                  result = result.length ? {$nor: result} : IGNORE;
                 }
+                break;
               } else {
                 result = IGNORE;
                 break;
@@ -905,10 +906,17 @@ function MongoDs(config) {
             } else {
               if (name === '$not') {
                 if (Array.isArray(tmp)) {
-                  tmp = tmp.length ? tmp : true;
+                  let tmp2 = [];
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] !== true && tmp[i] !== IGNORE) {
+                      tmp2.push(tmp[i]);
+                    }
+                  }
+                  tmp = tmp2.length ? tmp2 : IGNORE;
                 }
-                if (tmp === true) {
-                  result = true;
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
                 } else {
                   result = {};
                   result.$nor = tmp;
