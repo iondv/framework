@@ -17,7 +17,7 @@ module.exports = function (collFunc, af) {
             if (Array.isArray(args[0])) {
               return collFunc(
                 args[0],
-                args.length > 1 ? String(args[1]) : null,
+                args.length > 1 ? (typeof args[1] === 'function' ? args[1] : String(args[1])) : null,
                 args.length > 2 && typeof args[2] === 'function' ? args[2] : null
               );
             } else if (typeof args[0] === 'string') {
