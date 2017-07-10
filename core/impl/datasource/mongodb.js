@@ -815,7 +815,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
-        if (tmp && tmp !== IGNORE) {
+        if (tmp !== null) {
           result.push(tmp);
         }
       }
@@ -894,10 +894,11 @@ function MongoDs(config) {
                   }
                 }
                 if (name === '$and') {
-                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : IGNORE;
                 } else {
-                  result = result.length ? {$nor: result} : true;
+                  result = result.length ? {$nor: result} : IGNORE;
                 }
+                break;
               } else {
                 result = IGNORE;
                 break;
@@ -905,10 +906,17 @@ function MongoDs(config) {
             } else {
               if (name === '$not') {
                 if (Array.isArray(tmp)) {
-                  tmp = tmp.length ? tmp : true;
+                  let tmp2 = [];
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] !== true && tmp[i] !== IGNORE) {
+                      tmp2.push(tmp[i]);
+                    }
+                  }
+                  tmp = tmp2.length ? tmp2 : IGNORE;
                 }
-                if (tmp === true) {
-                  result = true;
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
                 } else {
                   result = {};
                   result.$nor = tmp;
@@ -1096,10 +1104,10 @@ function MongoDs(config) {
             let nm = prefix ? addPrefix(name, prefix) : name;
             let loperand = '$' + nm;
 
-            if (typeof find[name] === 'object' && find[name]) {
+            if (typeof find[name] === 'object' && find[name] !== null) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFromRedactfilter.indexOf(oper)) {
+                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
                     if (oper === '$exists') {
                       if (find[name][oper]) {
                         result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
@@ -1107,18 +1115,8 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      let roperand = find[name][oper];
-                      if (
-                        typeof roperand === 'object' ||
-                        typeof roperand === 'string' && roperand && roperand[0] === '$'
-                      ) {
-                        result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
-                      } else {
-                        //result.push(IGNORE);
-                      }
+                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                     }
-                  } else {
-                    //result.push(IGNORE);
                   }
                 }
               }
