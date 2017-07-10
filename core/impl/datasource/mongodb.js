@@ -815,7 +815,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
-        if (tmp) {
+        if (tmp !== null) {
           result.push(tmp);
         }
       }
@@ -1104,10 +1104,10 @@ function MongoDs(config) {
             let nm = prefix ? addPrefix(name, prefix) : name;
             let loperand = '$' + nm;
 
-            if (typeof find[name] === 'object' && find[name]) {
+            if (typeof find[name] === 'object' && find[name] !== null) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFromRedactfilter.indexOf(oper)) {
+                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
                     if (oper === '$exists') {
                       if (find[name][oper]) {
                         result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
@@ -1115,18 +1115,8 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      let roperand = find[name][oper];
-                      if (
-                        typeof roperand === 'object' ||
-                        typeof roperand === 'string' && roperand && roperand[0] === '$'
-                      ) {
-                        result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
-                      } else {
-                        //result.push(IGNORE);
-                      }
+                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                     }
-                  } else {
-                    //result.push(IGNORE);
                   }
                 }
               }
