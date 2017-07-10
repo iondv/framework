@@ -75,6 +75,13 @@ function OwnCloudStorage(config) {
     };
   }
 
+  function getBasicAuthLink(uri, login, password) {
+    let link = new url.URL(uri);
+    link.username = login;
+    link.password = password;
+    return link.href;
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} directory
@@ -125,12 +132,11 @@ function OwnCloudStorage(config) {
           password: config.password
         }
       };
-
       reader.pipe(request.put(reqParams, function (err, res, body) {
         if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
           resolve(new StoredFile(
             id,
-            reqParams.uri,
+            getBasicAuthLink(reqParams.uri, config.login, config.password),
             {name: fn},
             streamGetter(id)
           ));
@@ -176,7 +182,7 @@ function OwnCloudStorage(config) {
           var parts = id.split('/');
           result.push(new StoredFile(
             id,
-            urlResolver(config.url, urlTypes.WEBDAV, id),
+            getBasicAuthLink(urlResolver(config.url, urlTypes.WEBDAV, id), config.login, config.password),
             {name: parts[parts.length - 1]},
             streamGetter(id)
           ));

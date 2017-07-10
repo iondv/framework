@@ -8,6 +8,7 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const gm = require('gm');
 const cuid = require('cuid');
 const clone = require('clone');
+const PassThrough = require('stream').PassThrough;
 
 // jshint maxcomplexity: 20
 
@@ -40,13 +41,13 @@ function ImageStorage(options) {
       if (ds.hasOwnProperty(thumb)) {
         format = ds[thumb].format || 'png';
         opts.thumbType = thumb;
-        opts.name = thumb  + '_' + name.replace(/\.\w+$/, '.' + format);
         result.push(
           options.fileStorage.accept(
-            gm(source).
-            resize(ds[thumb].width, ds[thumb].height).
-            setFormat(format).
-            stream(),
+            {name: thumb  + '_' + name.replace(/\.\w+$/, '.' + format),
+              stream: gm(source)
+              .resize(ds[thumb].width, ds[thumb].height)
+              .setFormat(format)
+              .stream()},
             null,
             opts
           )
@@ -80,7 +81,10 @@ function ImageStorage(options) {
         } else if (typeof data.path !== 'undefined') {
           thumbs = createThumbnails(data.path, name, o);
         } else if (typeof data.stream !== 'undefined') {
-          thumbs = createThumbnails(data.stream, name, o);
+          let stream = data.stream;
+          let thumbsStream = stream.pipe(new PassThrough());
+          data.stream = stream.pipe(new PassThrough());
+          thumbs = createThumbnails(thumbsStream, name, o);
         }
       } else {
         name = ops.name || cuid();
