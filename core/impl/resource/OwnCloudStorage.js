@@ -75,13 +75,6 @@ function OwnCloudStorage(config) {
     };
   }
 
-  function getBasicAuthLink(uri, login, password) {
-    let link = new url.URL(uri);
-    link.username = login;
-    link.password = password;
-    return link.href;
-  }
-
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} directory
@@ -136,7 +129,7 @@ function OwnCloudStorage(config) {
         if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
           resolve(new StoredFile(
             id,
-            getBasicAuthLink(reqParams.uri, config.login, config.password),
+            urlResolver(slashChecker(urlBase), id),
             {name: fn},
             streamGetter(id)
           ));
@@ -182,7 +175,7 @@ function OwnCloudStorage(config) {
           var parts = id.split('/');
           result.push(new StoredFile(
             id,
-            getBasicAuthLink(urlResolver(config.url, urlTypes.WEBDAV, id), config.login, config.password),
+            urlResolver(slashChecker(urlBase), id),
             {name: parts[parts.length - 1]},
             streamGetter(id)
           ));
@@ -219,7 +212,7 @@ function OwnCloudStorage(config) {
   this._middle = function () {
     return function (req, res, next) {
       let basePath = url.parse(urlBase).path;
-      if (req.path.indexOf(basePath) !== 0) {
+      if (!basePath || req.path.indexOf(basePath) !== 0) {
         return next();
       }
 
@@ -240,7 +233,6 @@ function OwnCloudStorage(config) {
         .catch(err => {
           res.status(500).send(err.message);
         });
-
     };
   };
 

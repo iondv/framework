@@ -8,7 +8,6 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const gm = require('gm');
 const cuid = require('cuid');
 const clone = require('clone');
-const PassThrough = require('stream').PassThrough;
 
 // jshint maxcomplexity: 20
 
@@ -57,6 +56,17 @@ function ImageStorage(options) {
     return Promise.all(result);
   }
 
+  function imageToBuffer(source) {
+    return new Promise (function (resolve, reject) {
+      gm(source).quality(100).toBuffer(function (err, buf) {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(buf);
+      });
+    });
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} [directory]
@@ -81,10 +91,12 @@ function ImageStorage(options) {
         } else if (typeof data.path !== 'undefined') {
           thumbs = createThumbnails(data.path, name, o);
         } else if (typeof data.stream !== 'undefined') {
-          let stream = data.stream;
-          let thumbsStream = stream.pipe(new PassThrough());
-          data.stream = stream.pipe(new PassThrough());
-          thumbs = createThumbnails(thumbsStream, name, o);
+          thumbs = imageToBuffer(data.stream)
+            .then(buffer => {
+              delete data.stream;
+              data.buffer = buffer;
+              return createThumbnails(data.buffer, name, o);
+            });
         }
       } else {
         name = ops.name || cuid();
@@ -98,7 +110,7 @@ function ImageStorage(options) {
       thumbs.then(function (files) {
         thumbnails = {};
         ops.thumbnails = {};
-        for (var i = 0; i < files.length; i++) {
+        for (let i = 0; i < files.length; i++) {
           thumbnails[files[i].options.thumbType] = files[i];
           ops.thumbnails[files[i].options.thumbType] = files[i].id;
         }
