@@ -50,6 +50,17 @@ function OwnCloudStorage(config) {
     return uri;
   }
 
+  function urlConcat(part) {
+    if (arguments.length > 1) {
+      let result = slashChecker(arguments[0]);
+      for (let i = 1; i < arguments.length; i++) {
+        result += slashChecker(encodeURI(arguments[i]));
+      }
+      return result;
+    }
+    return part;
+  }
+
   function slashChecker(path) {
     if (path && path.slice(-1) !== '/') {
       return path   + '/';
@@ -119,7 +130,7 @@ function OwnCloudStorage(config) {
 
       var id = urlResolver(slashChecker(directory) || '', fn);
       var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
+        uri: urlConcat(config.url, urlTypes.WEBDAV, id),
         auth: {
           user: config.login,
           password: config.password
