@@ -603,6 +603,9 @@ function OwnCloudStorage(config) {
       });
   };
 
+  this.fileOptionsSupport = function () {
+    return false;
+  };
 }
 
 OwnCloudStorage.prototype = new ResourceStorage();

@@ -137,6 +137,7 @@ function ResourceStorage() {
   this.setShareAccess  = function (id, access) {
     return this._setShareAccess(id, access);
   };
+
 }
 
 module.exports.ResourceStorage = ResourceStorage;
