@@ -131,6 +131,7 @@
         "module": "core/impl/resource/ImageStorage",
         "options": {
           "fileStorage": "ion://fileStorage",
+          "urlBase": "/images",
           "thumbnails": {
             "tiny": {
               "width": 50,

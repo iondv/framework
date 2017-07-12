@@ -162,6 +162,9 @@ di('app', config.di,
       if (scope.fileStorage) {
         app.use(scope.fileStorage.middle());
       }
+      if (scope.imageStorage) {
+        app.use(scope.imageStorage.middle());
+      }
     } catch (err) {
       return Promise.reject(err);
     }

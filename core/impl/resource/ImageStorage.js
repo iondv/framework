@@ -137,7 +137,10 @@ function ImageStorage(options) { // jshint ignore:line
     if (uploadThumbnails) {
       return acceptWithThumbnails(data, directory, opts);
     }
-    return options.fileStorage.accept(data, directory, opts).then(enrichThumbnails);
+    return options.fileStorage.accept(data, directory, opts).then(file => {
+      let ggg = enrichThumbnails(file);
+      return ggg;
+    });
   };
 
   /**
@@ -214,7 +217,7 @@ function ImageStorage(options) { // jshint ignore:line
   }
 
   function slashChecker(path) {
-    if (path && path.slice(0) !== '/') {
+    if (path && path.slice(0, 1) !== '/') {
       return '/' + path;
     }
     return path || '';
