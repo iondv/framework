@@ -8,6 +8,8 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const gm = require('gm');
 const cuid = require('cuid');
 const clone = require('clone');
+const url = require('url');
+const path = require('path');
 
 // jshint maxcomplexity: 20
 
@@ -28,6 +30,7 @@ function StoredImage(id, link, thumbnails, options, streamGetter) {
  * @param {{}} options
  * @param {ResourceStorage} options.fileStorage
  * @param {{}} options.thumbnails
+ * @param {{}} options.urlBase
  * @constructor
  */
 function ImageStorage(options) {
@@ -171,7 +174,6 @@ function ImageStorage(options) {
 
   function thumbsLoader(files) {
     let thumbs = [];
-
     if (Array.isArray(files)) {
       files.forEach(file => {
         if (file.options.thumbnails) {
@@ -182,16 +184,15 @@ function ImageStorage(options) {
     let tmp = files;
     return options.fileStorage.fetch(thumbs)
       .then(thumbnails => {
-        let i, thumbs, thumb;
         let thumbById = {};
         let result = [];
-        for (i = 0; i < thumbnails.length; i++) {
+        for (let i = 0; i < thumbnails.length; i++) {
           thumbById[thumbnails[i].id] = thumbnails[i];
         }
-        for (i = 0; i < tmp.length; i++) {
+        for (let i = 0; i < tmp.length; i++) {
           if (tmp[i].options.thumbnails) {
-            thumbs = {};
-            for (thumb in tmp[i].options.thumbnails) {
+            let thumbs = {};
+            for (let thumb in tmp[i].options.thumbnails) {
               if (
                 tmp[i].options.thumbnails.hasOwnProperty(thumb) &&
                 thumbById.hasOwnProperty(tmp[i].options.thumbnails[thumb])
@@ -208,6 +209,35 @@ function ImageStorage(options) {
       });
   }
 
+  function slashChecker(path) {
+    if (path && path.slice(0) !== '/') {
+      return '/' + path;
+    }
+    return path || '';
+  }
+
+  function thumbsStreamer(files) {
+    if (!Array.isArray(files)) {
+      return files;
+    }
+    let result = [];
+    files.forEach(file => {
+      let thumbs = {};
+      if (options.thumbnails) {
+        Object.keys(options.thumbnails).forEach(thumb => {
+          thumbs[thumb] = new StoredFile(
+            file.id,
+            slashChecker(`${options.urlBase}/${thumb}/${file.id}`),
+            file.options,
+            null
+          );
+        });
+      }
+      result.push(new StoredImage(file.id, file.link, thumbs, file.options));
+    });
+    return result;
+  }
+
   /**
    * @param {String[]} ids
    * @returns {Promise}
@@ -217,13 +247,89 @@ function ImageStorage(options) {
       options.fileStorage.fetch(ids)
         .then(files => {
           if (!uploadThumbnails) {
-            return null;
+            return thumbsStreamer(files);
           }
           return thumbsLoader(files);
         })
         .then(resolve)
         .catch(reject);
     });
+  };
+
+  function respondFile(req, res) {
+    return function (file) {
+      if (file && file.stream) {
+        res.status(200);
+        res.set('Content-Disposition',
+          (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+          '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+        res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
+        if (file.options.size) {
+          res.set('Content-Length', file.options.size);
+        }
+        if (file.options.encoding) {
+          res.set('Content-Encoding', file.options.encoding);
+        }
+        file.stream.pipe(res);
+      } else {
+        res.status(404).send('File not found!');
+      }
+    };
+  }
+
+  /**
+   * @returns {Function}
+   */
+  this._middle = function () {
+    return function (req, res, next) {
+      try {
+        if (uploadThumbnails) {
+          return next();
+        }
+        let basePath = url.parse(options.urlBase).path;
+        if (req.path.indexOf(basePath) !== 0) {
+          return next();
+        }
+
+        let mapping = req.path.replace(basePath + '/', '');
+        if (!mapping) {
+          return next();
+        }
+
+        let ds = options.thumbnails;
+        let mapParts = mapping.split('/');
+        let thumbType, imageId;
+        if (mapParts.length > 1) {
+          thumbType = ds && Object.keys(ds).indexOf(mapParts[0]) > -1 ? mapParts[0] : null;
+          imageId = mapParts.slice(1).join('/');
+        }
+        if (!thumbType || !imageId) {
+          return next();
+        }
+
+        options.fileStorage.fetch([imageId])
+          .then(images => {
+            if (!images[0]) {
+              throw new Error('File not found!');
+            }
+            return images[0].getContents();
+          })
+          .then(image => {
+            if (!image || !image.stream) {
+              throw new Error('File not found!');
+            }
+            let format = ds[thumbType].format || 'png';
+            let name = path.basename(imageId);
+            name = thumbType + '_' + name.replace(/\.\w+$/, '.' + format);
+            let stream = gm(image.stream).resize(ds[thumbType].width, ds[thumbType].height).setFormat(format).stream();
+            return {name, stream, options: image.options};
+          })
+          .then(respondFile(req, res))
+          .catch(err => res.status(500).send(err.message));
+      } catch (err) {
+        return next();
+      }
+    };
   };
 
   /**
