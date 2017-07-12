@@ -143,7 +143,9 @@ function ClassMeta(metaObject) {
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
+    return this.plain.semantic && this._semanticAttrs.length ?
+      this._semanticAttrs :
+      this.getAncestor() ? this.getAncestor().getSemanticAttrs() : [];
   };
 
   this.getForcedEnrichment = function () {
