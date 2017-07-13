@@ -15,7 +15,7 @@ const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStora
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 
-// jshint maxstatements: 30, maxcomplexity: 20
+// jshint maxstatements: 100, maxcomplexity: 20
 
 function OwnCloudStorage(config) {
 
@@ -165,66 +165,67 @@ function OwnCloudStorage(config) {
    */
   this._accept = function (data, directory, options) {
     return new Promise(function (resolve,reject) {
-      options = options || {};
-      var d,fn,reader;
+      try {
+        options = options || {};
+        var d,fn,reader;
 
-      if (typeof data === 'object' && (
-        typeof data.buffer !== 'undefined' ||
-        typeof data.path !== 'undefined' ||
-        typeof data.stream !== 'undefined'
-      )) {
-        fn = options.name || data.originalname || data.name || cuid();
-        if (typeof data.buffer !== 'undefined') {
-          d = data.buffer;
-        } else if (typeof data.path !== 'undefined') {
-          d = data.path;
-        } else if (typeof data.stream !== 'undefined') {
-          d = data.stream;
+        if (typeof data === 'object' && (
+          typeof data.buffer !== 'undefined' ||
+          typeof data.path !== 'undefined' ||
+          typeof data.stream !== 'undefined'
+        )) {
+          fn = options.name || data.originalname || data.name || cuid();
+          if (typeof data.buffer !== 'undefined') {
+            d = data.buffer;
+          } else if (typeof data.path !== 'undefined') {
+            d = data.path;
+          } else if (typeof data.stream !== 'undefined') {
+            d = data.stream;
+          }
+        } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+          d = data;
+          fn = options.name || cuid();
         }
-      } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
-        d = data;
-        fn = options.name || cuid();
-      }
 
-      if (!d) {
-        return reject(new Error('Переданы данные недопустимого типа!'));
-      }
+        if (!d) {
+          return reject(new Error('Переданы данные недопустимого типа!'));
+        }
 
-      if (typeof d.pipe === 'function') {
-        reader = d;
-      } else if (Buffer.isBuffer(d)) {
-        reader = new stream.PassThrough();
-        reader.end(d);
-      } else {
-        reader = fs.createReadStream(d);
-      }
+        if (typeof d.pipe === 'function') {
+          reader = d;
+        } else if (Buffer.isBuffer(d)) {
+          reader = new stream.PassThrough();
+          reader.end(d);
+        } else {
+          reader = fs.createReadStream(d);
+        }
 
-      let mkdir = directory ? mkdirp(directory) : Promise.resolve(true);
-      mkdir.then(done => {
-        let id = urlResolver(slashChecker(directory) || '', fn);
-        let reqParams = {
-          uri: urlConcat(config.url, urlTypes.WEBDAV, id),
-          auth: {
-            user: config.login,
-            password: config.password
-          }
-        };
-        reader.pipe(request.put(reqParams, function (err, res, body) {
-          if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
-            return new StoredFile(
-              id,
-              urlResolver(slashChecker(urlBase), id),
-              {name: fn},
-              streamGetter(id)
-            );
-          } else {
-            let error = err || new Error('Status code: ' + res.statusCode + '. ' + res.body);
-            throw error;
-          }
-        }));
-      })
-      .then(resolve)
-      .catch(reject);
+        let mkdir = directory ? mkdirp(directory) : Promise.resolve(true);
+        mkdir.then(done => {
+          let id = urlResolver(slashChecker(directory) || '', fn);
+          let reqParams = {
+            uri: urlConcat(config.url, urlTypes.WEBDAV, id),
+            auth: {
+              user: config.login,
+              password: config.password
+            }
+          };
+          reader.pipe(request.put(reqParams, function (err, res, body) {
+            if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
+              return resolve(new StoredFile(
+                id,
+                urlResolver(slashChecker(urlBase), id),
+                {name: fn},
+                streamGetter(id)
+              ));
+            } else {
+              return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
+            }
+          }));
+        });
+      } catch (err) {
+        reject(err);
+      }
     });
   };
 
