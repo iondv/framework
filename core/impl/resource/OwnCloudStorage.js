@@ -86,6 +86,77 @@ function OwnCloudStorage(config) {
     };
   }
 
+  function checkDir(dir) {
+    dir = parseDirId(dir);
+    return new Promise(function (resolve,reject) {
+      var reqParams = {
+        uri: urlConcat(config.url, urlTypes.WEBDAV, dir),
+        auth: {
+          user: config.login,
+          password: config.password
+        },
+        headers: {
+          Depth: '0'
+        },
+        method: 'PROPFIND'
+      };
+      request(reqParams, function (err, res, body) {
+        if (err) {
+          return reject(err);
+        }
+        if (!body) {
+          return reject(new Error(`empty response, status: ${res.statusCode}`));
+        }
+        try {
+          let dom = new Dom();
+          let doc = dom.parseFromString(body);
+          let dResponse = xpath.select(
+            '/*[local-name()="multistatus"]/*[local-name()="response"]',
+            doc
+          );
+          if (!dResponse.length) {
+            return resolve(false);
+          }
+          resolve(true);
+        } catch (err) {
+          return reject(err);
+        }
+      });
+    });
+  }
+
+  function mkdirp(path) {
+    let dir = parseDirId(path);
+    return checkDir(dir)
+      .then(exist => {
+        if (exist) {
+          return true;
+        }
+        let dirs = dir.split('/').filter(v => v);
+        let i = 0;
+        function execute() {
+          return new Promise(function (resolve, reject) {
+            if (i++ < dirs.length) {
+              let d = dirs.slice(0, i + 1).join('/');
+              return checkDir(d)
+                .then(exist => {
+                  if (exist) {
+                    return true;
+                  }
+                  return _this._createDir(d);
+                })
+                .then(done => execute())
+                .then(resolve)
+                .catch(reject);
+            } else {
+              return resolve(true);
+            }
+          });
+        }
+        return execute();
+      });
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} directory
@@ -128,26 +199,32 @@ function OwnCloudStorage(config) {
         reader = fs.createReadStream(d);
       }
 
-      var id = urlResolver(slashChecker(directory) || '', fn);
-      var reqParams = {
-        uri: urlConcat(config.url, urlTypes.WEBDAV, id),
-        auth: {
-          user: config.login,
-          password: config.password
-        }
-      };
-      reader.pipe(request.put(reqParams, function (err, res, body) {
-        if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
-          resolve(new StoredFile(
-            id,
-            urlResolver(slashChecker(urlBase), id),
-            {name: fn},
-            streamGetter(id)
-          ));
-        } else {
-          reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
-        }
-      }));
+      let mkdir = directory ? mkdirp(directory) : Promise.resolve(true);
+      mkdir.then(done => {
+        let id = urlResolver(slashChecker(directory) || '', fn);
+        let reqParams = {
+          uri: urlConcat(config.url, urlTypes.WEBDAV, id),
+          auth: {
+            user: config.login,
+            password: config.password
+          }
+        };
+        reader.pipe(request.put(reqParams, function (err, res, body) {
+          if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
+            return new StoredFile(
+              id,
+              urlResolver(slashChecker(urlBase), id),
+              {name: fn},
+              streamGetter(id)
+            );
+          } else {
+            let error = err || new Error('Status code: ' + res.statusCode + '. ' + res.body);
+            throw error;
+          }
+        }));
+      })
+      .then(resolve)
+      .catch(reject);
     });
   };
 
@@ -364,11 +441,7 @@ function OwnCloudStorage(config) {
     return new Promise(function (resolve,reject) {
       var id = slashChecker(parentDirId) + name;
       var reqParams = {
-        uri: urlResolver(
-          config.url,
-          urlTypes.WEBDAV,
-          id
-        ),
+        uri: urlConcat(config.url, urlTypes.WEBDAV, id),
         auth: {
           user: config.login,
           password: config.password
