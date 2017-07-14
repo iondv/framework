@@ -1,5 +1,5 @@
 /**
- * Created by kras on 03.11.16.
+ * Created by krasilneg on 14.07.17.
  */
 'use strict';
 const c = require('./oper');
@@ -11,7 +11,7 @@ const Item = require('core/interfaces/DataRepository').Item;
  */
 module.exports = c(
   function (col, attr, cond) {
-    let result = 0;
+    let result = '';
     if (Array.isArray(col)) {
       for (let i = 0; i < col.length; i++) {
         if (col[i] !== null) {

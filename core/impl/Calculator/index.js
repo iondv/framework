@@ -31,6 +31,7 @@ function Calculator(options) {
         funcLib.avg = aggreg.avg(dataRepo);
         funcLib.max = aggreg.max(dataRepo);
         funcLib.min = aggreg.min(dataRepo);
+        funcLib.merge = aggreg.merge(dataRepo);
         funcLib.get = data.get(dataRepo);
       }
       resolve();
