@@ -43,7 +43,7 @@ function OwnCloudStorage(config) {
     if (arguments.length > 1) {
       var result = uri;
       for (var i = 1; i < arguments.length; i++) {
-        result = url.resolve(result, encodeURI(arguments[i]));
+        result = url.resolve(result, arguments[i]);
       }
       return result;
     }
@@ -54,7 +54,7 @@ function OwnCloudStorage(config) {
     if (arguments.length > 1) {
       let result = slashChecker(arguments[0]);
       for (let i = 1; i < arguments.length; i++) {
-        result += slashChecker(encodeURI(arguments[i]));
+        result += slashChecker(arguments[i]);
       }
       return result;
     }
@@ -136,8 +136,9 @@ function OwnCloudStorage(config) {
         let i = 0;
         function execute() {
           return new Promise(function (resolve, reject) {
-            if (i++ < dirs.length) {
+            if (i < dirs.length) {
               let d = dirs.slice(0, i + 1).join('/');
+              i++;
               return checkDir(d)
                 .then(exist => {
                   if (exist) {
@@ -222,7 +223,7 @@ function OwnCloudStorage(config) {
               return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
             }
           }));
-        });
+        }).catch(reject);
       } catch (err) {
         reject(err);
       }
@@ -457,7 +458,7 @@ function OwnCloudStorage(config) {
             resolve(null);
           }
         } else {
-          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body));
         }
       });
     });

@@ -118,13 +118,13 @@
         }
       },
       "fileStorage": {
-        "module": "core/impl/resource/OwnCloudStorage",
+        "module": "core/impl/resource/FsStorage",
+        "initMethod":"init",
+        "initLevel": 1,
         "options": {
           "storageBase": "[[fs.storageRoot]]",
-          "urlBase": "[[fs.urlBase]]",          
-          "url": "https://owncloud.iondv.ru/",
-          "login": "api",
-          "password": "apiapi"
+          "urlBase": "[[fs.urlBase]]",
+          "dataSource": "ion://Db"
         }
       },
       "imageStorage": {
