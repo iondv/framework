@@ -207,6 +207,17 @@ di('app', config.di,
           }
         }
       }
+      for (let ref in moduleTitles) {
+        if (moduleTitles.hasOwnProperty(ref) && typeof moduleTitles[ref] === "object" && moduleTitles[ref].url) {
+          app.locals.sysMenu.push(
+            {
+              name: moduleTitles[ref].url,
+              description: moduleTitles[ref].title || ref,
+              external: true
+            }
+          );
+        }
+      }
     } catch (err) {
       return Promise.reject(err);
     }
