@@ -4,14 +4,16 @@
 'use strict';
 const c = require('./oper');
 const Item = require('core/interfaces/DataRepository').Item;
+const p = require('./processed');
 
 /**
  * @param {DataRepository} dataRepo
  * @returns {Function}
  */
 module.exports = c(
-  function (col, attr, cond) {
+  function (col, attr, cond, unique) {
     let result = 0;
+    let processed = p();
     if (Array.isArray(col)) {
       for (let i = 0; i < col.length; i++) {
         if (col[i] !== null) {
@@ -20,6 +22,11 @@ module.exports = c(
               continue;
             }
           }
+
+          if (unique && processed(col[i])) {
+            continue;
+          }
+
           let v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
           if (v) {
             result = result + v;

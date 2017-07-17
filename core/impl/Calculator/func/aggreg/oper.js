@@ -12,13 +12,14 @@ module.exports = function (collFunc, af) {
   return function (dataRepo) {
     return function (args) {
       return function () {
-        return calc(this, args, 3, function (args) {
+        return calc(this, args, 4, function (args) {
           if (args.length > 0) {
             if (Array.isArray(args[0])) {
               return collFunc(
                 args[0],
                 args.length > 1 ? (typeof args[1] === 'function' ? args[1] : String(args[1])) : null,
-                args.length > 2 && typeof args[2] === 'function' ? args[2] : null
+                args.length > 2 ? args[2] : null,
+                args.length > 3 ? args[3] : null
               );
             } else if (typeof args[0] === 'string') {
               let opts = args.length > 2 && typeof args[2] === 'object' ? {filter: args[2]} : {};

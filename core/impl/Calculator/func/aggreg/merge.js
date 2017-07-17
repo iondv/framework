@@ -10,7 +10,7 @@ const Item = require('core/interfaces/DataRepository').Item;
  * @returns {Function}
  */
 module.exports = c(
-  function (col, attr, cond) {
+  function (col, attr, cond, sep) {
     let result = '';
     if (Array.isArray(col)) {
       for (let i = 0; i < col.length; i++) {
@@ -22,7 +22,7 @@ module.exports = c(
           }
           let v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
           if (v) {
-            result = result + v;
+            result = result + v + (sep || ' ');
           }
         }
       }
