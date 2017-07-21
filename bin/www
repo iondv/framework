@@ -77,7 +77,7 @@ app.use(bodyParser.raw({limit: limit}));
 // Создаем HTTP сервер.
 var server = http.createServer(app);
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 25
 var onError = function (error) {
   sysLog.error(error);
   server.close(function (err) {

@@ -249,6 +249,15 @@
           "dataRepo": "ion://dataRepo",
           "calc": "ion://calculator"
         }
+      },
+      "scheduler": {
+        "module": "core/impl/Scheduler",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "settings": "ion://settings",
+          "enabled": "[[schedule.enabled]]"
+        }
       }
     }
 }
