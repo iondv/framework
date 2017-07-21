@@ -241,26 +241,26 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
-    var ctx = options.user.properties() || {};
+    let ctx = options.user.properties() || {};
     ctx.$uid = options.user.id();
     if (typeof assignment._formula === 'function') {
       ctx.$context = item;
       return Promise.resolve()
-        .then(() => assignment._formula.apply(ctx))
-        .then(function (v) {
-          updates[assignment.key] = v;
-          item.set(assignment.key, v);
-          return v;
-        });
-    } else {
-      let v = assignment.value;
-      v = v && typeof v === 'string' && v[0] === '$' ?
-        ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
-        v;
-      updates[assignment.key] = v;
-      item.set(assignment.key, v);
-      return Promise.resolve(v);
+          .then(() => assignment._formula.apply(ctx))
+          .then((v) => {
+            updates[assignment.key] = v;
+            item.set(assignment.key, v);
+            return v;
+          });
     }
+
+    let v = assignment.value;
+    v = v && typeof v === 'string' && v[0] === '$' ?
+      ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
+      v;
+    updates[assignment.key] = v;
+    item.set(assignment.key, v);
+    return Promise.resolve(v);
   }
 
   /**
@@ -331,7 +331,7 @@ function WorkflowProvider(options) {
                       calcAssignmentValue(updates, item, assignment, tOptions);
                   });
                 }
-              
+
                 if (!calculations) {
                   calculations = Promise.resolve();
                 }
