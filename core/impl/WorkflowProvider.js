@@ -331,6 +331,10 @@ function WorkflowProvider(options) {
                       calcAssignmentValue(updates, item, assignment, tOptions);
                   });
                 }
+              
+                if (!calculations) {
+                  calculations = Promise.resolve();
+                }
 
                 let context = buildContext(item, tOptions);
                 return calculations.then(function () {
