@@ -9,6 +9,7 @@
     "log": {
       "logDestinations": ["console", "./log"]
     },
+    "runJobs": "[[jobs.enabled]]",
     "di" : {
       "rtEvents": {
         "module": "core/RuntimeEvents",

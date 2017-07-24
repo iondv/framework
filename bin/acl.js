@@ -149,7 +149,7 @@ di('app', config.di,
     sysLog: sysLog
   },
   null,
-  ['application', 'rtEvents', 'sessionHandler']
+  ['application', 'rtEvents', 'sessionHandler', 'scheduler']
 ).then(
   function (scp) {
     scope = scp;

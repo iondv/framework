@@ -25,7 +25,7 @@ di('app', config.di,
     sysLog: sysLog
   },
   null,
-  ['application', 'rtEvents', 'sessionHandler', 'scheduler']
+  ['application', 'rtEvents', 'sessionHandler']
 )
   .then(
     /**

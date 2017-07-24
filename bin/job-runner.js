@@ -30,6 +30,8 @@ if (process.argv.length) {
 
 let interval;
 
+// jshint maxcomplexity: 20, maxstatements: 30
+
 function checkOddEven(conf, n) {
   if (conf !== 'even' && conf !== 'odd') {
     return false;
@@ -38,17 +40,26 @@ function checkOddEven(conf, n) {
   return mod === (conf === 'even' ?  0 : 1);
 }
 
-function checkValue(conf, dv, pdv) {
+function checkValue(conf, dv) {
   if (typeof conf === 'undefined' || conf === null) {
     return true;
   }
-  if (typeof conf === 'number') {
-    pdv = pdv || dv;
-    if (conf < 0) {
-      if (dv % -conf !== 0) {
-        return false;
+  if (Array.isArray(conf)) {
+    if (conf.length) {
+      let res = false;
+      for (let i = 0; i < conf.length; i++) {
+        if (typeof conf[i] === 'number') {
+          if (conf[i] === dv) {
+            return true;
+          }
+        } else if (checkOddEven(conf[i], dv)) {
+          return true;
+        }
       }
-    } else if (dv !== conf) {
+      return res;
+    }
+  } else if (typeof conf === 'number') {
+    if (dv % conf !== 0) {
       return false;
     }
   } else if (!checkOddEven(conf, dv)) {
@@ -59,7 +70,7 @@ function checkValue(conf, dv, pdv) {
 
 
 /**
- * @param {{month: *, week: *, day: *, weekday: *, hour: *, min: *, sec: *}} launch
+ * @param {{month: *, week: *, day: *, dayOfYear: *, weekday: *, hour: *, min: *, sec: *}} launch
  * @returns {boolean}
  */
 function checkRun(launch) {
@@ -79,7 +90,11 @@ function checkRun(launch) {
     return false;
   }
 
-  if (!checkValue(launch.day, d.date(), launch.month ? null : d.dayOfYear())) {
+  if (!checkValue(launch.dayOfYear, d.dayOfYear())) {
+    return false;
+  }
+
+  if (!checkValue(launch.day, d.date())) {
     return false;
   }
 
@@ -103,7 +118,7 @@ di('app', config.di,
     sysLog: sysLog
   },
   null,
-  ['application', 'rtEvents', 'sessionHandler', 'scheduler']
+  ['application', 'rtEvents', 'sessionHandler']
 )
   .then(
     /**
@@ -161,14 +176,13 @@ di('app', config.di,
             });
           }
         }, checkInterval);
+        sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
+        process.exit(0);
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');
       }
-    })
-  .then(()=>{
-    sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
-    process.exit(0);
-  })
+    }
+  )
   .catch((err) => {
     try {
       clearInterval(interval);

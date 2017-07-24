@@ -18,6 +18,7 @@ const di = require('core/di');
 const theme = require('lib/util/theme');
 
 const IonLogger = require('core/impl/log/IonLogger');
+const Scheduler = require('core/impl/Scheduler');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
 const errorSetup = require('core/error-setup');
@@ -78,15 +79,15 @@ app.use(bodyParser.raw({limit: limit}));
 var server = http.createServer(app);
 
 // jshint maxstatements: 50, maxcomplexity: 25
-var onError = function (error) {
+function onError(error) {
   sysLog.error(error);
   server.close(function (err) {
     process.exit(130);
   });
-};
+}
 
 function start(ports, i) {
-  return new Promise(function (resolve, reject) {
+  return new Promise((resolve, reject) => {
     server.once('error', function (err) {
       if (err.code !== 'EADDRINUSE') {
         return reject(err);
@@ -113,12 +114,11 @@ function moduleLoader(name, module) {
 }
 
 // Связываем приложение
-di('app', config.di,
-  {
-    server: server,
-    application: app,
-    sysLog: sysLog
-  })
+di('app', config.di, {
+  server: server,
+  application: app,
+  sysLog: sysLog
+})
   .then(
   // Подключаем модули
   /**
@@ -130,7 +130,13 @@ di('app', config.di,
     return di('plugins', scope.settings.get('plugins') || {}, {}, 'app')
       .then(() => {return scope;});
   })
-  .then(function (scope) {
+  .then((scope) => {
+    if (config.runJobs) {
+      scope.scheduler = new Scheduler({settings: scope.settings});
+    }
+    return scope;
+  })
+  .then((scope) => {
     var moduleTitles = {};
     try {
       // Тема оформления страниц аутентификации и регистрации
@@ -219,28 +225,36 @@ di('app', config.di,
       return Promise.reject(err);
     }
     if (moduleInitiators) {
-      return moduleInitiators.then(function () {
+      return moduleInitiators.then(() => {
         sysLog.info('Все модули загружены.');
-        return Promise.resolve();
+        return Promise.resolve(scope);
       });
     }
-    return Promise.resolve();
+    return Promise.resolve(scope);
   })
   .then(
   // Запускаем приложение
-    function () {
+    (scope) => {
       var ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
-      return start(ports, 0);
+      return start(ports, 0).then(()=>scope);
     }
   )
   .then(
-    function () {
+    (scope) => {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
+      return scope;
     })
+  .then((scope)=>{
+    if (config.runJobs) {
+      sysLog.info('Запуск заданий по расписанию');
+      return scope.scheduler.start();
+    }
+    return Promise.resolve();
+  })
   .catch(onError);
