@@ -4,7 +4,7 @@
 'use strict';
 const c = require('./oper');
 const Item = require('core/interfaces/DataRepository').Item;
-
+// jshint maxcomplexity: 20
 /**
  * @param {DataRepository} dataRepo
  * @returns {Function}
@@ -22,6 +22,9 @@ module.exports = c(
           }
           let v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
           if (v) {
+            if (Array.isArray(v)) {
+              v = v.join(sep || ' ');
+            }
             result = result + v + (sep || ' ');
           }
         }
