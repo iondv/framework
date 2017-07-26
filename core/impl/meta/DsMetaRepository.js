@@ -151,12 +151,12 @@ function DsMetaRepository(options) {
    */
   function getFromMeta(name, version, namespace) {
     try {
-      var parts = name.split('@');
+      let parts = name.split('@');
       if (parts.length > 1) {
         name = parts[0];
         namespace = parts[1];
       }
-      var ns = formNS(namespace);
+      let ns = formNS(namespace);
       if (!_this.classMeta[ns]) {
         throw new Error('Пространство имен ' + namespace + ' не найдено.');
       }
@@ -165,7 +165,7 @@ function DsMetaRepository(options) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
           } else {
-            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            let cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
             if (cm) {
               return cm;
             }
@@ -246,7 +246,12 @@ function DsMetaRepository(options) {
   };
 
   this._getNavigationSection = function (code, namespace) {
-    var ns = formNS(namespace);
+    let parts = code.split('@');
+    if (parts.length > 1) {
+      code = parts[1];
+      namespace = parts[0];
+    }
+    let ns = formNS(namespace);
     if (this.navMeta.sections.hasOwnProperty(ns) && this.navMeta.sections[ns].hasOwnProperty(code)) {
       return this.navMeta.sections[ns][code];
     }
@@ -254,9 +259,14 @@ function DsMetaRepository(options) {
   };
 
   this._getNodes = function (section, parent, namespace) {
-    var ns = formNS(namespace);
-    var result = [];
-    var src = {};
+    let parts = section.split('@');
+    if (parts.length > 1) {
+      section = parts[1];
+      namespace = parts[0];
+    }
+    let ns = formNS(namespace);
+    let result = [];
+    let src = {};
 
     if (this.navMeta.roots.hasOwnProperty(ns)) {
       src = this.navMeta.roots[ns];
@@ -274,7 +284,7 @@ function DsMetaRepository(options) {
       }
     }
 
-    for (var code in src) {
+    for (let code in src) {
       if (src.hasOwnProperty(code)) {
         result.push(src[code]);
       }

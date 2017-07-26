@@ -24,7 +24,7 @@ const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$rege
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 80, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -694,6 +694,9 @@ function MongoDs(config) {
 
   function addPrefix(nm, prefix, sep) {
     sep = sep || '.';
+    if (nm.substr(0, nm.indexOf('.')) === prefix) {
+      return nm;
+    }
     return (prefix ? prefix + sep : '') + nm;
   }
 
@@ -717,8 +720,9 @@ function MongoDs(config) {
     return {$project: tmp};
   }
 
-  function joinId(join) {
-    return join.table + ':' + join.left + ':' + join.right + ':' + (join.many ? 'm' : '1');
+  function joinId(join, context) {
+    return (context ? context + ':' : '') + join.table + ':' + join.left + ':' +
+      join.right + ':' + (join.many ? 'm' : '1');
   }
 
   /**
@@ -760,14 +764,16 @@ function MongoDs(config) {
         if (!join.onlySize || Array.isArray(join.join)) {
           result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
         }
+        /*
         if (Array.isArray(join.join)) {
           processJoins(attributes, join.join, result, join.alias);
         }
+        */
       });
     }
   }
 
-  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter) {
+  function processJoin(attributes, joinedSources, lookups, leftPrefix, counter, joins) {
     counter = counter || {v: 0};
     return function (join) {
       leftPrefix = leftPrefix || '';
@@ -778,13 +784,19 @@ function MongoDs(config) {
         join.alias = '__j' + counter.v;
         counter.v++;
       }
-      var jid = joinId(join);
+      if (leftPrefix && (join.left.indexOf('.') < 0 || join.left.substr(0, join.left.indexOf('.')) !== leftPrefix)) {
+        join.left = leftPrefix + '.' + join.left;
+      }
+      let jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;
+        if (Array.isArray(joins)) {
+          joins.push(join);
+        }
         joinedSources[join.alias] = join;
       }
       if (Array.isArray(join.join)) {
-        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter));
+        join.join.forEach(processJoin(attributes, joinedSources, lookups, join.alias, counter, joins));
       }
     };
   }
@@ -797,13 +809,13 @@ function MongoDs(config) {
    * @param {{v:Number}} counter
    * @returns {*}
    */
-  function producePrefilter(attributes, find, joins, explicitJoins, counter) {
+  function producePrefilter(attributes, find, joins, explicitJoins, counter, prefix) {
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter);
-        if (tmp && tmp !== IGNORE) {
+        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
+        if (tmp !== null) {
           result.push(tmp);
         }
       }
@@ -811,7 +823,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object') {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
@@ -836,13 +848,14 @@ function MongoDs(config) {
             }
 
             if (find[name].filter) {
-              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter);
+              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter, j.alias);
             }
             result = true;
             break;
           } else {
+            let jalias = prefix;
             if (name.indexOf('.') > 0) {
-              let jalias = name.substr(0, name.indexOf('.'));
+              jalias = name.substr(0, name.indexOf('.'));
               let i = 0;
               for (i = 0; i < joins.length; i++) {
                 if (joins[i].alias === jalias) {
@@ -856,7 +869,7 @@ function MongoDs(config) {
               }
             }
 
-            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter);
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter, jalias);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
@@ -881,10 +894,11 @@ function MongoDs(config) {
                   }
                 }
                 if (name === '$and') {
-                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : true;
+                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : IGNORE;
                 } else {
-                  result = result.length ? {$nor: result} : true;
+                  result = result.length ? {$nor: result} : IGNORE;
                 }
+                break;
               } else {
                 result = IGNORE;
                 break;
@@ -892,10 +906,17 @@ function MongoDs(config) {
             } else {
               if (name === '$not') {
                 if (Array.isArray(tmp)) {
-                  tmp = tmp.length ? tmp : true;
+                  let tmp2 = [];
+                  for (let i = 0; i < tmp.length; i++) {
+                    if (tmp[i] !== true && tmp[i] !== IGNORE) {
+                      tmp2.push(tmp[i]);
+                    }
+                  }
+                  tmp = tmp2.length ? tmp2 : IGNORE;
                 }
-                if (tmp === true) {
-                  result = true;
+                if (tmp === IGNORE) {
+                  result = IGNORE;
+                  break;
                 } else {
                   result = {};
                   result.$nor = tmp;
@@ -928,7 +949,7 @@ function MongoDs(config) {
   }
 
   function joinPostFilter(join, explicitJoins, prefix, not) {
-    var jid = joinId(join);
+    var jid = joinId(join, prefix);
     var j = explicitJoins[jid];
 
     if (prefix) {
@@ -1083,10 +1104,10 @@ function MongoDs(config) {
             let nm = prefix ? addPrefix(name, prefix) : name;
             let loperand = '$' + nm;
 
-            if (typeof find[name] === 'object' && find[name]) {
+            if (typeof find[name] === 'object' && find[name] !== null) {
               for (let oper in find[name]) {
                 if (find[name].hasOwnProperty(oper)) {
-                  if (excludeFromRedactfilter.indexOf(oper)) {
+                  if (excludeFromRedactfilter.indexOf(oper) < 0) {
                     if (oper === '$exists') {
                       if (find[name][oper]) {
                         result.push({$not: [{$eq: [{$type: '$' + nm}, 'missing']}]});
@@ -1094,18 +1115,8 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      let roperand = find[name][oper];
-                      if (
-                        typeof roperand === 'object' ||
-                        typeof roperand === 'string' && roperand && roperand[0] === '$'
-                      ) {
-                        result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
-                      } else {
-                        result.push(IGNORE);
-                      }
+                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
                     }
-                  } else {
-                    result.push(IGNORE);
                   }
                 }
               }
@@ -1191,8 +1202,8 @@ function MongoDs(config) {
 
     try {
       if (Array.isArray(options.joins)) {
-        joins = options.joins;
-        options.joins.forEach(processJoin(attributes, joinedSources, lookups));
+        joins = [];
+        options.joins.forEach(processJoin(attributes, joinedSources, lookups, null, null, joins));
       }
 
       if (options.fields) {
