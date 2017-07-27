@@ -30,7 +30,8 @@ function OwnCloudStorage(config) {
   var urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
-    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
+    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
+    SHARE: 'index.php/s/'
   };
 
   var resourceType = {
@@ -214,6 +215,24 @@ function OwnCloudStorage(config) {
       return result;
     } else {
       throw new Error('Передан неправильный путь до директории');
+    }
+  }
+
+  function parseShareId(id) {
+    let result = null;
+    let urlObj = url.parse(id, true);
+    if (urlObj.host === ownCloudUrl.host) {
+      if (urlObj.path.indexOf(urlTypes.SHARE) > -1) {
+        result = urlObj.path.replace('/' + urlTypes.SHARE, '');
+      }
+    } else if (!urlObj.host) {
+      result = id;
+    }
+
+    if (result) {
+      return result;
+    } else {
+      throw new Error('Передан неправильный адрес share');
     }
   }
 
@@ -425,7 +444,13 @@ function OwnCloudStorage(config) {
   };
 
   this._deleteShare = function (share) {
-    return requestShareIds(parseDirId(share))
+    let requester;
+    try {
+      requester = requestShareIds(parseDirId(share));
+    } catch (e) {
+      requester = Promise.resolve([parseShareId(share)]);
+    }
+    return requester
       .then(ids => {
         let promises = [];
         ids.forEach(id => {
