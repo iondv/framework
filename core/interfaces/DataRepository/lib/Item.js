@@ -196,7 +196,7 @@ function Item(id, base, classMeta) {
    */
   function findPropertyMeta(nm, cm) {
     var dot, pm;
-    if ((dot = nm.lastIndexOf('.')) > -1) {
+    if ((dot = nm.indexOf('.')) > -1) {
       pm = cm.getPropertyMeta(nm.substring(0, dot));
       if (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) {
         return findPropertyMeta(nm.substring(dot + 1), pm._refClass);
