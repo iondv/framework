@@ -30,6 +30,9 @@ function Scheduler(options) {
     });
   }
 
+  /**
+   * @returns {Promise}
+   */
   this.stopAll = function () {
     let result = [];
     for (let nm in running) {
@@ -40,6 +43,10 @@ function Scheduler(options) {
     return Promise.all(result).then(()=>{running = {};});
   };
 
+  /**
+   * @param {String} job
+   * @returns {Promise}
+   */
   this.run = function (job) {
     try {
       if (!running.hasOwnProperty(job)) {
@@ -55,6 +62,22 @@ function Scheduler(options) {
     }
   };
 
+  /**
+   * @param {String} job
+   * @returns {boolean}
+   */
+  this.isRunning = function (job) {
+    let jobs = options.settings.get('jobs');
+    if (!jobs.hasOwnProperty(job)) {
+      throw new Error(`Задание ${job} не найдено в конфигурации`);
+    }
+    return running.hasOwnProperty(job);
+  };
+
+  /**
+   * @param {String} job
+   * @returns {Promise}
+   */
   this.stop = function (job) {
     if (running.hasOwnProperty(job)) {
       return stopper(job, running[job]);
@@ -62,11 +85,14 @@ function Scheduler(options) {
     return Promise.resolve();
   };
 
+  /**
+   * @returns {Promise}
+   */
   this.start = function () {
     try {
       let jobs = options.settings.get('jobs');
       for (let nm in jobs) {
-        if (jobs.hasOwnProperty(nm)) {
+        if (jobs.hasOwnProperty(nm) && !jobs[nm].disabled) {
           running[nm] = child.fork('bin/job-runner', [nm], {silent: true});
         }
       }
@@ -76,6 +102,9 @@ function Scheduler(options) {
     }
   };
 
+  /**
+   * @returns {Promise}
+   */
   this.restart = function () {
     return this.stopAll().then(()=>{
       return this.start();
