@@ -54,7 +54,11 @@
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
-            "saveUninitialized": true
+            "saveUninitialized": true,
+            "cookie": {
+              "httpOnly": true,
+              "secure": false
+            }
           }
         }
       },
