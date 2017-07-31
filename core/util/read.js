@@ -2,8 +2,9 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const merge = require('merge');
 
-module.exports.processDir = function processDir(dir, filter, handler, onErr) {
+function processDir(dir, filter, handler, onErr) {
   try {
     fs.accessSync(dir, fs.constants.F_OK);
     let files = fs.readdirSync(dir);
@@ -23,9 +24,10 @@ module.exports.processDir = function processDir(dir, filter, handler, onErr) {
       throw e;
     }
   }
-};
+}
+module.exports.processDir = processDir;
 
-module.exports.readFile = function readFile(filePath) {
+function readFile(filePath) {
   return new Promise(function (resolve, reject) {
     fs.readFile(filePath, {encoding: 'utf-8'}, function (err, data) {
       if (err) {
@@ -34,36 +36,64 @@ module.exports.readFile = function readFile(filePath) {
       return resolve(data);
     });
   });
+}
+module.exports.readFile = readFile;
 
-};
-
-module.exports.readYAML = function readYAML(filePath) {
+function readYAML(filePath) {
   return readFile(filePath).then(data => yaml.safeLoad(data, 'utf-8'));
-};
+}
+module.exports.readYAML = readYAML;
 
-module.exports.readJSON = function readJSON(filePath) {
+function readJSON(filePath) {
   return readFile(filePath).then(data => JSON.parse(data));
-};
+}
+module.exports.readJSON = readJSON;
 
-module.exports.readConfigFiles = function readConfigFiles(dir) {
-  return new Promise(function (resolve, reject) {
+function readConfigFiles(dir) {
+  try {
     let promises = [];
     let files = {};
     processDir(
       dir,
       nm => ['.json', '.yml'].indexOf(path.extname(nm)) > -1,
       fn => {
-        let ext = path.extname(nm);
+        let ext = path.extname(fn);
         let fname = path.basename(fn, ext);
         if (!files[fname]) {
           files[fname] = {};
         }
-        files[fname][ext];
-      },
-      reject
+        files[fname][ext] = fn;
+      }
     );
-    Object.keys(files).forEach(fn => {
-
+    Object.keys(files).forEach(fname => {
+      promises.push(new Promise(function (resolve, reject) {
+        let yamlCfg = files[fname]['.yml'];
+        let jsonCfg = files[fname]['.json'];
+        let readers = [];
+        if (yamlCfg) {
+          readers.push(
+            readYAML(yamlCfg)
+            .catch(e => reject(new Error(`Не удалось прочитать содержимое файла ${yamlCfg}`)))
+          );
+        } else {
+          readers.push(Promise.resolve({}));
+        }
+        if (jsonCfg) {
+          readers.push(
+            readJSON(jsonCfg)
+            .catch(e => reject(new Error(`Не удалось прочитать содержимое файла ${jsonCfg}`)))
+          );
+        } else {
+          readers.push(Promise.resolve({}));
+        }
+        Promise.all(readers)
+          .then(data => resolve(merge(data[0], data[1])))
+          .catch(e => reject(new Error(`Не удалось получить конфигурацию ${fname}`)));
+      }));
     });
-  });
-};
+    return Promise.all(promises);
+  } catch (err) {
+    return Promise.reject(err);
+  }
+}
+module.exports.readConfigFiles = readConfigFiles;
