@@ -224,6 +224,20 @@ function ClassMeta(metaObject) {
   this.isJournaling = function () {
     return this.plain.journaling;
   };
+
+  this.getCreatorTracker = function () {
+    if (!this.plain.creatorTracker && this.ancestor) {
+      return this.ancestor.getCreatorTracker();
+    }
+    return this.plain.creatorTracker;
+  };
+
+  this.getEditorTracker = function () {
+    if (!this.plain.editorTracker && this.ancestor) {
+      return this.ancestor.getEditorTracker();
+    }
+    return this.plain.editorTracker;
+  };
 }
 
 module.exports = ClassMeta;
