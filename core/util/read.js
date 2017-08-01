@@ -2,7 +2,16 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const merge = require('merge');
+const _ = require('lodash');
+
+function merge(obj, other) {
+  let result = _.mergeWith(obj, other, (objValue, srcValue) => {
+    if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+      return objValue.concat(srcValue);
+    }
+  });
+  return result;
+}
 
 function processDir(dir, filter, handler, onErr) {
   try {
@@ -68,6 +77,7 @@ module.exports.processDirAsync = processDirAsync;
 
 function readConfigFiles(filesList) {
   return new Promise(function (resolve, reject) {
+    let result = {};
     let promises = [];
     let files = {};
 
@@ -91,11 +101,14 @@ function readConfigFiles(filesList) {
           files[fname]['.json'] ? readJSON(files[fname]['.json']) : Promise.resolve({})
         ];
         Promise.all(readers)
-          .then(data => resolve(merge(data[0], data[1])))
+          .then(data => {
+            result[fname] = merge(data[0], data[1]);
+          })
+          .then(resolve)
           .catch(e => reject(new Error(`Не удалось получить конфигурацию ${fname}`)));
       }));
     });
-    return Promise.all(promises).then(resolve).catch(reject);
+    return Promise.all(promises).then(() => resolve(result)).catch(reject);
   });
 }
 module.exports.readConfigFiles = readConfigFiles;
@@ -115,6 +128,7 @@ function readConfig(filePath) {
   let jsonFilePath = params.ext === '.json' ? filePath : path.join(params.dir, params.name + '.json');
   let ymlFile = access(ymlFilePath) ? yaml.safeLoad(fs.readFileSync(ymlFilePath, 'utf-8'), 'utf-8') : {};
   let jsonFile = access(jsonFilePath) ? JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8')) : {};
-  return merge(ymlFile, jsonFile);
+  let result = merge(ymlFile, jsonFile);
+  return result;
 }
 module.exports.readConfig = readConfig;
