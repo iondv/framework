@@ -486,6 +486,9 @@ function OwnCloudStorage(config) {
         qs: {
           path: id
         },
+        headers: {
+          'OCS-APIRequest': true
+        },
         auth: {
           user: config.login,
           password: config.password
