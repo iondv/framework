@@ -398,7 +398,7 @@ function OwnCloudStorage(config) {
   function accessLevel(level) {
     switch (level) {
       case ShareAccessLevel.READ: return '1';
-      case ShareAccessLevel.WRITE: return '8';
+      case ShareAccessLevel.WRITE: return '15';
     }
     throw new Error('Некорректное значение уровня доступа!');
   }
@@ -485,6 +485,9 @@ function OwnCloudStorage(config) {
         uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
         qs: {
           path: id
+        },
+        headers: {
+          'OCS-APIRequest': true
         },
         auth: {
           user: config.login,
