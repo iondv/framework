@@ -55,11 +55,11 @@ di('app', config.di,
     if (!worker) {
       throw new Error('Не найден рабочий компонент задания ' + jobName);
     }
-    if (typeof worker.run !== 'function') {
+    if (typeof worker !== 'function' || typeof worker.run !== 'function') {
       throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
     }
     sysLog.info(new Date().toISOString() + ': Начало выполнения задания ' + jobName);
-    return worker.run();
+    return typeof worker === 'function' ? worker() : worker.run();
   })
   .then(()=>{
     sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' выполнено');
