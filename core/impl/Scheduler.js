@@ -93,7 +93,7 @@ function Scheduler(options) {
       let jobs = options.settings.get('jobs');
       for (let nm in jobs) {
         if (jobs.hasOwnProperty(nm) && !jobs[nm].disabled) {
-          running[nm] = child.fork('bin/job-runner', [nm], {silent: true});
+          running[nm] = child.fork('bin/job-runner', [nm], {stdio: ['pipe','inherit','inherit','ipc']});
         }
       }
       return Promise.resolve();

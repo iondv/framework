@@ -11,8 +11,8 @@ errorSetup(config.lang || 'ru');
 
 let jobName = false;
 
-if (process.argv.length) {
-  jobName = process.argv[0];
+if (process.argv.length > 2) {
+  jobName = process.argv[2];
 } else {
   console.error('Не передано имя задания');
   process.exit(130);
@@ -55,7 +55,7 @@ di('app', config.di,
     if (!worker) {
       throw new Error('Не найден рабочий компонент задания ' + jobName);
     }
-    if (typeof worker !== 'function' || typeof worker.run !== 'function') {
+    if (typeof worker !== 'function' && typeof worker.run !== 'function') {
       throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
     }
     sysLog.info(new Date().toISOString() + ': Начало выполнения задания ' + jobName);

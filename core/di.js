@@ -152,7 +152,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (component.module) {
       result = new f(opts);
     } else {
-      result = () => f.call(scope, opts);
+      result = function(){return f.call(scope, opts);};
       if (component.initMethod) {
         result[component.initMethod] = f[component.initMethod];
       }

@@ -13,16 +13,8 @@ errorSetup(config.lang || 'ru');
 
 
 let jobName = false;
-
-if (process.argv.length) {
-  jobName = process.argv[0];
-} else {
-  console.error('Не передано имя задания');
-  process.exit(130);
-}
-
-if (process.argv.length) {
-  jobName = process.argv[0];
+if (process.argv.length > 2) {
+  jobName = process.argv[2];
 } else {
   console.error('Не передано имя задания');
   process.exit(130);
@@ -145,7 +137,7 @@ di('app', config.di,
           throw new Error('Не указаны параметры задания ' + jobName);
         }
 
-        let checkInterval = 5000;
+        let checkInterval = 1000;
         let runImmediate = false;
         let runTimeout = checkInterval;
         if (typeof job.launch === 'object') {
@@ -157,14 +149,13 @@ di('app', config.di,
           checkInterval = parseInt(job.launch);
           runTimeout = checkInterval;
         }
-
         interval = setInterval(() => {
           let run = true;
           if (!runImmediate) {
             run = checkRun(job.launch);
           }
           if (run) {
-            let ch = child.fork('job', [jobName], {silent: true});
+            let ch = child.fork('bin/job', [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName +' было прервано по таймауту');
@@ -177,7 +168,6 @@ di('app', config.di,
           }
         }, checkInterval);
         sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
-        process.exit(0);
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');
       }
