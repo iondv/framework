@@ -26,10 +26,10 @@ function createProxy(scope, name) {
  */
 function normalizeOptions(options, components) {
   if (options) {
-    var nm, i, result;
+    let result;
     if (options instanceof Array) {
       result = [];
-      for (i = 0; i < options.length; i++) {
+      for (let i = 0; i < options.length; i++) {
         result.push(normalizeOptions(options[i], components));
       }
       return result;
@@ -47,7 +47,7 @@ function normalizeOptions(options, components) {
         return result;
       } else {
         result = {};
-        for (nm in options) {
+        for (let nm in options) {
           if (options.hasOwnProperty(nm)) {
             result[nm] = normalizeOptions(options[nm], components);
           }
@@ -69,10 +69,10 @@ function normalizeOptions(options, components) {
  */
 function processOptions(options, scope, components, init, skip, cwd) {
   if (options) {
-    var nm, i, result;
+    let result;
     if (typeof options === 'string') {
       if (options.substr(0, 6) === 'ion://') {
-        nm = options.substr(6);
+        let nm = options.substr(6);
         if (!nm) {
           return null;
         }
@@ -93,7 +93,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
       return options;
     } else if (options instanceof Array) {
       result = [];
-      for (i = 0; i < options.length; i++) {
+      for (let i = 0; i < options.length; i++) {
         result.push(processOptions(options[i], scope, components, init, skip, cwd));
       }
       return result;
@@ -102,7 +102,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
         return loadComponent(options.name, options, scope, components, init, skip, cwd);
       } else {
         result = {};
-        for (nm in options) {
+        for (let nm in options) {
           if (options.hasOwnProperty(nm)) {
             result[nm] = processOptions(options[nm], scope, components, init, skip, cwd);
           }
@@ -116,7 +116,12 @@ function processOptions(options, scope, components, init, skip, cwd) {
 
 /**
  * @param {String} name
- * @param {{module: String, config: {}, initMethod: String, initLevel: Number}} component
+ * @param {{}} component
+ * @param {String} [component.module]
+ * @param {String} [component.executable]
+ * @param {{}} [component.config]
+ * @param {String} [component.initMethod]
+ * @param {Number} [component.initLevel]
  * @param {{}} scope
  * @param {{}} components
  * @param {Array} init
@@ -135,22 +140,29 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     }
   }
 
-  var modulePath = component.module;
-  if (!modulePath) {
-    return null;
-  }
+  let result = null;
+  let modulePath = component.module || component.executable;
+  if (modulePath) {
+    if (modulePath.indexOf('./') === 0) {
+      modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
+    }
 
-  if (modulePath.indexOf('./') === 0) {
-    modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
-  }
-
-  var constructor = require(modulePath);
-  var result = new constructor(processOptions(component.options, scope, components, init, skip, cwd));
-  scope[name] = result;
-  component.name = name;
-  component.loaded = true;
-  if (component.initMethod) {
-    init.push(component);
+    let f = require(modulePath);
+    let opts = processOptions(component.options, scope, components, init, skip, cwd);
+    if (component.module) {
+      result = new f(opts);
+    } else {
+      result = () => f(opts);
+      if (component.initMethod) {
+        result[component.initMethod] = f[component.initMethod];
+      }
+    }
+    scope[name] = result;
+    component.name = name;
+    component.loaded = true;
+    if (component.initMethod) {
+      init.push(component);
+    }
   }
   return result;
 }
@@ -163,8 +175,8 @@ function componentInitConstructor(component, method, scope) {
 
 function levelConstructor(initLoaders) {
   return function () {
-    var p;
-    for (var i = 0; i < initLoaders.length; i++) {
+    let p;
+    for (let i = 0; i < initLoaders.length; i++) {
       if (p) {
         p = p.then(initLoaders[i]);
       } else {
@@ -179,8 +191,8 @@ function levelConstructor(initLoaders) {
 }
 
 function diInit(levels) {
-  var p;
-  for (var i = 0; i < levels.length; i++) {
+  let p;
+  for (let i = 0; i < levels.length; i++) {
     if (p) {
       p = p.then(levels[i]);
     } else {
@@ -205,56 +217,53 @@ function diInit(levels) {
  * @returns {Promise}
  */
 function di(context, components, presets, parentContext, skip, cwd) {
-  var nm, pc, src;
-  var scope = presets || {};
+  let scope = presets || {};
   if (parentContext && contexts.hasOwnProperty(parentContext)) {
-    pc = contexts[parentContext];
-    for (nm in pc) {
+    let pc = contexts[parentContext];
+    for (let nm in pc) {
       if (pc.hasOwnProperty(nm)) {
         scope[nm] = pc[nm];
       }
     }
   }
 
-  var init = [];
+  let init = [];
 
-  var norm = {};
-  for (nm in components) {
+  let norm = {};
+  for (let nm in components) {
     if (components.hasOwnProperty(nm) && components[nm].options) {
       normalizeOptions(components[nm], norm);
     }
   }
 
-  src = {};
-  for (nm in components) {
+  let src = {};
+  for (let nm in components) {
     if (components.hasOwnProperty(nm)) {
       src[nm] = components[nm];
     }
   }
 
-  for (nm in norm) {
+  for (let nm in norm) {
     if (norm.hasOwnProperty(nm)) {
       src[nm] = norm[nm];
     }
   }
 
-  for (nm in src) {
+  for (let nm in src) {
     if (src.hasOwnProperty(nm)) {
       loadComponent(nm, src[nm], scope, src, init, skip, cwd);
     }
   }
 
   init.sort(function (a, b) {
-    var lvl0 = a.initLevel || 0;
-    var lvl1 = b.initLevel || 0;
-    return lvl0 - lvl1;
+    return (a.initLevel || 0) - (b.initLevel || 0);
   });
 
   contexts[context] = scope;
 
-  var initLevels = [];
-  var initLevel = [];
-  for (var i = 0; i < init.length; i++) {
+  let initLevels = [];
+  let initLevel = [];
+  for (let i = 0; i < init.length; i++) {
     initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod], scope));
     if (i < init.length - 1) {
       if (init[i + 1].initLevel > init[i].initLevel) {
