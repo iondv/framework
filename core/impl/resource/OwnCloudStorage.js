@@ -30,7 +30,8 @@ function OwnCloudStorage(config) {
   var urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
     WEBDAV: 'remote.php/webdav/',
-    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares'
+    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
+    SHARE: 'index.php/s/'
   };
 
   var resourceType = {
@@ -217,6 +218,24 @@ function OwnCloudStorage(config) {
     }
   }
 
+  function parseShareId(id) {
+    let result = null;
+    let urlObj = url.parse(id, true);
+    if (urlObj.host === ownCloudUrl.host) {
+      if (urlObj.path.indexOf(urlTypes.SHARE) > -1) {
+        result = urlObj.path.replace('/' + urlTypes.SHARE, '');
+      }
+    } else if (!urlObj.host) {
+      result = id;
+    }
+
+    if (result) {
+      return result;
+    } else {
+      throw new Error('Передан неправильный адрес share');
+    }
+  }
+
   /**
    *
    * @param {String} id
@@ -379,7 +398,7 @@ function OwnCloudStorage(config) {
   function accessLevel(level) {
     switch (level) {
       case ShareAccessLevel.READ: return '1';
-      case ShareAccessLevel.WRITE: return '8';
+      case ShareAccessLevel.WRITE: return '15';
     }
     throw new Error('Некорректное значение уровня доступа!');
   }
@@ -425,7 +444,13 @@ function OwnCloudStorage(config) {
   };
 
   this._deleteShare = function (share) {
-    return requestShareIds(parseDirId(share))
+    let requester;
+    try {
+      requester = requestShareIds(parseDirId(share));
+    } catch (e) {
+      requester = Promise.resolve([parseShareId(share)]);
+    }
+    return requester
       .then(ids => {
         let promises = [];
         ids.forEach(id => {
@@ -460,6 +485,9 @@ function OwnCloudStorage(config) {
         uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
         qs: {
           path: id
+        },
+        headers: {
+          'OCS-APIRequest': true
         },
         auth: {
           user: config.login,
