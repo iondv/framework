@@ -1495,7 +1495,11 @@ function IonDataRepository(options) {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (options.user) {
-            updates._creator = options.user.id();
+            let creatorAttr = '_creator';
+            if (cm.getCreatorTracker()) {
+              creatorAttr = cm.getCreatorTracker();
+            }
+            updates[creatorAttr] = options.user.id();
           }
           return _this.ds.insert(
             tn(rcm),
@@ -1511,7 +1515,9 @@ function IonDataRepository(options) {
           var item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
-          delete updates._creator;
+          if (updates._creator) {
+            delete updates._creator;
+          }
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         })
         .then(function (item) {
@@ -1628,7 +1634,11 @@ function IonDataRepository(options) {
           })
           .then(function () {
             if (options.user) {
-              updates._editor = options.user.id();
+              let editorAttr = '_editor';
+              if (cm.getEditorTracker()) {
+                editorAttr = cm.getEditorTracker();
+              }
+              updates[editorAttr] = options.user.id();
             }
             return _this.ds.update(
               tn(rcm),
@@ -1643,7 +1653,9 @@ function IonDataRepository(options) {
               return Promise.reject(new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`}));
             }
             var item = _this._wrap(data._class, data, data._classVer);
-            delete updates._editor;
+            if (updates._editor) {
+              delete updates._editor;
+            }
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
           })
           .then(function (item) {

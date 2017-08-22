@@ -135,7 +135,7 @@ function Property(item, propertyMeta, name) {
   };
 
   function evalProperty(item, prop) {
-    var pos;
+    let pos;
     if ((pos = prop.getName().indexOf('.')) > 0) {
       let p = item.property(prop.getName().substring(0, pos));
       if (p.getType() === PropertyTypes.REFERENCE) {
