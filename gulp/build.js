@@ -205,7 +205,7 @@ function minifyCSS(p) {
           path.join(p, 'static', 'css', '*.css'),
           '!' + path.join(p, 'static', 'css', '*.min.css')
         ], {base: path.join(p, 'static', 'css')})
-          .pipe(cssMin())
+          .pipe(cssMin({rebase: false}))
           .pipe(rename({suffix: '.min'}))
           .pipe(gulp.dest(path.join(p, 'static', 'css')))
           .on('finish', resolve)
