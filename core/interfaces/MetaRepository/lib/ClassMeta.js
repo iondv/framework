@@ -141,7 +141,9 @@ function ClassMeta(metaObject) {
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
+    return this.plain.semantic && this._semanticAttrs.length ?
+      this._semanticAttrs :
+      this.getAncestor() ? this.getAncestor().getSemanticAttrs() : [];
   };
 
   this.getForcedEnrichment = function () {
@@ -219,6 +221,20 @@ function ClassMeta(metaObject) {
 
   this.isJournaling = function () {
     return this.plain.journaling;
+  };
+
+  this.getCreatorTracker = function () {
+    if (!this.plain.creatorTracker && this.ancestor) {
+      return this.ancestor.getCreatorTracker();
+    }
+    return this.plain.creatorTracker;
+  };
+
+  this.getEditorTracker = function () {
+    if (!this.plain.editorTracker && this.ancestor) {
+      return this.ancestor.getEditorTracker();
+    }
+    return this.plain.editorTracker;
   };
 }
 

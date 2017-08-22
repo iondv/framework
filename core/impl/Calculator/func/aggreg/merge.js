@@ -1,16 +1,18 @@
 /**
- * Created by kras on 03.11.16.
+ * Created by krasilneg on 14.07.17.
  */
 'use strict';
 const c = require('./oper');
 const Item = require('core/interfaces/DataRepository').Item;
 const p = require('./processed');
 
-// jshint maxstatements: 30, maxcomplexity: 20
-function work(col, attr, cond, unique) {
-  let result = 0;
-  let processed = p();
+// jshint maxcomplexity: 20, maxstatements: 30
+
+function work(col, attr, cond, unique, sep) {
+  let result = '';
+  sep = sep || ' ';
   if (Array.isArray(col)) {
+    let processed = p();
     for (let i = 0; i < col.length; i++) {
       if (col[i] !== null) {
         if (cond) {
@@ -31,19 +33,20 @@ function work(col, attr, cond, unique) {
           if (!Array.isArray(v)) {
             v = [v];
           }
-          v = work(v, satt, null, unique);
+          v = work(v, satt, null, unique, sep);
         } else {
           v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
         }
 
-        if (v !== null) {
-          result = result + v;
+        if (v) {
+          result = result + (result ? sep : '') + v;
         }
       }
     }
   }
   return result;
 }
+
 
 /**
  * @param {DataRepository} dataRepo

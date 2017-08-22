@@ -18,6 +18,12 @@ const Permissions = {
   DELETE: 'delete', // 4
   USE: 'use', // 8
   FULL: 'full', // 31
+
+  ATTR_CONTENT_CREATE: 'c_create',
+  ATTR_CONTENT_EDIT: 'c_edit',
+  ATTR_CONTENT_VIEW: 'c_view',
+  ATTR_CONTENT_DELETE: 'c_delete',
+
   /**
    * @param {Number} mask
    * @param {Boolean} [asArray]

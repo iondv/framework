@@ -147,12 +147,12 @@ function DsMetaRepository(options) {
    */
   function getFromMeta(name, version, namespace) {
     try {
-      var parts = name.split('@');
+      let parts = name.split('@');
       if (parts.length > 1) {
         name = parts[0];
         namespace = parts[1];
       }
-      var ns = formNS(namespace);
+      let ns = formNS(namespace);
       if (!_this.classMeta[ns]) {
         throw new Error('Пространство имен ' + namespace + ' не найдено.');
       }
@@ -161,7 +161,7 @@ function DsMetaRepository(options) {
           if (typeof _this.classMeta[ns][name][version] !== 'undefined') {
             return _this.classMeta[ns][name].byVersion[version];
           } else {
-            var cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
+            let cm = findByVersion(_this.classMeta[ns][name].byOrder, version);
             if (cm) {
               return cm;
             }
@@ -262,7 +262,7 @@ function DsMetaRepository(options) {
       }
     }
 
-    for (var code in src) {
+    for (let code in src) {
       if (src.hasOwnProperty(code)) {
         result.push(src[code]);
       }
