@@ -3,7 +3,7 @@
  */
 'use strict';
 
-var DbSync = require('core/interfaces/DbSync');
+const DbSync = require('core/interfaces/DbSync');
 
 const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
@@ -47,10 +47,10 @@ function MongoDbSync(options) {
   function db() {return options.dataSource.connection(); }
 
   function sysIndexer(tableType) {
-    return function (collection) {
+    return (collection) => {
       switch (tableType) {
         case 'meta': {
-          return new Promise(function (resolve, reject) {
+          return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
                 name: 1,
@@ -58,16 +58,13 @@ function MongoDbSync(options) {
               },
               {
                 unique: true
-              }, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(collection);
-              });
+              },
+              (err) => err ? reject(err) : resolve(collection)
+              );
           });
         }break;
         case 'view': {
-          return new Promise(function (resolve, reject) {
+          return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
                 type: 1,
@@ -77,12 +74,9 @@ function MongoDbSync(options) {
               },
               {
                 unique: true
-              }, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(collection);
-              });
+              },
+              (err) => err ? reject(err) : resolve(collection)
+            );
           });
         }break;
         case 'nav': {
@@ -95,18 +89,13 @@ function MongoDbSync(options) {
               },
               {
                 unique: true
-              }, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(collection);
-              });
+              },
+              (err) => err ? reject(err) : resolve(collection)
+            );
           });
         }break;
         case 'user_type': {
-          return new Promise(function (resolve, reject) {
-            resolve(collection);
-          });
+          return Promise.resolve(collection);
         }break;
       }
       throw new Error('Unsupported table type specified!');
@@ -114,30 +103,20 @@ function MongoDbSync(options) {
   }
 
   function getMetaTable(type) {
-    return new Promise(function (resolve, reject) {
-      var tn = '';
-      switch (type) {
-        case 'meta':
-          tn = _this.metaTableName;
-          break;
-        case 'view':
-          tn = _this.viewTableName;
-          break;
-        case 'nav':
-          tn = _this.navTableName;
-          break;
-        case 'user_type':
-          tn = _this.userTypeTableName;
-          break;
-        case 'workflow':
-          tn = _this.workflowTableName;
-          break;
-      }
+    let tn = '';
+    switch (type) {
+      case 'meta': tn = _this.metaTableName; break;
+      case 'view': tn = _this.viewTableName; break;
+      case 'nav': tn = _this.navTableName; break;
+      case 'user_type': tn = _this.userTypeTableName; break;
+      case 'workflow': tn = _this.workflowTableName; break;
+    }
 
-      if (!tn) {
-        return reject('Unsupported meta type specified!');
-      }
-      db().collection(tn, {strict: true}, function (err, collection) {
+    if (!tn) {
+      return Promise.reject('Unsupported meta type specified!');
+    }
+    return new Promise((resolve, reject) => {
+      db().collection(tn, {strict: true}, (err, collection) => {
         if (collection) {
           return resolve(collection);
         }
@@ -147,22 +126,33 @@ function MongoDbSync(options) {
   }
 
   function getSysColl(name) {
-    return new Promise(function (resolve, reject) {
-      db().collection(name, {strict: true}, function (err, collection) {
+    return new Promise((resolve, reject) => {
+      db().collection(name, {strict: true}, (err, collection) => {
         if (collection) {
           return resolve(collection);
         }
         db().createCollection(name).then(
-          function (collection) {
-            return new Promise(function (resolve, reject) {
-              collection.createIndex({__type: 1}, {unique: true}, function (err) {
-                return err ? reject(err) : resolve(collection);
-              });
+          (collection) => {
+            return new Promise((resolve, reject) => {
+              collection.createIndex({__type: 1}, {unique: true}, (err) => err ? reject(err) : resolve(collection));
             });
           }
         ).then(resolve).catch(reject);
       });
     });
+  }
+
+  /**
+   * @param {String} name
+   * @returns {{name: String, namespace: String}}
+   */
+  function parseCanonicalName(name) {
+    let parts = name.split('@');
+    let result = {name: parts[0]};
+    if (parts.length > 1) {
+      result.namespace = parts[1];
+    }
+    return result;
   }
 
   /**
@@ -174,7 +164,9 @@ function MongoDbSync(options) {
     if (!cm.ancestor) {
       return done(null, cm);
     }
-    var query = {name: cm.ancestor};
+    let cn = parseCanonicalName(cm.ancestor);
+    let query = {name: cn.name};
+    namespace = cn.namespace || cm.namespace || namespace;
     if (namespace) {
       query.namespace = namespace;
     } else {
@@ -187,18 +179,18 @@ function MongoDbSync(options) {
       if (anc) {
         findClassRoot(anc, namespace, metaCollection, done);
       } else {
-        done(new Error('Класс ' + cm.ancestor + ' не найден!'));
+        done(new Error('Класс ' + cn.name + '@' + namespace + ' не найден!'));
       }
     });
   }
 
   this._init = function () {
     return getMetaTable('meta').
-    then(function () {return getMetaTable('view');}).
-    then(function () {return getMetaTable('nav');}).
-    then(function () {return getMetaTable('user_type');}).
-    then(function () {return getSysColl(AUTOINC_COLL);}).
-    then(function () {return getSysColl(GEOFLD_COLL);});
+        then(() => getMetaTable('view')).
+        then(() => getMetaTable('nav')).
+        then(() => getMetaTable('user_type')).
+        then(() => getSysColl(AUTOINC_COLL)).
+        then(() => getSysColl(GEOFLD_COLL));
   };
 
   /**
@@ -209,18 +201,16 @@ function MongoDbSync(options) {
    */
   function createCollection(cm, namespace) {
     return new Promise(function (resolve, reject) {
-      var cn = (namespace ? namespace + '_' : '') + cm.name;
+      let namespace = cm.namespace || namespace;
+      let cn = (namespace ? namespace + '_' : '') + cm.name;
       db().collection(
         cn,
         {strict: true},
-        function (err, collection) {
+        (err, collection) => {
           if (!collection) {
             db().createCollection(cn).then(resolve).catch(reject);
           } else {
-            if (err) {
-              return reject(err);
-            }
-            resolve(collection);
+            return err ? reject(err) : resolve(collection);
           }
         }
       );
@@ -229,16 +219,18 @@ function MongoDbSync(options) {
 
   /**
    * @param {{}} cm
+   * @param {{}} rcm,
+   * @param {String} namespace
    * @private
    */
   function addIndexes(cm, rcm, namespace) {
     /**
      * @param {Collection} collection
      */
-    return function (collection) {
+    return (collection) => {
       function createIndexPromise(props, unique, nullable, type) {
         return function () {
-          var opts = {};
+          let opts = {};
           if (unique) {
             opts.unique = true;
             if (nullable) {
@@ -246,7 +238,7 @@ function MongoDbSync(options) {
             }
           }
 
-          var indexDef = {};
+          let indexDef = {};
           if (typeof props === 'string') {
             indexDef = props;
           } else if (Array.isArray(props)) {
@@ -261,8 +253,8 @@ function MongoDbSync(options) {
             return Promise.resolve();
           }
 
-          return new Promise(function (resolve) {
-            collection.createIndex(indexDef, opts, function (err, iname) {
+          return new Promise((resolve) => {
+            collection.createIndex(indexDef, opts, (err, iname) => {
               resolve(iname);
             });
           });
@@ -271,13 +263,13 @@ function MongoDbSync(options) {
 
       function createFullText(props) {
         return function () {
-          var indexDef = {};
+          let indexDef = {};
           for (let i = 0; i < props.length; i++) {
             indexDef[props[i]] = 'text';
           }
-          var opts = {};
-          return new Promise(function (resolve) {
-            collection.createIndex(indexDef, opts, function (err, iname) {
+          let opts = {};
+          return new Promise((resolve) => {
+            collection.createIndex(indexDef, opts, (err, iname) => {
               resolve(iname);
             });
           });
@@ -288,9 +280,10 @@ function MongoDbSync(options) {
         return function () {
           return getSysColl(GEOFLD_COLL)
             .then(function (coll) {
-              return new Promise(function (resolve, reject) {
-                var cn = (namespace ? namespace + '_' : '') + rcm.name;
-                var d = {};
+              return new Promise((resolve, reject) => {
+                let namespace = rcm.namespace || namespace;
+                let cn = (namespace ? namespace + '_' : '') + rcm.name;
+                let d = {};
                 d[property.name] = true;
                 coll.updateOne(
                   {
@@ -298,20 +291,18 @@ function MongoDbSync(options) {
                   },
                   {$set: d},
                   {upsert: true},
-                  function (err) {
-                    return err ? reject(err) : resolve();
-                  }
+                  (err) => err ? reject(err) : resolve()
                 );
               });
             });
         };
       }
 
-      var promise = createIndexPromise(cm.key, true)();
+      let promise = createIndexPromise(cm.key, true)();
       promise = promise.then(createIndexPromise('_class', false));
 
-      var fullText = [];
-      var props = {};
+      let fullText = [];
+      let props = {};
       for (let i = 0; i < cm.properties.length; i++) {
         props[cm.properties[i].name] = cm.properties[i];
         if (
@@ -374,18 +365,18 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return function (collection) {
-      var cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
-      var inc = {};
-      for (var i = 0; i < cm.properties.length; i++) {
+      let cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
+      let inc = {};
+      for (let i = 0; i < cm.properties.length; i++) {
         if (cm.properties[i].type === 6 && cm.properties[i].autoassigned === true) {
           inc[cm.properties[i].name] = 0;
         }
       }
 
       if (Object.keys(inc).length > 0) {
-        return getSysColl(AUTOINC_COLL).then(function (autoinc) {
-          return new Promise(function (resolve, reject) {
-            autoinc.find({__type: cn}).limit(1).next(function (err, c) {
+        return getSysColl(AUTOINC_COLL).then((autoinc) => {
+          return new Promise((resolve, reject) => {
+            autoinc.find({__type: cn}).limit(1).next((err, c) => {
               if (err) {
                 return reject(err);
               }
@@ -398,12 +389,12 @@ function MongoDbSync(options) {
                 }
               }
 
-              autoinc.updateOne({__type: cn}, {$set: {counters: inc}}, {upsert: true}, function (err) {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(collection);
-              });
+              autoinc.updateOne(
+                {__type: cn},
+                {$set: {counters: inc}},
+                {upsert: true},
+                (err) => err ? reject(err) :resolve(collection)
+              );
             });
           });
         });
@@ -420,10 +411,11 @@ function MongoDbSync(options) {
    */
   this._defineClass = function (classMeta, namespace) {
     return getMetaTable('meta')
-      .then(function (metaCollection) {
-        classMeta.namespace = namespace || null;
-        return new Promise(function (resolve, reject) {
-          findClassRoot(classMeta, namespace, metaCollection, function (err, cm) {
+      .then((metaCollection) => {
+        let namespace = classMeta.namespace || namespace || null;
+        classMeta.namespace = namespace;
+        return new Promise((resolve, reject) => {
+          findClassRoot(classMeta, namespace, metaCollection, (err, cm) => {
             if (err) {
               return reject(err);
             }
@@ -441,7 +433,7 @@ function MongoDbSync(options) {
                 },
                 classMeta,
                 {upsert: true},
-                function (err, result) {
+                (err, result) => {
                   if (err) {
                     return reject(err);
                   }
@@ -456,61 +448,59 @@ function MongoDbSync(options) {
   };
 
   this._undefineClass = function (className, version, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('meta').then(function (collection) {
-        var query = {name: className};
+    return getMetaTable('meta')
+      .then((collection) => {
+        let cn = parseCanonicalName(className);
+        let query = {name: cn.name};
         if (version) {
           query.version = version;
         }
+        namespace = cn.namespace || namespace;
         if (namespace) {
           query.namespace = namespace;
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
-        collection.remove(query, function (err, cm) {
-          if (err) {
-            return reject(err);
-          }
-          resolve(cm);
+        return new Promise((resolve, reject) => {
+          collection.remove(query, (err, cm) => err ? reject(err) : resolve(cm));
         });
-      }).catch(reject);
-    });
+      });
   };
 
-  this._defineView = function (viewMeta, className, type, path, namespace) {
-    return new Promise(function (resolve, reject) {
-      viewMeta.type = type;
-      viewMeta.className = className;
-      viewMeta.namespace = namespace || null;
-      viewMeta.path = path || '';
-      delete viewMeta._id;
+  this._defineView = function (viewMeta, className, type, path) {
+    viewMeta.type = type;
+    viewMeta.className = className;
+    viewMeta.path = path || '';
+    delete viewMeta._id;
 
-      getMetaTable('view').then(function (collection) {
-        collection.update(
-          {
-            type: viewMeta.type,
-            className: viewMeta.className,
-            path: viewMeta.path,
-            namespace: viewMeta.namespace,
-            version: viewMeta.version
-          },
-          viewMeta,
-          {upsert: true},
-          function (err, vm) {
-            if (err) {
-              return reject(err);
+    return getMetaTable('view')
+      .then((collection) => {
+        return new Promise((resolve, reject) => {
+          collection.update(
+            {
+              type: viewMeta.type,
+              className: viewMeta.className,
+              path: viewMeta.path,
+              version: viewMeta.version
+            },
+            viewMeta,
+            {upsert: true},
+            (err, vm) => {
+              if (err) {
+                return reject(err);
+              }
+              log.log('Создано представление ' + type + ' для класса ' + className);
+              resolve(vm);
             }
-            log.log('Создано представление ' + type + ' для класса ' + className);
-            resolve(vm);
-          });
-      }).catch(reject);
+          );
+      });
     });
   };
 
-  this._undefineView = function (className, type, path, version, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('view').then(function (collection) {
-        var query = {
+  this._undefineView = function (className, type, path, version) {
+    return getMetaTable('view')
+      .then((collection) => {
+        let query = {
           className: className,
           type: type,
           path: path
@@ -518,109 +508,105 @@ function MongoDbSync(options) {
         if (version) {
           query.version = version;
         }
-
-        if (namespace) {
-          query.namespace = namespace;
-        } else {
-          query.$or = [{namespace: {$exists: false}}, {namespace: false}];
-        }
-
-        collection.remove(query, function (err,vm) {
-          if (err) {
-            return reject(err);
-          }
-          resolve(vm);
-        });
-      }).catch(reject);
+      return new Promise((resolve, reject) => {
+        collection.remove(query, (err, vm) => err ? reject(err) : resolve(vm));
+      });
     });
   };
 
   this._defineNavSection = function (navSection, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('nav').then(function (collection) {
+    return getMetaTable('nav')
+      .then((collection) => {
         navSection.itemType = 'section';
-        navSection.namespace = namespace || null;
+        navSection.namespace = navSection.namespace || namespace || null;
         delete navSection._id;
-
-        collection.updateOne(
-          {
-            name: navSection.name,
-            itemType: navSection.itemType,
-            namespace: navSection.namespace
-          },
-          navSection,
-          {upsert: true},
-          function (err, ns) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(ns);
-          });
-      }).catch(reject);
-    });
+        return new Promise((resolve, reject) => {
+          collection.updateOne(
+            {
+              name: navSection.name,
+              itemType: navSection.itemType,
+              namespace: navSection.namespace
+            },
+            navSection,
+            {upsert: true},
+            (err, ns) => err ? reject(err) : resolve(ns)
+          );
+        });
+      });
   };
 
   this._undefineNavSection = function (sectionName, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('nav').then(function (collection) {
-        var query = {name: sectionName, itemType: 'section'};
+    return getMetaTable('nav')
+      .then((collection) => {
+        let sn = parseCanonicalName(sectionName);
+        if (sn.namespace) {
+          sectionName = sn.namespace;
+          namespace = sn.name;
+        }
+        let query = {name: sectionName, itemType: 'section'};
         if (namespace) {
           query.namespace = namespace;
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
 
-        collection.remove(query, function (err,nsm) {
-          if (err) {
-            return reject(err);
-          }
-          resolve(nsm);
+        return new Promise((resolve, reject) => {
+          collection.remove(query, (err, nsm) => err ? reject(err) : resolve(nsm));
         });
-      }).catch(reject);
-    });
+      });
   };
 
-  this._defineNavNode = function (navNode,navSectionName, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('nav').then(function (collection) {
+  this._defineNavNode = function (navNode, navSectionName, namespace) {
+    return getMetaTable('nav')
+      .then((collection) => {
         navNode.itemType = 'node';
-        navNode.section = navSectionName;
-        navNode.namespace = namespace || null;
+        let sn = parseCanonicalName(navSectionName);
+        if (sn.namespace) {
+          navSectionName = sn.namespace;
+          namespace = sn.name;
+        }
+        navNode.section = (namespace ? namespace + '@' : '') + navSectionName;
+        navNode.namespace = navNode.namespace || namespace || null;
         delete navNode._id;
-
-        collection.updateOne(
-          {
-            code: navNode.code,
-            itemType: navNode.itemType,
-            namespace: navNode.namespace
-          }, navNode, {upsert: true}, function (err, ns) {
-            if (err) {
-              return reject(err);
+        return new Promise((resolve, reject) => {
+          collection.updateOne(
+            {
+              code: navNode.code,
+              itemType: navNode.itemType,
+              namespace: navNode.namespace
+            },
+            navNode,
+            {upsert: true},
+            (err, ns) => {
+              if (err) {
+                return reject(err);
+              }
+              log.log('Создан узел навигации ' + navNode.code);
+              resolve(ns);
             }
-            log.log('Создан узел навигации ' + navNode.code);
-            resolve(ns);
-          });
-      }).catch(reject);
-    });
+          );
+        });
+      });
   };
 
   this._undefineNavNode = function (navNodeName, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('nav').then(function (collection) {
-        var query = {code: navNodeName, itemType: 'node'};
+    return getMetaTable('nav')
+      .then((collection) => {
+        let nn = parseCanonicalName(navNodeName);
+        if (nn.namespace) {
+          navNodeName = nn.namespace;
+          namespace = nn.name;
+        }
+        let query = {code: navNodeName, itemType: 'node'};
         if (namespace) {
           query.namespace = namespace;
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
-        collection.remove(query, function (err,nnm) {
-          if (err) {
-            return reject(err);
-          }
-          resolve(nnm);
+        return new Promise((resolve, reject) => {
+          collection.remove(query, (err, nnm) => err ? reject(err) : resolve(nnm));
         });
-      }).catch(reject);
-    });
+      });
   };
 
   /**
@@ -630,29 +616,30 @@ function MongoDbSync(options) {
    * @private
    */
   this._defineWorkflow = function (wfMeta, namespace) {
-    return new Promise(function (resolve, reject) {
-      wfMeta.namespace = namespace || null;
-      delete wfMeta._id;
+    wfMeta.namespace = wfMeta.namespace || namespace || null;
+    delete wfMeta._id;
 
-      getMetaTable('workflow').then(function (collection) {
-        collection.update(
-          {
-            wfClass: wfMeta.wfClass,
-            name: wfMeta.name,
-            namespace: wfMeta.namespace,
-            version: wfMeta.version
-          },
-          wfMeta,
-          {upsert: true},
-          function (err, wf) {
-            if (err) {
-              return reject(err);
-            }
-            log.log('Создан бизнес-процесс ' + wfMeta.name + ' для класса ' + wfMeta.wfClass);
-            resolve(wf);
-          });
-      }).catch(reject);
-    });
+    return getMetaTable('workflow')
+      .then((collection) => {
+        return new Promise((resolve, reject) => {
+          collection.update(
+            {
+              wfClass: wfMeta.wfClass,
+              name: wfMeta.name,
+              namespace: wfMeta.namespace,
+              version: wfMeta.version
+            },
+            wfMeta,
+            {upsert: true},
+            function (err, wf) {
+              if (err) {
+                return reject(err);
+              }
+              log.log('Создан бизнес-процесс ' + wfMeta.name + '@' + wfMeta.namespace + ' для класса ' + wfMeta.wfClass);
+              resolve(wf);
+            });
+        });
+      });
   };
 
   /**
@@ -664,50 +651,51 @@ function MongoDbSync(options) {
    * @private
    */
   this._undefineWorkflow = function (className, name, namespace, version) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('view').then(function (collection) {
-        var query = {
+    return getMetaTable('view')
+      .then(function (collection) {
+        let cn = parseCanonicalName(className);
+        let wn = parseCanonicalName(name);
+
+        if (!cn.namespace) {
+          className = cn.name + '@' + namespace;
+        }
+
+        let query = {
           wfClass: className,
-          name: name
+          name: wn.name
         };
+
         if (version) {
           query.version = version;
         }
 
+        namespace = wn.namespace || namespace;
         if (namespace) {
           query.namespace = namespace;
         } else {
           query.$or = [{namespace: {$exists: false}}, {namespace: false}];
         }
-
-        collection.remove(query, function (err, wf) {
-          if (err) {
-            return reject(err);
-          }
-          resolve(wf);
+        return new Promise((resolve, reject) => {
+          collection.remove(query, (err, wf) => err ? reject(err) : resolve(wf));
         });
-      }).catch(reject);
-    });
+      });
   };
 
   this._defineUserType = function (userType) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('user_type').then(function (collection) {
-        collection.updateOne(
-          {
-            name: userType.name
-          },
-          userType,
-          {upsert: true},
-          function (err, ns) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(ns);
-          }
-        );
-      }).catch(reject);
-    });
+    return getMetaTable('user_type')
+      .then((collection) => {
+        return new Promise((resolve, reject) => {
+          collection.updateOne(
+            {
+              name: userType.name,
+              namespace: userType.namespace
+            },
+            userType,
+            {upsert: true},
+            (err, ns) => err ? reject(err) : resolve(ns)
+          );
+        });
+      });
   };
 }
 
