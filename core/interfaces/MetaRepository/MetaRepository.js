@@ -56,18 +56,20 @@ function MetaRepository() {
   // NavigationRepository
 
   /**
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.getNavigationSections = function () {
-    return this._getNavigationSections();
+  this.getNavigationSections = function (namespace) {
+    return this._getNavigationSections(namespace);
   };
 
   /**
    * @param {String} code
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNavigationSection = function (code) {
-    return this._getNavigationSection(code);
+  this.getNavigationSection = function (code, namespace) {
+    return this._getNavigationSection(code, namespace);
   };
 
   /**
@@ -82,18 +84,20 @@ function MetaRepository() {
   /**
    * @param {String} sections
    * @param {String} [parent]
+   * @param {String} [namespace]
    * @returns {Object[]}
    */
-  this.getNodes = function (sections, parent) {
-    return this._getNodes(sections, parent);
+  this.getNodes = function (sections, parent, namespace) {
+    return this._getNodes(sections, parent, namespace);
   };
 
   /**
    * @param {String} className
+   * @param {String} [namespace]
    * @returns {Object | null}
    */
-  this.getNodeForClassname = function (className) {
-    return this._getNodeForClassname(className);
+  this.getNodeForClassname = function (className, namespace) {
+    return this._getNodeForClassname(className, namespace);
   };
 
   // ViewModelRepository
