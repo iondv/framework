@@ -11,6 +11,7 @@ const ClassMeta = MetaRepositoryModule.ClassMeta;
 const PropertyTypes = require('core/PropertyTypes');
 const Calculator = require('core/interfaces/Calculator');
 const clone = require('clone');
+const merge = require('merge');
 
 const defaultVersion = '___default';
 
@@ -259,15 +260,15 @@ function DsMetaRepository(options) {
         return navMeta.sections[ns];
       }
     } else {
-      let result = [];
+      let result = {};
       for (let ns in navMeta.sections) {
         if (navMeta.sections.hasOwnProperty(ns)) {
-          result = result.concat(navMeta.sections[ns]);
+          result = merge(result, navMeta.sections[ns]);
         }
       }
       return result;
     }
-    return [];
+    return {};
   };
 
   this._getNavigationSection = function (code, namespace) {
@@ -734,10 +735,10 @@ function DsMetaRepository(options) {
           }
         }
 
-        for (let name in _this.classMeta[ns]) {
+        for (let name in classMeta[ns]) {
           if (classMeta[ns].hasOwnProperty(name)) {
-            for (let i = 0; i < _this.classMeta[ns][name].byOrder.length; i++) {
-              let cm = _this.classMeta[ns][name].byOrder[i];
+            for (let i = 0; i < classMeta[ns][name].byOrder.length; i++) {
+              let cm = classMeta[ns][name].byOrder[i];
               expandProperty(cm);
               produceSemantics(cm);
             }
@@ -947,7 +948,7 @@ function DsMetaRepository(options) {
           }
         }
 
-        for (let name in _this.navMeta.nodes[ns]) {
+        for (let name in navMeta.nodes[ns]) {
           if (navMeta.nodes[ns].hasOwnProperty(name)) {
             navMeta.nodes[ns][name].children.sort((a, b) => {return a.orderNumber - b.orderNumber;});
           }
