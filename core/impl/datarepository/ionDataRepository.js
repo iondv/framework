@@ -961,7 +961,7 @@ function IonDataRepository(options) {
 
   function calcDefault(pm, updates, user) {
     return function () {
-      let p = pm._dvFormula.apply({$context: updates, $uid: user.id()});
+      let p = pm._dvFormula.apply({$context: updates, $uid: user ? user.id() : null});
       if (!(p instanceof Promise)) {
         p = Promise.resolve(p);
       }
@@ -1021,7 +1021,7 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = user.id();
+            v = user ? user.id() : null;
           } else if (pm._dvFormula) {
             calcs = calcs ? calcs.then(calcDefault(pm, updates, user)) : calcDefault(pm, updates, user)();
             break;
@@ -1789,7 +1789,8 @@ function IonDataRepository(options) {
             return checkRequired(cm, updates, true);
           } else {
             event = EventType.CREATE;
-            return checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
+            return autoAssign(cm, updates, false, options.user)
+              .then(()=>checkRequired(cm, updates, false, options.ignoreIntegrityCheck));
           }
         })
         .then(function () {
