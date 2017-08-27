@@ -14,8 +14,8 @@ module.exports = c(
     if (!col.length) {
       return null;
     }
-    var result = 0;
-    for (var i = 0; i < col.length; i++) {
+    let result = 0;
+    for (let i = 0; i < col.length; i++) {
       if (col[i] !== null) {
         if (cond) {
           if (!cond.apply(col[i])) {

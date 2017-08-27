@@ -20,17 +20,18 @@ const DataRepository = require('core/interfaces/DataRepository').DataRepository;
  */
 function Calculator(options) {
 
-  var funcLib = clone(stdLib);
+  let funcLib = clone(stdLib);
 
   this.init = function (scope) {
     return new Promise(function (resolve) {
-      var dataRepo = typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo;
+      let dataRepo = typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo;
       if (dataRepo instanceof DataRepository) {
         funcLib.sum = aggreg.sum(dataRepo);
         funcLib.count = aggreg.count(dataRepo);
         funcLib.avg = aggreg.avg(dataRepo);
         funcLib.max = aggreg.max(dataRepo);
         funcLib.min = aggreg.min(dataRepo);
+        funcLib.merge = aggreg.merge(dataRepo);
         funcLib.get = data.get(dataRepo);
       }
       resolve();
@@ -38,9 +39,10 @@ function Calculator(options) {
   };
 
   function findComma(src, start) {
-    var pos = src.indexOf(',', start);
+    let pos = src.indexOf(',', start);
+
     if (pos > 0) {
-      if (src[pos - 1] === ',') {
+      if (src[pos - 1] === '\'') {
         return findComma(src, pos + 1);
       }
     }
