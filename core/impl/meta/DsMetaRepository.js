@@ -933,10 +933,13 @@ function DsMetaRepository(options) {
         for (let name in navMeta.nodes[ns]) {
           if (navMeta.nodes[ns].hasOwnProperty(name)) {
             let n = navMeta.nodes[ns][name];
-            if (navMeta.sections.hasOwnProperty(ns) &&
-              navMeta.sections[ns].hasOwnProperty(n.section) &&
+            let sns = parseCanonicalName(n.section, true);
+            let sname = sns.name;
+            sns = formNS(sns.namespace || n.namespace);
+            if (navMeta.sections.hasOwnProperty(sns) &&
+              navMeta.sections[sns].hasOwnProperty(sname) &&
               n.code.indexOf('.') === -1) {
-              navMeta.sections[ns][n.section].nodes[n.code] = n;
+              navMeta.sections[sns][sname].nodes[n.code] = n;
             }
 
             if (n.code.indexOf('.') !== -1) {
