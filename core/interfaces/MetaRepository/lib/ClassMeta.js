@@ -185,7 +185,10 @@ function ClassMeta(metaObject) {
   };
 
   this.checkAncestor = function (name) {
-    if (name === this.getName()) {
+    if (name.indexOf('@') < 0) {
+      name = name + '@' + this.getNamespace();
+    }
+    if (name === this.getCanonicalName()) {
       return this;
     }
     var parent = this.getAncestor();
