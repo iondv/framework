@@ -9,7 +9,7 @@
     "log": {
       "logDestinations": ["console", "./log"]
     },
-    "di" : {
+    "bootstrap": {
       "rtEvents": {
         "module": "core/RuntimeEvents",
         "options": {
@@ -100,7 +100,9 @@
         "options": {
           "dataRepo": "dataRepo"
         }
-      },
+      }
+    },
+    "di" : {
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",

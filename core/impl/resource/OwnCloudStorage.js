@@ -166,44 +166,46 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._accept = function (data, directory, options) {
-    return new Promise(function (resolve,reject) {
-      try {
-        options = options || {};
-        var d,fn,reader;
+    try {
+      options = options || {};
 
-        if (typeof data === 'object' && (
-          typeof data.buffer !== 'undefined' ||
-          typeof data.path !== 'undefined' ||
-          typeof data.stream !== 'undefined'
-        )) {
-          fn = options.name || data.originalname || data.name || cuid();
-          if (typeof data.buffer !== 'undefined') {
-            d = data.buffer;
-          } else if (typeof data.path !== 'undefined') {
-            d = data.path;
-          } else if (typeof data.stream !== 'undefined') {
-            d = data.stream;
-          }
-        } else if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+      if (!data) {
+        return Promise.reject(new Error('Нет данных для приема в хранилище.'));
+      }
+
+      let fn = null;
+      let d = null;
+      if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
           d = data;
           fn = options.name || cuid();
+      } else if (typeof data === 'object') {
+        fn = options.name || data.originalname || data.name || cuid();
+        if (typeof data.buffer !== 'undefined') {
+          d = data.buffer;
+        } else if (typeof data.path !== 'undefined') {
+          d = data.path;
+        } else if (typeof data.stream !== 'undefined') {
+          d = data.stream;
         }
+      }
 
-        if (!d) {
-          return reject(new Error('Переданы данные недопустимого типа!'));
-        }
+      if (!d) {
+        return reject(new Error('Переданы данные недопустимого типа!'));
+      }
 
-        if (typeof d.pipe === 'function') {
-          reader = d;
-        } else if (Buffer.isBuffer(d)) {
-          reader = new stream.PassThrough();
-          reader.end(d);
-        } else {
-          reader = fs.createReadStream(d);
-        }
+      let reader;
+      if (typeof d.pipe === 'function') {
+        reader = d;
+      } else if (Buffer.isBuffer(d)) {
+        reader = new stream.PassThrough();
+        reader.end(d);
+      } else {
+        reader = fs.createReadStream(d);
+      }
 
-        let mkdir = directory ? mkdirp(directory) : Promise.resolve(true);
-        mkdir.then(done => {
+      let mkdir = directory ? mkdirp(directory) : Promise.resolve();
+      return mkdir
+        .then(() => {
           let id = urlResolver(slashChecker(directory) || '', fn);
           let reqParams = {
             uri: urlConcat(config.url, urlTypes.WEBDAV, id),
@@ -212,23 +214,24 @@ function OwnCloudStorage(config) {
               password: config.password
             }
           };
-          reader.pipe(request.put(reqParams, function (err, res, body) {
-            if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
-              return resolve(new StoredFile(
-                id,
-                urlResolver(slashChecker(urlBase), id),
-                {name: fn},
-                streamGetter(id)
-              ));
-            } else {
-              return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
-            }
-          }));
-        }).catch(reject);
-      } catch (err) {
-        reject(err);
-      }
-    });
+          return new Promise(function (resolve, reject) {
+            reader.pipe(request.put(reqParams, (err, res, body) => {
+              if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
+                resolve(new StoredFile(
+                  id,
+                  urlResolver(slashChecker(urlBase), id),
+                  {name: fn},
+                  streamGetter(id)
+                ));
+              } else {
+                reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
+              }
+            }));
+          });
+        });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -586,7 +589,7 @@ function OwnCloudStorage(config) {
       requester = requestShares(parseDirId(share));
     } catch (e) {
       requester = Promise.resolve([parseShareId(share)]);
-    }    
+    }
     return requester
       .then(shares => {
         let promises = [];

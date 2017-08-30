@@ -35,16 +35,18 @@ function StoredImage(id, link, thumbnails, options, streamGetter) {
  */
 function ImageStorage(options) { // jshint ignore:line
 
+  var fileStorage = options.fileStorage;
+
   let uploadThumbnails = true;
   if (options.fileStorage.fileOptionsSupport) {
     uploadThumbnails = options.fileStorage.fileOptionsSupport();
   }
 
   function createThumbnails(source, name, opts) {
-    var result = [];
-    var ds = options.thumbnails;
-    var format;
-    for (var thumb in ds) {
+    let result = [];
+    let ds = options.thumbnails;
+    let format;
+    for (let thumb in ds) {
       if (ds.hasOwnProperty(thumb)) {
         format = ds[thumb].format || 'png';
         opts.thumbType = thumb;
@@ -76,55 +78,49 @@ function ImageStorage(options) { // jshint ignore:line
   }
 
   function acceptWithThumbnails(data, directory, opts) {
-    return new Promise(function (resolve, reject) { // jshint ignore:line
-      let ops = opts || {};
-      let o = clone(ops);
-      let thumbs, name, thumbnails;
-      let mime = ops.mimetype || ops.mimeType || data.mimetype || data.mimeType;
+    let ops = opts || {};
+    let o = clone(ops);
+    let mime = ops.mimetype || ops.mimeType || data.mimetype || data.mimeType;
 
-      if (mime && mime.indexOf('image/') !== 0) {
-        return reject(new Error('Переданные данные не являются изображением!'));
-      }
-
-      if (typeof data === 'object' &&
-        (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
-        name = ops.name || data.originalname || data.name || cuid();
-        if (typeof data.buffer !== 'undefined') {
-          thumbs = createThumbnails(data.buffer, name, o);
-        } else if (typeof data.path !== 'undefined') {
-          thumbs = createThumbnails(data.path, name, o);
-        } else if (typeof data.stream !== 'undefined') {
-          thumbs = imageToBuffer(data.stream)
+    if (mime && mime.indexOf('image/') !== 0) {
+      return Promise.reject(new Error('Переданные данные не являются изображением!'));
+    }
+    let thumbs;
+    if (typeof data === 'object' &&
+      (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
+      let name = ops.name || data.originalname || data.name || cuid();
+      if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
+        thumbs = createThumbnails(data.buffer, name, o);
+      } else if (typeof data.path !== 'undefined') {
+        thumbs = createThumbnails(data.path, name, o);
+      } else if (typeof data.stream !== 'undefined') {
+        thumbs = imageToBuffer(data.stream)
             .then(buffer => {
               delete data.stream;
               data.buffer = buffer;
               return createThumbnails(data.buffer, name, o);
             });
         }
-      } else {
-        name = ops.name || cuid();
-        thumbs = createThumbnails(data, name, o);
-      }
+    } else {
+      thumbs = createThumbnails(data, ops.name || cuid(), o);
+    }
 
-      if (!thumbs) {
-        return reject(new Error('Переданные не корректные данные!'));
-      }
-
-      thumbs
-        .then((files) => {
-          if (files) {
-            thumbnails = {};
-            ops.thumbnails = {};
-            for (let i = 0; i < files.length; i++) {
-              thumbnails[files[i].options.thumbType] = files[i];
-              ops.thumbnails[files[i].options.thumbType] = files[i].id;
-            }
+    if (!thumbs) {
+      return Promise.reject(new Error('Переданы не корректные данные!'));
+    }
+    let thumbnails = {};
+    return thumbs
+      .then((files) => {
+        if (files) {
+          ops.thumbnails = {};
+          for (let i = 0; i < files.length; i++) {
+            thumbnails[files[i].options.thumbType] = files[i];
+            ops.thumbnails[files[i].options.thumbType] = files[i].id;
           }
-          return options.fileStorage.accept(data, directory, ops);
-        })
-        .then((file) => resolve(new StoredImage(file.id, file.link, thumbnails, file.options)))
-        .catch(reject);
-    });
+        }
+        return fileStorage.accept(data, directory, ops);
+      })
+      .then((file) => new StoredImage(file.id, file.link, thumbnails, file.options));
   }
 
   /**
@@ -137,7 +133,7 @@ function ImageStorage(options) { // jshint ignore:line
     if (uploadThumbnails) {
       return acceptWithThumbnails(data, directory, opts);
     }
-    return options.fileStorage.accept(data, directory, opts).then(file => {
+    return fileStorage.accept(data, directory, opts).then(file => {
       let ggg = enrichThumbnails(file);
       return ggg;
     });
@@ -149,7 +145,7 @@ function ImageStorage(options) { // jshint ignore:line
    */
   this._remove = function (id) {
     return new Promise(function (resolve, reject) {
-      options.fileStorage.fetch([id]).
+      fileStorage.fetch([id]).
       then(
         /**
          * @param {StoredFile[]} files
@@ -161,7 +157,7 @@ function ImageStorage(options) { // jshint ignore:line
             if (files[i].options.thumbnails) {
               for (thumb in files[i].options.thumbnails) {
                 if (files[i].options.thumbnails.hasOwnProperty(thumb)) {
-                  thumbs.push(options.fileStorage.remove(files[i].options.thumbnails[thumb]));
+                  thumbs.push(fileStorage.remove(files[i].options.thumbnails[thumb]));
                 }
               }
             }
@@ -171,7 +167,7 @@ function ImageStorage(options) { // jshint ignore:line
       ).
       then(
         function () {
-          return options.fileStorage.remove(id);
+          return fileStorage.remove(id);
         }
       ).
       then(resolve).
@@ -189,7 +185,7 @@ function ImageStorage(options) { // jshint ignore:line
       });
     }
     let tmp = files;
-    return options.fileStorage.fetch(thumbs)
+    return fileStorage.fetch(thumbs)
       .then(thumbnails => {
         let thumbById = {};
         let result = [];
@@ -253,7 +249,7 @@ function ImageStorage(options) { // jshint ignore:line
    */
   this._fetch = function (ids) {
     return new Promise(function (resolve, reject) {
-      options.fileStorage.fetch(ids)
+      fileStorage.fetch(ids)
         .then(files => {
           if (!uploadThumbnails) {
             return thumbsStreamer(files);
@@ -316,7 +312,7 @@ function ImageStorage(options) { // jshint ignore:line
           return next();
         }
 
-        options.fileStorage.fetch([imageId])
+        fileStorage.fetch([imageId])
           .then(images => {
             if (!images[0]) {
               throw new Error('File not found!');
@@ -347,7 +343,7 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._getDir = function (id) {
-    return options.fileStorage.getDir(id);
+    return fileStorage.getDir(id);
   };
 
   /**
@@ -358,7 +354,7 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
-    return options.fileStorage.createDir(name, parentDirId, fetch);
+    return fileStorage.createDir(name, parentDirId, fetch);
   };
 
   /**
@@ -367,7 +363,7 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._removeDir = function (id) {
-    return options.fileStorage.removeDir(id);
+    return fileStorage.removeDir(id);
   };
 
   /**
@@ -377,7 +373,7 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._putFile = function (dirId, fileId) {
-    return options.fileStorage.putFile(dirId, fileId);
+    return fileStorage.putFile(dirId, fileId);
   };
 
   /**
@@ -387,15 +383,22 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._ejectFile = function (dirId, fileId) {
-    return options.fileStorage.ejectFile(dirId, fileId);
+    return fileStorage.ejectFile(dirId, fileId);
   };
 
   this._share = function (id) {
-    return options.fileStorage.share(id);
+    return fileStorage.share(id);
   };
 
   this._currentShare = function (id) {
-    return options.fileStorage.currentShare(id);
+    return fileStorage.currentShare(id);
+  };
+
+  /**
+   * @param {ResourceStorage} storage
+   */
+  this.setFileStorage = function (storage) {
+    fileStorage = storage;
   };
 }
 
