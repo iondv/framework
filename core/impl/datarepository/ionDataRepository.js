@@ -961,7 +961,7 @@ function IonDataRepository(options) {
 
   function calcDefault(pm, updates, user) {
     return function () {
-      let p = pm._dvFormula.apply({$context: updates, $uid: user.id()});
+      let p = pm._dvFormula.apply({$context: updates, $uid: user ? user.id() : null});
       if (!(p instanceof Promise)) {
         p = Promise.resolve(p);
       }
@@ -1021,7 +1021,7 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = user.id();
+            v = user ? user.id() : null;
           } else if (pm._dvFormula) {
             calcs = calcs ? calcs.then(calcDefault(pm, updates, user)) : calcDefault(pm, updates, user)();
             break;
@@ -1725,76 +1725,73 @@ function IonDataRepository(options) {
       let da = {};
       let updates = data || {};
       let conditionsData;
-
-      if (id) {
-        conditionsData = _this.keyProvider.keyToData(rcm, id);
-      } else {
-        conditionsData = _this.keyProvider.keyData(rcm, updates);
-      }
-
       let event = EventType.UPDATE;
-
       let conditions = null;
-      if (conditionsData) {
-        conditions = formUpdatedData(rcm, conditionsData);
-      }
-
       let base = null;
 
       let p;
-      if (changeLogger) {
-        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
-          base = b;
-          return bubble(
-            'pre-save',
-            cm,
-            {
-              id: id,
-              item: b && _this._wrap(b._class, b, b._classVer),
-              data: updates,
-              user: options.user
-            });
-        });
+      if (options && options.autoAssign) {
+        p = autoAssign(cm, updates, true, options.user);
       } else {
-        p = bubble(
-            'pre-save',
-            cm,
-            {
-              id: id,
-              data: updates,
-              user: options.user
-            }
-          );
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
+        p = Promise.resolve(updates);
       }
 
+
       return p
+        .then(()=> {
+          if (id) {
+            conditionsData = _this.keyProvider.keyToData(rcm, id);
+          } else {
+            conditionsData = _this.keyProvider.keyData(rcm, updates);
+          }
+          if (conditionsData) {
+            conditions = formUpdatedData(rcm, conditionsData);
+          }
+          if (changeLogger) {
+            return _this.ds.get(tn(rcm), conditions).then(function (b) {
+              base = b;
+              return bubble(
+                'pre-save',
+                cm,
+                {
+                  id: id,
+                  item: b && _this._wrap(b._class, b, b._classVer),
+                  data: updates,
+                  user: options.user
+                });
+            });
+          } else {
+            return bubble(
+              'pre-save',
+              cm,
+              {
+                id: id,
+                data: updates,
+                user: options.user
+              }
+            );
+          }
+        })
         .then(preWriteEventHandler(updates))
         .then(function () {
           let fileSavers = [];
-          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
+          updates = formUpdatedData(cm, updates, true, refUpdates, da) || {};
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
         .then(function () {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
-          let p;
           if (conditions) {
-            if (options && options.autoAssign) {
-              p = autoAssign(cm, updates, true, options.user);
-            } else {
-              if (cm.getChangeTracker()) {
-                updates[cm.getChangeTracker()] = new Date();
-              }
-              p = Promise.resolve(updates);
-            }
-            p = p.then(()=>checkRequired(cm, updates, true));
+            return checkRequired(cm, updates, true);
           } else {
             event = EventType.CREATE;
-            p = autoAssign(cm, updates, false, options.user)
+            return autoAssign(cm, updates, false, options.user)
               .then(()=>checkRequired(cm, updates, false, options.ignoreIntegrityCheck));
           }
-          return p;
         })
         .then(function () {
           let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
