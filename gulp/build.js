@@ -8,6 +8,7 @@ const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
 const extend = require('extend');
+const merge = require('merge');
 
 const fs = require('fs');
 const path = require('path');
@@ -441,7 +442,7 @@ gulp.task('setup', function (done) {
   let applications = fs.readdirSync(appDir);
   let deps = [];
 
-  di('app', extend(config.bootstrap, config.di),
+  di('app', merge(true, config.bootstrap, config.di),
     {
       sysLog: sysLog
     },
@@ -493,18 +494,19 @@ gulp.task('setup', function (done) {
           }
         }
         if (stage2) {
-          return stage2.then(()=>{
-            console.log('Импорт меты приложений завершен.');
-            return scope.dataSources.disconnect()
-              .catch((err) => {console.error(err);return Promise.resolve();});
-          });
+          return stage2.then(()=>{console.log('Импорт меты приложений завершен.');});
         }
         console.log('Нет приложений для импорта меты.');
-        return scope.dataSources.disconnect()
-          .catch((err) => {console.error(err);return Promise.resolve();});
       } catch (err) {
         return Promise.reject(err);
       }
+    })
+    .then(() => {
+      return new Promise((resolve) => {
+        scope.dataSources.disconnect()
+          .then(resolve)
+          .catch((err) => {console.error(err);resolve();});
+      });
     })
     .then(() => done())
     .catch((err) => done(err));
