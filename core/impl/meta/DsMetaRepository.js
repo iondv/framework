@@ -119,20 +119,15 @@ function DsMetaRepository(options) {
   }
 
   function assignVm(coll, vm) {
-    let ns = formNS(vm.namespace);
-    if (!coll.hasOwnProperty(ns)) {
-      coll[ns] = {};
-    }
     let cn = vm.className;
     if (cn.indexOf('@') < 0) {
       cn = cn + '@' + vm.namespace;
     }
-
     let vp = viewPath(vm.path, cn);
-    if (!coll[ns].hasOwnProperty(vp)) {
-      coll[ns][vp] = [];
+    if (!coll.hasOwnProperty(vp)) {
+      coll[vp] = [];
     }
-    let arr = coll[ns][vp];
+    let arr = coll[vp];
     arr.push(vm);
   }
 
@@ -340,16 +335,14 @@ function DsMetaRepository(options) {
    * @returns {*}
    */
   function getViewModel(node, meta, coll) {
-    let nn = parseCanonicalName(node, true);
-    let path = viewPath(nn.name, meta.getCanonicalName());
-    let ns = formNS(nn.namespace, meta.getNamespace());
-
-    if (coll.hasOwnProperty(ns)) {
-      if (coll[ns].hasOwnProperty(path)) {
-        return findByVersion(coll[ns][path], meta.getVersion()); // TODO locate model in parent nodes
-      } else if (meta.getAncestor()) {
-        return getViewModel(node, meta.getAncestor(), coll);
-      }
+    let path = viewPath(node, meta.getCanonicalName());
+    let gpath = viewPath(null, meta.getCanonicalName());
+    if (coll.hasOwnProperty(path)) {
+      return findByVersion(coll[path], meta.getVersion()); // TODO locate model in parent nodes
+    } else if (coll.hasOwnProperty(gpath)) {
+      return findByVersion(coll[gpath], meta.getVersion());
+    } else if (meta.getAncestor()) {
+      return getViewModel(node, meta.getAncestor(), coll);
     }
     return null;
   }
