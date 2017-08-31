@@ -14,6 +14,7 @@ const path = require('path');
 const runSequence = require('run-sequence');
 const importer = require('lib/import');
 const deployer = require('lib/deploy');
+const alias = require('core/scope-alias');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -402,19 +403,26 @@ gulp.task('minify:js', function (done) {
 });
 
 function setup(appDir, scope, log) {
-  return function () {
+  return function (deps) {
     return deployer(appDir)
       .then((dep) => {
-        console.log('Выполнена настройка приложения.');
-        let ns = dep ? dep.namespace || '' : '';
-        console.log('Импорт выполняется в ' +
-          (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
-        return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
-          namespace: ns,
-          // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
-          ignoreIntegrityCheck: true
-        });
-      }).then(() => {console.log('Мета и данные импортированы в БД');});
+        console.log('Выполнена настройка приложения ' + appDir);
+        deps.push(dep);
+        return deps;
+      });
+  };
+}
+
+function appImporter(appDir, scope, log, dep) {
+  return function () {
+    let ns = dep ? dep.namespace || '' : '';
+    console.log('Импорт меты приложения ' + appDir + ' выполняется в ' +
+      (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
+    return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
+      namespace: ns,
+      // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
+      ignoreIntegrityCheck: true
+    }).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
   };
 }
 
@@ -429,59 +437,77 @@ gulp.task('setup', function (done) {
 
   var scope = null;
 
-  function finish(err) {
-    if (!scope) {
-      return done(err);
-    }
-    scope.dataSources.disconnect().then(function () {
-      done(err);
-    }).catch(function (dcer) {
-      console.error(dcer);
-      done(err);
-    });
-  }
+  let appDir = path.join(platformPath, 'applications');
+  let applications = fs.readdirSync(appDir);
+  let deps = [];
 
   di('app', extend(config.bootstrap, config.di),
     {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler']
-  ).then(function (scp) {
-    scope = scp;
-    return new Promise(function (rs, rj) {
-      var appDir =  path.join(platformPath, 'applications');
-      var stage, stat;
-
+    ['auth', 'rtEvents', 'sessionHandler'])
+    .then((scp) => {
+      scope = scp;
+      let stage1;
       try {
-        var applications = fs.readdirSync(appDir);
-        for (var i = 0; i < applications.length; i++) {
-          stat = fs.statSync(path.join(appDir, applications[i]));
+        for (let i = 0; i < applications.length; i++) {
+          let stat = fs.statSync(path.join(appDir, applications[i]));
           if (stat.isDirectory()) {
-            if (!stage) {
-              stage = setup(path.join(appDir, applications[i]), scope, sysLog)();
-            } else {
-              stage = stage.then(setup(path.join(appDir, applications[i]), scope, sysLog));
-            }
+            stage1 = stage1 ?
+              stage1.then(setup(path.join(appDir, applications[i]), scope, sysLog)) :
+              setup(path.join(appDir, applications[i]), scope, sysLog)(deps);
           }
         }
-      } catch (err) {
-        return rj(err);
-      }
 
-      if (stage) {
-        stage.then(function () {
-          console.log('Установка приложений завершена.');
-          rs();
-        }).catch(rj);
-      } else {
+        if (stage1) {
+          return stage1.then(() => {
+            console.log('Установка приложений завершена.');
+            return scp.dataSources.disconnect();
+          });
+        }
         console.log('Нет приложений для установки.');
-        rs();
+        return  scp.dataSources.disconnect();
+      } catch (err) {
+        return Promise.reject(err);
       }
-    });
-  }).
-  then(finish).
-  catch(finish);
+    })
+    .then(() => {
+      return di('boot', config.bootstrap,
+        {
+          sysLog: sysLog
+        }, null, ['auth', 'rtEvents', 'sessionHandler'])
+        .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+        .then((scope) => alias(scope, scope.settings.get('di-alias')));
+    })
+    .then((scp) => {
+      scope = scp;
+      let stage2;
+      try {
+        for (let i = 0; i < applications.length; i++) {
+          let stat = fs.statSync(path.join(appDir, applications[i]));
+          if (stat.isDirectory()) {
+            stage2 = stage2 ?
+              stage2.then(appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i])) :
+              appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i])();
+          }
+        }
+        if (stage2) {
+          return stage2.then(()=>{
+            console.log('Импорт меты приложений завершен.');
+            return scope.dataSources.disconnect()
+              .catch((err) => {console.error(err);return Promise.resolve();});
+          });
+        }
+        console.log('Нет приложений для импорта меты.');
+        return scope.dataSources.disconnect()
+          .catch((err) => {console.error(err);return Promise.resolve();});
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    })
+    .then(() => done())
+    .catch((err) => done(err));
 });
 
 gulp.task('install', function (done) {
