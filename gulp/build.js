@@ -7,6 +7,7 @@ const cssMin = require('gulp-clean-css');
 const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
+const extend = require('extend');
 
 const fs = require('fs');
 const path = require('path');
@@ -402,21 +403,18 @@ gulp.task('minify:js', function (done) {
 
 function setup(appDir, scope, log) {
   return function () {
-    return new Promise(function (resolve, reject) {
-      deployer(appDir).then(function (dep) {
+    return deployer(appDir)
+      .then((dep) => {
         console.log('Выполнена настройка приложения.');
-        var ns = dep ? dep.namespace || '' : '';
+        let ns = dep ? dep.namespace || '' : '';
         console.log('Импорт выполняется в ' +
           (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
         return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
           namespace: ns,
-          ignoreIntegrityCheck: true // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
+          // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
+          ignoreIntegrityCheck: true
         });
-      }).then(function () {
-        console.log('Мета и данные импортированы в БД');
-        resolve();
-      }).catch(reject);
-    });
+      }).then(() => {console.log('Мета и данные импортированы в БД');});
   };
 }
 
@@ -443,7 +441,7 @@ gulp.task('setup', function (done) {
     });
   }
 
-  di('app', config.di,
+  di('app', extend(config.bootstrap, config.di),
     {
       sysLog: sysLog
     },
