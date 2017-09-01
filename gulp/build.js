@@ -456,8 +456,8 @@ gulp.task('setup', function (done) {
       var stage, stat;
 
       try {
-        var applications = fs.readdirSync(appDir);
-        for (var i = 0; i < applications.length; i++) {
+        let applications = fs.readdirSync(appDir);
+        for (let i = 0; i < applications.length; i++) {
           stat = fs.statSync(path.join(appDir, applications[i]));
           if (stat.isDirectory()) {
             if (!stage) {
