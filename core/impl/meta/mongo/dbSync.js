@@ -562,13 +562,15 @@ function MongoDbSync(options) {
     return getMetaTable('nav')
       .then((collection) => {
         navNode.itemType = 'node';
+        let namespace = navNode.namespace || namespace || null;
+        let sectNs = namespace;
         let sn = parseCanonicalName(navSectionName);
         if (sn.namespace) {
           navSectionName = sn.namespace;
-          namespace = sn.name;
+          sectNs = sn.name;
         }
-        navNode.section = (namespace ? namespace + '@' : '') + navSectionName;
-        navNode.namespace = navNode.namespace || namespace || null;
+        navNode.section = (sectNs ? sectNs + '@' : '') + navSectionName;
+        navNode.namespace = namespace;
         delete navNode._id;
         return new Promise((resolve, reject) => {
           collection.updateOne(
