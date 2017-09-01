@@ -562,7 +562,7 @@ function MongoDbSync(options) {
     return getMetaTable('nav')
       .then((collection) => {
         navNode.itemType = 'node';
-        let namespace = navNode.namespace || namespace || null;
+        namespace = navNode.namespace || namespace || null;
         let sectNs = namespace;
         let sn = parseCanonicalName(navSectionName);
         if (sn.namespace) {
