@@ -534,7 +534,7 @@ function MongoDbSync(options) {
           );
         });
       })
-      .then(() => {log.log('Создана секция навигации ' + navSection.namespace + '@' + navSection.code);});
+      .then(() => {log.log('Создана секция навигации ' + navSection.namespace + '@' + navSection.name);});
   };
 
   this._undefineNavSection = function (sectionName, namespace) {
