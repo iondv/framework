@@ -66,6 +66,14 @@
           "dataSource": "ion://Db"
         }
       },
+      "aclProvider":{
+        "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataSource": "ion://Db"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
@@ -232,14 +240,6 @@
             "retry_strategy": {}
           },
           "logger": "ion://sysLog"
-        }
-      },
-      "aclProvider":{
-        "module": "core/impl/access/aclmongo",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataSource": "ion://Db"
         }
       },
       "workflows": {

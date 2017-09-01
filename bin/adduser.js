@@ -39,7 +39,7 @@ process.argv.forEach(function (val) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler'])
+  }, null, ['rtEvents', 'sessionHandler', 'application'])
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
