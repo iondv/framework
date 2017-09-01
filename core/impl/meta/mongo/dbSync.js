@@ -424,7 +424,7 @@ function MongoDbSync(options) {
             then(addIndexes(classMeta, cm, namespace)).
             then(function () {
               delete classMeta._id;
-              log.log('Регистрируем класс ' + classMeta.name);
+              log.log('Регистрирация класс ' + classMeta.name + '@' + namespace);
               metaCollection.updateOne(
                 {
                   name: classMeta.name,
@@ -437,7 +437,7 @@ function MongoDbSync(options) {
                   if (err) {
                     return reject(err);
                   }
-                  log.log('Класс ' + classMeta.name + ' зарегистрирован.');
+                  log.log('Класс ' + classMeta.name + '@' + namespace + ' зарегистрирован.');
                   resolve(result);
                 }
               );
@@ -489,7 +489,8 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создано представление ' + type + ' для класса ' + className);
+              log.log('Создано представление ' + type +
+                ' для класса ' + className + ' и пути навигации ' + viewMeta.path);
               resolve(vm);
             }
           );
@@ -532,7 +533,8 @@ function MongoDbSync(options) {
             (err, ns) => err ? reject(err) : resolve(ns)
           );
         });
-      });
+      })
+      .then(() => {log.log('Создана секция навигации ' + navSection.namespace + '@' + navSection.code);});
   };
 
   this._undefineNavSection = function (sectionName, namespace) {
@@ -581,7 +583,7 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создан узел навигации ' + navNode.code);
+              log.log('Создан узел навигации ' + navNode.namespace + '@' + navNode.code);
               resolve(ns);
             }
           );
