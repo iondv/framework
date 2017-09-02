@@ -123,16 +123,18 @@ di('app', config.di,
   })
   .then(
   // Подключаем модули
-  /**
-   * @param {{}} scope
-   * @param {SettingsRepository} [scope.settings]
-   * @returns {Promise}
-     */
   function (scope) {
     return di('plugins', scope.settings.get('plugins') || {}, {}, 'app')
       .then(() => {return scope;});
   })
-  .then(function (scope) {
+  .then(
+    /**
+     * @param {{}} scope
+     * @param {SettingsRepository} [scope.settings]
+     * @param {OAuth2Adapter} [scope.oauth]
+     * @returns {Promise}
+     */
+    function (scope) {
     var moduleTitles = {};
     try {
       // Тема оформления страниц аутентификации и регистрации
@@ -143,6 +145,11 @@ di('app', config.di,
       );
 
       scope.auth.setTopLevelAuth();
+
+      if (scope.oauth) {
+        app.use('/oauth2/grant', scope.oauth.grant());
+        app.post('/oauth2/token', scope.oauth.token());
+      }
 
       // Редирект на дефолтный модуль
       var defaultModule = null;

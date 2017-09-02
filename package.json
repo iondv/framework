@@ -50,7 +50,7 @@
     "mongodb": "latest",
     "morgan": "latest",
     "uuid": "latest",
-    "node-oauth2-server": "latest",
+    "oauth2-server": "latest",
     "passport": "latest",
     "passport-facebook": "latest",
     "passport-local": "latest",

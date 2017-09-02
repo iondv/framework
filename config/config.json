@@ -243,6 +243,14 @@
           "dataSource": "ion://Db"
         }
       },
+      "wsAuth": {
+        "module": "lib/wsAuth",
+        "options": {
+          "dataSource": "ion://Db",
+          "auth": "ion://auth",
+          "acl": "ion://aclProvider"
+        }
+      },
       "workflows": {
         "module": "core/impl/WorkflowProvider",
         "initMethod": "init",
