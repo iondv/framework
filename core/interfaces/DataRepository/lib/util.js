@@ -589,7 +589,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
     return p.then(() => {
       or.push(filterByItemIds(scope.keyProvider, cm, ids));
     });
-  } else {
+  } else if (Array.isArray(opts.searchBy)) {
     let fullText = false;
 
     let tmp = [];
