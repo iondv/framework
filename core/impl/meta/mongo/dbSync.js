@@ -412,7 +412,7 @@ function MongoDbSync(options) {
   this._defineClass = function (classMeta, namespace) {
     return getMetaTable('meta')
       .then((metaCollection) => {
-        let namespace = classMeta.namespace || namespace || null;
+        namespace = classMeta.namespace || namespace || null;
         classMeta.namespace = namespace;
         return new Promise((resolve, reject) => {
           findClassRoot(classMeta, namespace, metaCollection, (err, cm) => {
