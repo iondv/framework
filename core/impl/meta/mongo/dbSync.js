@@ -201,7 +201,7 @@ function MongoDbSync(options) {
    */
   function createCollection(cm, namespace) {
     return new Promise(function (resolve, reject) {
-      let namespace = cm.namespace || namespace;
+      namespace = cm.namespace || namespace;
       let cn = (namespace ? namespace + '_' : '') + cm.name;
       db().collection(
         cn,
@@ -281,8 +281,8 @@ function MongoDbSync(options) {
           return getSysColl(GEOFLD_COLL)
             .then(function (coll) {
               return new Promise((resolve, reject) => {
-                let namespace = rcm.namespace || namespace;
-                let cn = (namespace ? namespace + '_' : '') + rcm.name;
+                let ns = rcm.namespace || namespace;
+                let cn = (ns ? ns+ '_' : '') + rcm.name;
                 let d = {};
                 d[property.name] = true;
                 coll.updateOne(
