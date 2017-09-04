@@ -681,6 +681,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
       Array.prototype.push.apply(or, tmp);
     });
   }
+  return Promise.resolve();
 }
 
 /**
