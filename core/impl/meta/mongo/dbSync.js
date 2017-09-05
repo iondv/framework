@@ -368,7 +368,7 @@ function MongoDbSync(options) {
       return promise;
     };
   }
-  
+
   function addAutoInc(cm) {
     /**
      * @param {Collection} collection
@@ -581,27 +581,30 @@ function MongoDbSync(options) {
   };
 
   this._defineNavNode = function (navNode,navSectionName, namespace) {
-    return new Promise(function (resolve, reject) {
-      getMetaTable('nav').then(function (collection) {
+    return getMetaTable('nav')
+      .then(function (collection) {
         navNode.itemType = 'node';
         navNode.section = navSectionName;
         navNode.namespace = namespace || null;
         delete navNode._id;
-
-        collection.updateOne(
-          {
-            code: navNode.code,
-            itemType: navNode.itemType,
-            namespace: navNode.namespace
-          }, navNode, {upsert: true}, function (err, ns) {
-          if (err) {
-            return reject(err);
-          }
-          log.log('Создан узел навигации ' + navNode.code);
-          resolve(ns);
+        return new Promise((resolve, reject) => {
+          collection.updateOne(
+            {
+              code: navNode.code,
+              itemType: navNode.itemType,
+              namespace: navNode.namespace
+            },
+            navNode,
+            {upsert: true},
+            (err, ns) => {
+              if (err) {
+                return reject(err);
+              }
+              log.log('Создан узел навигации ' + navNode.code);
+              resolve(ns);
+            });
         });
-      }).catch(reject);
-    });
+      });
   };
 
   this._undefineNavNode = function (navNodeName, namespace) {
