@@ -100,7 +100,9 @@
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]"
         }
-      },
+      }
+    },
+    "di" : {
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
@@ -108,9 +110,7 @@
         "options": {
           "dataRepo": "dataRepo"
         }
-      }
-    },
-    "di" : {
+      },
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
