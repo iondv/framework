@@ -26,6 +26,7 @@ function OwnCloudStorage(config) {
   let _this = this;
 
   let urlBase = config.urlBase  || '';
+
   let ownCloudUrl = url.parse(config.url, true);
 
   let urlTypes = {
@@ -42,9 +43,15 @@ function OwnCloudStorage(config) {
 
   function urlResolver(uri, part) {
     if (arguments.length > 1) {
-      var result = uri;
-      for (var i = 1; i < arguments.length; i++) {
-        result = url.resolve(result, arguments[i]);
+      let result = uri;
+      for (let i = 1; i < arguments.length; i++) {
+        let tmp = arguments[i];
+        if (tmp) {
+          if (tmp[0] === '/') {
+            tmp = tmp.substr(1);
+          }
+          result = url.resolve(result, tmp);
+        }
       }
       return result;
     }
@@ -72,15 +79,14 @@ function OwnCloudStorage(config) {
   function streamGetter(filePath) {
     return function (callback) {
       try {
-        var reqParams = {
-          uri: urlResolver(config.url, urlTypes.WEBDAV, filePath),
+        let reqParams = {
+          uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, filePath)),
           auth: {
             user: config.login,
             password: config.password
           }
         };
-        var s = request.get(reqParams);
-        callback(null, s);
+        callback(null, request.get(reqParams));
       } catch (err) {
         callback(err);
       }
@@ -89,24 +95,25 @@ function OwnCloudStorage(config) {
 
   function checkDir(dir) {
     dir = parseDirId(dir);
-    return new Promise(function (resolve,reject) {
-      var reqParams = {
-        uri: urlConcat(config.url, urlTypes.WEBDAV, dir),
-        auth: {
-          user: config.login,
-          password: config.password
-        },
-        headers: {
-          Depth: '0'
-        },
-        method: 'PROPFIND'
-      };
-      request(reqParams, function (err, res, body) {
+    let reqParams = {
+      uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, dir)),
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      headers: {
+        Depth: '0'
+      },
+      method: 'PROPFIND'
+    };
+
+    return new Promise((resolve, reject) => {
+      request(reqParams, (err, res, body) => {
         if (err) {
           return reject(err);
         }
         if (!body) {
-          return reject(new Error(`empty response, status: ${res.statusCode}`));
+          return reject(new Error(`Empty response, status: ${res.statusCode}`));
         }
         try {
           let dom = new Dom();
@@ -129,33 +136,19 @@ function OwnCloudStorage(config) {
   function mkdirp(path) {
     let dir = parseDirId(path);
     return checkDir(dir)
-      .then(exist => {
-        if (exist) {
+      .then(exists => {
+        if (exists) {
           return true;
         }
-        let dirs = dir.split('/').filter(v => v);
-        let i = 0;
-        function execute() {
-          return new Promise(function (resolve, reject) {
-            if (i < dirs.length) {
-              let d = dirs.slice(0, i + 1).join('/');
-              i++;
-              return checkDir(d)
-                .then(exist => {
-                  if (exist) {
-                    return true;
-                  }
-                  return _this._createDir(d);
-                })
-                .then(done => execute())
-                .then(resolve)
-                .catch(reject);
-            } else {
-              return resolve(true);
-            }
-          });
-        }
-        return execute();
+        let parts = dir.split('/').filter(v => v);
+        let p;
+        parts.forEach((part, i) => {
+          if (i < parts.length - 1) {
+            let pth = parts.slice(0, i + 1).join('/');
+            p = p ? p.then(() => mkdirp(pth)) : mkdirp(pth);
+          }
+        });
+        return p ? p.then(() => _this._createDir(parts.join('/'))) : _this._createDir(parts.join('/'));
       });
   }
 
@@ -190,7 +183,7 @@ function OwnCloudStorage(config) {
       }
 
       if (!d) {
-        return reject(new Error('Переданы данные недопустимого типа!'));
+        return Promise.reject(new Error('Переданы данные недопустимого типа!'));
       }
 
       let reader;
@@ -203,26 +196,20 @@ function OwnCloudStorage(config) {
         reader = fs.createReadStream(d);
       }
 
-      let mkdir = directory ? mkdirp(directory) : Promise.resolve();
-      return mkdir
+      return (directory ? mkdirp(directory) : Promise.resolve())
         .then(() => {
           let id = urlResolver(slashChecker(directory) || '', fn);
           let reqParams = {
-            uri: urlConcat(config.url, urlTypes.WEBDAV, id),
+            uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
             auth: {
               user: config.login,
               password: config.password
             }
           };
-          return new Promise(function (resolve, reject) {
+          return new Promise((resolve, reject) => {
             reader.pipe(request.put(reqParams, (err, res, body) => {
               if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
-                resolve(new StoredFile(
-                  id,
-                  urlResolver(slashChecker(urlBase), id),
-                  {name: fn},
-                  streamGetter(id)
-                ));
+                resolve(new StoredFile(id, urlResolver(slashChecker(urlBase), id), {name: fn}, streamGetter(id)));
               } else {
                 reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
               }
@@ -239,15 +226,15 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._remove = function (id) {
-    return new Promise(function (resolve,reject) {
-      var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
-        auth: {
-          user: config.login,
-          password: config.password
-        }
-      };
-      request.delete(reqParams, function (err, res, body) {
+    let reqParams = {
+      uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, id)),
+      auth: {
+        user: config.login,
+        password: config.password
+      }
+    };
+    return new Promise((resolve,reject) => {
+      request.delete(reqParams, (err, res, body) => {
         if (!err && res.statusCode === 204) {
           return resolve(id);
         } else {
@@ -263,16 +250,18 @@ function OwnCloudStorage(config) {
    */
   this._fetch = function (ids) {
     return new Promise(function (resolve,reject) {
-      var result = [];
+      let result = [];
       if (Array.isArray(ids)) {
         ids.forEach(id => {
-          var parts = id.split('/');
-          result.push(new StoredFile(
-            id,
-            urlResolver(slashChecker(urlBase), id),
-            {name: parts[parts.length - 1]},
-            streamGetter(id)
-          ));
+          let parts = id.split('/');
+          result.push(
+            new StoredFile(
+              id,
+              urlResolver(slashChecker(urlBase), id),
+              {name: parts[parts.length - 1]},
+              streamGetter(id)
+            )
+          );
         });
       }
       resolve(result);
@@ -280,20 +269,25 @@ function OwnCloudStorage(config) {
   };
 
   function respondFile(req, res) {
-    return function (file) {
+    return (file) => {
       if (file && file.stream) {
-        res.status(200);
-        res.set('Content-Disposition',
-          (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
-          '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
-        res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
-        if (file.options.size) {
-          res.set('Content-Length', file.options.size);
-        }
-        if (file.options.encoding) {
-          res.set('Content-Encoding', file.options.encoding);
-        }
-        file.stream.pipe(res);
+        file.stream.on('response', (response) => {
+          if (response.statusCode === 200) {
+            res.status(200);
+            res.set('Content-Disposition',
+              (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+              '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+            res.set(
+              'Content-Type',
+              response.headers['content-type'] || file.options.mimetype || 'application/octet-stream'
+            );
+            res.set('Content-Length', response.headers['content-length'] || file.options.size);
+            res.set('Content-Encoding', response.headers['content-encoding'] || file.options.encoding);
+            file.stream.pipe(res);
+          } else {
+            res.status(404).send('File not found!');
+          }
+        });
       } else {
         res.status(404).send('File not found!');
       }
@@ -315,7 +309,7 @@ function OwnCloudStorage(config) {
         return next();
       }
 
-      _this.fetch([fileId])
+      _this.fetch([decodeURI(fileId)])
         .then(files => {
           if (!files[0]) {
             return res.status(404).send('File not found!');
@@ -334,14 +328,12 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._init = function () {
-    return new Promise(function (resolve,reject) {
-      resolve();
-    });
+    return Promise.resolve();
   };
 
   function parseDirId(id) {
-    var result = null;
-    var urlObj = url.parse(id, true);
+    let result = null;
+    let urlObj = url.parse(id, true);
     if (urlObj.host === ownCloudUrl.host) {
       if (urlObj.query && urlObj.query.dir) {
         result = urlObj.query.dir;
@@ -381,28 +373,27 @@ function OwnCloudStorage(config) {
   }
 
   /**
-   *
    * @param {String} id
    * @returns {Promise}
    */
   this._getDir = function (id) {
     id = parseDirId(id);
+    let reqParams = {
+      uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, id)),
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      headers: {
+        Depth: '1'
+      },
+      method: 'PROPFIND'
+    };
     return new Promise(function (resolve,reject) {
-      var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, id),
-        auth: {
-          user: config.login,
-          password: config.password
-        },
-        headers: {
-          Depth: '1'
-        },
-        method: 'PROPFIND'
-      };
       request(reqParams, function (err, res, body) {
-        var tmp;
+        let tmp;
         if (!err && res.statusCode === 207) {
-          var dirObject = {
+          let dirObject = {
             id: id,
             type: resourceType.DIR,
             name: id,
@@ -411,20 +402,20 @@ function OwnCloudStorage(config) {
             dirs: []
           };
           try {
-            var dom = new Dom();
-            var doc = dom.parseFromString(body);
-            var dResponse = xpath.select(
+            let dom = new Dom();
+            let doc = dom.parseFromString(body);
+            let dResponse = xpath.select(
               '/*[local-name()="multistatus"]/*[local-name()="response"]',
               doc
             );
-            for (var i = 0; i < dResponse.length; i++) {
-              var href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.nodeValue;
+            for (let i = 0; i < dResponse.length; i++) {
+              let href = xpath.select('*[local-name()="href"]', dResponse[i])[0].firstChild.nodeValue;
               href = decodeURI(href);
               if (i === 0) {
                 href = href.replace(urlTypes.WEBDAV, urlTypes.INDEX);
                 dirObject.link = urlResolver(config.url, href);
               } else {
-                var collection = xpath.select(
+                let collection = xpath.select(
                   '*[local-name()="propstat"]/*[local-name()="prop"]/*[local-name()="resourcetype"]' +
                   '/*[local-name()="collection"]',
                   dResponse[i]
@@ -462,17 +453,17 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
-    return new Promise(function (resolve,reject) {
-      var id = slashChecker(parentDirId) + name;
-      var reqParams = {
-        uri: urlConcat(config.url, urlTypes.WEBDAV, id),
-        auth: {
-          user: config.login,
-          password: config.password
-        },
-        method: 'MKCOL'
-      };
-      request(reqParams, function (err, res) {
+    let id = slashChecker(parentDirId) + name;
+    let reqParams = {
+      uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      method: 'MKCOL'
+    };
+    return new Promise((resolve,reject) => {
+      request(reqParams, (err, res) => {
         if (!err && res.statusCode === 201) {
           if (fetch) {
             _this._getDir(id).then(resolve).catch(reject);
@@ -502,20 +493,20 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._putFile = function (dirId, fileId) {
-    return new Promise(function (resolve,reject) {
-      var fileName = path.basename(fileId);
-      var reqParams = {
-        uri: urlResolver(config.url, urlTypes.WEBDAV, fileId),
-        auth: {
-          user: config.login,
-          password: config.password
-        },
-        headers: {
-          Destination: urlResolver(config.url, urlTypes.WEBDAV, slashChecker(dirId), fileName)
-        },
-        method: 'MOVE'
-      };
-      request(reqParams, function (err, res, body) {
+    let fileName = path.basename(fileId);
+    let reqParams = {
+      uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, fileId)),
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      headers: {
+        Destination: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, slashChecker(dirId), fileName))
+      },
+      method: 'MOVE'
+    };
+    return new Promise((resolve,reject) => {
+      request(reqParams, (err, res, body) => {
         if (!err && res.statusCode === 201) {
           resolve(urlResolver(slashChecker(dirId, fileName)));
         } else {
@@ -550,27 +541,27 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._share = function (id, access) {
-    return new Promise(function (resolve,reject) {
-      var reqObject = {
-        uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
-        qs: {
-          format: 'json'
-        },
-        headers: {
-          'OCS-APIRequest': true
-        },
-        auth: {
-          user: config.login,
-          password: config.password
-        },
-        form: {
-          path: id,
-          shareType: '3',
-          // PublicUpload: 'true',
-          permissions: access ? accessLevel(access) : '8'
-        }
-      };
-      request.post(reqObject, function (err, res, body) {
+    let reqObject = {
+      uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
+      qs: {
+        format: 'json'
+      },
+      headers: {
+        'OCS-APIRequest': true
+      },
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      form: {
+        path: id,
+        shareType: '3',
+        // PublicUpload: 'true',
+        permissions: access ? accessLevel(access) : '8'
+      }
+    };
+    return new Promise((resolve,reject) => {
+      request.post(reqObject, (err, res, body) => {
         if (!err && res.statusCode === 200) {
           if (typeof body === 'string') {
             body = JSON.parse(body);
@@ -583,6 +574,28 @@ function OwnCloudStorage(config) {
     });
   };
 
+  function shareDeleteConstr(share) {
+    let reqObject = {
+      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
+      headers: {
+        'OCS-APIRequest': true
+      },
+      auth: {
+        user: config.login,
+        password: config.password
+      }
+    };
+    return new Promise((resolve, reject) => {
+      request.delete(reqObject, (err, res) => {
+        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+          resolve(true);
+        } else {
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+        }
+      });
+    });
+  }
+
   this._deleteShare = function (share) {
     let requester;
     try {
@@ -592,49 +605,30 @@ function OwnCloudStorage(config) {
     }
     return requester
       .then(shares => {
-        let promises = [];
+        let promise;
         shares.forEach(share => {
-          promises.push(new Promise(function (resolve, reject) {
-            let reqObject = {
-              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id),
-              headers: {
-                'OCS-APIRequest': true
-              },
-              auth: {
-                user: config.login,
-                password: config.password
-              }
-            };
-            request.delete(reqObject, function (err, res) {
-              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-                resolve(true);
-              } else {
-                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
-              }
-            });
-          }));
+          promise = promise ? promise.then(()=>shareDeleteConstr(share)) : shareDeleteConstr(share);
         });
-        return Promise.all(promises);
-      })
-      .then(result => true);
+        return promise.then(()=>true) || Promise.resolve(true);
+      });
   };
 
   function requestShares(id) {
-    return new Promise(function (resolve, reject) {
-      let reqObject = {
-        uri: urlResolver(slashChecker(config.url), urlTypes.OCS),
-        qs: {
-          path: id
-        },
-        headers: {
-          'OCS-APIRequest': true
-        },
-        auth: {
-          user: config.login,
-          password: config.password
-        }
-      };
-      request.get(reqObject, function (err, res, body) {
+    let reqObject = {
+      uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
+      qs: {
+        path: id
+      },
+      headers: {
+        'OCS-APIRequest': true
+      },
+      auth: {
+        user: config.login,
+        password: config.password
+      }
+    };
+    return new Promise((resolve, reject) => {
+      request.get(reqObject, (err, res, body) => {
         if (err) {
           return reject(err);
         }
@@ -646,7 +640,7 @@ function OwnCloudStorage(config) {
             '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
             doc
           );
-          for (var i = 0; i < elements.length; i++) {
+          for (let i = 0; i < elements.length; i++) {
             let shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
             let shareUrl = xpath.select('*[local-name()="url"]', elements[i])[0].firstChild.nodeValue;
             if (shareId) {
@@ -661,44 +655,48 @@ function OwnCloudStorage(config) {
     });
   }
 
+  function shareAccessConstructor(share, access) {
+    let reqObject = {
+      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
+      headers: {
+        'OCS-APIRequest': true
+      },
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      form: {
+        permissions: accessLevel(access)
+      }
+    };
+    return new Promise((resolve, reject) => {
+      request.put(reqObject, (err, res) => {
+        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+          resolve(true);
+        } else {
+          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+        }
+      });
+    });
+  }
+
   /**
-   *
    * @param {String} id
    * @param {String} access
    * @returns {Promise}
    */
   this._setShareAccess = function (id, access) {
     id = parseDirId(id);
-    return new Promise(function (resolve, reject) {
-      requestShares(id).then((shares) => {
-        var promises = [];
+    return requestShares(id)
+      .then((shares) => {
+        let promise;
         shares.forEach((share) => {
-          promises.push(new Promise(function (resolve, reject) {
-            var reqObject = {
-              uri: urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id),
-              headers: {
-                'OCS-APIRequest': true
-              },
-              auth: {
-                user: config.login,
-                password: config.password
-              },
-              form: {
-                permissions: accessLevel(access)
-              }
-            };
-            request.put(reqObject, function (err, res) {
-              if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-                resolve(true);
-              } else {
-                return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
-              }
-            });
-          }));
+          promise = promise ?
+            promise.then(() => shareAccessConstructor(share, access)) :
+            shareAccessConstructor(share, access);
         });
-        Promise.all(promises).then(resolve).catch(reject);
-      }).catch(reject);
-    });
+        return promise || Promise.resolve();
+      });
   };
 
   /**
