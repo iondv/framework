@@ -9,7 +9,7 @@
     "log": {
       "logDestinations": ["console", "./log"]
     },
-    "di" : {
+    "bootstrap": {
       "rtEvents": {
         "module": "core/RuntimeEvents",
         "options": {
@@ -66,6 +66,14 @@
           "dataSource": "ion://Db"
         }
       },
+      "aclProvider":{
+        "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataSource": "ion://Db"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
@@ -92,7 +100,9 @@
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]"
         }
-      },
+      }
+    },
+    "di" : {
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
@@ -132,6 +142,7 @@
         "module": "core/impl/resource/ImageStorage",
         "options": {
           "fileStorage": "ion://fileStorage",
+          "urlBase": "/images",
           "thumbnails": {
             "tiny": {
               "width": 50,
@@ -229,14 +240,6 @@
             "retry_strategy": {}
           },
           "logger": "ion://sysLog"
-        }
-      },
-      "aclProvider":{
-        "module": "core/impl/access/aclmongo",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataSource": "ion://Db"
         }
       },
       "workflows": {

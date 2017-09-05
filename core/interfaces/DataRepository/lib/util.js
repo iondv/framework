@@ -710,7 +710,7 @@ function textSearchFilter(scope, cm, opts, sv, lang, useFullText, prefix, depth)
     }
     return null;
   });
-};
+}
 
 module.exports.textSearchFilter = textSearchFilter;
 
@@ -721,13 +721,12 @@ module.exports.textSearchFilter = textSearchFilter;
  * @returns {Promise}
  */
 function loadFiles(item, fileStorage, imageStorage) {
-  var pm;
-  var fids = [];
-  var iids = [];
-  var attrs = {};
-  for (var nm in item.base) {
+  let fids = [];
+  let iids = [];
+  let attrs = {};
+  for (let nm in item.base) {
     if (item.base.hasOwnProperty(nm) && item.base[nm]) {
-      pm = item.classMeta.getPropertyMeta(nm);
+      let pm = item.classMeta.getPropertyMeta(nm);
       if (pm) {
         if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
           if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
@@ -744,7 +743,7 @@ function loadFiles(item, fileStorage, imageStorage) {
           if (!Array.isArray(v)) {
             v = [v];
           }
-          for (var i = 0; i < v.length; i++) {
+          for (let i = 0; i < v.length; i++) {
             if (v[i]) {
               fids.push(v[i]);
               if (!attrs.hasOwnProperty('f_' + v[i])) {
@@ -761,18 +760,17 @@ function loadFiles(item, fileStorage, imageStorage) {
     return Promise.resolve(item);
   }
 
-  var loaders = [];
+  let loaders = [];
   loaders.push(fileStorage.fetch(fids));
   loaders.push(imageStorage.fetch(iids));
 
   return Promise.all(loaders)
     .then(function (files) {
-        var tmp, i, j, k;
-        for (k = 0; k < files.length; k++) {
-          for (i = 0; i < files[k].length; i++) {
+        for (let k = 0; k < files.length; k++) {
+          for (let i = 0; i < files[k].length; i++) {
             if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
-              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
-                tmp = attrs['f_' + files[k][i].id][j];
+              for (let j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
+                let tmp = attrs['f_' + files[k][i].id][j];
                 if (typeof tmp === 'object') {
                   if (!Array.isArray(item.files[tmp.attr])) {
                     item.files[tmp.attr] = [];
