@@ -21,7 +21,7 @@ function StoredFile(id, link, options, streamGetter) {
     return new Promise(function (resolve, reject) {
       if (typeof streamGetter === 'function') {
         try {
-          streamGetter(function (err, stream) {
+          streamGetter((err, stream) => {
             if (err) {
               return reject(err);
             }
