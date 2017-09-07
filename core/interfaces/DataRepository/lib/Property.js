@@ -99,14 +99,22 @@ function Property(item, propertyMeta, name) {
       return result;
     }
 
-    var v = this.getValue();
+    let v = this.getValue();
+
+    if (this.getType() === PropertyTypes.USER) {
+      if (typeof v === 'string') {
+        let p = v.split('@');
+        return p[0];
+      }
+      return '';
+    }
 
     if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
       v = typeof dateCallback === 'function' ? dateCallback.call(null, v) : v.toDateString();
     }
 
     if (this.meta.selectionProvider) {
-      var selection = this.getSelection();
+      let selection = this.getSelection();
       if (Array.isArray(selection)) {
         for (let i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
