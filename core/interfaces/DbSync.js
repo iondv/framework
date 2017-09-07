@@ -44,8 +44,8 @@ function DbSync() {
    * @param {String} [namespace]
    * @returns {Promise}
    */
-  this.defineView = function (viewMeta, className, type, path, namespace) {
-    return this._defineView(viewMeta, className, type, path, namespace);
+  this.defineView = function (viewMeta, className, type, path) {
+    return this._defineView(viewMeta, className, type, path);
   };
 
   /**
@@ -56,8 +56,8 @@ function DbSync() {
    * @param {String} [namespace]
    * @returns {Promise}
    */
-  this.undefineView = function (className, type, path, version, namespace) {
-    return this._undefineView(className, type, path, version, namespace);
+  this.undefineView = function (className, type, path, version) {
+    return this._undefineView(className, type, path, version);
   };
 
   /**

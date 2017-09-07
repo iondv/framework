@@ -92,8 +92,6 @@ function ClassMeta(metaObject) {
 
   var _this = this;
 
-  this.namespace = '';
-
   this.plain = metaObject;
 
   this.ancestor = null;
@@ -123,11 +121,11 @@ function ClassMeta(metaObject) {
   };
 
   this.getNamespace = function () {
-    return this.namespace;
+    return this.plain.namespace;
   };
 
   this.getCanonicalName = function () {
-    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
+    return this.plain.name + (this.plain.namespace ? '@' + this.plain.namespace : '');
   };
 
   this.getSemantics = function (item, dateCallback, circular) {
@@ -185,7 +183,10 @@ function ClassMeta(metaObject) {
   };
 
   this.checkAncestor = function (name) {
-    if (name === this.getName()) {
+    if (name.indexOf('@') < 0) {
+      name = name + '@' + this.getNamespace();
+    }
+    if (name === this.getCanonicalName()) {
       return this;
     }
     var parent = this.getAncestor();
@@ -223,6 +224,20 @@ function ClassMeta(metaObject) {
 
   this.isJournaling = function () {
     return this.plain.journaling;
+  };
+
+  this.getCreatorTracker = function () {
+    if (!this.plain.creatorTracker && this.ancestor) {
+      return this.ancestor.getCreatorTracker();
+    }
+    return this.plain.creatorTracker;
+  };
+
+  this.getEditorTracker = function () {
+    if (!this.plain.editorTracker && this.ancestor) {
+      return this.ancestor.getEditorTracker();
+    }
+    return this.plain.editorTracker;
   };
 }
 

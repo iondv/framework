@@ -5,6 +5,8 @@ const config = require('../config');
 const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
 errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger({});
@@ -33,41 +35,30 @@ process.argv.forEach(function (val) {
   setPwd = false;
 });
 
-var scope = null;
 // Связываем приложение
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler']
-).then(
-  function (scp) {
-    scope = scp;
-    return new Promise(function (rs, rj) {
+  }, null, ['rtEvents', 'sessionHandler', 'application'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) =>
+    new Promise(function (resolve, reject) {
       scope.auth.register(
         {
           name: name,
           pwd: pwd
         },
-        function (err, u) {
-          if (err) {
-            return rj(err);
-          }
-          rs(u);
-        }
+        (err, u) => err ? reject(err) : resolve(scope)
       );
-    });
-  }
-).then(function () {
-  return scope.dataSources.disconnect();
-}).then(
-  // Справились
-  function () {
+    })
+  )
+  .then((scope) => scope.dataSources.disconnect())
+  .then(() => {
     console.info('Пользователь успешно зарегистрирован.');
     process.exit(0);
-  }
-).catch(function (err) {
-  console.error(err);
-  process.exit(130);
-});
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(130);
+  });
