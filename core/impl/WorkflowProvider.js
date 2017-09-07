@@ -73,7 +73,7 @@ function WorkflowProvider(options) {
   this._getStatus = function (item, tOptions) {
     return new Promise(function (resolve, reject) {
       let workflows = options.metaRepo.getWorkflows(
-        item.getMetaClass().getName(),
+        item.getMetaClass().getCanonicalName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
@@ -330,6 +330,8 @@ function WorkflowProvider(options) {
                       calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
                       calcAssignmentValue(updates, item, assignment, tOptions);
                   });
+                } else {
+                  calculations = Promise.resolve(null);
                 }
 
                 if (!calculations) {

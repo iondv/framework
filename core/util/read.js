@@ -21,7 +21,7 @@ function processDir(dir, filter, handler, onErr) {
       let fn = path.join(dir, files[i]);
       let stat = fs.lstatSync(fn);
       if (stat.isDirectory()) {
-        processDir(fn, filter, handler);
+        processDir(fn, filter, handler, onErr);
       } else if (filter(files[i])) {
         handler(fn);
       }

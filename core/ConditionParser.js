@@ -29,29 +29,44 @@ function toScalar(v, context, type, lang) {
     v = v[0];
   }
 
-  if (typeof v === 'string' && v[0] === '$' && context) {
-    let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
-    let nm = v.substring(1);
-    let p;
-    if (item && (p = item.property(nm)) !== null) {
+  if (typeof v === 'string' && v[0] === '$') {
+    if (v === '$$now') {
+      v = new Date();
+    } else if (v === '$$today') {
+      v = new Date();
+      v.setHours(0, 0, 0, 0);
+    } if (context) {
+      let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+      let nm = v.substring(1);
+      let p;
+      if (item && (p = item.property(nm)) !== null) {
         v = p.getValue();
-    } else if (context.hasOwnProperty(nm)) {
-      v = context[nm];
-    }
-    if (Array.isArray(v)) {
-      let result = [];
-      v.forEach((v) => {result.push(toScalar(v, context, type, lang));});
-      return result;
+      } else if (context.hasOwnProperty(nm)) {
+        v = context[nm];
+      }
+      if (Array.isArray(v)) {
+        let result = [];
+        v.forEach((v) => {
+          result.push(toScalar(v, context, type, lang));
+        });
+        return result;
+      }
     }
   }
 
-  switch (type) {
-    case PropertyTypes.DATETIME: {
-      v = strToDate(v, lang);
-      return v;
-    }break;
-    default: return cast(v, type);
+  if (typeof v === 'string') {
+    switch (type) {
+      case PropertyTypes.DATETIME:
+      {
+        v = strToDate(v, lang);
+        return v;
+      }
+        break;
+      default:
+        return cast(v, type);
+    }
   }
+  return v;
 }
 
 function findPM(cm, name) {

@@ -531,6 +531,9 @@ function MongoDs(config) {
 
             if (!v) {
               parent[part] = new Date();
+            } else if (v === 'today') {
+              parent[part] = new Date();
+              parent[part].setHours(0, 0, 0);
             } else if (Array.isArray(v)) {
               parent[part] = new Function.prototype.bind.apply(Date, v.slice(0).unshift(null));
             } else {

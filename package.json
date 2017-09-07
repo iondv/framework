@@ -51,7 +51,8 @@
     "moment": "latest",
     "mongodb": "latest",
     "morgan": "latest",
-    "oauth2-server": "*",
+    "uuid": "latest",
+    "node-oauth2-server": "latest",
     "passport": "latest",
     "passport-facebook": "latest",
     "passport-local": "latest",
@@ -62,7 +63,6 @@
     "serve-favicon": "latest",
     "stream-buffers": "latest",
     "utf8": "latest",
-    "uuid": "latest",
     "xmldom": "latest",
     "xpath": "latest",
     "xss": "latest"
