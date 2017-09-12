@@ -22,6 +22,8 @@ const Scheduler = require('core/impl/Scheduler');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
 const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
 errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger(config.log || {});
@@ -114,30 +116,22 @@ function moduleLoader(name, module) {
 }
 
 // Связываем приложение
-di('app', config.di, {
-  server: server,
-  application: app,
-  sysLog: sysLog
-})
-  .then(
-  // Подключаем модули
-  /**
-   * @param {{}} scope
-   * @param {SettingsRepository} [scope.settings]
-   * @returns {Promise}
-     */
-  function (scope) {
-    return di('plugins', scope.settings.get('plugins') || {}, {}, 'app')
-      .then(() => {return scope;});
+di('boot', config.bootstrap,
+  {
+    server: server,
+    application: app,
+    sysLog: sysLog
   })
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => {
-    if (config.runJobs) {
+	if (config.runJobs) {
       scope.scheduler = new Scheduler({settings: scope.settings});
     }
     return scope;
   })
   .then((scope) => {
-    var moduleTitles = {};
+    let moduleTitles = {};
     try {
       // Тема оформления страниц аутентификации и регистрации
       theme(
@@ -149,7 +143,7 @@ di('app', config.di, {
       scope.auth.setTopLevelAuth();
 
       // Редирект на дефолтный модуль
-      var defaultModule = null;
+      let defaultModule = null;
       if (scope.settings && scope.settings instanceof SettingsRepository) {
         defaultModule = scope.settings.get('defaultModule');
         moduleTitles = scope.settings.get('moduleTitles') || {};
@@ -168,25 +162,27 @@ di('app', config.di, {
       if (scope.fileStorage) {
         app.use(scope.fileStorage.middle());
       }
+      if (scope.imageStorage) {
+        app.use(scope.imageStorage.middle());
+      }
     } catch (err) {
       return Promise.reject(err);
     }
 
-    var i, moduleInitiators;
     sysLog.info('Загрузка веб-модулей.');
     app.locals.sysMenu = [];
-    moduleInitiators = null;
+    let moduleInitiators = null;
     try {
-      var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-      var skipModules = config.skipModules || [];
-      for (i = 0; i < candidates.length; i++) {
+      let candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+      let skipModules = config.skipModules || [];
+      for (let i = 0; i < candidates.length; i++) {
         if (
           fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
           skipModules.indexOf(candidates[i]) < 0
         ) {
-          var module = require('modules/' + candidates[i] + '/web');
+          let module = require('modules/' + candidates[i] + '/web');
           if (typeof module === 'function') {
-            var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            let title = moduleTitles[candidates[i]] || module.locals.sysTitle;
             if (title) {
               app.locals.sysMenu.push(
                 {
@@ -227,36 +223,33 @@ di('app', config.di, {
     if (moduleInitiators) {
       return moduleInitiators.then(() => {
         sysLog.info('Все модули загружены.');
-        return Promise.resolve(scope);
       });
     }
-    return Promise.resolve(scope);
   })
   .then(
   // Запускаем приложение
-    (scope) => {
-      var ports = config.port;
+    () => {
+      let ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
-      return start(ports, 0).then(()=>scope);
+      return start(ports, 0);
     }
   )
   .then(
-    (scope) => {
+    () => {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
       return scope;
     })
-  .then((scope)=>{
+  .then(()=>{
     if (config.runJobs) {
       sysLog.info('Запуск заданий по расписанию');
       return scope.scheduler.start().then(() => {
         sysLog.info('Подсистема заданий по расписанию запущена');
       });
     }
-    return Promise.resolve();
   })
   .catch(onError);

@@ -4,5 +4,5 @@
 'use strict';
 const c = require('../arithmetic/incOper');
 
-module.exports = c(function (a, b) {return a + b;}, '');
+module.exports = c(function (a, b) {return (a || '') + (b || '');}, '');
 

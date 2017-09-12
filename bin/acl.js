@@ -10,6 +10,8 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger({});
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
 errorSetup(config.lang || 'ru');
 
 var params = {
@@ -144,22 +146,16 @@ function processAclDefinition(u) {
 }
 
 // Связываем приложение
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler', 'scheduler']
-).then(
-  function (scp) {
-    scope = scp;
-    if (!params.users.length) {
-      return Promise.resolve();
-    }
-    return scope.roleAccessManager.assignRoles(params.users, params.roles);
-  }
-).then(
-  function () {
+  }, null, ['auth', 'rtEvents', 'sessionHandler', 'scheduler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) => params.users.length ?
+    scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope
+  )
+  .then((scope) => {
     if (params.resources.length || params.permissions.length) {
       if (!params.resources.length) {
         params.resources.push(scope.roleAccessManager.globalMarker);
@@ -168,18 +164,16 @@ di('app', config.di,
         params.permissions.push(Permissions.FULL);
       }
       if (params.method === 'grant') {
-        return scope.roleAccessManager.grant(params.roles, params.resources, params.permissions);
+        return scope.roleAccessManager.grant(params.roles, params.resources, params.permissions).then(() => scope);
       } else {
-        return scope.roleAccessManager.deny(params.roles, params.resources, params.permissions);
+        return scope.roleAccessManager.deny(params.roles, params.resources, params.permissions).then(() => scope);
       }
     } else {
-      return Promise.resolve();
+      return scope;
     }
-  }
-).then(
-  function () {
-    var w = null;
-
+  })
+  .then((scope) => {
+    let w = null;
     aclDefinitions.forEach(function (u) {
       if (w) {
         w = w.then(processAclDefinition(u));
@@ -189,21 +183,16 @@ di('app', config.di,
     });
 
     if (!w) {
-      return Promise.resolve();
+      return Promise.resolve(scope);
     }
-    return w;
-  }
-).then(
-  function () {
-    return scope.dataSources.disconnect();
-  }
-).then(
-  // Справились
-  function () {
+    return w.then(() => scope);
+  })
+  .then((scope) => scope.dataSources.disconnect())
+  .then(() => {
     console.info('Права назначены');
     process.exit(0);
-  }
-).catch(function (err) {
-  console.error(err);
-  process.exit(130);
-});
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(130);
+  });
