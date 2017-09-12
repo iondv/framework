@@ -243,12 +243,7 @@ function FsStorage(options) {
 
   function urlAccessor(urlBase, filter) {
     return function (req, res, next) {
-      let basePath = url.parse(urlBase).path;
-      if (req.path.indexOf(basePath) !== 0) {
-        return next();
-      }
-
-      let fileId = req.path.replace(basePath + '/', '');
+      let fileId = req.params.id;
 
       if (!fileId) {
         return next();
@@ -447,6 +442,13 @@ function FsStorage(options) {
       .then(() => true);
   };
 
+  this._fileRoute = function () {
+    return _options.urlBase + '/:id';
+  };
+
+  this._shareRoute = function () {
+    return _options.shareBase + '/:id';
+  };
 }
 
 FsStorage.prototype = new ResourceStorage();

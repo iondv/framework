@@ -151,17 +151,27 @@ di('boot', config.bootstrap,
       }
 
       if (scope.fileStorage) {
-        app.use(scope.fileStorage.shareMiddle());
+        let route = scope.fileStorage.shareRoute();
+        if (route) {
+          app.get(route, scope.fileStorage.shareMiddle());
+        }
+      }
+
+      if (scope.fileStorage) {
+        let route = scope.fileStorage.fileRoute();
+        if (route) {
+          app.get(route, scope.auth.verifier(), scope.fileStorage.fileMiddle());
+        }
+      }
+      if (scope.imageStorage) {
+        let route = scope.imageStorage.fileRoute();
+        if (route) {
+          app.get(route, scope.auth.verifier(), scope.imageStorage.fileMiddle());
+        }
       }
 
       scope.auth.setTopLevelAuth();
 
-      if (scope.fileStorage) {
-        app.use(scope.fileStorage.fileMiddle());
-      }
-      if (scope.imageStorage) {
-        app.use(scope.imageStorage.fileMiddle());
-      }
     } catch (err) {
       return Promise.reject(err);
     }

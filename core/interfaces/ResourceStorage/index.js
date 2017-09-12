@@ -148,6 +148,19 @@ function ResourceStorage() {
     return this._setShareAccess(id, access);
   };
 
+  this.fileRoute = function () {
+    if (typeof this._fileRoute === 'function') {
+      return this._fileRoute();
+    }
+    return false;
+  };
+
+  this.shareRoute = function () {
+    if (typeof this._shareRoute === 'function') {
+      return this._shareRoute();
+    }
+    return false;
+  };
 }
 
 module.exports.ResourceStorage = ResourceStorage;
