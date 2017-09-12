@@ -39,6 +39,7 @@ function FsStorage(options) {
   delete options.dataSource;
   var _options = clone(options) || {};
   _options.urlBase = _options.urlBase  || '';
+  _options.shareBase = _options.shareBase  || '/share';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
@@ -240,12 +241,9 @@ function FsStorage(options) {
     res.status(404).send(html);
   }
 
-  /**
-   * @returns {Function}
-   */
-  this._middle = function () {
+  function urlAccessor(urlBase, filter) {
     return function (req, res, next) {
-      let basePath = url.parse(_options.urlBase).path;
+      let basePath = url.parse(urlBase).path;
       if (req.path.indexOf(basePath) !== 0) {
         return next();
       }
@@ -256,7 +254,9 @@ function FsStorage(options) {
         return next();
       }
 
-      dataSource.get('ion_files', {id: fileId})
+      filter = filter || {};
+      filter.id = fileId;
+      dataSource.get('ion_files', filter)
         .then((data) => {
           if (data && data.type === resourceType.FILE) {
             let f = new StoredFile(
@@ -291,8 +291,8 @@ function FsStorage(options) {
                   }
                   respondDirectory(res, data.name, dirLinks, fileLinks);
                 }).catch(() => {
-                  res.status(404).send('File (or directory) not found!');
-                });
+                res.status(404).send('File (or directory) not found!');
+              });
             } else {
               res.status(200).send('Folder is empty!');
             }
@@ -302,6 +302,17 @@ function FsStorage(options) {
         })
         .catch((err) => {res.status(500).send(err.message);});
     };
+  }
+
+  this._shareMiddle = function () {
+    return urlAccessor(_options.shareBase, {shared: true});
+  };
+
+  /**
+   * @returns {Function}
+   */
+  this._fileMiddle = function () {
+    return urlAccessor(_options.urlBase);
   };
 
   /**
@@ -418,15 +429,22 @@ function FsStorage(options) {
   };
 
   this._share = function (id) {
-    return Promise.resolve(_options.urlBase + '/' + id);
+    return dataSource
+      .update('ion_files', {id: id}, {shared: true})
+      .then(() => _options.shareBase + '/' + id);
   };
 
   this._currentShare  = function (id) {
-    return this._share(id);
+    return _options.shareBase + '/' + id;
   };
 
   this._deleteShare = function (share) {
-    return Promise.resolve(true);
+    let basePath = url.parse(_options.shareBase).path;
+    let fileId = share.replace(basePath + '/', '');
+
+    return dataSource
+      .update('ion_files', {id: fileId}, {shared: false})
+      .then(() => true);
   };
 
 }

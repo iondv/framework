@@ -33,9 +33,19 @@ function ResourceStorage() {
   /**
    * @returns {Function}
    */
-  this.middle = function () {
-    if (typeof this._middle === 'function') {
-      return this._middle();
+  this.fileMiddle = function () {
+    if (typeof this._fileMiddle === 'function') {
+      return this._fileMiddle();
+    }
+    return function (req, res, next) { next(); };
+  };
+
+  /**
+   * @returns {Function}
+   */
+  this.shareMiddle = function () {
+    if (typeof this._shareMiddle === 'function') {
+      return this._shareMiddle();
     }
     return function (req, res, next) { next(); };
   };

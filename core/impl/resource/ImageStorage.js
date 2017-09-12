@@ -285,7 +285,7 @@ function ImageStorage(options) { // jshint ignore:line
   /**
    * @returns {Function}
    */
-  this._middle = function () {
+  this._fileMiddle = function () {
     return function (req, res, next) {
       try {
         if (uploadThumbnails) {

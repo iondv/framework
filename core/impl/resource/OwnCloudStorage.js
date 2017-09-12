@@ -297,7 +297,7 @@ function OwnCloudStorage(config) {
   /**
    * @returns {Function}
    */
-  this._middle = function () {
+  this._fileMiddle = function () {
     return function (req, res, next) {
       let basePath = url.parse(urlBase).path;
       if (!basePath || req.path.indexOf(basePath) !== 0) {

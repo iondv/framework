@@ -133,8 +133,6 @@ di('boot', config.bootstrap,
         scope.settings.get('theme') || config.theme || 'default', sysLog
       );
 
-      scope.auth.setTopLevelAuth();
-
       // Редирект на дефолтный модуль
       let defaultModule = null;
       if (scope.settings && scope.settings instanceof SettingsRepository) {
@@ -153,10 +151,16 @@ di('boot', config.bootstrap,
       }
 
       if (scope.fileStorage) {
-        app.use(scope.fileStorage.middle());
+        app.use(scope.fileStorage.shareMiddle());
+      }
+
+      scope.auth.setTopLevelAuth();
+
+      if (scope.fileStorage) {
+        app.use(scope.fileStorage.fileMiddle());
       }
       if (scope.imageStorage) {
-        app.use(scope.imageStorage.middle());
+        app.use(scope.imageStorage.fileMiddle());
       }
     } catch (err) {
       return Promise.reject(err);
