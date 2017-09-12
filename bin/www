@@ -223,28 +223,29 @@ di('boot', config.bootstrap,
     if (moduleInitiators) {
       return moduleInitiators.then(() => {
         sysLog.info('Все модули загружены.');
+        return scope;
       });
     }
   })
   .then(
   // Запускаем приложение
-    () => {
+    (scope) => {
       let ports = config.port;
       if (!(ports instanceof Array)) {
         ports = [config.port];
       }
-      return start(ports, 0);
+      return start(ports, 0).then(() => scope);
     }
   )
   .then(
-    () => {
+    (scope) => {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
       return scope;
     })
-  .then(()=>{
+  .then((scope) => {
     if (config.runJobs) {
       sysLog.info('Запуск заданий по расписанию');
       return scope.scheduler.start().then(() => {

@@ -5,12 +5,13 @@ const child = require('child_process');
 const moment = require('moment');
 const config = require('../config');
 const di = require('core/di');
+const alias = require('core/scope-alias');
+const extend = require('extend');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 errorSetup(config.lang || 'ru');
-
 
 let jobName = false;
 if (process.argv.length > 2) {
@@ -60,10 +61,9 @@ function checkValue(conf, dv) {
   return true;
 }
 
-
 /**
  * @param {{month: *, week: *, day: *, dayOfYear: *, weekday: *, hour: *, min: *, sec: *}} launch
- * @returns {boolean}
+ * @returns {Boolean}
  */
 function checkRun(launch) {
   let d = moment();
@@ -105,13 +105,12 @@ function checkRun(launch) {
   return true;
 }
 
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler']
-)
+  }, null, ['auth', 'rtEvents', 'sessionHandler', 'scheduler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope
@@ -158,7 +157,7 @@ di('app', config.di,
             let ch = child.fork('bin/job', [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
             let rto = setTimeout(() => {
               if (ch.connected) {
-                sysLog.warn(new Date().toISOString() + ': Задание ' + jobName +' было прервано по таймауту');
+                sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
                 ch.kill(9);
               }
             }, runTimeout);

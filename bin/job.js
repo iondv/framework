@@ -7,6 +7,8 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
 errorSetup(config.lang || 'ru');
 
 let jobName = false;
@@ -20,13 +22,12 @@ if (process.argv.length > 2) {
 
 let job = false;
 
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler']
-)
+  }, null, ['auth', 'rtEvents', 'sessionHandler', 'scheduler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope
