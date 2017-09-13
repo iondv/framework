@@ -297,14 +297,9 @@ function OwnCloudStorage(config) {
   /**
    * @returns {Function}
    */
-  this._middle = function () {
+  this._fileMiddle = function () {
     return function (req, res, next) {
-      let basePath = url.parse(urlBase).path;
-      if (!basePath || req.path.indexOf(basePath) !== 0) {
-        return next();
-      }
-
-      let fileId = req.path.replace(basePath + '/', '');
+      let fileId = req.params.id;
       if (!fileId) {
         return next();
       }
@@ -556,7 +551,7 @@ function OwnCloudStorage(config) {
       form: {
         path: id,
         shareType: '3',
-        // PublicUpload: 'true',
+        PublicUpload: access === ShareAccessLevel.WRITE ? 'true' : 'false',
         permissions: access ? accessLevel(access) : '8'
       }
     };
