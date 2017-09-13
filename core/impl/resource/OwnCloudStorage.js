@@ -551,7 +551,7 @@ function OwnCloudStorage(config) {
       form: {
         path: id,
         shareType: '3',
-        PublicUpload: access === ShareAccessLevel.WRITE ? 'true' : 'false',
+        publicUpload: access === ShareAccessLevel.WRITE ? 'true' : 'false',
         permissions: access ? accessLevel(access) : '8'
       }
     };
