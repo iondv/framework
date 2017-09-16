@@ -3,6 +3,8 @@
  */
 
 function User(data, coactors) {
+  var ca = coactors || {};
+
   this.id = function () {
     return data.id + (data.type ? '@' + data.type : '');
   };
@@ -20,7 +22,11 @@ function User(data, coactors) {
   };
 
   this.isMe = function (sid) {
-    return this.id() === sid || coactors && coactors.hasOwnProperty(sid) && coactors[sid];
+    return this.id() === sid || ca.hasOwnProperty(sid) && ca[sid];
+  };
+
+  this.addCoactor = function (id) {
+    ca[id] = true;
   };
 }
 
