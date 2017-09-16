@@ -77,6 +77,7 @@ function WorkflowProvider(options) {
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
+
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -103,12 +104,13 @@ function WorkflowProvider(options) {
           }
 
           for (let i = 0; i < workflows.length; i++) {
-            if (!result.hasOwnProperty(workflows[i].name)) {
-              result[workflows[i].name] = {
+            let fullWfName = workflows[i].name + '@' + workflows[i].namespace;
+            if (!result.hasOwnProperty(fullWfName)) {
+              result[fullWfName] = {
                 next: {}
               };
             }
-            let state = result[workflows[i].name];
+            let state = result[fullWfName];
             state.workflowCaption = workflows[i].caption;
 
             let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
@@ -186,7 +188,7 @@ function WorkflowProvider(options) {
                 }
               }
             } else {
-              delete result[workflows[i].name];
+              delete result[fullWfName];
             }
           }
 
@@ -280,7 +282,6 @@ function WorkflowProvider(options) {
       item.getMetaClass().getNamespace(),
       item.getMetaClass().getVersion()
     );
-
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
