@@ -285,29 +285,17 @@ function ImageStorage(options) { // jshint ignore:line
   /**
    * @returns {Function}
    */
-  this._middle = function () {
+  this._fileMiddle = function () {
     return function (req, res, next) {
       try {
         if (uploadThumbnails) {
           return next();
         }
-        let basePath = url.parse(options.urlBase).path;
-        if (req.path.indexOf(basePath) !== 0) {
-          return next();
-        }
-
-        let mapping = req.path.replace(basePath + '/', '');
-        if (!mapping) {
-          return next();
-        }
-
         let ds = options.thumbnails;
-        let mapParts = mapping.split('/');
         let thumbType, imageId;
-        if (mapParts.length > 1) {
-          thumbType = ds && Object.keys(ds).indexOf(mapParts[0]) > -1 ? mapParts[0] : null;
-          imageId = mapParts.slice(1).join('/');
-        }
+        thumbType = ds && Object.keys(ds).indexOf(req.params.thumb) > -1 ? req.params.thumb : null;
+        imageId = req.params.id;
+
         if (!thumbType || !imageId) {
           return next();
         }
@@ -399,6 +387,10 @@ function ImageStorage(options) { // jshint ignore:line
    */
   this.setFileStorage = function (storage) {
     fileStorage = storage;
+  };
+
+  this._fileRoute = function () {
+    return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
   };
 }
 

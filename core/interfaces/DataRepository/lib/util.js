@@ -590,6 +590,9 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
       or.push(filterByItemIds(scope.keyProvider, cm, ids));
     });
   } else {
+    if (!Array.isArray(opts.searchBy)) {
+      opts.searchBy = cm.getSemanticAttrs();
+    }
     let fullText = false;
 
     let tmp = [];
@@ -642,11 +645,13 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           }
         } else {
           let pm = cm.getPropertyMeta(nm);
-          if (pm.indexSearch && useFullText) {
-            fullText = true;
+          if (pm) {
+            if (pm.indexSearch && useFullText) {
+              fullText = true;
+            }
+            result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
+              attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
           }
-          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
         }
       }
     });
@@ -681,6 +686,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
       Array.prototype.push.apply(or, tmp);
     });
   }
+  return Promise.resolve();
 }
 
 /**
