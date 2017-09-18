@@ -8,8 +8,7 @@ var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
-  var i, properties;
-  properties = plain.properties.sort(function (a,b) {
+  let properties = plain.properties.sort(function (a,b) {
     return a.orderNumber - b.orderNumber;
   });
 
@@ -24,8 +23,8 @@ function loadPropertyMetas(cm, plain) {
      * @param {Item} item
      */
     return function (item) {
-      var result = [];
-      for (var j = 0; j < this.matrix.length; j++) {
+      let result = [];
+      for (let j = 0; j < this.matrix.length; j++) {
         if (
           !Array.isArray(this.matrix[j].conditions) ||
           this.matrix[j].conditions.length === 0 ||
@@ -74,9 +73,8 @@ function loadPropertyMetas(cm, plain) {
     cm.propertyMetas.__classTitle = sysPm('__classTitle');
   }
 
-  var pm;
-  for (i = 0; i < properties.length; i++) {
-    pm = clone(properties[i]);
+  for (let i = 0; i < properties.length; i++) {
+    let pm = clone(properties[i]);
     cm.propertyMetas[properties[i].name] = pm;
     if (pm.selectionProvider) {
       if (pm.selectionProvider.type === 'SIMPLE') {
@@ -210,8 +208,8 @@ function ClassMeta(metaObject) {
   };
 
   this.getPropertyMetas = function () {
-    var result = [];
-    for (var nm in this.propertyMetas) {
+    let result = [];
+    for (let nm in this.propertyMetas) {
       if (this.propertyMetas.hasOwnProperty(nm)) {
         result.push(this.propertyMetas[nm]);
       }
