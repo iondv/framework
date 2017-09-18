@@ -20,7 +20,7 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where'];
+const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
@@ -1045,12 +1045,12 @@ function MongoDs(config) {
    * @param {String} [prefix]
    * @returns {*}
    */
-  function produceRedactFilter(find, explicitJoins, prefix) {
+  function produceRedactFilter(find, explicitJoins, prefix, includeNulls) {
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = produceRedactFilter(find[i], explicitJoins, prefix);
-        if (tmp) {
+        if (tmp || includeNulls) {
           result.push(tmp);
         }
       }
@@ -1060,14 +1060,14 @@ function MongoDs(config) {
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name[0] === '$') {
-            let tmp = produceRedactFilter(find[name], explicitJoins, prefix);
+            let tmp = produceRedactFilter(find[name], explicitJoins, prefix, true);
             if (tmp !== null) {
               let nm = name;
               if (name === '$nor' || name === '$or') {
                 let skip = !(Array.isArray(tmp) && tmp.length);
                 if (!skip) {
                   for (let i = 0; i < tmp.length; i++) {
-                    if (tmp[i] === IGNORE) {
+                    if (tmp[i] === null) {
                       skip = true;
                       break;
                     }
@@ -1088,7 +1088,7 @@ function MongoDs(config) {
                 let tmp2 = [];
                 if (!skip) {
                   for (let i = 0; i < tmp.length; i++) {
-                    if (tmp[i] !== IGNORE) {
+                    if (tmp[i]) {
                       tmp2.push(tmp[i]);
                     }
                   }
