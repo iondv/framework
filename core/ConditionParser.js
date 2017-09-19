@@ -246,6 +246,9 @@ function ConditionParser(condition, rcm, context, lang) {
   } else {
     if (condition.property) {
       result = {};
+      if (condition.operation === null) {
+        return '$' + condition.property;
+      }
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: {
           result[condition.property] = {$empty: true};
@@ -328,11 +331,25 @@ function ConditionParser(condition, rcm, context, lang) {
         result = {};
         switch (condition.operation) {
           case OperationTypes.DATE:
-            result.$date = toScalar(condition.value, context, PropertyTypes.STRING, lang); break;
+            result.$date = produceArray(condition.nestedConditions, rcm, context, lang); break;
           case OperationTypes.DATEADD:
-            result.$dateAdd = toScalar(condition.value, context, PropertyTypes.STRING, lang); break;
+            result.$dateAdd = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.DATEDIFF:
+            result.$dateDiff = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.ADD:
+            result.$add = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.SUB:
+            result.$sub = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.MUL:
+            result.$mul = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.DIV:
+            result.$div = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.MOD:
+            result.$mod = produceArray(condition.nestedConditions, rcm, context, lang); break;
         }
         return result;
+      } else if (condition.value) {
+        return toScalar(condition.value, context, PropertyTypes.STRING, lang);
       }
     }
   }

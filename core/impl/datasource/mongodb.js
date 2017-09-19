@@ -89,57 +89,6 @@ function MongoDs(config) {
     return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, err);
   }
 
-  function registerFunction(c, nm, f) {
-    return function () {
-      return new Promise(function (resolve, reject) {
-        c.updateOne(
-          {
-            _id: nm
-          },
-          {
-            value: new mongo.Code(f)
-          },
-          {
-            upsert: true
-          },
-          function (err) {
-            return err ? reject(err) : resolve();
-          }
-        );
-      });
-    };
-  }
-
-  /**
-   * @param {{}} funcs
-   * @returns {Promise}
-   */
-  function registerFunctions(funcs) {
-    return new Promise(function (resolve, reject) {
-      _this.db.collection('system.js', {}, function (err, c) {
-        if (err) {
-          return reject(err);
-        }
-
-        var p;
-        for (let nm in funcs) {
-          if (funcs.hasOwnProperty(nm)) {
-            if (p) {
-              p = p.then(registerFunction(c, nm, funcs[nm]));
-            } else {
-              p = registerFunction(c, nm, funcs[nm])();
-            }
-          }
-        }
-        if (p) {
-          p.then(resolve).catch(reject);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
   /**
    * @returns {Promise}
    */
@@ -166,31 +115,6 @@ function MongoDs(config) {
                 .then(
                   function () {
                     return _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true});
-                  }
-                )
-                .then(
-                  function () {
-                    return registerFunctions({
-                      dateAdd: function (d, v, p) {
-                        p = p || 'd';
-                        var result = new Date(d);
-                        switch (p) {
-                          case 'd': result.setDate(d.getDate() + v); break;
-                          case 'm': result.setMonth(d.getMonth() + v); break;
-                          case 'y': result.setFullYear(d.getFullYear() + v); break;
-                          case 'h': result.setHours(d.getHours()); break;
-                          case 'min': result.setMinutes(d.getMinutes() + v); break;
-                          case 'sec': result.setSeconds(d.getSeconds() + v); break;
-                        }
-                        return result;
-                      },
-                      date: function () {
-                        if (!arguments.length) {
-                          return Date();
-                        }
-                        return new Function.prototype.bind.apply(Date, arguments.slice(0).unshift(null));
-                      }
-                    });
                   }
                 )
                 .then(
@@ -482,6 +406,136 @@ function MongoDs(config) {
       );
   }
 
+  function fDate(args) {
+    let v = '';
+    if (args.length > 0) {
+      v = args[0];
+    }
+
+    if (!v) {
+      v = new Date();
+    } else if (v === 'today') {
+      v = new Date();
+      v.setHours(0, 0, 0);
+    } else {
+      v = moment(v).toDate();
+    }
+    return v;
+  }
+
+  function fDateAdd(args) {
+    let base = args[0];
+    let unit = 'd';
+    if (args.length > 2) {
+      unit = args[2];
+    }
+    let interval = args[1];
+    switch (unit) {
+      case 'ms': interval = interval;break;
+      case 's': interval = interval * 1000;break;
+      case 'min': interval = interval * 60000;break;
+      case 'h': interval = interval * 3600000;break;
+      case 'd': interval = interval * 86400000;break;
+      case 'm': interval = interval * 2626200000;break;
+      case 'y': interval = interval * 31514400000;break;
+      default: throw 'Передан некорректный тип интервала дат!';
+    }
+    return {$add: [base, interval]};
+  }
+
+  function fDateDiff(args) {
+    let d1 = args[0];
+    let d2 = args[1];
+    let unit = 'd';
+    if (args.length > 2) {
+      unit = args[2];
+    }
+
+    let floor = false;
+    if (args.length > 3) {
+      floor = args[3];
+    }
+
+    let result = null;
+    switch (unit) {
+      case 'm':  {
+        result = {
+            $subtract: [
+              {$add: [
+                {$multiply: [
+                  {$subtract: [
+                    {$year: d1},
+                    1
+                  ]},
+                  12
+                ]},
+                {$subtract: [{$month: d1}, 1]},
+                {$divide: [{$dayOfMonth: d1}, 31]}
+              ]},
+              {$add: [
+                {$multiply: [
+                  {$subtract: [
+                    {$year: d2},
+                    1
+                  ]},
+                  12
+                ]},
+                {$subtract: [{$month: d2}, 1]},
+                {$divide: [{$dayOfMonth: d2}, 31]}
+              ]}]
+          };
+      }break;
+      case 'y':result = {
+        $subtract: [
+          {$add: [
+            {$subtract: [
+              {$year: d1},
+              1
+            ]},
+            {$divide: [{$dayOdYear: d1}, 365]}
+          ]},
+          {$add: [
+            {$subtract: [
+              {$year: d2},
+              1
+            ]},
+            {$divide: [{$dayOdYear: d2}, 365]}
+          ]}]
+      };break;
+      case 'ms': result = {$subtract: [d1, d2]};break;
+      case 's': result = {$divide: [{$subtract: [d1, d2]}, 1000]};break;
+      case 'min': result = {$divide: [{$subtract: [d1, d2]}, 60000]};break;
+      case 'h': result = {$divide: [{$subtract: [d1, d2]}, 3600000]};break;
+      case 'd': result = {$divide: [{$subtract: [d1, d2]}, 86400000]};break;
+      default: throw 'Передан некорректный тип интервала дат!';
+    }
+
+    if (floor) {
+      return {$floor: result};
+    }
+    return result;
+  }
+
+  function fAdd(args) {
+    return {$add: args};
+  }
+
+  function fSub(args) {
+    return {$subtract: args};
+  }
+
+  function fMul(args) {
+    return {$multiply: args};
+  }
+
+  function fDiv(args) {
+    return {$divide: args};
+  }
+
+  function fMod(args) {
+    return {$mod: args};
+  }
+
   function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
       for (let i = 0; i < conditions.length; i++) {
@@ -512,69 +566,29 @@ function MongoDs(config) {
               parent[tmp].push(tmp2);
             }
           } else if (nm === '$date') {
-            let v = '';
-            let f = '';
-            if (Array.isArray(conditions[nm])) {
-              if (conditions[nm].length > 2) {
-                v =  conditions[nm];
-              } else {
-                if (conditions[nm].length > 0) {
-                  v = conditions[nm][0];
-                }
-                if (typeof v === 'string' && conditions[nm].length > 1) {
-                  f = conditions[nm][1];
-                }
-              }
-            } else {
-              v = conditions[nm];
-            }
-
-            if (!v) {
-              parent[part] = new Date();
-            } else if (v === 'today') {
-              parent[part] = new Date();
-              parent[part].setHours(0, 0, 0);
-            } else if (Array.isArray(v)) {
-              parent[part] = new Function.prototype.bind.apply(Date, v.slice(0).unshift(null));
-            } else {
-              if (f) {
-                parent[part] = moment(v, f).toDate();
-              } else {
-                parent[part] = moment(v).toDate();
-              }
-            }
+            parent[part] = fDate(conditions[nm]);
             break;
           } else if (nm === '$dateAdd') {
-            let args = [];
-            for (let k = 0; k < conditions[nm].length; k++) {
-              if (conditions[nm][k][0] === '$') {
-                args.push(conditions[nm][k].replace(/^\$/, 'this.'));
-              } else {
-                if (isNaN(conditions[nm][k])) {
-                  args.push('"' + conditions[nm][k] + '"');
-                } else {
-                  args.push(conditions[nm][k]);
-                }
-              }
-            }
-            if (parent2) {
-              delete parent2[part2];
-              parent2.$where = 'this.' + part2;
-              switch (part) {
-                case '$eq': parent2.$where = parent2.$where + ' == '; break;
-                case '$ne': parent2.$where = parent2.$where + ' != '; break;
-                case '$lt': parent2.$where = parent2.$where + ' < '; break;
-                case '$gt': parent2.$where = parent2.$where + ' > '; break;
-                case '$lte': parent2.$where = parent2.$where + ' <= '; break;
-                case '$gte': parent2.$where = parent2.$where + ' >= '; break;
-              }
-              parent2.$where = parent2.$where + 'dateAdd(' + args.join(', ') + ')';
-            } else if (parent) {
-              delete parent[part];
-              parent.$where = 'this.' + part + ' = dateAdd(' + args.join(', ') + ')';
-            } else {
-              throw new Error('Ошибка в синтаксисе условий запроса.');
-            }
+            parent[part] = fDateAdd(conditions[nm]);
+            break;
+          } else if (nm === '$dateDiff') {
+            parent[part] = fDateDiff(conditions[nm]);
+            break;
+          } else if (nm === '$add') {
+            parent[part] = fAdd(conditions[nm]);
+            break;
+          } else if (nm === '$sub') {
+            parent[part] = fSub(conditions[nm]);
+            break;
+          } else if (nm === '$mul') {
+            parent[part] = fMul(conditions[nm]);
+            break;
+          } else if (nm === '$div') {
+            parent[part] = fDiv(conditions[nm]);
+            break;
+          } else if (nm === '$mod') {
+            parent[part] = fMod(conditions[nm]);
+            break;
           } else if (nm === '$joinExists') {
             if (conditions[nm].filter) {
               prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false, part, parent);
@@ -928,7 +942,7 @@ function MongoDs(config) {
                 if (tmp === IGNORE) {
                   result = IGNORE;
                   break;
-                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 || tmp[0] === '$')) {
+                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 && tmp[0] === '$')) {
                   attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
                   result = IGNORE;
                   break;
