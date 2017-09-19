@@ -244,6 +244,16 @@ function fMod(args) {
   return result;
 }
 
+function rightArg(condition, item, context, t, lang) {
+  if (condition.value && condition.value.length) {
+    return toScalar(condition.value, context, t, lang);
+  }
+  if (condition.nestedConditions && condition.nestedConditions.length) {
+    return checkCondition(item, condition.nestedConditions[0], context, lang);
+  }
+  return null;
+}
+
 
 /**
  * @param {Item} item
@@ -266,42 +276,47 @@ function checkCondition(item, condition, context, lang) {
 
     switch (condition.operation) {
       case ConditionTypes.EQUAL:
-        return equal(p.getValue(), toScalar(condition.value, context, t, lang));
+        return equal(p.getValue(), rightArg(condition, item, context, t, lang));
       case ConditionTypes.NOT_EQUAL:
-        return !equal(p.getValue(), toScalar(condition.value, context, t, lang));
-      case ConditionTypes.EMPTY: {
+        return !equal(p.getValue(), rightArg(condition, item, context, t, lang));
+      case ConditionTypes.EMPTY:
+      {
         let v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length === 0;
         }
         return v === null || v === '' || typeof v === 'undefined' ? true : false;
-      }break;
-      case ConditionTypes.NOT_EMPTY: {
+      }
+        break;
+      case ConditionTypes.NOT_EMPTY:
+      {
         let v = p.evaluate() || item.get(pn);
         if (Array.isArray(v)) {
           return v.length > 0;
         }
         return v === null || v === '' || typeof v === 'undefined' ? false : true;
-      }break;
+      }
+        break;
       case ConditionTypes.LIKE:
         return String(p.getValue()).match(
-          new RegExp(toScalar(condition.value, context, t, lang))
+          new RegExp(rightArg(condition, item, context, t, lang))
         ) ? true : false;
       case ConditionTypes.LESS:
-        return p.getValue() < toScalar(condition.value, context, t, lang) ? true : false;
+        return p.getValue() < rightArg(condition, item, context, t, lang) ? true : false;
       case ConditionTypes.MORE:
-        return p.getValue() > toScalar(condition.value, context, t, lang) ? true : false;
+        return p.getValue() > rightArg(condition, item, context, t, lang) ? true : false;
       case ConditionTypes.LESS_OR_EQUAL:
-        return p.getValue() <= toScalar(condition.value, context, t, lang) ? true : false;
+        return p.getValue() <= rightArg(condition, item, context, t, lang) ? true : false;
       case ConditionTypes.MORE_OR_EQUAL:
-        return p.getValue() >= toScalar(condition.value, context, t, lang) ? true : false;
+        return p.getValue() >= rightArg(condition, item, context, t, lang) ? true : false;
       case ConditionTypes.IN:
         return contains(toArray(condition.value, context, t, lang), p.getValue());
-      case ConditionTypes.CONTAINS: {
+      case ConditionTypes.CONTAINS:
+      {
         if (p.getType() === PropertyTypes.COLLECTION) {
           return colContains(p.evaluate(), condition.nestedConditions);
         } else {
-          return contains(p.getValue(), toScalar(condition.value, context, t, lang));
+          return contains(p.getValue(), rightArg(condition, item, context, t, lang));
         }
       }
     }

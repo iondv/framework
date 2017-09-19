@@ -14,9 +14,10 @@ const cast = require('core/cast');
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
-const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD];
+const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATEDIFF, OperationTypes.ADD,
+              OperationTypes.SUB, OperationTypes.MUL, OperationTypes.DIV, OperationTypes.MOD];
 
-// jshint maxstatements: 40, maxcomplexity: 40
+// jshint maxstatements: 40, maxcomplexity: 45
 /**
  * @param {*} v
  * @param {Item} context
@@ -35,7 +36,7 @@ function toScalar(v, context, type, lang) {
     } else if (v === '$$today') {
       v = new Date();
       v.setHours(0, 0, 0, 0);
-    } if (context) {
+    } else if (context) {
       let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
       let nm = v.substring(1);
       let p;
@@ -138,7 +139,7 @@ function vt(cm, property) {
  */
 function produceFilter(condition, type, rcm, context, lang) {
   var result = {};
-  if (condition.value) {
+  if (condition.value && condition.value.length) {
     result[type] = toScalar(condition.value, context, vt(rcm, condition.property), lang);
   } else if (condition.nestedConditions && condition.nestedConditions.length) {
     result[type] = ConditionParser(condition.nestedConditions[0], rcm, context, lang);
@@ -285,12 +286,13 @@ function ConditionParser(condition, rcm, context, lang) {
         return result;
       }
     } else {
-      if (BoolOpers.indexOf(condition.operation) !== -1) {
+      let oper = parseInt(condition.operation);
+      if (BoolOpers.indexOf(oper) !== -1) {
         let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
           if (tmp.length > 1) {
             result = {};
-            switch (condition.operation) {
+            switch (oper) {
               case OperationTypes.AND:
                 result.$and = tmp;
                 break;
@@ -302,7 +304,7 @@ function ConditionParser(condition, rcm, context, lang) {
                 break;
             }
           } else {
-            switch (condition.operation) {
+            switch (oper) {
               case OperationTypes.AND:
               case OperationTypes.OR:
                 result = tmp[0];
@@ -314,11 +316,11 @@ function ConditionParser(condition, rcm, context, lang) {
           }
           return result;
         }
-      } else if (AgregOpers.indexOf(condition.operation) !== -1) {
+      } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
           result = {};
-          switch (condition.operation) {
+          switch (oper) {
             case OperationTypes.MIN: result.$min = tmp; break;
             case OperationTypes.MAX: result.$max = tmp; break;
             case OperationTypes.AVG: result.$avg = tmp; break;
@@ -327,9 +329,9 @@ function ConditionParser(condition, rcm, context, lang) {
           }
           return result;
         }
-      } else if (Funcs.indexOf(condition.operation) !== -1) {
+      } else if (Funcs.indexOf(oper) !== -1) {
         result = {};
-        switch (condition.operation) {
+        switch (oper) {
           case OperationTypes.DATE:
             result.$date = produceArray(condition.nestedConditions, rcm, context, lang); break;
           case OperationTypes.DATEADD:
@@ -348,7 +350,7 @@ function ConditionParser(condition, rcm, context, lang) {
             result.$mod = produceArray(condition.nestedConditions, rcm, context, lang); break;
         }
         return result;
-      } else if (condition.value) {
+      } else if (condition.value && condition.value.length) {
         return toScalar(condition.value, context, PropertyTypes.STRING, lang);
       }
     }

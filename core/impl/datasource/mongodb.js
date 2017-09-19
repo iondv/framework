@@ -20,11 +20,13 @@ const moment = require('moment');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
+const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options',
+  '$where', '$or', '$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$exist', '$in', '$nin', '$exists'];
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
 
-// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10
+// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10, maxparams: 8
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -826,12 +828,12 @@ function MongoDs(config) {
    * @param {{v:Number}} counter
    * @returns {*}
    */
-  function producePrefilter(attributes, find, joins, explicitJoins, counter, prefix) {
+  function producePrefilter(attributes, find, joins, explicitJoins, analise, counter, prefix) {
     counter = counter || {v: 0};
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, counter, prefix);
+        let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, analise, counter, prefix);
         if (tmp !== null) {
           result.push(tmp);
         }
@@ -865,7 +867,7 @@ function MongoDs(config) {
             }
 
             if (find[name].filter) {
-              producePrefilter(attributes, find[name].filter, joins, explicitJoins, counter, j.alias);
+              producePrefilter(attributes, find[name].filter, joins, explicitJoins, analise, counter, j.alias);
             }
             result = true;
             break;
@@ -886,7 +888,7 @@ function MongoDs(config) {
               }
             }
 
-            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, counter, jalias);
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, analise, counter, jalias);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
@@ -948,6 +950,10 @@ function MongoDs(config) {
                   break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
                   result = IGNORE;
+                  break;
+                } else if (name[0] === '$' && allowInPrefilter.indexOf(name) < 0) {
+                  result = IGNORE;
+                  analise.needRedact = true;
                   break;
                 } else {
                   result = result || {};
@@ -1027,9 +1033,9 @@ function MongoDs(config) {
         }
       }
       return result.length ? result : undefined;
-    } else if (typeof find === 'object' && find !== null) {
+    } else if (typeof find === 'object' && find !== null && !(find instanceof Date)) {
       let result;
-      for (var name in find) {
+      for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
             return joinPostFilter(find[name], explicitJoins, prefix, name === '$joinNotExists');
@@ -1069,7 +1075,7 @@ function MongoDs(config) {
         }
       }
       return result.length ? result : null;
-    } else if (typeof find === 'object' && find !== null) {
+    } else if (typeof find === 'object' && find !== null && !(find instanceof Date)) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
@@ -1210,12 +1216,17 @@ function MongoDs(config) {
    */
   function checkAggregation(type, options, forcedStages, onlyCount) {
     forcedStages = forcedStages || [];
-    var attributes = options.attributes || [];
-    var i, tmp, tmp2;
-    var joinedSources = {};
-    var lookups = {};
-    var result = [];
-    var joins = [];
+    let attributes = options.attributes || [];
+    let joinedSources = {};
+    let lookups = {};
+    let result = [];
+    let joins = [];
+    let resultAttrs = [];
+    let prefilter, postfilter, redactFilter, jl;
+
+    let analise = {
+      needRedact: false
+    };
 
     try {
       if (Array.isArray(options.joins)) {
@@ -1224,7 +1235,7 @@ function MongoDs(config) {
       }
 
       if (options.fields) {
-        for (tmp in options.fields) {
+        for (let tmp in options.fields) {
           if (options.fields.hasOwnProperty(tmp)) {
             checkAttrExpr(options.fields[tmp], attributes, joinedSources);
           }
@@ -1232,36 +1243,35 @@ function MongoDs(config) {
       }
 
       if (options.aggregates) {
-        for (tmp in options.aggregates) {
+        for (let tmp in options.aggregates) {
           if (options.aggregates.hasOwnProperty(tmp)) {
             checkAttrExpr(options.aggregates[tmp], attributes, joinedSources);
           }
         }
       }
 
-      var resultAttrs = attributes.slice(0);
-      var prefilter, postfilter, redactFilter, jl;
+      resultAttrs = attributes.slice(0);
 
       if (options.filter) {
         jl = joins.length;
 
-        prefilter = producePrefilter(attributes, options.filter, joins, lookups);
-        if (joins.length > jl || attributes.length > resultAttrs.length) {
+        prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise);
+        if (joins.length > jl || attributes.length > resultAttrs.length || analise.needRedact) {
           postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(postfilter, lookups);
-          postfilter = producePrefilter([], postfilter, [], []);
+          postfilter = producePrefilter([], postfilter, [], [], {});
         }
       }
 
       if (prefilter && typeof prefilter === 'object' &&
-        (joins.length || attributes.length > resultAttrs.length || options.to || forcedStages.length)) {
+        (joins.length || attributes.length > resultAttrs.length || options.to || forcedStages.length || analise.needRedact)) {
         result.push({$match: prefilter});
       }
     } catch (err) {
       return Promise.reject(wrapError(err, 'aggregate', type));
     }
 
-    var p = null;
+    let p = null;
     if (joins.length) {
       p = getCollection(GEOFLD_COLLECTION).then(function (c) {
         return new Promise(function (resolve, reject) {
@@ -1283,10 +1293,12 @@ function MongoDs(config) {
     }
 
     return p.then(function () {
-      if (joins.length) {
-        processJoins(attributes, joins, result);
-        if (postfilter && postfilter !== IGNORE) {
-          result.push({$match: postfilter});
+      if (joins.length || analise.needRedact) {
+        if (joins.length) {
+          processJoins(attributes, joins, result);
+          if (postfilter && postfilter !== IGNORE) {
+            result.push({$match: postfilter});
+          }
         }
         if (redactFilter && redactFilter !== IGNORE) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
@@ -1306,9 +1318,9 @@ function MongoDs(config) {
 
       if (result.length || options.to) {
         if (options.countTotal || onlyCount) {
-          tmp = {};
-          tmp2 = {__total: '$__total'};
-          for (i = 0; i < resultAttrs.length; i++) {
+          let tmp = {};
+          let tmp2 = {__total: '$__total'};
+          for (let i = 0; i < resultAttrs.length; i++) {
             tmp[resultAttrs[i]] = '$' + resultAttrs[i];
             tmp2[resultAttrs[i]] = '$data.' + resultAttrs[i];
           }
