@@ -5,6 +5,7 @@
 
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const express = require('express');
 const ejsLocals = require('ejs-locals');
 const flash = require('connect-flash');
@@ -12,12 +13,16 @@ const fs = require('fs');
 
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
+const FileStreamRotator = require('file-stream-rotator');
+const Morgan = require('morgan');
+
 
 const config = require('../config');
 const di = require('core/di');
 const theme = require('lib/util/theme');
 
 const IonLogger = require('core/impl/log/IonLogger');
+const Scheduler = require('core/impl/Scheduler');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
 const errorSetup = require('core/error-setup');
@@ -38,8 +43,6 @@ var app = express();
 global.app = app;
 
 // TODO Access-лог надо реализовать через IonLogger
-var FileStreamRotator = require('file-stream-rotator');
-var Morgan = require('morgan');
 if (process.env.NODE_ENV !== 'development') {
   var logDirectory = path.join(__dirname, '../log');
   if (!fs.existsSync(logDirectory)) {
@@ -77,18 +80,18 @@ app.use(bodyParser.urlencoded({extended: true, limit: limit}));
 app.use(bodyParser.raw({limit: limit}));
 
 // Создаем HTTP сервер.
-var server = http.createServer(app);
+var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
 
-// jshint maxstatements: 50, maxcomplexity: 30
-var onError = function (error) {
+// jshint maxstatements: 50, maxcomplexity: 25
+function onError(error) {
   sysLog.error(error);
   server.close(function (err) {
     process.exit(130);
   });
-};
+}
 
 function start(ports, i) {
-  return new Promise(function (resolve, reject) {
+  return new Promise((resolve, reject) => {
     server.once('error', function (err) {
       if (err.code !== 'EADDRINUSE') {
         return reject(err);
@@ -123,6 +126,12 @@ di('boot', config.bootstrap,
   })
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) => {
+	if (config.runJobs) {
+      scope.scheduler = new Scheduler({settings: scope.settings});
+    }
+    return scope;
+  })
   .then((scope) => {
     let moduleTitles = {};
     try {
@@ -171,6 +180,11 @@ di('boot', config.bootstrap,
       }
 
       scope.auth.setTopLevelAuth();
+
+      if (scope.oauth) {
+        app.use('/oauth2/grant', scope.oauth.grant());
+        app.post('/oauth2/token', scope.oauth.token());
+      }      
 
     } catch (err) {
       return Promise.reject(err);
@@ -230,24 +244,37 @@ di('boot', config.bootstrap,
     if (moduleInitiators) {
       return moduleInitiators.then(() => {
         sysLog.info('Все модули загружены.');
+        return scope;
       });
     }
   })
   .then(
   // Запускаем приложение
-    () => {
+    (scope) => {
       let ports = config.port;
-      if (!(ports instanceof Array)) {
-        ports = [config.port];
+      if (ports && !Array.isArray(ports)) {
+        ports = [ports];
       }
-      return start(ports, 0);
+      if (ports.length === 0) {
+        ports.push(config.https ? 443 : 80);
+      }
+      return start(ports, 0).then(() => scope);
     }
   )
   .then(
-    () => {
+    (scope) => {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
+      return scope;
     })
+  .then((scope) => {
+    if (config.runJobs) {
+      sysLog.info('Запуск заданий по расписанию');
+      return scope.scheduler.start().then(() => {
+        sysLog.info('Подсистема заданий по расписанию запущена');
+      });
+    }
+  })
   .catch(onError);

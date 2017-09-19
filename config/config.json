@@ -9,6 +9,7 @@
     "log": {
       "logDestinations": ["console", "./log"]
     },
+    "runJobs": "[[jobs.enabled]]",
     "bootstrap": {
       "rtEvents": {
         "module": "core/RuntimeEvents",
@@ -54,7 +55,11 @@
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
-            "saveUninitialized": true
+            "saveUninitialized": true,
+            "cookie": {
+              "httpOnly": true,
+              "secure": false
+            }
           }
         }
       },
@@ -240,6 +245,14 @@
             "retry_strategy": {}
           },
           "logger": "ion://sysLog"
+        }
+      },
+      "wsAuth": {
+        "module": "lib/wsAuth",
+        "options": {
+          "dataSource": "ion://Db",
+          "auth": "ion://auth",
+          "acl": "ion://aclProvider"
         }
       },
       "workflows": {
