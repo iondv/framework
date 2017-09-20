@@ -31,9 +31,9 @@ function Scheduler(options) {
           clearTimeout(to);
           resolve();
         });
-        ch.on('error', () => {
+        ch.on('error', (err) => {
           clearTimeout(to);
-          reject();
+          reject(err);
         });
         ch.kill('SIGKILL');
       } catch (e) {
@@ -66,7 +66,7 @@ function Scheduler(options) {
         if (!jobs.hasOwnProperty(job)) {
           throw new Error(`Задание ${job} не найдено в конфигурации`);
         }
-        running[job] = child.fork('bin/job-runner', [job], {silent: true});
+        running[job] = child.fork('bin/job-runner', [job], {stdio: ['pipe','inherit','inherit','ipc']});
       }
       return Promise.resolve();
     } catch (err) {
@@ -92,7 +92,7 @@ function Scheduler(options) {
    */
   this.stop = function (job) {
     if (running.hasOwnProperty(job)) {
-      return stopper(job, running[job]).then(() => {delete running[job];});
+      return stopper(job, running[job]).then(() => delete running[job]);
     }
     return Promise.resolve();
   };
@@ -171,19 +171,23 @@ function Scheduler(options) {
    * @returns {Promise}
    */
   this.removeJob = function (job) {
-    let promise = Promise.resolve();
-    if (this.isRunning(job)) {
-      promise = this.stop(job);
-    }
-    return promise.then(()=> {
-      let jobs = options.settings.get('jobs');
-      if (jobs.hasOwnProperty(job)) {
-        delete jobs[job];
-        options.settings.set('jobs', jobs);
-        return options.settings.apply();
+    try {
+      let promise = Promise.resolve();
+      if (this.isRunning(job)) {
+        promise = this.stop(job);
       }
-      return Promise.resolve();
-    });
+      return promise.then(()=> {
+        let jobs = options.settings.get('jobs');
+        if (jobs.hasOwnProperty(job)) {
+          delete jobs[job];
+          options.settings.set('jobs', jobs);
+          return options.settings.apply();
+        }
+        return Promise.resolve();
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 }
 
