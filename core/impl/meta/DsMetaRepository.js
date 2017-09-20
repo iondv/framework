@@ -801,7 +801,7 @@ function DsMetaRepository(options) {
           if (pathParts[0] === 'workflows') {
             let wf = pathParts[1];
             let state = pathParts[2];
-            let cm = _this._getMeta(views[i].className, views[i].version, views[i].namespace);
+            let cm = _this._getMeta(views[i].className, views[i].version);
             if (cm) {
               if (wf.indexOf('@') < 0) {
                 wf = wf + '@' + cm.getNamespace();
