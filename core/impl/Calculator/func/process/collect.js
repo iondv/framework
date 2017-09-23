@@ -4,7 +4,7 @@ const calc = require('../util').calculate;
 function processArg(arg, result) {
   if (Array.isArray(arg)) {
     arg.forEach((arg) => processArg(arg, result));
-  } else {
+  } else if (arg !== null) {
     result.push(arg);
   }
 }
