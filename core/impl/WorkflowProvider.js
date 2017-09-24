@@ -275,7 +275,7 @@ function WorkflowProvider(options) {
    */
   this._performTransition = function (item, workflow, name, tOptions) {
     let wf = options.metaRepo.getWorkflow(
-      item.getMetaClass().getName(),
+      item.getMetaClass().getCanonicalName(),
       workflow,
       item.getMetaClass().getNamespace(),
       item.getMetaClass().getVersion()
