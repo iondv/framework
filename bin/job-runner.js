@@ -62,7 +62,7 @@ function checkValue(conf, dv) {
 }
 
 /**
- * @param {{month: *, week: *, day: *, dayOfYear: *, weekday: *, hour: *, min: *, sec: *}} launch
+ * @param {{month: *, week: *, day: *, dayOfYear: *, weekday: *, hour: *, min: *, minute: *, sec: *, second: *}} launch
  * @returns {Boolean}
  */
 function checkRun(launch) {
@@ -94,15 +94,44 @@ function checkRun(launch) {
     return false;
   }
 
-  if (!checkValue(launch.min, d.minute())) {
+  if (!checkValue(launch.min || launch.minute, d.minute())
+  ) {
     return false;
   }
 
-  if (!checkValue(launch.sec, d.second())) {
+  if (!checkValue(launch.sec || launch.second, d.second())
+  ) {
     return false;
   }
 
   return true;
+}
+
+function calcCheckInterval(launch, dv) {
+  if (typeof launch === 'object') {
+    if (launch.sec || launch.second) {
+      return 1000;
+    }
+
+    if (launch.min || launch.minute) {
+      return 60000;
+    }
+
+    if (launch.hour) {
+      return 3600000;
+    }
+
+    if (launch.day || launch.dayOfYear || launch.weekday) {
+      return 86400000;
+    }
+
+    if (launch.week) {
+      return 604800000;
+    }
+
+    return 2592000000;
+  }
+  return dv;
 }
 
 di('boot', config.bootstrap,
@@ -141,14 +170,15 @@ di('boot', config.bootstrap,
         let runTimeout = checkInterval;
         if (typeof job.launch === 'object') {
           runImmediate = false;
-          checkInterval = job.launch.check || checkInterval;
+          checkInterval = job.launch.check || calcCheckInterval(job.launch, checkInterval);
           runTimeout = job.launch.timeout || 3600000;
         } else {
           runImmediate = true;
           checkInterval = parseInt(job.launch);
           runTimeout = checkInterval;
         }
-        interval = setInterval(() => {
+
+        let starter = function () {
           let run = true;
           if (!runImmediate) {
             run = checkRun(job.launch);
@@ -164,8 +194,15 @@ di('boot', config.bootstrap,
             ch.on('exit', () => {
               clearTimeout(rto);
             });
+            clearTimeout(interval);
+            interval = setTimeout(starter, checkInterval);
+          } else {
+            clearTimeout(interval);
+            interval = setTimeout(starter, 500);
           }
-        }, checkInterval);
+        };
+
+        interval = setTimeout(starter, 500);
         sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');

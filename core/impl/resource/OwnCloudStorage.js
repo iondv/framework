@@ -41,6 +41,18 @@ function OwnCloudStorage(config) {
     DIR: 'dir'
   };
 
+  function escape(str) {
+    let parts = str.split('/');
+    let result = [];
+    parts.forEach(p => {
+      let r = encodeURIComponent(p);
+      r = r.replace(/\(/g, '%28');
+      r = r.replace(/\)/g, '%29');
+      result.push(r);
+    });
+    return result.join('/');
+  }
+
   function urlResolver(uri, part) {
     if (arguments.length > 1) {
       let result = uri;
@@ -169,8 +181,8 @@ function OwnCloudStorage(config) {
       let fn = null;
       let d = null;
       if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
-          d = data;
-          fn = options.name || cuid();
+        d = data;
+        fn = options.name || cuid();
       } else if (typeof data === 'object') {
         fn = options.name || data.originalname || data.name || cuid();
         if (typeof data.buffer !== 'undefined') {
@@ -374,7 +386,7 @@ function OwnCloudStorage(config) {
   this._getDir = function (id) {
     id = parseDirId(id);
     let reqParams = {
-      uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, id)),
+      uri: urlResolver(config.url, urlTypes.WEBDAV, escape(id)),
       auth: {
         user: config.login,
         password: config.password
