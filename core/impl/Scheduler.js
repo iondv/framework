@@ -128,14 +128,12 @@ function Scheduler(options) {
    */
   this.getJobs = function () {
     let jobs = options.settings.get('jobs');
-    let result = {};
     for (let job in jobs) {
       if (jobs.hasOwnProperty(job)) {
-        result[job] = jobs[job];
-        result[job].isRunning = this.isRunning(job);
+        jobs[job].isRunning = this.isRunning(job);
       }
     }
-    return result;
+    return jobs;
   };
 
   /**
