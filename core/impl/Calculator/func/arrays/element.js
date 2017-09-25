@@ -17,6 +17,9 @@ module.exports = function (args) {
        }
        if (args.length > 1) {
          ind = args[1];
+         if (ind === 'last') {
+           ind = arr.length - 1;
+         }
        }
        if (typeof arr[ind] !== 'undefined') {
          return arr[ind];
