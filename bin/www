@@ -245,7 +245,7 @@ di('boot', config.bootstrap,
       }
       for (let ref in moduleTitles) {
         if (moduleTitles.hasOwnProperty(ref) && typeof moduleTitles[ref] === "object" && moduleTitles[ref].url) {
-          app.locals.sysMenu.push(
+          sysMenu.push(
             {
               name: moduleTitles[ref].url,
               description: moduleTitles[ref].title || ref,
