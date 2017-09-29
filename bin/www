@@ -28,7 +28,6 @@ const SettingsRepository = require('core/impl/SettingsRepository');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
-const sysMenuCheck = require('lib/util/sysMenuCheck');
 errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger(config.log || {});
@@ -192,23 +191,7 @@ di('boot', config.bootstrap,
     }
 
     sysLog.info('Загрузка веб-модулей.');
-    let sysMenu = [];
-    app.use(function (req, res, next) {
-      if (req.originalUrl.lastIndexOf('.') > 0 && req.originalUrl.lastIndexOf('.') > req.originalUrl.lastIndexOf('/')) {
-        return next();
-      }
-
-      sysMenuCheck(scope.auth, req, sysMenu)
-        .then((menu)=>{
-          res.locals.sysMenu = menu;
-          next();
-        })
-        .catch((err)=> {
-          sysLog.error(err);
-          res.locals.sysMenu = [];
-          next();
-        });
-    });
+    app.locals.sysMenu = [];
     let moduleInitiators = null;
     try {
       let candidates = fs.readdirSync(path.join(__dirname, '../modules'));
@@ -222,7 +205,7 @@ di('boot', config.bootstrap,
           if (typeof module === 'function') {
             let title = moduleTitles[candidates[i]] || module.locals.sysTitle;
             if (title) {
-              sysMenu.push(
+              app.locals.sysMenu.push(
                 {
                   name: candidates[i],
                   description: title
@@ -245,7 +228,7 @@ di('boot', config.bootstrap,
       }
       for (let ref in moduleTitles) {
         if (moduleTitles.hasOwnProperty(ref) && typeof moduleTitles[ref] === "object" && moduleTitles[ref].url) {
-          sysMenu.push(
+          app.locals.sysMenu.push(
             {
               name: moduleTitles[ref].url,
               description: moduleTitles[ref].title || ref,
