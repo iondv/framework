@@ -82,7 +82,7 @@ app.use(bodyParser.raw({limit: limit}));
 // Создаем HTTP сервер.
 var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
 
-// jshint maxstatements: 50, maxcomplexity: 25
+// jshint maxstatements: 60, maxcomplexity: 30
 function onError(error) {
   sysLog.error(error);
   server.close(function (err) {
@@ -184,7 +184,7 @@ di('boot', config.bootstrap,
       if (scope.oauth) {
         app.use('/oauth2/grant', scope.oauth.grant());
         app.post('/oauth2/token', scope.oauth.token());
-      }      
+      }
 
     } catch (err) {
       return Promise.reject(err);
@@ -213,7 +213,6 @@ di('boot', config.bootstrap,
               );
               module.locals.sysTitle = title;
             }
-            module.locals.sysMenu = app.locals.sysMenu;
             app.use(module);
             if (typeof module._init === 'function') {
               if (moduleInitiators) {
