@@ -103,7 +103,12 @@
           "blockPeriod": "[[auth.blockPeriod]]",
           "checkSignInAccess": "[[auth.checkSignInAccess]]",
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
-          "goHome": "[[auth.goHome]]"
+          "goHome": "[[auth.goHome]]",
+          "passports":[{
+            "name":"passport-esia",
+            "module":"lib/passport-esia",
+            "options":{}
+          }]
         }
       }
     },
