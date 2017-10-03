@@ -821,7 +821,6 @@ function IonDataRepository(options) {
       if (conditions  === null) {
         return Promise.resolve(null);
       }
-
       let fp = null;
       if (options.filter) {
         fp = prepareFilterValues(cm, options.filter)

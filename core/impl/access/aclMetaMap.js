@@ -6,6 +6,7 @@
 const AclProvider = require('core/interfaces/AclProvider');
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
+const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const merge = require('merge');
 
 // jshint maxstatements: 50, maxcomplexity: 20
@@ -14,6 +15,7 @@ const merge = require('merge');
  * @param {{}} options.map
  * @param {DataRepository} options.dataRepo
  * @param {AclProvider} options.acl
+ * @param {{}} options.accessManager
  * @constructor
  */
 function AclMetaMap(options) {
@@ -73,10 +75,13 @@ function AclMetaMap(options) {
 
     return p
       .then((item) => {
-        if (!item) {
+        if (!item || !options.map.hasOwnProperty(item.getClassName())) {
           return Promise.resolve(result);
         }
-        let p = skipCb ? Promise.resolve(result) : cb(item);
+
+        let config = options.map[item.getClassName()];
+        let sid = item.get(config.sidAttribute);
+        let p = skipCb || !sid ? Promise.resolve(result) : cb(sid);
         return p.then((result) => {
           if (result && breakOnResult) {
             return result;
@@ -99,31 +104,29 @@ function AclMetaMap(options) {
    * @returns {Function}
      */
   function walkEntry(sid, i, entries, cb, breakOnResult, result) {
-    return function () {
-      if (i >= entries.length) {
-        return Promise.resolve(result);
-      }
-      let f = {};
-      f[entries[i].sidAttribute] = sid;
-      let jumps = [];
-      if (!breakOnResult && Array.isArray(entries[i].jumps)) {
-        entries[i].jumps.forEach((j) => {
-          jumps.push(j.split('.'));
-        });
-      }
-      return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
-        .then((items)=>{
-          if (!items.length) {
-            return Promise.resolve();
+    if (i >= entries.length || !entries[i].sidAttribute) {
+      return Promise.resolve(result);
+    }
+    let f = {};
+    f[entries[i].sidAttribute] = sid;
+    let jumps = [];
+    if (!breakOnResult && Array.isArray(entries[i].jumps)) {
+      entries[i].jumps.forEach((j) => {
+        jumps.push(j.split('.'));
+      });
+    }
+    return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+      .then((items)=>{
+        if (!items.length) {
+          return Promise.resolve(result);
+        }
+        return walkItems(items, 0, cb, breakOnResult, true, result).then((result) => {
+          if (result && breakOnResult) {
+            return result;
           }
-          return walkItems(items, 0, cb, breakOnResult, true).then((result) => {
-            if (result && breakOnResult) {
-              return result;
-            }
-            return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
-          });
+          return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
         });
-    };
+      });
   }
 
   function walkEntries(sid, cb, breakOnResult) {
@@ -139,7 +142,7 @@ function AclMetaMap(options) {
     if (!entries.length) {
       return Promise.resolve();
     }
-    return walkEntry(sid, 0, entries, breakOnResult);
+    return walkEntry(sid, 0, entries, cb, breakOnResult);
   }
 
 
@@ -154,13 +157,10 @@ function AclMetaMap(options) {
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
-      return options.acl.checkAccess(subject, resource, permissions)
-        .then((can) => {
-          if (can) {
-            return can;
-          }
-          return walkRelatedSubjects(subject, (sid) => options.acl.checkAccess(sid, resource, permissions), true);
-        });
+    return options.acl.checkAccess(subject, resource, permissions)
+      .then((can) => {
+        return can  || walkRelatedSubjects(subject, (sid) => options.acl.checkAccess(sid, resource, permissions), true);
+      });
   };
 
   /**
@@ -172,13 +172,14 @@ function AclMetaMap(options) {
     return options.acl.getPermissions(subject, resources, skipGlobals)
       .then((permissions) => {
         return walkRelatedSubjects(subject,
-          (sid) =>
-            options.acl.getPermissions(sid, resources, skipGlobals)
+          (sid) => {
+            return options.acl.getPermissions(sid, resources, skipGlobals)
               .then((p2) => {
                 permissions = merge(permissions, p2);
-              })
+              });
+          }
         )
-          .then(() => resources);
+          .then(() => permissions);
       });
   };
 
@@ -234,6 +235,39 @@ function AclMetaMap(options) {
           .then(() => coactors);
       });
   };
+
+  if (options.accessManager instanceof RoleAccessManager && typeof options.dataRepo.on === 'function') {
+    /**
+     * @type {RoleAccessManager}
+     */
+    let am = options.accessManager;
+    let events = [];
+    for (let cn in options.map) {
+      if (options.map.hasOwnProperty(cn)) {
+        let me = options.map[cn];
+        if (me.sidAttribute && !me.isEntry) {
+          events.push(cn + '.create');
+          events.push(cn + '.edit');
+        }
+      }
+    }
+
+    if (events.length) {
+      options.dataRepo.on(events, (e) => {
+        if (e.item) {
+          if (options.map.hasOwnProperty(e.item.getClassName())) {
+            let me = options.map[e.item.getClassName()];
+            // if (e.type === e.item.getClassName() + '.create' || e.updates && e.updates.hasOwnProperty(me.sidAttribute)) {
+            let sid = e.item.get(me.sidAttribute);
+            if (sid) {
+              return am.defineRole(sid, e.item.toString()).then(() => am.assignRoles([sid], [sid])).then(() => null);
+            }
+            // }
+          }
+        }
+      });
+    }
+  }
 }
 
 AclMetaMap.prototype = new AclProvider();
