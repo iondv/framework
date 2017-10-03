@@ -158,8 +158,8 @@ function IonDataRepository(options) {
   function getMeta(obj) {
     if (typeof obj === 'string') {
       return _this.meta.getMeta(obj);
-    } else if (typeof obj === 'object' && obj.constructor.name === 'Item') {
-      return obj.classMeta;
+    } else if (obj instanceof Item) {
+      return obj.getMetaClass();
     }
     return null;
   }
@@ -727,12 +727,12 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getIterator = function (obj, options) {
-    var opts = clone(options) || {};
-    var cm = getMeta(obj);
-    var rcm = getRootType(cm);
+    let opts = clone(options) || {};
+    let cm = getMeta(obj);
+    let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    var props = cm.getPropertyMetas();
-    for (var i = 0; i < props.length; i++) {
+    let props = cm.getPropertyMetas();
+    for (let i = 0; i < props.length; i++) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
     opts.filter = addFilterByItem(opts.filter, obj);
@@ -763,9 +763,9 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
-    var opts = clone(options) || {};
-    var cm = getMeta(className);
-    var rcm = getRootType(cm);
+    let opts = clone(options) || {};
+    let cm = getMeta(className);
+    let rcm = getRootType(cm);
     opts.filter = addDiscriminatorFilter(opts.filter, cm);
     return prepareFilterValues(cm, opts.filter).
     then(function (filter) {
@@ -946,9 +946,9 @@ function IonDataRepository(options) {
    * @param {{}} data
    */
   function checkRequired(cm, data, lazy, warn) {
-    var props = cm.getPropertyMetas();
-    var invalidAttrs = [];
-    for (var i = 0; i < props.length; i++) {
+    let props = cm.getPropertyMetas();
+    let invalidAttrs = [];
+    for (let i = 0; i < props.length; i++) {
       if (
         props[i].type !== PropertyTypes.COLLECTION &&
         props[i].name !== '__class' &&
@@ -973,7 +973,7 @@ function IonDataRepository(options) {
 
   function calcDefault(pm, updates, user) {
     return function () {
-      let p = pm._dvFormula.apply({$context: updates, $uid: user.id()});
+      let p = pm._dvFormula.apply({$context: updates, $uid: user ? user.id() : null});
       if (!(p instanceof Promise)) {
         p = Promise.resolve(p);
       }
@@ -1033,7 +1033,7 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = user.id();
+            v = user ? user.id() : null;
           } else if (pm._dvFormula) {
             calcs = calcs ? calcs.then(calcDefault(pm, updates, user)) : calcDefault(pm, updates, user)();
             break;
@@ -1053,10 +1053,9 @@ function IonDataRepository(options) {
   }
 
   function prepareFileSavers(id, cm, fileSavers, updates) {
-    var properties = cm.getPropertyMetas();
-    var pm;
-    for (var i = 0;  i < properties.length; i++) {
-      pm = properties[i];
+    let properties = cm.getPropertyMetas();
+    for (let i = 0;  i < properties.length; i++) {
+      let pm = properties[i];
 
       if (updates.hasOwnProperty(pm.name) && updates[pm.name] &&
         (
@@ -1079,8 +1078,8 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function backRefUpdater(itemId, pm, updates, cm, oldId) {
-    var rcm = pm._refClass;
-    var rpm = rcm.getPropertyMeta(pm.backRef);
+    let rcm = pm._refClass;
+    let rpm = rcm.getPropertyMeta(pm.backRef);
 
     if (!rpm) {
       return Promise.reject(new IonError(Errors.NO_BACK_REF,
@@ -1091,15 +1090,14 @@ function IonDataRepository(options) {
       ));
     }
 
-    var clr = {};
-    var clrf = {$and: []};
-    var ups = {};
-    var conds = {};
-    var tmp;
+    let clr = {};
+    let clrf = {$and: []};
+    let ups = {};
+    let conds = {};
 
     conds[rcm.getKeyProperties()[0]] = updates[pm.name];
 
-    tmp = {};
+    let tmp = {};
     tmp[pm.backRef] = oldId || itemId;
     clrf.$and.push(tmp);
 
@@ -1119,8 +1117,8 @@ function IonDataRepository(options) {
      */
     function setBrLink(rcm, conds, ups) {
       return _this._getItem(rcm.getCanonicalName(), String(updates[pm.name]), {forcedEnrichment: [[pm.backRef]]})
-        .then(function (bro) {
-          var lost = bro.property(pm.backRef).evaluate();
+        .then((bro) => {
+          let lost = bro.property(pm.backRef).evaluate();
           if (lost) {
             if (options.log) {
               options.log.warn('Объект "' + bro.toString() +
@@ -1497,7 +1495,7 @@ function IonDataRepository(options) {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           return autoAssign(cm, updates, false, options.user);
         })
-        .then(function () {
+        .then(() => {
           checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
           prepareFileSavers('new', cm, fileSavers, updates);
@@ -1507,7 +1505,11 @@ function IonDataRepository(options) {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
           if (options.user) {
-            updates._creator = options.user.id();
+            let creatorAttr = '_creator';
+            if (cm.getCreatorTracker()) {
+              creatorAttr = cm.getCreatorTracker();
+            }
+            updates[creatorAttr] = options.user.id();
           }
           return _this.ds.insert(
             tn(rcm),
@@ -1516,27 +1518,23 @@ function IonDataRepository(options) {
           );
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
-        .then(function (data) {
+        .then((data) => {
           if (!data) {
             return Promise.resolve();
           }
-          var item = _this._wrap(data._class, data, data._classVer);
+          let item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
           delete updates._classVer;
-          delete updates._creator;
+          if (updates._creator) {
+            delete updates._creator;
+          }
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         })
-        .then(function (item) {
-          return updateBackRefs(item, cm, data);
-        })
-        .then(function (item) {
-          return refUpdator(item, refUpdates, changeLogger);
-        })
-        .then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        })
-        .then(function (item) {
-          return bubble(
+        .then((item) => updateBackRefs(item, cm, data))
+        .then((item) => refUpdator(item, refUpdates, changeLogger))
+        .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then((item) =>
+          bubble(
             'create',
             item.getMetaClass(),
             {
@@ -1544,12 +1542,10 @@ function IonDataRepository(options) {
               data: data,
               user: options.user
             }
-          );
-        })
+          )
+        )
         .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
-        .then(function (item) {
-          return calcProperties(item, options.skipResult);
-        });
+        .then((item) => calcProperties(item, options.skipResult));
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1631,16 +1627,20 @@ function IonDataRepository(options) {
 
         return p
           .then(preWriteEventHandler(updates))
-          .then(function () {
+          .then(() => {
             updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
             checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
             let fileSavers = [];
             prepareFileSavers(id, cm, fileSavers, updates);
             return Promise.all(fileSavers);
           })
-          .then(function () {
+          .then(() => {
             if (options.user) {
-              updates._editor = options.user.id();
+              let editorAttr = '_editor';
+              if (cm.getEditorTracker()) {
+                editorAttr = cm.getEditorTracker();
+              }
+              updates[editorAttr] = options.user.id();
             }
             return _this.ds.update(
               tn(rcm),
@@ -1650,24 +1650,22 @@ function IonDataRepository(options) {
             );
           })
           .catch(wrapDsError('editItem', classname, null, null, cm))
-          .then(function (data) {
+          .then((data) => {
             if (!data) {
               return Promise.reject(new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`}));
             }
-            var item = _this._wrap(data._class, data, data._classVer);
-            delete updates._editor;
+            let item = _this._wrap(data._class, data, data._classVer);
+            if (updates._editor) {
+              delete updates._editor;
+            }
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
           })
-          .then(function (item) {
+          .then((item) => {
             return updateBackRefs(item, cm, data, id);
           })
-          .then(function (item) {
-            return refUpdator(item, refUpdates, changeLogger);
-          })
-          .then(function (item) {
-            return loadFiles(item, _this.fileStorage, _this.imageStorage);
-          })
-          .then(function (item) {
+          .then((item) => refUpdator(item, refUpdates, changeLogger))
+          .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
+          .then((item) => {
             if (!suppresEvent) {
               return bubble(
                 'edit',
@@ -1682,9 +1680,7 @@ function IonDataRepository(options) {
             return Promise.resolve({item: item});
           })
           .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
-          .then(function (item) {
-            return calcProperties(item, options.skipResult);
-          });
+          .then((item) => calcProperties(item, options.skipResult));
       } else {
         return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
       }
@@ -1725,86 +1721,83 @@ function IonDataRepository(options) {
       let da = {};
       let updates = data || {};
       let conditionsData;
-
-      if (id) {
-        conditionsData = _this.keyProvider.keyToData(rcm, id);
-      } else {
-        conditionsData = _this.keyProvider.keyData(rcm, updates);
-      }
-
       let event = EventType.UPDATE;
-
       let conditions = null;
-      if (conditionsData) {
-        conditions = formUpdatedData(rcm, conditionsData);
-      }
-
       let base = null;
 
       let p;
-      if (changeLogger) {
-        p = _this.ds.get(tn(rcm), conditions).then(function (b) {
-          base = b;
-          return bubble(
-            'pre-save',
-            cm,
-            {
-              id: id,
-              item: b && _this._wrap(b._class, b, b._classVer),
-              data: updates,
-              user: options.user
-            });
-        });
+      if (options && options.autoAssign) {
+        p = autoAssign(cm, updates, true, options.user);
       } else {
-        p = bubble(
-            'pre-save',
-            cm,
-            {
-              id: id,
-              data: updates,
-              user: options.user
-            }
-          );
+        if (cm.getChangeTracker()) {
+          updates[cm.getChangeTracker()] = new Date();
+        }
+        p = Promise.resolve(updates);
       }
 
+
       return p
+        .then(()=> {
+          if (id) {
+            conditionsData = _this.keyProvider.keyToData(rcm, id);
+          } else {
+            conditionsData = _this.keyProvider.keyData(rcm, updates);
+          }
+          if (conditionsData) {
+            conditions = formUpdatedData(rcm, conditionsData);
+          }
+          if (changeLogger) {
+            return _this.ds.get(tn(rcm), conditions).then(function (b) {
+              base = b;
+              return bubble(
+                'pre-save',
+                cm,
+                {
+                  id: id,
+                  item: b && _this._wrap(b._class, b, b._classVer),
+                  data: updates,
+                  user: options.user
+                });
+            });
+          } else {
+            return bubble(
+              'pre-save',
+              cm,
+              {
+                id: id,
+                data: updates,
+                user: options.user
+              }
+            );
+          }
+        })
         .then(preWriteEventHandler(updates))
-        .then(function () {
+        .then(() => {
           let fileSavers = [];
-          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
+          updates = formUpdatedData(cm, updates, true, refUpdates, da) || {};
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
-        .then(function () {
+        .then(() => {
           updates._class = cm.getCanonicalName();
           updates._classVer = cm.getVersion();
-          let p;
           if (conditions) {
-            if (options && options.autoAssign) {
-              p = autoAssign(cm, updates, true, options.user);
-            } else {
-              if (cm.getChangeTracker()) {
-                updates[cm.getChangeTracker()] = new Date();
-              }
-              p = Promise.resolve(updates);
-            }
-            p = p.then(()=>checkRequired(cm, updates, true));
+            return checkRequired(cm, updates, true);
           } else {
             event = EventType.CREATE;
-            p = autoAssign(cm, updates, false, options.user)
+            return autoAssign(cm, updates, false, options.user)
               .then(()=>checkRequired(cm, updates, false, options.ignoreIntegrityCheck));
           }
-          return p;
         })
-        .then(function () {
+        .then(() => {
           let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
           return conditions ?
             _this.ds.upsert(tn(rcm), conditions, updates, opts) :
             _this.ds.insert(tn(rcm), updates, opts);
         })
         .catch(wrapDsError('saveItem', classname, null, null, cm))
-        .then(function (d) {
-          var item;
+        .then((d) => {
+          let item;
           if (d) {
             item = _this._wrap(d._class, d, d._classVer);
           } else {
@@ -1812,25 +1805,23 @@ function IonDataRepository(options) {
           }
           return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
         })
-        .then(function (item) {
+        .then((item) => {
           if (!options.ignoreIntegrityCheck) {
             return updateBackRefs(item, cm, data, id || item.getItemId());
           } else {
-            return Promise.resolve(item);
+            return item;
           }
         })
-        .then(function (item) {
+        .then((item) => {
           if (!options.ignoreIntegrityCheck) {
             return refUpdator(item, refUpdates, changeLogger);
           } else {
-            return Promise.resolve(item);
+            return item;
           }
         })
-        .then(function (item) {
-          return loadFiles(item, _this.fileStorage, _this.imageStorage);
-        })
-        .then(function (item) {
-          return bubble(
+        .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then((item) =>
+          bubble(
             'save',
             item.getMetaClass(),
             {
@@ -1838,12 +1829,10 @@ function IonDataRepository(options) {
               updates: data,
               user: options.user
             }
-          );
-        })
+          )
+        )
         .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
-        .then(function (item) {
-          return calcProperties(item, options.skipResult);
-        });
+        .then((item) => calcProperties(item, options.skipResult));
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1932,12 +1921,10 @@ function IonDataRepository(options) {
   this._bulkDelete = function (classname, options) {
     options = options || {};
 
-    var cm = _this.meta.getMeta(classname);
-    var rcm = getRootType(cm);
+    let cm = _this.meta.getMeta(classname);
+    let rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).then(function (filter) {
-      return _this.ds.delete(tn(rcm), filter);
-    });
+    return prepareFilterValues(cm, options.filter).then((filter) => _this.ds.delete(tn(rcm), filter));
   };
 
   /**
@@ -1954,28 +1941,26 @@ function IonDataRepository(options) {
   this._bulkEdit = function (classname, data, options) {
     options = options || {};
     try {
-      var cm = _this.meta.getMeta(classname);
-      var rcm = getRootType(cm);
+      let cm = _this.meta.getMeta(classname);
+      let rcm = getRootType(cm);
 
-      var refUpdates = {};
-      var updates = formUpdatedData(cm, data, false, refUpdates) || {};
+      let refUpdates = {};
+      let updates = formUpdatedData(cm, data, false, refUpdates) || {};
       if (cm.getChangeTracker()) {
         updates[cm.getChangeTracker()] = new Date();
       }
-      var fileSavers = [];
+      let fileSavers = [];
       prepareFileSavers('bulk', cm, fileSavers, updates);
       checkRequired(cm, updates, true, true);
       return Promise.all(fileSavers)
-        .then(function () {
-          return prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm));
-        })
-        .then(function (filter) {
+        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm)))
+        .then((filter) => {
           if (options.user) {
             updates._editor = options.user.id();
           }
           return _this.ds.update(tn(rcm), filter, updates, {skipResult: true, bulk: true});
         })
-        .then(function (matched) {
+        .then((matched) => {
           if (options.skipResult) {
             return Promise.resolve(matched);
           }
@@ -2255,6 +2240,20 @@ function IonDataRepository(options) {
    */
   this._getAssociationsCount = function (master, collection, options) {
     return getCollection(master, collection, options, true);
+  };
+
+  /**
+   * @param {ResourceStorage} storage
+   */
+  this.setFileStorage = function (storage) {
+    this.fileStorage = storage;
+  };
+
+  /**
+   * @param {ResourceStorage} storage
+   */
+  this.setImageStorage = function (storage) {
+    this.imageStorage = storage;
   };
 }
 

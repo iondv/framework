@@ -11,9 +11,9 @@ const Item = require('core/interfaces/DataRepository').Item;
  */
 module.exports = c(
   function (col, attr, cond) {
-    var result = 0;
-    var count = 0;
-    for (var i = 0; i < col.length; i++) {
+    let result = 0;
+    let count = 0;
+    for (let i = 0; i < col.length; i++) {
       if (col[i] !== null) {
         if (cond) {
           if (!cond.apply(col[i])) {

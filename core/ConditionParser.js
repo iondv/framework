@@ -13,10 +13,10 @@ const strToDate = require('core/strToDate');
 const cast = require('core/cast');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
-const AgregOpers = [
-  OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
-  OperationTypes.SUM, OperationTypes.COUNT
-];
+const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
+  OperationTypes.SUM, OperationTypes.COUNT];
+const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATEDIFF, OperationTypes.ADD,
+              OperationTypes.SUB, OperationTypes.MUL, OperationTypes.DIV, OperationTypes.MOD];
 
 // jshint maxstatements: 40, maxcomplexity: 50
 /**
@@ -31,29 +31,44 @@ function toScalar(v, context, type, lang) {
     v = v[0];
   }
 
-  if (typeof v === 'string' && v[0] === '$' && context) {
-    let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
-    let nm = v.substring(1);
-    let p;
-    if (item && (p = item.property(nm)) !== null) {
+  if (typeof v === 'string' && v[0] === '$') {
+    if (v === '$$now') {
+      v = new Date();
+    } else if (v === '$$today') {
+      v = new Date();
+      v.setHours(0, 0, 0, 0);
+    } else if (context) {
+      let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
+      let nm = v.substring(1);
+      let p;
+      if (item && (p = item.property(nm)) !== null) {
         v = p.getValue();
-    } else if (context.hasOwnProperty(nm)) {
-      v = context[nm];
-    }
-    if (Array.isArray(v)) {
-      let result = [];
-      v.forEach((v) => {result.push(toScalar(v, context, type, lang));});
-      return result;
+      } else if (context.hasOwnProperty(nm)) {
+        v = context[nm];
+      }
+      if (Array.isArray(v)) {
+        let result = [];
+        v.forEach((v) => {
+          result.push(toScalar(v, context, type, lang));
+        });
+        return result;
+      }
     }
   }
 
-  switch (type) {
-    case PropertyTypes.DATETIME: {
-      v = strToDate(v, lang);
-      return v;
-    }break;
-    default: return cast(v, type);
+  if (typeof v === 'string') {
+    switch (type) {
+      case PropertyTypes.DATETIME:
+      {
+        v = strToDate(v, lang);
+        return v;
+      }
+        break;
+      default:
+        return cast(v, type);
+    }
   }
+  return v;
 }
 
 function findPM(cm, name) {
@@ -132,7 +147,7 @@ function vt(cm, property) {
  */
 function produceFilter(condition, type, rcm, context, lang) {
   var result = {};
-  if (condition.value) {
+  if (condition.value && condition.value.length) {
     result[type] = toScalar(condition.value, context, vt(rcm, condition.property), lang);
   } else if (condition.nestedConditions && condition.nestedConditions.length) {
     result[type] = ConditionParser(condition.nestedConditions[0], rcm, context, lang);
@@ -246,6 +261,9 @@ function ConditionParser(condition, rcm, context, lang) {
     return null;
   } else {
     if (condition.property) {
+      if (condition.operation === null) {
+        return '$' + condition.property;
+      }
       switch (parseInt(condition.operation)) {
         case ConditionTypes.EMPTY: return {[Operations.EMPTY]: ['$' + condition.property]};
         case ConditionTypes.NOT_EMPTY: return {[Operations.NOT_EMPTY]: ['$' + condition.property]};
@@ -271,7 +289,8 @@ function ConditionParser(condition, rcm, context, lang) {
         default: throw new Error('Некорректный тип условия!');
       }
     } else {
-      if (BoolOpers.indexOf(condition.operation) !== -1) {
+      let oper = parseInt(condition.operation);
+      if (BoolOpers.indexOf(oper) !== -1) {
         let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
           switch (condition.operation) {
@@ -283,7 +302,7 @@ function ConditionParser(condition, rcm, context, lang) {
         } else {
           throw new Error('Не указаны аргументы операции!');
         }
-      } else if (AgregOpers.indexOf(condition.operation) !== -1) {
+      } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
           switch (condition.operation) {
@@ -297,7 +316,7 @@ function ConditionParser(condition, rcm, context, lang) {
         } else {
           throw new Error('Не указаны аргументы операции!');
         }
-      } else {
+      } else if (Funcs.indexOf(oper) !== -1) {
         let tmp = [];
         if (Array.isArray(condition.value) && condition.value.length) {
           tmp = tmp.concat(toScalar(condition.value, context));
@@ -320,6 +339,9 @@ function ConditionParser(condition, rcm, context, lang) {
           case OperationTypes.ABS: return {[Operations.ABS]: tmp};
           default: throw new Error('Некорректный тип операции!');
         }
+        return result;
+      } else if (condition.value && condition.value.length) {
+        return toScalar(condition.value, context, PropertyTypes.STRING, lang);
       }
     }
   }

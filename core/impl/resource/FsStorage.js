@@ -39,27 +39,34 @@ function FsStorage(options) {
   delete options.dataSource;
   var _options = clone(options) || {};
   _options.urlBase = _options.urlBase  || '';
+  _options.shareBase = _options.shareBase  || '/share';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
    * @param {Buffer | String | {} | stream.Readable} data
+   * @param {String} [directory]
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this._accept = function (data, options) {
-    var opts = clone(options) || {};
-    var m = moment();
-    var pth = m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+  this._accept = function (data, directory, options) {
+    let opts = clone(options) || {};
+    let m = moment();
+    let pth = directory ? directory : m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+    if (pth.charAt(0) === path.sep) {
+      pth = pth.slice(1);
+    }
     switch (_options.fragmentation) {
       case 'hour':pth = path.join(pth, m.format('HH'));break;
       case 'minute':pth = path.join(pth, m.format('mm'));break;
     }
 
-    var d;
-    var fn;
-    var id = cuid();
+    let d, fn;
+    let id = cuid();
 
-    if (
+    if (typeof data === 'string' || Buffer.isBuffer(data) || typeof data.pipe === 'function') {
+      d = data;
+      fn = opts.name || id;
+    } else if (
       typeof data === 'object' &&
       (
         typeof data.buffer !== 'undefined' ||
@@ -76,81 +83,69 @@ function FsStorage(options) {
         d = data.stream;
       }
 
-      var dt = clone(data);
+      let dt = clone(data);
       delete dt.buffer;
       delete dt.path;
       delete dt.stream;
 
       opts = merge(opts, dt);
     } else {
-      d = data;
-      fn = opts.name || id;
-    }
-
-    if (!(typeof d === 'string' || Buffer.isBuffer(d) || typeof d.pipe === 'function')) {
       throw new Error('Переданы данные недопустимого типа:!');
     }
 
     function checkDest(filename, prompt) {
-      return new Promise(function (resolve, reject) {
-        var result = path.join(_options.storageBase, pth, filename);
-        fs.access(result, function (err, stats) {
+      return new Promise((resolve, reject) => {
+        let result = path.join(_options.storageBase, pth, filename);
+        fs.access(result, (err, stats) => {
           if (err) {
             resolve({path: pth, filename: filename});
             return;
           }
-          var p = 1 + (prompt || 0);
-          var lind = filename.lastIndexOf('.');
-          var fn = lind > 0 ? filename.substring(0, lind) + p + filename.substring(lind) : filename + p;
+          let p = 1 + (prompt || 0);
+          let lind = filename.lastIndexOf('.');
+          let fn = lind > 0 ? filename.substring(0, lind) + p + filename.substring(lind) : filename + p;
 
           checkDest(fn, p).then(resolve).catch(reject);
         });
       });
     }
 
-    return new Promise(function (resolve, reject) {
-        checkDest(fn).then(function (check) {
-          return new Promise(function (rs, rj) {
-            mkdirp(path.join(_options.storageBase, check.path), function (err) {
-              if (err) {
-                return rj(err);
-              }
+    return checkDest(fn)
+      .then((check) => {
+        return new Promise((resolve, reject) => {
+          mkdirp(path.join(_options.storageBase, check.path), (err) => {
+            if (err) {
+              return reject(err);
+            }
 
-              var dest = path.join(_options.storageBase, check.path, check.filename);
+            let dest = path.join(_options.storageBase, check.path, check.filename);
 
-              if (typeof d === 'string' || typeof d.pipe === 'function') {
-                var writer, reader;
-                writer = fs.createWriteStream(dest);
-                reader = d;
-                if (typeof d === 'string') {
-                  reader = fs.createReadStream(d);
-                }
-                writer.on('error', rj);
-                writer.on('finish', function () {
-                  rs(path.join(check.path, check.filename));
-                });
-                reader.pipe(writer);
-              } else {
-                fs.writeFile(dest, d, function (err) {
-                  if (err) {
-                    rj(err);
-                  }
-                  rs(path.join(check.path, check.filename));
-                });
+            if (typeof d === 'string' || typeof d.pipe === 'function') {
+              let writer = fs.createWriteStream(dest);
+              let reader = d;
+              if (typeof d === 'string') {
+                reader = fs.createReadStream(d);
               }
-            });
+              writer.on('error', reject);
+              writer.on('finish', () => {resolve(path.join(check.path, check.filename));});
+              reader.pipe(writer);
+            } else {
+              fs.writeFile(dest, d, (err) => err ? reject(err) :resolve(path.join(check.path, check.filename)));
+            }
           });
-        }).then(function (pth) { // TODO ОПределять mime-type и content-type
+        });
+      })
+      .then((pth) => { // TODO ОПределять mime-type и content-type
           return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
-        }).then(function (r) {
-          resolve(new StoredFile(
+      })
+      .then((r) =>
+        new StoredFile(
             r.id,
             _options.urlBase + '/' + r.id,
             r.options,
             streamGetter(r)
-          ));
-        }).catch(reject);
-      });
+        )
+      );
   };
 
   /**
@@ -158,35 +153,31 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._remove = function (id) {
-    return new Promise(function (resolve, reject) {
-      dataSource.get('ion_files', {id: id}).
-      then(function (file) {
+    return dataSource.get('ion_files', {id: id})
+      .then((file) => {
         if (file) {
-          var result = path.join(_options.storageBase, file.path);
-          fs.unlink(result, function (err) {
-            if (err) {
-              reject(err);
-            }
-            dataSource.delete('ion_files', {id: id})
-              .then(resolve)
-              .catch(reject);
+          let result = path.join(_options.storageBase, file.path);
+          return new Promise((resolve, reject) => {
+            fs.unlink(result, (err) => {
+              if (err) {
+                return reject(err);
+              }
+              dataSource.delete('ion_files', {id: id}).then(resolve).catch(reject);
+            });
           });
         } else {
-          resolve();
+          return Promise.resolve();
         }
-      }).
-      catch(reject);
-    });
+      });
   };
 
   function streamGetter(file) {
     return function (callback) {
-      fs.access(path.join(_options.storageBase, file.path), fs.constants.R_OK, function (err) {
+      fs.access(path.join(_options.storageBase, file.path), fs.constants.R_OK, (err) => {
         if (err) {
           return callback(err, null);
         }
-        var s = fs.createReadStream(path.join(_options.storageBase, file.path));
-        return callback(null, s);
+        return callback(null, fs.createReadStream(path.join(_options.storageBase, file.path)));
       });
     };
   }
@@ -196,11 +187,10 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._fetch = function (ids) {
-    return new Promise(function (resolve, reject) {
-      dataSource.fetch('ion_files', {filter: {id: {$in: ids}}}).
-      then(function (files) {
-        var result = [];
-        for (var i = 0; i < files.length; i++) {
+    return dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
+      .then((files) => {
+        let result = [];
+        for (let i = 0; i < files.length; i++) {
           result.push(
             new StoredFile(
               files[i].id,
@@ -210,10 +200,8 @@ function FsStorage(options) {
             )
           );
         }
-        resolve(result);
-      }).
-      catch(reject);
-    });
+        return result;
+      });
   };
 
   function respondFile(req, res) {
@@ -238,42 +226,35 @@ function FsStorage(options) {
   }
 
   function respondDirectory(res, dirName,dirLinks,fileLinks) {
-    var i;
-    var html = '<html>' +
+    let html = '<html>' +
       '<head><title>' + xss(dirName) + '</title></head>' +
       '<body><div><h3>' + xss(dirName) + '</h3></div>' +
       '<div>';
-    for (i = 0; i < dirLinks.length; i++) {
+    for (let i = 0; i < dirLinks.length; i++) {
       html += '<p><a href="' + dirLinks[i].link + '"><strong>' + xss(dirLinks[i].name) + '&sol;</strong></a></p>';
     }
     html += '</div><div>';
-    for (i = 0; i < fileLinks.length; i++) {
+    for (let i = 0; i < fileLinks.length; i++) {
       html += '<p><a href="' + fileLinks[i].link + '">' + xss(fileLinks[i].name) + '</a></p>';
     }
     html += '</div></body></html>';
     res.status(404).send(html);
   }
 
-  /**
-   * @returns {Function}
-   */
-  this._middle = function () {
+  function urlAccessor(urlBase, filter) {
     return function (req, res, next) {
-      var basePath = url.parse(_options.urlBase).path;
-      if (req.path.indexOf(basePath) !== 0) {
-        return next();
-      }
-
-      var fileId = req.path.replace(basePath + '/', '');
+      let fileId = req.params.id;
 
       if (!fileId) {
         return next();
       }
 
-      dataSource.get('ion_files', {id: fileId})
-        .then(function (data) {
+      filter = filter || {};
+      filter.id = fileId;
+      dataSource.get('ion_files', filter)
+        .then((data) => {
           if (data && data.type === resourceType.FILE) {
-            var f = new StoredFile(
+            let f = new StoredFile(
               data.id,
               _options.urlBase + '/' + data.id,
               data.options,
@@ -281,19 +262,15 @@ function FsStorage(options) {
             );
             f.getContents()
               .then(respondFile(req, res))
-              .catch(
-                function (err) {
-                  res.status(404).send('File not found!');
-                }
-              );
+              .catch((err) => {res.status(404).send('File not found!');});
           } else if (data && data.type === resourceType.DIR) {
             if (data && (data.files.length || data.dirs.length)) {
-              var ids = data.files.concat(data.dirs);
+              let ids = data.files.concat(data.dirs);
               dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
-                .then(function (files) {
-                  var dirLinks = [];
-                  var fileLinks = [];
-                  for (var i = 0; i < files.length; i++) {
+                .then((files) => {
+                  let dirLinks = [];
+                  let fileLinks = [];
+                  for (let i = 0; i < files.length; i++) {
                     if (files[i].type === resourceType.FILE) {
                       fileLinks.push({
                         link: _options.urlBase + '/' + files[i].id,
@@ -308,9 +285,9 @@ function FsStorage(options) {
                     }
                   }
                   respondDirectory(res, data.name, dirLinks, fileLinks);
-                }).catch(function () {
-                  res.status(404).send('File (or directory) not found!');
-                });
+                }).catch(() => {
+                res.status(404).send('File (or directory) not found!');
+              });
             } else {
               res.status(200).send('Folder is empty!');
             }
@@ -318,24 +295,27 @@ function FsStorage(options) {
             res.status(404).send('File not found!');
           }
         })
-        .catch(
-          function (err) {
-            res.status(500).send(err.message);
-          }
-        );
+        .catch((err) => {res.status(500).send(err.message);});
     };
+  }
+
+  this._shareMiddle = function () {
+    return urlAccessor(_options.shareBase, {shared: true});
+  };
+
+  /**
+   * @returns {Function}
+   */
+  this._fileMiddle = function () {
+    return urlAccessor(_options.urlBase);
   };
 
   /**
    * @returns {Promise}
    */
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      dataSource.ensureIndex('ion_files', {id: 1}, {unique: true})
-        .then(function () { return dataSource.ensureIndex('ion_files', {path: 1}); })
-        .then(function () {resolve();})
-        .catch(reject);
-    });
+    return dataSource.ensureIndex('ion_files', {id: 1}, {unique: true})
+        .then(() => dataSource.ensureIndex('ion_files', {path: 1}));
   };
 
   /**
@@ -344,21 +324,19 @@ function FsStorage(options) {
   * @returns {Promise}
   */
   this._getDir = function (id) {
-    return new Promise(function (resolve, reject) {
-      dataSource.get('ion_files', {id: id}).
-       then(function (dir) {
+    return dataSource.get('ion_files', {id: id})
+      .then(function (dir) {
         if (dir && dir.files.length) {
-          _this._fetch(dir.files)
-            .then(function (files) {
+          return _this._fetch(dir.files)
+            .then((files) => {
               dir.files = files;
               dir.link = _options.urlBase + '/' + id;
-              resolve(dir);
-            }).catch(reject);
+              return dir;
+            });
         } else {
-          resolve(dir);
+          return dir;
         }
-      }).catch(reject);
-    });
+      });
   };
 
   /**
@@ -369,40 +347,32 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
-    return new Promise(function (resolve, reject) {
-      var id = cuid();
-      var dirObject = {
-        id: id,
-        type: resourceType.DIR,
-        name: name || id,
-        files: [],
-        dirs: []
-      };
-      dataSource.insert('ion_files', dirObject)
-        .then(function (dir) {
-          dir.link = _options.urlBase + '/' + id;
-          if (parentDirId) {
-            dataSource.get('ion_files', {id: parentDirId})
-              .then(function (parentDir) {
+    let id = cuid();
+    let dirObject = {
+      id: id,
+      type: resourceType.DIR,
+      name: name || id,
+      files: [],
+      dirs: []
+    };
+    return dataSource.insert('ion_files', dirObject)
+      .then((dir) => {
+        dir.link = _options.urlBase + '/' + id;
+        if (parentDirId) {
+          return dataSource.get('ion_files', {id: parentDirId})
+              .then((parentDir) => {
                 if (parentDir && dir.id) {
-                  try {
-                    parentDir.dirs.push(dir.id);
-                    dataSource.update('ion_files', {id: parentDir.id}, parentDir)
-                      .then(function () {
-                        resolve(fetch ? dir : null);
-                      }).catch(reject);
-                  } catch (err) {
-                    reject(err);
-                  }
+                  parentDir.dirs.push(dir.id);
+                  return dataSource.update('ion_files', {id: parentDir.id}, parentDir)
+                    .then(() => fetch ? dir : null);
                 } else {
-                  reject('нет тайкой директории');
+                  return Promise.reject('нет такой директории');
                 }
-              }).catch(reject);
+              });
           } else {
-            resolve(fetch ? dir : null);
+            return fetch ? dir : null;
           }
-        }).catch(reject);
-    });
+        });
   };
 
   /**
@@ -421,24 +391,15 @@ function FsStorage(options) {
    * @returns {Promise}
      */
   this._putFile = function (dirId, fileId) {
-    return new Promise(function (resolve, reject) {
-      dataSource.get('ion_files', {id: dirId})
-        .then(function (dir) {
-          if (dir) {
-            try {
-              dir.files.push(fileId);
-              dataSource.update('ion_files', {id: dirId}, dir)
-                .then(function () {
-                  resolve(fileId);
-                }).catch(reject);
-            } catch (err) {
-              reject(err);
-            }
-          } else {
-            reject('нет тайкой директории');
-          }
-        }).catch(reject);
-    });
+    return dataSource.get('ion_files', {id: dirId})
+      .then((dir) => {
+        if (dir) {
+          dir.files.push(fileId);
+          return dataSource.update('ion_files', {id: dirId}, dir).then(() => fileId);
+        } else {
+          return Promise.reject('Нет такой директории');
+        }
+      });
   };
 
   /**
@@ -448,33 +409,45 @@ function FsStorage(options) {
    * @returns {Promise}
      */
   this._ejectFile = function (dirId, fileId) {
-    return new Promise(function (resolve, reject) {
-      dataSource.get('ion_files', {id: dirId})
-        .then(function (dir) {
-          if (dir) {
-            try {
-              var fileIndex = dir.files.indexOf(fileId);
-              if (fileIndex > -1) {
-                dir.files.splice(fileIndex, 1);
-              }
-              dataSource.update('ion_files', {id: dirId}, dir)
-                .then(function () {
-                  resolve(fileId);
-                }).catch(reject);
-            } catch (err) {
-              reject(err);
-            }
-          } else {
-            reject('нет такой директории');
+    return dataSource.get('ion_files', {id: dirId})
+      .then((dir) => {
+        if (dir) {
+          let fileIndex = dir.files.indexOf(fileId);
+          if (fileIndex > -1) {
+            dir.files.splice(fileIndex, 1);
           }
-        }).catch(reject);
-    });
+          return dataSource.update('ion_files', {id: dirId}, dir).then(() => fileId);
+        } else {
+          return Promise.reject('Нет такой директории');
+        }
+      });
   };
 
   this._share = function (id) {
-    return new Promise(function (resolve) {
-      resolve(_options.urlBase + '/' + id);
-    });
+    return dataSource
+      .update('ion_files', {id: id}, {shared: true})
+      .then(() => _options.shareBase + '/' + id);
+  };
+
+  this._currentShare  = function (id) {
+    return _options.shareBase + '/' + id;
+  };
+
+  this._deleteShare = function (share) {
+    let basePath = url.parse(_options.shareBase).path;
+    let fileId = share.replace(basePath + '/', '');
+
+    return dataSource
+      .update('ion_files', {id: fileId}, {shared: false})
+      .then(() => true);
+  };
+
+  this._fileRoute = function () {
+    return _options.urlBase + '/:id';
+  };
+
+  this._shareRoute = function () {
+    return _options.shareBase + '/:id';
   };
 }
 

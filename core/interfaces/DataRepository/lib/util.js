@@ -6,6 +6,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
 const strToDate = require('core/strToDate');
 const ConditionParser = require('core/ConditionParser');
+const Item = require('./Item');
 const drOperations = require('core/DataRepoOperations');
 const dsOperations = require('core/DataSourceOperations');
 
@@ -20,7 +21,7 @@ const aggregOperations = [drOperations.MIN, drOperations.MAX, drOperations.AVG, 
  * @param {String} ns
  * @returns {*}
  */
-function castValue(value, pm, ns) {
+function castValue(value, pm) {
   if (value === null) {
     return value;
   }
@@ -34,7 +35,7 @@ function castValue(value, pm, ns) {
     if (refkey.length > 1) {
       return String(value);
     } else {
-      return castValue(value, pm._refClass.getPropertyMeta(refkey[0]), ns);
+      return castValue(value, pm._refClass.getPropertyMeta(refkey[0]));
     }
 
     return value;
@@ -54,6 +55,20 @@ function castValue(value, pm, ns) {
 }
 
 module.exports.castValue = castValue;
+
+function prepareData(v) {
+  if (Array.isArray(v)) {
+    let result = [];
+    for (let i = 0; i < v.length; i++) {
+      result.push(prepareData(v[i]));
+    }
+    return result;
+  }
+  if (v instanceof Item) {
+    return v.getItemId();
+  }
+  return v;
+}
 
 /**
  * @param {ClassMeta} cm
@@ -82,7 +97,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
               if (!refUpdates.hasOwnProperty(tmp)) {
                 refUpdates[tmp] = {};
               }
-              refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
+              refUpdates[tmp][nm.substring(dot + 1)] = prepareData(data[nm]);
             }
           }
         }
@@ -90,7 +105,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
         pm = cm.getPropertyMeta(nm);
         if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(data[nm], pm, cm.namespace);
+            data[nm] = castValue(prepareData(data[nm]), pm);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
               updates[nm] = data[nm];
             }
@@ -100,7 +115,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
               }
             }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
-            updates[nm] = data[nm];
+            updates[nm] = prepareData(data[nm]);
           }
         }
       }
@@ -491,32 +506,36 @@ function createSearchRegexp(search, mode, asString) {
   if (asString) {
     return result;
   }
-  return new RegExp(result);
+  return new RegExp(result, 'i');
 }
 
-function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, mode) {
-  var floatv, datev;
-
+function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
   if (pm.selectionProvider) {
     spFilter(cm, pm, or, createSearchRegexp(sv, mode), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
-      searchFilter(pm._refClass, or, {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
+      return searchFilter(scope, pm._refClass, or,
+        {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
         (prefix || '') + pm.name + '.', depth - 1, mode);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
     if (depth > 0) {
       let cor = [];
-      searchFilter(pm._refClass, cor, {
-        searchBy: pm._refClass.getSemanticAttrs()
-      }, sv, lang, false, depth - 1);
-      if (cor.length) {
-        let aname = '$' + (prefix || '') + pm.name;
-        or.push({[drOperations.CONTAINS]: [aname, {[drOperations.OR]: cor}]});
-      }
+      return searchFilter(scope, pm._refClass, cor,
+        {
+          searchBy: pm._refClass.getSemanticAttrs()
+        }, sv, lang, false, '', depth - 1)
+        .then(()=> {
+          if (cor.length) {
+            let aname = '$' + (prefix || '') + pm.name;
+            or.push({[drOperations.CONTAINS]: [aname, {[drOperations.OR]: cor}]});
+          }
+        });
     }
   } else {
+    let cond = {};
     let aname = '$' + (prefix || '') + pm.name;
+    let floatv, datev;
     if (pm.indexed && !pm.formula) {
       if (
         pm.type === PropertyTypes.STRING ||
@@ -544,91 +563,155 @@ function attrSearchFilter(cm, pm, or, sv, lang, prefix, depth, mode) {
       }
     }
   }
+  return Promise.resolve();
 }
 
 /**
+ * @param {{}} scope
+ * @param {{class: String, idProperties: Array}} opts
+ * @param {Array} ids
+ */
+function fillSearchIds(scope, scm, opts, ids, sv, lang, depth) {
+  return function () {
+    if (!opts.class || !Array.isArray(opts.idProperties) || !opts.idProperties.length) {
+      return Promise.resolve();
+    }
+    let cm = scope.metaRepo.getMeta(opts.class);
+    return textSearchFilter(scope, cm, opts, sv, lang, true, null, depth)
+      .then((filter) => {
+        let lo = {filter: filter};
+        lo.forceEnrichment = [];
+        opts.idProperties.forEach((p) => {lo.forceEnrichment.push(p.split('.'));});
+        return scope.dataRepo.getList(cm.getCanonicalName(), lo);
+      })
+      .then((list) => {
+        list.forEach((item) => {
+          opts.idProperties.forEach((pn) => {
+            let p = item.property(pn);
+            if (p) {
+              let v = p.evaluate();
+              if (!Array.isArray(v)) {
+                v= [v];
+              }
+              v.forEach((v) => {
+                if (v instanceof Item) {
+                  if (v.getMetaClass().checkAncestor(scm.getCanonicalName()) && ids.indexOf(v.getItemId()) < 0) {
+                    ids.push(v.getItemId());
+                  }
+                }
+              });
+            }
+          });
+        });
+      });
+  };
+}
+
+/**
+ * @param {{}} scope
  * @param {ClassMeta} cm
  * @param {Array} or
  * @param {{searchBy: String[], splitBy: String, mode: String[]}} opts
+ * @param {Array} [opts.searchByRefs]
  * @param {String} sv
  * @param {String} lang
- * @param {Boolean} [useFullText]
+ * @param {Boolean} useFullText
+ * @param {String} prefix
+ * @param {Number | Object} depth
  */
-function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
-  var fullText = false;
-
-  var tmp = [];
-
-  var svals = [];
-  var smodes = opts.mode || [];
-  var start = 0;
-  if (opts.splitBy) {
-    svals = sv.split(new RegExp(opts.splitBy));
-    start = svals.length;
-  }
-
-  for (let i = 0; i < opts.searchBy.length; i++) {
-    if (i >= start) {
-      svals.push(opts.splitBy ? false : sv);
+function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth) {
+  if (Array.isArray(opts.searchByRefs) && opts.searchByRefs.length) {
+    let ids = [];
+    let p = null;
+    opts.searchByRefs.forEach((opts)=>{
+      p = p ?
+        p.then(fillSearchIds(scope, cm, opts, ids, sv, lang, depth)) :
+        fillSearchIds(scope, cm, opts, ids, sv, lang, depth)();
+    });
+    if (!p) {
+      p = Promise.resolve();
     }
-    if (i + 1 > smodes.length) {
-      smodes.push('like');
+    return p.then(() => {
+      or.push(filterByItemIds(scope.keyProvider, cm, ids));
+    });
+  } else {
+    if (!Array.isArray(opts.searchBy)) {
+      opts.searchBy = cm.getSemanticAttrs();
     }
-  }
+    let fullText = false;
 
-  for (let i = 0; i < opts.searchBy.length; i++) {
-    if (svals[i]) {
-      let nm = opts.searchBy[i];
-      if (nm.indexOf('.') >= 0) {
-        var path = nm.split('.');
-        var p = null;
-        var cm2 = cm;
-        for (let j = 0; j < path.length; i++) {
-          p = cm2.getPropertyMeta(path[j]);
-          if (p && p.type === PropertyTypes.REFERENCE) {
-            cm2 = p._refClass;
-          } else if (j < path.length - 1) {
-            p = null;
-            break;
+    let tmp = [];
+
+    let svals = [];
+    let smodes = opts.mode || [];
+    let start = 0;
+    if (opts.splitBy) {
+      svals = sv.split(new RegExp(opts.splitBy));
+      start = svals.length;
+    }
+
+    for (let i = 0; i < opts.searchBy.length; i++) {
+      if (i >= start) {
+        svals.push(opts.splitBy ? false : sv);
+      }
+      if (i + 1 > smodes.length) {
+        smodes.push('like');
+      }
+    }
+
+    let result;
+    svals.forEach((sval, i) => {
+      if (sval) {
+        let nm = opts.searchBy[i];
+        let d = depth && typeof depth === 'object' ? depth[nm] || 1 : depth;
+
+        if (nm.indexOf('.') >= 0) {
+          let path = nm.split('.');
+          let p = null;
+          let cm2 = cm;
+          for (let j = 0; j < path.length; j++) {
+            p = cm2.getPropertyMeta(path[j]);
+            if (p && p.type === PropertyTypes.REFERENCE) {
+              cm2 = p._refClass;
+            } else if (j < path.length - 1) {
+              p = null;
+              break;
+            }
+          }
+          if (p) {
+            result = result ? result.then(() => {
+              return attrSearchFilter(scope, cm, p, tmp, sval, lang,
+                (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+                d, smodes[i]);
+            }) :
+              attrSearchFilter(scope, cm, p, tmp, sval, lang,
+              (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+              d, smodes[i]);
+          }
+        } else {
+          let pm = cm.getPropertyMeta(nm);
+          if (pm) {
+            if (pm.indexSearch && useFullText) {
+              fullText = true;
+            }
+            result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
+              attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
           }
         }
-        if (p) {
-          attrSearchFilter(cm, p, tmp, svals[i], lang,
-            (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-            depth, smodes[i]);
-        }
-      } else {
-        var pm = cm.getPropertyMeta(nm);
-        if (pm.indexSearch && useFullText) {
-          fullText = true;
-        }
-        attrSearchFilter(cm, pm, tmp, svals[i], lang, prefix, depth, smodes[i]);
       }
-    }
-  }
-
-  if (fullText) {
-    /*
-    Var tmp2 = tmp;
-    tmp = [];
-    tmp2.forEach(function (o) {
-      if (o.hasOwnProperty(drOperations.CONTAINS)) {
-        return;
-      }
-
-      for (var nm in o) {
-        if (nm.indexOf('.') > 0) {
-          return;
-        }
-      }
-
-      tmp.push(o);
     });
-    */
-    tmp.push({[drOperations.FULL_TEXT_MATCH]: [sv]});
-  }
 
-  Array.prototype.push.apply(or, tmp);
+    if (!result) {
+      result = Promise.resolve();
+    }
+    return result.then(() => {
+      if (fullText) {
+        tmp.push({[drOperations.FULL_TEXT_MATCH]: [sv]});
+      }
+      Array.prototype.push.apply(or, tmp);
+    });
+  }
+  return Promise.resolve();
 }
 
 /**
@@ -636,25 +719,30 @@ function searchFilter(cm, or, opts, sv, lang, useFullText, prefix, depth) {
  * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String}} opts
  * @param {String} sv
  * @param {String} lang
- * @param {Boolean} [useFullText]
+ * @param {Boolean} useFullText
+ * @param {String} prefix
+ * @param {Number|Object} depth
  */
-module.exports.textSearchFilter = function (cm, opts, sv, lang, useFullText, prefix, depth) {
-  var conds = [];
-  searchFilter(cm, conds, opts, sv, lang, true, null, 1);
-  if (conds.length) {
-    if (conds.length === 1) {
-      conds = conds[0];
-    } else {
-      if (opts.joinBy === 'and') {
-        conds = {$and: conds};
+function textSearchFilter(scope, cm, opts, sv, lang, useFullText, prefix, depth) {
+  let conds = [];
+  return searchFilter(scope, cm, conds, opts, sv, lang, true, null, depth || 1).then(()=>{
+    if (conds.length) {
+      if (conds.length === 1) {
+        conds = conds[0];
       } else {
-        conds = {$or: conds};
+        if (opts.joinBy === 'and') {
+          conds = {$and: conds};
+        } else {
+          conds = {$or: conds};
+        }
       }
+      return conds;
     }
-    return conds;
-  }
-  return null;
-};
+    return null;
+  });
+}
+
+module.exports.textSearchFilter = textSearchFilter;
 
 /**
  * @param {Item} item
@@ -663,13 +751,12 @@ module.exports.textSearchFilter = function (cm, opts, sv, lang, useFullText, pre
  * @returns {Promise}
  */
 function loadFiles(item, fileStorage, imageStorage) {
-  var pm;
-  var fids = [];
-  var iids = [];
-  var attrs = {};
-  for (var nm in item.base) {
+  let fids = [];
+  let iids = [];
+  let attrs = {};
+  for (let nm in item.base) {
     if (item.base.hasOwnProperty(nm) && item.base[nm]) {
-      pm = item.classMeta.getPropertyMeta(nm);
+      let pm = item.classMeta.getPropertyMeta(nm);
       if (pm) {
         if (pm.type === PropertyTypes.FILE || pm.type === PropertyTypes.IMAGE) {
           if (!attrs.hasOwnProperty('f_' + item.base[nm])) {
@@ -686,7 +773,7 @@ function loadFiles(item, fileStorage, imageStorage) {
           if (!Array.isArray(v)) {
             v = [v];
           }
-          for (var i = 0; i < v.length; i++) {
+          for (let i = 0; i < v.length; i++) {
             if (v[i]) {
               fids.push(v[i]);
               if (!attrs.hasOwnProperty('f_' + v[i])) {
@@ -703,18 +790,17 @@ function loadFiles(item, fileStorage, imageStorage) {
     return Promise.resolve(item);
   }
 
-  var loaders = [];
+  let loaders = [];
   loaders.push(fileStorage.fetch(fids));
   loaders.push(imageStorage.fetch(iids));
 
   return Promise.all(loaders)
     .then(function (files) {
-        var tmp, i, j, k;
-        for (k = 0; k < files.length; k++) {
-          for (i = 0; i < files[k].length; i++) {
+        for (let k = 0; k < files.length; k++) {
+          for (let i = 0; i < files[k].length; i++) {
             if (attrs.hasOwnProperty('f_' + files[k][i].id)) {
-              for (j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
-                tmp = attrs['f_' + files[k][i].id][j];
+              for (let j = 0; j < attrs['f_' + files[k][i].id].length; j++) {
+                let tmp = attrs['f_' + files[k][i].id][j];
                 if (typeof tmp === 'object') {
                   if (!Array.isArray(item.files[tmp.attr])) {
                     item.files[tmp.attr] = [];

@@ -73,10 +73,11 @@ function WorkflowProvider(options) {
   this._getStatus = function (item, tOptions) {
     return new Promise(function (resolve, reject) {
       let workflows = options.metaRepo.getWorkflows(
-        item.getMetaClass().getName(),
+        item.getMetaClass().getCanonicalName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
+
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -103,12 +104,13 @@ function WorkflowProvider(options) {
           }
 
           for (let i = 0; i < workflows.length; i++) {
-            if (!result.hasOwnProperty(workflows[i].name)) {
-              result[workflows[i].name] = {
+            let fullWfName = workflows[i].name + '@' + workflows[i].namespace;
+            if (!result.hasOwnProperty(fullWfName)) {
+              result[fullWfName] = {
                 next: {}
               };
             }
-            let state = result[workflows[i].name];
+            let state = result[fullWfName];
             state.workflowCaption = workflows[i].caption;
 
             let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
@@ -186,7 +188,7 @@ function WorkflowProvider(options) {
                 }
               }
             } else {
-              delete result[workflows[i].name];
+              delete result[fullWfName];
             }
           }
 
@@ -241,26 +243,26 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
-    var ctx = options.user.properties() || {};
+    let ctx = options.user.properties() || {};
     ctx.$uid = options.user.id();
     if (typeof assignment._formula === 'function') {
       ctx.$context = item;
       return Promise.resolve()
-        .then(() => assignment._formula.apply(ctx))
-        .then(function (v) {
-          updates[assignment.key] = v;
-          item.set(assignment.key, v);
-          return v;
-        });
-    } else {
-      let v = assignment.value;
-      v = v && typeof v === 'string' && v[0] === '$' ?
-        ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
-        v;
-      updates[assignment.key] = v;
-      item.set(assignment.key, v);
-      return Promise.resolve(v);
+          .then(() => assignment._formula.apply(ctx))
+          .then((v) => {
+            updates[assignment.key] = v;
+            item.set(assignment.key, v);
+            return v;
+          });
     }
+
+    let v = assignment.value;
+    v = v && typeof v === 'string' && v[0] === '$' ?
+      ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
+      v;
+    updates[assignment.key] = v;
+    item.set(assignment.key, v);
+    return Promise.resolve(v);
   }
 
   /**
@@ -275,12 +277,11 @@ function WorkflowProvider(options) {
    */
   this._performTransition = function (item, workflow, name, tOptions) {
     let wf = options.metaRepo.getWorkflow(
-      item.getMetaClass().getName(),
+      item.getMetaClass().getCanonicalName(),
       workflow,
       item.getMetaClass().getNamespace(),
       item.getMetaClass().getVersion()
     );
-
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
@@ -330,6 +331,12 @@ function WorkflowProvider(options) {
                       calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
                       calcAssignmentValue(updates, item, assignment, tOptions);
                   });
+                } else {
+                  calculations = Promise.resolve(null);
+                }
+
+                if (!calculations) {
+                  calculations = Promise.resolve();
                 }
 
                 let context = buildContext(item, tOptions);
