@@ -58,7 +58,7 @@ function prepareData(v) {
   if (Array.isArray(v)) {
     let result = [];
     for (let i = 0; i < v.length; i++) {
-      result.push(prepareData(v));
+      result.push(prepareData(v[i]));
     }
     return result;
   }
