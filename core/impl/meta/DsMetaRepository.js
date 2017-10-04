@@ -722,7 +722,11 @@ function DsMetaRepository(options) {
                 if (pm.formula && options.calc instanceof Calculator) {
                   pm._formula = options.calc.parseFormula(pm.formula);
                 }
-                if (pm.defaultValue && pm.defaultValue.indexOf('(') > 0 && options.calc instanceof Calculator) {
+                if (
+                  pm.defaultValue &&
+                  (typeof pm.defaultValue === 'object' || pm.defaultValue.indexOf('(') > 0) &&
+                  options.calc instanceof Calculator
+                ) {
                   pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                 }
               }

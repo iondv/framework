@@ -7,7 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
-const Operations = require('core/DataRepoOperations');
+const Operations = require('core/FunctionCodes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
 const cast = require('core/cast');
@@ -32,12 +32,7 @@ function toScalar(v, context, type, lang) {
   }
 
   if (typeof v === 'string' && v[0] === '$') {
-    if (v === '$$now') {
-      v = new Date();
-    } else if (v === '$$today') {
-      v = new Date();
-      v.setHours(0, 0, 0, 0);
-    } else if (context) {
+    if (context) {
       let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
       let nm = v.substring(1);
       let p;
@@ -155,7 +150,7 @@ function produceFilter(condition, type, rcm, context, lang) {
   var args = [condition.property];
   if (condition.value) {
     args = args.concat(toScalar(condition.value, context));
-  }  
+  }
 
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
     let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
@@ -218,30 +213,6 @@ function produceArray(conditions, rcm, context, lang) {
     }
   }
   return result.length ? result : null;
-}
-
-/**
- * @param {String[]} value
- * @param {String} property
- * @param {ClassMeta} rcm
- * @param {Item} context
- * @param {String} lang
- * @returns {Array}
- */
-function castInValue(value, property, rcm, context, lang) {
-  let result = [];
-  if (!Array.isArray(value)) {
-    value = [value];
-  }
-  value.forEach((v) => {
-    let sv = toScalar(v, context, vt(rcm, property), lang);
-    if (Array.isArray(sv)) {
-      Array.prototype.push.apply(result, sv);
-    } else {
-      result.push(sv);
-    }
-  });
-  return result;
 }
 
 /**

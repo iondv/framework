@@ -5,6 +5,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
+const F = require('core/FunctionCodes');
 const moment = require('moment');
 const fs = require('fs');
 const url = require('url');
@@ -162,7 +163,7 @@ function FsStorage(options) {
               if (err) {
                 return reject(err);
               }
-              dataSource.delete('ion_files', {id: id}).then(resolve).catch(reject);
+              dataSource.delete('ion_files', {[F.EQUAL]: ['$id', id]}).then(resolve).catch(reject);
             });
           });
         } else {
@@ -363,7 +364,7 @@ function FsStorage(options) {
               .then((parentDir) => {
                 if (parentDir && dir.id) {
                   parentDir.dirs.push(dir.id);
-                  return dataSource.update('ion_files', {id: parentDir.id}, parentDir)
+                  return dataSource.update('ion_files', {[F.EQUAL]: ['$id', parentDir.id]}, parentDir)
                     .then(() => fetch ? dir : null);
                 } else {
                   return Promise.reject('нет такой директории');
@@ -381,7 +382,7 @@ function FsStorage(options) {
    * @returns {Promise}
      */
   this._removeDir = function (id) {
-    return dataSource.delete('ion_files', {id: id});
+    return dataSource.delete('ion_files', {[F.EQUAL]: ['$id', id]});
   };
 
   /**
@@ -395,7 +396,7 @@ function FsStorage(options) {
       .then((dir) => {
         if (dir) {
           dir.files.push(fileId);
-          return dataSource.update('ion_files', {id: dirId}, dir).then(() => fileId);
+          return dataSource.update('ion_files', {[F.EQUAL]: ['$id', dirId]}, dir).then(() => fileId);
         } else {
           return Promise.reject('Нет такой директории');
         }
@@ -416,7 +417,7 @@ function FsStorage(options) {
           if (fileIndex > -1) {
             dir.files.splice(fileIndex, 1);
           }
-          return dataSource.update('ion_files', {id: dirId}, dir).then(() => fileId);
+          return dataSource.update('ion_files', {[F.EQUAL]: ['$id', dirId]}, dir).then(() => fileId);
         } else {
           return Promise.reject('Нет такой директории');
         }
@@ -425,7 +426,7 @@ function FsStorage(options) {
 
   this._share = function (id) {
     return dataSource
-      .update('ion_files', {id: id}, {shared: true})
+      .update('ion_files', {[F.EQUAL]: ['$id', id]}, {shared: true})
       .then(() => _options.shareBase + '/' + id);
   };
 
@@ -438,7 +439,7 @@ function FsStorage(options) {
     let fileId = share.replace(basePath + '/', '');
 
     return dataSource
-      .update('ion_files', {id: fileId}, {shared: false})
+      .update('ion_files', {[F.EQUAL]: ['$id', fileId]}, {shared: false})
       .then(() => true);
   };
 

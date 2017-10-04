@@ -26,7 +26,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
-const Operations = require('core/DataRepoOperations');
+const Operations = require('core/FunctionCodes');
 const isEmpty = require('core/empty');
 
 const EVENT_CANCELED = '____CANCELED___';
@@ -364,7 +364,10 @@ function IonDataRepository(options) {
       }
 
       if (property.meta.selConditions) {
-        attrs[pn].colFilter = ConditionParser(property.meta.selConditions, property.meta._refClass, item);
+        attrs[pn].colFilter =
+          Array.isArray(property.meta.selConditions) ?
+          ConditionParser(property.meta.selConditions, property.meta._refClass, item) :
+          property.meta.selConditions;
         if (!attrs[pn].colFilter) {
           delete attrs[pn].colFilter;
         }
@@ -829,6 +832,8 @@ function IonDataRepository(options) {
       if (conditions  === null) {
         return Promise.resolve(null);
       }
+
+
 
       let fp = null;
       if (options.filter) {
@@ -1551,6 +1556,16 @@ function IonDataRepository(options) {
     }
   };
 
+  function dataToFilter(data) {
+    let result = [];
+    for (let nm in data) {
+      if (data.hasOwnProperty(nm)) {
+        result.push({[Operations.EQUAL]: ['$' + nm, data[nm]]});
+      }
+    }
+    return {[Operations.AND]: result};
+  }
+
   /**
    *
    * @param {String} classname
@@ -1586,6 +1601,7 @@ function IonDataRepository(options) {
       let conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
 
       if (conditions) {
+        conditions = dataToFilter(conditions);
         let base;
         let refUpdates = {};
         let da = {};
@@ -1745,6 +1761,7 @@ function IonDataRepository(options) {
           }
           if (conditionsData) {
             conditions = formUpdatedData(rcm, conditionsData);
+            conditions = dataToFilter(conditions);
           }
           if (changeLogger) {
             return _this.ds.get(tn(rcm), conditions).then(function (b) {
@@ -1850,7 +1867,7 @@ function IonDataRepository(options) {
     var cm = _this.meta.getMeta(classname);
     var rcm = getRootType(cm);
     var base = null;
-    var conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id));
+    var conditions = dataToFilter(formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id)));
     var item = _this._wrap(classname, conditions);
     conditions = addFilterByItem(null, conditions);
     var filter;

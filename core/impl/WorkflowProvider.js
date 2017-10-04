@@ -10,6 +10,7 @@ const EventManager = require('core/impl/EventManager');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/workflow');
 const Permissions = require('core/Permissions');
+const F = require('core/FunctionCodes');
 
 const MetaPermissions  = {
   READ: 1,
@@ -232,8 +233,10 @@ function WorkflowProvider(options) {
   function move(item, workflow, nextState) {
     return options.dataSource.upsert(tableName,
       {
-        item: item.getClassName() + '@' + item.getItemId(),
-        workflow: workflow
+        [F.AND]: [
+          {[F.EQUAL]: ['$item', item.getClassName() + '@' + item.getItemId()]},
+          {[F.EQUAL]: ['$workflow', workflow]}
+        ]
       },
       {
         stage: nextState.name,

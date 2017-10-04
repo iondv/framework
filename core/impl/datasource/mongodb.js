@@ -16,15 +16,59 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-source');
 const Iterator = require('core/interfaces/Iterator');
 const moment = require('moment');
+const Operations = require('core/FunctionCodes');
+const DsOperations = require('core/DataSourceFunctionCodes');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
+
 
 const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options',
   '$where', '$or', '$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$exist', '$in', '$nin', '$exists'];
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
 const IGNORE = '____$$$ignore$$$___$$$me$$$___';
+
+const QUERY_OPERS = {
+  [Operations.EQUAL]: '$eq',
+  [Operations.NOT_EQUAL]: '$ne',
+  [Operations.EMPTY]: '$empty',
+  [Operations.NOT_EMPTY]: '$exists',
+  [Operations.LIKE]: '$regex',
+  [Operations.LESS]: '$lt',
+  [Operations.MORE]: '$gt',
+  [Operations.LESS_OR_EQUAL]: '$lte',
+  [Operations.MORE_OR_EQUAL]: '$gte',
+  [Operations.IN]: '$in',
+  [DsOperations.JOIN_EXISTS]: '$joinExists',
+  [DsOperations.JOIN_NOT_EXISTS]: '$joinNotExists',
+  [Operations.FULL_TEXT_MATCH]: '$text',
+  [Operations.GEO_WITHIN]: '$geoWithin',
+  [Operations.GEO_INTERSECTS]: '$geoIntersects'
+};
+
+const FUNC_OPERS = {
+  [Operations.AND]: '$and',
+  [Operations.OR]: '$or',
+  [Operations.NOT]: '$not',
+  [Operations.DATE]: '$date',
+  [Operations.DATEADD]: '$dateadd',
+  [Operations.DATEDIFF]: '$datediff',
+  [Operations.ADD]: '$add',
+  [Operations.SUB]: '$sub',
+  [Operations.MUL]: '$mul',
+  [Operations.DIV]: '$div',
+  [Operations.ROUND]: '$round',
+  [Operations.CONCAT]: '$concat',
+  [Operations.SUBSTR]: '$substr',
+  [Operations.MOD]: '$mod',
+  [Operations.ABS]: '$abs',
+  [Operations.MIN]: '$min',
+  [Operations.MAX]: '$max',
+  [Operations.AVG]: '$avg',
+  [Operations.SUM]: '$sum',
+  [Operations.COUNT]: '$count'
+};
 
 // jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10, maxparams: 8
 
@@ -538,6 +582,93 @@ function MongoDs(config) {
     return {$mod: args};
   }
 
+  function parseCondition(c) {
+    if (Array.isArray(c)) {
+      let result = [];
+      c.forEach((c1)=>{result.push(parseCondition(c1));});
+      return result;
+    }
+    if (c && typeof c === 'object' && !(c instanceof Date)) {
+      for (let oper in c) {
+        if (c.hasOwnProperty(oper)) {
+          if (QUERY_OPERS.hasOwnProperty(oper)) {
+            let o = QUERY_OPERS[oper];
+            let args = parseCondition(c[oper]);
+
+            switch (o) {
+              case '$joinExists':
+              case '$joinNotExists':
+                return {
+                  [oper]: {
+                    table: args[0],
+                    left: args[1],
+                    right: args[2],
+                    filter: args[3],
+                    many: args[4]
+                  }
+                };
+              default: {
+                let attr = null;
+                let left = null;
+                for (let i = 0; i < args.length; i++) {
+                  if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$' && args[i].indexOf('.') < 0) {
+                    attr = args[i].substr(1);
+                  } else {
+                    left = args[i];
+                  }
+                  if (attr && left) {
+                    break;
+                  }
+                }
+                if (attr && left) {
+                  switch (o) {
+                    case '$regex':
+                      return {[args[0]]: {$regex: left, $options: 'i'}};
+                    case '$text':
+                      return {$text: args[1]};
+                    case '$empty':
+                      return {[args[0]]: {$empty: true}};
+                    case '$exists':
+                      return {[args[0]]: {$empty: false}};
+                  }
+                  return {[args[0]]: {[o]: args[1]}};
+                } else {
+                  return {[o]: args};
+                }
+              }
+            }
+          } else if (FUNC_OPERS.hasOwnProperty(oper)) {
+            let oper = FUNC_OPERS[oper];
+            return {oper: parseCondition(c[oper])};
+          }
+        }
+      }
+      return IGNORE;
+    }
+    return c;
+  }
+
+  function parseExpression(e) {
+    if (Array.isArray(e)) {
+      let result = [];
+      e.forEach((e1)=>{result.push(parseCondition(e1));});
+      return result;
+    }
+    if (e && typeof e === 'object' && !(e instanceof Date)) {
+      for (let oper in e) {
+        if (e.hasOwnProperty(oper)) {
+          let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
+          if (o) {
+            return {[o]: parseExpression(e[oper])};
+          }
+        }
+      }
+      return IGNORE;
+    }
+    return e;
+  }
+
+
   function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
       for (let i = 0; i < conditions.length; i++) {
@@ -687,17 +818,18 @@ function MongoDs(config) {
   }
 
   this._update = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, {bulk: options.bulk, skipResult: options.skipResult});
+    return doUpdate(type, parseCondition(conditions), data, {bulk: options.bulk, skipResult: options.skipResult});
   };
 
   this._upsert = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, {upsert: true, skipResult: options.skipResult});
+    return doUpdate(type, parseCondition(conditions), data, {upsert: true, skipResult: options.skipResult});
   };
 
   this._delete = function (type, conditions) {
     return getCollection(type).then(
       function (c) {
         return new Promise(function (resolve, reject) {
+          conditions = parseCondition(conditions);
           prepareConditions(conditions);
           c.deleteMany(conditions,
             function (err, result) {
@@ -1181,11 +1313,11 @@ function MongoDs(config) {
     if (typeof expr === 'string') {
       return checkAttrLexem(expr, attributes, joinedSources);
     } else if (Array.isArray(expr)) {
-      for (var i = 0; i < expr.length; i++) {
+      for (let i = 0; i < expr.length; i++) {
         checkAttrExpr(expr[i], attributes, joinedSources);
       }
     } else if (typeof expr === 'object') {
-      for (var nm in expr) {
+      for (let nm in expr) {
         if (expr.hasOwnProperty(nm)) {
           if (nm[0] !== '$') {
             checkAttrLexem('$' + nm, attributes, joinedSources);
@@ -1237,6 +1369,7 @@ function MongoDs(config) {
       if (options.fields) {
         for (let tmp in options.fields) {
           if (options.fields.hasOwnProperty(tmp)) {
+            options.fields[tmp] = parseExpression(options.fields[tmp]);
             checkAttrExpr(options.fields[tmp], attributes, joinedSources);
           }
         }
@@ -1245,6 +1378,7 @@ function MongoDs(config) {
       if (options.aggregates) {
         for (let tmp in options.aggregates) {
           if (options.aggregates.hasOwnProperty(tmp)) {
+            options.aggregates[tmp] = parseExpression(options.aggregates[tmp]);
             checkAttrExpr(options.aggregates[tmp], attributes, joinedSources);
           }
         }
@@ -1516,12 +1650,13 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
-    options = options || {};
+    options = clone(options) || {};
     var tmpApp = null;
     var c;
     return getCollection(type).then(
       function (col) {
         c = col;
+        options.filter = parseCondition(options.filter);
         prepareConditions(options.filter);
         if (options.append) {
           tmpApp = 'tmp_' + cuid();
@@ -1611,11 +1746,12 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._iterator = function (type, options) {
-    options = options || {};
+    options = clone(options) || {};
     var c;
     return getCollection(type).then(
       function (col) {
         c = col;
+        options.filter = parseCondition(options.filter);
         prepareConditions(options.filter);
         return checkAggregation(type, options);
       }).then(function (aggregation) {
@@ -1646,7 +1782,8 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
-    options = options || {};
+    options = clone(options) || {};
+    options.filter = parseCondition(options.filter);
     var c;
     var tmpApp = null;
     return getCollection(type).then(
@@ -1666,16 +1803,18 @@ function MongoDs(config) {
           }
         }
 
-        var alias, oper;
-        for (alias in options.aggregates) {
+        for (let alias in options.aggregates) {
           if (options.aggregates.hasOwnProperty(alias)) {
-            for (oper in options.aggregates[alias]) {
+            for (let oper in options.aggregates[alias]) {
               if (options.aggregates[alias].hasOwnProperty(oper)) {
-                if (oper === '$count') {
+                if (oper === DsOperations.COUNT) {
                   expr.$group[alias] = {$sum: 1};
-                } else if (oper === '$sum' || oper === '$avg' || oper === '$min' || oper === '$max') {
+                } else if (
+                  oper === DsOperations.SUM || oper === DsOperations.AVG ||
+                  oper === DsOperations.MIN || oper === DsOperations.MAX
+                ) {
                   expr.$group[alias] = {};
-                  expr.$group[alias][oper] = options.aggregates[alias][oper];
+                  expr.$group[alias][FUNC_OPERS[oper]] = parseExpression(options.aggregates[alias][oper]);
                 }
               }
             }
@@ -1684,16 +1823,16 @@ function MongoDs(config) {
 
         plan.push(expr);
 
-        var attrs = {_id: false};
+        let attrs = {_id: false};
         if (options.fields) {
-          for (alias in options.fields) {
+          for (let alias in options.fields) {
             if (options.fields.hasOwnProperty(alias)) {
               attrs[alias] = '$_id.' + alias;
             }
           }
         }
         if (options.aggregates) {
-          for (alias in options.aggregates) {
+          for (let alias in options.aggregates) {
             if (options.aggregates.hasOwnProperty(alias)) {
               attrs[alias] = 1;
             }
@@ -1740,17 +1879,12 @@ function MongoDs(config) {
 
   this._count = function (type, options) {
     var c;
-    var opts = {};
+    options = clone(options) || {};
 
-    if (options.offset) {
-      opts.skip = options.offset;
-    }
-    if (options.count) {
-      opts.limit = options.count;
-    }
     return getCollection(type).then(
       function (col) {
         c = col;
+        options.filter = parseCondition(options.filter);
         prepareConditions(options.filter);
         return checkAggregation(type, options, [], true);
       }).then(function (agreg) {
@@ -1767,7 +1901,7 @@ function MongoDs(config) {
               resolve(cnt);
             });
           } else {
-            var opts = {};
+            let opts = {};
             if (options.offset) {
               opts.skip = options.offset;
             }
@@ -1795,7 +1929,7 @@ function MongoDs(config) {
    */
   this._get = function (type, conditions, options) {
     let c;
-    let opts = {filter: conditions, fields: options.fields || {}};
+    let opts = {filter: parseCondition(conditions), fields: options.fields || {}};
     return getCollection(type).then(
       function (col) {
         c = col;

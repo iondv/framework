@@ -1,6 +1,3 @@
-/**
- * Created by krasilneg on 14.04.17.
- */
 'use strict';
 
 module.exports = {
@@ -8,13 +5,13 @@ module.exports = {
   NOT_EQUAL: 'ne',
   EMPTY: 'empty',
   NOT_EMPTY: 'nempty',
+  CONTAINS: 'contains',
   LIKE: 'like',
   LESS: 'lt',
   MORE: 'gt',
   LESS_OR_EQUAL: 'lte',
   MORE_OR_EQUAL: 'gte',
   IN: 'in',
-  CONTAINS: 'contains',
   AND: 'and',
   OR: 'or',
   NOT: 'not',
@@ -37,5 +34,7 @@ module.exports = {
   COUNT: 'count',
   FULL_TEXT_MATCH: 'match',
   GEO_WITHIN: 'geoWithin',
-  GEO_INTERSECTS: 'geoIntersects'
+  GEO_INTERSECTS: 'geoIntersects',
+  IF: 'if',
+  CASE: 'case'
 };

@@ -197,11 +197,64 @@ function Calculator(options) {
     return formula;
   }
 
+  function byRefConstructor(f, args) {
+    return function () {return f(args);};
+  }
+
+  function parseObject(formula){
+    if (!isNaN(formula)) {
+      return Number(formula);
+    }
+
+    if (Array.isArray(formula)) {
+      let result = [];
+      formula.forEach((v) => {
+        result.push(parseObject(v));
+      });
+      return result;
+    }
+
+    if (formula === null || typeof formula !== 'object') {
+      if (typeof formula === 'string') {
+        if (formula[0] === '$') {
+          return propertyGetter(formula.substring(1));
+        }
+      }
+      return formula;
+    }
+
+    for (let func in formula) {
+      if (formula.hasOwnProperty(func)) {
+        let args = parseObject(formula[func]);
+        let byRef = false;
+        if (func[0] === '&') {
+          func = func.substr(1);
+          byRef = true;
+        }
+        if (funcLib.hasOwnProperty(func)) {
+          if (byRef) {
+            return byRefConstructor(funcLib[func],args);
+          }
+          return funcLib[func](args);
+        } else {
+          warn('Не найдена функция ' + func);
+        }
+      }
+    }
+
+    return formula;
+  }
+
   /**
    * @param {String} formula
    */
   this._parseFormula = function (formula) {
-    var result = evaluate(formula.trim());
+    let result = formula;
+    if (typeof formula === 'string') {
+      result = evaluate(formula.trim());
+    } else if (formula && typeof formula === 'object' && !(formula instanceof Date)) {
+      result = parseObject(formula);
+    }
     if (typeof result !== 'function') {
       return () => result;
     }

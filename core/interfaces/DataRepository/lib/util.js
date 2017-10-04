@@ -7,11 +7,8 @@ const cast = require('core/cast');
 const strToDate = require('core/strToDate');
 const ConditionParser = require('core/ConditionParser');
 const Item = require('./Item');
-const drOperations = require('core/DataRepoOperations');
-const dsOperations = require('core/DataSourceOperations');
-
-const geoOperations = [drOperations.GEO_WITHIN, drOperations.GEO_INTERSECTS];
-const aggregOperations = [drOperations.MIN, drOperations.MAX, drOperations.AVG, drOperations.SUM, drOperations.COUNT];
+const Operations = require('core/FunctionCodes');
+const dsOperations = require('core/DataSourceFunctionCodes');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
@@ -145,13 +142,13 @@ function filterByItemIds(keyProvider, cm, ids) {
     ids.forEach(function (id) {
       filter.push(cast(id, kp.type));
     });
-    return {[drOperations.IN]: [pn, filter]};
+    return {[Operations.IN]: [pn, filter]};
   } else {
     let filter = [];
     ids.forEach(function (id) {
       filter.push(keyProvider.keyToData(cm, id));
     });
-    return {[drOperations.OR]: filter};
+    return {[Operations.OR]: filter};
   }
 }
 
@@ -170,47 +167,6 @@ function tn(cm, nsSep) {
 }
 
 module.exports.classTableName = tn;
-
-/**
- * @param {ClassMeta} cm
- * @param {{}} context
- * @param {String} attr
- * @param {String} operation
- * @param {{className: String, collectionName: String, property: String, filter: {}}} options
- * @param {Array} fetchers
- * @param {DataSource} ds
- * @param {String} [nsSep]
- */
-function prepareAggregOperation(cm, context, attr, operation, options, fetchers, ds, nsSep) {
-  var cn;
-  if (options.className) {
-    cn = options.className;
-  } else if (options.collectionName) {
-    cn = cm.getPropertyMeta(options.collectionName)._refClass.getCanonicalName();
-  }
-
-  var oper = {};
-  oper[operation.substring(1)] = options.property;
-
-  var result = ds.aggregate(
-        tn(cn, nsSep),
-        {
-          filter: options.filter,
-          aggregations: {
-            val: oper
-          }
-        }
-      ).
-      then(
-        function (result) {
-          context[attr] = result.val;
-          return Promise.resolve();
-        }
-      );
-
-  fetchers.push(result);
-  return result;
-}
 
 function join(pm, cm, colMeta, filter) {
   return [
@@ -253,7 +209,7 @@ function prepareContains(cm, filter, fetchers, ds, keyProvider, nsSep) {
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
-  return {$joinExists: join(pm, cm, colMeta, tmp)};
+  return {[dsOperations.JOIN_EXISTS]: join(pm, cm, colMeta, tmp)};
 }
 
 /**
@@ -276,7 +232,7 @@ function prepareEmpty(cm, filter, empty) {
       return {$joinExists: join(pm, cm, colMeta, null)};
     }
   } else {
-    return {[empty ? dsOperations.EMPTY : dsOperations.NOT_EMPTY]: [filter[0]]};
+    return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [filter[0]]};
   }
 }
 
@@ -359,72 +315,72 @@ function prepareFilterOption(cm, filter, joins, numGen) {
   for (let oper in filter) {
     if (filter.hasOwnProperty(oper)) {
       switch (oper) {
-        case drOperations.CONTAINS:
+        case Operations.CONTAINS:
           return prepareContains(cm, filter[oper]);
-        case drOperations.NOT_EMPTY:
-        case drOperations.EMPTY:
-          return prepareEmpty(cm, filter[oper], oper === drOperations.EMPTY);
-        case drOperations.MAX:
-        case drOperations.MIN:
-        case drOperations.SUM:
-        case drOperations.AVG:
-        case drOperations.COUNT:
+        case Operations.NOT_EMPTY:
+        case Operations.EMPTY:
+          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY);
+        case Operations.MAX:
+        case Operations.MIN:
+        case Operations.SUM:
+        case Operations.AVG:
+        case Operations.COUNT:
         break;
-        case drOperations.EQUAL:
-          return {[dsOperations.EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.NOT_EQUAL:
-          return {[dsOperations.NOT_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.LIKE:
-          return {[dsOperations.LIKE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.LESS:
-          return {[dsOperations.LESS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.MORE:
-          return {[dsOperations.MORE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.LESS_OR_EQUAL:
-          return {[dsOperations.LESS_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.MORE_OR_EQUAL:
-          return {[dsOperations.MORE_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.IN:
-          return {[dsOperations.IN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.AND:
-          return {[dsOperations.AND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.OR:
-          return {[dsOperations.OR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.NOT:
-          return {[dsOperations.NOT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.DATE:
-          return {[dsOperations.DATE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.DATEADD:
-          return {[dsOperations.DATEADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.DATEDIFF:
-          return {[dsOperations.DATEDIFF]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.ADD:
-          return {[dsOperations.ADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.SUB:
-          return {[dsOperations.SUB]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.MUL:
-          return {[dsOperations.MUL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.DIV:
-          return {[dsOperations.DIV]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.ROUND:
-          return {[dsOperations.ROUND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.CONCAT:
-          return {[dsOperations.CONCAT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.SUBSTR:
-          return {[dsOperations.SUBSTR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.MOD:
-          return {[dsOperations.MOD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.ABS:
-          return {[dsOperations.ABS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.FULL_TEXT_MATCH:
+        case Operations.EQUAL:
+          return {[Operations.EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.NOT_EQUAL:
+          return {[Operations.NOT_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.LIKE:
+          return {[Operations.LIKE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.LESS:
+          return {[Operations.LESS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.MORE:
+          return {[Operations.MORE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.LESS_OR_EQUAL:
+          return {[Operations.LESS_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.MORE_OR_EQUAL:
+          return {[Operations.MORE_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.IN:
+          return {[Operations.IN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.AND:
+          return {[Operations.AND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.OR:
+          return {[Operations.OR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.NOT:
+          return {[Operations.NOT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.DATE:
+          return {[Operations.DATE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.DATEADD:
+          return {[Operations.DATEADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.DATEDIFF:
+          return {[Operations.DATEDIFF]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.ADD:
+          return {[Operations.ADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.SUB:
+          return {[Operations.SUB]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.MUL:
+          return {[Operations.MUL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.DIV:
+          return {[Operations.DIV]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.ROUND:
+          return {[Operations.ROUND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.CONCAT:
+          return {[Operations.CONCAT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.SUBSTR:
+          return {[Operations.SUBSTR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.MOD:
+          return {[Operations.MOD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.ABS:
+          return {[Operations.ABS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.FULL_TEXT_MATCH:
           return {
-            [dsOperations.FULL_TEXT_MATCH]: prepareOperArgs(cm, filter[oper], joins, numGen)
+            [Operations.FULL_TEXT_MATCH]: prepareOperArgs(cm, filter[oper], joins, numGen)
           };
-        case drOperations.GEO_WITHIN:
-          return {[dsOperations.GEO_WITHIN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case drOperations.GEO_INTERSECTS:
+        case Operations.GEO_WITHIN:
+          return {[Operations.GEO_WITHIN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        case Operations.GEO_INTERSECTS:
           return {
-            [dsOperations.GEO_INTERSECTS]: prepareOperArgs(cm, filter[oper], joins, numGen)
+            [Operations.GEO_INTERSECTS]: prepareOperArgs(cm, filter[oper], joins, numGen)
           };
         default:
           throw new Error('Некорректный тип операции!');
@@ -442,7 +398,6 @@ function prepareFilterOption(cm, filter, joins, numGen) {
  */
 function prepareFilterValues(cm, filter, joins, ds) {
   try {
-    var fetchers = [];
     return Promise.resolve(prepareFilterOption(cm, filter, joins, new NumGenerator()));
   } catch (e) {
     return Promise.reject(e);
@@ -457,7 +412,7 @@ function spFilter(cm, pm, or, svre, prefix) {
     let spList = pm.selectionProvider.list;
     for (let j = 0; j < spList.length; j++) {
       if (svre.test(spList[j].value)) {
-        or.push({[drOperations.EQUAL]: [aname, cast(spList[j].key, pm.type)]});
+        or.push({[Operations.EQUAL]: [aname, cast(spList[j].key, pm.type)]});
       }
     }
   } else if (pm.selectionProvider.type === 'MATRIX') {
@@ -466,17 +421,17 @@ function spFilter(cm, pm, or, svre, prefix) {
       let spOr = [];
       for (let j = 0; j < spList.length; j++) {
         if (svre.test(spList[j].value)) {
-          spOr.push({[drOperations.EQUAL]: [aname, cast(spList[j].key, pm.type)]});
+          spOr.push({[Operations.EQUAL]: [aname, cast(spList[j].key, pm.type)]});
         }
       }
       if (spOr.length) {
         if (spOr.length === 1) {
           spOr = spOr[0];
         } else if (spOr.length > 1) {
-          spOr = {[drOperations.OR]: spOr};
+          spOr = {[Operations.OR]: spOr};
         }
         or.push({
-          [drOperations.AND]: [
+          [Operations.AND]: [
             ConditionParser(pm.selectionProvider.matrix[k].conditions, cm),
             spOr
           ]
@@ -528,12 +483,11 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         .then(()=> {
           if (cor.length) {
             let aname = '$' + (prefix || '') + pm.name;
-            or.push({[drOperations.CONTAINS]: [aname, {[drOperations.OR]: cor}]});
+            or.push({[Operations.CONTAINS]: [aname, {[Operations.OR]: cor}]});
           }
         });
     }
   } else {
-    let cond = {};
     let aname = '$' + (prefix || '') + pm.name;
     let floatv, datev;
     if (pm.indexed && !pm.formula) {
@@ -544,7 +498,7 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          or.push({[drOperations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
+          or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
           pm.type === PropertyTypes.INT ||
@@ -553,13 +507,13 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         )
       ) {
         if (String(floatv) === sv) {
-          or.push({[drOperations.EQUAL]: [aname, floatv]});
+          or.push({[Operations.EQUAL]: [aname, floatv]});
         }
       } else if (
         (datev = strToDate(sv, lang)) &&
         pm.type === PropertyTypes.DATETIME
       ) {
-        or.push({[drOperations.EQUAL]: [aname, datev]});
+        or.push({[Operations.EQUAL]: [aname, datev]});
       }
     }
   }
@@ -706,7 +660,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
     }
     return result.then(() => {
       if (fullText) {
-        tmp.push({[drOperations.FULL_TEXT_MATCH]: [sv]});
+        tmp.push({[Operations.FULL_TEXT_MATCH]: [sv]});
       }
       Array.prototype.push.apply(or, tmp);
     });
