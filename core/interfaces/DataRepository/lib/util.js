@@ -12,6 +12,18 @@ const dsOperations = require('core/DataSourceFunctionCodes');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
+function dataToFilter(data) {
+  let result = [];
+  for (let nm in data) {
+    if (data.hasOwnProperty(nm)) {
+      result.push({[Operations.EQUAL]: ['$' + nm, data[nm]]});
+    }
+  }
+  return {[Operations.AND]: result};
+}
+
+module.exports.dataToFilter = dataToFilter;
+
 /**
  * @param {*} value
  * @param {{ type: Number, refClass: String }} pm
@@ -142,11 +154,11 @@ function filterByItemIds(keyProvider, cm, ids) {
     ids.forEach(function (id) {
       filter.push(cast(id, kp.type));
     });
-    return {[Operations.IN]: [pn, filter]};
+    return {[Operations.IN]: ['$' + pn, filter]};
   } else {
     let filter = [];
     ids.forEach(function (id) {
-      filter.push(keyProvider.keyToData(cm, id));
+      filter.push(dataToFilter(keyProvider.keyToData(cm, id)));
     });
     return {[Operations.OR]: filter};
   }
@@ -207,9 +219,14 @@ function findPm(cm, nm) {
  * @param {String} [nsSep]
  */
 function prepareContains(cm, filter, fetchers, ds, keyProvider, nsSep) {
-  var pm = findPm(cm, filter[0]);
-  var colMeta = pm._refClass;
-  var tmp = prepareFilterOption(colMeta, filter[1], fetchers, ds, keyProvider, nsSep);
+  let nm = filter[0].substr(1);
+  let pm = findPm(cm, nm);
+  if (!pm) {
+    throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+  }
+
+  let colMeta = pm._refClass;
+  let tmp = prepareFilterOption(colMeta, filter[1], fetchers, ds, keyProvider, nsSep);
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
@@ -222,21 +239,30 @@ function prepareContains(cm, filter, fetchers, ds, keyProvider, nsSep) {
  * @param {Boolean} empty
  * @returns {{}}
  */
-function prepareEmpty(cm, filter, empty) {
-  var pm = findPm(cm, filter[0]);
-  if (pm.type === PropertyTypes.COLLECTION) {
-    let colMeta = pm._refClass;
-    if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-      throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+function prepareEmpty(cm, filter, empty, joins, numGen) {
+  let nm = filter[0].substr(1);
+  if (nm.indexOf('.') < 0) {
+    let pm = findPm(cm, nm);
+    if (!pm) {
+      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
     }
+    if (pm.type === PropertyTypes.COLLECTION) {
+      let colMeta = pm._refClass;
+      if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+        throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+      }
 
-    if (empty) {
-      return {$joinNotExists: join(pm, cm, colMeta, null)};
+      if (empty) {
+        return {$joinNotExists: join(pm, cm, colMeta, null)};
+      } else {
+        return {$joinExists: join(pm, cm, colMeta, null)};
+      }
     } else {
-      return {$joinExists: join(pm, cm, colMeta, null)};
+      return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [filter[0]]};
     }
   } else {
-    return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [filter[0]]};
+    let attrs = prepareOperArgs(cm, [filter[0]], joins, numGen);
+    return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [attrs[0]]};
   }
 }
 
@@ -323,7 +349,7 @@ function prepareFilterOption(cm, filter, joins, numGen) {
           return prepareContains(cm, filter[oper]);
         case Operations.NOT_EMPTY:
         case Operations.EMPTY:
-          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY);
+          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen);
         case Operations.MAX:
         case Operations.MIN:
         case Operations.SUM:

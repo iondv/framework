@@ -15,6 +15,7 @@ const uuid = require('uuid');
 const EventManager = require('core/impl/EventManager');
 const ctn = require('core/interfaces/DataRepository/lib/util').classTableName;
 const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util').prepareDsFilter;
+const dataToFilter = require('core/interfaces/DataRepository/lib/util').dataToFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
@@ -146,8 +147,8 @@ function IonDataRepository(options) {
     return ctn(cm, _this.namespaceSeparator);
   }
 
-  function prepareFilterValues(cm, filter) {
-    return prepareDsFilterValues(cm, filter, _this.ds, _this.keyProvider, _this.namespaceSeparator);
+  function prepareFilterValues(cm, filter, joins) {
+    return prepareDsFilterValues(cm, filter, joins, _this.ds);
   }
 
   /**
@@ -252,17 +253,16 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
-    if (!options) {
-      options = {};
-    }
-    var cm = getMeta(obj);
-    var rcm = getRootType(cm);
-    var f = clone(options.filter);
+    options = options || {};
+    let cm = getMeta(obj);
+    let rcm = getRootType(cm);
+    let f = clone(options.filter);
+    let j = clone(options.joins || []);
     f = addFilterByItem(f, obj);
     f = addDiscriminatorFilter(f, cm);
-    return prepareFilterValues(cm, f)
+    return prepareFilterValues(cm, f, j)
       .then(function (filter) {
-        return _this.ds.count(tn(rcm), {filter: filter});
+        return _this.ds.count(tn(rcm), {filter: filter, joins: j});
       }).catch(wrapDsError('getCount', obj, ''));
   };
 
@@ -455,8 +455,7 @@ function IonDataRepository(options) {
             attrs[nm].filter.length
           ) {
             if (attrs[nm].backRef) {
-              filter = {};
-              filter[attrs[nm].key] = {$in: attrs[nm].filter};
+              filter = {[Operations.IN]: ['$' + attrs[nm].key, attrs[nm].filter]};
             } else {
               filter = filterByItemIds(_this.keyProvider, attrs[nm].refClass, attrs[nm].filter);
             }
@@ -470,13 +469,12 @@ function IonDataRepository(options) {
               sort = attrs[nm].sort;
             }
             if (attrs[nm].backRef) {
-              filter = {};
-              filter[attrs[nm].backRef] = {$in: attrs[nm].colItems};
+              filter = {[Operations.IN]: ['$' + attrs[nm].backRef, attrs[nm].colItems]};
             } else {
               filter = filterByItemIds(_this.keyProvider, attrs[nm].colClass, attrs[nm].colItems);
             }
             if (attrs[nm].colFilter) {
-              filter = {$and: [filter, attrs[nm].colFilter]};
+              filter = {[Operations.AND]: [filter, attrs[nm].colFilter]};
             }
             cn = attrs[nm].colClass.getCanonicalName();
           }
@@ -625,9 +623,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    if (!options) {
-      options = {};
-    }
+    options = clone(options || {});
     var cm = getMeta(obj);
     var rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -637,13 +633,15 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
+    options.joins = options.joins || [];
+
     return bubble(
       'pre-fetch',
       cm,
       {
         options: options
       }).
-    then(() => prepareFilterValues(cm, options.filter)).
+    then(() => prepareFilterValues(cm, options.filter, options.joins)).
     then(function (filter) {
       options.filter = filter;
       return _this.ds.fetch(tn(rcm), options);
@@ -726,7 +724,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getIterator = function (obj, options) {
-    let opts = clone(options) || {};
+    let opts = clone(options || {});
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -736,13 +734,14 @@ function IonDataRepository(options) {
     }
     opts.filter = addFilterByItem(opts.filter, obj);
     opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.joins = opts.joins || [];
     return bubble(
       'pre-iterate',
       cm,
       {
         options: opts
       }).
-    then(()=>prepareFilterValues(cm, opts.filter)).
+    then(()=>prepareFilterValues(cm, opts.filter, opts.joins)).
     then(function (filter) {
       opts.filter = filter;
       return _this.ds.iterator(tn(rcm), opts);
@@ -766,7 +765,8 @@ function IonDataRepository(options) {
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.filter = addDiscriminatorFilter(opts.filter, cm);
-    return prepareFilterValues(cm, opts.filter).
+    opts.joins = opts.joins || [];
+    return prepareFilterValues(cm, opts.filter, opts.joins).
     then(function (filter) {
         opts.filter = filter;
         return _this.ds.aggregate(tn(rcm), opts);
@@ -797,7 +797,8 @@ function IonDataRepository(options) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
     opts.filter = addDiscriminatorFilter(opts.filter, cm);
-    return prepareFilterValues(cm, opts.filter)
+    opts.joins = [];
+    return prepareFilterValues(cm, opts.filter, opts.joins)
       .then(function (filter) {
         opts.filter = filter;
         return _this.ds.fetch(tn(rcm), opts);
@@ -829,12 +830,17 @@ function IonDataRepository(options) {
         return Promise.resolve(null);
       }
 
-
+      let j = [];
 
       let fp = null;
       if (options.filter) {
-        fp = prepareFilterValues(cm, options.filter)
-          .then((filter) => {return {$and: [conditions, filter]};});
+        fp = prepareFilterValues(cm, options.filter, j)
+          .then((filter) => {
+            if (j.length) {
+              opts.joins = j;
+            }
+            return {$and: [conditions, filter]};
+          });
       } else {
         fp = Promise.resolve(conditions);
       }
@@ -869,7 +875,8 @@ function IonDataRepository(options) {
         opts.filter = addFilterByItem({}, obj);
         opts.filter = addDiscriminatorFilter(opts.filter, cm);
         opts.count = 1;
-        fetcher = prepareFilterValues(cm, opts.filter)
+        opts.joins = [];
+        fetcher = prepareFilterValues(cm, opts.filter, opts.joins)
           .then(function (filter) {
             opts.filter = filter;
             return _this.ds.fetch(tn(rcm), opts);
@@ -1552,16 +1559,6 @@ function IonDataRepository(options) {
     }
   };
 
-  function dataToFilter(data) {
-    let result = [];
-    for (let nm in data) {
-      if (data.hasOwnProperty(nm)) {
-        result.push({[Operations.EQUAL]: ['$' + nm, data[nm]]});
-      }
-    }
-    return {[Operations.AND]: result};
-  }
-
   /**
    *
    * @param {String} classname
@@ -1867,7 +1864,7 @@ function IonDataRepository(options) {
     var item = _this._wrap(classname, conditions);
     conditions = addFilterByItem(null, conditions);
     var filter;
-    var p = prepareFilterValues(cm, conditions);
+    var p = prepareFilterValues(cm, conditions, []);
     if (changeLogger) {
       p = p
         .then(function (f) {filter = f; return _this.ds.get(tn(rcm), f);})
@@ -1937,7 +1934,7 @@ function IonDataRepository(options) {
     let cm = _this.meta.getMeta(classname);
     let rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter).then((filter) => _this.ds.delete(tn(rcm), filter));
+    return prepareFilterValues(cm, options.filter, []).then((filter) => _this.ds.delete(tn(rcm), filter));
   };
 
   /**
@@ -1966,7 +1963,7 @@ function IonDataRepository(options) {
       prepareFileSavers('bulk', cm, fileSavers, updates);
       checkRequired(cm, updates, true, true);
       return Promise.all(fileSavers)
-        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm)))
+        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, [])))
         .then((filter) => {
           if (options.user) {
             updates._editor = options.user.id();
@@ -2191,15 +2188,14 @@ function IonDataRepository(options) {
     }
 
     if (pm.backRef) {
-      filter = {};
-      filter[pm.backRef] = pm.binding ? master.get(pm.binding) : master.getItemId();
+      filter = {[Operations.EQUAL]: ['$' + pm.backRef, pm.binding ? master.get(pm.binding) : master.getItemId()]};
       if (pm.selConditions) {
-        var tmp = ConditionParser(pm.selConditions, pm._refClass, master);
+        let tmp = Array.isArray(pm.selConditions) ? ConditionParser(pm.selConditions, pm._refClass, master) : pm.selConditions;
         if (tmp) {
-          filter = {$and: [filter, tmp]};
+          filter = {[Operations.AND]: [filter, tmp]};
         }
       }
-      options.filter = options.filter ? {$and: [filter, options.filter]} : filter;
+      options.filter = options.filter ? {[Operations.AND]: [filter, options.filter]} : filter;
       return _this._getList(detailCm.getCanonicalName(), options);
     } else {
       var kp = detailCm.getKeyProperties();
@@ -2213,7 +2209,7 @@ function IonDataRepository(options) {
         .then(function (m) {
           if (m) {
             var filter = filterByItemIds(_this.keyProvider, detailCm, m.base[collection] || []);
-            options.filter = options.filter ? {$and: [options.filter, filter]} : filter;
+            options.filter = options.filter ? {[Operations.AND]: [options.filter, filter]} : filter;
             if (onlyCount) {
               return _this._getCount(detailCm.getCanonicalName(), options);
             } else {

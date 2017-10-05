@@ -615,7 +615,7 @@ function MongoDs(config) {
                 let attr = null;
                 let right;
                 for (let i = 0; i < args.length; i++) {
-                  if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$' && args[i].indexOf('.') < 0) {
+                  if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$') {
                     attr = args[i].substr(1);
                   } else {
                     right = args[i];
