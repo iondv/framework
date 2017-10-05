@@ -36,9 +36,9 @@ const QUERY_OPERS = {
   [Operations.NOT_EMPTY]: '$exists',
   [Operations.LIKE]: '$regex',
   [Operations.LESS]: '$lt',
-  [Operations.MORE]: '$gt',
+  [Operations.GREATER]: '$gt',
   [Operations.LESS_OR_EQUAL]: '$lte',
-  [Operations.MORE_OR_EQUAL]: '$gte',
+  [Operations.GREATER_OR_EQUAL]: '$gte',
   [Operations.IN]: '$in',
   [DsOperations.JOIN_EXISTS]: '$joinExists',
   [DsOperations.JOIN_NOT_EXISTS]: '$joinNotExists',
@@ -594,7 +594,6 @@ function MongoDs(config) {
           if (QUERY_OPERS.hasOwnProperty(oper)) {
             let o = QUERY_OPERS[oper];
             let args = parseCondition(c[oper]);
-
             switch (o) {
               case '$joinExists':
               case '$joinNotExists':
@@ -607,39 +606,42 @@ function MongoDs(config) {
                     many: args[4]
                   }
                 };
+              case '$text':
+                return {$text: args[0]};
               default: {
                 let attr = null;
-                let left = null;
+                let right;
                 for (let i = 0; i < args.length; i++) {
                   if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$' && args[i].indexOf('.') < 0) {
                     attr = args[i].substr(1);
                   } else {
-                    left = args[i];
+                    right = args[i];
                   }
-                  if (attr && left) {
+                  if (attr && typeof right !== 'undefined') {
                     break;
                   }
                 }
-                if (attr && left) {
-                  switch (o) {
-                    case '$regex':
-                      return {[args[0]]: {$regex: left, $options: 'i'}};
-                    case '$text':
-                      return {$text: args[1]};
-                    case '$empty':
-                      return {[args[0]]: {$empty: true}};
-                    case '$exists':
-                      return {[args[0]]: {$empty: false}};
-                  }
-                  return {[args[0]]: {[o]: args[1]}};
-                } else {
+                if (!attr) {
                   return {[o]: args};
                 }
+                switch (o) {
+                  case '$regex':
+                    if (typeof right !== 'undefined') {
+                      return {[attr]: {$regex: right, $options: 'i'}};
+                    }break;
+                  case '$empty':
+                    return {[attr]: {$empty: true}};
+                  case '$exists':
+                    return {[attr]: {$empty: false}};
+                }
+                if (typeof right !== 'undefined') {
+                  return {[attr]: {[o]: right}};
+                }
+                return {[o]: args};
               }
             }
           } else if (FUNC_OPERS.hasOwnProperty(oper)) {
-            let oper = FUNC_OPERS[oper];
-            return {oper: parseCondition(c[oper])};
+            return {[FUNC_OPERS[oper]]: parseCondition(c[oper])};
           }
         }
       }

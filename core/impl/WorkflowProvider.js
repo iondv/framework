@@ -82,7 +82,7 @@ function WorkflowProvider(options) {
       options.dataSource.fetch(tableName,
         {
           filter: {
-            item: item.getClassName() + '@' + item.getItemId()
+            [F.EQUAL]: ['$item', item.getClassName() + '@' + item.getItemId()]
           }
         }
       ).
@@ -208,8 +208,10 @@ function WorkflowProvider(options) {
     return options.dataSource.fetch(tableName,
         {
           filter: {
-            workflow: workflow,
-            stage: status
+            [F.AND]: [
+              {[F.EQUAL]: ['$workflow', workflow]},
+              {[F.EQUAL]: ['$stage', status]}
+            ]
           }
         }
       ).

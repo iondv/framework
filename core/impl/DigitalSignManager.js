@@ -7,6 +7,7 @@ const IDigitalSignManager = require('core/interfaces/DigitalSignManager');
 const Preprocessor = require('core/interfaces/Preprocessor');
 const base64 = require('base64-js');
 const buf = require('core/buffer');
+const F = require('core/FunctionCodes');
 
 // jshint maxcomplexity: 20
 
@@ -165,18 +166,18 @@ function DigitalSignManager(options) {
       var and = [];
 
       if (id) {
-        and.push({id: id});
+        and.push({[F.EQUAL]: ['$id', id]});
       }
 
       if (since && till) {
         and.push({
-          $and: [
-            {timeStamp: {$gte: since}},
-            {timeStamp: {$lte: till}}
+          [F.AND]: [
+            {[F.GREATER_OR_EQUAL]: ['$timeStamp', since]},
+            {[F.LESS_OR_EQUAL]: ['$timeStamp', till]}
           ]
         });
       } else if (since) {
-        and.push({timeStamp: {$gte: since}});
+        and.push({[F.GREATER_OR_EQUAL]: ['$timeStamp', since]});
       }
 
       if (!and.length) {
@@ -185,7 +186,7 @@ function DigitalSignManager(options) {
 
       options.dataSource.fetch('ion_signatures',
         {
-          filter: and.length > 1 ? {$and: and} : and[0],
+          filter: and.length > 1 ? {[F.AND]: and} : and[0],
           sort: {timeStamp: 1}
         }
       ).

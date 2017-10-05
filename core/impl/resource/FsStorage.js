@@ -188,7 +188,7 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._fetch = function (ids) {
-    return dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
+    return dataSource.fetch('ion_files', {filter: {[F.IN]: ['$id', ids]}})
       .then((files) => {
         let result = [];
         for (let i = 0; i < files.length; i++) {
@@ -267,7 +267,7 @@ function FsStorage(options) {
           } else if (data && data.type === resourceType.DIR) {
             if (data && (data.files.length || data.dirs.length)) {
               let ids = data.files.concat(data.dirs);
-              dataSource.fetch('ion_files', {filter: {id: {$in: ids}}})
+              dataSource.fetch('ion_files', {filter: {[F.IN]: ['$id', ids]}})
                 .then((files) => {
                   let dirLinks = [];
                   let fileLinks = [];

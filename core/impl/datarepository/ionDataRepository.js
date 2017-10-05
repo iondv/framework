@@ -182,17 +182,15 @@ function IonDataRepository(options) {
    * @private
    */
   function addDiscriminatorFilter(filter, cm) {
-    var descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
-    var cnFilter = [cm.getCanonicalName()];
-    for (var i = 0; i < descendants.length; i++) {
+    let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
+    let cnFilter = [cm.getCanonicalName()];
+    for (let i = 0; i < descendants.length; i++) {
       cnFilter.push(descendants[i].getCanonicalName());
     }
 
-    if (!filter) {
-      return {[Operations.IN]: ['_class', cnFilter]};
-    } else {
-      return {[Operations.AND]: [{[Operations.IN]: ['_class', cnFilter]}, filter]};
-    }
+    let df = {[Operations.IN]: ['$_class', cnFilter]};
+
+    return !filter ? df : {[Operations.AND]: [df, filter]};
   }
 
   /**
@@ -639,7 +637,6 @@ function IonDataRepository(options) {
     }
     options.filter = addFilterByItem(options.filter, obj);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-
     return bubble(
       'pre-fetch',
       cm,
@@ -649,7 +646,6 @@ function IonDataRepository(options) {
     then(() => prepareFilterValues(cm, options.filter)).
     then(function (filter) {
       options.filter = filter;
-
       return _this.ds.fetch(tn(rcm), options);
     }).
     catch(wrapDsError('getList', obj)).

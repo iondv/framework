@@ -184,14 +184,18 @@ function join(pm, cm, colMeta, filter) {
  * @returns {{}}
  */
 function findPm(cm, nm) {
-  var dotpos = nm.indexOf('.');
-  if (dotpos > 0) {
-    let pm = cm.getPropertyMeta(nm.substring(0, dotpos));
-    if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
-      return findPm(pm._refClass, nm.substring(dotpos + 1));
+  if (nm && nm[0] === '$') {
+    nm = nm.substr(1);
+    let dotpos = nm.indexOf('.');
+    if (dotpos > 0) {
+      let pm = cm.getPropertyMeta(nm.substring(0, dotpos));
+      if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+        return findPm(pm._refClass, nm.substring(dotpos + 1));
+      }
     }
+    return cm.getPropertyMeta(nm);
   }
-  return cm.getPropertyMeta(nm);
+  return null;
 }
 
 /**
@@ -286,9 +290,9 @@ function prepareLinked(cm, path, joins, numGen) {
 function prepareOperArgs(cm, args, joins, numGen) {
   var result = [];
   args.forEach(function (arg) {
-    if (typeof arg === 'string' && arg[0] === '$' && arg.indexOf('.')) {
+    if (typeof arg === 'string' && arg[0] === '$' && arg.indexOf('.') >= 0) {
       result.push(prepareLinked(cm, arg.substr(1).split('.'), joins, numGen));
-    } else if (typeof arg === 'object' && arg !== null && !(arg instanceof Date)) {
+    } else if (arg !== null && !Array.isArray(arg) && !(arg instanceof Date) && typeof arg === 'object') {
       result.push(prepareFilterOption(cm, arg, joins, numGen));
     } else {
       result.push(arg);
@@ -326,64 +330,7 @@ function prepareFilterOption(cm, filter, joins, numGen) {
         case Operations.AVG:
         case Operations.COUNT:
         break;
-        case Operations.EQUAL:
-          return {[Operations.EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.NOT_EQUAL:
-          return {[Operations.NOT_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.LIKE:
-          return {[Operations.LIKE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.LESS:
-          return {[Operations.LESS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.MORE:
-          return {[Operations.MORE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.LESS_OR_EQUAL:
-          return {[Operations.LESS_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.MORE_OR_EQUAL:
-          return {[Operations.MORE_OR_EQUAL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.IN:
-          return {[Operations.IN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.AND:
-          return {[Operations.AND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.OR:
-          return {[Operations.OR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.NOT:
-          return {[Operations.NOT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.DATE:
-          return {[Operations.DATE]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.DATEADD:
-          return {[Operations.DATEADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.DATEDIFF:
-          return {[Operations.DATEDIFF]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.ADD:
-          return {[Operations.ADD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.SUB:
-          return {[Operations.SUB]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.MUL:
-          return {[Operations.MUL]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.DIV:
-          return {[Operations.DIV]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.ROUND:
-          return {[Operations.ROUND]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.CONCAT:
-          return {[Operations.CONCAT]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.SUBSTR:
-          return {[Operations.SUBSTR]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.MOD:
-          return {[Operations.MOD]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.ABS:
-          return {[Operations.ABS]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.FULL_TEXT_MATCH:
-          return {
-            [Operations.FULL_TEXT_MATCH]: prepareOperArgs(cm, filter[oper], joins, numGen)
-          };
-        case Operations.GEO_WITHIN:
-          return {[Operations.GEO_WITHIN]: prepareOperArgs(cm, filter[oper], joins, numGen)};
-        case Operations.GEO_INTERSECTS:
-          return {
-            [Operations.GEO_INTERSECTS]: prepareOperArgs(cm, filter[oper], joins, numGen)
-          };
-        default:
-          throw new Error('Некорректный тип операции!');
+        default: return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
       }
     }
   }

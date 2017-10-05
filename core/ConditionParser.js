@@ -141,23 +141,18 @@ function vt(cm, property) {
  * @returns {{}}
  */
 function produceFilter(condition, type, rcm, context, lang) {
-  var result = {};
-  if (condition.value && condition.value.length) {
-    result[type] = toScalar(condition.value, context, vt(rcm, condition.property), lang);
-  } else if (condition.nestedConditions && condition.nestedConditions.length) {
-    result[type] = ConditionParser(condition.nestedConditions[0], rcm, context, lang);
-  }
-  var args = [condition.property];
-  if (condition.value) {
-    args = args.concat(toScalar(condition.value, context));
-  }
-
+  var args = ['$'+condition.property];
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
     let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
     if (tmp) {
       args.push(tmp);
     }
+  } else if (condition.value) {
+    args = args.concat(toScalar(condition.value, context, vt(rcm, condition.property), lang));
+  } else {
+    args.push(null);
   }
+
   return {[type]: args};
 }
 
@@ -242,9 +237,9 @@ function ConditionParser(condition, rcm, context, lang) {
         case ConditionTypes.EQUAL: return produceFilter(condition, Operations.EQUAL, rcm, context);
         case ConditionTypes.NOT_EQUAL: return produceFilter(condition, Operations.NOT_EQUAL, rcm, context);
         case ConditionTypes.LESS: return produceFilter(condition, Operations.LESS, rcm, context);
-        case ConditionTypes.MORE: return produceFilter(condition, Operations.MORE, rcm, context);
+        case ConditionTypes.MORE: return produceFilter(condition, Operations.GREATER, rcm, context);
         case ConditionTypes.LESS_OR_EQUAL: return produceFilter(condition, Operations.LESS_OR_EQUAL, rcm, context);
-        case ConditionTypes.MORE_OR_EQUAL: return produceFilter(condition, Operations.MORE_OR_EQUAL, rcm, context);
+        case ConditionTypes.MORE_OR_EQUAL: return produceFilter(condition, Operations.GREATER_OR_EQUAL, rcm, context);
         case ConditionTypes.LIKE: return produceFilter(condition, Operations.LIKE, rcm, context);
           /*
 
