@@ -18,6 +18,7 @@ module.exports = {
   DATE: 'date',
   DATEADD: 'dateadd',
   DATEDIFF: 'datediff',
+  DATESTR: 'dateToStr',
   ADD: 'add',
   SUB: 'sub',
   MUL: 'mul',
@@ -36,5 +37,6 @@ module.exports = {
   GEO_WITHIN: 'geoWithin',
   GEO_INTERSECTS: 'geoIntersects',
   IF: 'if',
-  CASE: 'case'
+  CASE: 'case',
+  IFNULL: 'ifNull'
 };

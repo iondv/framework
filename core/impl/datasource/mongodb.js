@@ -55,9 +55,9 @@ const FUNC_OPERS = {
   [Operations.DATEADD]: '$dateadd',
   [Operations.DATEDIFF]: '$datediff',
   [Operations.ADD]: '$add',
-  [Operations.SUB]: '$sub',
-  [Operations.MUL]: '$mul',
-  [Operations.DIV]: '$div',
+  [Operations.SUB]: '$subtract',
+  [Operations.MUL]: '$multiply',
+  [Operations.DIV]: '$divide',
   [Operations.ROUND]: '$round',
   [Operations.CONCAT]: '$concat',
   [Operations.SUBSTR]: '$substr',
@@ -67,7 +67,10 @@ const FUNC_OPERS = {
   [Operations.MAX]: '$max',
   [Operations.AVG]: '$avg',
   [Operations.SUM]: '$sum',
-  [Operations.COUNT]: '$count'
+  [Operations.COUNT]: '$count',
+  [Operations.IFNULL]: '$ifNull',
+  [Operations.DATESTR]: '$dateToStr',
+  [Operations.IF]: '$cond'
 };
 
 // jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10, maxparams: 8
