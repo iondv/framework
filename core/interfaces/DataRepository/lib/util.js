@@ -196,18 +196,14 @@ function join(pm, cm, colMeta, filter) {
  * @returns {{}}
  */
 function findPm(cm, nm) {
-  if (nm && nm[0] === '$') {
-    nm = nm.substr(1);
-    let dotpos = nm.indexOf('.');
-    if (dotpos > 0) {
-      let pm = cm.getPropertyMeta(nm.substring(0, dotpos));
-      if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
-        return findPm(pm._refClass, nm.substring(dotpos + 1));
-      }
+  let dotpos = nm.indexOf('.');
+  if (dotpos > 0) {
+    let pm = cm.getPropertyMeta(nm.substring(0, dotpos));
+    if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+      return findPm(pm._refClass, nm.substring(dotpos + 1));
     }
-    return cm.getPropertyMeta(nm);
   }
-  return null;
+  return cm.getPropertyMeta(nm);
 }
 
 /**

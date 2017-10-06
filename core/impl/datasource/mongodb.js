@@ -615,7 +615,7 @@ function MongoDs(config) {
                 let attr = null;
                 let right;
                 for (let i = 0; i < args.length; i++) {
-                  if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$') {
+                  if (typeof args[i] === 'string' && args[i].length > 1 && args[i][0] === '$' && !attr) {
                     attr = args[i].substr(1);
                   } else {
                     right = args[i];
@@ -627,6 +627,17 @@ function MongoDs(config) {
                 if (!attr) {
                   return {[o]: args};
                 }
+
+                if (attr && right) {
+                  if (attr[0] === '$' && right[0] === '$') {
+                    if (attr.indexOf('.') >= 0) {
+                      let tmp = attr;
+                      attr = right;
+                      right = tmp;
+                    }
+                  }
+                }
+
                 switch (o) {
                   case '$regex':
                     if (typeof right !== 'undefined') {
@@ -656,7 +667,7 @@ function MongoDs(config) {
   function parseExpression(e) {
     if (Array.isArray(e)) {
       let result = [];
-      e.forEach((e1)=>{result.push(parseCondition(e1));});
+      e.forEach((e1)=>{result.push(parseExpression(e1));});
       return result;
     }
     if (e && typeof e === 'object' && !(e instanceof Date)) {
@@ -664,7 +675,13 @@ function MongoDs(config) {
         if (e.hasOwnProperty(oper)) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
-            return {[o]: parseExpression(e[oper])};
+            if (oper === Operations.NOT_EMPTY) {
+              return {$ne:[{$type: parseExpression(e[oper])[0]}, 'null']};
+            } else if (oper === Operations.NOT_EMPTY) {
+              return {$eq:[{$type: parseExpression(e[oper])[0]}, 'null']};
+            } else {
+              return {[o]: parseExpression(e[oper])};
+            }
           }
         }
       }
@@ -1789,15 +1806,13 @@ function MongoDs(config) {
   this._aggregate = function (type, options) {
     options = clone(options) || {};
     options.filter = parseCondition(options.filter);
-    var c;
-    var tmpApp = null;
+    let c;
+    let tmpApp = null;
     return getCollection(type).then(
       function (col) {
         c = col;
-        var plan = [];
-
-        var expr = {$group: {}};
-
+        let plan = [];
+        let expr = {$group: {}};
         expr.$group._id = null;
         if (options.fields && typeof options.fields === 'object') {
           for (let fld in options.fields) {
@@ -1856,7 +1871,7 @@ function MongoDs(config) {
         }
 
         return checkAggregation(type, options, plan);
-      }).then(function (plan) {
+      }).then((plan) => {
         return new Promise(function (resolve, reject) {
           try {
             c.aggregate(plan, {allowDiskUse: true}, function (err, result) {
