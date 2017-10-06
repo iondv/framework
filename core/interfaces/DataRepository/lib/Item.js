@@ -198,6 +198,9 @@ function Item(id, base, classMeta) {
     var dot, pm;
     if ((dot = nm.indexOf('.')) > -1) {
       pm = cm.getPropertyMeta(nm.substring(0, dot));
+      if (!pm) {
+        throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+      }
       if (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) {
         return findPropertyMeta(nm.substring(dot + 1), pm._refClass);
       } else {
