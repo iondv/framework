@@ -38,5 +38,6 @@ module.exports = {
   GEO_INTERSECTS: 'geoIntersects',
   IF: 'if',
   CASE: 'case',
-  IFNULL: 'ifNull'
+  IFNULL: 'ifNull',
+  LITERAL: 'literal'
 };

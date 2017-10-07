@@ -352,6 +352,7 @@ function prepareFilterOption(cm, filter, joins, numGen) {
         case Operations.AVG:
         case Operations.COUNT:
         break;
+        case Operations.LITERAL: return {[oper]: filter[oper]};
         default: return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
       }
     }

@@ -70,7 +70,9 @@ const FUNC_OPERS = {
   [Operations.COUNT]: '$count',
   [Operations.IFNULL]: '$ifNull',
   [Operations.DATESTR]: '$dateToStr',
-  [Operations.IF]: '$cond'
+  [Operations.IF]: '$cond',
+  [Operations.CASE]: '$case',
+  [Operations.LITERAL]: '$literal'
 };
 
 // jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10, maxparams: 8
@@ -679,6 +681,21 @@ function MongoDs(config) {
               return {$ne:[{$type: parseExpression(e[oper])[0]}, 'null']};
             } else if (oper === Operations.NOT_EMPTY) {
               return {$eq:[{$type: parseExpression(e[oper])[0]}, 'null']};
+            } else if (oper === Operations.CASE) {
+              let args = parseExpression(e[oper]);
+              let result = {$switch: {
+                branches: []
+              }};
+              for (let i = 0; i < args.length; i++) {
+                if (i === args.length - 1 && args.length % 2 === 1) {
+                  result.$switch.default = args[i];
+                } else if ((i + 1) % 2 === 1) {
+                  result.$switch.branches.push({case: args[i]});
+                } else {
+                  result.$switch.branches[result.$switch.branches.length - 1].then = args[i];
+                }
+              }
+              return result;
             } else {
               return {[o]: parseExpression(e[oper])};
             }
@@ -1817,7 +1834,14 @@ function MongoDs(config) {
         if (options.fields && typeof options.fields === 'object') {
           for (let fld in options.fields) {
             if (options.fields.hasOwnProperty(fld)) {
-              expr.$group._id = options.fields;
+              if (!expr.$group._id) {
+                expr.$group._id = {};
+              }
+              if (options.fields[fld] === 1 || options.fields[fld] === 0 || typeof options.fields[fld] === 'boolean') {
+                expr.$group._id[fld] = {literal: options.fields[fld]};
+              } else {
+                expr.$group._id[fld] = options.fields[fld];
+              }
               break;
             }
           }
