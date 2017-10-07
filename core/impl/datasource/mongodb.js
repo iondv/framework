@@ -1676,6 +1676,7 @@ function MongoDs(config) {
                 } else if (oper === '$sum' || oper === '$avg' || oper === '$min' || oper === '$max') {
                   expr.$group[alias] = {};
                   expr.$group[alias][oper] = options.aggregates[alias][oper];
+                  prepareConditions(expr.$group[alias][oper]);
                 }
               }
             }
