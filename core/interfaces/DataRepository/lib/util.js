@@ -19,7 +19,7 @@ const aggregOperations = ['$min', '$max', '$avg', '$sum', '$count'];
  * @param {String} ns
  * @returns {*}
  */
-function castValue(value, pm, ns) {
+function castValue(value, pm) {
   if (value === null) {
     return value;
   }
@@ -33,7 +33,7 @@ function castValue(value, pm, ns) {
     if (refkey.length > 1) {
       return String(value);
     } else {
-      return castValue(value, pm._refClass.getPropertyMeta(refkey[0]), ns);
+      return castValue(value, pm._refClass.getPropertyMeta(refkey[0]));
     }
 
     return value;
@@ -53,6 +53,20 @@ function castValue(value, pm, ns) {
 }
 
 module.exports.castValue = castValue;
+
+function prepareData(v) {
+  if (Array.isArray(v)) {
+    let result = [];
+    for (let i = 0; i < v.length; i++) {
+      result.push(prepareData(v[i]));
+    }
+    return result;
+  }
+  if (v instanceof Item) {
+    return v.getItemId();
+  }
+  return v;
+}
 
 /**
  * @param {ClassMeta} cm
@@ -81,7 +95,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
               if (!refUpdates.hasOwnProperty(tmp)) {
                 refUpdates[tmp] = {};
               }
-              refUpdates[tmp][nm.substring(dot + 1)] = data[nm];
+              refUpdates[tmp][nm.substring(dot + 1)] = prepareData(data[nm]);
             }
           }
         }
@@ -89,7 +103,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
         pm = cm.getPropertyMeta(nm);
         if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(data[nm], pm, cm.namespace);
+            data[nm] = castValue(prepareData(data[nm]), pm);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
               updates[nm] = data[nm];
             }
@@ -99,7 +113,7 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
               }
             }
           } else if (setCollections && Array.isArray(data[nm]) && !pm.backRef) {
-            updates[nm] = data[nm];
+            updates[nm] = prepareData(data[nm]);
           }
         }
       }
@@ -589,7 +603,10 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
     return p.then(() => {
       or.push(filterByItemIds(scope.keyProvider, cm, ids));
     });
-  } else if (Array.isArray(opts.searchBy)) {
+  } else {
+    if (!Array.isArray(opts.searchBy)) {
+      opts.searchBy = cm.getSemanticAttrs();
+    }
     let fullText = false;
 
     let tmp = [];
@@ -642,11 +659,13 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           }
         } else {
           let pm = cm.getPropertyMeta(nm);
-          if (pm.indexSearch && useFullText) {
-            fullText = true;
+          if (pm) {
+            if (pm.indexSearch && useFullText) {
+              fullText = true;
+            }
+            result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
+              attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
           }
-          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
         }
       }
     });

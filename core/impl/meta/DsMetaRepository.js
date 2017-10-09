@@ -120,15 +120,17 @@ function DsMetaRepository(options) {
 
   function assignVm(coll, vm) {
     let cn = vm.className;
+    let namespaced = true;
     if (cn.indexOf('@') < 0) {
       cn = cn + '@' + vm.namespace;
+      namespaced = false;
     }
     let vp = viewPath(vm.path, cn);
     if (!coll.hasOwnProperty(vp)) {
       coll[vp] = [];
     }
-    let arr = coll[vp];
-    arr.push(vm);
+
+    coll[vp].push(vm);
   }
 
   function findByVersion(arr, version, i1, i2) {
@@ -799,7 +801,7 @@ function DsMetaRepository(options) {
           if (pathParts[0] === 'workflows') {
             let wf = pathParts[1];
             let state = pathParts[2];
-            let cm = _this._getMeta(views[i].className, views[i].version, views[i].namespace);
+            let cm = _this._getMeta(views[i].className, views[i].version);
             if (cm) {
               if (wf.indexOf('@') < 0) {
                 wf = wf + '@' + cm.getNamespace();
@@ -958,9 +960,9 @@ function DsMetaRepository(options) {
         [
           ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
           ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
-          ds.fetch(_this.viewTableName, {sort: {type: 1, className: 1, path: 1, version: 1}}),
+          ds.fetch(_this.viewTableName, {sort: {type: 1, className: -1, path: -1, version: 1}}),
           ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
-          ds.fetch(_this.workflowTableName, {sort: {wfClass: 1, name: 1, version: 1}})
+          ds.fetch(_this.workflowTableName, {sort: {wfClass: -1, name: 1, version: 1}})
         ]
       ).then(
         function (results) {
