@@ -7,103 +7,6 @@ const ConditionParser = require('core/ConditionParser');
 const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
-/**
- * @param {ClassMeta} cm
- * @param {{}} plain
- * @param {Calculator} calc
- */
-function loadPropertyMetas(cm, plain, calc) {
-  let properties = plain.properties.sort(function (a,b) {
-    return a.orderNumber - b.orderNumber;
-  });
-
-  function selectionConstructor1() {
-    return function () {
-      return this.list || [];
-    };
-  }
-
-  function selectionConstructor2() {
-    /**
-     * @param {Item} item
-     */
-    return function (item) {
-      let result = [];
-      for (let j = 0; j < this.matrix.length; j++) {
-        if (!this.matrix[j]._checker) {
-          Array.prototype.push.apply(result, this.matrix[j].result || []);
-        } if (typeof this.matrix[j]._checker === 'function') {
-          let cr = this.matrix[j]._checker.apply(item);
-          if (cr) {
-            if (cr instanceof Promise) {
-              throw new Error('Асинхронные вызовы в условиях соответствия списков выбора недопустимы!');
-            }
-            Array.prototype.push.apply(result, this.matrix[j].result || []);
-          }
-        }
-      }
-      return result;
-    };
-  }
-
-  function sysPm(name) {
-    return {
-      orderNumber: 0,
-      name: name,
-      caption: name,
-      type: 0,
-      size: 500,
-      decimals: 0,
-      allowedFileTypes: null,
-      maxFileCount: 0,
-      nullable: true,
-      readonly: true,
-      indexed: false,
-      unique: false,
-      autoassigned: false,
-      hint: null,
-      defaultValue: null,
-      refClass: "",
-      itemsClass: "",
-      backRef: "",
-      backColl: "",
-      binding: "",
-      semantic: null,
-      selConditions: [],
-      selSorting: [],
-      selectionProvider: null,
-      indexSearch: false,
-      eagerLoading: false,
-      formula: null
-    };
-  }
-
-  if (!plain.ancestor) {
-    cm.propertyMetas.__class = sysPm('__class');
-    cm.propertyMetas.__classTitle = sysPm('__classTitle');
-  }
-
-  for (let i = 0; i < properties.length; i++) {
-    let pm = clone(properties[i]);
-    cm.propertyMetas[properties[i].name] = pm;
-    if (pm.selectionProvider) {
-      if (pm.selectionProvider.type === 'SIMPLE') {
-        pm.selectionProvider.getSelection = selectionConstructor1();
-      } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        let matrix = properties[i].selectionProvider.matrix;
-        for (let j = 0; j < matrix.length; j++) {
-          if (matrix[j].conditions) {
-            if (Array.isArray(matrix[j].conditions)) {
-              matrix[j].conditions = ConditionParser(matrix[j].conditions, cm, null);
-            }
-            matrix[j]._checker = calc.parseFormula(matrix[j].conditions);
-          }
-        }
-        pm.selectionProvider.getSelection = selectionConstructor2();
-      }
-    }
-  }
-}
 
 function ClassMeta(metaObject) {
 
@@ -122,8 +25,6 @@ function ClassMeta(metaObject) {
   this._semanticAttrs = [];
 
   this._semanticFunc = null;
-
-  loadPropertyMetas(_this, metaObject);
 
   this.getVersion = function () {
     return this.plain.version;

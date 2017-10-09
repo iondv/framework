@@ -27,5 +27,10 @@ module.exports = {
   substr: require('./string/substr'),
   element: require('./arrays/element'),
   collect: require('./process/collect'),
-  if: require('./condition/if')
+  if: require('./condition/if'),
+  nempty: require('./cmp/nempty'),
+  empty: require('./cmp/empty'),
+  contains: require('./data/contains'),
+  like: require('./string/like'),
+  in: require('./arrays/in')
 };

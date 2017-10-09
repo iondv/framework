@@ -311,7 +311,8 @@ function ConditionParser(condition, rcm, context, lang) {
       }
     }
   }
-  throw new Error('Мета условий выборки не соответствует спецификации!');
+  return null;
+  //throw new Error('Мета условий выборки не соответствует спецификации!');
 }
 
 module.exports = ConditionParser;

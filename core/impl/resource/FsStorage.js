@@ -154,7 +154,7 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._remove = function (id) {
-    return dataSource.get('ion_files', {id: id})
+    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', id]})
       .then((file) => {
         if (file) {
           let result = path.join(_options.storageBase, file.path);
@@ -325,7 +325,7 @@ function FsStorage(options) {
   * @returns {Promise}
   */
   this._getDir = function (id) {
-    return dataSource.get('ion_files', {id: id})
+    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', 'id']})
       .then(function (dir) {
         if (dir && dir.files.length) {
           return _this._fetch(dir.files)
@@ -360,7 +360,7 @@ function FsStorage(options) {
       .then((dir) => {
         dir.link = _options.urlBase + '/' + id;
         if (parentDirId) {
-          return dataSource.get('ion_files', {id: parentDirId})
+          return dataSource.get('ion_files', {[F.EQUAL]: ['$id', parentDirId]})
               .then((parentDir) => {
                 if (parentDir && dir.id) {
                   parentDir.dirs.push(dir.id);
@@ -392,7 +392,7 @@ function FsStorage(options) {
    * @returns {Promise}
      */
   this._putFile = function (dirId, fileId) {
-    return dataSource.get('ion_files', {id: dirId})
+    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', dirId]})
       .then((dir) => {
         if (dir) {
           dir.files.push(fileId);
@@ -410,7 +410,7 @@ function FsStorage(options) {
    * @returns {Promise}
      */
   this._ejectFile = function (dirId, fileId) {
-    return dataSource.get('ion_files', {id: dirId})
+    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', dirId]})
       .then((dir) => {
         if (dir) {
           let fileIndex = dir.files.indexOf(fileId);

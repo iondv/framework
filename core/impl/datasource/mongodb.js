@@ -406,7 +406,7 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         return resolve(result);
                       }
-                      _this._get(type, {_id: result.insertedId}, {}).then(resolve).catch(reject);
+                      _this._get(type, {[Operations.EQUAL]: ['$_id', result.insertedId]}, {}).then(resolve).catch(reject);
                     } else {
                       reject(new IonError(Errors.OPER_FAILED, {oper: 'insert', table: type}));
                     }
@@ -818,10 +818,11 @@ function MongoDs(config) {
                 if (!empty(data.unset)) {
                   updates.$unset = data.unset;
                 }
-                prepareConditions(conditions);
+                let pconditions = parseCondition(conditions);
+                prepareConditions(pconditions);
                 if (!options.bulk) {
                   c.updateOne(
-                    conditions,
+                    pconditions,
                     updates,
                     {upsert: options.upsert || false},
                     function (err) {
@@ -839,7 +840,7 @@ function MongoDs(config) {
                       p.then(resolve).catch(reject);
                     });
                 } else {
-                  c.updateMany(conditions, updates,
+                  c.updateMany(pconditions, updates,
                     function (err, result) {
                       if (err) {
                         return reject(wrapError(err, 'update', type));
@@ -857,11 +858,11 @@ function MongoDs(config) {
   }
 
   this._update = function (type, conditions, data, options) {
-    return doUpdate(type, parseCondition(conditions), data, {bulk: options.bulk, skipResult: options.skipResult});
+    return doUpdate(type, conditions, data, {bulk: options.bulk, skipResult: options.skipResult});
   };
 
   this._upsert = function (type, conditions, data, options) {
-    return doUpdate(type, parseCondition(conditions), data, {upsert: true, skipResult: options.skipResult});
+    return doUpdate(type, conditions, data, {upsert: true, skipResult: options.skipResult});
   };
 
   this._delete = function (type, conditions) {
@@ -1974,49 +1975,54 @@ function MongoDs(config) {
   this._get = function (type, conditions, options) {
     let c;
     let opts = {filter: parseCondition(conditions), fields: options.fields || {}};
-    return getCollection(type).then(
-      function (col) {
+    return getCollection(type)
+      .then((col) => {
         c = col;
         prepareConditions(opts.filter);
         return checkAggregation(type, opts);
-      }).then(function (aggregation) {
-      if (aggregation) {
-        return new Promise(function (resolve, reject) {
-          fetch(c, opts, aggregation,
-            function (r, amount) {
-              return new Promise(function (resolve, reject) {
-                if (Array.isArray(r)) {
-                  resolve(r);
-                } else {
-                  r.toArray(function (err, docs) {
-                    r.close();
-                    if (err) {
-                      return reject(err);
-                    }
-                    resolve(docs);
-                  });
-                }
-              }).then(function (docs) {
-                docs.forEach(mergeGeoJSON);
-                resolve(docs.length ? docs[0] : null);
-              }).catch(reject);
-            },
-            function (e) {
-              reject(wrapError(e, 'get', type));
-            }
-          );
-        });
-      } else {
-        return new Promise(function (resolve, reject) {
-          c.find(conditions).limit(1).next(function (err, result) {
-            if (err) {
-              return reject(wrapError(err, 'get', type));
-            }
-            resolve(mergeGeoJSON(result));
+      })
+      .then((aggregation) => {
+        if (aggregation) {
+          return new Promise((resolve, reject) => {
+            fetch(c, opts, aggregation,
+              (r, amount) => {
+                return new Promise((resolve, reject) => {
+                  if (Array.isArray(r)) {
+                    resolve(r);
+                  } else {
+                    r.toArray(function (err, docs) {
+                      r.close();
+                      if (err) {
+                        return reject(err);
+                      }
+                      resolve(docs);
+                    });
+                  }
+                }).then((docs) => {
+                  docs.forEach(mergeGeoJSON);
+                  resolve(docs.length ? docs[0] : null);
+                }).catch(reject);
+              },
+              (e) => {
+                reject(wrapError(e, 'get', type));
+              }
+            );
           });
-        });
-      }
-    });
+        } else {
+          return new Promise((resolve, reject) => {
+            try {
+              c.find(opts.filter).limit(1).next((err, result) => {
+                if (err) {
+                  return reject(wrapError(err, 'get', type));
+                }
+                resolve(mergeGeoJSON(result));
+              });
+            } catch (err) {
+              throw wrapError(err, 'get', type);
+            }
+          });
+        }
+      });
   };
 
   /**
