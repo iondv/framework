@@ -1658,10 +1658,21 @@ function MongoDs(config) {
 
         expr.$group._id = null;
         if (options.fields && typeof options.fields === 'object') {
+          expr.$group._id = {};
           for (let fld in options.fields) {
             if (options.fields.hasOwnProperty(fld)) {
-              expr.$group._id = options.fields;
-              break;
+              if (typeof options.fields[fld] === 'object' ||
+                typeof options.fields[fld] === 'string' &&
+                  options.fields[fld][0] === '$') {
+                expr.$group._id[fld] = {
+                  $ifNull: [
+                    options.fields[fld],
+                    null
+                  ]
+                };
+              } else {
+                expr.$group._id[fld] = options.fields[fld];
+              }
             }
           }
         }
@@ -1674,9 +1685,7 @@ function MongoDs(config) {
                 if (oper === '$count') {
                   expr.$group[alias] = {$sum: 1};
                 } else if (oper === '$sum' || oper === '$avg' || oper === '$min' || oper === '$max') {
-                  expr.$group[alias] = {};
-                  expr.$group[alias][oper] = options.aggregates[alias][oper];
-                  prepareConditions(expr.$group[alias][oper]);
+                  expr.$group[alias] = prepareConditions({[oper]: options.aggregates[alias][oper]});
                 }
               }
             }
