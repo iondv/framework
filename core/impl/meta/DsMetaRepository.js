@@ -10,6 +10,7 @@ const MetaRepository = MetaRepositoryModule.MetaRepository;
 const ClassMeta = MetaRepositoryModule.ClassMeta;
 const PropertyTypes = require('core/PropertyTypes');
 const Calculator = require('core/interfaces/Calculator');
+const ConditionParser = require('core/ConditionParser');
 const clone = require('clone');
 const merge = require('merge');
 
@@ -853,9 +854,16 @@ function DsMetaRepository(options) {
         workflowMeta[ns][wfClass][wf.name] = [];
       }
 
+      let wfCm = _this._getMeta(wfClass);
       wf.statesByName = {};
       for (let j = 0; j < wf.states.length; j++) {
         wf.statesByName[wf.states[j].name] = wf.states[j];
+        if (wf.states[j].conditions) {
+          if (Array.isArray(wf.states[j].conditions)) {
+            wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
+          }
+          wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
+        }
       }
 
       wf.transitionsByName = {};
@@ -874,6 +882,14 @@ function DsMetaRepository(options) {
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
           }
         }
+
+        if ( wf.transitions[j].conditions) {
+          if (Array.isArray( wf.transitions[j].conditions)) {
+            wf.transitions[j].conditions = ConditionParser( wf.transitions[j].conditions, wfCm);
+          }
+          wf.transitions[j]._checker = options.calc.parseFormula( wf.transitions[j].conditions);
+        }
+
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
         if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
           wf.transitionsBySrc[wf.transitions[j].startState] = [];

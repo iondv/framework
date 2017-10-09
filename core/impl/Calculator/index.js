@@ -58,10 +58,10 @@ function Calculator(options) {
       return [];
     }
 
-    var i = 0;
-    var result = [];
-    var start = 0;
-    var commaPos, openBracketPos, bp, open, closeBracketPos;
+    let i = 0;
+    let result = [];
+    let start = 0;
+    let commaPos, openBracketPos, bp, open, closeBracketPos;
 
     do {
       commaPos = findComma(argsSrc, start);
@@ -119,9 +119,9 @@ function Calculator(options) {
       }
     }
 
-    var pth = nm.split('.');
-    var ctx = obj;
-    for (var i = 0; i < pth.length; i++) {
+    let pth = nm.split('.');
+    let ctx = obj;
+    for (let i = 0; i < pth.length; i++) {
       ctx = ctx[pth[i]];
       if (typeof ctx !== 'object' || !ctx) {
         return ctx;
@@ -141,8 +141,7 @@ function Calculator(options) {
   }
 
   function warn(msg) {
-    var log = options.log || console;
-    log.warn(msg);
+    (options.log || console).warn(msg);
   }
 
   /**
@@ -246,7 +245,7 @@ function Calculator(options) {
   }
 
   /**
-   * @param {String} formula
+   * @param {String | {}} formula
    */
   this._parseFormula = function (formula) {
     let result = formula;

@@ -3,11 +3,16 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-var checkConditions = require('core/ConditionChecker');
-var clone = require('clone');
+const ConditionParser = require('core/ConditionParser');
+const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
-function loadPropertyMetas(cm, plain) {
+/**
+ * @param {ClassMeta} cm
+ * @param {{}} plain
+ * @param {Calculator} calc
+ */
+function loadPropertyMetas(cm, plain, calc) {
   let properties = plain.properties.sort(function (a,b) {
     return a.orderNumber - b.orderNumber;
   });
@@ -25,11 +30,16 @@ function loadPropertyMetas(cm, plain) {
     return function (item) {
       let result = [];
       for (let j = 0; j < this.matrix.length; j++) {
-        if (
-          !Array.isArray(this.matrix[j].conditions) ||
-          this.matrix[j].conditions.length === 0 ||
-          checkConditions(item, this.matrix[j].conditions)) {
+        if (!this.matrix[j]._checker) {
           Array.prototype.push.apply(result, this.matrix[j].result || []);
+        } if (typeof this.matrix[j]._checker === 'function') {
+          let cr = this.matrix[j]._checker.apply(item);
+          if (cr) {
+            if (cr instanceof Promise) {
+              throw new Error('Асинхронные вызовы в условиях соответствия списков выбора недопустимы!');
+            }
+            Array.prototype.push.apply(result, this.matrix[j].result || []);
+          }
         }
       }
       return result;
@@ -80,6 +90,15 @@ function loadPropertyMetas(cm, plain) {
       if (pm.selectionProvider.type === 'SIMPLE') {
         pm.selectionProvider.getSelection = selectionConstructor1();
       } else if (properties[i].selectionProvider.type === 'MATRIX') {
+        let matrix = properties[i].selectionProvider.matrix;
+        for (let j = 0; j < matrix.length; j++) {
+          if (matrix[j].conditions) {
+            if (Array.isArray(matrix[j].conditions)) {
+              matrix[j].conditions = ConditionParser(matrix[j].conditions, cm, null);
+            }
+            matrix[j]._checker = calc.parseFormula(matrix[j].conditions);
+          }
+        }
         pm.selectionProvider.getSelection = selectionConstructor2();
       }
     }
