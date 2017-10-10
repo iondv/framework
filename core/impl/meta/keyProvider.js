@@ -57,6 +57,10 @@ function MetaKeyProvider(options) {
     let result = {};
     if (typeof id === 'string') {
       let keyProps = cm.getKeyProperties();
+      if (keyProps.length === 1) {
+        let pm = cm.getPropertyMeta(keyProps[0]);
+        return {[keyProps[0]]: cast(id, pm.type)};
+      }
       let sep = getSeparator(cm.getCanonicalName());
       let parts = id.split(sep);
       let pm;
