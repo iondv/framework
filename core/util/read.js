@@ -105,7 +105,7 @@ function readConfigFiles(filesList) {
             result[fname] = merge(data[0], data[1]);
           })
           .then(resolve)
-          .catch(e => reject(new Error(`Не удалось получить конфигурацию ${fname}`)));
+          .catch(e => reject(e));
       }));
     });
     return Promise.all(promises).then(() => resolve(result)).catch(reject);

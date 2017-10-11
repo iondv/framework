@@ -573,26 +573,6 @@ function MongoDs(config) {
     return result;
   }
 
-  function fAdd(args) {
-    return {$add: args};
-  }
-
-  function fSub(args) {
-    return {$subtract: args};
-  }
-
-  function fMul(args) {
-    return {$multiply: args};
-  }
-
-  function fDiv(args) {
-    return {$divide: args};
-  }
-
-  function fMod(args) {
-    return {$mod: args};
-  }
-
   function parseCondition(c) {
     if (Array.isArray(c)) {
       let result = [];
@@ -687,6 +667,12 @@ function MongoDs(config) {
               return {$ne:[{$type: parseExpression(e[oper])[0]}, 'null']};
             } else if (oper === Operations.NOT_EMPTY) {
               return {$eq:[{$type: parseExpression(e[oper])[0]}, 'null']};
+            } else if (oper === Operations.DATE) {
+              return fDate(e[oper]);
+            } else if (oper === Operations.DATE_ADD) {
+              return fDateAdd(parseExpression(e[oper]));
+            } else if (oper === Operations.DATE_DIFF) {
+              return fDateDiff(parseExpression(e[oper]));
             } else if (oper === Operations.CASE) {
               let args = parseExpression(e[oper]);
               let result = {$switch: {
@@ -751,21 +737,6 @@ function MongoDs(config) {
             break;
           } else if (nm === '$dateDiff') {
             parent[part] = fDateDiff(conditions[nm]);
-            break;
-          } else if (nm === '$add') {
-            parent[part] = fAdd(conditions[nm]);
-            break;
-          } else if (nm === '$sub') {
-            parent[part] = fSub(conditions[nm]);
-            break;
-          } else if (nm === '$mul') {
-            parent[part] = fMul(conditions[nm]);
-            break;
-          } else if (nm === '$div') {
-            parent[part] = fDiv(conditions[nm]);
-            break;
-          } else if (nm === '$mod') {
-            parent[part] = fMod(conditions[nm]);
             break;
           } else if (nm === '$joinExists') {
             if (conditions[nm].filter) {
@@ -1838,18 +1809,19 @@ function MongoDs(config) {
         let plan = [];
         let expr = {$group: {}};
         expr.$group._id = null;
-        if (options.fields && typeof options.fields === 'object') {
+        if (options.fields) {
           for (let fld in options.fields) {
             if (options.fields.hasOwnProperty(fld)) {
               if (!expr.$group._id) {
                 expr.$group._id = {};
               }
-              if (options.fields[fld] === 1 || options.fields[fld] === 0 || typeof options.fields[fld] === 'boolean') {
+              if (!isNaN(options.fields[fld]) || typeof options.fields[fld] === 'boolean') {
                 expr.$group._id[fld] = {literal: options.fields[fld]};
+              } else if (options.fields[fld] && typeof options.fields[fld] === 'object' && !(options.fields[fld] instanceof Date)) {
+                expr.$group._id[fld] = parseExpression(options.fields[fld]);
               } else {
                 expr.$group._id[fld] = options.fields[fld];
               }
-              break;
             }
           }
         }
@@ -1861,11 +1833,13 @@ function MongoDs(config) {
                 if (oper === DsOperations.COUNT) {
                   expr.$group[alias] = {$sum: 1};
                 } else if (
-                  oper === DsOperations.SUM || oper === DsOperations.AVG ||
-                  oper === DsOperations.MIN || oper === DsOperations.MAX
+                  oper === Operations.SUM || oper === Operations.AVG ||
+                  oper === Operations.MIN || oper === Operations.MAX
                 ) {
-                  expr.$group[alias] = {};
-                  expr.$group[alias][FUNC_OPERS[oper]] = parseExpression(options.aggregates[alias][oper]);
+                  let args = parseExpression(options.aggregates[alias][oper]);
+                  if (args.length) {
+                    expr.$group[alias] = {[FUNC_OPERS[oper]]: args[0]};
+                  }
                 }
               }
             }

@@ -209,12 +209,10 @@ function findPm(cm, nm) {
 /**
  * @param {ClassMeta} cm
  * @param {{}} filter
- * @param {Array} fetchers
- * @param {DataSource} ds
- * @param {KeyProvider} keyProvider
- * @param {String} [nsSep]
+ * @param {Array} joins
+ * @param (Number} numGen
  */
-function prepareContains(cm, filter, fetchers, ds, keyProvider, nsSep) {
+function prepareContains(cm, filter, joins, numGen) {
   let nm = filter[0].substr(1);
   let pm = findPm(cm, nm);
   if (!pm) {
@@ -222,7 +220,7 @@ function prepareContains(cm, filter, fetchers, ds, keyProvider, nsSep) {
   }
 
   let colMeta = pm._refClass;
-  let tmp = prepareFilterOption(colMeta, filter[1], fetchers, ds, keyProvider, nsSep);
+  let tmp = prepareFilterOption(colMeta, filter[1], joins, numGen);
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
@@ -340,9 +338,12 @@ function NumGenerator() {
 function prepareFilterOption(cm, filter, joins, numGen) {
   for (let oper in filter) {
     if (filter.hasOwnProperty(oper)) {
+      if (!Array.isArray(filter[oper])) {
+        throw new Error('Ошибка синтаксиса в выражении ' + JSON.stringify(filter));
+      }
       switch (oper) {
         case Operations.CONTAINS:
-          return prepareContains(cm, filter[oper]);
+          return prepareContains(cm, filter[oper], joins, numGen);
         case Operations.NOT_EMPTY:
         case Operations.EMPTY:
           return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen);

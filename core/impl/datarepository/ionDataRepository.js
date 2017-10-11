@@ -829,7 +829,7 @@ function IonDataRepository(options) {
       if (conditions  === null) {
         return Promise.resolve(null);
       }
-
+      conditions = dataToFilter(conditions);
       let j = [];
 
       let fp = null;
@@ -839,7 +839,7 @@ function IonDataRepository(options) {
             if (j.length) {
               opts.joins = j;
             }
-            return {$and: [conditions, filter]};
+            return {and: [conditions, filter]};
           });
       } else {
         fp = Promise.resolve(conditions);
@@ -2173,14 +2173,14 @@ function IonDataRepository(options) {
       options = {};
     }
 
-    var pm = master.getMetaClass().getPropertyMeta(collection);
+    let pm = master.getMetaClass().getPropertyMeta(collection);
     if (!pm) {
       return Promise.reject(
         new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
       );
     }
 
-    var detailCm = pm._refClass;
+    let detailCm = pm._refClass;
     if (!detailCm) {
       return Promise.reject(
         new IonError(Errors.INVALID_META, {info: `${master.getClassName()}@${master.getItemId()}`})
@@ -2188,7 +2188,12 @@ function IonDataRepository(options) {
     }
 
     if (pm.backRef) {
-      filter = {[Operations.EQUAL]: ['$' + pm.backRef, pm.binding ? master.get(pm.binding) : master.getItemId()]};
+      filter = {
+        [Operations.EQUAL]: [
+          '$' + pm.backRef,
+          pm.binding ? master.get(pm.binding) : master.get(master.getMetaClass().getKeyProperties()[0])
+        ]
+      };
       if (pm.selConditions) {
         let tmp = Array.isArray(pm.selConditions) ? ConditionParser(pm.selConditions, pm._refClass, master) : pm.selConditions;
         if (tmp) {
