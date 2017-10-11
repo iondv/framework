@@ -1818,7 +1818,9 @@ function MongoDs(config) {
               if (!isNaN(options.fields[fld]) || typeof options.fields[fld] === 'boolean') {
                 expr.$group._id[fld] = {literal: options.fields[fld]};
               } else if (options.fields[fld] && typeof options.fields[fld] === 'object' && !(options.fields[fld] instanceof Date)) {
-                expr.$group._id[fld] = parseExpression(options.fields[fld]);
+                expr.$group._id[fld] = {$ifNull: [parseExpression(options.fields[fld]), null]};
+              } else if (options.fields[fld] && typeof options.fields[fld] === 'string' && options.fields[fld][0] === '$') {
+                expr.$group._id[fld] = {$ifNull: [options.fields[fld], null]};
               } else {
                 expr.$group._id[fld] = options.fields[fld];
               }
