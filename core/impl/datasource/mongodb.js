@@ -1473,32 +1473,34 @@ function MongoDs(config) {
   }
 
   function copyColl(src, dest, cb) {
-    _this.db.collection(src, {strict: true}, function (err, c2) {
-      if (err) {
-        return cb(err);
-      }
+    let p = new Promise(function (resolve, reject) {
+      _this.db.collection(src, {strict: true}, function (e, c2) {
+        if (e) {
+          return reject(e);
+        }
 
-      getCollection(dest)
-        .then(
-          function (c3) {
-            c2.aggregate([]).toArray(function (err, docs) {
-              if (err) {
-                return cb(err);
-              }
-              if (!docs.length) {
-                return cb();
-              }
-              c3.insertMany(docs, function (err) {
-                if (err) {
-                  return cb(err);
+        getCollection(dest).then(function (c3) {
+          c2.find().toArray(function (err, docs) {
+            if (err) {
+              return reject(err);
+            }
+
+            if (docs.length) {
+              c3.insertMany(docs, function (err2) {
+                if (err2) {
+                  return reject(err2);
                 }
-                _this.db.dropCollection(src, cb);
               });
-            });
-          }
-        )
-        .catch(cb);
+            }
+            resolve();
+          });
+        });
+      });
     });
+
+    return p.then(function () {
+      _this.db.dropCollection(src, cb);
+    }).catch(cb);
   }
 
   /**
