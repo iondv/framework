@@ -189,7 +189,9 @@ function WorkflowProvider(options) {
                         name: transition.name,
                         caption: transition.caption,
                         signBefore: transition.signBefore,
-                        signAfter: transition.signAfter
+                        signAfter: transition.signAfter,
+                        confirm: transition.confirm,
+                        confirmMessage: transition.confirmMessage                        
                       };
                     }
                   });
@@ -310,48 +312,48 @@ function WorkflowProvider(options) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             if (wf.transitionsByName.hasOwnProperty(name)) {
-                if (Array.isArray(transition.roles) && transition.roles.length) {
-                  let allowed = false;
-                  for (let i = 0; i < transition.roles.length; i++) {
-                    if (
-                      tOptions.user.isMe(transition.roles[i]) ||
-                      tOptions.user.isMe(item.get(transition.roles[i]))
-                    ) {
-                      allowed = true;
-                      break;
-                    }
-                  }
-                  if (!allowed) {
-                    return Promise.reject(
-                      new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
-                    );
+              if (Array.isArray(transition.roles) && transition.roles.length) {
+                let allowed = false;
+                for (let i = 0; i < transition.roles.length; i++) {
+                  if (
+                    tOptions.user.isMe(transition.roles[i]) ||
+                    tOptions.user.isMe(item.get(transition.roles[i]))
+                  ) {
+                    allowed = true;
+                    break;
                   }
                 }
-
-                let nextState = wf.statesByName[transition.finishState];
-                if (!nextState) {
+                if (!allowed) {
                   return Promise.reject(
-                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                    new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
                   );
                 }
+              }
 
-                let updates = {};
-                let calculations = null;
+              let nextState = wf.statesByName[transition.finishState];
+              if (!nextState) {
+                return Promise.reject(
+                  new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                );
+              }
 
-                if (Array.isArray(transition.assignments) && transition.assignments.length) {
-                  updates = {};
-                  transition.assignments.forEach((assignment) => {
-                    calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
-                      calcAssignmentValue(updates, item, assignment, tOptions);
-                  });
-                } else {
-                  calculations = Promise.resolve(null);
-                }
+              let updates = {};
+              let calculations = null;
 
-                if (!calculations) {
-                  calculations = Promise.resolve();
-                }
+              if (Array.isArray(transition.assignments) && transition.assignments.length) {
+                updates = {};
+                transition.assignments.forEach((assignment) => {
+                  calculations = calculations ?
+                    calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
+                    calcAssignmentValue(updates, item, assignment, tOptions);
+                });
+              } else {
+                calculations = Promise.resolve(null);
+              }
+
+              if (!calculations) {
+                calculations = Promise.resolve();
+              }
 
                 let context = buildContext(item, tOptions);
                 return calculations
