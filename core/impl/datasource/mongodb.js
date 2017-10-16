@@ -1472,33 +1472,27 @@ function MongoDs(config) {
     }
   }
 
-  function copyColl(src, dest, cb) {
-    _this.db.collection(src, {strict: true}, function (err, c2) {
-      if (err) {
-        return cb(err);
-      }
-
-      getCollection(dest)
-        .then(
-          function (c3) {
-            c2.aggregate([]).toArray(function (err, docs) {
-              if (err) {
-                return cb(err);
-              }
-              if (!docs.length) {
-                return cb();
-              }
-              c3.insertMany(docs, function (err) {
-                if (err) {
-                  return cb(err);
-                }
-                _this.db.dropCollection(src, cb);
-              });
-            });
-          }
-        )
-        .catch(cb);
-    });
+  function copyColl(src, dest) {
+    let srcColl;
+    return getCollection(src)
+      .then((c) => {
+        srcColl = c;
+        return getCollection(dest);
+      })
+      .then((c3) => {
+        return new Promise((resolve, reject) => {
+          srcColl.find().toArray((err, docs) => {
+            if (err) {
+              return reject(err);
+            }
+            if (!docs.length) {
+              return resolve();
+            }
+            c3.insertMany(docs, (err2) => err2 ? reject(err2) : resolve());
+          });
+        });
+      })
+      .then(() => new Promise((resolve, reject) => _this.db.dropCollection(src, (err) => err ? reject(err) : resolve())));
   }
 
   /**
@@ -1516,11 +1510,11 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
-    options = options || {};
-    var tmpApp = null;
-    var c;
-    return getCollection(type).then(
-      function (col) {
+    options = clone(options || {});
+    let tmpApp = null;
+    let c;
+    return getCollection(type)
+      .then((col) => {
         c = col;
         prepareConditions(options.filter);
         if (options.append) {
@@ -1528,21 +1522,18 @@ function MongoDs(config) {
           options.to = tmpApp;
         }
         return checkAggregation(type, options);
-      }).then(function (aggregation) {
-        return new Promise(function (resolve, reject) {
+      })
+      .then((aggregation) => {
+        return new Promise((resolve, reject) => {
           fetch(c, options, aggregation,
             function (r, amount) {
               if (tmpApp) {
-                copyColl(tmpApp, options.append, function (err) {
-                  if (err) {
-                    return reject(wrapError(err, 'fetch', type));
-                  }
-                  resolve();
-                });
-                return;
+                return copyColl(tmpApp, options.append)
+                  .then(resolve)
+                  .catch(err => reject(wrapError(err, 'fetch', type)));
               }
 
-              return new Promise(function (resolve, reject) {
+              return new Promise((resolve, reject) => {
                 if (Array.isArray(r)) {
                   resolve(r);
                 } else {
@@ -1554,15 +1545,15 @@ function MongoDs(config) {
                     resolve(docs);
                   });
                 }
-              }).then(function (docs) {
+              }).then((docs) => {
                 docs.forEach(mergeGeoJSON);
                 if (amount !== null) {
                   docs.total = amount;
                 }
-                return resolve(docs);
+                resolve(docs);
               }).catch(reject);
             },
-            function (e) {reject(wrapError(e, 'fetch', type));}
+            (e) => {reject(wrapError(e, 'fetch', type));}
           );
         });
       }
@@ -1646,15 +1637,15 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
-    options = options || {};
-    var c;
-    var tmpApp = null;
-    return getCollection(type).then(
-      function (col) {
+    options = clone(options || {});
+    let c;
+    let tmpApp = null;
+    return getCollection(type)
+      .then((col) => {
         c = col;
-        var plan = [];
+        let plan = [];
 
-        var expr = {$group: {}};
+        let expr = {$group: {}};
 
         expr.$group._id = null;
         if (options.fields && typeof options.fields === 'object') {
@@ -1677,10 +1668,9 @@ function MongoDs(config) {
           }
         }
 
-        var alias, oper;
-        for (alias in options.aggregates) {
+        for (let alias in options.aggregates) {
           if (options.aggregates.hasOwnProperty(alias)) {
-            for (oper in options.aggregates[alias]) {
+            for (let oper in options.aggregates[alias]) {
               if (options.aggregates[alias].hasOwnProperty(oper)) {
                 if (oper === '$count') {
                   expr.$group[alias] = {$sum: 1};
@@ -1694,16 +1684,16 @@ function MongoDs(config) {
 
         plan.push(expr);
 
-        var attrs = {_id: false};
+        let attrs = {_id: false};
         if (options.fields) {
-          for (alias in options.fields) {
+          for (let alias in options.fields) {
             if (options.fields.hasOwnProperty(alias)) {
               attrs[alias] = '$_id.' + alias;
             }
           }
         }
         if (options.aggregates) {
-          for (alias in options.aggregates) {
+          for (let alias in options.aggregates) {
             if (options.aggregates.hasOwnProperty(alias)) {
               attrs[alias] = 1;
             }
@@ -1722,20 +1712,18 @@ function MongoDs(config) {
         }
 
         return checkAggregation(type, options, plan);
-      }).then(function (plan) {
-        return new Promise(function (resolve, reject) {
+      })
+      .then((plan) => {
+        return new Promise((resolve, reject) => {
           try {
-            c.aggregate(plan, {allowDiskUse: true}, function (err, result) {
+            c.aggregate(plan, {allowDiskUse: true}, (err, result) => {
               if (err) {
                 return reject(wrapError(err, 'aggregate', type));
               }
               if (tmpApp) {
-                copyColl(tmpApp, options.append, function (err) {
-                  if (err) {
-                    return reject(wrapError(err, 'aggregate', type));
-                  }
-                  resolve();
-                });
+                copyColl(tmpApp, options.append)
+                  .then(resolve)
+                  .catch(err => reject(wrapError(err, 'aggregate', type)));
                 return;
               }
               resolve(result);
@@ -1749,35 +1737,36 @@ function MongoDs(config) {
   };
 
   this._count = function (type, options) {
-    var c;
-    var opts = {};
-
+    let c;
+    let opts = {};
+    options = clone(options || {});
     if (options.offset) {
       opts.skip = options.offset;
     }
     if (options.count) {
       opts.limit = options.count;
     }
-    return getCollection(type).then(
-      function (col) {
+    return getCollection(type)
+      .then((col) => {
         c = col;
         prepareConditions(options.filter);
         return checkAggregation(type, options, [], true);
-      }).then(function (agreg) {
-        return new Promise(function (resolve, reject) {
+      })
+      .then((agreg) => {
+        return new Promise((resolve, reject) => {
           if (agreg) {
-            c.aggregate(agreg, function (err, result) {
+            c.aggregate(agreg, (err, result) => {
               if (err) {
                 return reject(wrapError(err, 'count', type));
               }
-              var cnt = 0;
+              let cnt = 0;
               if (result.length) {
                 cnt = result[0].__total;
               }
               resolve(cnt);
             });
           } else {
-            var opts = {};
+            let opts = {};
             if (options.offset) {
               opts.skip = options.offset;
             }
