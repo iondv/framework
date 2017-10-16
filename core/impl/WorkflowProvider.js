@@ -183,7 +183,9 @@ function WorkflowProvider(options) {
                     name: transition.name,
                     caption: transition.caption,
                     signBefore: transition.signBefore,
-                    signAfter: transition.signAfter
+                    signAfter: transition.signAfter,
+                    confirm: transition.confirm,
+                    confirmMessage: transition.confirmMessage
                   };
                 }
               }
@@ -296,106 +298,106 @@ function WorkflowProvider(options) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             if (wf.transitionsByName.hasOwnProperty(name)) {
-                if (Array.isArray(transition.roles) && transition.roles.length) {
-                  let allowed = false;
-                  for (let i = 0; i < transition.roles.length; i++) {
-                    if (
-                      tOptions.user.isMe(transition.roles[i]) ||
-                      tOptions.user.isMe(item.get(transition.roles[i]))
-                    ) {
-                      allowed = true;
-                      break;
-                    }
+              if (Array.isArray(transition.roles) && transition.roles.length) {
+                let allowed = false;
+                for (let i = 0; i < transition.roles.length; i++) {
+                  if (
+                    tOptions.user.isMe(transition.roles[i]) ||
+                    tOptions.user.isMe(item.get(transition.roles[i]))
+                  ) {
+                    allowed = true;
+                    break;
                   }
-                  if (!allowed) {
+                }
+                if (!allowed) {
+                  return Promise.reject(
+                    new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                  );
+                }
+              }
+
+              let nextState = wf.statesByName[transition.finishState];
+              if (!nextState) {
+                return Promise.reject(
+                  new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                );
+              }
+
+              let updates = {};
+              let calculations = null;
+
+              if (Array.isArray(transition.assignments) && transition.assignments.length) {
+                updates = {};
+                transition.assignments.forEach((assignment) => {
+                  calculations = calculations ?
+                    calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
+                    calcAssignmentValue(updates, item, assignment, tOptions);
+                });
+              } else {
+                calculations = Promise.resolve(null);
+              }
+
+              if (!calculations) {
+                calculations = Promise.resolve();
+              }
+
+              let context = buildContext(item, tOptions);
+              return calculations.then(function () {
+                if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
+                  if (!checker(item, nextState.conditions, context, tOptions.lang)) {
                     return Promise.reject(
-                      new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                      new IonError(
+                        Errors.CONDITION_VIOLATION,
+                        {
+                          info: item.getClassName() + '@' + item.getItemId(),
+                          state: nextState.caption,
+                          workflow: wf.caption
+                        }
+                      )
                     );
                   }
                 }
 
-                let nextState = wf.statesByName[transition.finishState];
-                if (!nextState) {
-                  return Promise.reject(
-                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
-                  );
-                }
-
-                let updates = {};
-                let calculations = null;
-
-                if (Array.isArray(transition.assignments) && transition.assignments.length) {
-                  updates = {};
-                  transition.assignments.forEach((assignment) => {
-                    calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
-                      calcAssignmentValue(updates, item, assignment, tOptions);
-                  });
-                } else {
-                  calculations = Promise.resolve(null);
-                }
-
-                if (!calculations) {
-                  calculations = Promise.resolve();
-                }
-
-                let context = buildContext(item, tOptions);
-                return calculations.then(function () {
-                  if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions, context, tOptions.lang)) {
-                      return Promise.reject(
-                        new IonError(
-                          Errors.CONDITION_VIOLATION,
-                          {
-                            info: item.getClassName() + '@' + item.getItemId(),
-                            state: nextState.caption,
-                            workflow: wf.caption
-                          }
-                        )
-                      );
-                    }
-                  }
-
-                  return _this.trigger({
-                    type: workflow + '.' + nextState.name,
-                    item: item
-                  }).then(
-                    function (e) {
-                      if (Array.isArray(e.results) && e.results.length) {
-                        for (let i = 0; i < e.results.length; i++) {
-                          if (e.results[i] && typeof e.results[i] === 'object') {
-                            for (let nm in e.results[i]) {
-                              if (e.results[i].hasOwnProperty(nm)) {
-                                if (!updates) {
-                                  updates = {};
-                                }
-                                updates[nm] = e.results[i][nm];
+                return _this.trigger({
+                  type: workflow + '.' + nextState.name,
+                  item: item
+                }).then(
+                  function (e) {
+                    if (Array.isArray(e.results) && e.results.length) {
+                      for (let i = 0; i < e.results.length; i++) {
+                        if (e.results[i] && typeof e.results[i] === 'object') {
+                          for (let nm in e.results[i]) {
+                            if (e.results[i].hasOwnProperty(nm)) {
+                              if (!updates) {
+                                updates = {};
                               }
+                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
                       }
+                    }
 
-                      if (updates) {
-                        return options.dataRepo.editItem(
-                          item.getMetaClass().getCanonicalName(),
-                          item.getItemId(),
-                          updates,
-                          tOptions.changeLogger,
-                          {
-                            user: tOptions.user
-                          }
-                        );
-                      }
-                      return Promise.resolve(item);
+                    if (updates) {
+                      return options.dataRepo.editItem(
+                        item.getMetaClass().getCanonicalName(),
+                        item.getItemId(),
+                        updates,
+                        tOptions.changeLogger,
+                        {
+                          user: tOptions.user
+                        }
+                      );
                     }
-                  ).then(
-                    function (item) {
-                      return move(item, workflow, nextState);
-                    }
-                  );
-                });
-              }
+                    return Promise.resolve(item);
+                  }
+                ).then(
+                  function (item) {
+                    return move(item, workflow, nextState);
+                  }
+                );
+              });
+            }
           }
           return Promise.reject(
             new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})

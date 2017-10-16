@@ -9,12 +9,22 @@ const cast = require('core/cast');
 /**
  * @param {{}} options
  * @param {MetaRepository} options.metaRepo
+ * @param {{}} [options.keySeparators]
+ * @param {String} [options.keySeparator]
  */
 function MetaKeyProvider(options) {
   /**
    * @type {MetaRepository}
    */
   this.meta = options.metaRepo;
+
+  function getSeparator(cn) {
+    let keySeparator = options.keySeparator || '_';
+    if (options.keySeparators && options.keySeparators.hasOwnProperty(cn)) {
+      return options.keySeparators[cn] || keySeparator;
+    }
+    return keySeparator;
+  }
 
   /**
    * @param {ClassMeta} cm
@@ -26,11 +36,12 @@ function MetaKeyProvider(options) {
     if (data === null) {
       return null;
     }
-    var result = '';
-    var keyProps = cm.getKeyProperties();
-    for (var i = 0; i < keyProps.length; i++) {
+    let result = '';
+    let keyProps = cm.getKeyProperties();
+    let sep = getSeparator(cm.getCanonicalName());
+    for (let i = 0; i < keyProps.length; i++) {
       if (data.hasOwnProperty(keyProps[i])) {
-        result = result + (result ? '_' : '') + data[keyProps[i]];
+        result = result + (result ? sep : '') + data[keyProps[i]];
       }
     }
     return result || null;
@@ -43,12 +54,17 @@ function MetaKeyProvider(options) {
    * @private
    */
   this._keyToData = function (cm, id) {
-    var result = {};
+    let result = {};
     if (typeof id === 'string') {
-      var keyProps = cm.getKeyProperties();
-      var parts = id.split('_');
-      var pm;
-      for (var i = 0; i < keyProps.length; i++) {
+      let keyProps = cm.getKeyProperties();
+      if (keyProps.length === 1) {
+        let pm = cm.getPropertyMeta(keyProps[0]);
+        return {[keyProps[0]]: cast(id, pm.type)};
+      }
+      let sep = getSeparator(cm.getCanonicalName());
+      let parts = id.split(sep);
+      let pm;
+      for (let i = 0; i < keyProps.length; i++) {
         pm = cm.getPropertyMeta(keyProps[i]);
         result[keyProps[i]] = cast(parts[i], pm.type);
       }
@@ -63,10 +79,10 @@ function MetaKeyProvider(options) {
    * @private
    */
   this._keyData = function (cm, data) {
-    var result = {};
+    let result = {};
     if (typeof data === 'object' && data) {
-      var keyProps = cm.getKeyProperties();
-      for (var i = 0; i < keyProps.length; i++) {
+      let keyProps = cm.getKeyProperties();
+      for (let i = 0; i < keyProps.length; i++) {
         if (data.hasOwnProperty(keyProps[i]) && data[keyProps[i]] !== null) {
           result[keyProps[i]] = data[keyProps[i]];
         } else {
