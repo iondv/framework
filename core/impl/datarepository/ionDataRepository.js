@@ -1528,7 +1528,11 @@ function IonDataRepository(options) {
         .catch(wrapDsError('createItem', classname, null, null, cm))
         .then((data) => {
           if (!data) {
-            return Promise.resolve();
+            if (options.skipResult && !(da.refUpdates || da.backRefUpdates)) {
+              return Promise.resolve();
+            } else {
+              throw new Error('Объект не был найден после создания.');
+            }
           }
           let item = _this._wrap(data._class, data, data._classVer);
           delete updates._class;
@@ -1540,8 +1544,9 @@ function IonDataRepository(options) {
         })
         .then((item) => updateBackRefs(item, cm, data))
         .then((item) => refUpdator(item, refUpdates, changeLogger))
-        .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then((item) => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then((item) =>
+          options.skipResult ? null :
           bubble(
             'create',
             item.getMetaClass(),
@@ -1553,7 +1558,7 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
-        .then((item) => calcProperties(item, options.skipResult));
+        .then((item) => item ? calcProperties(item, options.skipResult) : null);
     } catch (err) {
       return Promise.reject(err);
     }

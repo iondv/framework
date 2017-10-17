@@ -410,7 +410,7 @@ function MongoDs(config) {
                       reject(wrapError(err, 'insert', type));
                     } else if (result.insertedId) {
                       if (options.skipResult) {
-                        return resolve(result);
+                        return resolve(null);
                       }
                       _this._get(type, {[Operations.EQUAL]: ['$_id', result.insertedId]}, {}).then(resolve).catch(reject);
                     } else {
@@ -579,7 +579,7 @@ function MongoDs(config) {
       c.forEach((c1)=>{result.push(parseCondition(c1));});
       return result;
     }
-    if (c && typeof c === 'object' && !(c instanceof Date)) {
+    if (c && typeof c === 'object' && !(c instanceof Date) && !(c instanceof ObjectID)) {
       for (let oper in c) {
         if (c.hasOwnProperty(oper)) {
           if (QUERY_OPERS.hasOwnProperty(oper)) {
@@ -1957,6 +1957,7 @@ function MongoDs(config) {
   this._get = function (type, conditions, options) {
     let c;
     let opts = {filter: parseCondition(conditions), fields: options.fields || {}};
+    console.log(JSON.stringify(opts.filter));
     return getCollection(type)
       .then((col) => {
         c = col;
@@ -1993,6 +1994,7 @@ function MongoDs(config) {
         } else {
           return new Promise((resolve, reject) => {
             try {
+              console.log(JSON.stringify(opts.filter));
               c.find(opts.filter).limit(1).next((err, result) => {
                 if (err) {
                   return reject(wrapError(err, 'get', type));
