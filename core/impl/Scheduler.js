@@ -2,6 +2,7 @@
  * Created by krasilneg on 19.07.17.
  */
 const child = require('child_process');
+const toAbsolutePath = require('core/system').toAbsolute;
 
 /**
  * @param {{}} options
@@ -66,7 +67,7 @@ function Scheduler(options) {
         if (!jobs.hasOwnProperty(job)) {
           throw new Error(`Задание ${job} не найдено в конфигурации`);
         }
-        running[job] = child.fork('bin/job-runner', [job], {stdio: ['pipe','inherit','inherit','ipc']});
+        running[job] = child.fork(toAbsolutePath('bin/job-runner'), [job], {stdio: ['pipe','inherit','inherit','ipc']});
       }
       return Promise.resolve();
     } catch (err) {
@@ -105,7 +106,7 @@ function Scheduler(options) {
       let jobs = options.settings.get('jobs');
       for (let nm in jobs) {
         if (jobs.hasOwnProperty(nm) && !jobs[nm].disabled) {
-          running[nm] = child.fork('bin/job-runner', [nm], {stdio: ['pipe','inherit','inherit','ipc']});
+          running[nm] = child.fork(toAbsolutePath('bin/job-runner'), [nm], {stdio: ['pipe','inherit','inherit','ipc']});
         }
       }
       return Promise.resolve();

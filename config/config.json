@@ -172,7 +172,8 @@
         "name": "keyProvider",
         "module": "core/impl/meta/keyProvider",
         "options": {
-          "metaRepo": "ion://metaRepo"
+          "metaRepo": "ion://metaRepo",
+          "keySeparator": "[[data.keySeparator]]"
         }
       },
       "dataRepo": {
