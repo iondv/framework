@@ -214,6 +214,7 @@ di('boot', config.bootstrap,
               module.locals.sysTitle = title;
             }
             module.locals.sysMenu = sysMenu;
+            module.locals.baseUrl = config.baseUrl || '/';
             app.use(module);
             if (typeof module._init === 'function') {
               if (moduleInitiators) {
