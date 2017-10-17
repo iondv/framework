@@ -579,27 +579,46 @@ function MongoDs(config) {
       c.forEach((c1)=>{result.push(parseCondition(c1));});
       return result;
     }
-    if (c && typeof c === 'object' && !(c instanceof Date) && !(c instanceof ObjectID)) {
+    if (c && typeof c === 'object' && !(c instanceof Date) && !(c instanceof mongo.ObjectID)) {
       for (let oper in c) {
         if (c.hasOwnProperty(oper)) {
           if (QUERY_OPERS.hasOwnProperty(oper)) {
             let o = QUERY_OPERS[oper];
-            let args = parseCondition(c[oper]);
             switch (o) {
               case '$joinExists':
               case '$joinNotExists':
                 return {
                   [oper]: {
-                    table: args[0],
-                    left: args[1],
-                    right: args[2],
-                    filter: args[3],
-                    many: args[4]
+                    table: c[oper][0],
+                    left: c[oper][1],
+                    right: c[oper][2],
+                    filter: parseCondition(c[oper][3]),
+                    many: c[oper][4]
                   }
                 };
               case '$text':
-                return {$text: args[0]};
+                return {$text: c[oper][0]};
+              case '$geoWithin':
+              case '$geoIntersects': {
+                let attr = null;
+                let right;
+                for (let i = 0; i < c[oper].length; i++) {
+                  if (typeof c[oper][i] === 'string' && c[oper][i].length > 1 && c[oper][i][0] === '$' && !attr) {
+                    attr = c[oper][i].substr(1);
+                  } else {
+                    right = c[oper][i];
+                  }
+                  if (attr && typeof right !== 'undefined') {
+                    break;
+                  }
+                }
+                if (attr && right && right.geometry) {
+                  return {[attr]: {[o]: {$geometry: right.geometry}}};
+                }
+                return {[o]: parseCondition(c[oper])};
+              }break;
               default: {
+                let args = parseCondition(c[oper]);
                 let attr = null;
                 let right;
                 for (let i = 0; i < args.length; i++) {
@@ -1957,7 +1976,6 @@ function MongoDs(config) {
   this._get = function (type, conditions, options) {
     let c;
     let opts = {filter: parseCondition(conditions), fields: options.fields || {}};
-    console.log(JSON.stringify(opts.filter));
     return getCollection(type)
       .then((col) => {
         c = col;
@@ -1994,7 +2012,6 @@ function MongoDs(config) {
         } else {
           return new Promise((resolve, reject) => {
             try {
-              console.log(JSON.stringify(opts.filter));
               c.find(opts.filter).limit(1).next((err, result) => {
                 if (err) {
                   return reject(wrapError(err, 'get', type));

@@ -338,26 +338,30 @@ function NumGenerator() {
 function prepareFilterOption(cm, filter, joins, numGen) {
   for (let oper in filter) {
     if (filter.hasOwnProperty(oper)) {
-      if (!Array.isArray(filter[oper])) {
-        throw new Error('Ошибка синтаксиса в выражении ' + JSON.stringify(filter));
-      }
-      switch (oper) {
-        case Operations.CONTAINS:
-          return prepareContains(cm, filter[oper], joins, numGen);
-        case Operations.NOT_EMPTY:
-        case Operations.EMPTY:
-          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen);
-        case Operations.MAX:
-        case Operations.MIN:
-        case Operations.SUM:
-        case Operations.AVG:
-        case Operations.COUNT:
+      if (Operations.hasOwnProperty(oper)) {
+        switch (oper) {
+          case Operations.CONTAINS:
+            return prepareContains(cm, filter[oper], joins, numGen);
+          case Operations.NOT_EMPTY:
+          case Operations.EMPTY:
+            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen);
+          case Operations.MAX:
+          case Operations.MIN:
+          case Operations.SUM:
+          case Operations.AVG:
+          case Operations.COUNT:
+            break;
+          case Operations.LITERAL:
+            return {[oper]: filter[oper]};
+          default:
+            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+        }
+      } else {
         break;
-        case Operations.LITERAL: return {[oper]: filter[oper]};
-        default: return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
       }
     }
   }
+  return filter;
 }
 
 /**

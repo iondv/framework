@@ -74,7 +74,7 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 2 : options.maxEagerDepth);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 0 : options.maxEagerDepth);
 
   function getAttrs(key, cm) {
     if (cm) {
@@ -391,6 +391,102 @@ function IonDataRepository(options) {
     }
   }
 
+  function getEnrichList(options) {
+    return function () {
+      let {src, srcByKey, cn, sort, filter, depth, forced, loaded, attr} = options;
+      return _this._getList(cn,
+        {
+          sort: sort,
+          filter: filter,
+          nestingDepth: depth - 1,
+          forceEnrichment: forced,
+          ___loaded: loaded
+        }
+      ).then((items) => {
+        if (!items || items.length === 0) {
+          return;
+        }
+        if (attr.type === PropertyTypes.REFERENCE) {
+          let itemsByKey = {};
+          if (attr.backRef) {
+            for (let i = 0; i < items.length; i++) {
+              let v = items[i].get(attr.key);
+              if (!itemsByKey.hasOwnProperty(v)) {
+                itemsByKey[v] = [];
+              }
+              itemsByKey[v].push(items[i]);
+            }
+
+            for (let i = 0; i < src.length; i++) {
+              if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
+                if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
+                  options.log.warn('Обратной ссылке "' +
+                    src[i].property(attr.attrName).getCaption() +
+                    '" соответствует несколько объектов '
+                  );
+                }
+                src[i].base[attr.attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
+                src[i].references[attr.attrName] = itemsByKey[src[i].getItemId()][0];
+              }
+            }
+          } else {
+            for (let i = 0; i < items.length; i++) {
+              itemsByKey[items[i].getItemId()] = items[i];
+            }
+
+            for (let i = 0; i < src.length; i++) {
+              if (itemsByKey.hasOwnProperty(src[i].base[attr.attrName])) {
+                src[i].references[attr.attrName] = itemsByKey[src[i].base[attr.attrName]];
+              }
+            }
+          }
+        } else if (attr.type === PropertyTypes.COLLECTION) {
+          if (attr.backRef) {
+            if (!srcByKey) {
+              srcByKey = {};
+
+              for (let i = 0; i < src.length; i++) {
+                srcByKey[src[i].getItemId()] = src[i];
+              }
+            }
+
+            for (let i = 0; i < items.length; i++) {
+              if (srcByKey.hasOwnProperty(items[i].base[attr.backRef])) {
+                if (typeof srcByKey[items[i].base[attr.backRef]].
+                    collections[attr.attrName] === 'undefined') {
+                  srcByKey[items[i].base[attr.backRef]].collections[attr.attrName] = [];
+                }
+                srcByKey[items[i].base[attr.backRef]].collections[attr.attrName].push(items[i]);
+              }
+            }
+          } else {
+            let itemsByKey = {};
+            for (let i = 0; i < src.length; i++) {
+              let ids = src[i].get(attr.attrName) || [];
+              for (let j = 0; j < ids.length; j++) {
+                if (!itemsByKey[ids[j]]) {
+                  itemsByKey[ids[j]] = [];
+                }
+                itemsByKey[ids[j]].push(src[i]);
+              }
+            }
+            for (let i = 0; i < items.length; i++) {
+              if (itemsByKey[items[i].getItemId()]) {
+                for (let j = 0; j < itemsByKey[items[i].getItemId()].length; j++) {
+                  let srcItem = itemsByKey[items[i].getItemId()][j];
+                  if (!srcItem.collections[attr.attrName]) {
+                    srcItem.collections[attr.attrName] = [];
+                  }
+                  srcItem.collections[attr.attrName].push(items[i]);
+                }
+              }
+            }
+          }
+        }
+      });
+    };
+  }
+
   /**
    * @param {Item[]|Item} src2
    * @param {Number} depth
@@ -399,25 +495,25 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, depth, forced, loaded) {
-    var i, nm, attrs, item, promises, filter, sort, cn, forced2, pcl;
-    var src = Array.isArray(src2) ? src2 : [src2];
+    let src = Array.isArray(src2) ? src2 : [src2];
     depth = depth || 0;
-
-    forced2 = {};
+    let srcByKey = {};
+    let forced2 = {};
     formForced(forced, forced2);
-    attrs = {};
-    promises = [];
+    let attrs = {};
     loaded = loaded || {};
+    let promises = Promise.resolve();
     try {
-      pcl = {};
-      for (i = 0; i < src.length; i++) {
-        if (src[i]) {
+      let pcl = {};
+      for (let i = 0; i < src.length; i++) {
+        if (src[i] instanceof Item) {
           loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+          srcByKey[src[i].getItemId()] = src[i];
         }
       }
 
-      for (i = 0; i < src.length; i++) {
-        item = src[i];
+      for (let i = 0; i < src.length; i++) {
+        let item = src[i];
         if (item && item instanceof Item) {
           let cm = item.getMetaClass();
           let props = item.getProperties();
@@ -425,7 +521,7 @@ function IonDataRepository(options) {
             pcl[cm.getName()] = true;
             formForced(cm.getForcedEnrichment(), forced2);
           }
-          for (nm in props) {
+          for (let nm in props) {
             if (props.hasOwnProperty(nm)) {
               if (
                 depth > 0 ||
@@ -442,13 +538,11 @@ function IonDataRepository(options) {
         }
       }
 
-      promises = [];
-
-      i = 0;
-      for (nm in attrs) {
+      for (let nm in attrs) {
         if (attrs.hasOwnProperty(nm)) {
-          filter = null;
-          sort = null;
+          let filter = null;
+          let sort = null;
+          let cn = null;
           if (
             attrs[nm].type  === PropertyTypes.REFERENCE &&
             Array.isArray(attrs[nm].filter) &&
@@ -480,19 +574,14 @@ function IonDataRepository(options) {
           }
 
           if (filter) {
-            attrs[nm].pIndex = i;
-            i++;
-            promises.push(
-              _this._getList(cn,
-                {
-                  sort: sort,
-                  filter: filter,
-                  nestingDepth: depth - 1,
-                  forceEnrichment: forced2[attrs[nm].attrName],
-                  ___loaded: loaded
-                }
-              )
-            );
+            promises = promises
+              .then(getEnrichList({
+                src, srcByKey,
+                cn, sort, filter, depth,
+                forced: forced2[attrs[nm].attrName],
+                loaded,
+                attr: attrs[nm]
+              }));
           }
         }
       }
@@ -500,100 +589,7 @@ function IonDataRepository(options) {
       return Promise.reject(err);
     }
 
-    if (promises.length === 0) {
-      return Promise.resolve(src2);
-    }
-    return Promise.all(promises).then(
-      function (results) {
-        var srcByKey;
-        for (let nm in attrs) {
-          if (attrs.hasOwnProperty(nm)) {
-            let items = results[attrs[nm].pIndex];
-            if (!items || items.length === 0) {
-              continue;
-            }
-            if (attrs[nm].type === PropertyTypes.REFERENCE) {
-              let itemsByKey = {};
-              if (attrs[nm].backRef) {
-                for (let i = 0; i < items.length; i++) {
-                  let v = items[i].get(attrs[nm].key);
-                  if (!itemsByKey.hasOwnProperty(v)) {
-                    itemsByKey[v] = [];
-                  }
-                  itemsByKey[v].push(items[i]);
-                }
-
-                for (let i = 0; i < src.length; i++) {
-                  if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
-                    if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
-                      options.log.warn('Обратной ссылке "' +
-                        src[i].property(attrs[nm].attrName).getCaption() +
-                        '" соответствует несколько объектов '
-                      );
-                    }
-                    src[i].base[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
-                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].getItemId()][0];
-                  }
-                }
-              } else {
-                for (let i = 0; i < items.length; i++) {
-                  itemsByKey[items[i].getItemId()] = items[i];
-                }
-
-                for (let i = 0; i < src.length; i++) {
-                  if (itemsByKey.hasOwnProperty(src[i].base[attrs[nm].attrName])) {
-                    src[i].references[attrs[nm].attrName] = itemsByKey[src[i].base[attrs[nm].attrName]];
-                  }
-                }
-              }
-            } else if (attrs[nm].type === PropertyTypes.COLLECTION) {
-              if (attrs[nm].backRef) {
-                if (!srcByKey) {
-                  srcByKey = {};
-
-                  for (i = 0; i < src.length; i++) {
-                    srcByKey[src[i].getItemId()] = src[i];
-                  }
-                }
-
-                for (let i = 0; i < items.length; i++) {
-                  if (srcByKey.hasOwnProperty(items[i].base[attrs[nm].backRef])) {
-                    if (typeof srcByKey[items[i].base[attrs[nm].backRef]].
-                        collections[attrs[nm].attrName] === 'undefined') {
-                      srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName] = [];
-                    }
-                    srcByKey[items[i].base[attrs[nm].backRef]].collections[attrs[nm].attrName].push(items[i]);
-                  }
-                }
-              } else {
-                let itemsByKey = {};
-                for (let i = 0; i < src.length; i++) {
-                  let ids = src[i].get(attrs[nm].attrName) || [];
-                  for (let j = 0; j < ids.length; j++) {
-                    if (!itemsByKey[ids[j]]) {
-                      itemsByKey[ids[j]] = [];
-                    }
-                    itemsByKey[ids[j]].push(src[i]);
-                  }
-                }
-                for (let i = 0; i < items.length; i++) {
-                  if (itemsByKey[items[i].getItemId()]) {
-                    for (let j = 0; j < itemsByKey[items[i].getItemId()].length; j++) {
-                      let srcItem = itemsByKey[items[i].getItemId()][j];
-                      if (!srcItem.collections[attrs[nm].attrName]) {
-                        srcItem.collections[attrs[nm].attrName] = [];
-                      }
-                      srcItem.collections[attrs[nm].attrName].push(items[i]);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        return Promise.resolve(src2);
-      }
-    );
+    return promises.then(() => src2);
   }
 
   function calcItemsProperties(items) {
