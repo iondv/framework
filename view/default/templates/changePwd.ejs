@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head><title>Платформа ION: Вход</title>
-  <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/css/auth.css">
   <meta name="robots" content="noindex,nofollow">
-  <script src="/vendor/jquery/jquery.min.js" type="application/javascript"></script>
+  <base id="baseUrl" href="<%=baseUrl%>">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/auth.css">
+  <script src="vendor/jquery/jquery.min.js"></script>
 </head>
 <body>
 <div class="demo">
@@ -22,13 +23,13 @@
     }
     %>
     </div>
-    <form action="/chpwd" method="post" id="reg-form">
+    <form action="chpwd" method="post" id="reg-form">
       <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
       <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
       <div class="buttons">
         <button id="submit-btn" type="button">Изменить пароль</button>
         <div class="forgot-password pull-left">
-          <a href="/"><b>Вернуться в приложение</b></a>
+          <a href="<%=baseUrl%>"><b>Вернуться в приложение</b></a>
         </div>
       </div>
     </form>
