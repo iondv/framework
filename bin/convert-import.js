@@ -90,10 +90,10 @@ function importApplications(appPathItem) {
       .then((importedData) => {
         /**
          * Импорт и сохранение партии данных из пути импортируемой базы
+         * @param {Object} importedData - объект с данными импорта
          * @param {String} importPath импортируемый путь
-         * @param {Function} callback
          */
-        async function importAppBase(importPath, callback) {
+        async function importAppBase(importedData, importPath) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
           try {
@@ -101,61 +101,66 @@ function importApplications(appPathItem) {
             importedData = await convertImportedFiles(importedData);
             delete importedData.parsed; // Очищаем память от уже сконвертированных данных
             importedData.path = '';
-            let res = !importOptions.saveAll ? saveImportedFiles(importedData, importOptions.skipClassName) :  0; // Не сохранять каждую итерации и соответственно не очищать результаты импорта
-            console.info(!importOptions.saveAll ? 'Сохранили и очистили память после импорта папки ' + importedPath :
-                                                  'Не сохраняли очередную итерацию, память не очищена' + importedPath);
-            callback(null, res);
+            if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+              importedData = await saveImportedFiles(importedData, importOptions.skipClassName);
+              console.info('Сохранили и очистили память после импорта папки', importedPath);
+            } else {
+              console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
+            }
+            return importedData;
           } catch (err) {
-            callback(err);
+            return err;
           }
-          /* Предыдущая реализация на промизах
-           getImportedFiles(importedData, importedPath)
-            .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
-            .then((importedData) => {
-              delete importedData.parsed; // Очищаем память от уже сконвертированных данных
-              importedData.path = '';
-              return importedData;
-            })
-            .then((res) => {
-              if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
-                console.info('Сохранили и очистили память после импорта папки', importedPath);
-                return saveImportedFiles(res, importOptions.skipClassName);
-              } else {
-                console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
-                return 0;
-              }
-              callback(null, res);
-            })
-            .catch((err)=> {
-              callback(err);
-            });*/
         }
 
         /**
          * Итератор импорта
          * @param {Array} importedFolders - список импортируемых дирректорий
+         * @param {Object} importedData - объект с данными импорта
          * @param {Number} i
-         * @param {Function} callback
          */
-        function importIterator(importedFolders, i, callback) {
+        async function importIterator(importedData, importedFolders,  i) {
+          i = i || 0; // Если i неопределенно, присваиваем 0;
           if (i === importedFolders.length) {
-            callback (null);
+            return importedData;
           } else {
             console.info('Импортируем', importedFolders[i]);
-            importAppBase(importedFolders[i])
-              .then((res) => {
-                console.info('Закончили импорт %s', importedFolders[i]);
-                i++;
-                importIterator(importedFolders, i, callback);
-              })
-              .catch((err) => {
-                callback (err);
-              });
+            try {
+              importedData = await importAppBase(importedData, importedFolders[i]);
+              console.info('Закончили импорт %s', importedFolders[i]);
+              return importIterator(importedData, importedFolders, ++i);
+            } catch (err) {
+              return err;
+            }
           }
         }
+        return importIterator(importedData, importedFolders);
+        /* Предыдущая реализация на промизах
+                  function importAppBase(importPath) {
+                  let importedPath = path.join(appPathItem, importPath);
+                  importedData.path = importedPath;
+                   getImportedFiles(importedData, importedPath)
+                    .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
+                    .then((importedData) => {
+                      delete importedData.parsed; // Очищаем память от уже сконвертированных данных
+                      importedData.path = '';
+                      return importedData;
+                    })
+                    .then((res) => {
+                      if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                        console.info('Сохранили и очистили память после импорта папки', importedPath);
+                        return saveImportedFiles(res, importOptions.skipClassName);
+                      } else {
+                        console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
+                        return 0;
+                      }
+                      callback(null, res);
+                    })
+                    .catch((err)=> {
+                      callback(err);
+                    });
+                  }
 
-
-        /* Предыдущая реализация на async
           function importIterator(importedFolders, i, callback) {
           if (i === importedFolders.length) {
             callback (null);
@@ -171,8 +176,7 @@ function importApplications(appPathItem) {
                 callback (err);
               });
           }
-        }*/
-
+        }
         return new Promise(function (resolve,reject) {
           importIterator(importedFolders, 0, (err) => {
             if (err) {
@@ -181,7 +185,7 @@ function importApplications(appPathItem) {
               resolve (importedData);
             }
           });
-        });
+        });*/
       })
       .then((importedData) => { // Добавляем справочники, которые были не нужны для импорта
         for (let key in importedAfterReference) {
