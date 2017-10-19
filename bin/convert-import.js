@@ -34,7 +34,7 @@ Promise.all(appPath.map(importApplications))
  * @param {*} res
  * @returns {*}
  */
-function empty(res) {
+async function empty(res) {
   return res;
 }
 
@@ -93,10 +93,23 @@ function importApplications(appPathItem) {
          * @param {String} importPath импортируемый путь
          * @param {Function} callback
          */
-        function importAppBase(importPath, callback) {
+        async function importAppBase(importPath, callback) {
           let importedPath = path.join(appPathItem, importPath);
           importedData.path = importedPath;
-          getImportedFiles(importedData, importedPath)
+          try {
+            importedData = await getImportedFiles(importedData, importedPath);
+            importedData = await convertImportedFiles(importedData);
+            delete importedData.parsed; // Очищаем память от уже сконвертированных данных
+            importedData.path = '';
+            let res = !importOptions.saveAll ? saveImportedFiles(importedData, importOptions.skipClassName) :  0; // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+            console.info(!importOptions.saveAll ? 'Сохранили и очистили память после импорта папки ' + importedPath :
+                                                  'Не сохраняли очередную итерацию, память не очищена' + importedPath);
+            callback(null, res);
+          } catch (err) {
+            callback(err);
+          }
+          /* Предыдущая реализация на промизах
+           getImportedFiles(importedData, importedPath)
             .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
             .then((importedData) => {
               delete importedData.parsed; // Очищаем память от уже сконвертированных данных
@@ -105,22 +118,17 @@ function importApplications(appPathItem) {
             })
             .then((res) => {
               if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
+                console.info('Сохранили и очистили память после импорта папки', importedPath);
                 return saveImportedFiles(res, importOptions.skipClassName);
               } else {
-                return 0;
-              }
-            })
-            .then((res) => {
-              if (!importOptions.saveAll) {
-                console.info('Сохранили и очистили память после импорта папки', importedPath);
-              } else {
                 console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
+                return 0;
               }
               callback(null, res);
             })
             .catch((err)=> {
               callback(err);
-            });
+            });*/
         }
 
         /**
@@ -134,17 +142,37 @@ function importApplications(appPathItem) {
             callback (null);
           } else {
             console.info('Импортируем', importedFolders[i]);
-            importAppBase(importedFolders[i], (err, res) => {
-              console.info('Закончили импорт %s', importedFolders[i]);
-              if (err) {
-                callback (err);
-              } else {
+            importAppBase(importedFolders[i])
+              .then((res) => {
+                console.info('Закончили импорт %s', importedFolders[i]);
                 i++;
                 importIterator(importedFolders, i, callback);
-              }
-            });
+              })
+              .catch((err) => {
+                callback (err);
+              });
           }
         }
+
+
+        /* Предыдущая реализация на async
+          function importIterator(importedFolders, i, callback) {
+          if (i === importedFolders.length) {
+            callback (null);
+          } else {
+            console.info('Импортируем', importedFolders[i]);
+            importAppBase(importedFolders[i])
+              .then((res) => {
+                console.info('Закончили импорт %s', importedFolders[i]);
+                i++;
+                importIterator(importedFolders, i, callback);
+              })
+              .catch((err) => {
+                callback (err);
+              });
+          }
+        }*/
+
         return new Promise(function (resolve,reject) {
           importIterator(importedFolders, 0, (err) => {
             if (err) {
