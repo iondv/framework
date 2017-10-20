@@ -74,7 +74,7 @@ const FUNC_OPERS = {
   [Operations.MAX]: '$max',
   [Operations.AVG]: '$avg',
   [Operations.SUM]: '$sum',
-  [Operations.COUNT]: '$count',
+  [Operations.COUNT]: '$sum',
   [Operations.IFNULL]: '$ifNull',
   [Operations.IF]: '$cond',
   [Operations.CASE]: '$case',
@@ -576,7 +576,7 @@ function MongoDs(config) {
   function parseCondition(c) {
     if (Array.isArray(c)) {
       let result = [];
-      c.forEach((c1)=>{result.push(parseCondition(c1));});
+      c.forEach((c1) => {result.push(parseCondition(c1));});
       return result;
     }
     if (c && typeof c === 'object' && !(c instanceof Date) && !(c instanceof mongo.ObjectID)) {
@@ -588,7 +588,7 @@ function MongoDs(config) {
               case '$joinExists':
               case '$joinNotExists':
                 return {
-                  [oper]: {
+                  [o]: {
                     table: c[oper][0],
                     left: c[oper][1],
                     right: c[oper][2],
@@ -1846,11 +1846,15 @@ function MongoDs(config) {
                   expr.$group[alias] = {$sum: 1};
                 } else if (
                   oper === Operations.SUM || oper === Operations.AVG ||
-                  oper === Operations.MIN || oper === Operations.MAX
+                  oper === Operations.MIN || oper === Operations.MAX || oper === Operations.COUNT
                 ) {
-                  let args = parseExpression(options.aggregates[alias][oper]);
-                  if (args.length) {
-                    expr.$group[alias] = {[FUNC_OPERS[oper]]: args[0]};
+                  if (oper === Operations.COUNT) {
+                    expr.$group[alias] = {[FUNC_OPERS[oper]]: {$literal: 1}};
+                  } else {
+                    let args = parseExpression(options.aggregates[alias][oper]);
+                    if (args.length) {
+                      expr.$group[alias] = {[FUNC_OPERS[oper]]: args[0]};
+                    }
                   }
                 }
               }
@@ -1886,7 +1890,6 @@ function MongoDs(config) {
           tmpApp = 'tmp_' + cuid();
           options.to = tmpApp;
         }
-
         return checkAggregation(type, options, plan);
       })
       .then((plan) => {

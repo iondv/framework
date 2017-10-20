@@ -245,11 +245,10 @@ function prepareEmpty(cm, filter, empty, joins, numGen) {
       if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
         throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
       }
-
       if (empty) {
-        return {$joinNotExists: join(pm, cm, colMeta, null)};
+        return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null)};
       } else {
-        return {$joinExists: join(pm, cm, colMeta, null)};
+        return {[dsOperations.JOIN_EXISTS]: join(pm, cm, colMeta, null)};
       }
     } else {
       return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [filter[0]]};
@@ -336,9 +335,9 @@ function NumGenerator() {
  * @returns {{}}
  */
 function prepareFilterOption(cm, filter, joins, numGen) {
-  for (let oper in filter) {
-    if (filter.hasOwnProperty(oper)) {
-      if (Operations.hasOwnProperty(oper)) {
+  if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
+    for (let oper in filter) {
+      if (filter.hasOwnProperty(oper) && Array.isArray(filter[oper])) {
         switch (oper) {
           case Operations.CONTAINS:
             return prepareContains(cm, filter[oper], joins, numGen);
@@ -356,8 +355,6 @@ function prepareFilterOption(cm, filter, joins, numGen) {
           default:
             return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
         }
-      } else {
-        break;
       }
     }
   }

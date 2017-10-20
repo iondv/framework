@@ -92,20 +92,20 @@ function produceContainsFilter(rcm, condition, context, lang) {
       if (Array.isArray(condition.value) && condition.value.length) {
         return {
           [Operations.CONTAINS]: [
-              condition.property,
+              '$' + condition.property,
               {[Operations.IN]: [pm._refClass.getKeyProperties()[0], condition.value]}
           ]
         };
       }
       return {
         [Operations.CONTAINS]: [
-          condition.property,
+          '$' + condition.property,
           ConditionParser(condition.nestedConditions, pm._refClass, context)
         ]
       };
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
       let tmp = toScalar(condition.value, context);
-      return {[Operations.LIKE]: [condition.property, tmp[0]]};
+      return {[Operations.LIKE]: ['$' + condition.property, tmp[0]]};
     } else {
       throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
@@ -222,7 +222,7 @@ function ConditionParser(condition, rcm, context, lang) {
   if (Array.isArray(condition)) {
     let tmp = produceArray(condition, rcm, context, lang);
     if (tmp) {
-      return {[Operations.AND]: tmp};
+      return tmp.length === 1 ? tmp[0] : {[Operations.AND]: tmp};
     }
     return null;
   } else {
