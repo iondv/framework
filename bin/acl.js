@@ -123,22 +123,15 @@ function processAclDefinition(u) {
         return Promise.resolve();
       });
     } else if (u.type === 'role') {
-      let w;
+      let w = Promise.resolve();
       if (u.permissions && typeof u.permissions === 'object') {
         for (let resource in u.permissions) {
           if (u.permissions.hasOwnProperty(resource)) {
             if (Array.isArray(u.permissions[resource])) {
-              if (w) {
-                w = w.then(setRolePermissions(u.name, resource, u.permissions[resource]));
-              } else {
-                w = setRolePermissions(u.name, resource, u.permissions[resource])();
-              }
+              w = w.then(setRolePermissions(u.name, resource, u.permissions[resource]));
             }
           }
         }
-      }
-      if (!w) {
-        return Promise.resolve();
       }
       return w;
     }
@@ -173,18 +166,10 @@ di('boot', config.bootstrap,
     }
   })
   .then((scope) => {
-    let w = null;
+    let w = Promise.resolve();
     aclDefinitions.forEach(function (u) {
-      if (w) {
-        w = w.then(processAclDefinition(u));
-      } else {
-        w = processAclDefinition(u)();
-      }
+      w = w.then(processAclDefinition(u));
     });
-
-    if (!w) {
-      return Promise.resolve(scope);
-    }
     return w.then(() => scope);
   })
   .then((scope) => scope.dataSources.disconnect())
