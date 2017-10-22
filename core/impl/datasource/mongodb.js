@@ -662,6 +662,11 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
+                        for (let nm in conditions) {
+                          if (conditions.hasOwnProperty(nm) && updates.$set.hasOwnProperty(nm)) {
+                            conditions[nm] = updates.$set[nm];
+                          }
+                        }
                         p = _this._get(type, conditions, {}).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
                         });

@@ -142,8 +142,8 @@ function processAclDefinition(u) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['auth', 'rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => params.users.length ?
     scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope

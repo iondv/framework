@@ -8,6 +8,11 @@ const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Permissions = require('core/Permissions');
 const chain = require('core/util/chain');
 
+/**
+ * @param {{}} config
+ * @param {DataSource} config.dataSource
+ * @constructor
+ */
 function MongoAclAccessManager(config) {
   var _this = this;
 
@@ -17,7 +22,7 @@ function MongoAclAccessManager(config) {
     throw 'Не указан источник данных для подсистемы контроля доступа!';
   }
 
-  this.acl = {};
+  this.acl = null;
 
   this.globalMarker = config.allAlias ? config.allAlias : '*';
 
@@ -76,13 +81,14 @@ function MongoAclAccessManager(config) {
    */
   this._assignRoles = function (subjects, roles) {
     subjects  = Array.isArray(subjects) ? subjects : [subjects];
-    return chain(subjects, function (subject) {
-      return new Promise(function (resolve, reject) {
-        _this.acl.addUserRoles(subject, roles, function (err) {
-          return err ? reject(err) : resolve();
-        });
-      });
-    });
+    return chain(roles, (role) => _this._defineRole(role))
+      .then(() =>
+        chain(subjects, (subject) => {
+          return new Promise((resolve, reject) => {
+            _this.acl.addUserRoles(subject, roles, (err) => err ? reject(err) : resolve());
+          });
+        })
+      );
   };
 
   /**
@@ -92,14 +98,12 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.allow(roles, resources, permissions, function (err) {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
-      });
-    });
+    return chain(roles, (role) => _this._defineRole(role))
+      .then(() => chain(resources, (resource) => _this._defineResource(resource)))
+      .then(() => new Promise((resolve, reject) => {
+          _this.acl.allow(roles, resources, permissions, (err) => err ? reject(err) : resolve());
+        })
+      );
   };
 
   /**
@@ -137,13 +141,30 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineRoles = function (roles) {
-    return chain(roles, function (role) {
-      return new Promise(function (resolve, reject) {
-        _this.acl.removeRole(role, function (err) {
-          return err ? reject(err) : resolve();
-        });
-      });
+    return chain(roles, (role) => {
+      return ds.delete('ion_security_role', {id: role})
+        .then(
+          () => new Promise((resolve, reject) => {
+            _this.acl.removeRole(role, (err) => err ? reject(err) : resolve());
+          })
+        );
     });
+  };
+
+  this._defineRole = function (role, caption = null) {
+    let data = {id: role};
+    if (caption) {
+      data.name = caption;
+    }
+    return ds.upsert('ion_security_role', {id: role}, data);
+  };
+
+  this._defineResource = function (resource, caption = null) {
+    let data = {id: resource};
+    if (caption) {
+      data.name = caption;
+    }
+    return ds.upsert('ion_security_resource', {id: resource}, data);
   };
 
   /**
@@ -151,12 +172,13 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineResources = function (resources) {
-    return chain(resources, function (resource) {
-      return new Promise(function (resolve, reject) {
-        _this.acl.removeResource(resource, function (err) {
-          return err ? reject(err) : resolve();
-        });
-      });
+    return chain(resources, (resource) => {
+      return ds.delete('ion_security_resource', {id: resource})
+        .then(
+          () => new Promise((resolve, reject) => {
+            _this.acl.removeResource(resource, (err) => err ? reject(err) : resolve());
+          })
+        );
     });
   };
 }

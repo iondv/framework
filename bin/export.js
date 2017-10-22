@@ -40,8 +40,8 @@ process.argv.forEach(function (val) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['auth', 'rtEvents', 'sessionHandler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  }, null, ['rtEvents', 'sessionHandler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
     worker(
