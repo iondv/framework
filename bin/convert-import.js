@@ -4,6 +4,8 @@
  * Если не нужно сохранение в режиме отладки, нужно задать переменную окружения IMPORT = DONTSAVE
  */
 
+// TODO вынести в node_modules - чтобы ставить в проекты, в которых это нужно, а не везде подряд.
+
 // Уточняем параметры jsHint.
 // maxcomplexity - цикломатическая сложность функций разбора по типам 12, а не 10ть из-за архитектуры и упрощения чтения
 // jshint maxcomplexity: 12
@@ -135,57 +137,6 @@ function importApplications(appPathItem) {
           }
         }
         return importIterator(importedData, importedFolders);
-        /* Предыдущая реализация на промизах
-                  function importAppBase(importPath) {
-                  let importedPath = path.join(appPathItem, importPath);
-                  importedData.path = importedPath;
-                   getImportedFiles(importedData, importedPath)
-                    .then(convertImportedFiles) // Конвертируем распарсенные объекты из папки importedPath
-                    .then((importedData) => {
-                      delete importedData.parsed; // Очищаем память от уже сконвертированных данных
-                      importedData.path = '';
-                      return importedData;
-                    })
-                    .then((res) => {
-                      if (!importOptions.saveAll) { // Не сохранять каждую итерации и соответственно не очищать результаты импорта
-                        console.info('Сохранили и очистили память после импорта папки', importedPath);
-                        return saveImportedFiles(res, importOptions.skipClassName);
-                      } else {
-                        console.info('Не сохраняли очередную итерацию, память не очищена', importedPath);
-                        return 0;
-                      }
-                      callback(null, res);
-                    })
-                    .catch((err)=> {
-                      callback(err);
-                    });
-                  }
-
-          function importIterator(importedFolders, i, callback) {
-          if (i === importedFolders.length) {
-            callback (null);
-          } else {
-            console.info('Импортируем', importedFolders[i]);
-            importAppBase(importedFolders[i])
-              .then((res) => {
-                console.info('Закончили импорт %s', importedFolders[i]);
-                i++;
-                importIterator(importedFolders, i, callback);
-              })
-              .catch((err) => {
-                callback (err);
-              });
-          }
-        }
-        return new Promise(function (resolve,reject) {
-          importIterator(importedFolders, 0, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve (importedData);
-            }
-          });
-        });*/
       })
       .then((importedData) => { // Добавляем справочники, которые были не нужны для импорта
         for (let key in importedAfterReference) {
