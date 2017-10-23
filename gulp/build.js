@@ -16,6 +16,7 @@ const runSequence = require('run-sequence');
 const importer = require('lib/import');
 const deployer = require('lib/deploy');
 const alias = require('core/scope-alias');
+const aclImporter = require('lib/aclImporter');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -419,11 +420,13 @@ function appImporter(appDir, scope, log, dep) {
     let ns = dep ? dep.namespace || '' : '';
     console.log('Импорт меты приложения ' + appDir + ' выполняется в ' +
       (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
-    return importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
-      namespace: ns,
-      // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка, ещё не импортированы
-      ignoreIntegrityCheck: true
-    }).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
+    return aclImporter(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
+      .then(() => importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
+        namespace: ns,
+        // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка,
+        // ещё не импортированы
+        ignoreIntegrityCheck: true
+      }).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
   };
 }
 
@@ -468,7 +471,7 @@ gulp.task('setup', function (done) {
           });
         }
         console.log('Нет приложений для установки.');
-        return  scp.dataSources.disconnect();
+        return scp.dataSources.disconnect();
       } catch (err) {
         return Promise.reject(err);
       }

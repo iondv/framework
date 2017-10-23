@@ -3,16 +3,14 @@
  */
 const config = require('../config');
 const di = require('core/di');
-const fs = require('fs');
-const path = require('path');
 
 const IonLogger = require('core/impl/log/IonLogger');
-const sysLog = new IonLogger({});
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
 errorSetup(config.lang || 'ru');
+const aclImporter = require('lib/aclImporter');
 
 var params = {
   permissions: [],
@@ -22,8 +20,6 @@ var params = {
   method: 'grant',
   aclFile: null
 };
-
-var aclDefinitions = [];
 
 var setParam = false;
 
@@ -63,20 +59,9 @@ if (!params.aclDir) {
     console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
     process.exit(130);
   }
-} else {
-  if (fs.existsSync(params.aclDir)) {
-    let files = fs.readdirSync(params.aclDir);
-    files.forEach(function (file) {
-      if (fs.statSync(path.join(params.aclDir, file)).isFile()) {
-        aclDefinitions.push(JSON.parse(fs.readFileSync(path.join(params.aclDir, file), {encoding: 'utf-8'})));
-      }
-    });
-  } else {
-    console.warn('Указанная директория списков доступа не существует.');
-  }
 }
 
-var scope = null;
+var sysLog = new IonLogger(config.log || {});
 
 config.di.roleAccessManager =
 {
@@ -88,56 +73,6 @@ config.di.roleAccessManager =
   }
 };
 
-function setRolePermissions(role, resource, permissions) {
-  return function () {
-    return scope.roleAccessManager.grant([role], [resource], permissions);
-  };
-}
-
-function processAclDefinition(u) {
-  return function () {
-    if (u.type === 'user') {
-      return new Promise(function (resolve, reject) {
-        scope.auth.register(
-          {
-            name: u.name,
-            pwd: u.pwd
-          },
-          function (err, u) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(u);
-          }
-        );
-      }).catch(function (err) {
-        console.warn('Не удалось зарегистрировать пользователя ' + u.name);
-        return Promise.resolve();
-      }).then(function (user) {
-        if (Array.isArray(u.roles)) {
-          return scope.roleAccessManager.assignRoles(
-            [(user ? user.id : u.name) + '@' + (user ? user.type : 'local')],
-            u.roles
-          );
-        }
-        return Promise.resolve();
-      });
-    } else if (u.type === 'role') {
-      let w = Promise.resolve();
-      if (u.permissions && typeof u.permissions === 'object') {
-        for (let resource in u.permissions) {
-          if (u.permissions.hasOwnProperty(resource)) {
-            if (Array.isArray(u.permissions[resource])) {
-              w = w.then(setRolePermissions(u.name, resource, u.permissions[resource]));
-            }
-          }
-        }
-      }
-      return w;
-    }
-  };
-}
-
 // Связываем приложение
 di('boot', config.bootstrap,
   {
@@ -145,9 +80,10 @@ di('boot', config.bootstrap,
   }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) => params.aclDir ?
+    aclImporter(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
   .then((scope) => params.users.length ?
-    scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope
-  )
+    scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope)
   .then((scope) => {
     if (params.resources.length || params.permissions.length) {
       if (!params.resources.length) {
@@ -164,13 +100,6 @@ di('boot', config.bootstrap,
     } else {
       return scope;
     }
-  })
-  .then((scope) => {
-    let w = Promise.resolve();
-    aclDefinitions.forEach(function (u) {
-      w = w.then(processAclDefinition(u));
-    });
-    return w.then(() => scope);
   })
   .then((scope) => scope.dataSources.disconnect())
   .then(() => {
