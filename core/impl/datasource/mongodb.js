@@ -1146,7 +1146,10 @@ function MongoDs(config) {
                   result = IGNORE;
                   break;
                 } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 && tmp[0] === '$')) {
-                  attributes.push(tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp);
+                  let an = (tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp).substr(1);
+                  if (attributes.indexOf(an) < 0) {
+                    attributes.push(an);
+                  }
                   result = IGNORE;
                   break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
@@ -1451,6 +1454,7 @@ function MongoDs(config) {
                 expr.$group._id[tmp] = {$literal: options.fields[tmp]};
               } else if (options.fields[tmp] && typeof options.fields[tmp] === 'object' && !(options.fields[tmp] instanceof Date)) {
                 options.fields[tmp] = parseExpression(options.fields[tmp], attributes, joinedSources, lookups, joins, counter);
+                checkAttrExpr(options.fields[tmp], attributes, joinedSources);
                 expr.$group._id[tmp] = {$ifNull: [options.fields[tmp], null]};
               } else if (options.fields[tmp] && typeof options.fields[tmp] === 'string' && options.fields[tmp][0] === '$') {
                 checkAttrExpr(options.fields[tmp], attributes, joinedSources);
