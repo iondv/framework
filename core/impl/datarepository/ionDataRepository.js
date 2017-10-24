@@ -645,10 +645,10 @@ function IonDataRepository(options) {
     catch(wrapDsError('getList', obj)).
     then(
       function (data) {
-        var result = [];
-        var fl = [];
+        let result = [];
+        let fl = [];
         try {
-          for (var i = 0; i < data.length; i++) {
+          for (let i = 0; i < data.length; i++) {
             result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
             fl.push(loadFiles(result[i], _this.fileStorage, _this.imageStorage));
           }

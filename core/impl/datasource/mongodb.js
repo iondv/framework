@@ -671,10 +671,10 @@ function MongoDs(config) {
     return c;
   }
 
-  function parseExpression(e) {
+  function parseExpression(e, attributes, joinedSources, explicitJoins, joins, counter) {
     if (Array.isArray(e)) {
       let result = [];
-      e.forEach((e1)=>{result.push(parseExpression(e1));});
+      e.forEach((e1)=>{result.push(parseExpression(e1, attributes, joinedSources, explicitJoins, joins, counter));});
       return result;
     }
     if (e && typeof e === 'object' && !(e instanceof Date)) {
@@ -683,17 +683,17 @@ function MongoDs(config) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
-              return {$ne:[{$type: parseExpression(e[oper])[0]}, 'null']};
+              return {$ne:[{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
             } else if (oper === Operations.NOT_EMPTY) {
-              return {$eq:[{$type: parseExpression(e[oper])[0]}, 'null']};
+              return {$eq:[{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
             } else if (oper === Operations.DATE_ADD) {
-              return fDateAdd(parseExpression(e[oper]));
+              return fDateAdd(parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter));
             } else if (oper === Operations.DATE_DIFF) {
-              return fDateDiff(parseExpression(e[oper]));
+              return fDateDiff(parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter));
             } else if (oper === Operations.CASE) {
-              let args = parseExpression(e[oper]);
+              let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               let result = {$switch: {
                 branches: []
               }};
@@ -707,8 +707,41 @@ function MongoDs(config) {
                 }
               }
               return result;
+            } else if (oper === DsOperations.JOIN_EXISTS || oper === DsOperations.JOIN_NOT_EXISTS) {
+              let f = parseCondition(e[oper][3]);
+              if (f) {
+                prepareConditions(f);
+              }
+              let join = {
+                table: e[oper][0],
+                left: e[oper][1],
+                right: e[oper][2],
+                filter: f,
+                many: e[oper][4]
+              };
+
+              let jid = joinId(join);
+              let j;
+              if (explicitJoins.hasOwnProperty(jid)) {
+                j = explicitJoins[jid];
+              } else {
+                j = join;
+                j.alias = '__j' + counter.v;
+                counter.v++;
+              }
+
+              let jsrc = {};
+              let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+              pj(j);
+
+              for (let ja in jsrc) {
+                if (jsrc.hasOwnProperty(ja)) {
+                  joins.push(jsrc[ja]);
+                }
+              }
+              return {$gt: ['$' + j.alias + '_size', 0]};
             } else {
-              return {[o]: parseExpression(e[oper])};
+              return {[o]: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)};
             }
           }
         }
@@ -825,7 +858,7 @@ function MongoDs(config) {
                       if (err) {
                         return reject(wrapError(err, options.upsert ? 'upsert' : 'update', type));
                       }
-                      var p;
+                      let p;
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
@@ -942,12 +975,12 @@ function MongoDs(config) {
         };
         result.push({$lookup: tmp});
         attributes.push(join.alias);
-        if (join.passSize) {
-          tmp = clean(attributes);
-          tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
-          attributes.push(join.alias + '_size');
-          result.push(tmp);
-        }
+
+        tmp = clean(attributes);
+        tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
+        attributes.push(join.alias + '_size');
+        result.push(tmp);
+
         if (!join.onlySize || Array.isArray(join.join)) {
           result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
         }
@@ -964,7 +997,7 @@ function MongoDs(config) {
     counter = counter || {v: 0};
     return function (join) {
       leftPrefix = leftPrefix || '';
-      if (!leftPrefix && attributes.indexOf(join.left) < 0) {
+      if (!leftPrefix && attributes.indexOf(join.left) < 0 && join.left.indexOf('.') < 0) {
         attributes.push(join.left);
       }
       if (!join.alias) {
@@ -1140,13 +1173,13 @@ function MongoDs(config) {
   }
 
   function joinPostFilter(join, explicitJoins, prefix, not) {
-    var jid = joinId(join, prefix);
-    var j = explicitJoins[jid];
+    let jid = joinId(join, prefix);
+    let j = explicitJoins[jid];
 
     if (prefix) {
       j.left = addPrefix(j.left, prefix);
     }
-    var f = null;
+    let f = null;
     if (join.filter || join.join) {
       f = null;
       if (join.filter) {
@@ -1159,10 +1192,9 @@ function MongoDs(config) {
       }
 
       if (Array.isArray(join.join)) {
-        var and = [];
-        var tmp;
-        for (var i = 0; i < join.join.length; i++) {
-          tmp = joinPostFilter(join.join[i], explicitJoins, join.alias, false);
+        let and = [];
+        for (let i = 0; i < join.join.length; i++) {
+          let tmp = joinPostFilter(join.join[i], explicitJoins, join.alias, false);
           if (tmp) {
             and.push(tmp);
           }
@@ -1214,7 +1246,7 @@ function MongoDs(config) {
             if (tmp !== undefined) {
               result = result || {};
               if (name[0] !== '$') {
-                result[prefix ? addPrefix(name, prefix) : name] = tmp;
+                result[prefix && name.indexOf('.') < 0 ? addPrefix(name, prefix) : name] = tmp;
               } else {
                 result[name] = tmp;
               }
@@ -1347,7 +1379,7 @@ function MongoDs(config) {
    */
   function checkAttrExpr(expr, attributes, joinedSources) {
     if (typeof expr === 'string') {
-      return checkAttrLexem(expr, attributes, joinedSources);
+      checkAttrLexem(expr, attributes, joinedSources);
     } else if (Array.isArray(expr)) {
       for (let i = 0; i < expr.length; i++) {
         checkAttrExpr(expr[i], attributes, joinedSources);
@@ -1391,10 +1423,12 @@ function MongoDs(config) {
     let joins = [];
     let resultAttrs = [];
     let prefilter, postfilter, redactFilter, jl;
-
+    let doGroup = false;
     let analise = {
       needRedact: false
     };
+
+    let counter = {v: 0};
 
     try {
       if (Array.isArray(options.joins)) {
@@ -1402,30 +1436,75 @@ function MongoDs(config) {
         options.joins.forEach(processJoin(attributes, joinedSources, lookups, null, null, joins));
       }
 
-      if (options.fields) {
-        for (let tmp in options.fields) {
-          if (options.fields.hasOwnProperty(tmp)) {
-            options.fields[tmp] = parseExpression(options.fields[tmp]);
-            checkAttrExpr(options.fields[tmp], attributes, joinedSources);
+      if (options.fields || options.aggregates) {
+        let expr = {$group: {}};
+        expr.$group._id = null;
+        let attrs = {_id: false};
+
+        if (options.fields) {
+          for (let tmp in options.fields) {
+            if (options.fields.hasOwnProperty(tmp)) {
+              if (!expr.$group._id) {
+                expr.$group._id = {};
+              }
+              if (!isNaN(options.fields[tmp]) || typeof options.fields[tmp] === 'boolean') {
+                expr.$group._id[tmp] = {$literal: options.fields[tmp]};
+              } else if (options.fields[tmp] && typeof options.fields[tmp] === 'object' && !(options.fields[tmp] instanceof Date)) {
+                options.fields[tmp] = parseExpression(options.fields[tmp], attributes, joinedSources, lookups, joins, counter);
+                expr.$group._id[tmp] = {$ifNull: [options.fields[tmp], null]};
+              } else if (options.fields[tmp] && typeof options.fields[tmp] === 'string' && options.fields[tmp][0] === '$') {
+                checkAttrExpr(options.fields[tmp], attributes, joinedSources);
+                expr.$group._id[tmp] = {$ifNull: [options.fields[tmp], null]};
+              } else {
+                expr.$group._id[tmp] = options.fields[tmp];
+              }
+              attrs[tmp] = '$_id.' + tmp;
+              doGroup = true;
+            }
           }
+        }
+
+        if (options.aggregates) {
+          for (let alias in options.aggregates) {
+            if (options.aggregates.hasOwnProperty(alias)) {
+              for (let oper in options.aggregates[alias]) {
+                if (options.aggregates[alias].hasOwnProperty(oper)) {
+                  if (
+                    oper === Operations.SUM || oper === Operations.AVG ||
+                    oper === Operations.MIN || oper === Operations.MAX || oper === Operations.COUNT
+                  ) {
+                    if (oper === Operations.COUNT) {
+                      expr.$group[alias] = {[FUNC_OPERS[oper]]: {$literal: 1}};
+                    } else {
+                      options.aggregates[alias][oper] =
+                        parseExpression(options.aggregates[alias][oper], attributes, joinedSources, lookups, joins, counter);
+                      checkAttrExpr(options.aggregates[alias][oper], attributes, joinedSources);
+                      if (options.aggregates[alias][oper].length) {
+                        expr.$group[alias] = {[FUNC_OPERS[oper]]: options.aggregates[alias][oper][0]};
+                      }
+                    }
+                  }
+                }
+              }
+              attrs[alias] = 1;
+              doGroup = true;
+            }
+          }
+        }
+
+        if (doGroup) {
+          forcedStages.push(expr);
+          forcedStages.push({$project: attrs});
         }
       }
 
-      if (options.aggregates) {
-        for (let tmp in options.aggregates) {
-          if (options.aggregates.hasOwnProperty(tmp)) {
-            options.aggregates[tmp] = parseExpression(options.aggregates[tmp]);
-            checkAttrExpr(options.aggregates[tmp], attributes, joinedSources);
-          }
-        }
-      }
 
       resultAttrs = attributes.slice(0);
 
       if (options.filter) {
         jl = joins.length;
 
-        prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise);
+        prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (joins.length > jl || attributes.length > resultAttrs.length || analise.needRedact) {
           postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(postfilter, lookups);
@@ -1473,13 +1552,10 @@ function MongoDs(config) {
         if (redactFilter && redactFilter !== IGNORE) {
           result.push({$redact: {$cond: [redactFilter, '$$KEEP', '$$PRUNE']}});
         }
-        if (resultAttrs.length) {
-          Array.prototype.push.apply(result, wind(resultAttrs));
-        }
       }
 
-      if (options.distinct && options.select.length && (result.length || options.select.length > 1)) {
-        Array.prototype.push.apply(result, wind(options.select));
+      if (resultAttrs.length && options.distinct) {
+        Array.prototype.push.apply(result, wind(resultAttrs));
       }
 
       if (forcedStages.length) {
@@ -1577,7 +1653,7 @@ function MongoDs(config) {
             return reject(err);
           }
           if (options.sort && options.sort[options.select[0]]) {
-            var direction = options.sort[options.select[0]];
+            let direction = options.sort[options.select[0]];
             data = data.sort(function compare(a, b) {
               if (a < b) {
                 return -1 * direction;
@@ -1587,12 +1663,11 @@ function MongoDs(config) {
               return 0;
             });
           }
-          var res, stPos, endPos;
-          res = [];
-          stPos = options.offset || 0;
-          endPos = options.count ? stPos + options.count : data.length;
-          for (var i = stPos; i < endPos && i < data.length; i++) {
-            var tmp = {};
+          let res = [];
+          let stPos = options.offset || 0;
+          let endPos = options.count ? stPos + options.count : data.length;
+          for (let i = stPos; i < endPos && i < data.length; i++) {
+            let tmp = {};
             tmp[options.select[0]] = data[i];
             res.push(tmp);
           }
@@ -1817,70 +1892,6 @@ function MongoDs(config) {
       .then((col) => {
         c = col;
         let plan = [];
-        let expr = {$group: {}};
-        expr.$group._id = null;
-        if (options.fields) {
-          for (let fld in options.fields) {
-            if (options.fields.hasOwnProperty(fld)) {
-              if (!expr.$group._id) {
-                expr.$group._id = {};
-              }
-              if (!isNaN(options.fields[fld]) || typeof options.fields[fld] === 'boolean') {
-                expr.$group._id[fld] = {literal: options.fields[fld]};
-              } else if (options.fields[fld] && typeof options.fields[fld] === 'object' && !(options.fields[fld] instanceof Date)) {
-                expr.$group._id[fld] = {$ifNull: [parseExpression(options.fields[fld]), null]};
-              } else if (options.fields[fld] && typeof options.fields[fld] === 'string' && options.fields[fld][0] === '$') {
-                expr.$group._id[fld] = {$ifNull: [options.fields[fld], null]};
-              } else {
-                expr.$group._id[fld] = options.fields[fld];
-              }
-            }
-          }
-        }
-
-        for (let alias in options.aggregates) {
-          if (options.aggregates.hasOwnProperty(alias)) {
-            for (let oper in options.aggregates[alias]) {
-              if (options.aggregates[alias].hasOwnProperty(oper)) {
-                if (oper === DsOperations.COUNT) {
-                  expr.$group[alias] = {$sum: 1};
-                } else if (
-                  oper === Operations.SUM || oper === Operations.AVG ||
-                  oper === Operations.MIN || oper === Operations.MAX || oper === Operations.COUNT
-                ) {
-                  if (oper === Operations.COUNT) {
-                    expr.$group[alias] = {[FUNC_OPERS[oper]]: {$literal: 1}};
-                  } else {
-                    let args = parseExpression(options.aggregates[alias][oper]);
-                    if (args.length) {
-                      expr.$group[alias] = {[FUNC_OPERS[oper]]: args[0]};
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        plan.push(expr);
-
-        let attrs = {_id: false};
-        if (options.fields) {
-          for (let alias in options.fields) {
-            if (options.fields.hasOwnProperty(alias)) {
-              attrs[alias] = '$_id.' + alias;
-            }
-          }
-        }
-        if (options.aggregates) {
-          for (let alias in options.aggregates) {
-            if (options.aggregates.hasOwnProperty(alias)) {
-              attrs[alias] = 1;
-            }
-          }
-        }
-
-        plan.push({$project: attrs});
 
         if (options.filter) {
           prepareConditions(options.filter);

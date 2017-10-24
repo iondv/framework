@@ -180,10 +180,11 @@ function tn(cm, nsSep) {
 
 module.exports.classTableName = tn;
 
-function join(pm, cm, colMeta, filter) {
+function join(pm, cm, colMeta, filter, context) {
   return [
     tn(colMeta),
-    pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+    (context ? context.alias + '.' : '') +
+      (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
     pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
     filter,
     !pm.backRef
@@ -212,19 +213,44 @@ function findPm(cm, nm) {
  * @param {Array} joins
  * @param (Number} numGen
  */
-function prepareContains(cm, filter, joins, numGen) {
+function prepareContains(cm, filter, joins, numGen, context) {
   let nm = filter[0].substr(1);
   let pm = findPm(cm, nm);
   if (!pm) {
     throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
   }
 
+  if (pm.type !== PropertyTypes.COLLECTION) {
+    throw new Error('Операция contains не применима к атрибуту ' + nm + ' класса ' + cm.getCanonicalName());
+  }
+
   let colMeta = pm._refClass;
-  let tmp = prepareFilterOption(colMeta, filter[1], joins, numGen);
+
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
     throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
   }
-  return {[dsOperations.JOIN_EXISTS]: join(pm, cm, colMeta, tmp)};
+
+  let tbl = tn(colMeta);
+  let alias = '';
+  let j;
+  if (!joins.hasOwnProperty(tbl)) {
+    alias = 'coll_join_' + numGen.next();
+    j = {
+      table: tbl,
+      many: !pm.backRef,
+      left: (context ? context.alias + '.' : '') +
+        (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
+      right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
+      filter: null,
+      alias: alias
+    };
+    joins.push(j);
+  } else {
+    alias = joins[tbl].alias;
+    j = joins[tbl];
+  }
+
+  return prepareFilterOption(colMeta, filter[1], joins, numGen, j);
 }
 
 /**
@@ -233,7 +259,7 @@ function prepareContains(cm, filter, joins, numGen) {
  * @param {Boolean} empty
  * @returns {{}}
  */
-function prepareEmpty(cm, filter, empty, joins, numGen) {
+function prepareEmpty(cm, filter, empty, joins, numGen, context) {
   let nm = filter[0].substr(1);
   if (nm.indexOf('.') < 0) {
     let pm = findPm(cm, nm);
@@ -246,16 +272,15 @@ function prepareEmpty(cm, filter, empty, joins, numGen) {
         throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
       }
       if (empty) {
-        return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null)};
+        return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null, context)};
       } else {
-        return {[dsOperations.JOIN_EXISTS]: join(pm, cm, colMeta, null)};
+        return {[dsOperations.JOIN_EXISTS]: join(pm, cm, colMeta, null, context)};
       }
     } else {
-      return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [filter[0]]};
+      return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: ['$' + (context ? context.alias + '.' : '') + nm]};
     }
   } else {
-    let attrs = prepareOperArgs(cm, [filter[0]], joins, numGen);
-    return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: [attrs[0]]};
+    return {[empty ? Operations.EMPTY : Operations.NOT_EMPTY]: prepareOperArgs(cm, filter, joins, numGen, context)};
   }
 }
 
@@ -266,9 +291,9 @@ function prepareEmpty(cm, filter, empty, joins, numGen) {
  * @param {NumGenerator} numGen
  * @returns {{}}
  */
-function prepareLinked(cm, path, joins, numGen) {
-  var lc = null;
-  var pm = cm.getPropertyMeta(path[0]);
+function prepareLinked(cm, path, joins, numGen, context) {
+  let lc = null;
+  let pm = cm.getPropertyMeta(path[0]);
   if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) && path.length > 1) {
     let rMeta = pm._refClass;
     if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
@@ -276,24 +301,28 @@ function prepareLinked(cm, path, joins, numGen) {
     }
     let tbl = tn(rMeta);
     let alias = '';
+    let j;
     if (!joins.hasOwnProperty(tbl)) {
       alias = 'ref_join_' + numGen.next();
-      joins.push({
-        table: tn(rMeta),
+      j = {
+        table: tbl,
         many: pm.type === PropertyTypes.COLLECTION && !pm.backRef,
-        left: pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name,
+        left: (context ? context.alias + '.' : '') +
+                (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
         filter: null,
         alias: alias
-      });
+      };
+      joins.push(j);
     } else {
       alias = joins[tbl].alias;
+      j = joins[tbl];
     }
 
     if (path.length === 2) {
       return '$' + alias + '.' + path[1];
     } else {
-      return prepareLinked(rMeta, path.slice(1), joins, numGen);
+      return prepareLinked(rMeta, path.slice(1), joins, numGen, j);
     }
   }
   return lc;
@@ -306,13 +335,17 @@ function prepareLinked(cm, path, joins, numGen) {
  * @param {NumGenerator} numGen
  * @returns {Array}
  */
-function prepareOperArgs(cm, args, joins, numGen) {
+function prepareOperArgs(cm, args, joins, numGen, context) {
   var result = [];
   args.forEach(function (arg) {
-    if (typeof arg === 'string' && arg[0] === '$' && arg.indexOf('.') >= 0) {
-      result.push(prepareLinked(cm, arg.substr(1).split('.'), joins, numGen));
+    if (typeof arg === 'string' && arg[0] === '$') {
+      if (arg.indexOf('.') >= 0) {
+        result.push(prepareLinked(cm, arg.substr(1).split('.'), joins, numGen, context));
+      } else {
+        result.push('$' + (context ? context.alias + '.' : '') + arg.substr(1));
+      }
     } else if (arg !== null && !Array.isArray(arg) && !(arg instanceof Date) && typeof arg === 'object') {
-      result.push(prepareFilterOption(cm, arg, joins, numGen));
+      result.push(prepareFilterOption(cm, arg, joins, numGen, context));
     } else {
       result.push(arg);
     }
@@ -334,16 +367,16 @@ function NumGenerator() {
  * @param {{}} joins
  * @returns {{}}
  */
-function prepareFilterOption(cm, filter, joins, numGen) {
+function prepareFilterOption(cm, filter, joins, numGen, context) {
   if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
     for (let oper in filter) {
       if (filter.hasOwnProperty(oper) && Array.isArray(filter[oper])) {
         switch (oper) {
           case Operations.CONTAINS:
-            return prepareContains(cm, filter[oper], joins, numGen);
+            return prepareContains(cm, filter[oper], joins, numGen, context);
           case Operations.NOT_EMPTY:
           case Operations.EMPTY:
-            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen);
+            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
           case Operations.MAX:
           case Operations.MIN:
           case Operations.SUM:
@@ -353,7 +386,7 @@ function prepareFilterOption(cm, filter, joins, numGen) {
           case Operations.LITERAL:
             return {[oper]: filter[oper]};
           default:
-            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen)};
+            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
         }
       }
     }
