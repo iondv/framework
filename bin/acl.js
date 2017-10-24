@@ -10,7 +10,7 @@ const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
 errorSetup(config.lang || 'ru');
-const aclImporter = require('lib/aclImporter');
+const aclImport = require('lib/aclImport');
 
 var params = {
   permissions: [],
@@ -61,27 +61,17 @@ if (!params.aclDir) {
   }
 }
 
-var sysLog = new IonLogger(config.log || {});
-
-config.di.roleAccessManager =
-{
-  module: 'core/impl/access/amAccessManager',
-  initMethod: 'init',
-  initLevel: 1,
-  options: {
-    dataSource: 'ion://Db'
-  }
-};
+let sysLog = new IonLogger(config.log || {});
 
 // Связываем приложение
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => params.aclDir ?
-    aclImporter(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
+    aclImport(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
   .then((scope) => params.users.length ?
     scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope)
   .then((scope) => {

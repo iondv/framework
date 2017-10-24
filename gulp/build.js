@@ -16,7 +16,7 @@ const runSequence = require('run-sequence');
 const importer = require('lib/import');
 const deployer = require('lib/deploy');
 const alias = require('core/scope-alias');
-const aclImporter = require('lib/aclImporter');
+const aclImport = require('lib/aclImport');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -420,13 +420,14 @@ function appImporter(appDir, scope, log, dep) {
     let ns = dep ? dep.namespace || '' : '';
     console.log('Импорт меты приложения ' + appDir + ' выполняется в ' +
       (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
-    return aclImporter(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
+    return aclImport(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
+      .catch((err) => log.error(err))
       .then(() => importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
         namespace: ns,
         // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка,
         // ещё не импортированы
         ignoreIntegrityCheck: true
-      }).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
+      })).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
   };
 }
 
@@ -480,8 +481,11 @@ gulp.task('setup', function (done) {
       return di('boot', config.bootstrap,
         {
           sysLog: sysLog
-        }, null, ['rtEvents', 'sessionHandler'])
-        .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+        }, null, ['rtEvents', 'sessionHandler', 'application'])
+        .then((scope) => di('app',
+          extend(true, config.di, scope.settings.get('plugins') || {}),
+          {},
+          'boot'))
         .then((scope) => alias(scope, scope.settings.get('di-alias')));
     })
     .then((scp) => {
