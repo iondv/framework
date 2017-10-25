@@ -79,6 +79,8 @@ app.use(bodyParser.json({type: 'application/json', limit: limit}));
 app.use(bodyParser.urlencoded({extended: true, limit: limit}));
 app.use(bodyParser.raw({limit: limit}));
 
+app.locals.baseUrl = config.baseUrl || '/';
+
 // Создаем HTTP сервер.
 var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
 
@@ -214,6 +216,7 @@ di('boot', config.bootstrap,
               module.locals.sysTitle = title;
             }
             module.locals.sysMenu = sysMenu;
+            module.locals.baseUrl = config.baseUrl || '/';
             app.use(module);
             if (typeof module._init === 'function') {
               if (moduleInitiators) {
