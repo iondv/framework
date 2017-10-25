@@ -73,10 +73,11 @@ function WorkflowProvider(options) {
   this._getStatus = function (item, tOptions) {
     return new Promise(function (resolve, reject) {
       let workflows = options.metaRepo.getWorkflows(
-        item.getMetaClass().getName(),
+        item.getMetaClass().getCanonicalName(),
         item.getMetaClass().getNamespace(),
         item.getMetaClass().getVersion()
       );
+
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -103,12 +104,13 @@ function WorkflowProvider(options) {
           }
 
           for (let i = 0; i < workflows.length; i++) {
-            if (!result.hasOwnProperty(workflows[i].name)) {
-              result[workflows[i].name] = {
+            let fullWfName = workflows[i].name + '@' + workflows[i].namespace;
+            if (!result.hasOwnProperty(fullWfName)) {
+              result[fullWfName] = {
                 next: {}
               };
             }
-            let state = result[workflows[i].name];
+            let state = result[fullWfName];
             state.workflowCaption = workflows[i].caption;
 
             let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
@@ -181,12 +183,14 @@ function WorkflowProvider(options) {
                     name: transition.name,
                     caption: transition.caption,
                     signBefore: transition.signBefore,
-                    signAfter: transition.signAfter
+                    signAfter: transition.signAfter,
+                    confirm: transition.confirm,
+                    confirmMessage: transition.confirmMessage
                   };
                 }
               }
             } else {
-              delete result[workflows[i].name];
+              delete result[fullWfName];
             }
           }
 
@@ -241,26 +245,26 @@ function WorkflowProvider(options) {
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
-    var ctx = options.user.properties() || {};
+    let ctx = options.user.properties() || {};
     ctx.$uid = options.user.id();
     if (typeof assignment._formula === 'function') {
       ctx.$context = item;
       return Promise.resolve()
-        .then(() => assignment._formula.apply(ctx))
-        .then(function (v) {
-          updates[assignment.key] = v;
-          item.set(assignment.key, v);
-          return v;
-        });
-    } else {
-      let v = assignment.value;
-      v = v && typeof v === 'string' && v[0] === '$' ?
-        ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
-        v;
-      updates[assignment.key] = v;
-      item.set(assignment.key, v);
-      return Promise.resolve(v);
+          .then(() => assignment._formula.apply(ctx))
+          .then((v) => {
+            updates[assignment.key] = v;
+            item.set(assignment.key, v);
+            return v;
+          });
     }
+
+    let v = assignment.value;
+    v = v && typeof v === 'string' && v[0] === '$' ?
+      ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
+      v;
+    updates[assignment.key] = v;
+    item.set(assignment.key, v);
+    return Promise.resolve(v);
   }
 
   /**
@@ -275,12 +279,11 @@ function WorkflowProvider(options) {
    */
   this._performTransition = function (item, workflow, name, tOptions) {
     let wf = options.metaRepo.getWorkflow(
-      item.getMetaClass().getName(),
+      item.getMetaClass().getCanonicalName(),
       workflow,
       item.getMetaClass().getNamespace(),
       item.getMetaClass().getVersion()
     );
-
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
@@ -295,100 +298,106 @@ function WorkflowProvider(options) {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             if (wf.transitionsByName.hasOwnProperty(name)) {
-                if (Array.isArray(transition.roles) && transition.roles.length) {
-                  let allowed = false;
-                  for (let i = 0; i < transition.roles.length; i++) {
-                    if (
-                      tOptions.user.isMe(transition.roles[i]) ||
-                      tOptions.user.isMe(item.get(transition.roles[i]))
-                    ) {
-                      allowed = true;
-                      break;
-                    }
+              if (Array.isArray(transition.roles) && transition.roles.length) {
+                let allowed = false;
+                for (let i = 0; i < transition.roles.length; i++) {
+                  if (
+                    tOptions.user.isMe(transition.roles[i]) ||
+                    tOptions.user.isMe(item.get(transition.roles[i]))
+                  ) {
+                    allowed = true;
+                    break;
                   }
-                  if (!allowed) {
+                }
+                if (!allowed) {
+                  return Promise.reject(
+                    new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                  );
+                }
+              }
+
+              let nextState = wf.statesByName[transition.finishState];
+              if (!nextState) {
+                return Promise.reject(
+                  new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                );
+              }
+
+              let updates = {};
+              let calculations = null;
+
+              if (Array.isArray(transition.assignments) && transition.assignments.length) {
+                updates = {};
+                transition.assignments.forEach((assignment) => {
+                  calculations = calculations ?
+                    calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
+                    calcAssignmentValue(updates, item, assignment, tOptions);
+                });
+              } else {
+                calculations = Promise.resolve(null);
+              }
+
+              if (!calculations) {
+                calculations = Promise.resolve();
+              }
+
+              let context = buildContext(item, tOptions);
+              return calculations.then(function () {
+                if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
+                  if (!checker(item, nextState.conditions, context, tOptions.lang)) {
                     return Promise.reject(
-                      new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                      new IonError(
+                        Errors.CONDITION_VIOLATION,
+                        {
+                          info: item.getClassName() + '@' + item.getItemId(),
+                          state: nextState.caption,
+                          workflow: wf.caption
+                        }
+                      )
                     );
                   }
                 }
 
-                let nextState = wf.statesByName[transition.finishState];
-                if (!nextState) {
-                  return Promise.reject(
-                    new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
-                  );
-                }
-
-                let updates = {};
-                let calculations = null;
-
-                if (Array.isArray(transition.assignments) && transition.assignments.length) {
-                  updates = {};
-                  transition.assignments.forEach((assignment) => {
-                    calculations = calculations ?
-                      calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
-                      calcAssignmentValue(updates, item, assignment, tOptions);
-                  });
-                }
-
-                let context = buildContext(item, tOptions);
-                return calculations.then(function () {
-                  if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                    if (!checker(item, nextState.conditions, context, tOptions.lang)) {
-                      return Promise.reject(
-                        new IonError(
-                          Errors.CONDITION_VIOLATION,
-                          {
-                            info: item.getClassName() + '@' + item.getItemId(),
-                            state: nextState.caption,
-                            workflow: wf.caption
-                          }
-                        )
-                      );
-                    }
-                  }
-
-                  return _this.trigger({
-                    type: workflow + '.' + nextState.name,
-                    item: item
-                  }).then(
-                    function (e) {
-                      if (Array.isArray(e.results) && e.results.length) {
-                        for (let i = 0; i < e.results.length; i++) {
-                          if (e.results[i] && typeof e.results[i] === 'object') {
-                            for (let nm in e.results[i]) {
-                              if (e.results[i].hasOwnProperty(nm)) {
-                                if (!updates) {
-                                  updates = {};
-                                }
-                                updates[nm] = e.results[i][nm];
+                return _this.trigger({
+                  type: workflow + '.' + nextState.name,
+                  item: item
+                }).then(
+                  function (e) {
+                    if (Array.isArray(e.results) && e.results.length) {
+                      for (let i = 0; i < e.results.length; i++) {
+                        if (e.results[i] && typeof e.results[i] === 'object') {
+                          for (let nm in e.results[i]) {
+                            if (e.results[i].hasOwnProperty(nm)) {
+                              if (!updates) {
+                                updates = {};
                               }
+                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
                       }
+                    }
 
-                      if (updates) {
-                        return options.dataRepo.editItem(
-                          item.getMetaClass().getCanonicalName(),
-                          item.getItemId(),
-                          updates,
-                          tOptions.changeLogger,
-                          {
-                            user: tOptions.user
-                          }
-                        );
-                      }
-                      return Promise.resolve(item);
+                    if (updates) {
+                      return options.dataRepo.editItem(
+                        item.getMetaClass().getCanonicalName(),
+                        item.getItemId(),
+                        updates,
+                        tOptions.changeLogger,
+                        {
+                          user: tOptions.user
+                        }
+                      );
                     }
-                  ).then(
-                    function (item) {
-                      return move(item, workflow, nextState);
-                    }
-                  );
-                });
-              }
+                    return Promise.resolve(item);
+                  }
+                ).then(
+                  function (item) {
+                    return move(item, workflow, nextState);
+                  }
+                );
+              });
+            }
           }
           return Promise.reject(
             new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})

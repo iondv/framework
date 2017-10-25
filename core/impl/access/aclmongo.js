@@ -42,7 +42,7 @@ function MongoAcl(config) {
    */
   this._checkAccess = function (subject, resource, permissions) {
     return new Promise(function (resolve, reject) {
-      var pr = function (err,res) {
+      var pr = function (err, res) {
         if (err) {
           reject(err);
           return true;

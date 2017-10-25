@@ -4,12 +4,13 @@
   <title>Платформа ION: Профиль пользователя</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
-  <link rel="shortcut icon" href="/favicon.ico">
   <meta name="robots" content="noindex,nofollow">
-  <script src="/vendor/jquery/jquery.min.js" type="application/javascript"></script>
-  <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
-  <link href="/css/essentials.min.css" rel="stylesheet" type="text/css"/>
-  <link href="/css/layout.min.css" rel="stylesheet" type="text/css"/>
+  <base id="baseUrl" href="<%=baseUrl%>">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <link href="css/essentials.min.css" rel="stylesheet" type="text/css">
+  <link href="css/layout.min.css" rel="stylesheet" type="text/css">
+  <script src="vendor/jquery/jquery.min.js"></script>
 </head>
 
 <body>
@@ -23,7 +24,7 @@
       <% }); %>
     </div>
     <% } %>
-    <form id="reg-form" action="/profile" method="post" class="sky-form boxed">
+    <form id="reg-form" action="profile" method="post" class="sky-form boxed">
       <header><i class="fa fa-users"></i> Профиль пользователя <%=user.name%></header>
       <fieldset>
         <% Object.keys(fields).forEach(function(fieldName){ %>
@@ -52,7 +53,7 @@
       <footer>
         <button id="authbutton" type="submit" class="btn btn-primary pull-right">Сохранить</button>
         <div class="forgot-password pull-left">
-          <a href="/"><b>Вернуться в приложение</b></a>
+          <a href="<%=baseUrl%>"><b>Вернуться в приложение</b></a>
         </div>
       </footer>
     </form>

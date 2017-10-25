@@ -8,5 +8,6 @@ module.exports = {
   count: require('./count'),
   avg: require('./avg'),
   max: require('./max'),
-  min: require('./min')
+  min: require('./min'),
+  merge: require('./merge')
 };

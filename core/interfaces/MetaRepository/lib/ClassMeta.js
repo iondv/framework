@@ -8,8 +8,7 @@ var clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 function loadPropertyMetas(cm, plain) {
-  var i, properties;
-  properties = plain.properties.sort(function (a,b) {
+  let properties = plain.properties.sort(function (a,b) {
     return a.orderNumber - b.orderNumber;
   });
 
@@ -24,8 +23,8 @@ function loadPropertyMetas(cm, plain) {
      * @param {Item} item
      */
     return function (item) {
-      var result = [];
-      for (var j = 0; j < this.matrix.length; j++) {
+      let result = [];
+      for (let j = 0; j < this.matrix.length; j++) {
         if (
           !Array.isArray(this.matrix[j].conditions) ||
           this.matrix[j].conditions.length === 0 ||
@@ -74,9 +73,8 @@ function loadPropertyMetas(cm, plain) {
     cm.propertyMetas.__classTitle = sysPm('__classTitle');
   }
 
-  var pm;
-  for (i = 0; i < properties.length; i++) {
-    pm = clone(properties[i]);
+  for (let i = 0; i < properties.length; i++) {
+    let pm = clone(properties[i]);
     cm.propertyMetas[properties[i].name] = pm;
     if (pm.selectionProvider) {
       if (pm.selectionProvider.type === 'SIMPLE') {
@@ -91,8 +89,6 @@ function loadPropertyMetas(cm, plain) {
 function ClassMeta(metaObject) {
 
   var _this = this;
-
-  this.namespace = '';
 
   this.plain = metaObject;
 
@@ -123,11 +119,11 @@ function ClassMeta(metaObject) {
   };
 
   this.getNamespace = function () {
-    return this.namespace;
+    return this.plain.namespace;
   };
 
   this.getCanonicalName = function () {
-    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
+    return this.plain.name + (this.plain.namespace ? '@' + this.plain.namespace : '');
   };
 
   this.getSemantics = function (item, dateCallback, circular) {
@@ -143,7 +139,9 @@ function ClassMeta(metaObject) {
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || (this.getAncestor() ? this.getAncestor().getSemanticAttrs() : []);
+    return this.plain.semantic && this._semanticAttrs.length ?
+      this._semanticAttrs :
+      this.getAncestor() ? this.getAncestor().getSemanticAttrs() : [];
   };
 
   this.getForcedEnrichment = function () {
@@ -183,7 +181,10 @@ function ClassMeta(metaObject) {
   };
 
   this.checkAncestor = function (name) {
-    if (name === this.getName()) {
+    if (name.indexOf('@') < 0) {
+      name = name + '@' + this.getNamespace();
+    }
+    if (name === this.getCanonicalName()) {
       return this;
     }
     var parent = this.getAncestor();
@@ -207,8 +208,8 @@ function ClassMeta(metaObject) {
   };
 
   this.getPropertyMetas = function () {
-    var result = [];
-    for (var nm in this.propertyMetas) {
+    let result = [];
+    for (let nm in this.propertyMetas) {
       if (this.propertyMetas.hasOwnProperty(nm)) {
         result.push(this.propertyMetas[nm]);
       }
@@ -221,6 +222,20 @@ function ClassMeta(metaObject) {
 
   this.isJournaling = function () {
     return this.plain.journaling;
+  };
+
+  this.getCreatorTracker = function () {
+    if (!this.plain.creatorTracker && this.ancestor) {
+      return this.ancestor.getCreatorTracker();
+    }
+    return this.plain.creatorTracker;
+  };
+
+  this.getEditorTracker = function () {
+    if (!this.plain.editorTracker && this.ancestor) {
+      return this.ancestor.getEditorTracker();
+    }
+    return this.plain.editorTracker;
   };
 }
 

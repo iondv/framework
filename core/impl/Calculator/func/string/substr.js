@@ -8,7 +8,7 @@ function countResult(args) {
   var v1, v2, v3;
   v1 = '';
   if (args.length) {
-    v1 = String(args[0]);
+    v1 = String(args[0] || '');
   }
   v2 = 0;
   if (args.length > 1 && !isNaN(args[1])) {

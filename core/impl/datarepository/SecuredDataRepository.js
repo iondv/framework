@@ -260,7 +260,7 @@ function SecuredDataRepository(options) {
             result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
             Array.prototype.push.apply(result, attrResources(ri));
           } else {
-            result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + ri);
+            result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue());
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
@@ -276,27 +276,66 @@ function SecuredDataRepository(options) {
    * @returns {{}}
    */
   function attrPermissions(item, permissions) {
-    var props = item.getProperties();
-    var p, ri, tmp;
-    var result = {};
-    for (var nm in props) {
+    let props = item.getProperties();
+    let result = {};
+    let iperm = item.permissions || {};
+    for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
-        p = props[nm];
+        let p = props[nm];
+        result[p.getName()] = {};
         if (p.getType() === PropertyTypes.REFERENCE) {
-          ri = p.evaluate();
-          tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
+          let ri = p.evaluate();
+          let tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
           if (ri instanceof Item) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
+            if (!ri.permissions) {
+              ri.permissions =
+                merge(true, permissions[tmp] || {}, permissions[classPrefix + p.meta._refClass.getCanonicalName()]);
+            }
             ri.attrPermissions = attrPermissions(ri, permissions);
           }
 
-          result[p.getName()] = merge(
-            true,
-            permissions[tmp] || {},
-            permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}
-          );
+          let rperm = permissions[tmp] || {};
+          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+
+          result[p.getName()][Permissions.READ] =
+            iperm[Permissions.READ] &&
+            rcperm[Permissions.READ];
+
+          if (p.meta.backRef) {
+            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] &&
+              (
+                rperm[Permissions.WRITE] ||
+                rcperm[Permissions.WRITE]
+              );
+          } else {
+            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
+          }
+
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = rcperm[Permissions.READ] || rperm[Permissions.READ];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE] || rperm[Permissions.WRITE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || rperm[Permissions.DELETE];
+
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          result[p.getName()] = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && rcperm[Permissions.READ];
+
+          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && rcperm[Permissions.WRITE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = iperm[Permissions.WRITE] && rcperm[Permissions.USE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = true;
+
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = iperm[Permissions.WRITE] && rcperm[Permissions.DELETE];
+        } else {
+          result[p.getName()][Permissions.READ] = iperm[Permissions.READ];
+          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
         }
       }
     }
@@ -310,6 +349,9 @@ function SecuredDataRepository(options) {
    */
   function setItemPermissions(options) {
     return function (item) {
+      if (!item) {
+        return Promise.resolve(item);
+      }
       return aclProvider.getPermissions(
         options.user.id(), [
           classPrefix + item.getClassName(),
