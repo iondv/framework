@@ -1402,7 +1402,7 @@ function MongoDs(config) {
    * @param {Function} reject
    */
   function fetch(c, options, aggregate, resolve, reject) {
-    var r, flds;
+    let r;
     if (aggregate) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {
@@ -1412,7 +1412,7 @@ function MongoDs(config) {
             return reject(err);
           }
           if (options.sort && options.sort[options.select[0]]) {
-            var direction = options.sort[options.select[0]];
+            let direction = options.sort[options.select[0]];
             data = data.sort(function compare(a, b) {
               if (a < b) {
                 return -1 * direction;
@@ -1422,19 +1422,17 @@ function MongoDs(config) {
               return 0;
             });
           }
-          var res, stPos, endPos;
-          res = [];
-          stPos = options.offset || 0;
-          endPos = options.count ? stPos + options.count : data.length;
-          for (var i = stPos; i < endPos && i < data.length; i++) {
-            var tmp = {};
+          let res = [];
+          let stPos = options.offset || 0;
+          let endPos = options.count ? stPos + options.count : data.length;
+          for (let i = stPos; i < endPos && i < data.length; i++) {
+            let tmp = {};
             tmp[options.select[0]] = data[i];
             res.push(tmp);
           }
           resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
         });
       } else {
-        flds = null;
         r = c.find(options.filter || {});
       }
 
@@ -1456,7 +1454,7 @@ function MongoDs(config) {
     if (options.countTotal) {
       if (aggregate) {
         r.next(function (err, d) {
-          var amount = null;
+          let amount = null;
           if (d && d.__total) {
             amount = d.__total;
           }

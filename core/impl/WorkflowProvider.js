@@ -324,21 +324,13 @@ function WorkflowProvider(options) {
               }
 
               let updates = {};
-              let calculations = null;
+              let calculations = Promise.resolve();
 
               if (Array.isArray(transition.assignments) && transition.assignments.length) {
                 updates = {};
                 transition.assignments.forEach((assignment) => {
-                  calculations = calculations ?
-                    calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
-                    calcAssignmentValue(updates, item, assignment, tOptions);
+                  calculations = calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions));
                 });
-              } else {
-                calculations = Promise.resolve(null);
-              }
-
-              if (!calculations) {
-                calculations = Promise.resolve();
               }
 
               let context = buildContext(item, tOptions);
