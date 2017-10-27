@@ -1647,7 +1647,7 @@ function MongoDs(config) {
    * @param {Function} reject
    */
   function fetch(c, options, aggregate, resolve, reject) {
-    var r, flds;
+    let r;
     if (aggregate) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {
@@ -1678,7 +1678,6 @@ function MongoDs(config) {
           resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
         });
       } else {
-        flds = null;
         r = c.find(options.filter || {});
       }
 
@@ -1700,7 +1699,7 @@ function MongoDs(config) {
     if (options.countTotal) {
       if (aggregate) {
         r.next(function (err, d) {
-          var amount = null;
+          let amount = null;
           if (d && d.__total) {
             amount = d.__total;
           }
