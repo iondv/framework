@@ -780,6 +780,17 @@ function DsMetaRepository(options) {
     return src;
   }
 
+  function compileStyles(vm) {
+    if (vm.styles && typeof vm.styles === 'object' && options.calc) {
+      for (let cn in vm.styles) {
+        if (vm.styles.hasOwnProperty(cn)) {
+          vm.styles[cn] = options.calc.parseFormula(vm.styles[cn]);
+        }
+      }
+    }
+    return vm;
+  }
+
   function acceptViews(views) {
     viewMeta = {
       listModels: {},
@@ -794,8 +805,8 @@ function DsMetaRepository(options) {
 
     for (let i = 0; i < views.length; i++) {
       switch (views[i].type){
-        case 'list': assignVm(viewMeta.listModels, sortViewElements(views[i])); break;
-        case 'collection': assignVm(viewMeta.collectionModels, sortViewElements(views[i])); break;
+        case 'list': assignVm(viewMeta.listModels, compileStyles(sortViewElements(views[i]))); break;
+        case 'collection': assignVm(viewMeta.collectionModels, compileStyles(sortViewElements(views[i]))); break;
         case 'item': {
           let pathParts = views[i].path.split('.');
           if (pathParts[0] === 'workflows') {
@@ -815,11 +826,11 @@ function DsMetaRepository(options) {
               viewMeta.workflowModels[wf][state][cm.getCanonicalName()] = views[i];
             }
           } else {
-            assignVm(viewMeta.itemModels, sortViewElements(views[i]));
+            assignVm(viewMeta.itemModels, compileStyles(sortViewElements(views[i])));
           }
         } break;
-        case 'create': assignVm(viewMeta.createModels, sortViewElements(views[i])); break;
-        case 'detail': assignVm(viewMeta.detailModels, sortViewElements(views[i])); break;
+        case 'create': assignVm(viewMeta.createModels, compileStyles(sortViewElements(views[i]))); break;
+        case 'detail': assignVm(viewMeta.detailModels, compileStyles(sortViewElements(views[i]))); break;
         case 'masks': viewMeta.masks[views[i].name] = views[i]; break;
         case 'validators': viewMeta.validators[views[i].name] = views[i]; break;
         default: break;
