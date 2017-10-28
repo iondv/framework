@@ -81,7 +81,7 @@ const FUNC_OPERS = {
   [Operations.LITERAL]: '$literal'
 };
 
-// jshint maxstatements: 100, maxcomplexity: 50, maxdepth: 10, maxparams: 8
+// jshint maxstatements: 100, maxcomplexity: 60, maxdepth: 10, maxparams: 8
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -1145,22 +1145,27 @@ function MongoDs(config) {
                 if (tmp === IGNORE) {
                   result = IGNORE;
                   break;
-                } else if (typeof tmp === 'string' && (tmp.indexOf('.') > 0 && tmp[0] === '$')) {
+                } else if (typeof tmp === 'string' && tmp[0] === '$') {
                   let an = (tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp).substr(1);
                   if (attributes.indexOf(an) < 0) {
                     attributes.push(an);
                   }
                   result = IGNORE;
                   break;
-                } else if (typeof tmp === 'string' && tmp[0] === '$') {
-                  result = IGNORE;
-                  break;
-                } else if (name[0] === '$' && allowInPrefilter.indexOf(name) < 0) {
-                  result = IGNORE;
-                  analise.needRedact = true;
-                  break;
+                } else if (name[0] === '$') {
+                  if (allowInPrefilter.indexOf(name) < 0) {
+                    result = IGNORE;
+                    analise.needRedact = true;
+                    break;
+                  } else {
+                    result = result || {};
+                    result[name] = tmp;
+                  }
                 } else {
                   result = result || {};
+                  if (attributes.indexOf(name) < 0) {
+                    attributes.push(name);
+                  }
                   result[name] = tmp;
                 }
               }
