@@ -1858,25 +1858,26 @@ function IonDataRepository(options) {
    * @param {User} [options.user]
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    var cm = _this.meta.getMeta(classname);
-    var rcm = getRootType(cm);
-    var base = null;
-    var conditions = dataToFilter(formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, id)));
-    var item = _this._wrap(classname, conditions);
-    conditions = addFilterByItem(null, conditions);
-    var filter;
-    var p = prepareFilterValues(cm, conditions, []);
+    let cm = this.meta.getMeta(classname);
+    let rcm = getRootType(cm);
+    let base = null;
+    let dt = formUpdatedData(rcm, this.keyProvider.keyToData(rcm, id));
+    let item = this._wrap(classname, dt);
+
+    let conditions = dataToFilter(dt);
+    let filter;
+    let p = prepareFilterValues(cm, conditions, []).then((f) => {filter = f;});
     if (changeLogger) {
       p = p
-        .then(function (f) {filter = f; return _this.ds.get(tn(rcm), f);})
-        .then(function (b) {
+        .then(() => this.ds.get(tn(rcm), filter))
+        .then((b) => {
           base = b;
           return bubble(
             'pre-delete',
             cm,
             {
               id: id,
-              item: b && _this._wrap(cm.getCanonicalName(), b, cm.getVersion()),
+              item: b && this._wrap(cm.getCanonicalName(), b, cm.getVersion()),
               user: options.user
             }
           );
@@ -1896,17 +1897,17 @@ function IonDataRepository(options) {
         if (e && e.canceled) {
           return Promise.resolve(EVENT_CANCELED);
         }
-        return _this.ds.delete(tn(rcm), conditions);
+        return _this.ds.delete(tn(rcm), filter);
       })
       .catch(wrapDsError('deleteItem', classname, id))
-      .then(function (result) {
+      .then((result) => {
         if (result === EVENT_CANCELED) {
           return Promise.resolve(EVENT_CANCELED);
         }
         return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: base, updates: {}});
       })
       .then(
-        function (result) {
+        (result) => {
           if (result === EVENT_CANCELED) {
             return Promise.resolve();
           }

@@ -1683,7 +1683,7 @@ function MongoDs(config) {
             tmp[options.select[0]] = data[i];
             res.push(tmp);
           }
-          resolve(res, options.countTotal ? (data.length ? data.length : 0) : null);
+          resolve(res, options.countTotal ? data.length || 0 : null);
         });
       } else {
         r = c.find(options.filter || {});
@@ -1712,7 +1712,7 @@ function MongoDs(config) {
             amount = d.__total;
           }
           r.rewind();
-          resolve(r, amount);
+          resolve(r, amount || 0);
         });
       } else {
         r.count(false, function (err, amount) {
@@ -1720,7 +1720,7 @@ function MongoDs(config) {
             r.close();
             return reject(err);
           }
-          resolve(r, amount);
+          resolve(r, amount || 0);
         });
       }
     } else {
