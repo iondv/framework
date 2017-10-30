@@ -757,7 +757,10 @@ function MongoDs(config) {
       for (let i = 0; i < conditions.length; i++) {
         prepareConditions(conditions[i], i, conditions, false, part, parent);
       }
-    } else if (typeof conditions === 'object' && conditions) {
+    } else if (
+        typeof conditions === 'object' && conditions &&
+        !(conditions instanceof Date) && !(conditions instanceof mongo.ObjectID)
+    ) {
       for (let nm in conditions) {
         if (conditions.hasOwnProperty(nm)) {
           if (nm === '_id' && typeof conditions._id === 'string') {
@@ -1040,7 +1043,7 @@ function MongoDs(config) {
         }
       }
       return result.length ? result : null;
-    } else if (typeof find === 'object') {
+    } else if (typeof find === 'object' && find && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       let jsrc = {};
       let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
@@ -1241,7 +1244,7 @@ function MongoDs(config) {
         }
       }
       return result.length ? result : undefined;
-    } else if (typeof find === 'object' && find !== null && !(find instanceof Date)) {
+    } else if (typeof find === 'object' && find !== null && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
@@ -1283,7 +1286,7 @@ function MongoDs(config) {
         }
       }
       return result.length ? result : null;
-    } else if (typeof find === 'object' && find !== null && !(find instanceof Date)) {
+    } else if (typeof find === 'object' && find !== null && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
@@ -1514,7 +1517,7 @@ function MongoDs(config) {
         jl = joins.length;
 
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
-        if (joins.length > jl || attributes.length > resultAttrs.length || analise.needRedact) {
+        if (joins.length > jl || analise.needRedact) {
           postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(postfilter, lookups);
           postfilter = producePrefilter([], postfilter, [], [], {});
@@ -1522,7 +1525,7 @@ function MongoDs(config) {
       }
 
       if (prefilter && typeof prefilter === 'object' &&
-        (joins.length || attributes.length > resultAttrs.length || options.to || forcedStages.length || analise.needRedact)) {
+        (joins.length || options.to || forcedStages.length || analise.needRedact)) {
         result.push({$match: prefilter});
       }
     } catch (err) {
