@@ -7,6 +7,7 @@ const Acl = require('acl');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Permissions = require('core/Permissions');
 const chain = require('core/util/chain');
+const F = require('core/FunctionCodes');
 
 /**
  * @param {{}} config
@@ -142,7 +143,7 @@ function MongoAclAccessManager(config) {
    */
   this._undefineRoles = function (roles) {
     return chain(roles, (role) => {
-      return ds.delete('ion_security_role', {id: role})
+      return ds.delete('ion_security_role', {[F.EQUAL]: ['$id', role]})
         .then(
           () => new Promise((resolve, reject) => {
             _this.acl.removeRole(role, (err) => err ? reject(err) : resolve());
@@ -156,7 +157,7 @@ function MongoAclAccessManager(config) {
     if (caption) {
       data.name = caption;
     }
-    return ds.upsert('ion_security_role', {id: role}, data);
+    return ds.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data);
   };
 
   this._defineResource = function (resource, caption = null) {
@@ -164,7 +165,7 @@ function MongoAclAccessManager(config) {
     if (caption) {
       data.name = caption;
     }
-    return ds.upsert('ion_security_resource', {id: resource}, data);
+    return ds.upsert('ion_security_resource', {[F.EQUAL]: ['$id', resource]}, data);
   };
 
   /**
@@ -173,7 +174,7 @@ function MongoAclAccessManager(config) {
    */
   this._undefineResources = function (resources) {
     return chain(resources, (resource) => {
-      return ds.delete('ion_security_resource', {id: resource})
+      return ds.delete('ion_security_resource', {[F.EQUAL]: ['$id', resource]})
         .then(
           () => new Promise((resolve, reject) => {
             _this.acl.removeResource(resource, (err) => err ? reject(err) : resolve());
