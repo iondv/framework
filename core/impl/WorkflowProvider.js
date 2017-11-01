@@ -450,9 +450,8 @@ function WorkflowProvider(options) {
         }
 
         let target = wf.statesByName[state];
-        let context = buildContext(item, tOptions);
         let checker = Promise.resolve();
-        checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(context) : true);
+        checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(item) : true);
 
         return checker
           .then((allowed) => {
