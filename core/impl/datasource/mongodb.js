@@ -656,12 +656,48 @@ function MongoDs(config) {
                     return {[attr]: {$empty: false}};
                 }
                 if (typeof right !== 'undefined') {
+                  if (o === QUERY_OPERS[Operations.EQUAL]) {
+                    return {[attr]: right};
+                  }
                   return {[attr]: {[o]: right}};
                 }
                 return {[o]: args};
               }
             }
           } else if (FUNC_OPERS.hasOwnProperty(oper)) {
+            if (oper === Operations.AND) {
+              let conds = parseCondition(c[oper]);
+              let processed = {};
+              for (let i = 0; i < conds.length; i++) {
+                let c = conds[i];
+                let loper;
+                for (loper in c) {
+                  if (c.hasOwnProperty(loper)) {
+                    break;
+                  }
+                }
+
+                let oper2;
+                if (loper) {
+                  for (oper2 in c[loper]) {
+                    if (c[loper].hasOwnProperty(oper2)) {
+                      break;
+                    }
+                  }
+                }
+                if (loper && loper[0] !== '$' &&
+                  oper2 === QUERY_OPERS[Operations.EQUAL] && !processed.hasOwnProperty(loper)
+                ) {
+                  processed[loper] = c[loper][oper2];
+                } else {
+                  processed = false;
+                  break;
+                }
+              }
+              if (processed) {
+                return processed;
+              }
+            }
             return {[FUNC_OPERS[oper]]: parseCondition(c[oper])};
           }
         }
