@@ -77,13 +77,16 @@ function WorkflowProvider(options) {
       item.getMetaClass().getVersion()
     );
 
+    let wfByName = {};
+    for (let i = 0; i < workflows.length; i++) {
+      wfByName[workflows[i].name] = workflows[i];
+    }
+
     let result = {};
 
     let itemPermissions = {};
     let propertyPermissions = {};
     let selectionProviders = {};
-
-    let context = buildContext(item, tOptions);
 
     return options.dataSource.fetch(tableName,
         {
@@ -94,6 +97,9 @@ function WorkflowProvider(options) {
       )
       .then((states) => {
         for (let i = 0; i < states.length; i++) {
+          if (states[i].workflow.indexOf('@') < 0 && wfByName.hasOwnProperty(states[i].workflow)) {
+            states[i].workflow = states[i].workflow + '@' + wfByName[states[i].workflow].namespace;
+          }
           result[states[i].workflow] = {
             stage: states[i].stage,
             since: states[i].since,
@@ -115,14 +121,14 @@ function WorkflowProvider(options) {
           let stage = wf.statesByName[state.stage] || wf.statesByName[wf.startState];
           if (stage) {
             if (stage._checker) {
-              rp = rp.then(() => stage._checker.apply(context));
+              rp = rp.then(() => stage._checker.apply(item));
             } else {
               rp = rp.then(() => true);
             }
 
             rp = rp.then((allowed) => {
               if (!allowed) {
-                delete result[wf.name];
+                delete result[fullWfName];
                 return;
               }
 
@@ -163,7 +169,7 @@ function WorkflowProvider(options) {
               if (Array.isArray(wf.transitionsBySrc[stage.name])) {
                 wf.transitionsBySrc[stage.name].forEach((transition) => {
                   if (transition._checker) {
-                    rp2 = rp2.then(() => transition._checker.apply(context));
+                    rp2 = rp2.then(() => transition._checker.apply(item));
                   } else {
                     rp2 = rp2.then(() => true);
                   }
@@ -191,7 +197,7 @@ function WorkflowProvider(options) {
                         signBefore: transition.signBefore,
                         signAfter: transition.signAfter,
                         confirm: transition.confirm,
-                        confirmMessage: transition.confirmMessage                        
+                        confirmMessage: transition.confirmMessage
                       };
                     }
                   });

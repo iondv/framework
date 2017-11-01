@@ -251,7 +251,13 @@ function ConditionParser(condition, rcm, context, lang) {
           }; break;
 
           */
-        case ConditionTypes.IN: return produceFilter(condition, Operations.IN, rcm, context);
+        case ConditionTypes.IN: {
+          let arr = toScalar(condition.value, context, vt(rcm, condition.property), lang);
+          if (typeof arr === 'string' && arr && arr[0] === '$' || Array.isArray(arr)) {
+            return {[Operations.IN]: ['$' + condition.property, arr]};
+          }
+          return {[Operations.IN]: ['$' + condition.property, [arr]]};
+        }
         default: throw new Error('Некорректный тип условия!');
       }
     } else {
