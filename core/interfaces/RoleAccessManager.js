@@ -50,6 +50,14 @@ function RoleAccessManager() {
     return this._unassignRoles(subjects, roles);
   };
 
+  this.defineRole = function (role, caption = null) {
+    return this._defineRole(role, caption);
+  };
+
+  this.defineResource = function (resource, caption = null) {
+    return this._defineResource(resource, caption);
+  };
+
   /**
    * @param {String[]} roles
    * @returns {Promise}

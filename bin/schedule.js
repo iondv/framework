@@ -3,7 +3,8 @@
  */
 const config = require('../config');
 const di = require('core/di');
-
+const alias = require('core/scope-alias');
+const extend = require('extend');
 const IonLogger = require('core/impl/log/IonLogger');
 const Scheduler = require('core/impl/Scheduler');
 
@@ -14,13 +15,12 @@ errorSetup(config.lang || 'ru');
 
 // jshint maxcomplexity: 20, maxstatements: 30
 
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler']
-)
+  }, null, ['rtEvents', 'sessionHandler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope

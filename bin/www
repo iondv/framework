@@ -180,7 +180,6 @@ di('boot', config.bootstrap,
           app.get(route, scope.auth.verifier(), scope.imageStorage.fileMiddle());
         }
       }
-
       scope.auth.setTopLevelAuth();
 
       if (scope.oauth) {

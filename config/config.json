@@ -71,7 +71,9 @@
         "options": {
           "dataSource": "ion://Db"
         }
-      },
+      }
+    },
+    "di" : {
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
@@ -106,9 +108,7 @@
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]"
         }
-      }
-    },
-    "di" : {
+      },
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
@@ -120,7 +120,7 @@
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
-        "initLevel": 2,
+        "initLevel": 1,
         "options": {
           "dataSource": "ion://Db",
           "calc": "ion://calculator",
