@@ -5,7 +5,7 @@
 
 function Calculator() {
   /**
-   * @param {String} formula
+   * @param {String | {}} formula
    */
   this.parseFormula = function (formula) {
     return this._parseFormula(formula);

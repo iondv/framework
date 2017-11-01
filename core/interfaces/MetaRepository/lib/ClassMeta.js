@@ -3,88 +3,10 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-var checkConditions = require('core/ConditionChecker');
-var clone = require('clone');
+const ConditionParser = require('core/ConditionParser');
+const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
-function loadPropertyMetas(cm, plain) {
-  let properties = plain.properties.sort(function (a,b) {
-    return a.orderNumber - b.orderNumber;
-  });
-
-  function selectionConstructor1() {
-    return function () {
-      return this.list || [];
-    };
-  }
-
-  function selectionConstructor2() {
-    /**
-     * @param {Item} item
-     */
-    return function (item) {
-      let result = [];
-      for (let j = 0; j < this.matrix.length; j++) {
-        if (
-          !Array.isArray(this.matrix[j].conditions) ||
-          this.matrix[j].conditions.length === 0 ||
-          checkConditions(item, this.matrix[j].conditions)) {
-          Array.prototype.push.apply(result, this.matrix[j].result || []);
-        }
-      }
-      return result;
-    };
-  }
-
-  function sysPm(name) {
-    return {
-      orderNumber: 0,
-      name: name,
-      caption: name,
-      type: 0,
-      size: 500,
-      decimals: 0,
-      allowedFileTypes: null,
-      maxFileCount: 0,
-      nullable: true,
-      readonly: true,
-      indexed: false,
-      unique: false,
-      autoassigned: false,
-      hint: null,
-      defaultValue: null,
-      refClass: "",
-      itemsClass: "",
-      backRef: "",
-      backColl: "",
-      binding: "",
-      semantic: null,
-      selConditions: [],
-      selSorting: [],
-      selectionProvider: null,
-      indexSearch: false,
-      eagerLoading: false,
-      formula: null
-    };
-  }
-
-  if (!plain.ancestor) {
-    cm.propertyMetas.__class = sysPm('__class');
-    cm.propertyMetas.__classTitle = sysPm('__classTitle');
-  }
-
-  for (let i = 0; i < properties.length; i++) {
-    let pm = clone(properties[i]);
-    cm.propertyMetas[properties[i].name] = pm;
-    if (pm.selectionProvider) {
-      if (pm.selectionProvider.type === 'SIMPLE') {
-        pm.selectionProvider.getSelection = selectionConstructor1();
-      } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        pm.selectionProvider.getSelection = selectionConstructor2();
-      }
-    }
-  }
-}
 
 function ClassMeta(metaObject) {
 
@@ -103,8 +25,6 @@ function ClassMeta(metaObject) {
   this._semanticAttrs = [];
 
   this._semanticFunc = null;
-
-  loadPropertyMetas(_this, metaObject);
 
   this.getVersion = function () {
     return this.plain.version;

@@ -1,6 +1,7 @@
 {
     "log_level": "notice",
     "parametrised": true,
+    "baseUrl": "[[app.baseUrl]]",
     "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
     "skipModules": "[[module.skip]]",

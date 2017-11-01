@@ -4,12 +4,12 @@
 'use strict';
 
 const IWorkflowProvider = require('core/interfaces/WorkflowProvider');
-const checker = require('core/ConditionChecker');
 const period = require('core/period');
 const EventManager = require('core/impl/EventManager');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/workflow');
 const Permissions = require('core/Permissions');
+const F = require('core/FunctionCodes');
 
 const MetaPermissions  = {
   READ: 1,
@@ -71,55 +71,59 @@ function WorkflowProvider(options) {
    * @returns {Promise}
    */
   this._getStatus = function (item, tOptions) {
-    return new Promise(function (resolve, reject) {
-      let workflows = options.metaRepo.getWorkflows(
-        item.getMetaClass().getCanonicalName(),
-        item.getMetaClass().getNamespace(),
-        item.getMetaClass().getVersion()
-      );
+    let workflows = options.metaRepo.getWorkflows(
+      item.getMetaClass().getCanonicalName(),
+      item.getMetaClass().getNamespace(),
+      item.getMetaClass().getVersion()
+    );
 
-      options.dataSource.fetch(tableName,
+    let result = {};
+
+    let itemPermissions = {};
+    let propertyPermissions = {};
+    let selectionProviders = {};
+
+    let context = buildContext(item, tOptions);
+
+    return options.dataSource.fetch(tableName,
         {
           filter: {
-            item: item.getClassName() + '@' + item.getItemId()
+            [F.EQUAL]: ['$item', item.getClassName() + '@' + item.getItemId()]
           }
         }
-      ).
-      then(
-        function (states) {
-          let result = {};
+      )
+      .then((states) => {
+        for (let i = 0; i < states.length; i++) {
+          result[states[i].workflow] = {
+            stage: states[i].stage,
+            since: states[i].since,
+            next: {}
+          };
+        }
 
-          let itemPermissions = {};
-          let propertyPermissions = {};
-          let selectionProviders = {};
-
-          let context = buildContext(item, tOptions);
-
-          for (let i = 0; i < states.length; i++) {
-            result[states[i].workflow] = {
-              stage: states[i].stage,
-              since: states[i].since,
+        let rp = Promise.resolve();
+        workflows.forEach((wf) => {
+          let fullWfName = wf.name + '@' + wf.namespace;
+          if (!result.hasOwnProperty(fullWfName)) {
+            result[fullWfName] = {
               next: {}
             };
           }
+          let state = result[fullWfName];
+          state.workflowCaption = wf.caption;
 
-          for (let i = 0; i < workflows.length; i++) {
-            let fullWfName = workflows[i].name + '@' + workflows[i].namespace;
-            if (!result.hasOwnProperty(fullWfName)) {
-              result[fullWfName] = {
-                next: {}
-              };
+          let stage = wf.statesByName[state.stage] || wf.statesByName[wf.startState];
+          if (stage) {
+            if (stage._checker) {
+              rp = rp.then(() => stage._checker.apply(context));
+            } else {
+              rp = rp.then(() => true);
             }
-            let state = result[fullWfName];
-            state.workflowCaption = workflows[i].caption;
 
-            let stage = workflows[i].statesByName[state.stage] || workflows[i].statesByName[workflows[i].startState];
-            if (stage) {
-              if (Array.isArray(stage.conditions) && stage.conditions.length) {
-                if (!checker(item, stage.conditions, context, tOptions.lang)) {
-                  delete result[workflows[i].name];
-                  continue;
-                }
+            rp = rp.then((allowed) => {
+              if (!allowed) {
+                delete result[wf.name];
+                return;
               }
 
               state.stageCaption = stage.caption;
@@ -155,62 +159,70 @@ function WorkflowProvider(options) {
                 }
               }
 
-              if (Array.isArray(workflows[i].transitionsBySrc[stage.name])) {
-                for (let j = 0; j < workflows[i].transitionsBySrc[stage.name].length; j++) {
-                  let transition = workflows[i].transitionsBySrc[stage.name][j];
-                  if (Array.isArray(transition.conditions) && transition.conditions.length) {
-                    if (!checker(item, transition.conditions, context, tOptions.lang)) {
-                      continue;
-                    }
+              let rp2 = Promise.resolve();
+              if (Array.isArray(wf.transitionsBySrc[stage.name])) {
+                wf.transitionsBySrc[stage.name].forEach((transition) => {
+                  if (transition._checker) {
+                    rp2 = rp2.then(() => transition._checker.apply(context));
+                  } else {
+                    rp2 = rp2.then(() => true);
                   }
 
-                  if (Array.isArray(transition.roles) && transition.roles.length) {
-                    let available = false;
-                    for (let k = 0; k < transition.roles.length; k++) {
-                      if (
-                        tOptions.user.isMe(transition.roles[k]) ||
-                        tOptions.user.isMe(item.get(transition.roles[k]))
-                      ) {
-                        available = true;
-                        break;
+                  rp2 = rp2.then((allowed) => {
+                    if (allowed) {
+                      if (Array.isArray(transition.roles) && transition.roles.length) {
+                        let available = false;
+                        for (let k = 0; k < transition.roles.length; k++) {
+                          if (
+                            tOptions.user.isMe(transition.roles[k]) ||
+                            tOptions.user.isMe(item.get(transition.roles[k]))
+                          ) {
+                            available = true;
+                            break;
+                          }
+                        }
+                        if (!available) {
+                          return;
+                        }
                       }
+                      state.next[transition.name] = {
+                        name: transition.name,
+                        caption: transition.caption,
+                        signBefore: transition.signBefore,
+                        signAfter: transition.signAfter,
+                        confirm: transition.confirm,
+                        confirmMessage: transition.confirmMessage                        
+                      };
                     }
-                    if (!available) {
-                      continue;
-                    }
-                  }
-                  state.next[transition.name] = {
-                    name: transition.name,
-                    caption: transition.caption,
-                    signBefore: transition.signBefore,
-                    signAfter: transition.signAfter,
-                    confirm: transition.confirm,
-                    confirmMessage: transition.confirmMessage
-                  };
-                }
+                  });
+                });
               }
-            } else {
-              delete result[fullWfName];
-            }
+              return rp2;
+            });
+          } else {
+            delete result[fullWfName];
           }
+        });
 
-          resolve({
+        return rp.then(()=> {
+          return {
             stages: result,
             itemPermissions: itemPermissions,
             propertyPermissions: propertyPermissions,
             selectionProviders: selectionProviders
-          });
-        }
-      ).catch(reject);
-    });
+          };
+        });
+      });
   };
 
   this._itemsInStatus = function (workflow, status) {
     return options.dataSource.fetch(tableName,
         {
           filter: {
-            workflow: workflow,
-            stage: status
+            [F.AND]: [
+              {[F.EQUAL]: ['$workflow', workflow]},
+              {[F.EQUAL]: ['$stage', status]}
+            ]
           }
         }
       ).
@@ -234,8 +246,10 @@ function WorkflowProvider(options) {
   function move(item, workflow, nextState) {
     return options.dataSource.upsert(tableName,
       {
-        item: item.getClassName() + '@' + item.getItemId(),
-        workflow: workflow
+        [F.AND]: [
+          {[F.EQUAL]: ['$item', item.getClassName() + '@' + item.getItemId()]},
+          {[F.EQUAL]: ['$workflow', workflow]}
+        ]
       },
       {
         stage: nextState.name,
@@ -324,80 +338,66 @@ function WorkflowProvider(options) {
               }
 
               let updates = {};
-              let calculations = null;
+              let calculations = Promise.resolve();
 
               if (Array.isArray(transition.assignments) && transition.assignments.length) {
                 updates = {};
                 transition.assignments.forEach((assignment) => {
-                  calculations = calculations ?
-                    calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions)) :
-                    calcAssignmentValue(updates, item, assignment, tOptions);
+                  calculations = calculations.then(() => calcAssignmentValue(updates, item, assignment, tOptions));
                 });
-              } else {
-                calculations = Promise.resolve(null);
               }
 
-              if (!calculations) {
-                calculations = Promise.resolve();
-              }
+                let context = buildContext(item, tOptions);
+                return calculations
+                  .then(() => typeof nextState._checker === 'function' ? nextState._checker.apply(context) : true)
+                  .then((allowed) => {
+                    if (!allowed) {
+                      throw new IonError(
+                          Errors.CONDITION_VIOLATION,
+                          {
+                            info: item.getClassName() + '@' + item.getItemId(),
+                            state: nextState.caption,
+                            workflow: wf.caption
+                          }
+                        );
+                    }
 
-              let context = buildContext(item, tOptions);
-              return calculations.then(function () {
-                if (Array.isArray(nextState.conditions) && nextState.conditions.length) {
-                  if (!checker(item, nextState.conditions, context, tOptions.lang)) {
-                    return Promise.reject(
-                      new IonError(
-                        Errors.CONDITION_VIOLATION,
-                        {
-                          info: item.getClassName() + '@' + item.getItemId(),
-                          state: nextState.caption,
-                          workflow: wf.caption
-                        }
-                      )
-                    );
-                  }
-                }
-
-                return _this.trigger({
-                  type: workflow + '.' + nextState.name,
-                  item: item
-                }).then(
-                  function (e) {
-                    if (Array.isArray(e.results) && e.results.length) {
-                      for (let i = 0; i < e.results.length; i++) {
-                        if (e.results[i] && typeof e.results[i] === 'object') {
-                          for (let nm in e.results[i]) {
-                            if (e.results[i].hasOwnProperty(nm)) {
-                              if (!updates) {
-                                updates = {};
+                    return _this.trigger({
+                        type: workflow + '.' + nextState.name,
+                        item: item
+                      })
+                      .then((e) => {
+                        if (Array.isArray(e.results) && e.results.length) {
+                          for (let i = 0; i < e.results.length; i++) {
+                            if (e.results[i] && typeof e.results[i] === 'object') {
+                              for (let nm in e.results[i]) {
+                                if (e.results[i].hasOwnProperty(nm)) {
+                                  if (!updates) {
+                                    updates = {};
+                                  }
+                                  updates[nm] = e.results[i][nm];
+                                }
                               }
-                              updates[nm] = e.results[i][nm];
                             }
                           }
                         }
-                      }
-                    }
 
-                    if (updates) {
-                      return options.dataRepo.editItem(
-                        item.getMetaClass().getCanonicalName(),
-                        item.getItemId(),
-                        updates,
-                        tOptions.changeLogger,
-                        {
-                          user: tOptions.user
+                        if (updates) {
+                          return options.dataRepo.editItem(
+                            item.getMetaClass().getCanonicalName(),
+                            item.getItemId(),
+                            updates,
+                            tOptions.changeLogger,
+                            {
+                              user: tOptions.user
+                            }
+                          );
                         }
-                      );
-                    }
-                    return Promise.resolve(item);
-                  }
-                ).then(
-                  function (item) {
-                    return move(item, workflow, nextState);
-                  }
-                );
-              });
-            }
+                        return item;
+                      })
+                      .then((item) => move(item, workflow, nextState));
+                  });
+              }
           }
           return Promise.reject(
             new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})
@@ -432,74 +432,74 @@ function WorkflowProvider(options) {
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
-    return _this._getStatus(item, tOptions).then(function (status) {
-      if (status.stages.hasOwnProperty(workflow)) {
-        return Promise.reject(new IonError(Errors.IN_WORKFLOW, {workflow: wf.caption}));
-      }
-      if (!wf.statesByName.hasOwnProperty(state)) {
-        return Promise.reject(
-          new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption})
-        );
-      }
-
-      let target = wf.statesByName[state];
-
-      if (Array.isArray(target.conditions) && target.conditions.length) {
-        let context = buildContext(item, tOptions);
-        if (!checker(item, target.conditions, context, tOptions.lang)) {
+    return _this._getStatus(item, tOptions)
+      .then((status) => {
+        if (status.stages.hasOwnProperty(workflow)) {
+          return Promise.reject(new IonError(Errors.IN_WORKFLOW, {workflow: wf.caption}));
+        }
+        if (!wf.statesByName.hasOwnProperty(state)) {
           return Promise.reject(
-            new IonError(
-              Errors.CONDITION_VIOLATION,
-              {
-                info: item.getClassName() + '@' + item.getItemId(),
-                state: target.caption,
-                workflow: wf.caption
-              }
-            )
+            new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption})
           );
         }
-      }
 
-      return _this.trigger({
-        type: workflow + '.' + target.name,
-        item: item
-      }).then(
-        function (e) {
-          let updates;
-          if (Array.isArray(e.results) && e.results.length) {
-            for (let i = 0; i < e.results.length; i++) {
-              if (e.results[i] && typeof e.results[i] === 'object') {
-                for (let nm in e.results[i]) {
-                  if (e.results[i].hasOwnProperty(nm)) {
-                    if (!updates) {
-                      updates = {};
+        let target = wf.statesByName[state];
+        let context = buildContext(item, tOptions);
+        let checker = Promise.resolve();
+        checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(context) : true);
+
+        return checker
+          .then((allowed) => {
+            if (!allowed) {
+              throw new IonError(
+                Errors.CONDITION_VIOLATION,
+                {
+                  info: item.getClassName() + '@' + item.getItemId(),
+                  state: target.caption,
+                  workflow: wf.caption
+                }
+              );
+            }
+          })
+          .then(() =>
+            _this.trigger({
+              type: workflow + '.' + target.name,
+              item: item
+            })
+          )
+          .then((e) => {
+              let updates;
+              if (Array.isArray(e.results) && e.results.length) {
+                for (let i = 0; i < e.results.length; i++) {
+                  if (e.results[i] && typeof e.results[i] === 'object') {
+                    for (let nm in e.results[i]) {
+                      if (e.results[i].hasOwnProperty(nm)) {
+                        if (!updates) {
+                          updates = {};
+                        }
+                        updates[nm] = e.results[i][nm];
+                      }
                     }
-                    updates[nm] = e.results[i][nm];
                   }
                 }
               }
-            }
-          }
 
-          if (updates) {
-            return options.dataRepo.editItem(
-              item.getMetaClass().getCanonicalName(),
-              item.getItemId(),
-              updates,
-              tOptions.changeLogger,
-              {
-                user: tOptions.user
+              if (updates) {
+                return options.dataRepo.editItem(
+                  item.getMetaClass().getCanonicalName(),
+                  item.getItemId(),
+                  updates,
+                  tOptions.changeLogger,
+                  {
+                    user: tOptions.user
+                  }
+                );
               }
-            );
-          }
-          return Promise.resolve(item);
-        }
-      ).then(
-        function (item) {
-          return move(item, workflow, target);
-        }
-      );
-    });
+              return item;
+            }
+          )
+          .then((item) => move(item, workflow, target));
+      });
   };
 
   /**
