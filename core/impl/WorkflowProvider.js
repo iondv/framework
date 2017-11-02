@@ -78,6 +78,11 @@ function WorkflowProvider(options) {
         item.getMetaClass().getVersion()
       );
 
+      let wfByName = {};
+      for (let i = 0; i < workflows.length; i++) {
+        wfByName[workflows[i].name] = workflows[i];
+      }
+
       options.dataSource.fetch(tableName,
         {
           filter: {
@@ -96,6 +101,9 @@ function WorkflowProvider(options) {
           let context = buildContext(item, tOptions);
 
           for (let i = 0; i < states.length; i++) {
+            if (states[i].workflow.indexOf('@') < 0 && wfByName.hasOwnProperty(states[i].workflow)) {
+              states[i].workflow = states[i].workflow + '@' + wfByName[states[i].workflow].namespace;
+            }           
             result[states[i].workflow] = {
               stage: states[i].stage,
               since: states[i].since,
@@ -117,7 +125,7 @@ function WorkflowProvider(options) {
             if (stage) {
               if (Array.isArray(stage.conditions) && stage.conditions.length) {
                 if (!checker(item, stage.conditions, context, tOptions.lang)) {
-                  delete result[workflows[i].name];
+                  delete result[fullWfName];
                   continue;
                 }
               }
