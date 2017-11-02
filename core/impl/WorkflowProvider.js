@@ -55,7 +55,7 @@ function WorkflowProvider(options) {
    * @returns {{}}
    */
   function buildContext(item, options) {
-    let context = {$item: item, $uid: options.user.id()};
+    let context = {$context: item, $uid: options.user.id()};
     let props = options.user.properties();
     for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
@@ -77,6 +77,11 @@ function WorkflowProvider(options) {
       item.getMetaClass().getVersion()
     );
 
+    let wfByName = {};
+    for (let i = 0; i < workflows.length; i++) {
+      wfByName[workflows[i].name] = workflows[i];
+    }
+
     let result = {};
 
     let itemPermissions = {};
@@ -94,6 +99,9 @@ function WorkflowProvider(options) {
       )
       .then((states) => {
         for (let i = 0; i < states.length; i++) {
+          if (states[i].workflow.indexOf('@') < 0 && wfByName.hasOwnProperty(states[i].workflow)) {
+            states[i].workflow = states[i].workflow + '@' + wfByName[states[i].workflow].namespace;
+          }
           result[states[i].workflow] = {
             stage: states[i].stage,
             since: states[i].since,
@@ -122,7 +130,7 @@ function WorkflowProvider(options) {
 
             rp = rp.then((allowed) => {
               if (!allowed) {
-                delete result[wf.name];
+                delete result[fullWfName];
                 return;
               }
 
@@ -191,7 +199,7 @@ function WorkflowProvider(options) {
                         signBefore: transition.signBefore,
                         signAfter: transition.signAfter,
                         confirm: transition.confirm,
-                        confirmMessage: transition.confirmMessage                        
+                        confirmMessage: transition.confirmMessage
                       };
                     }
                   });
@@ -432,6 +440,8 @@ function WorkflowProvider(options) {
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
+    let context = buildContext(item, tOptions);
+
     return _this._getStatus(item, tOptions)
       .then((status) => {
         if (status.stages.hasOwnProperty(workflow)) {
@@ -444,7 +454,6 @@ function WorkflowProvider(options) {
         }
 
         let target = wf.statesByName[state];
-        let context = buildContext(item, tOptions);
         let checker = Promise.resolve();
         checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(context) : true);
 

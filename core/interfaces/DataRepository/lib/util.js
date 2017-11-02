@@ -690,9 +690,9 @@ function textSearchFilter(scope, cm, opts, sv, lang, useFullText, prefix, depth)
         conds = conds[0];
       } else {
         if (opts.joinBy === 'and') {
-          conds = {$and: conds};
+          conds = {[Operations.AND]: conds};
         } else {
-          conds = {$or: conds};
+          conds = {[Operations.OR]: conds};
         }
       }
       return conds;

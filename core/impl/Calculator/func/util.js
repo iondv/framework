@@ -48,8 +48,8 @@ function sequence(context, args, interrupt) {
   if (!args.length) {
     return false;
   }
-  var ps = args.length;
-  var p;
+  let ps = args.length;
+  let p;
   let result;
   for (let i = 0; i < args.length; i++) {
     result = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
