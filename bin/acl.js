@@ -17,8 +17,7 @@ var params = {
   users: [],
   resources: [],
   roles: [],
-  method: 'grant',
-  aclFile: null
+  method: 'grant'
 };
 
 var setParam = false;
