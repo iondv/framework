@@ -92,14 +92,11 @@ function objProp(obj, nm) {
   }
 
   let pth = nm.split('.');
-  let ctx = obj;
-  for (let i = 0; i < pth.length; i++) {
-    ctx = ctx[pth[i]];
-    if (typeof ctx !== 'object' || !ctx) {
-      return ctx;
-    }
+  let ctx = objProp(obj, pth[0]);
+  if (ctx && typeof ctx === 'object') {
+    return objProp(ctx, pth.slice(1).join('.'));
   }
-  return ctx;
+  return null;
 }
 
 /**

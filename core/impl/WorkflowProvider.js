@@ -55,7 +55,7 @@ function WorkflowProvider(options) {
    * @returns {{}}
    */
   function buildContext(item, options) {
-    let context = {$item: item, $uid: options.user.id()};
+    let context = {$context: item, $uid: options.user.id()};
     let props = options.user.properties();
     for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
@@ -87,6 +87,8 @@ function WorkflowProvider(options) {
     let itemPermissions = {};
     let propertyPermissions = {};
     let selectionProviders = {};
+
+    let context = buildContext(item, tOptions);
 
     return options.dataSource.fetch(tableName,
         {
@@ -121,7 +123,7 @@ function WorkflowProvider(options) {
           let stage = wf.statesByName[state.stage] || wf.statesByName[wf.startState];
           if (stage) {
             if (stage._checker) {
-              rp = rp.then(() => stage._checker.apply(item));
+              rp = rp.then(() => stage._checker.apply(context));
             } else {
               rp = rp.then(() => true);
             }
@@ -169,7 +171,7 @@ function WorkflowProvider(options) {
               if (Array.isArray(wf.transitionsBySrc[stage.name])) {
                 wf.transitionsBySrc[stage.name].forEach((transition) => {
                   if (transition._checker) {
-                    rp2 = rp2.then(() => transition._checker.apply(item));
+                    rp2 = rp2.then(() => transition._checker.apply(context));
                   } else {
                     rp2 = rp2.then(() => true);
                   }
@@ -438,6 +440,8 @@ function WorkflowProvider(options) {
     if (!wf) {
       return Promise.reject(new IonError(Errors.WORKFLOW_NOT_FOUND, {workflow: workflow}));
     }
+    let context = buildContext(item, tOptions);
+
     return _this._getStatus(item, tOptions)
       .then((status) => {
         if (status.stages.hasOwnProperty(workflow)) {
@@ -451,7 +455,7 @@ function WorkflowProvider(options) {
 
         let target = wf.statesByName[state];
         let checker = Promise.resolve();
-        checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(item) : true);
+        checker = checker.then(() => typeof target._checker === 'function' ? target._checker.apply(context) : true);
 
         return checker
           .then((allowed) => {
