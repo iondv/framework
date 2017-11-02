@@ -853,9 +853,9 @@ function MongoDs(config) {
    * @returns {Promise}
      */
   function doUpdate(type, conditions, data, options) {
-    var hasData = false;
+    let hasData = false;
     if (data) {
-      for (var nm in data) {
+      for (let nm in data) {
         if (data.hasOwnProperty(nm) &&
           typeof data[nm] !== 'undefined' &&
           typeof data[nm] !== 'function'
@@ -879,7 +879,7 @@ function MongoDs(config) {
           .then(
             function (data) {
               return new Promise(function (resolve, reject) {
-                var updates = {};
+                let updates = {};
                 if (!empty(data.data)) {
                   updates.$set = data.data;
                 }
@@ -1473,6 +1473,7 @@ function MongoDs(config) {
    */
   function checkAggregation(type, options, forcedStages, onlyCount) {
     forcedStages = forcedStages || [];
+    let groupStages = [];
     let attributes = options.attributes || [];
     let joinedSources = {};
     let lookups = {};
@@ -1482,7 +1483,8 @@ function MongoDs(config) {
     let prefilter, postfilter, redactFilter, jl;
     let doGroup = false;
     let analise = {
-      needRedact: false
+      needRedact: false,
+      needPostFilter: false
     };
 
     let counter = {v: 0};
@@ -1497,7 +1499,7 @@ function MongoDs(config) {
         let expr = {$group: {}};
         expr.$group._id = null;
         let attrs = {_id: false};
-
+        let fetchFields = false;
         if (options.fields) {
           for (let tmp in options.fields) {
             if (options.fields.hasOwnProperty(tmp)) {
@@ -1506,18 +1508,21 @@ function MongoDs(config) {
               }
               if (!isNaN(options.fields[tmp]) || typeof options.fields[tmp] === 'boolean') {
                 expr.$group._id[tmp] = {$literal: options.fields[tmp]};
+                doGroup = true;
               } else if (options.fields[tmp] && typeof options.fields[tmp] === 'object' && !(options.fields[tmp] instanceof Date)) {
                 options.fields[tmp] = parseExpression(options.fields[tmp], attributes, joinedSources, lookups, joins, counter);
                 checkAttrExpr(options.fields[tmp], attributes, joinedSources);
                 expr.$group._id[tmp] = {$ifNull: [options.fields[tmp], null]};
+                doGroup = true;
               } else if (options.fields[tmp] && typeof options.fields[tmp] === 'string' && options.fields[tmp][0] === '$') {
                 checkAttrExpr(options.fields[tmp], attributes, joinedSources);
                 expr.$group._id[tmp] = {$ifNull: [options.fields[tmp], null]};
+                fetchFields = true;
               } else {
                 expr.$group._id[tmp] = options.fields[tmp];
+                doGroup = true;
               }
               attrs[tmp] = '$_id.' + tmp;
-              doGroup = true;
             }
           }
         }
@@ -1550,9 +1555,9 @@ function MongoDs(config) {
           }
         }
 
-        if (doGroup) {
-          forcedStages.push(expr);
-          forcedStages.push({$project: attrs});
+        if (doGroup || fetchFields) {
+          groupStages.push(expr);
+          groupStages.push({$project: attrs});
         }
       }
 
@@ -1571,7 +1576,7 @@ function MongoDs(config) {
       }
 
       if (prefilter && typeof prefilter === 'object' &&
-        (joins.length || options.to || forcedStages.length || analise.needRedact)) {
+        (joins.length || options.to || forcedStages.length || analise.needRedact || analise.needPostFilter)) {
         result.push({$match: prefilter});
       }
     } catch (err) {
@@ -1586,7 +1591,7 @@ function MongoDs(config) {
             if (err) {
               return reject(err);
             }
-            for (var fld in geoflds) {
+            for (let fld in geoflds) {
               if (geoflds.hasOwnProperty(fld) && fld !== '__type' && fld !== '_id') {
                 resultAttrs.push('__geo__' + fld + '_f');
               }
@@ -1600,7 +1605,7 @@ function MongoDs(config) {
     }
 
     return p.then(function () {
-      if (joins.length || analise.needRedact) {
+      if (joins.length || analise.needRedact || analise.needPostFilter) {
         if (joins.length) {
           processJoins(attributes, joins, result);
           if (postfilter && postfilter !== IGNORE) {
@@ -1612,12 +1617,16 @@ function MongoDs(config) {
         }
       }
 
-      if (resultAttrs.length && options.distinct) {
+      if (result.length && resultAttrs.length && options.distinct) {
         Array.prototype.push.apply(result, wind(resultAttrs));
       }
 
       if (forcedStages.length) {
         Array.prototype.push.apply(result, forcedStages);
+      }
+
+      if (doGroup || result.length) {
+        Array.prototype.push.apply(result, groupStages);
       }
 
       if (result.length || options.to) {

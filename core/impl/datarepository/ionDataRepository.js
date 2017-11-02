@@ -620,11 +620,11 @@ function IonDataRepository(options) {
    */
   this._getList = function (obj, options) {
     options = clone(options || {});
-    var cm = getMeta(obj);
-    var rcm = getRootType(cm);
+    let cm = getMeta(obj);
+    let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    var props = cm.getPropertyMetas();
-    for (var i = 0; i < props.length; i++) {
+    let props = cm.getPropertyMetas();
+    for (let i = 0; i < props.length; i++) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = addFilterByItem(options.filter, obj);
@@ -1991,27 +1991,22 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function editCollections(masters, collections, details, action) {
-    return new Promise(function (resolve, reject) {
-      var getters = [];
-      for (var i = 0; i < masters.length; i++) {
-        getters.push(_this._getItem(masters[i].getMetaClass().getCanonicalName(), masters[i].getItemId(), 0));
-      }
-
-      Promise.all(getters).
-      then(function (m) {
-        var writers = [];
-        var i, j, k, cond, updates, act, src, mrcm;
-        for (i = 0; i < m.length; i++) {
-          if (m[i]) {
-            cond = formUpdatedData(
-              m[i].getMetaClass(),
-              _this.keyProvider.keyToData(m[i].getMetaClass(), m[i].getItemId())
+    let worker = Promise.resolve();
+    masters.forEach((m) => {
+      worker = worker
+        .then(()=>_this._getItem(m.getMetaClass().getCanonicalName(), m.getItemId(), 0))
+        .then((m) => {
+          if (m) {
+            let cond = formUpdatedData(
+              m.getMetaClass(),
+              _this.keyProvider.keyToData(m.getMetaClass(), m.getItemId())
             );
-            updates = {};
-            act = false;
-            for (k = 0; k < collections.length; k++) {
-              src = m[i].base[collections[k]] || [];
-              for (j = 0; j < details.length; j++) {
+            cond = dataToFilter(cond);
+            let updates = {};
+            let act = false;
+            for (let k = 0; k < collections.length; k++) {
+              let src = m.base[collections[k]] || [];
+              for (let j = 0; j < details.length; j++) {
                 if (details[j]) {
                   if (action === 'eject') {
                     src.splice(src.indexOf(details[j].getItemId()), 1);
@@ -2024,16 +2019,13 @@ function IonDataRepository(options) {
               act = true;
             }
             if (act) {
-              mrcm = getRootType(m[i].getMetaClass());
-              writers.push(_this.ds.update(tn(mrcm), cond, updates, {skipResult: true}));
+              let mrcm = getRootType(m.getMetaClass());
+              return _this.ds.update(tn(mrcm), cond, updates, {skipResult: true});
             }
           }
-        }
-        return Promise.all(writers);
-      }).
-      then(resolve).
-      catch(reject);
+        });
     });
+    return worker;
   }
 
   /**
@@ -2074,29 +2066,25 @@ function IonDataRepository(options) {
     } else {
       return editCollections([master], [collection], details, operation ? 'put' : 'eject')
         .then(function () {
-          var i;
           if (pm.backColl) {
-            var colls = [];
-            for (i = 0; i < details.length; i++) {
-              var bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
+            let colls = [];
+            for (let i = 0; i < details.length; i++) {
+              let bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
               if (bcpm.type === PropertyTypes.COLLECTION) {
                 colls.push(bcpm.name);
               }
             }
             if (colls.length === 0) {
-              return new Promise(function (r) {
-                r();
-              });
+              return Promise.resolve();
             }
             return editCollections(details, colls, [master], operation ? 'put' : 'eject');
           } else {
-            var props;
-            var backColls = [];
-            var parsed = {};
-            for (i = 0; i < details.length; i++) {
+            let backColls = [];
+            let parsed = {};
+            for (let i = 0; i < details.length; i++) {
               if (!parsed.hasOwnProperty(details[i].getClassName())) {
-                props = details[i].getMetaClass().getPropertyMetas();
-                for (var j = 0; j < props.length; j++) {
+                let props = details[i].getMetaClass().getPropertyMetas();
+                for (let j = 0; j < props.length; j++) {
                   if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
                     backColls.push(props[j].name);
                   }
@@ -2105,16 +2093,14 @@ function IonDataRepository(options) {
               }
             }
             if (backColls.length === 0) {
-              return new Promise(function (r) {
-                r();
-              });
+              return Promise.resolve();
             }
             return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
           }
-        }).then(function () {
-          var updates = {};
+        }).then(() => {
+          let updates = {};
           updates[collection] = [];
-          for (var i = 0; i < details.length; i++) {
+          for (let i = 0; i < details.length; i++) {
             updates[collection].push({
               className: details[i].getMetaClass().getCanonicalName(),
               id: details[i].getItemId()
@@ -2129,9 +2115,7 @@ function IonDataRepository(options) {
             }
           );
         }).
-        then(function () {
-          return _this.trigger({type: event, master: master, details: details});
-        });
+        then(() => _this.trigger({type: event, master: master, details: details}));
     }
   }
 
