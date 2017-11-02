@@ -13,6 +13,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
+const F = require('core/FunctionCodes');
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -137,16 +138,16 @@ function SecuredDataRepository(options) {
           }
 
           if (exc.length) {
-            let cf = {_class: {$not: {$in: exc}}};
+            let cf = {[F.NOT]: [{[F.IN]: ['$_class', exc]}]};
             if (items.length) {
               permissions[classPrefix + cm.getCanonicalName()] = permissions[classPrefix + cm.getCanonicalName()] || {};
               permissions[classPrefix + cm.getCanonicalName()][Permissions.READ] = true;
-              cf = {$or: [cf, filterByItemIds(options.keyProvider, cm, items)]};
+              cf = {[F.OR]: [cf, filterByItemIds(options.keyProvider, cm, items)]};
             }
             if (!filter) {
               filter = cf;
             } else {
-              filter = {$and: [cf, filter]};
+              filter = {[F.AND]: [cf, filter]};
             }
           }
 

@@ -1091,6 +1091,7 @@ function MongoDs(config) {
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists') {
+            analise.needPostFilter = true;
             let jid = joinId(find[name]);
             let j;
             if (explicitJoins.hasOwnProperty(jid)) {
@@ -1119,6 +1120,7 @@ function MongoDs(config) {
           } else {
             let jalias = prefix;
             if (name.indexOf('.') > 0) {
+              analise.needPostFilter = true;
               jalias = name.substr(0, name.indexOf('.'));
               let i = 0;
               for (i = 0; i < joins.length; i++) {
@@ -1191,6 +1193,9 @@ function MongoDs(config) {
                   break;
                 } else if (typeof tmp === 'string' && tmp[0] === '$') {
                   let an = (tmp.indexOf('.') > 0 ? tmp.substring(0, tmp.indexOf('.')) : tmp).substr(1);
+                  if (tmp.indexOf('.') > 0) {
+                    analise.needPostFilter = true;
+                  }
                   if (attributes.indexOf(an) < 0) {
                     attributes.push(an);
                   }
@@ -1558,7 +1563,7 @@ function MongoDs(config) {
         jl = joins.length;
 
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
-        if (joins.length > jl || analise.needRedact) {
+        if (analise.needRedact || analise.needPostFilter) {
           postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(postfilter, lookups);
           postfilter = producePrefilter([], postfilter, [], [], {});

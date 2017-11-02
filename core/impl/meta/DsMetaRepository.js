@@ -984,7 +984,9 @@ function DsMetaRepository(options) {
           if (Array.isArray(wf.states[j].conditions)) {
             wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
           }
-          wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
+          if (wf.states[j].conditions) {
+            wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
+          }
         }
       }
 
@@ -1009,7 +1011,9 @@ function DsMetaRepository(options) {
           if (Array.isArray( wf.transitions[j].conditions)) {
             wf.transitions[j].conditions = ConditionParser( wf.transitions[j].conditions, wfCm);
           }
-          wf.transitions[j]._checker = options.calc.parseFormula( wf.transitions[j].conditions);
+          if (wf.transitions[j].conditions) {
+            wf.transitions[j]._checker = options.calc.parseFormula(wf.transitions[j].conditions);
+          }
         }
 
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
