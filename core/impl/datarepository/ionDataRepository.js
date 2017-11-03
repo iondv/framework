@@ -1092,21 +1092,14 @@ function IonDataRepository(options) {
     }
 
     let clr = {};
-    let clrf = {$and: []};
     let ups = {};
-    let conds = {};
+    let conds = {[Operations.EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]};
 
-    conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+    let clrf = {[Operations.AND]: [
+      {[Operations.EQUAL]: ['$' + pm.backRef, oldId || itemId]},
+      {[Operations.NOT_EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]},
+    ]};
 
-    let tmp = {};
-    tmp[pm.backRef] = oldId || itemId;
-    clrf.$and.push(tmp);
-
-    tmp = {};
-    tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
-    clrf.$and.push(tmp);
-
-    clrf[pm.backRef] = oldId || itemId;
     clr[pm.backRef] = null;
     ups[pm.backRef] = itemId;
 
