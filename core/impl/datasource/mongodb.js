@@ -81,7 +81,7 @@ const FUNC_OPERS = {
   [Operations.LITERAL]: '$literal'
 };
 
-// jshint maxstatements: 100, maxcomplexity: 60, maxdepth: 10, maxparams: 8
+// jshint maxstatements: 150, maxcomplexity: 60, maxdepth: 10, maxparams: 8
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -842,6 +842,32 @@ function MongoDs(config) {
     return conditions;
   }
 
+  function adjustSetKeys(conditions, data) {
+    if (Array.isArray(conditions)) {
+      for (let i = 0; i < conditions.length; i++) {
+        adjustSetKeys(conditions[i], data);
+      }
+    }
+    if (conditions && typeof conditions === 'object' &&
+      !(conditions instanceof Date) && !(conditions instanceof mongo.ObjectID)) {
+      for (let oper in conditions) {
+        if (conditions.hasOwnProperty(oper) && oper === Operations.EQUAL) {
+          let args = conditions[oper];
+          for (let i = 0; i < args.length; i++) {
+            if (args[i] && typeof args[i] === 'string' && args[i][0] === '$') {
+              let an = args[i].substr(1);
+              if (data.hasOwnProperty(an)) {
+                conditions[oper] = [args[i], data[an]];
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
   /**
    * @param {String} type
    * @param {{}} conditions
@@ -901,10 +927,8 @@ function MongoDs(config) {
                       if (options.skipResult) {
                         p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
                       } else {
-                        for (let nm in conditions) {
-                          if (conditions.hasOwnProperty(nm) && updates.$set.hasOwnProperty(nm)) {
-                            conditions[nm] = updates.$set[nm];
-                          }
+                        if (updates.$set) {
+                          adjustSetKeys(conditions, updates.$set);
                         }
                         p = _this._get(type, conditions, {}).then(function (r) {
                           return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
