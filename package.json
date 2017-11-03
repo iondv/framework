@@ -24,6 +24,7 @@
     "test": "gulp test"
   },
   "dependencies": {
+    "js-yaml": "latest",
     "acl": "latest",
     "base64-js": "latest",
     "base64-stream": "latest",
