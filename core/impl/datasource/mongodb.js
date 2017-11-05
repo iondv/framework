@@ -1646,7 +1646,11 @@ function MongoDs(config) {
       }
 
       if (forcedStages.length) {
-        Array.prototype.push.apply(result, forcedStages);
+        for (let i = 0; i < forcedStages.length; i++) {
+          if (forcedStages[i] && typeof forcedStages[i] === 'object') {
+            result.push(forcedStages[i]);
+          }
+        }
       }
 
       if (doGroup || result.length) {
@@ -1981,7 +1985,7 @@ function MongoDs(config) {
     return getCollection(type)
       .then((col) => {
         c = col;
-        let plan = [];
+        let plan = [false];
 
         if (options.filter) {
           prepareConditions(options.filter);
@@ -1996,7 +2000,7 @@ function MongoDs(config) {
       .then((plan) => {
         return new Promise((resolve, reject) => {
           try {
-            c.aggregate(plan, {allowDiskUse: true}, (err, result) => {
+            c.aggregate(plan || [], {allowDiskUse: true}, (err, result) => {
               if (err) {
                 return reject(wrapError(err, 'aggregate', type));
               }
