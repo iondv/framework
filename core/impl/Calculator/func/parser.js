@@ -170,9 +170,9 @@ function byRefConstructor(f, args) {
 }
 
 function parseObject(formula, funcLib, warn, byRefMask, byRef) {
-  if (!isNaN(formula)) {
+  /*if (!isNaN(formula)) {
     return Number(formula);
-  }
+  }*/
 
   if (Array.isArray(formula)) {
     let result = [];
