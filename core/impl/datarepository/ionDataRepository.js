@@ -271,8 +271,9 @@ function IonDataRepository(options) {
    * @param {Property} property
    * @param {{}} attrs
    * @param {{}} loaded
+   * @param {Boolean} [linksByRef]
    */
-  function prepareRefEnrichment(item, property, attrs, loaded) {
+  function prepareRefEnrichment(item, property, attrs, loaded, linksByRef) {
     var refc = property.meta._refClass;
     if (refc) {
       let pn = item.classMeta.getName() + '.' + property.getName();
@@ -301,7 +302,9 @@ function IonDataRepository(options) {
         }
         if (!property.meta.backRef && loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
           item.references[property.getName()] =
-            _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
+            linksByRef ?
+              loaded[refc.getCanonicalName() + '@' + v] :
+              _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
         } else {
           if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
             attrs[pn].filter.push(v);
@@ -316,8 +319,9 @@ function IonDataRepository(options) {
    * @param {Property} property
    * @param {{}} attrs
    * @param {{}} loaded
+   * @param {Boolean} [linksByRef]
    */
-  function prepareColEnrichment(item, property, attrs, loaded) {
+  function prepareColEnrichment(item, property, attrs, loaded, linksByRef) {
     var refc = property.meta._refClass;
     item.collections = item.collections || {};
     if (refc) {
@@ -350,7 +354,9 @@ function IonDataRepository(options) {
           v.forEach(function (v) {
             if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
               item.collections[property.getName()].push(
-                _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
+                linksByRef ?
+                  loaded[refc.getCanonicalName() + '@' + v] :
+                  _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
               );
             } else {
               if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
@@ -393,14 +399,15 @@ function IonDataRepository(options) {
 
   function getEnrichList(options) {
     return function () {
-      let {src, srcByKey, cn, sort, filter, depth, forced, loaded, attr} = options;
+      let {src, srcByKey, cn, sort, filter, depth, forced, loaded, attr, linksByRef} = options;
       return _this._getList(cn,
         {
           sort: sort,
           filter: filter,
           nestingDepth: depth - 1,
           forceEnrichment: forced,
-          ___loaded: loaded
+          ___loaded: loaded,
+          linksByRef
         }
       ).then((items) => {
         if (!items || items.length === 0) {
@@ -489,25 +496,24 @@ function IonDataRepository(options) {
 
   /**
    * @param {Item[]|Item} src2
-   * @param {Number} depth
-   * @param {String[][]} [forced]
-   * @param {{}} [loaded]
+   * @param {{}} options
    * @returns {Promise}
    */
-  function enrich(src2, depth, forced, loaded) {
+  function enrich(src2, options) {
+    let {nestingDepth, forceEnrichment, __loaded, linksByRef} = options;
+    nestingDepth = nestingDepth || 0;
     let src = Array.isArray(src2) ? src2 : [src2];
-    depth = depth || 0;
     let srcByKey = {};
     let forced2 = {};
-    formForced(forced, forced2);
+    formForced(forceEnrichment, forced2);
     let attrs = {};
-    loaded = loaded || {};
+    __loaded = __loaded || {};
     let promises = Promise.resolve();
     try {
       let pcl = {};
       for (let i = 0; i < src.length; i++) {
         if (src[i] instanceof Item) {
-          loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+          __loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
           srcByKey[src[i].getItemId()] = src[i];
         }
       }
@@ -524,13 +530,13 @@ function IonDataRepository(options) {
           for (let nm in props) {
             if (props.hasOwnProperty(nm)) {
               if (
-                depth > 0 ||
-                (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && depth >= _this.maxEagerDepth
+                nestingDepth > 0 ||
+                (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && nestingDepth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs, loaded);
+                  prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
-                  prepareColEnrichment(item, props[nm], attrs, loaded);
+                  prepareColEnrichment(item, props[nm], attrs, __loaded, linksByRef);
                 }
               }
             }
@@ -577,10 +583,12 @@ function IonDataRepository(options) {
             promises = promises
               .then(getEnrichList({
                 src, srcByKey,
-                cn, sort, filter, depth,
+                cn, sort, filter,
+                depth: nestingDepth,
                 forced: forced2[attrs[nm].attrName],
-                loaded,
-                attr: attrs[nm]
+                loaded: __loaded,
+                attr: attrs[nm],
+                linksByRef
               }));
           }
         }
@@ -620,11 +628,11 @@ function IonDataRepository(options) {
    */
   this._getList = function (obj, options) {
     options = clone(options || {});
-    var cm = getMeta(obj);
-    var rcm = getRootType(cm);
+    let cm = getMeta(obj);
+    let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    var props = cm.getPropertyMetas();
-    for (var i = 0; i < props.length; i++) {
+    let props = cm.getPropertyMetas();
+    for (let i = 0; i < props.length; i++) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
     options.filter = addFilterByItem(options.filter, obj);
@@ -664,16 +672,7 @@ function IonDataRepository(options) {
         });
       }
     ).
-    then(
-      function (result) {
-        return enrich(
-          result,
-          options.nestingDepth ? options.nestingDepth : 0,
-          options.forceEnrichment,
-          options.___loaded
-        );
-      }
-    ).
+    then((result) => enrich(result, options)).
     then(calcItemsProperties);
   };
 
@@ -687,9 +686,7 @@ function IonDataRepository(options) {
             function (item) {
               return enrich(
                 item,
-                options.nestingDepth ? options.nestingDepth : 0,
-                options.forceEnrichment,
-                options.___loaded
+                options
               );
             }
           ).
@@ -850,7 +847,7 @@ function IonDataRepository(options) {
               return loadFiles(item, _this.fileStorage, _this.imageStorage).
               then(
                 function (item) {
-                  return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
+                  return enrich(item, options);
                 }
               ).
               then(
@@ -891,7 +888,7 @@ function IonDataRepository(options) {
       return fetcher
         .catch(wrapDsError('getItem', cm.getCanonicalName(), obj.getItemId()))
         .then(function (item) {
-          return enrich(item, options.nestingDepth || 0, options.forceEnrichment);
+          return enrich(item, options);
         })
         .then(function (item) {
           return calcProperties(item);
@@ -1095,21 +1092,14 @@ function IonDataRepository(options) {
     }
 
     let clr = {};
-    let clrf = {$and: []};
     let ups = {};
-    let conds = {};
+    let conds = {[Operations.EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]};
 
-    conds[rcm.getKeyProperties()[0]] = updates[pm.name];
+    let clrf = {[Operations.AND]: [
+      {[Operations.EQUAL]: ['$' + pm.backRef, oldId || itemId]},
+      {[Operations.NOT_EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]},
+    ]};
 
-    let tmp = {};
-    tmp[pm.backRef] = oldId || itemId;
-    clrf.$and.push(tmp);
-
-    tmp = {};
-    tmp[rcm.getKeyProperties()[0]] = {$ne: updates[pm.name]};
-    clrf.$and.push(tmp);
-
-    clrf[pm.backRef] = oldId || itemId;
     clr[pm.backRef] = null;
     ups[pm.backRef] = itemId;
 
@@ -1433,9 +1423,9 @@ function IonDataRepository(options) {
     };
   }
 
-  function writeEventHandler(nestingDepth, changeLogger, skip) {
+  function writeEventHandler(changeLogger, options) {
     return function (e) {
-      if (!e || skip) {
+      if (!e || options.skipResult) {
         return Promise.resolve();
       }
       var up = false;
@@ -1456,11 +1446,11 @@ function IonDataRepository(options) {
           e.item.getItemId(),
           data,
           changeLogger,
-          {nestingDepth: nestingDepth},
+          options,
           true
         );
       }
-      return enrich(e.item, nestingDepth || 0);
+      return enrich(e.item, options);
     };
   }
 
@@ -1553,7 +1543,7 @@ function IonDataRepository(options) {
             }
           )
         )
-        .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+        .then(writeEventHandler(changeLogger, options))
         .then((item) => item ? calcProperties(item, options.skipResult) : null);
     } catch (err) {
       return Promise.reject(err);
@@ -1689,7 +1679,7 @@ function IonDataRepository(options) {
             }
             return Promise.resolve({item: item});
           })
-          .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+          .then(writeEventHandler(changeLogger, options))
           .then((item) => calcProperties(item, options.skipResult));
       } else {
         return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
@@ -1842,7 +1832,7 @@ function IonDataRepository(options) {
             }
           )
         )
-        .then(writeEventHandler(options.nestingDepth, changeLogger, options.skipResult))
+        .then(writeEventHandler(changeLogger, options))
         .then((item) => calcProperties(item, options.skipResult));
     } catch (err) {
       return Promise.reject(err);
@@ -1991,27 +1981,22 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function editCollections(masters, collections, details, action) {
-    return new Promise(function (resolve, reject) {
-      var getters = [];
-      for (var i = 0; i < masters.length; i++) {
-        getters.push(_this._getItem(masters[i].getMetaClass().getCanonicalName(), masters[i].getItemId(), 0));
-      }
-
-      Promise.all(getters).
-      then(function (m) {
-        var writers = [];
-        var i, j, k, cond, updates, act, src, mrcm;
-        for (i = 0; i < m.length; i++) {
-          if (m[i]) {
-            cond = formUpdatedData(
-              m[i].getMetaClass(),
-              _this.keyProvider.keyToData(m[i].getMetaClass(), m[i].getItemId())
+    let worker = Promise.resolve();
+    masters.forEach((m) => {
+      worker = worker
+        .then(()=>_this._getItem(m.getMetaClass().getCanonicalName(), m.getItemId(), 0))
+        .then((m) => {
+          if (m) {
+            let cond = formUpdatedData(
+              m.getMetaClass(),
+              _this.keyProvider.keyToData(m.getMetaClass(), m.getItemId())
             );
-            updates = {};
-            act = false;
-            for (k = 0; k < collections.length; k++) {
-              src = m[i].base[collections[k]] || [];
-              for (j = 0; j < details.length; j++) {
+            cond = dataToFilter(cond);
+            let updates = {};
+            let act = false;
+            for (let k = 0; k < collections.length; k++) {
+              let src = m.base[collections[k]] || [];
+              for (let j = 0; j < details.length; j++) {
                 if (details[j]) {
                   if (action === 'eject') {
                     src.splice(src.indexOf(details[j].getItemId()), 1);
@@ -2024,16 +2009,13 @@ function IonDataRepository(options) {
               act = true;
             }
             if (act) {
-              mrcm = getRootType(m[i].getMetaClass());
-              writers.push(_this.ds.update(tn(mrcm), cond, updates, {skipResult: true}));
+              let mrcm = getRootType(m.getMetaClass());
+              return _this.ds.update(tn(mrcm), cond, updates, {skipResult: true});
             }
           }
-        }
-        return Promise.all(writers);
-      }).
-      then(resolve).
-      catch(reject);
+        });
     });
+    return worker;
   }
 
   /**
@@ -2074,29 +2056,25 @@ function IonDataRepository(options) {
     } else {
       return editCollections([master], [collection], details, operation ? 'put' : 'eject')
         .then(function () {
-          var i;
           if (pm.backColl) {
-            var colls = [];
-            for (i = 0; i < details.length; i++) {
-              var bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
+            let colls = [];
+            for (let i = 0; i < details.length; i++) {
+              let bcpm = details[i].getMetaClass().getPropertyMeta(pm.backColl);
               if (bcpm.type === PropertyTypes.COLLECTION) {
                 colls.push(bcpm.name);
               }
             }
             if (colls.length === 0) {
-              return new Promise(function (r) {
-                r();
-              });
+              return Promise.resolve();
             }
             return editCollections(details, colls, [master], operation ? 'put' : 'eject');
           } else {
-            var props;
-            var backColls = [];
-            var parsed = {};
-            for (i = 0; i < details.length; i++) {
+            let backColls = [];
+            let parsed = {};
+            for (let i = 0; i < details.length; i++) {
               if (!parsed.hasOwnProperty(details[i].getClassName())) {
-                props = details[i].getMetaClass().getPropertyMetas();
-                for (var j = 0; j < props.length; j++) {
+                let props = details[i].getMetaClass().getPropertyMetas();
+                for (let j = 0; j < props.length; j++) {
                   if (props[j].type === PropertyTypes.COLLECTION && props[j].backColl === collection) {
                     backColls.push(props[j].name);
                   }
@@ -2105,16 +2083,14 @@ function IonDataRepository(options) {
               }
             }
             if (backColls.length === 0) {
-              return new Promise(function (r) {
-                r();
-              });
+              return Promise.resolve();
             }
             return editCollections(details, backColls, [master], operation ? 'put' : 'eject');
           }
-        }).then(function () {
-          var updates = {};
+        }).then(() => {
+          let updates = {};
           updates[collection] = [];
-          for (var i = 0; i < details.length; i++) {
+          for (let i = 0; i < details.length; i++) {
             updates[collection].push({
               className: details[i].getMetaClass().getCanonicalName(),
               id: details[i].getItemId()
@@ -2129,9 +2105,7 @@ function IonDataRepository(options) {
             }
           );
         }).
-        then(function () {
-          return _this.trigger({type: event, master: master, details: details});
-        });
+        then(() => _this.trigger({type: event, master: master, details: details}));
     }
   }
 

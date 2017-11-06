@@ -8,6 +8,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const merge = require('merge');
+const F = require('core/FunctionCodes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
 /**
@@ -107,8 +108,7 @@ function AclMetaMap(options) {
     if (i >= entries.length || !entries[i].sidAttribute) {
       return Promise.resolve(result);
     }
-    let f = {};
-    f[entries[i].sidAttribute] = sid;
+    let f = {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]};
     let jumps = [];
     if (!breakOnResult && Array.isArray(entries[i].jumps)) {
       entries[i].jumps.forEach((j) => {
