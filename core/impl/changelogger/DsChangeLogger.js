@@ -5,7 +5,8 @@
 
 /* var util = require('util'); */// jscs:ignore requireCapitalizedComments
 
-var ChangeLogger = require('core/interfaces/ChangeLogger');
+const ChangeLogger = require('core/interfaces/ChangeLogger');
+const F = require('core/FunctionCodes');
 
 /**
  * @constructor
@@ -74,22 +75,22 @@ function DsChangeLogger(ds, authCallback) {
   this._getChanges = function (className, id, since, till) {
     var and = [];
     if (className) {
-      and.push({className: className});
+      and.push({[F.EQUAL]: ['$className', className]});
     }
     if (id) {
-      and.push({id: id});
+      and.push({[F.EQUAL]: ['$id', id]});
     }
     if (since) {
-      and.push({timestamp: {$gte: since}});
+      and.push({[F.GREATER_OR_EQUAL]: ['$timestamp', since]});
     }
     if (till) {
-      and.push({timestamp: {$lt: till}});
+      and.push({[F.LESS]: ['$timestamp', till]});
     }
 
-    return _this.ds.fetch('ion_changelog', {filter: {$and: and}, sort: {timestamp: 1}}).then(
-      function (changes) {
+    return _this.ds.fetch('ion_changelog', {filter: {[F.AND]: and}, sort: {timestamp: 1}})
+      .then((changes) => {
         var result = [];
-        for (var i = 0; i < changes.length; i++) {
+        for (let i = 0; i < changes.length; i++) {
           result.push(new ChangeLogger.Change(
             typeof changes[i].timestamp === 'string' ? Date.parse(changes[i].timestamp) : changes[i].timestamp,
             changes[i].type,

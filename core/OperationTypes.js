@@ -19,5 +19,9 @@ module.exports = {
   SUB: 12,
   MUL: 13,
   DIV: 14,
-  MOD: 15
+  MOD: 15,
+  ROUND: 16,
+  CONCAT: 17,
+  SUBSTR: 18,
+  ABS: 19
 };

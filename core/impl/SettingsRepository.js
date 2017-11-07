@@ -1,7 +1,7 @@
 /**
  * Created by kras on 18.08.16.
  */
-
+const F = require('core/FunctionCodes');
 /**
  * @param {{dataSource: DataSource}} options
  * @constructor
@@ -28,7 +28,7 @@ function SettingsRepository(options) {
     let writers = [];
     for (let nm in changed) {
       if (changed.hasOwnProperty(nm)) {
-        writers.push(options.dataSource.upsert('ion_global_settings', {name: nm}, {value: registry[nm]}));
+        writers.push(options.dataSource.upsert('ion_global_settings', {[F.EQUAL]: ['$name', nm]}, {value: registry[nm]}));
       }
     }
     changed = {};

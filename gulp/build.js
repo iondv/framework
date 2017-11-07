@@ -477,29 +477,20 @@ gulp.task('setup', function (done) {
       return di('boot', config.bootstrap,
         {
           sysLog: sysLog
-        }, null, ['auth', 'rtEvents', 'sessionHandler'])
-        .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+        }, null, ['rtEvents', 'sessionHandler'])
+        .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
         .then((scope) => alias(scope, scope.settings.get('di-alias')));
     })
     .then((scp) => {
       scope = scp;
-      let stage2;
-      try {
-        for (let i = 0; i < applications.length; i++) {
-          let stat = fs.statSync(path.join(appDir, applications[i]));
-          if (stat.isDirectory()) {
-            stage2 = stage2 ?
-              stage2.then(appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i])) :
-              appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i])();
-          }
+      let stage2 = Promise.resolve();
+      for (let i = 0; i < applications.length; i++) {
+        let stat = fs.statSync(path.join(appDir, applications[i]));
+        if (stat.isDirectory()) {
+          stage2 = stage2.then(appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i]));
         }
-        if (stage2) {
-          return stage2.then(()=>{console.log('Импорт меты приложений завершен.');});
-        }
-        console.log('Нет приложений для импорта меты.');
-      } catch (err) {
-        return Promise.reject(err);
       }
+      return stage2.then(()=>{console.log('Импорт меты приложений завершен.');});
     })
     .then(() => {
       return new Promise((resolve) => {

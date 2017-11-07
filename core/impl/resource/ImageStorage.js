@@ -8,7 +8,6 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const gm = require('gm');
 const cuid = require('cuid');
 const clone = require('clone');
-const url = require('url');
 const path = require('path');
 
 // jshint maxcomplexity: 20

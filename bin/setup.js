@@ -20,8 +20,8 @@ if (process.argv.length > 2) {
   di('boot', config.bootstrap,
     {
       sysLog: sysLog
-    }, null, ['auth', 'rtEvents', 'sessionHandler'])
-    .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+    }, null, ['rtEvents', 'sessionHandler'])
+    .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
     .then((scope) => alias(scope, scope.settings.get('di-alias')))
     .then((scope) => worker(path.join(__dirname, '..', 'applications', app)).then(() => scope))
     .then((scope) => scope.dataSources.disconnect())

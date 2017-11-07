@@ -10,6 +10,7 @@ const MetaRepository = MetaRepositoryModule.MetaRepository;
 const ClassMeta = MetaRepositoryModule.ClassMeta;
 const PropertyTypes = require('core/PropertyTypes');
 const Calculator = require('core/interfaces/Calculator');
+const ConditionParser = require('core/ConditionParser');
 const clone = require('clone');
 const merge = require('merge');
 
@@ -498,6 +499,115 @@ function DsMetaRepository(options) {
   /**
    * @param {ClassMeta} cm
    */
+  function setupSelections(cm) {
+    function selectionConstructor1() {
+      return function () {
+        return this.list || [];
+      };
+    }
+
+    function selectionConstructor2() {
+      /**
+       * @param {Item} item
+       */
+      return function (item) {
+        let result = [];
+        for (let j = 0; j < this.matrix.length; j++) {
+          if (!this.matrix[j]._checker) {
+            Array.prototype.push.apply(result, this.matrix[j].result || []);
+          } if (typeof this.matrix[j]._checker === 'function') {
+            let cr = this.matrix[j]._checker.apply(item);
+            if (cr) {
+              if (cr instanceof Promise) {
+                throw new Error('Асинхронные вызовы в условиях соответствия списков выбора недопустимы!');
+              }
+              Array.prototype.push.apply(result, this.matrix[j].result || []);
+            }
+          }
+        }
+        return result;
+      };
+    }
+
+    for (let nm in cm.propertyMetas) {
+      if (cm.propertyMetas.hasOwnProperty(nm)) {
+        let pm = cm.propertyMetas[nm];
+        if (pm.selectionProvider) {
+          if (pm.selectionProvider.type === 'SIMPLE') {
+            pm.selectionProvider.getSelection = selectionConstructor1();
+          } else if (pm.selectionProvider.type === 'MATRIX') {
+            let matrix = pm.selectionProvider.matrix;
+            for (let j = 0; j < matrix.length; j++) {
+              if (matrix[j].conditions) {
+                if (Array.isArray(matrix[j].conditions)) {
+                  matrix[j].conditions = ConditionParser(matrix[j].conditions, cm, null);
+                }
+                matrix[j]._checker = options.calc.parseFormula(matrix[j].conditions);
+              }
+            }
+            pm.selectionProvider.getSelection = selectionConstructor2();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} plain
+   * @param {Calculator} calc
+   */
+  function loadPropertyMetas(cm) {
+    let properties = cm.plain.properties.sort(function (a,b) {
+      return a.orderNumber - b.orderNumber;
+    });
+
+    function sysPm(name) {
+      return {
+        orderNumber: 0,
+        name: name,
+        caption: name,
+        type: 0,
+        size: 500,
+        decimals: 0,
+        allowedFileTypes: null,
+        maxFileCount: 0,
+        nullable: true,
+        readonly: true,
+        indexed: false,
+        unique: false,
+        autoassigned: false,
+        hint: null,
+        defaultValue: null,
+        refClass: "",
+        itemsClass: "",
+        backRef: "",
+        backColl: "",
+        binding: "",
+        semantic: null,
+        selConditions: [],
+        selSorting: [],
+        selectionProvider: null,
+        indexSearch: false,
+        eagerLoading: false,
+        formula: null
+      };
+    }
+
+    if (!cm.plain.ancestor) {
+      cm.propertyMetas.__class = sysPm('__class');
+      cm.propertyMetas.__classTitle = sysPm('__classTitle');
+    }
+
+    for (let i = 0; i < properties.length; i++) {
+      let pm = clone(properties[i]);
+      cm.propertyMetas[properties[i].name] = pm;
+    }
+  }
+
+  /**
+   * @param {ClassMeta} cm
+   */
   function expandProperty(cm) {
     for (let i = 0; i < cm.plain.properties.length; i++) {
       if (cm.plain.properties[i].type === PropertyTypes.STRUCT) {
@@ -677,6 +787,7 @@ function DsMetaRepository(options) {
       }
       let cm = new ClassMeta(metas[i]);
       cm.namespace = metas[i].namespace;
+      loadPropertyMetas(cm);
       classMeta[ns][metas[i].name].byVersion[metas[i].version] = cm;
       classMeta[ns][metas[i].name].byOrder.push(cm);
       classMeta[ns][metas[i].name][defaultVersion] = cm;
@@ -722,7 +833,11 @@ function DsMetaRepository(options) {
                 if (pm.formula && options.calc instanceof Calculator) {
                   pm._formula = options.calc.parseFormula(pm.formula);
                 }
-                if (pm.defaultValue && pm.defaultValue.indexOf('(') > 0 && options.calc instanceof Calculator) {
+                if (
+                  pm.defaultValue &&
+                  (typeof pm.defaultValue === 'object' || pm.defaultValue.indexOf('(') > 0) &&
+                  options.calc instanceof Calculator
+                ) {
                   pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                 }
               }
@@ -735,6 +850,7 @@ function DsMetaRepository(options) {
             for (let i = 0; i < classMeta[ns][name].byOrder.length; i++) {
               let cm = classMeta[ns][name].byOrder[i];
               expandProperty(cm);
+              setupSelections(cm);
               produceSemantics(cm);
             }
           }
@@ -860,9 +976,18 @@ function DsMetaRepository(options) {
         workflowMeta[ns][wfClass][wf.name] = [];
       }
 
+      let wfCm = _this._getMeta(wfClass);
       wf.statesByName = {};
       for (let j = 0; j < wf.states.length; j++) {
         wf.statesByName[wf.states[j].name] = wf.states[j];
+        if (wf.states[j].conditions) {
+          if (Array.isArray(wf.states[j].conditions)) {
+            wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
+          }
+          if (wf.states[j].conditions) {
+            wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
+          }
+        }
       }
 
       wf.transitionsByName = {};
@@ -881,6 +1006,16 @@ function DsMetaRepository(options) {
               options.calc.parseFormula(wf.transitions[j].assignments[k].value);
           }
         }
+
+        if ( wf.transitions[j].conditions) {
+          if (Array.isArray( wf.transitions[j].conditions)) {
+            wf.transitions[j].conditions = ConditionParser( wf.transitions[j].conditions, wfCm);
+          }
+          if (wf.transitions[j].conditions) {
+            wf.transitions[j]._checker = options.calc.parseFormula(wf.transitions[j].conditions);
+          }
+        }
+
         wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
         if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
           wf.transitionsBySrc[wf.transitions[j].startState] = [];
