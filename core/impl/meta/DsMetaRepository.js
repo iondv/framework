@@ -27,6 +27,7 @@ const defaultVersion = '___default';
  * @param {String} [options.WorkflowTableName]
  * @param {String} [options.UsertypeTableName]
  * @param {DbSync} [options.sync]
+ * @param {Logger} [options.log]
  * @param {Calculator} [options.calc]
  * @constructor
  */
@@ -174,10 +175,7 @@ function DsMetaRepository(options) {
     namespace = cn.namespace || namespace;
     try {
       let ns = formNS(namespace);
-      if (!classMeta[ns]) {
-        throw new Error('Пространство имен ' + namespace + ' не найдено.');
-      }
-      if (classMeta[ns].hasOwnProperty(name)) {
+      if (classMeta[ns] && classMeta[ns].hasOwnProperty(name)) {
         if (version) {
           if (typeof classMeta[ns][name][version] !== 'undefined') {
             return classMeta[ns][name].byVersion[version];
@@ -195,7 +193,7 @@ function DsMetaRepository(options) {
     } catch (err) {
       throw err;
     }
-    throw new Error('Класс ' + name + '(вер.' + version + ') не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') +' не найден в пространстве имен ' + namespace + '!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -969,66 +967,73 @@ function DsMetaRepository(options) {
         wfClass = wfClass + '@' + wf.namespace;
       }
 
-      if (!workflowMeta[ns].hasOwnProperty(wfClass)) {
-        workflowMeta[ns][wfClass] = {};
-      }
-      if (!workflowMeta[ns][wfClass].hasOwnProperty(wf.name)) {
-        workflowMeta[ns][wfClass][wf.name] = [];
-      }
+      try {
+        let wfCm = _this._getMeta(wfClass);
+        if (!workflowMeta[ns].hasOwnProperty(wfClass)) {
+          workflowMeta[ns][wfClass] = {};
+        }
+        if (!workflowMeta[ns][wfClass].hasOwnProperty(wf.name)) {
+          workflowMeta[ns][wfClass][wf.name] = [];
+        }
 
-      let wfCm = _this._getMeta(wfClass);
-      wf.statesByName = {};
-      for (let j = 0; j < wf.states.length; j++) {
-        wf.statesByName[wf.states[j].name] = wf.states[j];
-        if (wf.states[j].conditions) {
-          if (Array.isArray(wf.states[j].conditions)) {
-            wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
-          }
+        wf.statesByName = {};
+        for (let j = 0; j < wf.states.length; j++) {
+          wf.statesByName[wf.states[j].name] = wf.states[j];
           if (wf.states[j].conditions) {
-            wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
-          }
-        }
-      }
-
-      wf.transitionsByName = {};
-      wf.transitionsBySrc = {};
-      wf.transitionsByDest = {};
-
-      for (let j = 0; j < wf.transitions.length; j++) {
-        for (let k = 0; k < wf.transitions[j].assignments.length; k++) {
-          if (
-            wf.transitions[j].assignments[k].value &&
-            wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
-            wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
-            options.calc
-          ) {
-            wf.transitions[j].assignments[k]._formula =
-              options.calc.parseFormula(wf.transitions[j].assignments[k].value);
+            if (Array.isArray(wf.states[j].conditions)) {
+              wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
+            }
+            if (wf.states[j].conditions) {
+              wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
+            }
           }
         }
 
-        if ( wf.transitions[j].conditions) {
-          if (Array.isArray( wf.transitions[j].conditions)) {
-            wf.transitions[j].conditions = ConditionParser( wf.transitions[j].conditions, wfCm);
+        wf.transitionsByName = {};
+        wf.transitionsBySrc = {};
+        wf.transitionsByDest = {};
+
+        for (let j = 0; j < wf.transitions.length; j++) {
+          for (let k = 0; k < wf.transitions[j].assignments.length; k++) {
+            if (
+              wf.transitions[j].assignments[k].value &&
+              wf.transitions[j].assignments[k].value.indexOf('(') !== -1 &&
+              wf.transitions[j].assignments[k].value.indexOf(')') !== -1 &&
+              options.calc
+            ) {
+              wf.transitions[j].assignments[k]._formula =
+                options.calc.parseFormula(wf.transitions[j].assignments[k].value);
+            }
           }
+
           if (wf.transitions[j].conditions) {
-            wf.transitions[j]._checker = options.calc.parseFormula(wf.transitions[j].conditions);
+            if (Array.isArray(wf.transitions[j].conditions)) {
+              wf.transitions[j].conditions = ConditionParser(wf.transitions[j].conditions, wfCm);
+            }
+            if (wf.transitions[j].conditions) {
+              wf.transitions[j]._checker = options.calc.parseFormula(wf.transitions[j].conditions);
+            }
           }
+
+          wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
+          if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
+            wf.transitionsBySrc[wf.transitions[j].startState] = [];
+          }
+          wf.transitionsBySrc[wf.transitions[j].startState].push(wf.transitions[j]);
+
+          if (!wf.transitionsByDest.hasOwnProperty(wf.transitions[j].finishState)) {
+            wf.transitionsByDest[wf.transitions[j].finishState] = [];
+          }
+          wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
         }
 
-        wf.transitionsByName[wf.transitions[j].name] = wf.transitions[j];
-        if (!wf.transitionsBySrc.hasOwnProperty(wf.transitions[j].startState)) {
-          wf.transitionsBySrc[wf.transitions[j].startState] = [];
+        workflowMeta[ns][wfClass][wf.name].push(wf);
+      } catch (e) {
+        if (options.log) {
+          options.log.warn(e);
+          options.log.warn('Бизнес-процесс ' + wf.name + '@' + wf.namespace + ' не был инициализирован!');
         }
-        wf.transitionsBySrc[wf.transitions[j].startState].push(wf.transitions[j]);
-
-        if (!wf.transitionsByDest.hasOwnProperty(wf.transitions[j].finishState)) {
-          wf.transitionsByDest[wf.transitions[j].finishState] = [];
-        }
-        wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
       }
-
-      workflowMeta[ns][wfClass][wf.name].push(wf);
     }
   }
 
