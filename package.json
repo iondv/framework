@@ -1,6 +1,6 @@
 {
   "name": "ion-web-platform",
-  "version": "1.6.0",
+  "version": "1.8.2",
   "homepage": "https://git.iondv.ru/ION/ion-portal",
   "bugs": {
     "url": "https://ion-dv.atlassian.net/browse/IONPORTAL"
@@ -24,6 +24,7 @@
     "test": "gulp test"
   },
   "dependencies": {
+    "js-yaml": "latest",
     "acl": "latest",
     "base64-js": "latest",
     "base64-stream": "latest",
