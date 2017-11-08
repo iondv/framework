@@ -265,7 +265,7 @@ function ConditionParser(condition, rcm, context, lang) {
       if (BoolOpers.indexOf(oper) !== -1) {
         let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
-          switch (condition.operation) {
+          switch (oper) {
             case OperationTypes.AND: return {[Operations.AND]: tmp};
             case OperationTypes.OR: return {[Operations.OR]: tmp};
             case OperationTypes.NOT: return {[Operations.NOT]: tmp};
@@ -277,7 +277,7 @@ function ConditionParser(condition, rcm, context, lang) {
       } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
-          switch (condition.operation) {
+          switch (oper) {
             case OperationTypes.MIN: return {[Operations.MIN]: tmp};
             case OperationTypes.MAX: return {[Operations.MAX]: tmp};
             case OperationTypes.AVG: return {[Operations.AVG]: tmp};
@@ -296,7 +296,7 @@ function ConditionParser(condition, rcm, context, lang) {
         if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
           tmp = tmp.concat(produceArray(condition.nestedConditions, rcm, context));
         }
-        switch (condition.operation) {
+        switch (oper) {
           case OperationTypes.DATE: return {[Operations.DATE]: tmp};
           case OperationTypes.DATEADD: return {[Operations.DATEADD]: tmp};
           case OperationTypes.DATEDIFF: return {[Operations.DATEDIFF]: tmp};
