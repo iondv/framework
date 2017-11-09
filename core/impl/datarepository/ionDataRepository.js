@@ -530,8 +530,8 @@ function IonDataRepository(options) {
           for (let nm in props) {
             if (props.hasOwnProperty(nm)) {
               if (
-                nestingDepth > 0 ||
-                (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && nestingDepth >= _this.maxEagerDepth
+                nestingDepth > 0 || forced2.hasOwnProperty(nm) ||
+                props[nm].eagerLoading() && nestingDepth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
                   prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
