@@ -489,12 +489,12 @@ function MongoDs(config) {
     let interval = args[1];
     switch (unit) {
       case 'ms': interval = interval;break;
-      case 's': interval = interval * 1000;break;
-      case 'min': interval = interval * 60000;break;
-      case 'h': interval = interval * 3600000;break;
-      case 'd': interval = interval * 86400000;break;
-      case 'm': interval = interval * 2626200000;break;
-      case 'y': interval = interval * 31514400000;break;
+      case 's': interval = {$multiply: [interval, 1000]};break;
+      case 'min': interval = {$multiply: [interval, 60000]};break;
+      case 'h': interval = {$multiply: [interval, 3600000]};break;
+      case 'd': interval = {$multiply: [interval, 86400000]};break;
+      case 'm': interval = {$multiply: [interval, 2626200000]};break;
+      case 'y': interval = {$multiply: [interval, 31514400000]};break;
       default: throw 'Передан некорректный тип интервала дат!';
     }
     return {$add: [base, interval]};
