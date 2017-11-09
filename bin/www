@@ -84,7 +84,8 @@ app.locals.baseUrl = config.baseUrl || '/';
 // Создаем HTTP сервер.
 var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
 
-// jshint maxstatements: 60, maxcomplexity: 30
+// jshint maxstatements: 60, maxcomplexity: 60
+
 function onError(error) {
   sysLog.error(error);
   server.close(function (err) {
