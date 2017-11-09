@@ -250,9 +250,11 @@ function FsStorage(options) {
         return next();
       }
 
-      filter = filter || {};
-      filter.id = fileId;
-      dataSource.get('ion_files', filter)
+      let f = {[F.EQUAL]: ['$id', fileId]};
+      if (filter) {
+        f = {[F.AND]: [f, filter]};
+      }
+      dataSource.get('ion_files', f)
         .then((data) => {
           if (data && data.type === resourceType.FILE) {
             let f = new StoredFile(
@@ -301,7 +303,7 @@ function FsStorage(options) {
   }
 
   this._shareMiddle = function () {
-    return urlAccessor(_options.shareBase, {shared: true});
+    return urlAccessor(_options.shareBase, {[F.EQUAL]: ['$shared', true]});
   };
 
   /**
