@@ -21,10 +21,12 @@ function Calculator(options) {
 
   let funcLib = clone(stdLib);
 
+  let drg = null;
+
   this.init = function (scope) {
-    return new Promise(function (resolve) {
-      let dataRepo = typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo;
-      if (dataRepo instanceof DataRepository) {
+    drg = function () {return typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo};
+    let dataRepo = drg();
+    if (dataRepo instanceof DataRepository) {
         funcLib.sum = aggreg.sum(dataRepo);
         funcLib.count = aggreg.count(dataRepo);
         funcLib.avg = aggreg.avg(dataRepo);
@@ -32,9 +34,8 @@ function Calculator(options) {
         funcLib.min = aggreg.min(dataRepo);
         funcLib.merge = aggreg.merge(dataRepo);
         funcLib.get = data.get(dataRepo);
-      }
-      resolve();
-    });
+    }
+    return Promise.resolve();
   };
 
   function warn(msg) {
@@ -45,7 +46,7 @@ function Calculator(options) {
    * @param {String | {}} formula
    */
   this._parseFormula = function (formula) {
-    return parser(formula, funcLib, warn);
+    return parser(formula, funcLib, warn, drg);
   };
 }
 
