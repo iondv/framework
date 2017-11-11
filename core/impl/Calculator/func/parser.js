@@ -1,5 +1,6 @@
 'use strict';
-const Item = require('core/interfaces/DataRepository').Item;
+const {DataRepository, Item} = require('core/interfaces/DataRepository');
+const PropertyTypes = require('core/PropertyTypes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
 function findComma(src, start) {
@@ -17,7 +18,7 @@ function findComma(src, start) {
  * @param {String} argsSrc
  * @returns {Array}
  */
-function parseArgs(argsSrc, funcLib, warn, byRefMask) {
+function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
   if (!argsSrc) {
     return [];
   }
@@ -57,14 +58,15 @@ function parseArgs(argsSrc, funcLib, warn, byRefMask) {
           argsSrc.substring(start, closeBracketPos + 1).trim(),
           funcLib,
           warn,
+          dataRepoGetter,
           cbr && byRefMask.indexOf(i) >= 0
         )
       );
       commaPos = findComma(argsSrc, closeBracketPos + 1);
     } else if (commaPos > -1) {
-      result.push(evaluate(argsSrc.substring(start, commaPos).trim(), funcLib, warn, cbr && byRefMask.indexOf(i) >= 0));
+      result.push(evaluate(argsSrc.substring(start, commaPos).trim(), funcLib, warn, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
     } else {
-      result.push(evaluate(argsSrc.substring(start).trim(), funcLib, warn, cbr && byRefMask.indexOf(i) >= 0));
+      result.push(evaluate(argsSrc.substring(start).trim(), funcLib, warn, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
     }
     start = commaPos + 1;
     i++;
@@ -72,13 +74,38 @@ function parseArgs(argsSrc, funcLib, warn, byRefMask) {
   return result;
 }
 
-function objProp(obj, nm) {
+function objProp(obj, nm, dataRepoGetter) {
   if (!nm) {
     return null;
   }
 
   if (obj instanceof Item) {
-    return obj.property(nm).evaluate();
+    let p = obj.property(nm);
+    if (p) {
+     switch (p.meta.type) {
+       case PropertyTypes.REFERENCE: {
+         let v = p.evaluate();
+         if (p.getValue() && !v && typeof dataRepoGetter === 'function') {
+           let dr = dataRepoGetter();
+           if (dr instanceof DataRepository) {
+             return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue());
+           }
+         }
+         return v;
+       }break;
+       case PropertyTypes.COLLECTION: {
+         let v = p.evaluate();
+         if (v === null && typeof dataRepoGetter === 'function') {
+           let dr = dataRepoGetter();
+           if (dr instanceof DataRepository) {
+             return dr.getAssociationsList(obj, p.getName());
+           }
+         }
+         return v;
+       }break;
+       default: return p.evaluate();
+     }
+    }
   }
 
   if (nm.indexOf('.') < 0) {
@@ -87,7 +114,7 @@ function objProp(obj, nm) {
     }
 
     if (obj.$context) {
-      return objProp(obj.$context, nm);
+      return objProp(obj.$context, nm, dataRepoGetter);
     }
   }
 
@@ -106,9 +133,9 @@ function objProp(obj, nm) {
  * @param {{name: String}} nm
  * @returns {Function}
  */
-function propertyGetter(nm) {
+function propertyGetter(nm, dataRepoGetter) {
   return function () {
-    return objProp(this, nm);
+    return objProp(this, nm, dataRepoGetter);
   };
 }
 
@@ -116,7 +143,7 @@ function propertyGetter(nm) {
  * @param {String} formula
  * @returns {*}
  */
-function evaluate(formula, funcLib, warn, byRef) {
+function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
   if (!isNaN(formula)) {
     return Number(formula);
   }
@@ -147,7 +174,7 @@ function evaluate(formula, funcLib, warn, byRef) {
 
     if (funcLib.hasOwnProperty(func)) {
       let f = funcLib[func];
-      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim(), funcLib, warn, f.byRefMask);
+      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
 
       if (byRef) {
         return function () {return f(args);};
@@ -159,7 +186,7 @@ function evaluate(formula, funcLib, warn, byRef) {
   }
 
   if (formula[0] === '$') {
-    return propertyGetter(formula.substring(1));
+    return propertyGetter(formula.substring(1), dataRepoGetter);
   }
 
   return formula;
@@ -169,7 +196,7 @@ function byRefConstructor(f, args) {
   return function () {return f(args);};
 }
 
-function parseObject(formula, funcLib, warn, byRefMask, byRef) {
+function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   /*if (!isNaN(formula)) {
     return Number(formula);
   }*/
@@ -178,7 +205,7 @@ function parseObject(formula, funcLib, warn, byRefMask, byRef) {
     let result = [];
     let cbr = Array.isArray(byRefMask);
     formula.forEach((v, ind) => {
-      result.push(parseObject(v, funcLib, warn, null, cbr && byRefMask.indexOf(ind) >= 0));
+      result.push(parseObject(v, funcLib, warn, dataRepoGetter, null, cbr && byRefMask.indexOf(ind) >= 0));
     });
     return result;
   }
@@ -186,7 +213,7 @@ function parseObject(formula, funcLib, warn, byRefMask, byRef) {
   if (formula === null || typeof formula !== 'object') {
     if (typeof formula === 'string') {
       if (formula[0] === '$') {
-        return propertyGetter(formula.substring(1));
+        return propertyGetter(formula.substring(1), dataRepoGetter);
       }
     }
     return formula;
@@ -200,7 +227,7 @@ function parseObject(formula, funcLib, warn, byRefMask, byRef) {
       }
       if (funcLib.hasOwnProperty(func)) {
         let f = funcLib[func];
-        let args = parseObject(formula[func], funcLib, warn, f.byRefMask);
+        let args = parseObject(formula[func], funcLib, warn, dataRepoGetter, f.byRefMask);
         if (byRef) {
           return byRefConstructor(f, args);
         }
@@ -214,12 +241,12 @@ function parseObject(formula, funcLib, warn, byRefMask, byRef) {
   return formula;
 }
 
-module.exports = function (formula, lib, warn) {
+module.exports = function (formula, lib, warn, dataRepoGetter) {
   let result = formula;
   if (typeof formula === 'string') {
-    result = evaluate(formula.trim(), lib, warn);
+    result = evaluate(formula.trim(), lib, warn, dataRepoGetter);
   } else if (formula && typeof formula === 'object' && !(formula instanceof Date)) {
-    result = parseObject(formula, lib, warn);
+    result = parseObject(formula, lib, warn, dataRepoGetter);
   }
   if (typeof result !== 'function') {
     return () => result;

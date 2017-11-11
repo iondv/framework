@@ -530,8 +530,8 @@ function IonDataRepository(options) {
           for (let nm in props) {
             if (props.hasOwnProperty(nm)) {
               if (
-                nestingDepth > 0 ||
-                (forced2.hasOwnProperty(nm) || props[nm].eagerLoading()) && nestingDepth >= _this.maxEagerDepth
+                nestingDepth > 0 || forced2.hasOwnProperty(nm) ||
+                props[nm].eagerLoading() && nestingDepth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
                   prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
@@ -1240,9 +1240,7 @@ function IonDataRepository(options) {
      */
   function fetchNSaveBackRefs(meta, backRef, id, updates, changeLogger) {
     return function () {
-      var f = {};
-      f[backRef] = id;
-      return _this._getList(meta.getCanonicalName(), {filter: f})
+      return _this._getList(meta.getCanonicalName(), {filter: {[Operations.EQUAL]: ['$' + backRef, id]}})
         .then(function (found) {
           var saver = null;
           if (found.length) {
