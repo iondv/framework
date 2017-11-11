@@ -708,6 +708,20 @@ function MongoDs(config) {
     return c;
   }
 
+  function prepareDateFormat(format) {
+    return format
+      .replace('d', '%w')
+      .replace('DDDD', '%j')
+      .replace('DD', '%d')
+      .replace('MM', '%m')
+      .replace('YYYY', '%Y')
+      .replace('HH','%H')
+      .replace('mm','%M')
+      .replace('ss', '%S')
+      .replace('SSS', '%L')
+      .replace('WW', '%V');
+  }
+
   function parseExpression(e, attributes, joinedSources, explicitJoins, joins, counter) {
     if (Array.isArray(e)) {
       let result = [];
@@ -731,7 +745,7 @@ function MongoDs(config) {
               return fDateDiff(parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter));
             } else if (oper === Operations.FORMAT) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
-              return {$dateToString: {date: args[0], format: args[1]}};
+              return {$dateToString: {date: args[0], format: prepareDateFormat(args[1])}};
             } else if (oper === Operations.CASE) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               let result = {$switch: {
