@@ -369,25 +369,25 @@ function NumGenerator() {
  */
 function prepareFilterOption(cm, filter, joins, numGen, context) {
   if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
-    for (let oper in filter) {
-      if (filter.hasOwnProperty(oper) && Array.isArray(filter[oper])) {
-        switch (oper) {
-          case Operations.CONTAINS:
-            return prepareContains(cm, filter[oper], joins, numGen, context);
-          case Operations.NOT_EMPTY:
-          case Operations.EMPTY:
-            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
-          case Operations.MAX:
-          case Operations.MIN:
-          case Operations.SUM:
-          case Operations.AVG:
-          case Operations.COUNT:
-            break;
-          case Operations.LITERAL:
-            return {[oper]: filter[oper]};
-          default:
-            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
-        }
+    let keys = Object.keys(filter);
+    if (keys.length === 1 && Object.values(Operations).indexOf(keys[0]) >= 0) {
+      let oper = keys[0];
+      switch (oper) {
+        case Operations.CONTAINS:
+          return prepareContains(cm, filter[oper], joins, numGen, context);
+        case Operations.NOT_EMPTY:
+        case Operations.EMPTY:
+          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
+        case Operations.MAX:
+        case Operations.MIN:
+        case Operations.SUM:
+        case Operations.AVG:
+        case Operations.COUNT:
+          break;
+        case Operations.LITERAL:
+          return {[oper]: filter[oper]};
+        default:
+          return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
       }
     }
   }

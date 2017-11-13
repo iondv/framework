@@ -23,7 +23,7 @@ const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
 
-const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options',
+const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$geometry', '$regex', '$options',
   '$where', '$or', '$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$exist', '$in', '$nin', '$exists'];
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where'];
@@ -612,8 +612,8 @@ function MongoDs(config) {
                     break;
                   }
                 }
-                if (attr && right && right.geometry) {
-                  return {[attr]: {[o]: {$geometry: right.geometry}}};
+                if (attr && right) {
+                  return {[attr]: {[o]: {$geometry: right}}};
                 }
                 return {[o]: parseCondition(c[oper])};
               }break;
