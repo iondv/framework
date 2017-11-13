@@ -1024,7 +1024,7 @@ function MongoDs(config) {
 
   function joinId(join, context) {
     return (context ? context + ':' : '') + join.table + ':' + join.left + ':' +
-      join.right + ':' + (join.many ? 'm' : '1');
+      join.right + ':' + (join.many ? 'm' : '1') + (join.alias ? ':' + join.alias : '');
   }
 
   /**
@@ -1561,7 +1561,6 @@ function MongoDs(config) {
 
     try {
       if (Array.isArray(options.joins)) {
-        joins = [];
         options.joins.forEach(processJoin(attributes, joinedSources, lookups, null, null, joins));
       }
 
