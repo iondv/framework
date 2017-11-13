@@ -23,6 +23,7 @@ module.exports = {
   dateAdd: require('./date/dateAdd'),
   dateDiff: require('./date/dateDiff'),
   dateFormat: require('./date/dateFormat'),
+  format: require('./date/dateFormat'),
   concat: require('./string/concat'),
   substr: require('./string/substr'),
   element: require('./arrays/element'),
