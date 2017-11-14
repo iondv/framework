@@ -25,9 +25,11 @@ const Iterator = require('core/interfaces/Iterator');
 const SortingParser = require('core/SortingParser');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
+const MetaErrors = require('core/errors/meta-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('clone');
 const Operations = require('core/FunctionCodes');
+const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
 
 const EVENT_CANCELED = '____CANCELED___';
@@ -746,6 +748,149 @@ function IonDataRepository(options) {
   };
 
   /**
+   * @param {ClassMeta} cm
+   * @param {String} attr
+   * @param {Array | {}} parent
+   * @param {String} path
+   * @param {{}} joinsHash
+   * @returns {String | {}}
+   */
+  function parseAttr(cm, attr, parent, path, joinsHash) {
+    if (cm) {
+      if (attr[0] === '$') {
+        let cntxt = '';
+        if (typeof parent === 'object' && !Array.isArray(parent)) {
+          cntxt = parent.alias + '.';
+        }
+
+        let tmp = attr.substr(1);
+        let pt = attr.indexOf('.');
+        let pm;
+        if (pt > 0) {
+          tmp = attr.substr(1, pt - 1);
+        }
+        if ((pm = cm.getPropertyMeta(tmp)) !== null) {
+          if (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) {
+            let rc = pm._refClass;
+            if (pt > 0) {
+              let jpth = (path ? path + '|' : '') + pm.name;
+              let join;
+              if (joinsHash.hasOwnProperty(jpth)) {
+                join = joinsHash[jpth];
+              } else {
+                joinsHash.zi$$$$counter++;
+                join = {
+                  table: tn(rc),
+                  alias: '___join' + joinsHash.zi$$$$counter,
+                  left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
+                  right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
+                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef
+                };
+                joinsHash[jpth] = join;
+
+                if (Array.isArray(parent)) {
+                  parent.push(join);
+                } else if (typeof parent === 'object') {
+                  if (!Array.isArray(parent.join)) {
+                    parent.join = [];
+                  }
+                  parent.join.push(join);
+                }
+              }
+              return parseAttr(
+                rc,
+                '$' + attr.substr(pt + 1),
+                join,
+                jpth,
+                joinsHash
+              );
+            }
+            return {[dsF.JOIN_EXISTS]: [
+              tn(rc),
+              cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
+              pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
+              null,
+              pm.type === PropertyTypes.COLLECTION && !pm.backRef
+            ]};
+          }
+          return '$' + cntxt + attr.substr(1);
+        } else {
+          throw new IonError(MetaErrors.NO_ATTR, {class: cm.getCaption(), attr: tmp});
+        }
+      }
+    }
+    return attr;
+  }
+
+  /**
+   * @param {{}} result
+   * @param {String} nm
+   * @param {ClassMeta} cm
+   * @param {Array} joins
+   * @param {{}} joinsHash
+   */
+  function toDsSize(result, nm, cm, joins, joinsHash) {
+    let parsed = parseAttr(cm, nm, joins, '', joinsHash);
+    if (typeof parsed === 'object' && parsed) {
+      result[dsF.JOIN_SIZE] = parsed[dsF.JOIN_EXISTS];
+    } else {
+      result[Operations.SIZE] = [parsed];
+    }
+  }
+
+  function funcToDsExpr(expr, cm, joins, joinsHash) {
+    let result;
+    if (Array.isArray(expr)) {
+      result = [];
+      expr.forEach(function (e) {
+        result.push(funcToDsExpr(e, cm, joins, joinsHash));
+      });
+      return result;
+    }
+
+    if (typeof expr === 'string') {
+      return parseAttr(cm, expr, joins, '', joinsHash);
+    }
+
+    if (typeof expr === 'object' && !(expr instanceof Date) && expr) {
+      result = {};
+      for (let nm in expr) {
+        if (expr.hasOwnProperty(nm)) {
+          if (nm === Operations.SIZE) {
+            toDsSize(result, expr[nm][0], cm, joins, joinsHash);
+          } else {
+            result[nm] = funcToDsExpr(expr[nm], cm, joins, joinsHash);
+          }
+        }
+      }
+      return result;
+    }
+    return expr;
+  }
+
+  function prepareResults(cm, opts, joins) {
+    let joinsHash = {zi$$$$counter: 0};
+    if (opts.aggregates) {
+      for (let nm in opts.aggregates) {
+        if (opts.aggregares.hasOwnProperty(nm)) {
+          opts.aggregates[nm] = funcToDsExpr(opts.aggregates[nm], cm, joins, joinsHash);
+        }
+      }
+    }
+    if (opts.fields) {
+      for (let nm in opts.fields) {
+        if (opts.fields.hasOwnProperty(nm)) {
+          if (typeof opts.fields[nm] === 'object' && opts.fields[nm]) {
+            opts.fields[nm] = funcToDsExpr(opts.fields[nm], cm, joins, joinsHash);
+          } else if (typeof opts.fields[nm] === 'string') {
+            opts.fields[nm] = parseAttr(cm, opts.fields[nm], joins, '', joinsHash);
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * @param {String} className
    * @param {{}} [options]
    * @param {{}} [options.expressions]
@@ -757,8 +902,9 @@ function IonDataRepository(options) {
     let opts = clone(options) || {};
     let cm = getMeta(className);
     let rcm = getRootType(cm);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
     opts.joins = opts.joins || [];
+    prepareResults(cm, opts, opts.joins);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm);
     return prepareFilterValues(cm, opts.filter, opts.joins).
     then(function (filter) {
         opts.filter = filter;
