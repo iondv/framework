@@ -46,5 +46,6 @@ module.exports = {
   CASE: 'case',
   IFNULL: 'ifNull',
   LITERAL: 'literal',
-  SIZE: 'size'
+  SIZE: 'size',
+  FORMAT: 'format'
 };

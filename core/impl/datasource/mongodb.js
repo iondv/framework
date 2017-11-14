@@ -80,7 +80,8 @@ const FUNC_OPERS = {
   [Operations.IF]: '$cond',
   [Operations.CASE]: '$case',
   [Operations.LITERAL]: '$literal',
-  [Operations.SIZE]: '$strLenCP'
+  [Operations.SIZE]: '$strLenCP',
+  [Operations.FORMAT]: '$dateToString'
 };
 
 // jshint maxstatements: 150, maxcomplexity: 60, maxdepth: 10, maxparams: 8
@@ -710,6 +711,20 @@ function MongoDs(config) {
     return c;
   }
 
+  function prepareDateFormat(format) {
+    return format
+      .replace('d', '%w')
+      .replace('DDDD', '%j')
+      .replace('DD', '%d')
+      .replace('MM', '%m')
+      .replace('YYYY', '%Y')
+      .replace('HH','%H')
+      .replace('mm','%M')
+      .replace('ss', '%S')
+      .replace('SSS', '%L')
+      .replace('WW', '%V');
+  }
+
   function parseExpression(e, attributes, joinedSources, explicitJoins, joins, counter) {
     if (Array.isArray(e)) {
       let result = [];
@@ -734,6 +749,9 @@ function MongoDs(config) {
             } else if (oper === Operations.SIZE) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               return {$strLenCP: args[0]};
+            } else if (oper === Operations.FORMAT) {
+              let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
+              return {$dateToString: {date: args[0], format: prepareDateFormat(args[1])}};
             } else if (oper === Operations.CASE) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               let result = {$switch: {
