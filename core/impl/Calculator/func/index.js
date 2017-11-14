@@ -33,5 +33,6 @@ module.exports = {
   empty: require('./cmp/empty'),
   contains: require('./data/contains'),
   like: require('./string/like'),
-  in: require('./arrays/in')
+  in: require('./arrays/in'),
+  size: require('./data/size')
 };
