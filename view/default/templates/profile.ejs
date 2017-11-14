@@ -25,7 +25,7 @@
     </div>
     <% } %>
     <form id="reg-form" action="profile" method="post" class="sky-form boxed">
-      <header><i class="fa fa-users"></i> Профиль пользователя <%=user.name%></header>
+      <header><i class="fa fa-users"></i> Профиль пользователя <%=user.name()%></header>
       <fieldset>
         <% Object.keys(fields).forEach(function(fieldName){ %>
         <section>
@@ -35,7 +35,7 @@
           </label>
           <label class="input">
             <%
-            let val = user.properties[fieldName];
+            let val = user.properties()[fieldName];
             if (Array.isArray(fields[fieldName])) {
             %>
             <select name="<%= fieldName %>">
