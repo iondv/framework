@@ -30,6 +30,8 @@ const alias = require('core/scope-alias');
 const extend = require('extend');
 errorSetup(config.lang || 'ru');
 
+const cookieParser = require('cookie-parser');
+
 var sysLog = new IonLogger(config.log || {});
 
 /** Сервер http
@@ -39,6 +41,7 @@ var sysLog = new IonLogger(config.log || {});
 sysLog.info('Запуск приложения ION');
 
 var app = express();
+app.use('/', cookieParser());
 
 global.app = app;
 
