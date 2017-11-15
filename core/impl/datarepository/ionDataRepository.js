@@ -872,7 +872,7 @@ function IonDataRepository(options) {
     let joinsHash = {zi$$$$counter: 0};
     if (opts.aggregates) {
       for (let nm in opts.aggregates) {
-        if (opts.aggregares.hasOwnProperty(nm)) {
+        if (opts.aggregates.hasOwnProperty(nm)) {
           opts.aggregates[nm] = funcToDsExpr(opts.aggregates[nm], cm, joins, joinsHash);
         }
       }
