@@ -872,7 +872,7 @@ function IonDataRepository(options) {
     let joinsHash = {zi$$$$counter: 0};
     if (opts.aggregates) {
       for (let nm in opts.aggregates) {
-        if (opts.aggregares.hasOwnProperty(nm)) {
+        if (opts.aggregates.hasOwnProperty(nm)) {
           opts.aggregates[nm] = funcToDsExpr(opts.aggregates[nm], cm, joins, joinsHash);
         }
       }
@@ -1243,7 +1243,7 @@ function IonDataRepository(options) {
 
     let clrf = {[Operations.AND]: [
       {[Operations.EQUAL]: ['$' + pm.backRef, oldId || itemId]},
-      {[Operations.NOT_EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]},
+      {[Operations.NOT_EQUAL]: ['$' + rcm.getKeyProperties()[0], updates[pm.name]]}
     ]};
 
     clr[pm.backRef] = null;
@@ -1878,7 +1878,6 @@ function IonDataRepository(options) {
         }
         p = Promise.resolve(updates);
       }
-
 
       return p
         .then(()=> {
