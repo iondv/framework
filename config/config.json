@@ -1,6 +1,7 @@
 {
     "log_level": "notice",
     "parametrised": true,
+    "baseUrl": "[[app.baseUrl]]",
     "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
     "skipModules": "[[module.skip]]",
@@ -70,7 +71,9 @@
         "options": {
           "dataSource": "ion://Db"
         }
-      },
+      }
+    },
+    "di" : {
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
@@ -105,9 +108,7 @@
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]"
         }
-      }
-    },
-    "di" : {
+      },
       "calculator": {
         "module": "core/impl/Calculator",
         "initMethod": "init",
@@ -119,7 +120,7 @@
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
-        "initLevel": 2,
+        "initLevel": 1,
         "options": {
           "dataSource": "ion://Db",
           "calc": "ion://calculator",
@@ -130,7 +131,8 @@
               "dataSource": "ion://Db",
               "log": "ion://sysLog"
             }
-          }
+          },
+          "log": "ion://sysLog"
         }
       },
       "fileStorage": {
@@ -172,7 +174,8 @@
         "name": "keyProvider",
         "module": "core/impl/meta/keyProvider",
         "options": {
-          "metaRepo": "ion://metaRepo"
+          "metaRepo": "ion://metaRepo",
+          "keySeparator": "[[data.keySeparator]]"
         }
       },
       "dataRepo": {

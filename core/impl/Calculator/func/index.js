@@ -23,9 +23,16 @@ module.exports = {
   dateAdd: require('./date/dateAdd'),
   dateDiff: require('./date/dateDiff'),
   dateFormat: require('./date/dateFormat'),
+  format: require('./date/dateFormat'),
   concat: require('./string/concat'),
   substr: require('./string/substr'),
   element: require('./arrays/element'),
   collect: require('./process/collect'),
-  if: require('./condition/if')
+  if: require('./condition/if'),
+  nempty: require('./cmp/nempty'),
+  empty: require('./cmp/empty'),
+  contains: require('./data/contains'),
+  like: require('./string/like'),
+  in: require('./arrays/in'),
+  size: require('./data/size')
 };

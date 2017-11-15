@@ -12,7 +12,7 @@ function argCalc(context, args, argCount) {
   for (let i = 0; i < n; i++) {
     let tmp = typeof args[i] === 'function' ?
       args[i].apply(context) :
-        typeof args[i] === 'string' && context[args[i]] ?
+        typeof args[i] === 'string' && typeof context[args[i]] !== 'undefined' ?
           context[args[i]] :
           args[i];
     async = tmp instanceof Promise ? true : async;
@@ -48,8 +48,8 @@ function sequence(context, args, interrupt) {
   if (!args.length) {
     return false;
   }
-  var ps = args.length;
-  var p;
+  let ps = args.length;
+  let p;
   let result;
   for (let i = 0; i < args.length; i++) {
     result = typeof args[i] === 'function' ? args[i].apply(context) : args[i];
