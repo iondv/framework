@@ -75,7 +75,7 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
   return result;
 }
 
-function objProp(obj, nm, dataRepoGetter) {
+function objProp(obj, nm, dataRepoGetter, depth) {
   if (!nm) {
     return null;
   }
@@ -103,19 +103,20 @@ function objProp(obj, nm, dataRepoGetter) {
 
   if (obj instanceof Item) {
     if (nm.indexOf('.') > 0) {
+      depth = depth || 0;
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
       let ri = objProp(obj, nm2, dataRepoGetter);
       let rp = ri instanceof Promise? ri : Promise.resolve(ri);
       return rp.then((ri) => {
         if (ri instanceof Item) {
-          return objProp(ri, nm3, dataRepoGetter);
+          return objProp(ri, nm3, dataRepoGetter, depth + 1);
         } else if (Array.isArray(ri)) {
           let result = [];
           let p = Promise.resolve();
           ri.forEach((ri) => {
             if (ri instanceof Item) {
-              p = p.then(() => objProp(ri, nm3, dataRepoGetter))
+              p = p.then(() => objProp(ri, nm3, dataRepoGetter, depth + 1))
                 .then((v) => {
                   if (Array.isArray(v)) {
                     result.push(...v);
