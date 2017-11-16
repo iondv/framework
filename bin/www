@@ -205,7 +205,7 @@ di('boot', config.bootstrap,
         ) {
           let module = require('modules/' + candidates[i] + '/web');
           if (typeof module === 'function') {
-            let title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            let title = moduleTitles.hasOwnProperty(candidates[i]) ? moduleTitles[candidates[i]] : module.locals.sysTitle;
             if (title) {
               sysMenu.push(
                 {
@@ -232,7 +232,7 @@ di('boot', config.bootstrap,
         }
       }
       for (let ref in moduleTitles) {
-        if (moduleTitles.hasOwnProperty(ref) && typeof moduleTitles[ref] === "object" && moduleTitles[ref].url) {
+        if (moduleTitles.hasOwnProperty(ref) && moduleTitles[ref] && moduleTitles[ref].url) {
           sysMenu.push(
             {
               name: moduleTitles[ref].url,

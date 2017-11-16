@@ -1,6 +1,7 @@
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
+const F = require('core/FunctionCodes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
 function findComma(src, start) {
@@ -79,6 +80,27 @@ function objProp(obj, nm, dataRepoGetter, depth) {
     return null;
   }
 
+  if (nm.indexOf('.') < 0) {
+    if (obj.hasOwnProperty(nm)) {
+      return obj[nm];
+    }
+  } else {
+    let pth = nm.split('.');
+    let ctx = obj;
+    for (let i = 0; i < pth.length; i++) {
+      if (ctx.hasOwnProperty(pth[i])) {
+        ctx = ctx[pth[i]];
+        if (typeof ctx !== 'object' || !ctx) {
+          return ctx;
+        }
+      }
+    }
+  }
+
+  if (obj.$context) {
+    return objProp(obj.$context, nm, dataRepoGetter);
+  }
+
   if (obj instanceof Item) {
     if (nm.indexOf('.') > 0) {
       depth = depth || 0;
@@ -115,10 +137,27 @@ function objProp(obj, nm, dataRepoGetter, depth) {
      switch (p.meta.type) {
        case PropertyTypes.REFERENCE: {
          let v = p.evaluate();
-         if (p.getValue() && !v && typeof dataRepoGetter === 'function') {
+         if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue());
+             if (p.meta.backRef) {
+               return dr.getList(p.meta._refClass.getCanonicalName(), {filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]}})
+                 .then((items) => {
+                   let item = items.length ? items[0] : null;
+                   if (item) {
+                     obj.references[p.getName()] = item;
+                   }
+                   return item;
+                 });
+             } else {
+               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue())
+                 .then((item) => {
+                   if (item) {
+                     obj.references[p.getName()] = item;
+                   }
+                   return item;
+                 });
+             }
            }
          }
          return v;
@@ -128,7 +167,11 @@ function objProp(obj, nm, dataRepoGetter, depth) {
          if (v === null && typeof dataRepoGetter === 'function') {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName());
+             return dr.getAssociationsList(obj, p.getName())
+               .then((list) => {
+                 obj.collections[p.getName()] = list;
+                 return list;
+               });
            }
          }
          return v;
@@ -138,25 +181,7 @@ function objProp(obj, nm, dataRepoGetter, depth) {
     }
   }
 
-  if (nm.indexOf('.') < 0) {
-    if (obj.hasOwnProperty(nm)) {
-      return obj[nm];
-    }
-
-    if (obj.$context) {
-      return objProp(obj.$context, nm, dataRepoGetter);
-    }
-  }
-
-  let pth = nm.split('.');
-  let ctx = obj;
-  for (let i = 0; i < pth.length; i++) {
-    ctx = ctx[pth[i]];
-    if (typeof ctx !== 'object' || !ctx) {
-      return ctx;
-    }
-  }
-  return ctx;
+  return null;
 }
 
 /**
