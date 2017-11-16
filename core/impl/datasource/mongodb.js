@@ -1247,7 +1247,7 @@ function MongoDs(config) {
                 if (
                   name[0] === '$' &&
                   Array.isArray(tmp) &&
-                  !(name === '$and' || name === '$or' || name === 'not' || name === 'nor')
+                  !(name === '$and' || name === '$or' || name === 'not' || name === 'nor' || name === '$in')
                 ) {
                   result = IGNORE;
                   break;
@@ -1656,7 +1656,6 @@ function MongoDs(config) {
 
       if (options.filter) {
         jl = joins.length;
-
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (analise.needRedact || analise.needPostFilter) {
           postfilter = producePostfilter(options.filter, lookups);
