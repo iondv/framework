@@ -537,7 +537,8 @@ function IonDataRepository(options) {
               if (
                 explicitForced.hasOwnProperty(nm) ||
                 (
-                  nestingDepth > 0 && props[nm].eagerLoading() ||
+                  nestingDepth > 0 ||
+                  props[nm].eagerLoading() ||
                   implicitForced.hasOwnProperty(nm)
                 ) && nestingDepth >= _this.maxEagerDepth
               ) {
