@@ -1,8 +1,9 @@
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
+const F = require('core/FunctionCodes');
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 25
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -79,6 +80,27 @@ function objProp(obj, nm, dataRepoGetter) {
     return null;
   }
 
+  if (nm.indexOf('.') < 0) {
+    if (obj.hasOwnProperty(nm)) {
+      return obj[nm];
+    }
+  } else {
+    let pth = nm.split('.');
+    let ctx = obj;
+    for (let i = 0; i < pth.length; i++) {
+      if (ctx.hasOwnProperty(pth[i])) {
+        ctx = ctx[pth[i]];
+        if (typeof ctx !== 'object' || !ctx) {
+          return ctx;
+        }
+      }
+    }
+  }
+
+  if (obj.$context) {
+    return objProp(obj.$context, nm, dataRepoGetter);
+  }
+
   if (obj instanceof Item) {
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
@@ -93,7 +115,8 @@ function objProp(obj, nm, dataRepoGetter) {
           let p = Promise.resolve();
           ri.forEach((ri) => {
             if (ri instanceof Item) {
-              p = p.then(() => objProp(ri, nm3, dataRepoGetter))
+              p = p
+                .then(() => objProp(ri, nm3, dataRepoGetter))
                 .then((v) => {
                   if (Array.isArray(v)) {
                     result.push(...v);
@@ -114,20 +137,44 @@ function objProp(obj, nm, dataRepoGetter) {
      switch (p.meta.type) {
        case PropertyTypes.REFERENCE: {
          let v = p.evaluate();
-         if (p.getValue() && !v && typeof dataRepoGetter === 'function') {
+         if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue());
+             if (p.meta.backRef) {
+               if (!obj.getItemId()) {
+                 return null;
+               }
+               return dr.getList(p.meta._refClass.getCanonicalName(), {filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]}})
+                 .then((items) => {
+                   let item = items.length ? items[0] : null;
+                   if (item) {
+                     obj.references[p.getName()] = item;
+                   }
+                   return item;
+                 });
+             } else {
+               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue())
+                 .then((item) => {
+                   if (item) {
+                     obj.references[p.getName()] = item;
+                   }
+                   return item;
+                 });
+             }
            }
          }
          return v;
        }break;
        case PropertyTypes.COLLECTION: {
          let v = p.evaluate();
-         if (v === null && typeof dataRepoGetter === 'function') {
+         if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName());
+             return dr.getAssociationsList(obj, p.getName())
+               .then((list) => {
+                 obj.collections[p.getName()] = list;
+                 return list;
+               });
            }
          }
          return v;
@@ -137,25 +184,7 @@ function objProp(obj, nm, dataRepoGetter) {
     }
   }
 
-  if (nm.indexOf('.') < 0) {
-    if (obj.hasOwnProperty(nm)) {
-      return obj[nm];
-    }
-
-    if (obj.$context) {
-      return objProp(obj.$context, nm, dataRepoGetter);
-    }
-  }
-
-  let pth = nm.split('.');
-  let ctx = obj;
-  for (let i = 0; i < pth.length; i++) {
-    ctx = ctx[pth[i]];
-    if (typeof ctx !== 'object' || !ctx) {
-      return ctx;
-    }
-  }
-  return ctx;
+  return null;
 }
 
 /**
