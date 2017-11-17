@@ -820,27 +820,18 @@ function calcProperties(item, skip) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  var calculations = [];
-  var calcNames = [];
-  var props = item.getMetaClass().getPropertyMetas();
+  let calculations = Promise.resolve();
+  let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
     if (p._formula) {
-      calculations.push(Promise.resolve().then(()=>p._formula.apply(item)));
-      calcNames.push(p.name);
+      calculations = calculations.then(()=>p._formula.apply(item))
+        .then((result) => {
+          item.calculated[p.name] = result;
+        });
     }
   });
 
-  if (calculations.length === 0) {
-    return Promise.resolve(item);
-  }
-
-  return Promise.all(calculations).
-  then(function (results) {
-    for (var i = 0; i < calcNames.length; i++) {
-      item.calculated[calcNames[i]] = results[i];
-    }
-    return Promise.resolve(item);
-  });
+  return calculations.then(()=>item);
 }
 
 module.exports.calcProperties = calcProperties;

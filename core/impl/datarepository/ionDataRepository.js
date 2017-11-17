@@ -536,8 +536,8 @@ function IonDataRepository(options) {
             if (props.hasOwnProperty(nm)) {
               if (
                 explicitForced.hasOwnProperty(nm) ||
+                nestingDepth > 0 ||
                 (
-                  nestingDepth > 0 ||
                   props[nm].eagerLoading() ||
                   implicitForced.hasOwnProperty(nm)
                 ) && nestingDepth >= _this.maxEagerDepth
@@ -1002,7 +1002,6 @@ function IonDataRepository(options) {
           return Promise.resolve(null);
         });
     } else if (obj instanceof Item) {
-      let fetcher = null;
       if (obj.getItemId()) {
         opts.filter = addFilterByItem({}, obj);
         opts.filter = addDiscriminatorFilter(opts.filter, cm);
@@ -1014,9 +1013,8 @@ function IonDataRepository(options) {
             return _this.ds.fetch(tn(rcm), opts);
           })
           .then(function (data) {
-            let item;
             for (let i = 0; i < data.length; i++) {
-              item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+              let item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
               return loadFiles(item, _this.fileStorage, _this.imageStorage);
             }
             return Promise.resolve(null);
@@ -2273,7 +2271,7 @@ function IonDataRepository(options) {
    * @param {Item} master
    * @param {String} collection
    * @param {{}} options
-   * @param {Boolean} onlyCount - определяте получаемы результат, если true то только считаем количество
+   * @param {Boolean} onlyCount - определяте получаемый результат, если true то только считаем количество
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {
