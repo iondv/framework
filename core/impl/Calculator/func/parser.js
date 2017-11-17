@@ -141,6 +141,9 @@ function objProp(obj, nm, dataRepoGetter, depth) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
              if (p.meta.backRef) {
+               if (!obj.getItemId()) {
+                 return null;
+               }
                return dr.getList(p.meta._refClass.getCanonicalName(), {filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]}})
                  .then((items) => {
                    let item = items.length ? items[0] : null;
@@ -164,7 +167,7 @@ function objProp(obj, nm, dataRepoGetter, depth) {
        }break;
        case PropertyTypes.COLLECTION: {
          let v = p.evaluate();
-         if (v === null && typeof dataRepoGetter === 'function') {
+         if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
              return dr.getAssociationsList(obj, p.getName())
