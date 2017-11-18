@@ -386,14 +386,16 @@ function IonDataRepository(options) {
     }
   }
 
-  function formForced(param, forced) {
+  function formForced(param, forced, options) {
     if (param && Array.isArray(param)) {
       for (let i = 0; i < param.length; i++) {
-        if (!forced.hasOwnProperty(param[i][0])) {
-          forced[param[i][0]] = [];
-        }
-        if (param[i].length > 1) {
-          forced[param[i][0]].push(param[i].slice(1));
+        if (!options.needed || options.needed.hasOwnProperty(param[i][0])) {
+          if (!forced.hasOwnProperty(param[i][0])) {
+            forced[param[i][0]] = [];
+          }
+          if (param[i].length > 1) {
+            forced[param[i][0]].push(param[i].slice(1));
+          }
         }
       }
     }
@@ -509,8 +511,8 @@ function IonDataRepository(options) {
     let srcByKey = {};
     let explicitForced = {};
     let implicitForced = {};
-    formForced(forceEnrichment, explicitForced);
-    formForced(___implicitEnrichment, implicitForced);
+    formForced(forceEnrichment, explicitForced, {});
+    formForced(___implicitEnrichment, implicitForced, options);
     let attrs = {};
     __loaded = __loaded || {};
     let promises = Promise.resolve();
@@ -530,7 +532,7 @@ function IonDataRepository(options) {
           let props = item.getProperties();
           if (!pcl.hasOwnProperty(cm.getName())) {
             pcl[cm.getName()] = true;
-            formForced(cm.getForcedEnrichment(), implicitForced);
+            formForced(cm.getForcedEnrichment(), implicitForced, options);
           }
           for (let nm in props) {
             if (props.hasOwnProperty(nm)) {
@@ -610,10 +612,10 @@ function IonDataRepository(options) {
     return promises.then(() => src2);
   }
 
-  function calcItemsProperties(items) {
+  function calcItemsProperties(items, options) {
     let calcs = Promise.resolve();
     items.forEach((item) => {
-      calcs = calcs.then(()=>calcProperties(item));
+      calcs = calcs.then(()=>calcProperties(item, options.needed));
     });
     return calcs.then(() => items);
   }
@@ -629,6 +631,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {{}} [options.___loaded]
+   * @param {{}} [options.needed]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
@@ -678,7 +681,7 @@ function IonDataRepository(options) {
       }
     ).
     then((result) => enrich(result, options)).
-    then(calcItemsProperties);
+    then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
   function ItemIterator(iterator, options) {
@@ -687,15 +690,8 @@ function IonDataRepository(options) {
         if (data) {
           let item = _this._wrap(data._class, data, data._classVer);
           return loadFiles(item, _this.fileStorage, _this.imageStorage).
-          then(
-            function (item) {
-              return enrich(
-                item,
-                options
-              );
-            }
-          ).
-          then(calcItemsProperties);
+          then((item) => enrich(item, options)).
+          then((item) => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
         }
         return Promise.resolve(null);
       });
@@ -718,6 +714,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
+   * @param {Boolean} [options.skipCalculations]
    * @param {{}} [options.___loaded]
    * @returns {Promise}
    */
@@ -958,6 +955,7 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipEnrich]
    * @param {Boolean} [options.skipCalculations]
+   * @param {{}} [options.needed]
    */
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
@@ -1028,7 +1026,7 @@ function IonDataRepository(options) {
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
       .then((item) => options.skipEnrich ? item : enrich(item, options))
-      .then((item) => options.skipCalculations ? item : calcProperties(item));
+      .then((item) => options.skipCalculations ? item : calcProperties(item, options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
@@ -2347,6 +2345,7 @@ function IonDataRepository(options) {
    * @param {Object} [options.sort]
    * @param {Boolean} [options.countTotal]
    * @param {Number} [options.nestingDepth]
+   * @param {{}} [options.needed]
    * @returns {Promise}
    */
   this._getAssociationsList = function (master, collection, options) {
