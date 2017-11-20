@@ -20,5 +20,8 @@ module.exports = {
 
   GEO_MAP: 0,
   GEO_LOCATOR: 1,
-  GEO_CANVAS: 2
+  GEO_CANVAS: 2,
+
+  GROUP_VERTICAL: 0,
+  GROUP_HORIZONTAL: 1
 };
