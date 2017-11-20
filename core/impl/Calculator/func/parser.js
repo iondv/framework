@@ -75,7 +75,7 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
   return result;
 }
 
-function objProp(obj, nm, dataRepoGetter) {
+function objProp(obj, nm, dataRepoGetter, needed) {
   if (!nm) {
     return null;
   }
@@ -105,7 +105,11 @@ function objProp(obj, nm, dataRepoGetter) {
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
-      let ri = objProp(obj, nm2, dataRepoGetter);
+      let nm4 = nm3;
+      if (nm4.indexOf('.') > 0) {
+        nm4 = nm4.substr(0, nm.indexOf('.'));
+      }
+      let ri = objProp(obj, nm2, dataRepoGetter, {[nm4]: true});
       let rp = ri instanceof Promise? ri : Promise.resolve(ri);
       return rp.then((ri) => {
         if (ri instanceof Item) {
@@ -144,22 +148,14 @@ function objProp(obj, nm, dataRepoGetter) {
                if (!obj.getItemId()) {
                  return null;
                }
-               return dr.getList(p.meta._refClass.getCanonicalName(), {filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]}})
-                 .then((items) => {
-                   let item = items.length ? items[0] : null;
-                   if (item) {
-                     obj.references[p.getName()] = item;
-                   }
-                   return item;
-                 });
+               return dr.getList(p.meta._refClass.getCanonicalName(),
+                 {
+                   filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
+                   needed: needed
+                 })
+                 .then((items) => items.length ? items[0] : null);
              } else {
-               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue())
-                 .then((item) => {
-                   if (item) {
-                     obj.references[p.getName()] = item;
-                   }
-                   return item;
-                 });
+               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed});
              }
            }
          }
@@ -170,11 +166,7 @@ function objProp(obj, nm, dataRepoGetter) {
          if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName())
-               .then((list) => {
-                 obj.collections[p.getName()] = list;
-                 return list;
-               });
+             return dr.getAssociationsList(obj, p.getName(), {needed: needed});
            }
          }
          return v;
@@ -255,9 +247,11 @@ function byRefConstructor(f, args) {
 }
 
 function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
-  /*if (!isNaN(formula)) {
+  /*
+  if (!isNaN(formula)) {
     return Number(formula);
-  }*/
+  }
+  */
 
   if (Array.isArray(formula)) {
     let result = [];
