@@ -3,7 +3,7 @@ const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 25
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -115,7 +115,8 @@ function objProp(obj, nm, dataRepoGetter) {
           let p = Promise.resolve();
           ri.forEach((ri) => {
             if (ri instanceof Item) {
-              p = p.then(() => objProp(ri, nm3, dataRepoGetter))
+              p = p
+                .then(() => objProp(ri, nm3, dataRepoGetter))
                 .then((v) => {
                   if (Array.isArray(v)) {
                     result.push(...v);
@@ -140,6 +141,9 @@ function objProp(obj, nm, dataRepoGetter) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
              if (p.meta.backRef) {
+               if (!obj.getItemId()) {
+                 return null;
+               }
                return dr.getList(p.meta._refClass.getCanonicalName(), {filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]}})
                  .then((items) => {
                    let item = items.length ? items[0] : null;
@@ -163,7 +167,7 @@ function objProp(obj, nm, dataRepoGetter) {
        }break;
        case PropertyTypes.COLLECTION: {
          let v = p.evaluate();
-         if (v === null && typeof dataRepoGetter === 'function') {
+         if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
              return dr.getAssociationsList(obj, p.getName())

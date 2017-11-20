@@ -22,7 +22,7 @@ const DsOperations = require('core/DataSourceFunctionCodes');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options',
+const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$geometry', '$regex', '$options',
   '$where', '$or', '$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$exist', '$in', '$nin', '$exists'];
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
 const excludeFromPostfilter = ['$text', '$geoIntersects', '$geoWithin', '$where', '$strLenCP'];
@@ -620,8 +620,8 @@ function MongoDs(config) {
               case '$geoWithin':
               case '$geoIntersects': {
                 let {attr, right} = argsToSides(c[oper]);
-                if (attr && right && right.geometry) {
-                  return {[attr]: {[o]: {$geometry: right.geometry}}};
+                if (attr && right) {
+                  return {[attr]: {[o]: {$geometry: right}}};
                 }
                 return {[o]: parseCondition(c[oper])};
               }break;
@@ -1245,7 +1245,7 @@ function MongoDs(config) {
                 if (
                   name[0] === '$' &&
                   Array.isArray(tmp) &&
-                  !(name === '$and' || name === '$or' || name === 'not' || name === 'nor')
+                  !(name === '$and' || name === '$or' || name === 'not' || name === 'nor' || name === '$in')
                 ) {
                   result = IGNORE;
                   break;
@@ -1653,7 +1653,6 @@ function MongoDs(config) {
 
       if (options.filter) {
         jl = joins.length;
-
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (analise.needRedact || analise.needPostFilter) {
           postfilter = producePostfilter(options.filter, lookups);
