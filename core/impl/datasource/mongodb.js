@@ -22,7 +22,6 @@ const DsOperations = require('core/DataSourceFunctionCodes');
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
 
-
 const allowInPrefilter = ['$text', '$geoIntersects', '$geoWithin', '$geometry', '$regex', '$options',
   '$where', '$or', '$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$exist', '$in', '$nin', '$exists'];
 const excludeFromRedactfilter = ['$text', '$geoIntersects', '$geoWithin', '$regex', '$options', '$where', '$or'];
@@ -546,22 +545,22 @@ function MongoDs(config) {
           };
       }break;
       case 'y':result = {
-        $subtract: [
-          {$add: [
-            {$subtract: [
-              {$year: d1},
-              1
+          $subtract: [
+            {$add: [
+              {$subtract: [
+                {$year: d1},
+                1
+              ]},
+              {$divide: [{$dayOdYear: d1}, 365]}
             ]},
-            {$divide: [{$dayOdYear: d1}, 365]}
-          ]},
-          {$add: [
-            {$subtract: [
-              {$year: d2},
-              1
-            ]},
-            {$divide: [{$dayOdYear: d2}, 365]}
-          ]}]
-      };break;
+            {$add: [
+              {$subtract: [
+                {$year: d2},
+                1
+              ]},
+              {$divide: [{$dayOdYear: d2}, 365]}
+            ]}]
+        };break;
       case 'ms': result = {$subtract: [d1, d2]};break;
       case 's': result = {$divide: [{$subtract: [d1, d2]}, 1000]};break;
       case 'min': result = {$divide: [{$subtract: [d1, d2]}, 60000]};break;
@@ -718,8 +717,8 @@ function MongoDs(config) {
       .replace('DD', '%d')
       .replace('MM', '%m')
       .replace('YYYY', '%Y')
-      .replace('HH','%H')
-      .replace('mm','%M')
+      .replace('HH', '%H')
+      .replace('mm', '%M')
       .replace('ss', '%S')
       .replace('SSS', '%L')
       .replace('WW', '%V');
@@ -728,7 +727,7 @@ function MongoDs(config) {
   function parseExpression(e, attributes, joinedSources, explicitJoins, joins, counter) {
     if (Array.isArray(e)) {
       let result = [];
-      e.forEach((e1)=>{result.push(parseExpression(e1, attributes, joinedSources, explicitJoins, joins, counter));});
+      e.forEach((e1)=> {result.push(parseExpression(e1, attributes, joinedSources, explicitJoins, joins, counter));});
       return result;
     }
     if (e && typeof e === 'object' && !(e instanceof Date)) {
@@ -737,9 +736,9 @@ function MongoDs(config) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
-              return {$ne:[{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
             } else if (oper === Operations.NOT_EMPTY) {
-              return {$eq:[{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
             } else if (oper === Operations.DATE_ADD) {
@@ -818,7 +817,6 @@ function MongoDs(config) {
     }
     return e;
   }
-
 
   function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
     if (Array.isArray(conditions)) {
@@ -1651,7 +1649,6 @@ function MongoDs(config) {
         }
       }
 
-
       resultAttrs = attributes.slice(0);
 
       if (options.filter) {
@@ -1745,6 +1742,16 @@ function MongoDs(config) {
             result.push({$sort: options.sort});
           }
         }
+      }
+
+      let skip = parseInt(options.offset);
+      if (skip) {
+        result.push({$skip: skip});
+      }
+
+      let limit = parseInt(options.count);
+      if (limit) {
+        result.push({$limit: limit});
       }
 
       if (options.to) {
