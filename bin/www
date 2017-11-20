@@ -28,6 +28,7 @@ const SettingsRepository = require('core/impl/SettingsRepository');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
+
 errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger(config.log || {});
@@ -80,6 +81,9 @@ app.use(bodyParser.urlencoded({extended: true, limit: limit}));
 app.use(bodyParser.raw({limit: limit}));
 
 app.locals.baseUrl = config.baseUrl || '/';
+if (!app.locals.baseUrl.endsWith('/')) {
+  app.locals.baseUrl = app.locals.baseUrl + '/';
+}
 
 // Создаем HTTP сервер.
 var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
@@ -156,11 +160,15 @@ di('boot', config.bootstrap,
         defaultModule = config.defaultModule;
       }
 
-      if (defaultModule) {
-        app.get('/', function (req, res) { res.redirect('/' + defaultModule); });
-      } else {
+      if (!defaultModule) {
         throw new Error('Не указан модуль по умолчанию!');
       }
+
+      app.locals.defaultModule = defaultModule;
+
+      app.get('/', function (req, res) {
+        res.redirect(app.locals.baseUrl + defaultModule);
+      });
 
       if (scope.fileStorage) {
         let route = scope.fileStorage.shareRoute();
@@ -205,7 +213,7 @@ di('boot', config.bootstrap,
         ) {
           let module = require('modules/' + candidates[i] + '/web');
           if (typeof module === 'function') {
-            let title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            let title = moduleTitles.hasOwnProperty(candidates[i]) ? moduleTitles[candidates[i]] : module.locals.sysTitle;
             if (title) {
               sysMenu.push(
                 {
@@ -232,7 +240,7 @@ di('boot', config.bootstrap,
         }
       }
       for (let ref in moduleTitles) {
-        if (moduleTitles.hasOwnProperty(ref) && typeof moduleTitles[ref] === "object" && moduleTitles[ref].url) {
+        if (moduleTitles.hasOwnProperty(ref) && moduleTitles[ref] && moduleTitles[ref].url) {
           sysMenu.push(
             {
               name: moduleTitles[ref].url,

@@ -399,27 +399,27 @@ function NumGenerator() {
  */
 function prepareFilterOption(cm, filter, joins, numGen, context) {
   if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
-    for (let oper in filter) {
-      if (filter.hasOwnProperty(oper) && Array.isArray(filter[oper])) {
-        switch (oper) {
-          case Operations.CONTAINS:
-            return prepareContains(cm, filter[oper], joins, numGen, context);
-          case Operations.SIZE:
-            return prepareSize(cm, filter[oper], joins, numGen, context);
-          case Operations.NOT_EMPTY:
-          case Operations.EMPTY:
-            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
-          case Operations.MAX:
-          case Operations.MIN:
-          case Operations.SUM:
-          case Operations.AVG:
-          case Operations.COUNT:
-            break;
-          case Operations.LITERAL:
-            return {[oper]: filter[oper]};
-          default:
-            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
-        }
+    let keys = Object.keys(filter);
+    if (keys.length === 1 && Object.values(Operations).indexOf(keys[0]) >= 0) {
+      let oper = keys[0];
+      switch (oper) {
+        case Operations.CONTAINS:
+          return prepareContains(cm, filter[oper], joins, numGen, context);
+        case Operations.SIZE:
+          return prepareSize(cm, filter[oper], joins, numGen, context);
+        case Operations.NOT_EMPTY:
+        case Operations.EMPTY:
+          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
+        case Operations.MAX:
+        case Operations.MIN:
+        case Operations.SUM:
+        case Operations.AVG:
+        case Operations.COUNT:
+          break;
+        case Operations.LITERAL:
+          return {[oper]: filter[oper]};
+        default:
+          return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
       }
     }
   }
@@ -816,31 +816,22 @@ module.exports.loadFiles = loadFiles;
  * @param {Boolean} [skip]
  * @returns {Promise}
  */
-function calcProperties(item, skip) {
+function calcProperties(item, skip, needed) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  var calculations = [];
-  var calcNames = [];
-  var props = item.getMetaClass().getPropertyMetas();
+  let calculations = Promise.resolve();
+  let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
-    if (p._formula) {
-      calculations.push(Promise.resolve().then(()=>p._formula.apply(item)));
-      calcNames.push(p.name);
+    if (p._formula && (!needed || needed.hasOwnProperty(p.name))) {
+      calculations = calculations.then(()=>p._formula.apply(item))
+        .then((result) => {
+          item.calculated[p.name] = result;
+        });
     }
   });
 
-  if (calculations.length === 0) {
-    return Promise.resolve(item);
-  }
-
-  return Promise.all(calculations).
-  then(function (results) {
-    for (var i = 0; i < calcNames.length; i++) {
-      item.calculated[calcNames[i]] = results[i];
-    }
-    return Promise.resolve(item);
-  });
+  return calculations.then(()=>item);
 }
 
 module.exports.calcProperties = calcProperties;

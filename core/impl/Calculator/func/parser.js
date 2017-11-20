@@ -1,8 +1,9 @@
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
+const F = require('core/FunctionCodes');
 
-// jshint maxstatements: 50, maxcomplexity: 20
+// jshint maxstatements: 50, maxcomplexity: 25
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -74,16 +75,41 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
   return result;
 }
 
-function objProp(obj, nm, dataRepoGetter) {
+function objProp(obj, nm, dataRepoGetter, needed) {
   if (!nm) {
     return null;
+  }
+
+  if (nm.indexOf('.') < 0) {
+    if (obj.hasOwnProperty(nm)) {
+      return obj[nm];
+    }
+  } else {
+    let pth = nm.split('.');
+    let ctx = obj;
+    for (let i = 0; i < pth.length; i++) {
+      if (ctx.hasOwnProperty(pth[i])) {
+        ctx = ctx[pth[i]];
+        if (typeof ctx !== 'object' || !ctx) {
+          return ctx;
+        }
+      }
+    }
+  }
+
+  if (obj.$context) {
+    return objProp(obj.$context, nm, dataRepoGetter);
   }
 
   if (obj instanceof Item) {
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
-      let ri = objProp(obj, nm2, dataRepoGetter);
+      let nm4 = nm3;
+      if (nm4.indexOf('.') > 0) {
+        nm4 = nm4.substr(0, nm.indexOf('.'));
+      }
+      let ri = objProp(obj, nm2, dataRepoGetter, {[nm4]: true});
       let rp = ri instanceof Promise? ri : Promise.resolve(ri);
       return rp.then((ri) => {
         if (ri instanceof Item) {
@@ -93,7 +119,8 @@ function objProp(obj, nm, dataRepoGetter) {
           let p = Promise.resolve();
           ri.forEach((ri) => {
             if (ri instanceof Item) {
-              p = p.then(() => objProp(ri, nm3, dataRepoGetter))
+              p = p
+                .then(() => objProp(ri, nm3, dataRepoGetter))
                 .then((v) => {
                   if (Array.isArray(v)) {
                     result.push(...v);
@@ -114,20 +141,32 @@ function objProp(obj, nm, dataRepoGetter) {
      switch (p.meta.type) {
        case PropertyTypes.REFERENCE: {
          let v = p.evaluate();
-         if (p.getValue() && !v && typeof dataRepoGetter === 'function') {
+         if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue());
+             if (p.meta.backRef) {
+               if (!obj.getItemId()) {
+                 return null;
+               }
+               return dr.getList(p.meta._refClass.getCanonicalName(),
+                 {
+                   filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
+                   needed: needed
+                 })
+                 .then((items) => items.length ? items[0] : null);
+             } else {
+               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed});
+             }
            }
          }
          return v;
        }break;
        case PropertyTypes.COLLECTION: {
          let v = p.evaluate();
-         if (v === null && typeof dataRepoGetter === 'function') {
+         if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName());
+             return dr.getAssociationsList(obj, p.getName(), {needed: needed});
            }
          }
          return v;
@@ -137,25 +176,7 @@ function objProp(obj, nm, dataRepoGetter) {
     }
   }
 
-  if (nm.indexOf('.') < 0) {
-    if (obj.hasOwnProperty(nm)) {
-      return obj[nm];
-    }
-
-    if (obj.$context) {
-      return objProp(obj.$context, nm, dataRepoGetter);
-    }
-  }
-
-  let pth = nm.split('.');
-  let ctx = obj;
-  for (let i = 0; i < pth.length; i++) {
-    ctx = ctx[pth[i]];
-    if (typeof ctx !== 'object' || !ctx) {
-      return ctx;
-    }
-  }
-  return ctx;
+  return null;
 }
 
 /**
@@ -226,9 +247,11 @@ function byRefConstructor(f, args) {
 }
 
 function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
-  /*if (!isNaN(formula)) {
+  /*
+  if (!isNaN(formula)) {
     return Number(formula);
-  }*/
+  }
+  */
 
   if (Array.isArray(formula)) {
     let result = [];
