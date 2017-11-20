@@ -331,6 +331,10 @@ function OwnCloudStorage(config) {
     };
   };
 
+  this._fileRoute = function () {
+    return urlBase + '/:id(([^/]+/?[^/]+)*)';
+  };
+
   /**
    * @returns {Promise}
    */

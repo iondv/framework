@@ -11,6 +11,8 @@ const extend = require('extend');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
+const toAbsolutePath = require('core/system').toAbsolute;
+
 errorSetup(config.lang || 'ru');
 
 let jobName = false;
@@ -137,8 +139,8 @@ function calcCheckInterval(launch, dv) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['auth', 'rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
@@ -184,7 +186,7 @@ di('boot', config.bootstrap,
             run = checkRun(job.launch);
           }
           if (run) {
-            let ch = child.fork('bin/job', [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
+            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');

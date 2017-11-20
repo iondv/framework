@@ -7,6 +7,7 @@
 const PropertyTypes = require('core/PropertyTypes');
 const ConditionTypes = require('core/ConditionTypes');
 const OperationTypes = require('core/OperationTypes');
+const Operations = require('core/FunctionCodes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
 const cast = require('core/cast');
@@ -17,7 +18,7 @@ const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
 const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATEDIFF, OperationTypes.ADD,
               OperationTypes.SUB, OperationTypes.MUL, OperationTypes.DIV, OperationTypes.MOD];
 
-// jshint maxstatements: 40, maxcomplexity: 45
+// jshint maxstatements: 40, maxcomplexity: 50
 /**
  * @param {*} v
  * @param {Item} context
@@ -27,16 +28,19 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATED
  */
 function toScalar(v, context, type, lang) {
   if (Array.isArray(v)) {
-    v = v[0];
+    if (v.length === 1) {
+      v = v[0];
+    } else {
+      let res = [];
+      for (let i = 0; i < v.length; i++) {
+        res.push(toScalar(v[i], context, type, lang));
+      }
+      return res;
+    }
   }
 
   if (typeof v === 'string' && v[0] === '$') {
-    if (v === '$$now') {
-      v = new Date();
-    } else if (v === '$$today') {
-      v = new Date();
-      v.setHours(0, 0, 0, 0);
-    } else if (context) {
+    if (context) {
       let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
       let nm = v.substring(1);
       let p;
@@ -93,16 +97,23 @@ function produceContainsFilter(rcm, condition, context, lang) {
   var pm = findPM(rcm, condition.property);
   if (pm) {
     if (pm.type === PropertyTypes.COLLECTION && pm._refClass) {
-      if (condition.value && condition.value.length) {
-        var tmp = {};
-        tmp[pm._refClass.getKeyProperties()[0]] = {
-          $in: castInValue(condition.value, pm._refClass.getKeyProperties()[0], pm._refClass, context, lang)
+      if (Array.isArray(condition.value) && condition.value.length) {
+        return {
+          [Operations.CONTAINS]: [
+              '$' + condition.property,
+              {[Operations.IN]: [pm._refClass.getKeyProperties()[0], condition.value]}
+          ]
         };
-        return {$contains: tmp};
       }
-      return {$contains: ConditionParser(condition.nestedConditions, pm._refClass, context, lang)};
+      return {
+        [Operations.CONTAINS]: [
+          '$' + condition.property,
+          ConditionParser(condition.nestedConditions, pm._refClass, context)
+        ]
+      };
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
-      return {$regex: toScalar(condition.value, context, pm.type, lang)};
+      let tmp = toScalar(condition.value, context);
+      return {[Operations.LIKE]: ['$' + condition.property, tmp[0]]};
     } else {
       throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
     }
@@ -138,13 +149,19 @@ function vt(cm, property) {
  * @returns {{}}
  */
 function produceFilter(condition, type, rcm, context, lang) {
-  var result = {};
-  if (condition.value && condition.value.length) {
-    result[type] = toScalar(condition.value, context, vt(rcm, condition.property), lang);
-  } else if (condition.nestedConditions && condition.nestedConditions.length) {
-    result[type] = ConditionParser(condition.nestedConditions[0], rcm, context, lang);
+  var args = ['$'+condition.property];
+  if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
+    let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
+    if (tmp) {
+      args.push(tmp);
+    }
+  } else if (condition.value) {
+    args = args.concat(toScalar(condition.value, context, vt(rcm, condition.property), lang));
+  } else {
+    args.push(null);
   }
-  return result;
+
+  return {[type]: args};
 }
 
 /**
@@ -162,28 +179,23 @@ function produceAggregationOperation(condition, rcm, context, lang) {
 
   if (condition.value.length === 1) {
     pn = condition.value[0];
-    an = 'className';
+    an = 'class';
     av = rcm.getCanonicalName();
   } else {
     pn = condition.value[1];
     av = condition.value[0];
-    an = 'className';
+    an = 'class';
     if ((pm = findPM(rcm, condition.value[0])) !== null) {
       if (pm.type === PropertyTypes.COLLECTION) {
-        an = 'collectionName';
+        an = 'collection';
       }
     }
   }
-
+  var result = [an, av, pn];
   var filter = ConditionParser(condition.nestedConditions, rcm, context, lang);
   if (!filter) {
-    return null;
+    result.push(filter);
   }
-  var result = {
-    property: pn,
-    filter: filter
-  };
-  result[an] = av;
   return result;
 }
 
@@ -207,30 +219,6 @@ function produceArray(conditions, rcm, context, lang) {
 }
 
 /**
- * @param {String[]} value
- * @param {String} property
- * @param {ClassMeta} rcm
- * @param {Item} context
- * @param {String} lang
- * @returns {Array}
- */
-function castInValue(value, property, rcm, context, lang) {
-  let result = [];
-  if (!Array.isArray(value)) {
-    value = [value];
-  }
-  value.forEach((v) => {
-    let sv = toScalar(v, context, vt(rcm, property), lang);
-    if (Array.isArray(sv)) {
-      Array.prototype.push.apply(result, sv);
-    } else {
-      result.push(sv);
-    }
-  });
-  return result;
-}
-
-/**
  * @param {{}} condition
  * @param {ClassMeta} rcm
  * @param {Item} context
@@ -242,112 +230,97 @@ function ConditionParser(condition, rcm, context, lang) {
   if (Array.isArray(condition)) {
     let tmp = produceArray(condition, rcm, context, lang);
     if (tmp) {
-      return {$and: tmp};
+      return tmp.length === 1 ? tmp[0] : {[Operations.AND]: tmp};
     }
+    return null;
   } else {
     if (condition.property) {
-      result = {};
       if (condition.operation === null) {
         return '$' + condition.property;
       }
       switch (parseInt(condition.operation)) {
-        case ConditionTypes.EMPTY: {
-          result[condition.property] = {$empty: true};
-        } break;
-        case ConditionTypes.NOT_EMPTY: {
-          result[condition.property] = {$empty: false};
-        } break;
-        case ConditionTypes.CONTAINS: result[condition.property] = produceContainsFilter(rcm, condition, context, lang);
-          break;
-        case ConditionTypes.EQUAL:
-          result[condition.property] = produceFilter(condition, '$eq', rcm, context, lang); break;
-        case ConditionTypes.NOT_EQUAL:
-          result[condition.property] = produceFilter(condition, '$ne', rcm, context, lang); break;
-        case ConditionTypes.LESS:
-          result[condition.property] = produceFilter(condition, '$lt', rcm, context, lang); break;
-        case ConditionTypes.MORE:
-          result[condition.property] = produceFilter(condition, '$gt', rcm, context, lang); break;
-        case ConditionTypes.LESS_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$lte', rcm, context, lang); break;
-        case ConditionTypes.MORE_OR_EQUAL:
-          result[condition.property] = produceFilter(condition, '$gte', rcm, context, lang); break;
-        case ConditionTypes.LIKE: result[condition.property] = {
-            $regex: String(toScalar(condition.value, context, PropertyTypes.STRING, lang))
+        case ConditionTypes.EMPTY: return {[Operations.EMPTY]: ['$' + condition.property]};
+        case ConditionTypes.NOT_EMPTY: return {[Operations.NOT_EMPTY]: ['$' + condition.property]};
+        case ConditionTypes.CONTAINS: return produceContainsFilter(rcm, condition, context);
+        case ConditionTypes.EQUAL: return produceFilter(condition, Operations.EQUAL, rcm, context);
+        case ConditionTypes.NOT_EQUAL: return produceFilter(condition, Operations.NOT_EQUAL, rcm, context);
+        case ConditionTypes.LESS: return produceFilter(condition, Operations.LESS, rcm, context);
+        case ConditionTypes.MORE: return produceFilter(condition, Operations.GREATER, rcm, context);
+        case ConditionTypes.LESS_OR_EQUAL: return produceFilter(condition, Operations.LESS_OR_EQUAL, rcm, context);
+        case ConditionTypes.MORE_OR_EQUAL: return produceFilter(condition, Operations.GREATER_OR_EQUAL, rcm, context);
+        case ConditionTypes.LIKE: return produceFilter(condition, Operations.LIKE, rcm, context);
+          /*
+
+          Result[condition.property] = {
+            $regex: String(toScalar(condition.value, context))
               .replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$&')
               .replace(/\s+/g, '\\s+'),
             $options: 'i'
           }; break;
-        case ConditionTypes.IN:
-          result[condition.property] = {
-            $in: castInValue(condition.value, condition.property, rcm, context, lang)
-          }; break;
-      }
-      if (result.hasOwnProperty(condition.property)) {
-        return result;
+
+          */
+        case ConditionTypes.IN: {
+          let arr = toScalar(condition.value, context, vt(rcm, condition.property), lang);
+          if (typeof arr === 'string' && arr && arr[0] === '$' || Array.isArray(arr)) {
+            return {[Operations.IN]: ['$' + condition.property, arr]};
+          }
+          if (!Array.isArray(arr)) {
+            arr = [arr];
+          }
+          return {[Operations.IN]: ['$' + condition.property, arr]};
+        }
+        default: throw new Error('Некорректный тип условия!');
       }
     } else {
       let oper = parseInt(condition.operation);
       if (BoolOpers.indexOf(oper) !== -1) {
         let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
-          if (tmp.length > 1) {
-            result = {};
-            switch (oper) {
-              case OperationTypes.AND:
-                result.$and = tmp;
-                break;
-              case OperationTypes.OR:
-                result.$or = tmp;
-                break;
-              case OperationTypes.NOT:
-                result.$not = {$and: tmp};
-                break;
-            }
-          } else {
-            switch (oper) {
-              case OperationTypes.AND:
-              case OperationTypes.OR:
-                result = tmp[0];
-                break;
-              case OperationTypes.NOT:
-                result = {$not: tmp[0]};
-                break;
-            }
+          switch (oper) {
+            case OperationTypes.AND: return {[Operations.AND]: tmp};
+            case OperationTypes.OR: return {[Operations.OR]: tmp};
+            case OperationTypes.NOT: return {[Operations.NOT]: tmp};
+            default: throw new Error('Некорректный тип операции!');
           }
-          return result;
+        } else {
+          throw new Error('Не указаны аргументы операции!');
         }
       } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
-          result = {};
           switch (oper) {
-            case OperationTypes.MIN: result.$min = tmp; break;
-            case OperationTypes.MAX: result.$max = tmp; break;
-            case OperationTypes.AVG: result.$avg = tmp; break;
-            case OperationTypes.SUM: result.$sum = tmp; break;
-            case OperationTypes.COUNT: result.$count = tmp; break;
+            case OperationTypes.MIN: return {[Operations.MIN]: tmp};
+            case OperationTypes.MAX: return {[Operations.MAX]: tmp};
+            case OperationTypes.AVG: return {[Operations.AVG]: tmp};
+            case OperationTypes.SUM: return {[Operations.SUM]: tmp};
+            case OperationTypes.COUNT: return {[Operations.COUNT]: tmp};
+            default: throw new Error('Некорректный тип операции!');
           }
-          return result;
+        } else {
+          throw new Error('Не указаны аргументы операции!');
         }
       } else if (Funcs.indexOf(oper) !== -1) {
-        result = {};
+        let tmp = [];
+        if (Array.isArray(condition.value) && condition.value.length) {
+          tmp = tmp.concat(toScalar(condition.value, context));
+        }
+        if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
+          tmp = tmp.concat(produceArray(condition.nestedConditions, rcm, context));
+        }
         switch (oper) {
-          case OperationTypes.DATE:
-            result.$date = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.DATEADD:
-            result.$dateAdd = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.DATEDIFF:
-            result.$dateDiff = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.ADD:
-            result.$add = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.SUB:
-            result.$sub = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.MUL:
-            result.$mul = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.DIV:
-            result.$div = produceArray(condition.nestedConditions, rcm, context, lang); break;
-          case OperationTypes.MOD:
-            result.$mod = produceArray(condition.nestedConditions, rcm, context, lang); break;
+          case OperationTypes.DATE: return {[Operations.DATE]: tmp};
+          case OperationTypes.DATEADD: return {[Operations.DATEADD]: tmp};
+          case OperationTypes.DATEDIFF: return {[Operations.DATEDIFF]: tmp};
+          case OperationTypes.ADD: return {[Operations.ADD]: tmp};
+          case OperationTypes.SUB: return {[Operations.SUB]: tmp};
+          case OperationTypes.MUL: return {[Operations.MUL]: tmp};
+          case OperationTypes.DIV: return {[Operations.DIV]: tmp};
+          case OperationTypes.ROUND: return {[Operations.ROUND]: tmp};
+          case OperationTypes.CONCAT: return {[Operations.CONCAT]: tmp};
+          case OperationTypes.SUBSTR: return {[Operations.SUBSTR]: tmp};
+          case OperationTypes.MOD: return {[Operations.MOD]: tmp};
+          case OperationTypes.ABS: return {[Operations.ABS]: tmp};
+          default: throw new Error('Некорректный тип операции!');
         }
         return result;
       } else if (condition.value && condition.value.length) {
@@ -356,6 +329,7 @@ function ConditionParser(condition, rcm, context, lang) {
     }
   }
   return null;
+  //throw new Error('Мета условий выборки не соответствует спецификации!');
 }
 
 module.exports = ConditionParser;

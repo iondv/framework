@@ -9,6 +9,7 @@ const moment = require('moment');
 const FileStreamRotator = require('file-stream-rotator');
 const fs = require('fs');
 const path = require('path');
+const toAbsolutePath = require('core/system').toAbsolute;
 
 // jshint maxcomplexity: 20
 
@@ -62,20 +63,22 @@ function IonLogger(options) {
       } else if (typeof dest[i] === 'string' && dest[i] !== 'console') {
         if (!streams.hasOwnProperty(dest[i])) {
           try {
-            if (!fs.existsSync(dest[i])) {
-              fs.mkdirSync(dest[i]);
+            let dst = toAbsolutePath(dest[i]);
+
+            if (!fs.existsSync(dst)) {
+              fs.mkdirSync(dst);
             }
 
-            stat = fs.statSync(dest[i]);
+            stat = fs.statSync(dst);
             if (stat.isDirectory()) {
               result.push(FileStreamRotator.getStream({
-                filename: path.join(dest[i], type + '-%DATE%.log'),
+                filename: path.join(dst, type + '-%DATE%.log'),
                 frequency: 'daily',
                 verbose: false,
                 date_format: 'YYYY-MM-DD'
               }));
             } else if (stat.isFile()) {
-              result.push(fs.createWriteStream(dest[i], {encoding: 'utf-8'}));
+              result.push(fs.createWriteStream(dst, {encoding: 'utf-8'}));
             }
           } catch (err) {
             console.warn(err);
