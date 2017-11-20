@@ -207,6 +207,34 @@ function findPm(cm, nm) {
   return cm.getPropertyMeta(nm);
 }
 
+function joinColl(cm, pm, joins, context, numGen) {
+  let colMeta = pm._refClass;
+
+  if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
+    throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+  }
+
+  let tbl = tn(colMeta);
+  let j;
+  if (!joins.hasOwnProperty(tbl)) {
+    let alias = 'coll_join_' + numGen.next();
+    j = {
+      table: tbl,
+      many: !pm.backRef,
+      left: (context ? context.alias + '.' : '') +
+      (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
+      right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
+      filter: null,
+      alias: alias
+    };
+    joins.push(j);
+  } else {
+    j = joins[tbl];
+  }
+  return j;
+}
+
+
 /**
  * @param {ClassMeta} cm
  * @param {{}} filter
@@ -224,33 +252,32 @@ function prepareContains(cm, filter, joins, numGen, context) {
     throw new Error('Операция contains не применима к атрибуту ' + nm + ' класса ' + cm.getCanonicalName());
   }
 
-  let colMeta = pm._refClass;
+  return prepareFilterOption(pm._refClass, filter[1], joins, numGen, joinColl(cm, pm, joins, context, numGen));
+}
 
-  if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-    throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+/**
+ * @param {ClassMeta} cm
+ * @param {{}} filter
+ * @param {Array} joins
+ * @param (Number} numGen
+ */
+function prepareSize(cm, filter, joins, numGen, context) {
+  if (typeof filter[0] === 'string' && filter[0][0] === '$') {
+    let nm = filter[0].substr(1);
+    let pm = findPm(cm, nm);
+    if (!pm) {
+      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+    }
+
+    if (pm.type !== PropertyTypes.COLLECTION) {
+      return {[Operations.SIZE]: [filter[0]]};
+    }
+
+    // TODO Реализовать возможность обращения через несколько уровней вложенности
+
+    return {[dsOperations.JOIN_SIZE]: join(pm, cm, pm._refClass, null, context)};
   }
-
-  let tbl = tn(colMeta);
-  let alias = '';
-  let j;
-  if (!joins.hasOwnProperty(tbl)) {
-    alias = 'coll_join_' + numGen.next();
-    j = {
-      table: tbl,
-      many: !pm.backRef,
-      left: (context ? context.alias + '.' : '') +
-        (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
-      right: pm.backRef ? pm.backRef : colMeta.getKeyProperties()[0],
-      filter: null,
-      alias: alias
-    };
-    joins.push(j);
-  } else {
-    alias = joins[tbl].alias;
-    j = joins[tbl];
-  }
-
-  return prepareFilterOption(colMeta, filter[1], joins, numGen, j);
+  return {[Operations.SIZE]: prepareOperArgs(cm, filter, joins, numGen, context)};
 }
 
 /**
@@ -271,6 +298,9 @@ function prepareEmpty(cm, filter, empty, joins, numGen, context) {
       if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
         throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
       }
+
+      // TODO Реализовать возможность обращения через несколько уровней вложенности
+
       if (empty) {
         return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null, context)};
       } else {
@@ -369,25 +399,27 @@ function NumGenerator() {
  */
 function prepareFilterOption(cm, filter, joins, numGen, context) {
   if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
-    for (let oper in filter) {
-      if (filter.hasOwnProperty(oper) && Array.isArray(filter[oper])) {
-        switch (oper) {
-          case Operations.CONTAINS:
-            return prepareContains(cm, filter[oper], joins, numGen, context);
-          case Operations.NOT_EMPTY:
-          case Operations.EMPTY:
-            return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
-          case Operations.MAX:
-          case Operations.MIN:
-          case Operations.SUM:
-          case Operations.AVG:
-          case Operations.COUNT:
-            break;
-          case Operations.LITERAL:
-            return {[oper]: filter[oper]};
-          default:
-            return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
-        }
+    let keys = Object.keys(filter);
+    if (keys.length === 1 && Object.values(Operations).indexOf(keys[0]) >= 0) {
+      let oper = keys[0];
+      switch (oper) {
+        case Operations.CONTAINS:
+          return prepareContains(cm, filter[oper], joins, numGen, context);
+        case Operations.SIZE:
+          return prepareSize(cm, filter[oper], joins, numGen, context);
+        case Operations.NOT_EMPTY:
+        case Operations.EMPTY:
+          return prepareEmpty(cm, filter[oper], oper === Operations.EMPTY, joins, numGen, context);
+        case Operations.MAX:
+        case Operations.MIN:
+        case Operations.SUM:
+        case Operations.AVG:
+        case Operations.COUNT:
+          break;
+        case Operations.LITERAL:
+          return {[oper]: filter[oper]};
+        default:
+          return {[oper]: prepareOperArgs(cm, filter[oper], joins, numGen, context)};
       }
     }
   }
@@ -784,31 +816,22 @@ module.exports.loadFiles = loadFiles;
  * @param {Boolean} [skip]
  * @returns {Promise}
  */
-function calcProperties(item, skip) {
+function calcProperties(item, skip, needed) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  var calculations = [];
-  var calcNames = [];
-  var props = item.getMetaClass().getPropertyMetas();
+  let calculations = Promise.resolve();
+  let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
-    if (p._formula) {
-      calculations.push(Promise.resolve().then(()=>p._formula.apply(item)));
-      calcNames.push(p.name);
+    if (p._formula && (!needed || needed.hasOwnProperty(p.name))) {
+      calculations = calculations.then(()=>p._formula.apply(item))
+        .then((result) => {
+          item.calculated[p.name] = result;
+        });
     }
   });
 
-  if (calculations.length === 0) {
-    return Promise.resolve(item);
-  }
-
-  return Promise.all(calculations).
-  then(function (results) {
-    for (var i = 0; i < calcNames.length; i++) {
-      item.calculated[calcNames[i]] = results[i];
-    }
-    return Promise.resolve(item);
-  });
+  return calculations.then(()=>item);
 }
 
 module.exports.calcProperties = calcProperties;

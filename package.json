@@ -1,13 +1,13 @@
 {
   "name": "ion-web-platform",
-  "version": "1.8.2",
+  "version": "1.8.6",
   "homepage": "https://git.iondv.ru/ION/ion-portal",
   "bugs": {
     "url": "https://ion-dv.atlassian.net/browse/IONPORTAL"
   },
   "license": "MIT",
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=8.9.1"
   },
   "directories": {
     "test": "test"

@@ -28,7 +28,15 @@ const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATED
  */
 function toScalar(v, context, type, lang) {
   if (Array.isArray(v)) {
-    v = v[0];
+    if (v.length === 1) {
+      v = v[0];
+    } else {
+      let res = [];
+      for (let i = 0; i < v.length; i++) {
+        res.push(toScalar(v[i], context, type, lang));
+      }
+      return res;
+    }
   }
 
   if (typeof v === 'string' && v[0] === '$') {
@@ -256,7 +264,10 @@ function ConditionParser(condition, rcm, context, lang) {
           if (typeof arr === 'string' && arr && arr[0] === '$' || Array.isArray(arr)) {
             return {[Operations.IN]: ['$' + condition.property, arr]};
           }
-          return {[Operations.IN]: ['$' + condition.property, [arr]]};
+          if (!Array.isArray(arr)) {
+            arr = [arr];
+          }
+          return {[Operations.IN]: ['$' + condition.property, arr]};
         }
         default: throw new Error('Некорректный тип условия!');
       }
@@ -265,7 +276,7 @@ function ConditionParser(condition, rcm, context, lang) {
       if (BoolOpers.indexOf(oper) !== -1) {
         let tmp = produceArray(condition.nestedConditions, rcm, context, lang);
         if (tmp) {
-          switch (condition.operation) {
+          switch (oper) {
             case OperationTypes.AND: return {[Operations.AND]: tmp};
             case OperationTypes.OR: return {[Operations.OR]: tmp};
             case OperationTypes.NOT: return {[Operations.NOT]: tmp};
@@ -277,7 +288,7 @@ function ConditionParser(condition, rcm, context, lang) {
       } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
         if (tmp) {
-          switch (condition.operation) {
+          switch (oper) {
             case OperationTypes.MIN: return {[Operations.MIN]: tmp};
             case OperationTypes.MAX: return {[Operations.MAX]: tmp};
             case OperationTypes.AVG: return {[Operations.AVG]: tmp};
@@ -296,7 +307,7 @@ function ConditionParser(condition, rcm, context, lang) {
         if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
           tmp = tmp.concat(produceArray(condition.nestedConditions, rcm, context));
         }
-        switch (condition.operation) {
+        switch (oper) {
           case OperationTypes.DATE: return {[Operations.DATE]: tmp};
           case OperationTypes.DATEADD: return {[Operations.DATEADD]: tmp};
           case OperationTypes.DATEDIFF: return {[Operations.DATEDIFF]: tmp};

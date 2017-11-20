@@ -139,7 +139,8 @@
               "dataSource": "ion://Db",
               "log": "ion://sysLog"
             }
-          }
+          },
+          "log": "ion://sysLog"
         }
       },
       "fileStorage": {

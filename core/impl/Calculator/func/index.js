@@ -23,6 +23,7 @@ module.exports = {
   dateAdd: require('./date/dateAdd'),
   dateDiff: require('./date/dateDiff'),
   dateFormat: require('./date/dateFormat'),
+  format: require('./date/dateFormat'),
   concat: require('./string/concat'),
   substr: require('./string/substr'),
   element: require('./arrays/element'),
@@ -32,5 +33,6 @@ module.exports = {
   empty: require('./cmp/empty'),
   contains: require('./data/contains'),
   like: require('./string/like'),
-  in: require('./arrays/in')
+  in: require('./arrays/in'),
+  size: require('./data/size')
 };
