@@ -816,14 +816,14 @@ module.exports.loadFiles = loadFiles;
  * @param {Boolean} [skip]
  * @returns {Promise}
  */
-function calcProperties(item, skip) {
+function calcProperties(item, skip, needed) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
   let calculations = Promise.resolve();
   let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
-    if (p._formula) {
+    if (p._formula && (!needed || needed.hasOwnProperty(p.name))) {
       calculations = calculations.then(()=>p._formula.apply(item))
         .then((result) => {
           item.calculated[p.name] = result;
