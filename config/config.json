@@ -82,6 +82,14 @@
           "dataSource": "ion://Db"
         }
       },
+      "roleAccessManager": {
+        "module": "core/impl/access/amAccessManager",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",

@@ -1742,16 +1742,16 @@ function MongoDs(config) {
             result.push({$sort: options.sort});
           }
         }
-      }
 
-      let skip = parseInt(options.offset);
-      if (skip) {
-        result.push({$skip: skip});
-      }
+        let skip = parseInt(options.offset);
+        if (skip) {
+          result.push({$skip: skip});
+        }
 
-      let limit = parseInt(options.count);
-      if (limit) {
-        result.push({$limit: limit});
+        let limit = parseInt(options.count);
+        if (limit) {
+          result.push({$limit: limit});
+        }
       }
 
       if (options.to) {
