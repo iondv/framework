@@ -50,6 +50,7 @@
     "method-override": "latest",
     "mkdirp": "latest",
     "moment": "latest",
+    "moment-timezone": "latest",
     "mongodb": "latest",
     "morgan": "latest",
     "uuid": "latest",
