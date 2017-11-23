@@ -2157,10 +2157,11 @@ function MongoDs(config) {
           return new Promise((resolve, reject) => {
             fetch(c, opts, aggregation,
               (r, amount) => {
-                return new Promise((resolve, reject) => {
-                  if (Array.isArray(r)) {
-                    resolve(r);
-                  } else {
+                let p;
+                if (Array.isArray(r)) {
+                  p = Promise.resolve(r);
+                } else {
+                  p = new Promise((resolve, reject) => {
                     r.toArray(function (err, docs) {
                       r.close();
                       if (err) {
@@ -2168,8 +2169,9 @@ function MongoDs(config) {
                       }
                       resolve(docs);
                     });
-                  }
-                }).then((docs) => {
+                  });
+                }
+                p.then((docs) => {
                   docs.forEach(mergeGeoJSON);
                   resolve(docs.length ? docs[0] : null);
                 }).catch(reject);

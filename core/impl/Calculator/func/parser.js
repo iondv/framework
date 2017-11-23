@@ -151,11 +151,11 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                return dr.getList(p.meta._refClass.getCanonicalName(),
                  {
                    filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
-                   needed: needed
+                   needed: needed || {}
                  })
                  .then((items) => items.length ? items[0] : null);
              } else {
-               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed});
+               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
              }
            }
          }
@@ -166,7 +166,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
          if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
            let dr = dataRepoGetter();
            if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName(), {needed: needed});
+             return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}});
            }
          }
          return v;
