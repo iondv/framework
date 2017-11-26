@@ -24,7 +24,6 @@
     "test": "gulp test"
   },
   "dependencies": {
-    "js-yaml": "latest",
     "acl": "latest",
     "base64-js": "latest",
     "base64-stream": "latest",
@@ -42,6 +41,7 @@
     "file-stream-rotator": "latest",
     "gm": "latest",
     "ini": "latest",
+    "js-yaml": "latest",
     "jszip": "latest",
     "locale": "latest",
     "lodash": "^4.17.4",
@@ -52,7 +52,7 @@
     "moment": "latest",
     "mongodb": "latest",
     "morgan": "latest",
-    "uuid": "latest",
+    "node-forge": "^0.7.1",
     "oauth2-server": "latest",
     "passport": "latest",
     "passport-facebook": "latest",
@@ -64,6 +64,7 @@
     "serve-favicon": "latest",
     "stream-buffers": "latest",
     "utf8": "latest",
+    "uuid": "latest",
     "xmldom": "latest",
     "xpath": "latest",
     "xss": "latest"

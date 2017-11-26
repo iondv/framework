@@ -110,7 +110,13 @@
           "passports":[{
             "name":"passport-esia",
             "module":"lib/passport-esia",
-            "options":{}
+            "options":{
+              "init": {
+                "mnemonik": "MKOU27001",
+                "cer": "/home/inkz/Downloads/mqs.cer",
+                "key": "/home/inkz/Downloads/smev_nopass.pem"
+              }
+            }
           }]
         }
       },
