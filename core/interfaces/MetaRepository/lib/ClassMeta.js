@@ -3,54 +3,14 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-var checkConditions = require('core/ConditionChecker');
-var clone = require('clone');
+const ConditionParser = require('core/ConditionParser');
+const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
-function loadPropertyMetas(cm, plain) {
-  var i, properties;
-  properties = plain.properties.sort(function (a,b) {
-    return a.orderNumber - b.orderNumber;
-  });
-
-  function selectionConstructor1() {
-    return function () {
-      return this.list || [];
-    };
-  }
-
-  function selectionConstructor2() {
-    /**
-     * @param {Item} item
-     */
-    return function (item) {
-      for (var j = 0; j < this.matrix.length; j++) {
-        if (checkConditions(item, this.matrix[j].conditions)) {
-          return this.matrix[j].result || [];
-        }
-      }
-      return [];
-    };
-  }
-  var pm;
-  for (i = 0; i < properties.length; i++) {
-    pm = clone(properties[i]);
-    cm.propertyMetas[properties[i].name] = pm;
-    if (pm.selectionProvider) {
-      if (pm.selectionProvider.type === 'SIMPLE') {
-        pm.selectionProvider.getSelection = selectionConstructor1();
-      } else if (properties[i].selectionProvider.type === 'MATRIX') {
-        pm.selectionProvider.getSelection = selectionConstructor2();
-      }
-    }
-  }
-}
 
 function ClassMeta(metaObject) {
 
   var _this = this;
-
-  this.namespace = '';
 
   this.plain = metaObject;
 
@@ -66,8 +26,6 @@ function ClassMeta(metaObject) {
 
   this._semanticFunc = null;
 
-  loadPropertyMetas(_this, metaObject);
-
   this.getVersion = function () {
     return this.plain.version;
   };
@@ -81,22 +39,29 @@ function ClassMeta(metaObject) {
   };
 
   this.getNamespace = function () {
-    return this.namespace;
+    return this.plain.namespace;
   };
 
   this.getCanonicalName = function () {
-    return this.plain.name + (this.namespace ? '@' + this.namespace : '');
+    return this.plain.name + (this.plain.namespace ? '@' + this.plain.namespace : '');
   };
 
   this.getSemantics = function (item, dateCallback, circular) {
     if (typeof this._semanticFunc === 'function') {
       return this._semanticFunc.call(item, dateCallback, circular);
     }
+
+    if (this.getAncestor()) {
+      return this.getAncestor().getSemantics(item, dateCallback, circular);
+    }
+
     return item.getItemId();
   };
 
   this.getSemanticAttrs = function () {
-    return this._semanticAttrs || [];
+    return this.plain.semantic && this._semanticAttrs.length ?
+      this._semanticAttrs :
+      this.getAncestor() ? this.getAncestor().getSemanticAttrs() : [];
   };
 
   this.getForcedEnrichment = function () {
@@ -104,7 +69,7 @@ function ClassMeta(metaObject) {
   };
 
   this.getKeyProperties = function () {
-    if (!this.plain.key) {
+    if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
       var anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
@@ -136,7 +101,10 @@ function ClassMeta(metaObject) {
   };
 
   this.checkAncestor = function (name) {
-    if (name === this.getName()) {
+    if (name.indexOf('@') < 0) {
+      name = name + '@' + this.getNamespace();
+    }
+    if (name === this.getCanonicalName()) {
       return this;
     }
     var parent = this.getAncestor();
@@ -160,8 +128,8 @@ function ClassMeta(metaObject) {
   };
 
   this.getPropertyMetas = function () {
-    var result = [];
-    for (var nm in this.propertyMetas) {
+    let result = [];
+    for (let nm in this.propertyMetas) {
       if (this.propertyMetas.hasOwnProperty(nm)) {
         result.push(this.propertyMetas[nm]);
       }
@@ -170,6 +138,24 @@ function ClassMeta(metaObject) {
       result = result.concat(this.getAncestor().getPropertyMetas());
     }
     return result;
+  };
+
+  this.isJournaling = function () {
+    return this.plain.journaling;
+  };
+
+  this.getCreatorTracker = function () {
+    if (!this.plain.creatorTracker && this.ancestor) {
+      return this.ancestor.getCreatorTracker();
+    }
+    return this.plain.creatorTracker;
+  };
+
+  this.getEditorTracker = function () {
+    if (!this.plain.editorTracker && this.ancestor) {
+      return this.ancestor.getEditorTracker();
+    }
+    return this.plain.editorTracker;
   };
 }
 

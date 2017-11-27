@@ -1,16 +1,16 @@
 /**
  * Created by kras on 18.08.16.
  */
-
+const F = require('core/FunctionCodes');
 /**
  * @param {{dataSource: DataSource}} options
  * @constructor
  */
 function SettingsRepository(options) {
 
-  var registry = {};
+  let registry = {};
 
-  var changed = {};
+  let changed = {};
 
   this.set = function (nm, value) {
     registry[nm] = value;
@@ -25,10 +25,10 @@ function SettingsRepository(options) {
   };
 
   this.apply = function () {
-    var writers = [];
-    for (var nm in changed) {
+    let writers = [];
+    for (let nm in changed) {
       if (changed.hasOwnProperty(nm)) {
-        writers.push(options.dataSource.upsert('ion_global_settings', {name: nm}, {value: registry[nm]}));
+        writers.push(options.dataSource.upsert('ion_global_settings', {[F.EQUAL]: ['$name', nm]}, {value: registry[nm]}));
       }
     }
     changed = {};
@@ -36,21 +36,17 @@ function SettingsRepository(options) {
   };
 
   this.init = function () {
-    return new Promise(function (resolve, reject) {
-      options.dataSource.ensureIndex('ion_global_settings', [{name: 1}], {unique: true}).
+    return options.dataSource.ensureIndex('ion_global_settings', [{name: 1}], {unique: true}).
       then(
-        function () {
-          return options.dataSource.fetch('ion_global_settings');
-        }
+        () => options.dataSource.fetch('ion_global_settings')
       ).then(
-        function (settings) {
-          for (var i = 0; i < settings.length; i++) {
+        (settings) => {
+          for (let i = 0; i < settings.length; i++) {
             registry[settings[i].name] = settings[i].value;
           }
-          resolve();
+          return Promise.resolve();
         }
-      ).catch(reject);
-    });
+      );
   };
 }
 

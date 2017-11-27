@@ -1,14 +1,17 @@
 {
     "log_level": "notice",
     "parametrised": true,
+    "baseUrl": "[[app.baseUrl]]",
     "port": "[[server.ports]]",
     "defaultModule":"[[module.default]]",
     "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",
+    "theme": "[[ui.theme]]",
     "log": {
       "logDestinations": ["console", "./log"]
     },
-    "di" : {
+    "runJobs": "[[jobs.enabled]]",
+    "bootstrap": {
       "rtEvents": {
         "module": "core/RuntimeEvents",
         "options": {
@@ -31,7 +34,9 @@
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
                 "options": {
-                  "keepAlive": 1
+                  "keepAlive": 1,
+                  "connectTimeoutMS": "[[db.connectTimeOut]]",
+                  "socketTimeoutMS": "[[db.operTimeOut]]"
                 },
                 "connectionLimit": 10,
                 "user": "[[db.user]]",
@@ -51,12 +56,34 @@
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
-            "saveUninitialized": true
+            "saveUninitialized": true,
+            "cookie": {
+              "httpOnly": true,
+              "secure": false
+            }
           }
         }
       },
       "settings": {
         "module": "core/impl/SettingsRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      }
+    },
+    "di" : {
+      "aclProvider":{
+        "module": "core/impl/access/aclmongo",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataSource": "ion://Db"
+        }
+      },
+      "roleAccessManager": {
+        "module": "core/impl/access/amAccessManager",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
@@ -74,7 +101,20 @@
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
-          "exclude": "[[auth.exclude]]"
+          "exclude": "[[auth.exclude]]",
+          "acl": "ion://[[auth.aclProvider]]",
+          "inactiveTimeout": "[[auth.inactivityTimeout]]",
+          "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinLength": "[[auth.passwordMinLength]]",
+          "attemptTimeOut": "[[auth.attemptTimeOut]]",
+          "attemptLimit": "[[auth.attemptLimit]]",
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
+          "tempBlockLimit": "[[auth.tempBlockLimit]]",
+          "tempBlockInterval": "[[auth.tempBlockInterval]]",
+          "blockPeriod": "[[auth.blockPeriod]]",
+          "checkSignInAccess": "[[auth.checkSignInAccess]]",
+          "checkUrlAccess": "[[auth.checkUrlAccess]]",
+          "goHome": "[[auth.goHome]]"
         }
       },
       "calculator": {
@@ -88,7 +128,7 @@
       "metaRepo": {
         "module": "core/impl/meta/DsMetaRepository",
         "initMethod": "init",
-        "initLevel": 2,
+        "initLevel": 1,
         "options": {
           "dataSource": "ion://Db",
           "calc": "ion://calculator",
@@ -99,7 +139,8 @@
               "dataSource": "ion://Db",
               "log": "ion://sysLog"
             }
-          }
+          },
+          "log": "ion://sysLog"
         }
       },
       "fileStorage": {
@@ -116,6 +157,7 @@
         "module": "core/impl/resource/ImageStorage",
         "options": {
           "fileStorage": "ion://fileStorage",
+          "urlBase": "/images",
           "thumbnails": {
             "tiny": {
               "width": 50,
@@ -136,6 +178,14 @@
           }
         }
       },
+      "keyProv": {
+        "name": "keyProvider",
+        "module": "core/impl/meta/keyProvider",
+        "options": {
+          "metaRepo": "ion://metaRepo",
+          "keySeparator": "[[data.keySeparator]]"
+        }
+      },
       "dataRepo": {
         "module": "core/impl/datarepository/ionDataRepository",
         "options": {
@@ -144,13 +194,7 @@
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
-          "keyProvider": {
-            "name": "keyProvider",
-            "module": "core/impl/meta/keyProvider",
-            "options": {
-              "metaRepo": "ion://metaRepo"
-            }
-          }
+          "keyProvider": "ion://keyProv"
         }
       },
       "innerCache": {
@@ -214,12 +258,12 @@
           "logger": "ion://sysLog"
         }
       },
-      "aclProvider":{
-        "module": "core/impl/access/aclmongo",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataSource": "ion://Db"
+      "wsAuth": {
+        "module": "lib/wsAuth",
+        "options": {
+          "dataSource": "ion://Db",
+          "auth": "ion://auth",
+          "acl": "ion://aclProvider"
         }
       },
       "workflows": {

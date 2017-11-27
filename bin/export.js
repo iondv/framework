@@ -1,17 +1,20 @@
 /**
  * Created by kras on 13.07.16.
  */
-var worker = require('lib/export');
-var config = require('../config');
-var di = require('core/di');
-
-var IonLogger = require('core/impl/log/IonLogger');
+const worker = require('lib/export');
+const config = require('../config');
+const di = require('core/di');
+const IonLogger = require('core/impl/log/IonLogger');
+const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
+errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger({});
 
 var params = {
   dst: '../out',
-  ver: '',
+  ver: null,
   ns: '',
   skipData: false,
   fileDir: false
@@ -33,38 +36,32 @@ process.argv.forEach(function (val) {
   }
 });
 
-var scope = null;
 // Связываем приложение
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['auth', 'rtEvents', 'sessionHandler']
-).then(
-  // Импорт
-  function (scp) {
-    scope = scp;
-    return worker(
+  }, null, ['rtEvents', 'sessionHandler'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) =>
+    worker(
       params.dst,
       scope.metaRepo,
       scope.dataRepo,
       {
         namespace: params.ns,
-        version: params.version,
+        version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
-        fileDir: params.fileDir
-      });
-  }
-).then(
-  function () {
-    return scope.dataSources.disconnect();
-  }
-).then(function () {
-  console.info('Экспорт выполнен успешно.', params.dst);
-  process.exit(0);
-}).catch(function (err) {
-  console.error(err);
-  var exit = function () { process.exit(130); };
-  scope.dataSources.disconnect().then(exit).catch(exit);
-});
+        fileDir: params.fileDir,
+        lastVersion: params.ver === '-last'
+      }).then(()=>scope)
+  )
+  .then((scope) => scope.dataSources.disconnect())
+  .then(() => {
+    console.info('Экспорт выполнен успешно.', params.dst);
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(130);
+  });

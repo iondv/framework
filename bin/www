@@ -5,6 +5,7 @@
 
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const express = require('express');
 const ejsLocals = require('ejs-locals');
 const flash = require('connect-flash');
@@ -12,13 +13,23 @@ const fs = require('fs');
 
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
+const FileStreamRotator = require('file-stream-rotator');
+const Morgan = require('morgan');
+
 
 const config = require('../config');
 const di = require('core/di');
 const theme = require('lib/util/theme');
 
 const IonLogger = require('core/impl/log/IonLogger');
+const Scheduler = require('core/impl/Scheduler');
 const SettingsRepository = require('core/impl/SettingsRepository');
+
+const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
+
+errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger(config.log || {});
 
@@ -33,8 +44,6 @@ var app = express();
 global.app = app;
 
 // TODO Access-лог надо реализовать через IonLogger
-var FileStreamRotator = require('file-stream-rotator');
-var Morgan = require('morgan');
 if (process.env.NODE_ENV !== 'development') {
   var logDirectory = path.join(__dirname, '../log');
   if (!fs.existsSync(logDirectory)) {
@@ -71,19 +80,25 @@ app.use(bodyParser.json({type: 'application/json', limit: limit}));
 app.use(bodyParser.urlencoded({extended: true, limit: limit}));
 app.use(bodyParser.raw({limit: limit}));
 
-// Создаем HTTP сервер.
-var server = http.createServer(app);
+app.locals.baseUrl = config.baseUrl || '/';
+if (!app.locals.baseUrl.endsWith('/')) {
+  app.locals.baseUrl = app.locals.baseUrl + '/';
+}
 
-// jshint maxstatements: 50, maxcomplexity: 20
-var onError = function (error) {
+// Создаем HTTP сервер.
+var server = config.https ? https.createServer(config.https, app) : http.createServer(app);
+
+// jshint maxstatements: 60, maxcomplexity: 60
+
+function onError(error) {
   sysLog.error(error);
   server.close(function (err) {
     process.exit(130);
   });
-};
+}
 
 function start(ports, i) {
-  return new Promise(function (resolve, reject) {
+  return new Promise((resolve, reject) => {
     server.once('error', function (err) {
       if (err.code !== 'EADDRINUSE') {
         return reject(err);
@@ -110,21 +125,22 @@ function moduleLoader(name, module) {
 }
 
 // Связываем приложение
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     server: server,
     application: app,
     sysLog: sysLog
-  }).
-then(
-  // Подключаем модули
-  /**
-   * @param {{}} scope
-   * @param {SettingsRepository} [scope.settings]
-   * @returns {Promise}
-     */
-  function (scope) {
-    var moduleTitles = {};
+  })
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) => {
+	if (config.runJobs) {
+      scope.scheduler = new Scheduler({settings: scope.settings});
+    }
+    return scope;
+  })
+  .then((scope) => {
+    let moduleTitles = {};
     try {
       // Тема оформления страниц аутентификации и регистрации
       theme(
@@ -133,10 +149,8 @@ then(
         scope.settings.get('theme') || config.theme || 'default', sysLog
       );
 
-      scope.auth.setTopLevelAuth();
-
       // Редирект на дефолтный модуль
-      var defaultModule = null;
+      let defaultModule = null;
       if (scope.settings && scope.settings instanceof SettingsRepository) {
         defaultModule = scope.settings.get('defaultModule');
         moduleTitles = scope.settings.get('moduleTitles') || {};
@@ -146,44 +160,72 @@ then(
         defaultModule = config.defaultModule;
       }
 
-      if (defaultModule) {
-        app.get('/', function (req, res) { res.redirect('/' + defaultModule); });
-      } else {
+      if (!defaultModule) {
         throw new Error('Не указан модуль по умолчанию!');
       }
 
+      app.locals.defaultModule = defaultModule;
+
+      app.get('/', function (req, res) {
+        res.redirect(app.locals.baseUrl + defaultModule);
+      });
+
       if (scope.fileStorage) {
-        app.use(scope.fileStorage.middle());
+        let route = scope.fileStorage.shareRoute();
+        if (route) {
+          app.get(route, scope.fileStorage.shareMiddle());
+        }
       }
+
+      if (scope.fileStorage) {
+        let route = scope.fileStorage.fileRoute();
+        if (route) {
+          app.get(route, scope.auth.verifier(), scope.fileStorage.fileMiddle());
+        }
+      }
+      if (scope.imageStorage) {
+        let route = scope.imageStorage.fileRoute();
+        if (route) {
+          app.get(route, scope.auth.verifier(), scope.imageStorage.fileMiddle());
+        }
+      }
+      scope.auth.setTopLevelAuth();
+
+      if (scope.oauth) {
+        app.use('/oauth2/grant', scope.oauth.grant());
+        app.post('/oauth2/token', scope.oauth.token());
+      }
+
     } catch (err) {
       return Promise.reject(err);
     }
 
-    var i, moduleInitiators;
     sysLog.info('Загрузка веб-модулей.');
-    app.locals.sysMenu = [];
-    moduleInitiators = null;
+    let sysMenu = [];
+    let moduleInitiators = null;
     try {
-      var candidates = fs.readdirSync(path.join(__dirname, '../modules'));
-      var skipModules = config.skipModules || [];
-      for (i = 0; i < candidates.length; i++) {
+      let candidates = fs.readdirSync(path.join(__dirname, '../modules'));
+      let skipModules = config.skipModules || [];
+      for (let i = 0; i < candidates.length; i++) {
         if (
           fs.existsSync(path.join(__dirname, '../modules', candidates[i], 'web.js')) &&
           skipModules.indexOf(candidates[i]) < 0
         ) {
-          var module = require('modules/' + candidates[i] + '/web');
+          let module = require('modules/' + candidates[i] + '/web');
           if (typeof module === 'function') {
-            var title = moduleTitles[candidates[i]] || module.locals.sysTitle;
+            let title = moduleTitles.hasOwnProperty(candidates[i]) ? moduleTitles[candidates[i]] : module.locals.sysTitle;
             if (title) {
-              app.locals.sysMenu.push(
+              sysMenu.push(
                 {
                   name: candidates[i],
-                  description: title
+                  description: title.description || title,
+                  order: title.order || 0
                 }
               );
               module.locals.sysTitle = title;
             }
-            module.locals.sysMenu = app.locals.sysMenu;
+            module.locals.sysMenu = sysMenu;
+            module.locals.baseUrl = config.baseUrl || '/';
             app.use(module);
             if (typeof module._init === 'function') {
               if (moduleInitiators) {
@@ -197,31 +239,56 @@ then(
           }
         }
       }
+      for (let ref in moduleTitles) {
+        if (moduleTitles.hasOwnProperty(ref) && moduleTitles[ref] && moduleTitles[ref].url) {
+          sysMenu.push(
+            {
+              name: moduleTitles[ref].url,
+              description: moduleTitles[ref].title || ref,
+              external: true,
+              order: moduleTitles[ref].order || 0
+            }
+          );
+        }
+      }
+      sysMenu.sort((a, b) => a.order - b.order);
     } catch (err) {
       return Promise.reject(err);
     }
     if (moduleInitiators) {
-      return moduleInitiators.then(function () {
+      return moduleInitiators.then(() => {
         sysLog.info('Все модули загружены.');
-        return Promise.resolve();
+        return scope;
       });
     }
-    return Promise.resolve();
-  }
-).then(
+  })
+  .then(
   // Запускаем приложение
-  function () {
-      var ports = config.port;
-      if (!(ports instanceof Array)) {
-        ports = [config.port];
+    (scope) => {
+      let ports = config.port;
+      if (ports && !Array.isArray(ports)) {
+        ports = [ports];
       }
-      return start(ports, 0);
+      if (ports.length === 0) {
+        ports.push(config.https ? 443 : 80);
+      }
+      return start(ports, 0).then(() => scope);
     }
-).then(
-  function () {
+  )
+  .then(
+    (scope) => {
       server.on('error', onError);
       sysLog.info('Слушается ' + (typeof server.address() === 'string' ?
         'конвеер ' + server.address() :
         'порт ' + server.address().port));
+      return scope;
+    })
+  .then((scope) => {
+    if (config.runJobs) {
+      sysLog.info('Запуск заданий по расписанию');
+      return scope.scheduler.start().then(() => {
+        sysLog.info('Подсистема заданий по расписанию запущена');
+      });
     }
-).catch(onError);
+  })
+  .catch(onError);

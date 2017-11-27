@@ -42,7 +42,7 @@ function MongoAcl(config) {
    */
   this._checkAccess = function (subject, resource, permissions) {
     return new Promise(function (resolve, reject) {
-      var pr = function (err,res) {
+      var pr = function (err, res) {
         if (err) {
           reject(err);
           return true;
@@ -169,6 +169,40 @@ function MongoAcl(config) {
           return resolve(res);
         });
       });
+    });
+  };
+
+  /**
+   * @param {String} subject
+   * @param {String | String[]} permissions
+   * @returns {Promise}
+   */
+  this._getResources = function (subject, permissions) {
+    return new Promise(function (resolve, reject) {
+      var p = Array.isArray(permissions) ? permissions : [permissions];
+      if (p.indexOf(_this.globalMarker) < 0) {
+        p.push(_this._globalMarker);
+      }
+      _this.acl.userRoles(subject, function (err, roles) {
+        if (err) {
+          return reject(err);
+        }
+        _this.acl.whatResources(roles, p, function (err, resources) {
+          return err ? reject(err) : resolve(resources);
+        });
+      });
+    });
+  };
+
+  /**
+   * @param {String} subject
+   * @returns {Promise}
+   */
+  this._getCoactors = function (subject) {
+    return new Promise(function (resolve, reject) {
+      _this.acl.userRoles(subject, function (err, roles) {
+        return err ? reject(err) : resolve(roles);
+        });
     });
   };
 }

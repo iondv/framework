@@ -3,23 +3,22 @@
  */
 const config = require('../config');
 const di = require('core/di');
-const fs = require('fs');
-const path = require('path');
 
 const IonLogger = require('core/impl/log/IonLogger');
-const sysLog = new IonLogger({});
 const Permissions = require('core/Permissions');
+const errorSetup = require('core/error-setup');
+const alias = require('core/scope-alias');
+const extend = require('extend');
+errorSetup(config.lang || 'ru');
+const aclImport = require('lib/aclImport');
 
 var params = {
   permissions: [],
   users: [],
   resources: [],
   roles: [],
-  method: 'grant',
-  aclFile: null
+  method: 'grant'
 };
-
-var aclDefinitions = [];
 
 var setParam = false;
 
@@ -59,105 +58,22 @@ if (!params.aclDir) {
     console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
     process.exit(130);
   }
-} else {
-  if (fs.existsSync(params.aclDir)) {
-    let files = fs.readdirSync(params.aclDir);
-    files.forEach(function (file) {
-      if (fs.statSync(path.join(params.aclDir, file)).isFile()) {
-        aclDefinitions.push(JSON.parse(fs.readFileSync(path.join(params.aclDir, file), {encoding: 'utf-8'})));
-      }
-    });
-  } else {
-    console.warn('Указанная директория списков доступа не существует.');
-  }
 }
 
-var scope = null;
-
-config.di.roleAccessManager =
-{
-  module: 'core/impl/access/amAccessManager',
-  initMethod: 'init',
-  initLevel: 1,
-  options: {
-    dataSource: 'ion://Db'
-  }
-};
-
-function setRolePermissions(role, resource, permissions) {
-  return function () {
-    return scope.roleAccessManager.grant([role], [resource], permissions);
-  };
-}
-
-function processAclDefinition(u) {
-  return function () {
-    if (u.type === 'user') {
-      return new Promise(function (resolve, reject) {
-        scope.auth.register(
-          {
-            name: u.name,
-            pwd: u.pwd
-          },
-          function (err, u) {
-            if (err) {
-              return reject(err);
-            }
-            resolve(u);
-          }
-        );
-      }).catch(function (err) {
-        console.warn('Не удалось зарегистрировать пользователя ' + u.name);
-        return Promise.resolve();
-      }).then(function (user) {
-        if (Array.isArray(u.roles)) {
-          return scope.roleAccessManager.assignRoles(
-            [(user ? user.id : u.name) + '@' + (user ? user.type : 'local')],
-            u.roles
-          );
-        }
-        return Promise.resolve();
-      });
-    } else if (u.type === 'role') {
-      let w;
-      if (u.permissions && typeof u.permissions === 'object') {
-        for (let resource in u.permissions) {
-          if (u.permissions.hasOwnProperty(resource)) {
-            if (Array.isArray(u.permissions[resource])) {
-              if (w) {
-                w = w.then(setRolePermissions(u.name, resource, u.permissions[resource]));
-              } else {
-                w = setRolePermissions(u.name, resource, u.permissions[resource])();
-              }
-            }
-          }
-        }
-      }
-      if (!w) {
-        return Promise.resolve();
-      }
-      return w;
-    }
-  };
-}
+let sysLog = new IonLogger(config.log || {});
 
 // Связываем приложение
-di('app', config.di,
+di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  },
-  null,
-  ['application', 'rtEvents', 'sessionHandler']
-).then(
-  function (scp) {
-    scope = scp;
-    if (!params.users.length) {
-      return Promise.resolve();
-    }
-    return scope.roleAccessManager.assignRoles(params.users, params.roles);
-  }
-).then(
-  function () {
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then((scope) => params.aclDir ?
+    aclImport(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
+  .then((scope) => params.users.length ?
+    scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope)
+  .then((scope) => {
     if (params.resources.length || params.permissions.length) {
       if (!params.resources.length) {
         params.resources.push(scope.roleAccessManager.globalMarker);
@@ -166,42 +82,20 @@ di('app', config.di,
         params.permissions.push(Permissions.FULL);
       }
       if (params.method === 'grant') {
-        return scope.roleAccessManager.grant(params.roles, params.resources, params.permissions);
+        return scope.roleAccessManager.grant(params.roles, params.resources, params.permissions).then(() => scope);
       } else {
-        return scope.roleAccessManager.deny(params.roles, params.resources, params.permissions);
+        return scope.roleAccessManager.deny(params.roles, params.resources, params.permissions).then(() => scope);
       }
     } else {
-      return Promise.resolve();
+      return scope;
     }
-  }
-).then(
-  function () {
-    var w = null;
-
-    aclDefinitions.forEach(function (u) {
-      if (w) {
-        w = w.then(processAclDefinition(u));
-      } else {
-        w = processAclDefinition(u)();
-      }
-    });
-
-    if (!w) {
-      return Promise.resolve();
-    }
-    return w;
-  }
-).then(
-  function () {
-    return scope.dataSources.disconnect();
-  }
-).then(
-  // Справились
-  function () {
+  })
+  .then((scope) => scope.dataSources.disconnect())
+  .then(() => {
     console.info('Права назначены');
     process.exit(0);
-  }
-).catch(function (err) {
-  console.error(err);
-  process.exit(130);
-});
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(130);
+  });

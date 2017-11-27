@@ -40,30 +40,37 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
-  this.insert = function (type, data) {
-    return this._insert(type, data);
+  this.insert = function (type, data, options) {
+    return this._insert(type, data, options);
   };
 
   /**
    * @param {String} type
    * @param {{}} conditions
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.bulk]
    * @returns {Promise}
    */
-  this.update = function (type, conditions, data) {
-    return this._update(type, conditions, data);
+  this.update = function (type, conditions, data, options) {
+    return this._update(type, conditions, data, options || {});
   };
 
   /**
    * @param {String} type
    * @param {{}} conditions
    * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
    * @returns {Promise}
    */
-  this.upsert = function (type, conditions, data) {
-    return this._upsert(type, conditions, data);
+  this.upsert = function (type, conditions, data, options) {
+    return this._upsert(type, conditions, data, options || {});
   };
 
   /**
@@ -125,10 +132,11 @@ function DataSource() {
   /**
    * @param {String} type
    * @param {{}} conditions
+   * @param {{fields: {}}} [options]
    * @returns {Promise}
    */
-  this.get = function (type, conditions) {
-    return this._get(type, conditions);
+  this.get = function (type, conditions, options) {
+    return this._get(type, conditions, options || {});
   };
 
   /**

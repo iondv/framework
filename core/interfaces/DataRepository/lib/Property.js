@@ -99,14 +99,14 @@ function Property(item, propertyMeta, name) {
       return result;
     }
 
-    var v = this.getValue();
+    let v = this.getValue();
 
     if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
       v = typeof dateCallback === 'function' ? dateCallback.call(null, v) : v.toDateString();
     }
 
     if (this.meta.selectionProvider) {
-      var selection = this.getSelection();
+      let selection = this.getSelection();
       if (Array.isArray(selection)) {
         for (let i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
           if (this.selectionKeyMatch(selection[i].key)) {
@@ -135,7 +135,7 @@ function Property(item, propertyMeta, name) {
   };
 
   function evalProperty(item, prop) {
-    var pos;
+    let pos;
     if ((pos = prop.getName().indexOf('.')) > 0) {
       let p = item.property(prop.getName().substring(0, pos));
       if (p.getType() === PropertyTypes.REFERENCE) {
@@ -186,6 +186,7 @@ function Property(item, propertyMeta, name) {
     }
     if (this.meta.selectionProvider) {
       this.selectList = this.meta.selectionProvider.getSelection(this.item);
+      this.item.slCacheClean = false;
       return this.selectList;
     }
     return null;

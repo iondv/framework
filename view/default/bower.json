@@ -13,6 +13,8 @@
     "tests"
   ],
   "dependencies": {
-    "bootstrap": "3.3.5"
+    "bootstrap": "3.3.5",
+    "moment": "latest",
+    "moment-timezone": "latest"
   }
 }

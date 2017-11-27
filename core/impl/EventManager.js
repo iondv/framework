@@ -18,30 +18,29 @@ function EventManager() {
   };
 
   this.trigger = function (event) {
-    return new Promise(function (resolve, reject) {
-      if (listeners[event.type]) {
-        var promises = [];
-        try {
-          var r;
-          for (var i = 0; i < listeners[event.type].length; i++) {
-            r = listeners[event.type][i](event);
-            if (r instanceof Promise) {
-              promises.push(r);
-            }
+    if (listeners[event.type]) {
+      var promises = [];
+      try {
+        for (let i = 0; i < listeners[event.type].length; i++) {
+          let r = listeners[event.type][i](event);
+          if (r instanceof Promise) {
+            promises.push(r);
           }
-        } catch (err) {
-          return reject(err);
         }
-        Promise.all(promises).then(function (results) {
-          event.results = results;
-          resolve(event);
-        }).catch(reject);
-      } else {
-        resolve(event);
+      } catch (err) {
+        return Promise.reject(err);
       }
-    });
+      return Promise.all(promises)
+        .then(
+          function (results) {
+            event.results = results;
+            return Promise.resolve(event);
+          }
+        );
+    } else {
+      return Promise.resolve(event);
+    }
   };
-
 }
 
 module.exports = EventManager;

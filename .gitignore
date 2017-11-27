@@ -9,6 +9,7 @@
 #*.log
 #*.pdf
 #*.xls
+*.swp
 
 # Игнорирование файла во ВСЕХ директориях
 # Например /params/db/config.php, /config.php
@@ -81,12 +82,4 @@
 # Например /images/h4/user.jpg, /images/h/company.jpeg
 #/images/h?/*.jp?g
 
-
-\.project
-
-\.settings/
-node_modules/
-view/default/static/vendor/
-view/default/vendor/
-view/static/
-view/vendor/
+/.project
