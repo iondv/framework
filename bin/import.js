@@ -15,19 +15,24 @@ var sysLog = new IonLogger(config.log || {});
 var params = {
   src: '../in',
   ns: null,
+  skip: [],
   ignoreIntegrityCheck: true
 };
 
-var setParam = false;
+let setParam = null;
 
 process.argv.forEach(function (val) {
-  if (val.substr(0, 2) === '--') {
-    setParam = val.substr(2);
-  } else if (val === '--ignoreIntegrityCheck') {
+  if (val === '--ignoreIntegrityCheck') {
     console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
     params.ignoreIntegrityCheck = true;
+  } else if (val.substr(0, 2) === '--') {
+    setParam = val.substr(2);
   } else if (setParam) {
-    params[setParam] = val;
+    if (setParam === 'skip') {
+      params[setParam].push(val);
+    } else {
+      params[setParam] = val;
+    }
   }
 });
 
@@ -42,7 +47,8 @@ di('boot', config.bootstrap,
     worker(params.src, scope.dbSync, scope.metaRepo, scope.dataRepo, sysLog,
       {
         namespace: params.ns,
-        ignoreIntegrityCheck: params.ignoreIntegrityCheck
+        ignoreIntegrityCheck: params.ignoreIntegrityCheck,
+        skip: params.skip
       }).then(()=>scope)
   )
   .then((scope) => scope.dataSources.disconnect())
