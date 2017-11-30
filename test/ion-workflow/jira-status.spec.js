@@ -4,11 +4,6 @@
 
 'use strict';
 
-// Уточняем параметры jsHint.
-// expr - убрать предупреждение для функций без (): expect(...).to.have.been.called или expect(...).to.be.ok
-// maxstatements - множественные describe/it/expect одного уровня в одной группе describe или it
-// jshint expr: true, maxstatements:20
-
 const fs = require('fs');
 const path = require('path');
 
