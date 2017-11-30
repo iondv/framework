@@ -1,0 +1,15 @@
+verbose: true
+linters: {
+  "*.js": "prettier --write"
+ }
+#,
+#"core/**/.{js,json}": [
+#  "prettier"
+#  #"prettier --write",
+#  #"git add"
+#],
+#"lib/**/.{js,json}": [
+#  "prettier"
+#  #"prettier --write",
+#  #"git add"
+#]
