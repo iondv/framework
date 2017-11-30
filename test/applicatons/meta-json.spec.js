@@ -4,11 +4,6 @@
 
 'use strict';
 
-// Уточняем параметры jsHint.
-// expr - убрать предупреждение для функций без (): expect(...).to.have.been.called или expect(...).to.be.ok
-// maxstatements - множественные describe/it/expect одного уровня в одной группе describe или it
-// jshint expr: true, maxstatements:20
-
 const path = require('path');
 
 const processDir = require('core/util/read').processDir;
@@ -24,10 +19,10 @@ describe('# Проверка соответствия файлов метада�
     let errFiles = [];
     filesList.forEach((fn) => {
       try {
-        let temp = require(fn);
+        require(fn);
       } catch (err) {
         errFiles.push(fn);
-        console.error('Ошибка в файле %s\n', fn, err.message);
+        console.error('Ошибка в', err.message);
       }
     });
     if (errFiles.length) {
