@@ -24,11 +24,10 @@ describe('# Проверка статуса бизнес-процесса по �
       let foldersToGitCheck = [path.join(__dirname, '../..')];
       foldersToGitCheck = foldersToGitCheck.concat(getFolderInDir(path.join(__dirname, '../../applications')),
         getFolderInDir(path.join(__dirname, '../../modules')));
-      console.log('Проверяем статусы ', foldersToGitCheck);
       let tasksCodeToCheck = [];
       let qntCheckRes = 0;
       let onceErr = false;
-      foldersToGitCheck.forEach((folder, i) => {
+      foldersToGitCheck.forEach((folder) => {
         const branchName = fs.readFileSync(path.join(folder, '.git/HEAD'))
           .toString()
           .replace('\n', '')
@@ -43,7 +42,8 @@ describe('# Проверка статуса бизнес-процесса по �
                   console.log('Компонент ' + folder + ' с веткой задачи ' + taskCode + ' имеет статус:', status);
                   if (!onceErr && status !== 'Мердж') {
                     onceErr = true;
-                    done(new Error('Компонент ' + folder + ' с веткой задачи ' + taskCode + ' имеет статус ' + status + ' вместо Мердж'));
+                    done(new Error('Компонент ' + folder + ' с веткой задачи ' + taskCode + ' имеет статус ' + status +
+                      ' вместо Мердж'));
                   }
                   if (!onceErr && ++qntCheckRes === tasksCodeToCheck.length) {
                     console.log('Проверенные статусы Мердж у задач:', tasksCodeToCheck.toString());
