@@ -22,6 +22,10 @@ describe('# Проверка статуса бизнес-процесса по �
   });
 });
 
+/**
+ * Функция проверки через ветки указанные в гит
+ * @param {Function} done - калбек успешности теста
+ */
 function checkGitBranch(done) {
   try {
     let foldersToGitCheck = [path.join(__dirname, '../..')];
@@ -70,6 +74,10 @@ function checkGitBranch(done) {
   }
 }
 
+/**
+ * Функция проверки через ветки указанные в переменной окружения
+ * @param {Function} done - калбек успешности теста
+ */
 function checkEnvBranch(done) {
   let taskCode =  process.env.CI_COMMIT_REF_SLUG.split('_')[0];
   checkMergeStatus(taskCode)
@@ -141,9 +149,7 @@ function checkMergeStatus(taskCode) {
             resolve(status);
           }
         }
-
       });
-
     }).on('error', (e) => {
       reject(e);
     });
