@@ -10,9 +10,10 @@ const processDir = require('core/util/read').processDir;
 
 describe('# Проверка соответствия файлов метаданных форматам', function () {
   this.timeout(120000);
-  it('Проверка соответствия формату JSON', (done) => {
+  const pathApp = path.join(__dirname, '../../applications');
+  it('Проверка соответствия формату JSON в ' + pathApp, (done) => {
     let filesList = [];
-    processDir(path.join(__dirname, '../../applications'),
+    processDir(pathApp),
       (nm) => {return nm.substr(-5) === '.json';},
       (fn) => {filesList.push(fn);},
       (err) => {console.error('Ошибка считывания файлов', err);});
