@@ -3,14 +3,9 @@
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
 
-const ConditionParser = require('core/ConditionParser');
-const clone = require('clone');
-
 /* jshint maxstatements: 30, evil: true */
 
 function ClassMeta(metaObject) {
-
-  var _this = this;
 
   this.plain = metaObject;
 
@@ -128,16 +123,20 @@ function ClassMeta(metaObject) {
   };
 
   this.getPropertyMetas = function () {
-    let result = [];
+    let result = {};
+    if (this.getAncestor()) {
+      let apm = this.getAncestor().getPropertyMetas();
+      apm.forEach((pm) => {
+        result[pm.name] = pm;
+      });
+    }
+
     for (let nm in this.propertyMetas) {
       if (this.propertyMetas.hasOwnProperty(nm)) {
-        result.push(this.propertyMetas[nm]);
+        result[nm] = this.propertyMetas[nm];
       }
     }
-    if (this.getAncestor()) {
-      result = result.concat(this.getAncestor().getPropertyMetas());
-    }
-    return result;
+    return Object.values(result);
   };
 
   this.isJournaling = function () {
