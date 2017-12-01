@@ -13,7 +13,7 @@ describe('# Проверка соответствия файлов метада�
   const pathApp = path.join(__dirname, '../../applications');
   it('Проверка соответствия формату JSON в ' + pathApp, (done) => {
     let filesList = [];
-    processDir(pathApp),
+    processDir(pathApp,
       (nm) => {return nm.substr(-5) === '.json';},
       (fn) => {filesList.push(fn);},
       (err) => {console.error('Ошибка считывания файлов', err);});
