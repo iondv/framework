@@ -21,7 +21,12 @@
     "start": "node bin/www",
     "build": "gulp build",
     "setup": "gulp install",
-    "test": "gulp test"
+    "test": "gulp test",
+    "precommit": "lint-staged",
+    "lint": "eslint --fix"
+  },
+  "lint-staged": {
+    "*.js": ["eslint --fix", "git add"]
   },
   "dependencies": {
     "js-yaml": "latest",
@@ -70,15 +75,17 @@
     "xss": "latest"
   },
   "devDependencies": {
-    "jshint": "latest",
+    "eslint": "^4.12.1",
     "gulp": "latest",
     "gulp-clean-css": "latest",
     "gulp-jscs": "latest",
     "gulp-jshint": "latest",
-    "gulp-json-schema": "latest",
     "gulp-jsmin": "latest",
+    "gulp-json-schema": "latest",
     "gulp-less": "latest",
     "gulp-rename": "latest",
+    "husky": "^0.14.3",
+    "lint-staged": "^5.0.0",
     "run-sequence": "latest"
   }
 }

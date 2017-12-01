@@ -1,0 +1,50 @@
+root: true # Корневой уровень правил
+env:
+  browser: true # browser global variables TODO - в папку скриптов
+  es6: true # enable all ECMAScript 6 features except for modules
+  node: true # Node.js global variables and Node.js scoping
+  mocha: true #  adds all of the Mocha testing global variables TODO - в папку тестов
+  protractor: true # Protractor global variables TODO - в папку тестов или в каждом тесте /* eslint-env protractor, mocha */
+  jquery: true #  jQuery global variables TODO - в папку скриптов
+  # mongo: true # MongoDB global variables Не понятно нужно ли
+globals:
+  app: true
+  # var2: false
+extends: 'eslint:recommended'
+parserOptions:
+  ecmaVersion: 6 # specify the version of ECMAScript
+  sourceType: module
+rules:
+  # Разрешаем дополнительные правила к типовой конфигурации
+  indent:
+    - error
+    - 2
+  linebreak-style:
+    - error
+    - unix
+  quotes:
+    - error
+    - single
+  semi:
+    - error
+    - always
+  valid-jsdoc:
+    - warn
+    - {requireReturn: false, # Не требуем обязательный return
+      requireReturnType: true, # Требуется тип возвращаемого значения
+      requireParamDescription: true, # Требуется описание параметра
+      requireReturnDescription: true} # Требуется описание возвращаемого значения
+
+  require-jsdoc:
+    - warn
+    - require: {FunctionDeclaration: true, # Определение функций
+                MethodDefinition: false, # Определение методов
+                ClassDeclaration: true, # Определения классов
+                ArrowFunctionExpression: false, # Стрелочные выражения - объявление стрелочной функции в контексте выражения
+                FunctionExpression: true} # Функциональные выражение var f = function - объявление функции в контексте какого-либо выражения
+
+  # Меняем правила из типовой конфигруации ESLint
+  no-console: warn # Использование консольного вывода в продакшене не рекомендуется
+
+  # Запрещаем правила типовой конфигрурации
+  # no-console: off
