@@ -90,7 +90,6 @@ function checkEnvBranch(done) {
         console.log('Проверенные статусы Мердж у задачи', taskCode);
         done();
       }
-
     })
     .catch((e) => {
       console.log('Ошибка осуществления запросов в Jira, пропускаем тестирование\n', e);
@@ -121,6 +120,11 @@ function getFolderInDir(dir) {
   return folders;
 }
 
+/**
+ * Функция проверки статуса для таска
+ * @param {String} taskCode - код таска в джире
+ * @return {Promise}
+ */
 function checkMergeStatus(taskCode) {
   const https = require('https');
   return new Promise(function (resolve, reject) {
