@@ -4,12 +4,10 @@
 'use strict';
 const calc = require('../util').calculate;
 
-function ifStatetement([expression, trueCase, falseCase]) {
-  return expression ? trueCase : falseCase;
-}
-
 module.exports = function (args) {
   return function () {
-    return calc(this, args, 3, ifStatetement);
+    return calc(this, args, 1, (cond) => {
+        return cond[0] ? calc(this, [args[1]], 1, (r) => r[0]) : calc(this, [args[2]], 1, (r) => r[0]);
+    });
   };
 };

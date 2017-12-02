@@ -1103,19 +1103,23 @@ function IonDataRepository(options) {
     }
   }
 
-  function calcDefault(pm, updates, user) {
+  /**
+   * @param {ClassMeta} cm
+   * @param {{}} pm
+   * @param {{}} updates
+   * @param {User} user
+   * @returns {Function}
+   */
+  function calcDefault(cm, pm, updates, user) {
     return function () {
-      let p = pm._dvFormula.apply({$context: updates, $uid: user ? user.id() : null});
-      if (!(p instanceof Promise)) {
-        p = Promise.resolve(p);
-      }
-      return p.then((result) => {
-        try {
-          updates[pm.name] = cast(result, pm.type);
-        } catch (err) {
-        }
-        return updates;
-      });
+      return Promise.resolve(pm._dvFormula.apply({$context: _this._wrap(cm.getCanonicalName(), updates), $uid: user ? user.id() : null}))
+        .then((result) => {
+          try {
+            updates[pm.name] = cast(result, pm.type);
+          } catch (err) {
+          }
+          return updates;
+        });
     };
   }
 
@@ -1136,7 +1140,7 @@ function IonDataRepository(options) {
 
     let properties = cm.getPropertyMetas();
     let keys = cm.getKeyProperties();
-    let calcs = null;
+    let calcs = Promise.resolve(updates);
 
     for (let i = 0;  i < properties.length; i++) {
       let pm = properties[i];
@@ -1146,7 +1150,7 @@ function IonDataRepository(options) {
           continue;
         }
 
-        if (pm.autoassigned && !onlyDefaults) {
+        if (pm.autoassigned && (pm.defaultValue === null || pm.defaultValue === '') && !onlyDefaults) {
           switch (pm.type) {
             case PropertyTypes.STRING:
             case PropertyTypes.GUID: {
@@ -1167,7 +1171,7 @@ function IonDataRepository(options) {
           if (v === '$$uid') {
             v = user ? user.id() : null;
           } else if (pm._dvFormula) {
-            calcs = calcs ? calcs.then(calcDefault(pm, updates, user)) : calcDefault(pm, updates, user)();
+            calcs = calcs.then(calcDefault(cm, pm, updates, user));
             break;
           }
 
@@ -1181,7 +1185,7 @@ function IonDataRepository(options) {
       }
     }
 
-    return calcs || Promise.resolve(updates);
+    return calcs;
   }
 
   function prepareFileSavers(id, cm, fileSavers, updates) {

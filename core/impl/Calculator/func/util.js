@@ -6,14 +6,14 @@
 // jshint maxstatements: 50, maxcomplexity: 20
 
 function argCalc(context, args, argCount) {
-  var calc = [];
-  var n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
-  var async = false;
+  let calc = [];
+  let n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
+  let async = false;
   for (let i = 0; i < n; i++) {
     let tmp = typeof args[i] === 'function' ?
       args[i].apply(context) :
-        typeof args[i] === 'string' && typeof context[args[i]] !== 'undefined' ?
-          context[args[i]] :
+        /*typeof args[i] === 'string' && typeof context[args[i]] !== 'undefined' ?
+          context[args[i]] :*/
           args[i];
     async = tmp instanceof Promise ? true : async;
     calc.push(tmp);

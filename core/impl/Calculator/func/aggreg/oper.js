@@ -3,7 +3,9 @@
  */
 'use strict';
 const calc = require('../util').calculate;
+const F = require('core/FunctionCodes');
 
+// jshint maxcomplexity
 module.exports = function (collFunc, af) {
   /**
    * @param {DataRepository} dataRepo
@@ -23,12 +25,21 @@ module.exports = function (collFunc, af) {
                 args.length > 4 ? args[4] : null
               );
             } else if (typeof args[0] === 'string') {
-              let opts = args.length > 2 && typeof args[2] === 'object' ? {filter: args[2]} : {};
-              let oper = {};
-              oper['$' + af] = args[1];
-              opts.aggregates = {result: oper};
-              return dataRepo.aggregate(args[0], opts).then(function (data) {
-                return Promise.resolve(data.result);
+              let opts = {};
+              if (args.length > 2 && args[2] && typeof args[2] === 'object') {
+                let f = [];
+                for (let attr in args[2]) {
+                  if (args[2].hasOwnProperty(attr)) {
+                    f.push({[F.EQUAL]: ['$' + attr, args[2][attr]]});
+                  }
+                }
+                if (f.length) {
+                  opts.filter = f.length > 1 ? {[F.AND]: f} : f[0];
+                }
+              }
+              opts.aggregates = {result: {[af]: ['$' + args[1]]}};
+              return dataRepo.aggregate(args[0], opts).then((data) => {
+                return data[0].result;
               });
             } else {
               return null;
