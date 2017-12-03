@@ -1169,15 +1169,14 @@ function IonDataRepository(options) {
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
           if (v === '$$uid') {
-            v = user ? user.id() : null;
+            updates[pm.name] = user ? user.id() : null;
           } else if (pm._dvFormula) {
             calcs = calcs.then(calcDefault(cm, pm, updates, user));
-            break;
-          }
-
-          try {
-            updates[pm.name] = cast(v, pm.type);
-          } catch (err) {
+          } else {
+            try {
+              updates[pm.name] = cast(v, pm.type);
+            } catch (err) {
+            }
           }
         } else if (keys.indexOf(pm.name) >= 0 && !onlyDefaults) {
           throw new IonError(Errors.NO_KEY_SPEC, {info: cm.getCaption() + '.' + pm.caption});
