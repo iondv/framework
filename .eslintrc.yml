@@ -1,11 +1,10 @@
 root: true # Корневой уровень правил
 env:
   browser: true # browser global variables TODO - в папку скриптов
+  jquery: true #  jQuery global variables TODO - в папку скриптов
   es6: true # enable all ECMAScript 6 features except for modules
   node: true # Node.js global variables and Node.js scoping
-  mocha: true #  adds all of the Mocha testing global variables TODO - в папку тестов
-  protractor: true # Protractor global variables TODO - в папку тестов или в каждом тесте /* eslint-env protractor, mocha */
-  jquery: true #  jQuery global variables TODO - в папку скриптов
+
   # mongo: true # MongoDB global variables Не понятно нужно ли
 globals:
   app: true
@@ -15,9 +14,52 @@ parserOptions:
   ecmaVersion: 6 # specify the version of ECMAScript
   sourceType: module
 rules:
-  # Разрешаем дополнительные правила к типовой конфигурации
+  # Possible Errors
+  for-direction: error # Недостижимые циклы for - Откл.в recommended
+  getter-return: error # Геттеры не содержат return - Откл.в recommended
+  no-await-in-loop: error # Await в циклах - не позволяет запустить в них код асинхронно. Лучше Promise.all - Откл.в recommended
+  no-console: warn # Использование консольного вывода в продакшене не рекомендуется - Изм.recommended: error
+  no-prototype-builtins: warn # Использование вызовов метода Object.prototype в объекте - Изм.recommended: error
+  no-template-curly-in-string: warn # Использование шаблонов не в кавчках ` - Откл.в recommended
+  valid-jsdoc: # Валдиация jsDoc - Откл.в recommended
+    - warn
+    - {requireReturn: false, # Не требуем обязательный return
+      requireReturnType: true, # Требуется тип возвращаемого значения
+      requireParamDescription: true, # Требуется описание параметра
+      requireReturnDescription: true} # Требуется описание возвращаемого значения
+
+  # Best Practices -
+  accessor-pairs: warn # Обязательность и сеттера и геттера в объекте, если есть хоть один - Откл.в recommended
+  array-callback-return: warn # Обязательность куегкт или калбека в методах массива - Откл.в recommended
+  block-scoped-var: warn # Использование переменной вне блока объявления - Откл.в recommended
+  class-methods-use-this: warn # Методы не использующие this - должны объявляться static - Откл.в recommended
+  complexity: # Цикломатическая сложность - т.е. кол-во веток/путей в функции
+    - warn
+    - 10 # В jshint было 10 (рек. в wiki) - recommended: 20
+  consistent-return: warn # Требование значение для функции return - Откл.в recommended
+  curly: error # Требования обязательно наличия скобок - Откл.в recommended
+  default-case: error # Обязательный default в switch - Откл.в recommended
+  dot-location: # Размещение точки - Откл.в recommended
+    - warn
+    - property # Если с новой строки, то перед свойством
+  dot-notation: warn # Использовать точки для доступа к свойстам, вместо нотации именнованного массива - Откл.в recommended
+  eqeqeq: warn # Строгое сравнение с типами, без приведения - Откл.в recommended
+  guard-for-in: warn # Проверка на свойство в циклах for-in - Откл.в recommended
+  no-alert: error # Запрет на allert и другие методы - которые нельзя в браузере протыкать - Откл.в recommended
+  no-caller: error # Запрет на caller - выводится из JS  - Откл.в recommended
+  no-div-regex: error # Требование экранирования литератолов regexp - Откл.в recommended
+  no-else-return: warn # Не требуется else с return - Откл.в recommended
+  no-empty-function: warn # Запрет пустых функций (нужен хотя бы комментарий) - Откл.в recommended
+  no-eq-null: error # Запрет на сравнение с нулем без приведения типов  - Откл.в recommended
+  no-eval: error # Запрет на eval - Откл.в recommended
+  no-extend-native: error # Запрет на изменение свойст и методов нативных объектов - Откл.в recommended
+
+
+  # Variables
+  # Node.js and CommonJS
+  # Stylistic Issues
   indent:
-    - error
+    - warn
     - 2
   linebreak-style:
     - error
@@ -28,13 +70,6 @@ rules:
   semi:
     - error
     - always
-  valid-jsdoc:
-    - warn
-    - {requireReturn: false, # Не требуем обязательный return
-      requireReturnType: true, # Требуется тип возвращаемого значения
-      requireParamDescription: true, # Требуется описание параметра
-      requireReturnDescription: true} # Требуется описание возвращаемого значения
-
   require-jsdoc:
     - warn
     - require: {FunctionDeclaration: true, # Определение функций
@@ -43,8 +78,7 @@ rules:
                 ArrowFunctionExpression: false, # Стрелочные выражения - объявление стрелочной функции в контексте выражения
                 FunctionExpression: true} # Функциональные выражение var f = function - объявление функции в контексте какого-либо выражения
 
-  # Меняем правила из типовой конфигруации ESLint
-  no-console: warn # Использование консольного вывода в продакшене не рекомендуется
+  # ECMAScript 6
 
-  # Запрещаем правила типовой конфигрурации
-  # no-console: off
+
+

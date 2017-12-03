@@ -29,7 +29,7 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 gulp.task('build', function (done) {
   runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function (err) {
     if (!err) {
-      console.log('Сборка приложения завершена.');
+      console.log('Сборка платормы, модулей и приложений завершена.');
     }
     done(err);
   });
@@ -83,13 +83,13 @@ function copyResources(src, dest, msg) {
           resolve(false);
           return;
         }
-        gulp.src([path.join(src, '**', '*')]).
-          pipe(gulp.dest(dest)).
-          on('finish', function () {
+        gulp.src([path.join(src, '**', '*')])
+          .pipe(gulp.dest(dest))
+          .on('finish', function () {
             console.log(msg);
             resolve(true);
-          }).
-          on('error', reject);
+          })
+          .on('error', reject);
       } else {
         resolve(true);
       }
@@ -335,8 +335,8 @@ gulp.task('build:bower', function (done) {
   }
   start.then(function () {
     done();
-  }).
-    catch(function (err) {
+  })
+    .catch(function (err) {
       console.error(err);
       done(err);
     });
@@ -358,8 +358,8 @@ gulp.task('compile:less', function (done) {
 
   start.then(function () {
     done();
-  }).
-    catch(function (err) {
+  })
+    .catch(function (err) {
       console.error(err);
       done(err);
     });
@@ -401,8 +401,8 @@ gulp.task('minify:js', function (done) {
   }
   start.then(function () {
     done();
-  }).
-    catch(function (err) {
+  })
+    .catch(function (err) {
       console.error(err);
       done(err);
     });
@@ -447,8 +447,8 @@ function appImporter(appDir, scope, log, dep) {
   };
 }
 
-gulp.task('setup', function (done) {
-  console.log('Установка приложений.');
+gulp.task('deploy', function (done) {
+  console.log('Развертывание и импорт данных приложений.');
   /**
    * Параметры конфигруации сборки
    * @property {object} log - параметры логгирования
@@ -493,7 +493,7 @@ gulp.task('setup', function (done) {
 
         if (stage1) {
           return stage1.then(() => {
-            console.log('Установка приложений завершена.');
+            console.log('Развертывание приложений завершено.');
             return scp.dataSources.disconnect();
           });
         }
@@ -536,11 +536,11 @@ gulp.task('setup', function (done) {
     .catch((err) => done(err));
 });
 
-gulp.task('install', function (done) {
-  console.log('Установка платформы ION.');
-  runSequence('build', 'setup', function (err) {
+gulp.task('assemble', function (done) {
+  console.log('Сборка и развертывание платформы и приложений ION.');
+  runSequence('build', 'deploy', function (err) {
     if (!err) {
-      console.log('Платформа ION установлена.');
+      console.log('Выполнена сборка и развертывание платформы и приложений ION.');
     }
     done(err);
   });
