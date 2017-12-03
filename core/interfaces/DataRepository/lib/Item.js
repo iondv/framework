@@ -195,9 +195,9 @@ function Item(id, base, classMeta) {
    * @param {ClassMeta} cm
    */
   function findPropertyMeta(nm, cm) {
-    var dot, pm;
+    let dot;
     if ((dot = nm.indexOf('.')) > -1) {
-      pm = cm.getPropertyMeta(nm.substring(0, dot));
+      let pm = cm.getPropertyMeta(nm.substring(0, dot));
       if (!pm) {
         throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
       }
@@ -215,7 +215,7 @@ function Item(id, base, classMeta) {
    * @returns {Property | null}
    */
   this.property = function (name) {
-    var props = this.getProperties();
+    let props = this.getProperties();
     if (props.hasOwnProperty(name)) {
       return props[name];
     } else {
@@ -228,14 +228,14 @@ function Item(id, base, classMeta) {
   };
 
   function initClassProps(cm) {
-    var pm = cm.getPropertyMetas();
-    for (var i = 0; i < pm.length; i++) {
+    if (cm.getAncestor()) {
+      initClassProps(cm.getAncestor());
+    }
+    let pm = cm.getPropertyMetas();
+    for (let i = 0; i < pm.length; i++) {
       if (pm[i].type !== PropertyTypes.STRUCT) {
         _this.properties[pm[i].name] = new Property(_this, pm[i]);
       }
-    }
-    if (cm.getAncestor()) {
-      initClassProps(cm.getAncestor());
     }
   }
 
