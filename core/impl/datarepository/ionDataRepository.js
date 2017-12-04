@@ -269,6 +269,25 @@ function IonDataRepository(options) {
   };
 
   /**
+   * @param {ClassMeta} refc
+   * @param {String} id
+   * @param {{}} loaded
+   */
+  function checkLoaded(refc, id, loaded) {
+    if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' +id)) {
+      return loaded[refc.getCanonicalName() + '@' +id];
+    }
+    let descs = refc.getDescendants();
+    for (let i = 0; i < descs.length; i++) {
+      let tmp = checkLoaded(descs[i], id, loaded);
+      if (tmp) {
+        return tmp;
+      }
+    }
+    return false;
+  }
+
+  /**
    * @param {Item} item
    * @param {Property} property
    * @param {{}} attrs
@@ -302,11 +321,15 @@ function IonDataRepository(options) {
         if (typeof item.references === 'undefined') {
           item.references = {};
         }
-        if (!property.meta.backRef && loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+        /**
+         * @type {Item}
+         */
+        let ldd = null;
+        if (!property.meta.backRef && (ldd = checkLoaded(refc, v, loaded))) {
           item.references[property.getName()] =
             linksByRef ?
-              loaded[refc.getCanonicalName() + '@' + v] :
-              _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base);
+              ldd :
+              _this._wrap(ldd.getClassName(), ldd.base);
         } else {
           if (v !== null && attrs[pn].filter.indexOf(v) < 0) {
             attrs[pn].filter.push(v);
@@ -354,11 +377,15 @@ function IonDataRepository(options) {
         if (Array.isArray(v)) {
           item.collections[property.getName()] = [];
           v.forEach(function (v) {
-            if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + v)) {
+            /**
+             * @type {Item}
+             */
+            let ldd = checkLoaded(refc, v, loaded);
+            if (ldd) {
               item.collections[property.getName()].push(
                 linksByRef ?
-                  loaded[refc.getCanonicalName() + '@' + v] :
-                  _this._wrap(refc.getCanonicalName(), loaded[refc.getCanonicalName() + '@' + v].base)
+                  ldd :
+                  _this._wrap(ldd.getClassName(), ldd.base)
               );
             } else {
               if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
