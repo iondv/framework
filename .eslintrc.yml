@@ -4,7 +4,6 @@ env:
   jquery: true #  jQuery global variables TODO - в папку скриптов
   es6: true # enable all ECMAScript 6 features except for modules
   node: true # Node.js global variables and Node.js scoping
-
   # mongo: true # MongoDB global variables Не понятно нужно ли
 globals:
   app: true
@@ -13,7 +12,7 @@ extends: 'eslint:recommended'
 parserOptions:
   ecmaVersion: 6 # specify the version of ECMAScript
   sourceType: module
-rules:
+rules: # Описание правил https://eslint.org/docs/rules/
   # Possible Errors
   for-direction: error # Недостижимые циклы for - Откл.в recommended
   getter-return: error # Геттеры не содержат return - Откл.в recommended
@@ -45,16 +44,56 @@ rules:
   dot-notation: warn # Использовать точки для доступа к свойстам, вместо нотации именнованного массива - Откл.в recommended
   eqeqeq: warn # Строгое сравнение с типами, без приведения - Откл.в recommended
   guard-for-in: warn # Проверка на свойство в циклах for-in - Откл.в recommended
-  no-alert: error # Запрет на allert и другие методы - которые нельзя в браузере протыкать - Откл.в recommended
   no-caller: error # Запрет на caller - выводится из JS  - Откл.в recommended
-  no-div-regex: error # Требование экранирования литератолов regexp - Откл.в recommended
+  no-div-regex: error # Требование экранирования литералов regexp - Откл.в recommended
   no-else-return: warn # Не требуется else с return - Откл.в recommended
   no-empty-function: warn # Запрет пустых функций (нужен хотя бы комментарий) - Откл.в recommended
   no-eq-null: error # Запрет на сравнение с нулем без приведения типов  - Откл.в recommended
   no-eval: error # Запрет на eval - Откл.в recommended
-  no-extend-native: error # Запрет на изменение свойст и методов нативных объектов - Откл.в recommended
+  no-extend-native: error # Запрет на изменение свойств и методов нативных объектов - Откл.в recommended
+  no-extra-bind: error # Использование bind без this - Откл.в recommended
+  no-extra-label: error # Запрет использовани ярасширенных меток - Откл.в recommended
+  no-floating-decimal: error # Запрет чисел с плав.точкой без числа перед точкой - Откл.в recommended
+  no-implicit-coercion: warn # Запрет на неявные преобразования типов - Откл.в recommended
+  no-implied-eval: error # Запрет на неявный вызов eval - Откл.в recommended
+  no-invalid-this: error # Запрет на this вне классов и подобных объектов - Откл.в recommended
+  no-labels: error # Запрет использования меток - Откл.в recommended
+  no-lone-blocks: error # Запрет на пустые кривые скобки - Откл.в recommended
+  no-loop-func: warn # Создание функций внутри циклов или функций исп. переменную вне обл.видимости - Откл.в recommended
+  no-magic-numbers: warn # Использование цифровых констант 2*5*100 в присвоении - Откл.в recommended
+  no-multi-spaces:  # Использование пробелов оформления - Откл.в recommended
+    - warn
+    - ignoreEOLComments: true # За исключением комментариев
+  no-multi-str: error # Запрет на мультистроки - Откл.в recommended
+  no-new: error # Запрет на конструкт, без присваивания результатов - Откл.в recommended
+  no-new-func: error # Запрет на использования конструктора функций - Откл.в recommended
+  no-new-wrappers: error # Запрет на конструктор объектов JS - Откл.в recommended
+  no-octal-escape: error # Запрет на восмеричное исчисление через esc последовательность - Откл.в recommended
+  # no-param-reassign: warn # Запрет изменения параметров функций - нужно присваивание новым переменным - ошибка если использовать arguemnt[] (не надо использовать argument[] )))) - Откл.в recommended
+  no-proto: error # Запрещенная свойство Object - Откл.в recommended
+  no-return-assign: warn # Запрет присваивание в return - Откл.в recommended
+  no-return-await: error # Запрет на возврат async в return - Откл.в recommended
+  no-self-compare: error # Запрет на сравнение с самим собой - Откл.в recommended
+  no-sequences: error # Запрет на использование нескольких выражений через запятую - Откл.в recommended
+  no-throw-literal: warn # Запрет на неявное создание объекта Error в throw - Откл.в recommended
+  no-unmodified-loop-condition: error # Запрет использования немодифицируемых условий в циклах - Откл.в recommended
+  no-unused-expressions: warn # Запрет на неиспользуемые выражения - Откл.в recommended
+  no-useless-call: warn # Запрет на неоптимальный вызов call и apply - Откл.в recommended
+  no-useless-concat: warn # Запрет на склеивание строк констант - Откл.в recommended
+  no-useless-return: warn # Запрет на путсые операнды в return - Откл.в recommended
+  no-void: error # Запрет на устаревший тип void - Откл.в recommended
+  no-warning-comments: # Предупреждения, для разработческих комментов для продуктива - Откл.в recommended
+    - warn
+    - {"terms": ["todo", "fixme", "xxx", "2del"], "location": "anywhere" }
+  no-with: error # Запрет использования with - Откл.в recommended
+  prefer-promise-reject-errors: warn # Предупреждение использования приведения к Error для reject - Откл.в recommended
+  radix: error # Требования указания исчисления для parseInt, если строка с 0 - Откл.в recommended
+  require-await: error # Требование await в async функциях  - Откл.в recommended
+  vars-on-top: warn # Требование расположения объявлений var вверху функций - Откл.в recommended
+  wrap-iife: error # Оформление скобками немедленный вызов функций при объявлении - Откл.в recommended
+  yoda: warn # Предупреждение при yoda сравнениях 5 > abc или 'текст' === strVal - Откл.в recommended
 
-
+  strict: warn # Обязательный strict режим - Откл.в recommended
   # Variables
   # Node.js and CommonJS
   # Stylistic Issues
