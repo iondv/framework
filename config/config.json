@@ -46,6 +46,12 @@
           ]
         }
       },
+      "sequenceProvider": {
+        "module": "core/impl/datasource/MongoSequenceProvider",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "sessionHandler": {
         "module": "lib/session",
         "initMethod": "init",
@@ -122,7 +128,8 @@
         "initMethod": "init",
         "initLevel": 1,
         "options": {
-          "dataRepo": "dataRepo"
+          "dataRepo": "dataRepo",
+          "sequenceProvider": "ion://sequenceProvider"
         }
       },
       "metaRepo": {
