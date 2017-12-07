@@ -96,8 +96,8 @@ function ChangeLogger() {
    * @param {Date} till
    * @returns {Promise}
    */
-  this.getChanges = function (className, id, since, till) {
-    if (!(className || id || since || till)) {
+  this.getChanges = function (className, id, since, till, author, type, count, offset = 0, total = false) {
+    if (!(className || id || since || till || author || type)) {
       throw new Error('Не указаны критерии выборки записей лога изменений');
     }
 
@@ -113,7 +113,7 @@ function ChangeLogger() {
       till = since;
       since = tmp;
     }
-    return this._getChanges(className, id, since, till);
+    return this._getChanges(className, id, since, till, author, type, count, offset, total);
   };
 }
 

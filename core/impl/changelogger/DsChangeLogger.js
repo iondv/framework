@@ -69,11 +69,19 @@ function DsChangeLogger(ds, authCallback) {
    * @param {String} id
    * @param {Date} since
    * @param {Date} till
+   * @param {String} author
+   * @param {String} type
    * @return {Promise}
    * @private
    */
-  this._getChanges = function (className, id, since, till) {
-    var and = [];
+  this._getChanges = function (className, id, since, till, author, type, count, offset, total) {
+
+    let options = {
+      sort: {timestamp: 1},
+      offset: offset,
+      countTotal: total
+    };
+    let and = [];
     if (className) {
       and.push({[F.EQUAL]: ['$className', className]});
     }
@@ -86,10 +94,21 @@ function DsChangeLogger(ds, authCallback) {
     if (till) {
       and.push({[F.LESS]: ['$timestamp', till]});
     }
+    if (author) {
+      and.push({[F.EQUAL]: ['$author', author]});
+    }
+    if (type) {
+      and.push({[F.EQUAL]: ['$type', type]});
+    }
 
-    return _this.ds.fetch('ion_changelog', {filter: {[F.AND]: and}, sort: {timestamp: 1}})
+    options.filter = {[F.AND]: and};
+    if (count) {
+      options.count = count;
+    }
+
+    return _this.ds.fetch('ion_changelog', options)
       .then((changes) => {
-        var result = [];
+        let result = [];
         for (let i = 0; i < changes.length; i++) {
           result.push(new ChangeLogger.Change(
             typeof changes[i].timestamp === 'string' ? Date.parse(changes[i].timestamp) : changes[i].timestamp,
@@ -103,6 +122,9 @@ function DsChangeLogger(ds, authCallback) {
             changes[i].data,
             changes[i].base
           ));
+        }
+        if (changes.total) {
+          result.total = changes.total;
         }
         return Promise.resolve(result);
       }
