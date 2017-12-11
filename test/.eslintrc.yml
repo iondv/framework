@@ -1,8 +1,9 @@
 env:
-  mocha: true #  adds all of the Mocha testing global variables TODO - в папку тестов
-  protractor: true # Protractor global variables TODO - в папку тестов или в каждом тесте /* eslint-env protractor, mocha */
+  mocha: true #  adds all of the Mocha testing global variables
+  protractor: true # Protractor global variables
 globals:
   app: false
   chai: true
 rules:
   no-console: off
+  no-sync: off # Разрешено использовать синхронные функции в тесте

@@ -1,7 +1,10 @@
 /**
  * Created by Vasiliy Ermilov (ermilov.work@yandex.ru) on 12/22/16.
  */
-const scheduleToString =  require('core/util/schedule').scheduleToString;
+'use strict';
+
+const scheduleToString = require('core/util/schedule').scheduleToString;
+let a = ['q','e'];
 
 var schedule1 = {
   description: 'Недельное расписание',

@@ -92,11 +92,102 @@ rules: # Описание правил https://eslint.org/docs/rules/
   vars-on-top: warn # Требование расположения объявлений var вверху функций - Откл.в recommended
   wrap-iife: error # Оформление скобками немедленный вызов функций при объявлении - Откл.в recommended
   yoda: warn # Предупреждение при yoda сравнениях 5 > abc или 'текст' === strVal - Откл.в recommended
-
   strict: warn # Обязательный strict режим - Откл.в recommended
   # Variables
+  no-label-var: error
+  no-restricted-globals: # Запрещено использовать нижеследующие глобальные переменные - Откл.в recommended
+    - error
+    - event # Глобальную переменную even в IE
+  no-shadow: # Запрет на повторяющеся объявление переменных выще видимсти
+    - warn
+    - {"builtinGlobals": true,  # Запрет переприсваивания глобальных переменных
+       "hoist": "all",  # Запрет переобъявления с таким же именем везде
+       "allow": [] } # Нет исключений
+  no-shadow-restricted-names: error # Запрет переопределения типов стандарта JS
+  no-undef-init: error # Запрет инициализации переменной как неопределена присваиванием undefined
+  no-undefined: warn # Предупрежение переопределения или сравнения с undefined
+  no-use-before-define: # Запрет на использование переменной, раньше объявления
+    - error
+    - functions: false # За исключением функций
+
   # Node.js and CommonJS
+  callback-return: # Требует return для калбеков с ошибками, для исключения множественных вызовов. Можно использовать другие названия функций, или поставить изменение правил
+    - warn
+    - ["callback", "cb", "next", "done"] # Типовые названия функций клабеков
+  global-require: # Глобальное размещение require в моделях - для упрощения отслеживания зависимостей
+    - warn
+  handle-callback-err: # Рекомендация шаблона калбека с первой err
+    - warn
+  no-buffer-constructor: # Предупреждение использования контруктора буффера
+    - warn
+  no-mixed-requires:
+    - error # Запрет на смешение require ядра, модулей и переменных
+  no-new-require: # Запрет на вызов конструктора при подключении модуля
+    - error
+  no-path-concat: # Предупреждение использования склеивания строк с глобалными переменными пути, без испльзования библиотеки path
+    - warn
+  no-process-env: # Предупреждение при конфигурировании приложения через переменные окружения, лучше через конфиг
+    - warn
+  no-process-exit: # Запрет на выход из приложения через process.exit
+    - error
+  no-restricted-modules: # Предупреждение при использовании запрещенных модулей
+    - warn
+    - {
+        "paths": [ # Запрещенные библиотеки - как fs, js-zip и т.п.
+          {"name": "lib/convert-import-util", "message": "Библиотека импорта вывдена в node_modules"},
+          {"name": "async", "message": "Библиотека async использует имя из ES6"}
+        ],
+        "patterns": ["/lib/meta-update/*"] # Запрет на паттерны
+      }
+  no-sync: # Запрет на синхронные функции в продакшн коде
+    - error
   # Stylistic Issues
+  array-bracket-newline: # Новая линия после скобок в массивах запрещена
+    - warn
+    - never
+  array-bracket-spacing: # Пробел после и перед скобками в массиве запрещены
+    - warn
+    - never
+  array-element-newline: # Новая строка перед каждым элементом массива запрещены
+    - warn
+    - never
+  block-spacing: # Пробел перед каждым блоком запрещены
+    - warn
+    - never
+  brace-style: # Тип скобок - стандартный, разрешены на одной строке
+    - warn
+    - 1tbs
+    - allowSingleLine": true
+  camelcase: # Стиль камелКейс, в т.ч. для свойств объектов
+    - warn
+  capitalized-comments:
+    - warn
+    - always
+    - ignoreInlineComments: true
+    - ignoreConsecutiveComments: true
+  comma-dangle: # Запрет запяты в конце в массивах, объектах, функциях и т.д.
+    - error
+    - never
+  comma-spacing: # Пробел после запятых
+    - warn
+    - {"before": false, "after": true}
+  comma-style: # Запятые в конце строки
+    - warn
+  computed-property-spacing: # Пробелы перед/после имени свойства объекта в кв.скобках
+    - warn
+    - never
+  consistent-this: # Присваивание this только одному имени _this
+    - error
+    - _this
+  eol-last: # Новая строка в окончании файла
+    - warn
+    - always
+  func-call-spacing: # Пробел перед вызовом функции
+    - warn
+    - never
+  func-name-matching: # Запрет на переприсваивание имени функций переменной с другим именем
+    - error
+
   indent:
     - warn
     - 2

@@ -57,7 +57,7 @@ function run(path, command, args, resolve, reject) {
       if (code !== 0) {
         return reject('install failed with code ' + code);
       }
-      resolve();
+      return resolve();
     });
   } catch (error) {
     reject(error);
