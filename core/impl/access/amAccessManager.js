@@ -7,6 +7,7 @@ const Acl = require('acl');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Permissions = require('core/Permissions');
 const chain = require('core/util/chain');
+const _ = require('lodash');
 const F = require('core/FunctionCodes');
 
 /**
@@ -82,12 +83,13 @@ function MongoAclAccessManager(config) {
    */
   this._assignRoles = function (subjects, roles) {
     subjects  = Array.isArray(subjects) ? subjects : [subjects];
+    let roleChunks = _.chunk(roles, 10);
     return chain(roles, (role) => _this._defineRole(role))
       .then(() =>
         chain(subjects, (subject) => {
-          return new Promise((resolve, reject) => {
-            _this.acl.addUserRoles(subject, roles, (err) => err ? reject(err) : resolve());
-          });
+          return chain(roleChunks, (rc) => new Promise((resolve, reject) => {
+            _this.acl.addUserRoles(subject, rc, (err) => err ? reject(err) : resolve());
+          }));
         })
       );
   };
@@ -99,12 +101,17 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
+    let roleChunks = _.chunk(roles, 10);
+    let resChunks = _.chunk(resources, 10);
     return chain(roles, (role) => _this._defineRole(role))
       .then(() => chain(resources, (resource) => _this._defineResource(resource)))
-      .then(() => new Promise((resolve, reject) => {
-          _this.acl.allow(roles, resources, permissions, (err) => err ? reject(err) : resolve());
-        })
-      );
+      .then(() => {
+        return chain(roleChunks, (rolesc) => {
+          return chain(resChunks, (resc) => new Promise((resolve, reject) => {
+            _this.acl.allow(rolesc, resc, permissions, (err) => err ? reject(err) : resolve());
+          }));
+        });
+      });
   };
 
   /**
@@ -114,12 +121,11 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
+    let resChunks = _.chunk(resources, 10);
     return chain(roles, function (role) {
-      return new Promise(function (resolve, reject) {
-        _this.acl.removeAllow(role, resources, permissions, function (err) {
-          return err ? reject(err) : resolve();
-        });
-      });
+      return chain(resChunks, (resc) => new Promise((resolve, reject) => {
+        _this.acl.removeAllow(role, resc, permissions, (err) => err ? reject(err) : resolve());
+      }));
     });
   };
 
@@ -129,12 +135,11 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._unassignRoles = function (subjects, roles) {
+    let roleChunks = _.chunk(roles, 10);
     return chain(subjects, function (subject) {
-      return new Promise(function (resolve, reject) {
-        _this.acl.removeUserRoles(subject, roles, function (err) {
-          return err ? reject(err) : resolve();
-        });
-      });
+      return chain(roleChunks, (rolesc) => new Promise((resolve, reject) => {
+        _this.acl.removeUserRoles(subject, rolesc, (err) => err ? reject(err) : resolve());
+      }));
     });
   };
   /**
