@@ -90,20 +90,27 @@ function ChangeLogger() {
   };
 
   /**
-   * @param {String} className
-   * @param {String} id
-   * @param {Date} since
-   * @param {Date} till
+   * @param {{}} options
+   * @param {String} [options.className]
+   * @param {String} [options.id]
+   * @param {Date} [options.since]
+   * @param {Date} [options.till]
+   * @param {String} [options.author]
+   * @param {String} [options.type]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.total]
    * @returns {Promise}
    */
-  this.getChanges = function (className, id, since, till, author, type, count, offset = 0, total = false) {
+  this.getChanges = function (options) {
+    let {className, id, since, till, author, type} = options;
     if (!(className || id || since || till || author || type)) {
       throw new Error('Не указаны критерии выборки записей лога изменений');
     }
 
     if (
-      since && Object.prototype.toString.call(since) !== '[object Date]' ||
-      till && Object.prototype.toString.call(till) !== '[object Date]'
+      since && !(since instanceof Date) ||
+      till && !(till instanceof Date)
     ) {
       throw new Error('Интервал должен быть задан объектами класса Date!');
     }
@@ -113,7 +120,7 @@ function ChangeLogger() {
       till = since;
       since = tmp;
     }
-    return this._getChanges(className, id, since, till, author, type, count, offset, total);
+    return this._getChanges(options);
   };
 }
 

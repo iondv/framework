@@ -65,18 +65,23 @@ function DsChangeLogger(ds, authCallback) {
   };
 
   /**
-   * @param {String} className
-   * @param {String} id
-   * @param {Date} since
-   * @param {Date} till
-   * @param {String} author
-   * @param {String} type
+   * @param {{}} options
+   * @param {String} [options.className]
+   * @param {String} [options.id]
+   * @param {Date} [options.since]
+   * @param {Date} [options.till]
+   * @param {String} [options.author]
+   * @param {String} [options.type]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Boolean} [options.total]
    * @return {Promise}
    * @private
    */
-  this._getChanges = function (className, id, since, till, author, type, count, offset, total) {
+  this._getChanges = function (options) {
+    let {className, id, since, till, author, type, count, offset, total} = options;
 
-    let options = {
+    let qoptions = {
       sort: {timestamp: 1},
       offset: offset,
       countTotal: total
@@ -101,12 +106,12 @@ function DsChangeLogger(ds, authCallback) {
       and.push({[F.EQUAL]: ['$type', type]});
     }
 
-    options.filter = {[F.AND]: and};
+    qoptions.filter = {[F.AND]: and};
     if (count) {
-      options.count = count;
+      qoptions.count = count;
     }
 
-    return _this.ds.fetch('ion_changelog', options)
+    return _this.ds.fetch('ion_changelog', qoptions)
       .then((changes) => {
         let result = [];
         for (let i = 0; i < changes.length; i++) {
