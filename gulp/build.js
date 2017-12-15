@@ -1,5 +1,6 @@
-// jscs:disable requireCapitalizedComments
 'use strict';
+
+/*eslint "require-jsdoc": off */
 
 const gulp = require('gulp');
 const less = require('gulp-less');
@@ -21,7 +22,6 @@ const aclImport = require('lib/aclImport');
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 
-// jshint maxcomplexity: 30, maxstatements: 40
 /**
  * Инициализируем первичное приложение.
  * Сначала очищаем папки и устанавливаем все модули
@@ -29,7 +29,7 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 gulp.task('build', function (done) {
   runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function (err) {
     if (!err) {
-      console.log('Сборка приложения завершена.');
+      console.log('Сборка платормы, модулей и приложений завершена.');
     }
     done(err);
   });
@@ -37,7 +37,7 @@ gulp.task('build', function (done) {
 
 function run(path, command, args, resolve, reject) {
   try {
-    var child = spawn(command + commandExtension,
+    let child = spawn(command + commandExtension,
       args,
       {
         cwd: path,
@@ -57,7 +57,7 @@ function run(path, command, args, resolve, reject) {
       if (code !== 0) {
         return reject('install failed with code ' + code);
       }
-      resolve();
+      return resolve();
     });
   } catch (error) {
     reject(error);
@@ -83,13 +83,13 @@ function copyResources(src, dest, msg) {
           resolve(false);
           return;
         }
-        gulp.src([path.join(src, '**', '*')]).
-        pipe(gulp.dest(dest)).
-        on('finish', function () {
-          console.log(msg);
-          resolve(true);
-        }).
-        on('error', reject);
+        gulp.src([path.join(src, '**', '*')])
+          .pipe(gulp.dest(dest))
+          .on('finish', function () {
+            console.log(msg);
+            resolve(true);
+          })
+          .on('error', reject);
       } else {
         resolve(true);
       }
@@ -99,10 +99,10 @@ function copyResources(src, dest, msg) {
 
 function copyVendorResources(src, dst, module) {
   return new Promise(function (resolve, reject) {
-    var dist = path.join(src, module, 'dist');
-    var min = path.join(src, module, 'min');
-    // var build = path.join(src, module, 'build');
-    var dest = path.join(dst, module);
+    let dist = path.join(src, module, 'dist');
+    let min = path.join(src, module, 'min');
+    // let build = path.join(src, module, 'build');
+    let dest = path.join(dst, module);
 
     copyResources(
       dist,
@@ -111,13 +111,13 @@ function copyVendorResources(src, dst, module) {
     )(false).then(copyResources(
       min,
       dest,
-        'Скопированы минифицированные файлы вендорского пакета ' + module
-      )
+      'Скопированы минифицированные файлы вендорского пакета ' + module
+    )
     ).then(copyResources(
       path.join(src, module),
       dest,
       'Скопированы файлы вендорского пакета ' + module
-      )
+    )
     ).then(resolve).catch(reject);
   });
 }
@@ -132,10 +132,14 @@ function bower(p) {
         return;
       }
       try {
-        var bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
+        /**
+         * Параметры конфигурации bower
+         * @property {String} vendorDir - папка установки пакетов
+         */
+        let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Установка пакетов фронтенда для пути ' + p);
         run(p, 'bower', ['install', '--config.interactive=false'], function () {
-          var srcDir = path.join(p, bc.directory);
+          let srcDir = path.join(p, bc.directory);
           try {
             fs.accessSync(srcDir);
           } catch (err) {
@@ -143,11 +147,11 @@ function bower(p) {
             return;
           }
           try {
-            var vendorModules = fs.readdirSync(srcDir);
-            var copyers, copyer;
+            let vendorModules = fs.readdirSync(srcDir);
+            let copyers, copyer;
             copyers = [];
             if (bc.vendorDir) {
-              for (var i = 0; i < vendorModules.length; i++) {
+              for (let i = 0; i < vendorModules.length; i++) {
                 copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
                 if (copyer) {
                   copyers.push(copyer);
@@ -248,11 +252,11 @@ function minifyJS(p) {
 }
 
 function buildDir(start, dir) {
-  var modulesDir = path.join(platformPath, dir);
-  var modules = fs.readdirSync(modulesDir);
-  var stat;
-  var f = start;
-  for (var i = 0; i < modules.length; i++) {
+  let modulesDir = path.join(platformPath, dir);
+  let modules = fs.readdirSync(modulesDir);
+  let stat;
+  let f = start;
+  for (let i = 0; i < modules.length; i++) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
       f = f.then(npm(path.join(modulesDir, modules[i])));
@@ -262,7 +266,7 @@ function buildDir(start, dir) {
 }
 
 gulp.task('build:npm', function (done) {
-  var w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
+  let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
 
   w.then(function () {
     done();
@@ -273,12 +277,12 @@ gulp.task('build:npm', function (done) {
 });
 
 function _themeDirs(basePath) {
-  var themes = [];
+  let themes = [];
   if (fs.existsSync(basePath)) {
-    var tmp = fs.readdirSync(basePath);
+    let tmp = fs.readdirSync(basePath);
     tmp.forEach(function (dir) {
-      var theme = path.join(basePath, dir);
-      var stat = fs.statSync(theme);
+      let theme = path.join(basePath, dir);
+      let stat = fs.statSync(theme);
       if (stat.isDirectory()) {
         themes.push(theme);
       }
@@ -288,12 +292,12 @@ function _themeDirs(basePath) {
 }
 
 function themeDirs() {
-  var themes = _themeDirs(path.join(platformPath, 'view'));
-  var pth = path.join(platformPath, 'modules');
-  var tmp = fs.readdirSync(pth);
+  let themes = _themeDirs(path.join(platformPath, 'view'));
+  let pth = path.join(platformPath, 'modules');
+  let tmp = fs.readdirSync(pth);
   tmp.forEach(function (dir) {
-    var module = path.join(pth, dir);
-    var stat = fs.statSync(module);
+    let module = path.join(pth, dir);
+    let stat = fs.statSync(module);
     if (stat.isDirectory()) {
       themes.push(path.join(module, 'view'));
       Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
@@ -302,10 +306,10 @@ function themeDirs() {
   pth = path.join(platformPath, 'applications');
   tmp = fs.readdirSync(pth);
   tmp.forEach(function (dir) {
-    var module = path.join(pth, dir);
-    var stat = fs.statSync(module);
+    let module = path.join(pth, dir);
+    let stat = fs.statSync(module);
     if (stat.isDirectory()) {
-      var themesDir = path.join(module, 'themes');
+      let themesDir = path.join(module, 'themes');
       if (fs.existsSync(themesDir)) {
         Array.prototype.push.apply(themes, _themeDirs(themesDir));
       } else {
@@ -317,9 +321,9 @@ function themeDirs() {
 }
 
 gulp.task('build:bower', function (done) {
-  var themes = themeDirs();
-  var start = null;
-  for (var i = 0; i < themes.length; i++) {
+  let themes = themeDirs();
+  let start = null;
+  for (let i = 0; i < themes.length; i++) {
     if (start) {
       start = start.then(bower(themes[i]));
     } else {
@@ -331,17 +335,17 @@ gulp.task('build:bower', function (done) {
   }
   start.then(function () {
     done();
-  }).
-  catch(function (err) {
-    console.error(err);
-    done(err);
-  });
+  })
+    .catch(function (err) {
+      console.error(err);
+      done(err);
+    });
 });
 
 gulp.task('compile:less', function (done) {
-  var themes = themeDirs();
-  var start = null;
-  for (var i = 0; i < themes.length; i++) {
+  let themes = themeDirs();
+  let start = null;
+  for (let i = 0; i < themes.length; i++) {
     if (start) {
       start = start.then(compileLess(themes[i]));
     } else {
@@ -354,17 +358,17 @@ gulp.task('compile:less', function (done) {
 
   start.then(function () {
     done();
-  }).
-  catch(function (err) {
-    console.error(err);
-    done(err);
-  });
+  })
+    .catch(function (err) {
+      console.error(err);
+      done(err);
+    });
 });
 
 gulp.task('minify:css', function (done) {
-  var themes = themeDirs();
-  var start = null;
-  for (var i = 0; i < themes.length; i++) {
+  let themes = themeDirs();
+  let start = null;
+  for (let i = 0; i < themes.length; i++) {
     if (start) {
       start = start.then(minifyCSS(themes[i]));
     } else {
@@ -383,9 +387,9 @@ gulp.task('minify:css', function (done) {
 });
 
 gulp.task('minify:js', function (done) {
-  var themes = themeDirs();
-  var start = null;
-  for (var i = 0; i < themes.length; i++) {
+  let themes = themeDirs();
+  let start = null;
+  for (let i = 0; i < themes.length; i++) {
     if (start) {
       start = start.then(minifyJS(themes[i]));
     } else {
@@ -397,14 +401,14 @@ gulp.task('minify:js', function (done) {
   }
   start.then(function () {
     done();
-  }).
-  catch(function (err) {
-    console.error(err);
-    done(err);
-  });
+  })
+    .catch(function (err) {
+      console.error(err);
+      done(err);
+    });
 });
 
-function setup(appDir, scope, log) {
+function setup(appDir) { // Неиспользуемые переменные, scope, log
   return function (deps) {
     return deployer(appDir)
       .then((dep) => {
@@ -415,6 +419,18 @@ function setup(appDir, scope, log) {
   };
 }
 
+/**
+ * Импорт данных приложения
+ * @param {string} appDir каталог приложения
+ * @param scope
+ * @param scope.roleAccessManager
+ * @param scope.auth
+ * @param scope.dataRepo
+ * @param scope.dbSync
+ * @param {Function} log - логгер
+ * @param dep
+ * @returns {Function}
+ */
 function appImporter(appDir, scope, log, dep) {
   return function () {
     let ns = dep ? dep.namespace || '' : '';
@@ -431,16 +447,22 @@ function appImporter(appDir, scope, log, dep) {
   };
 }
 
-gulp.task('setup', function (done) {
-  console.log('Установка приложений.');
-  var config = require('../config');
-  var di = require('core/di');
+gulp.task('deploy', function (done) {
+  console.log('Развертывание и импорт данных приложений.');
+  /**
+   * Параметры конфигруации сборки
+   * @property {object} log - параметры логгирования
+   * @property {object} bootstrap - параметры загрузки
+   * @property {object} di - параметры интерфейсов данных
+   */
+  let config = require('../config');
+  let di = require('core/di');
 
-  var IonLogger = require('core/impl/log/IonLogger');
+  let IonLogger = require('core/impl/log/IonLogger');
 
-  var sysLog = new IonLogger(config.log || {});
+  let sysLog = new IonLogger(config.log || {});
 
-  var scope = null;
+  let scope = null;
 
   let appDir = path.join(platformPath, 'applications');
   let applications = fs.readdirSync(appDir);
@@ -452,6 +474,10 @@ gulp.task('setup', function (done) {
     },
     null,
     ['auth', 'rtEvents', 'sessionHandler'])
+  /**
+   * @param {Object} scp
+   * @param {Object} scp.dataSources
+   */
     .then((scp) => {
       scope = scp;
       let stage1;
@@ -467,7 +493,7 @@ gulp.task('setup', function (done) {
 
         if (stage1) {
           return stage1.then(() => {
-            console.log('Установка приложений завершена.');
+            console.log('Развертывание приложений завершено.');
             return scp.dataSources.disconnect();
           });
         }
@@ -510,11 +536,11 @@ gulp.task('setup', function (done) {
     .catch((err) => done(err));
 });
 
-gulp.task('install', function (done) {
-  console.log('Установка платформы ION.');
-  runSequence('build', 'setup', function (err) {
+gulp.task('assemble', function (done) {
+  console.log('Сборка и развертывание платформы и приложений ION.');
+  runSequence('build', 'deploy', function (err) {
     if (!err) {
-      console.log('Платформа ION установлена.');
+      console.log('Выполнена сборка и развертывание платформы и приложений ION.');
     }
     done(err);
   });

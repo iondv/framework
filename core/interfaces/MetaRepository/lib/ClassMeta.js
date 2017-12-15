@@ -2,8 +2,60 @@
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
+const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
+
+function sysPm(name) {
+  return {
+    orderNumber: 0,
+    name: name,
+    caption: name,
+    type: 0,
+    size: 500,
+    decimals: 0,
+    allowedFileTypes: null,
+    maxFileCount: 0,
+    nullable: true,
+    readonly: true,
+    indexed: false,
+    unique: false,
+    autoassigned: false,
+    hint: null,
+    defaultValue: null,
+    refClass: "",
+    itemsClass: "",
+    backRef: "",
+    backColl: "",
+    binding: "",
+    semantic: null,
+    selConditions: [],
+    selSorting: [],
+    selectionProvider: null,
+    indexSearch: false,
+    eagerLoading: false,
+    formula: null
+  };
+}
+
+/**
+ * @param {ClassMeta} cm
+ */
+function loadPropertyMetas(cm) {
+  let properties = cm.plain.properties.sort(function (a,b) {
+    return a.orderNumber - b.orderNumber;
+  });
+
+  if (!cm.plain.ancestor) {
+    cm.propertyMetas.__class = sysPm('__class');
+    cm.propertyMetas.__classTitle = sysPm('__classTitle');
+  }
+
+  for (let i = 0; i < properties.length; i++) {
+    let pm = clone(properties[i]);
+    cm.propertyMetas[properties[i].name] = pm;
+  }
+}
 
 function ClassMeta(metaObject) {
 
@@ -20,6 +72,8 @@ function ClassMeta(metaObject) {
   this._semanticAttrs = [];
 
   this._semanticFunc = null;
+
+  loadPropertyMetas(this);
 
   this.getVersion = function () {
     return this.plain.version;
