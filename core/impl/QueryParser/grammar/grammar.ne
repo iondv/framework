@@ -1,26 +1,31 @@
+@{%
+
+const F=require('./../../../FunctionCodes');
+
+%}
+
 
 # Filter
 # ==========
 
 filter -> 
-  expression {% id %}
-  | expression __ expressionType __ expression {% d => { return {[d[2]]: [d[0], d[4]]} } %}
-  | filter __ expressionType __ filter {% d => { return {[d[2]]: [d[0], d[4]]} } %}
-
+  filter __ expressionType __ expression {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
+  | notx __ filter {% d => { return {[F[d[0]]]: [d[2]]} } %}
+  | expression {% id %}
 
 # Expression
 # ==========
 
 expression -> 
   expressionBody {% id %}
-  | "(" _ expressionBody _ ")" {% d => { return d[2] } %}
+  | "(" _ filter _ ")" {% d => { return d[2] } %}
 
-expressionBody -> expressionNode _ expressionType _ expressionNode {% d => { return {[d[2]]: [d[0], d[4]]} } %}
+expressionBody -> expressionNode _ expressionType _ expressionNode {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
 
 expressionNode -> 
   attribute {% id %}
-  | String {% id %}
-  | Number {% id %}
+  | string {% id %}
+  | number {% id %}
 
 expressionType -> 
   conditionType
@@ -40,9 +45,10 @@ conditionType ->
   | "<>" {% d => { return 'EMPTY' } %}
 
 operationType -> 
-  "AND" {% d => { return 'AND' } %}
-  | "OR" {% d => { return 'OR' } %}
-  | "NOT" {% d => { return 'NOT' } %}
+  AND {% d => { return 'AND' } %}
+  | OR {% d => { return 'OR' } %}
+
+notx -> NOT {% d => { return 'NOT' } %}
 
 mathType -> 
   "+" {% d => { return 'ADD' } %}
@@ -52,12 +58,19 @@ mathType ->
 
 attribute -> [$_a-zA-Z] [$_a-zA-Z0-9-]:* {% d => { return d[0] + d[1].join('')} %}
 
+# Keywords
+# ==========
+
+AND -> [Aa] [Nn] [Dd]
+OR -> [Oo] [Rr]
+NOT -> [Nn] [Oo] [Tt]
+
 # Primitives
 # ==========
  
 # Numbers
  
-Number -> _number {% function(d) {return parseFloat(d[0])} %}
+number -> _number {% function(d) {return parseFloat(d[0])} %}
  
 _posint ->
   [0-9] {% id %}
@@ -78,7 +91,7 @@ _number ->
  
 #Strings
  
-String -> "\"" _string "\"" {% function(d) {return d[1]; } %}
+string -> "\"" _string "\"" {% function(d) {return d[1]; } %}
  
 _string ->
   null {% function() {return ""; } %}

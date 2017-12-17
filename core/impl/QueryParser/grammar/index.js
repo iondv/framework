@@ -2,18 +2,22 @@
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) {return x[0]; }
+
+
+const F=require('./../../../FunctionCodes');
+
 var grammar = {
     Lexer: undefined,
     ParserRules: [
+    {"name": "filter", "symbols": ["filter", "__", "expressionType", "__", "expression"], "postprocess": d => { return {[F[d[2]]]: [d[0], d[4]]} }},
+    {"name": "filter", "symbols": ["notx", "__", "filter"], "postprocess": d => { return {[F[d[0]]]: [d[2]]} }},
     {"name": "filter", "symbols": ["expression"], "postprocess": id},
-    {"name": "filter", "symbols": ["expression", "__", "expressionType", "__", "expression"], "postprocess": d => { return {[d[2]]: [d[0], d[4]]} }},
-    {"name": "filter", "symbols": ["filter", "__", "expressionType", "__", "filter"], "postprocess": d => { return {[d[2]]: [d[0], d[4]]} }},
     {"name": "expression", "symbols": ["expressionBody"], "postprocess": id},
-    {"name": "expression", "symbols": [{"literal":"("}, "_", "expressionBody", "_", {"literal":")"}], "postprocess": d => { return d[2] }},
-    {"name": "expressionBody", "symbols": ["expressionNode", "_", "expressionType", "_", "expressionNode"], "postprocess": d => { return {[d[2]]: [d[0], d[4]]} }},
+    {"name": "expression", "symbols": [{"literal":"("}, "_", "filter", "_", {"literal":")"}], "postprocess": d => { return d[2] }},
+    {"name": "expressionBody", "symbols": ["expressionNode", "_", "expressionType", "_", "expressionNode"], "postprocess": d => { return {[F[d[2]]]: [d[0], d[4]]} }},
     {"name": "expressionNode", "symbols": ["attribute"], "postprocess": id},
-    {"name": "expressionNode", "symbols": ["String"], "postprocess": id},
-    {"name": "expressionNode", "symbols": ["Number"], "postprocess": id},
+    {"name": "expressionNode", "symbols": ["string"], "postprocess": id},
+    {"name": "expressionNode", "symbols": ["number"], "postprocess": id},
     {"name": "expressionType", "symbols": ["conditionType"]},
     {"name": "expressionType", "symbols": ["operationType"]},
     {"name": "expressionType", "symbols": ["mathType"]},
@@ -28,12 +32,9 @@ var grammar = {
     {"name": "conditionType", "symbols": ["conditionType$string$3"], "postprocess": d => { return 'GREATER_OR_EQUAL' }},
     {"name": "conditionType$string$4", "symbols": [{"literal":"<"}, {"literal":">"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "conditionType", "symbols": ["conditionType$string$4"], "postprocess": d => { return 'EMPTY' }},
-    {"name": "operationType$string$1", "symbols": [{"literal":"A"}, {"literal":"N"}, {"literal":"D"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "operationType", "symbols": ["operationType$string$1"], "postprocess": d => { return 'AND' }},
-    {"name": "operationType$string$2", "symbols": [{"literal":"O"}, {"literal":"R"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "operationType", "symbols": ["operationType$string$2"], "postprocess": d => { return 'OR' }},
-    {"name": "operationType$string$3", "symbols": [{"literal":"N"}, {"literal":"O"}, {"literal":"T"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "operationType", "symbols": ["operationType$string$3"], "postprocess": d => { return 'NOT' }},
+    {"name": "operationType", "symbols": ["AND"], "postprocess": d => { return 'AND' }},
+    {"name": "operationType", "symbols": ["OR"], "postprocess": d => { return 'OR' }},
+    {"name": "notx", "symbols": ["NOT"], "postprocess": d => { return 'NOT' }},
     {"name": "mathType", "symbols": [{"literal":"+"}], "postprocess": d => { return 'ADD' }},
     {"name": "mathType", "symbols": [{"literal":"-"}], "postprocess": d => { return 'SUB' }},
     {"name": "mathType", "symbols": [{"literal":"*"}], "postprocess": d => { return 'MUL' }},
@@ -41,7 +42,10 @@ var grammar = {
     {"name": "attribute$ebnf$1", "symbols": []},
     {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", /[$_a-zA-Z0-9-]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "attribute", "symbols": [/[$_a-zA-Z]/, "attribute$ebnf$1"], "postprocess": d => { return d[0] + d[1].join('')}},
-    {"name": "Number", "symbols": ["_number"], "postprocess": function(d) {return parseFloat(d[0])}},
+    {"name": "AND", "symbols": [/[Aa]/, /[Nn]/, /[Dd]/]},
+    {"name": "OR", "symbols": [/[Oo]/, /[Rr]/]},
+    {"name": "NOT", "symbols": [/[Nn]/, /[Oo]/, /[Tt]/]},
+    {"name": "number", "symbols": ["_number"], "postprocess": function(d) {return parseFloat(d[0])}},
     {"name": "_posint", "symbols": [/[0-9]/], "postprocess": id},
     {"name": "_posint", "symbols": ["_posint", /[0-9]/], "postprocess": function(d) {return d[0] + d[1]}},
     {"name": "_int", "symbols": [{"literal":"-"}, "_posint"], "postprocess": function(d) {return d[0] + d[1]; }},
@@ -50,7 +54,7 @@ var grammar = {
     {"name": "_float", "symbols": ["_int", {"literal":"."}, "_posint"], "postprocess": function(d) {return d[0] + d[1] + d[2]; }},
     {"name": "_number", "symbols": ["_float"], "postprocess": id},
     {"name": "_number", "symbols": ["_float", {"literal":"e"}, "_int"], "postprocess": function(d){return d[0] + d[1] + d[2]; }},
-    {"name": "String", "symbols": [{"literal":"\""}, "_string", {"literal":"\""}], "postprocess": function(d) {return d[1]; }},
+    {"name": "string", "symbols": [{"literal":"\""}, "_string", {"literal":"\""}], "postprocess": function(d) {return d[1]; }},
     {"name": "_string", "symbols": [], "postprocess": function() {return ""; }},
     {"name": "_string", "symbols": ["_string", "_stringchar"], "postprocess": function(d) {return d[0] + d[1];}},
     {"name": "_stringchar", "symbols": [/[^\\"]/], "postprocess": id},
