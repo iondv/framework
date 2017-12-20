@@ -355,57 +355,58 @@ function WorkflowProvider(options) {
                 });
               }
 
-                let context = buildContext(item, tOptions);
-                return calculations
-                  .then(() => typeof nextState._checker === 'function' ? nextState._checker.apply(context) : true)
-                  .then((allowed) => {
-                    if (!allowed) {
-                      throw new IonError(
-                          Errors.CONDITION_VIOLATION,
-                          {
-                            info: item.getClassName() + '@' + item.getItemId(),
-                            state: nextState.caption,
-                            workflow: wf.caption
-                          }
-                        );
-                    }
+              let context = buildContext(item, tOptions);
+              return calculations
+                .then(() => typeof nextState._checker === 'function' ? nextState._checker.apply(context) : true)
+                .then((allowed) => {
+                  if (!allowed) {
+                    throw new IonError(
+                        Errors.CONDITION_VIOLATION,
+                        {
+                          info: item.getClassName() + '@' + item.getItemId(),
+                          state: nextState.caption,
+                          workflow: wf.caption
+                        }
+                      );
+                  }
 
-                    return _this.trigger({
-                        type: workflow + '.' + nextState.name,
-                        item: item
-                      })
-                      .then((e) => {
-                        if (Array.isArray(e.results) && e.results.length) {
-                          for (let i = 0; i < e.results.length; i++) {
-                            if (e.results[i] && typeof e.results[i] === 'object') {
-                              for (let nm in e.results[i]) {
-                                if (e.results[i].hasOwnProperty(nm)) {
-                                  if (!updates) {
-                                    updates = {};
-                                  }
-                                  updates[nm] = e.results[i][nm];
+                  return _this.trigger({
+                      user: tOptions.user || null,
+                      type: workflow + '.' + nextState.name,
+                      item: item
+                    })
+                    .then((e) => {
+                      if (Array.isArray(e.results) && e.results.length) {
+                        for (let i = 0; i < e.results.length; i++) {
+                          if (e.results[i] && typeof e.results[i] === 'object') {
+                            for (let nm in e.results[i]) {
+                              if (e.results[i].hasOwnProperty(nm)) {
+                                if (!updates) {
+                                  updates = {};
                                 }
+                                updates[nm] = e.results[i][nm];
                               }
                             }
                           }
                         }
+                      }
 
-                        if (updates) {
-                          return options.dataRepo.editItem(
-                            item.getMetaClass().getCanonicalName(),
-                            item.getItemId(),
-                            updates,
-                            tOptions.changeLogger,
-                            {
-                              user: tOptions.user
-                            }
-                          );
-                        }
-                        return item;
-                      })
-                      .then((item) => move(item, workflow, nextState));
-                  });
-              }
+                      if (updates) {
+                        return options.dataRepo.editItem(
+                          item.getMetaClass().getCanonicalName(),
+                          item.getItemId(),
+                          updates,
+                          tOptions.changeLogger,
+                          {
+                            user: tOptions.user
+                          }
+                        );
+                      }
+                      return item;
+                    })
+                    .then((item) => move(item, workflow, nextState));
+                });
+            }
           }
           return Promise.reject(
             new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})
@@ -472,6 +473,7 @@ function WorkflowProvider(options) {
           })
           .then(() =>
             _this.trigger({
+              user: tOptions.user || null,
               type: workflow + '.' + target.name,
               item: item
             })
