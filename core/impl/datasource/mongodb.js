@@ -1567,6 +1567,7 @@ function MongoDs(config) {
     let resultAttrs = [];
     let prefilter, postfilter, redactFilter, jl;
     let doGroup = false;
+    let fetchFields = false;
     let analise = {
       needRedact: false,
       needPostFilter: false
@@ -1583,7 +1584,6 @@ function MongoDs(config) {
         let expr = {$group: {}};
         expr.$group._id = null;
         let attrs = {_id: false};
-        let fetchFields = false;
         if (options.fields) {
           for (let tmp in options.fields) {
             if (options.fields.hasOwnProperty(tmp)) {
@@ -1714,7 +1714,7 @@ function MongoDs(config) {
         }
       }
 
-      if (doGroup || result.length) {
+      if (doGroup || result.length || (fetchFields && forcedStages.length)) {
         Array.prototype.push.apply(result, groupStages);
       }
 
