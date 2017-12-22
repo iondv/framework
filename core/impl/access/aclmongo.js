@@ -28,10 +28,8 @@ function MongoAcl(config) {
    * @private
    */
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      _this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
-      resolve();
-    });
+    this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+    return Promise.resolve();
   };
 
   /**
@@ -103,35 +101,35 @@ function MongoAcl(config) {
    */
   this._getPermissions = function (subject, resources, skipGlobals) {
     return new Promise(function (resolve, reject) {
-      var r = Array.isArray(resources) ? resources : [resources];
+      let r = Array.isArray(resources) ? resources : [resources];
+      let returnGlobal = r.indexOf(_this.globalMarker) >= 0;
       if (!skipGlobals) {
         if (r.indexOf(_this.globalMarker) < 0) {
           r = r.concat([_this.globalMarker]);
         }
       }
-      var res = null;
+      let res = null;
       _this.acl.allowedPermissions(subject, r, function (err, perm) {
         if (err) {
           return reject(err);
         }
         res = {};
-        var nm, i, hasGlobals;
-        hasGlobals = false;
-        var globalPermissions = {};
+        let hasGlobals = false;
+        let globalPermissions = {};
         if (!skipGlobals) {
           if (perm.hasOwnProperty(_this.globalMarker)) {
-            for (i = 0; i < perm[_this.globalMarker].length; i++) {
+            for (let i = 0; i < perm[_this.globalMarker].length; i++) {
               globalPermissions[perm[_this.globalMarker][i]] = true;
               hasGlobals = true;
             }
           }
         }
 
-        if (perm.hasOwnProperty(_this.globalMarker)) {
+        if (perm.hasOwnProperty(_this.globalMarker) && !returnGlobal) {
           delete perm[_this.globalMarker];
         }
 
-        for (nm in perm) {
+        for (let nm in perm) {
           if (perm.hasOwnProperty(nm)) {
             if (perm[nm].length || hasGlobals) {
               res[nm] = clone(globalPermissions);
@@ -142,7 +140,7 @@ function MongoAcl(config) {
                 res[nm][Permissions.USE] = true;
                 res[nm][Permissions.FULL] = true;
               } else {
-                for (i = 0; i < perm[nm].length; i++) {
+                for (let i = 0; i < perm[nm].length; i++) {
                   res[nm][perm[nm][i]] = true;
                 }
               }
@@ -159,9 +157,9 @@ function MongoAcl(config) {
             return reject(err);
           }
 
-          for (var nm in perm) {
+          for (let nm in perm) {
             if (perm.hasOwnProperty(nm) && res.hasOwnProperty(nm)) {
-              for (i = 0; i < perm[nm].length; i++) {
+              for (let i = 0; i < perm[nm].length; i++) {
                 res[nm][perm[nm][i]] = true;
               }
             }

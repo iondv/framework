@@ -283,6 +283,27 @@
           "dataRepo": "ion://dataRepo",
           "calc": "ion://calculator"
         }
+      },
+      "cachedDataRepo": {
+        "module": "core/impl/datarepository/CachedDataRepository",
+        "options": {
+          "data": "ion://dataRepo",
+          "cache": "ion://[[cache.module]]",
+          "fileStorage": "ion://fileStorage",
+          "imageStorage": "ion://imageStorage"
+        }
+      },
+      "securedDataRepo": {
+        "module": "core/impl/datarepository/SecuredDataRepository",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "data": "ion://cachedDataRepo",
+          "meta": "ion://metaRepo",
+          "acl": "ion://aclProvider",
+          "keyProvider": "ion://keyProv",
+          "workflow": "ion://workflows"
+        }
       }
     }
 }
