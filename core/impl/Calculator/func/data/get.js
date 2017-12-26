@@ -24,7 +24,7 @@ module.exports = function (dataRepo) {
                 }
               }
               return dataRepo
-                .getList(args[0], filter.length ? {[F.AND]: filter} : {})
+                .getList(args[0], filter.length ? {filter: {[F.AND]: filter}} : {})
                 .then((data) => data.length ? data[0].getItemId() : null);
             }
           } else {
