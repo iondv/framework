@@ -983,6 +983,8 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.skipEnrich]
    * @param {Boolean} [options.skipCalculations]
    * @param {{}} [options.needed]
+   * @param {Boolean} [options.skipAutoAssign]
+   * @param {Boolean} [options.reload]
    */
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
@@ -1036,11 +1038,11 @@ function IonDataRepository(options) {
           opts.count = 1;
           opts.joins = [];
           fetcher = prepareFilterValues(cm, opts.filter, opts.joins)
-            .then(function (filter) {
+            .then((filter) => {
               opts.filter = filter;
               return _this.ds.fetch(tn(rcm), opts);
             })
-            .then(function (data) {
+            .then((data) => {
               for (let i = 0; i < data.length; i++) {
                 let item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
                 return loadFiles(item, _this.fileStorage, _this.imageStorage);
@@ -1049,7 +1051,11 @@ function IonDataRepository(options) {
             });
         }
       } else {
-        fetcher = autoAssign(cm, obj.base, true, options.user).then(()=>obj);
+        if (options.skipAutoAssign) {
+          fetcher = Promise.resolve(obj);
+        } else {
+          fetcher = autoAssign(cm, obj.base, true, options.user).then(()=>obj);
+        }
       }
     } else {
       throw new IonError(Errors.BAD_PARAMS, {method: 'getItem'});
