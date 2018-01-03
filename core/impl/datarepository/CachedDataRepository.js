@@ -5,6 +5,7 @@
 
 const DataRepositoryModule = require('core/interfaces/DataRepository');
 const DataRepository = DataRepositoryModule.DataRepository;
+const Item = DataRepositoryModule.Item;
 const CacheProxy = require('core/impl/cache/CacheProxy');
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
 const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
@@ -180,7 +181,6 @@ function CachedDataRepository(options) {
     return function () {
       return uncacheItem(params.className, params.id, processed).then(function (item) {
         references[nm] = item;
-        return Promise.resolve();
       });
     };
   }
@@ -189,19 +189,24 @@ function CachedDataRepository(options) {
     return function () {
       return uncacheItem(params.className, params.id, processed).then(function (item) {
         coll.push(item);
-        return Promise.resolve();
       });
     };
   }
 
   function uncacheItem(className, id, processed) {
+    if (className instanceof Item) {
+      if (!id) {
+        id = className.getItemId();
+      }
+      className = className.getClassName();
+    }
     if (processed && processed.hasOwnProperty(className + '@' + id)) {
       return Promise.resolve(processed[className + '@' + id]);
     }
     return cache.get(className + '@' + id)
-      .then(function (item) {
+      .then((item) => {
         if (!item) {
-          return Promise.resolve(null);
+          return null;
         }
 
         var result = _this._wrap(className, item.base);
@@ -319,21 +324,18 @@ function CachedDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    */
   this._getItem = function (obj, id, options) {
+    if (obj instanceof Item) {
+      if (!options.reload) {
+        return dataRepo.getItem(obj, id, options);
+      }
+    }
     return uncacheItem(obj, id)
-      .then(function (item) {
+      .then((item) => {
         if (item) {
-          return Promise.resolve(item);
+          return item;
         }
         return dataRepo.getItem(obj, id, options)
-          .then(function (item) {
-            if (!item) {
-              return Promise.resolve(item);
-            }
-            return cacheItem(item)
-              .then(function () {
-                return Promise.resolve(item);
-              });
-          });
+          .then((item) => !item ? item : cacheItem(item).then(() => item));
       });
   };
 

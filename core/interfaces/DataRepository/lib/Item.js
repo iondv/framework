@@ -79,8 +79,8 @@ function Item(id, base, classMeta) {
    * @returns {Item | null}
    */
   this.getAggregate = function (name) {
-    var props = this.getProperties();
-    var p = props[name];
+    let props = this.getProperties();
+    let p = props[name];
     if (p && p.getType() === PropertyTypes.REFERENCE) {
       return this.references[name] || null;
     }
@@ -92,8 +92,8 @@ function Item(id, base, classMeta) {
    * @returns {Array | null}
    */
   this.getAggregates = function (name) {
-    var props = this.getProperties();
-    var p = props[name];
+    let props = this.getProperties();
+    let p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
       return this.collections[name] || null;
     }
@@ -106,8 +106,8 @@ function Item(id, base, classMeta) {
     }
 
     if (_this.base.hasOwnProperty(name)) {
-      var props = _this.getProperties();
-      var p = props[name];
+      let props = _this.getProperties();
+      let p = props[name];
       if (p && (
         p.getType() === PropertyTypes.FILE ||
         p.getType() === PropertyTypes.IMAGE ||
@@ -124,7 +124,7 @@ function Item(id, base, classMeta) {
   }
 
   function setToBase(name,value) {
-    var p = _this.property(name);
+    let p = _this.property(name);
     if (p) {
       if (value instanceof Item) {
         _this.references[name] = value;
@@ -179,9 +179,9 @@ function Item(id, base, classMeta) {
   };
 
   this.set = function (name, value) {
-    var dot = name.indexOf('.');
+    let dot = name.indexOf('.');
     if (dot > -1) {
-      var i = this.getAggregate(name.substring(0, dot));
+      let i = this.getAggregate(name.substring(0, dot));
       if (i) {
         i.set(name.substring(dot + 1), value);
       }

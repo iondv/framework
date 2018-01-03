@@ -212,14 +212,14 @@ function IonDataRepository(options) {
           if (props.hasOwnProperty(nm)) {
             let v = item.get(nm);
             if (v !== null) {
-              conditions.push({[Operations.EQUAL]: [nm, v]});
+              conditions.push({[Operations.EQUAL]: ['$' + nm, v]});
             }
           }
         }
       } else {
         for (let nm in item) {
           if (item.hasOwnProperty(nm)) {
-            conditions.push({[Operations.EQUAL]: [nm, item[nm]]});
+            conditions.push({[Operations.EQUAL]: ['$' + nm, item[nm]]});
           }
         }
       }
@@ -983,6 +983,8 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.skipEnrich]
    * @param {Boolean} [options.skipCalculations]
    * @param {{}} [options.needed]
+   * @param {Boolean} [options.skipAutoAssign]
+   * @param {Boolean} [options.reload]
    */
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
@@ -1027,25 +1029,33 @@ function IonDataRepository(options) {
           return Promise.resolve(null);
         });
     } else if (obj instanceof Item) {
-      if (obj.getItemId()) {
-        opts.filter = addFilterByItem({}, obj);
-        opts.filter = addDiscriminatorFilter(opts.filter, cm);
-        opts.count = 1;
-        opts.joins = [];
-        fetcher = prepareFilterValues(cm, opts.filter, opts.joins)
-          .then(function (filter) {
-            opts.filter = filter;
-            return _this.ds.fetch(tn(rcm), opts);
-          })
-          .then(function (data) {
-            for (let i = 0; i < data.length; i++) {
-              let item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-              return loadFiles(item, _this.fileStorage, _this.imageStorage);
-            }
-            return Promise.resolve(null);
-          });
+      if (options.reload) {
+        if (obj.getItemId()) {
+          return this._getItem(obj.getClassName(), obj.getItemId(), options);
+        } else {
+          opts.filter = addFilterByItem({}, obj);
+          opts.filter = addDiscriminatorFilter(opts.filter, cm);
+          opts.count = 1;
+          opts.joins = [];
+          fetcher = prepareFilterValues(cm, opts.filter, opts.joins)
+            .then((filter) => {
+              opts.filter = filter;
+              return _this.ds.fetch(tn(rcm), opts);
+            })
+            .then((data) => {
+              for (let i = 0; i < data.length; i++) {
+                let item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+                return loadFiles(item, _this.fileStorage, _this.imageStorage);
+              }
+              return Promise.resolve(null);
+            });
+        }
       } else {
-        fetcher = autoAssign(cm, obj.base, true, options.user).then(()=>obj);
+        if (options.skipAutoAssign) {
+          fetcher = Promise.resolve(obj);
+        } else {
+          fetcher = autoAssign(cm, obj.base, true, options.user).then(()=>obj);
+        }
       }
     } else {
       throw new IonError(Errors.BAD_PARAMS, {method: 'getItem'});

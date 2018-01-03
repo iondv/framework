@@ -3,14 +3,12 @@
  */
 'use strict';
 
-var CacheRepository = require('core/interfaces/CacheRepository');
+const CacheRepository = require('core/interfaces/CacheRepository');
 
 /**
- *
- * @param {Object} config
  * @constructor
  */
-function CacheProxy(config) {
+function CacheProxy() {
 
   /**
    *
@@ -19,9 +17,7 @@ function CacheProxy(config) {
    * @private
    */
   this._get = function (key) {
-    return new Promise(function (resolve, reject) {
-      resolve(null);
-    });
+    return Promise.resolve(null);
   };
 
   /**
@@ -32,9 +28,7 @@ function CacheProxy(config) {
    * @private
    */
   this._set = function (key, value) {
-    return new Promise(function (resolve, reject) {
-      resolve();
-    });
+    return Promise.resolve();
   };
 }
 
