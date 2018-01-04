@@ -283,6 +283,10 @@
           "dataRepo": "ion://dataRepo",
           "calc": "ion://calculator"
         }
+      },
+      "queryParser": {
+        "module": "core/impl/QueryParser",
+        "options": {}
       }
     }
 }
