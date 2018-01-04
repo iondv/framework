@@ -1628,58 +1628,68 @@ function IonDataRepository(options) {
    * @param {{}} [conditions]
    */
   function refreshCaches(item, conditions) {
-    let props = item.getMetaClass().getPropertyMetas();
-    let needed = [];
-    props.forEach((p)=> {
-      if (p.cached) {
-        needed[p.name] = true;
-      }
-    });
-    let updates = {};
-
-    let eager = [];
-    if (item.getMetaClass().isSemanticCached()) {
-      eager.push(...item.getMetaClass().getForcedEnrichment());
-    }
-
-    let cd = item.getMetaClass().getCacheDependencies();
-
-    eager.push(...cd);
-
-    let p = eager.length ?
-      _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
-      Promise.resolve(item);
-
-    return p.then((item) => calcProperties(item, false, needed, true))
-      .then((item) => {
-        let rcm = getRootType(item.getMetaClass());
-        if (!conditions) {
-          conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, item.getItemId()));
-          conditions = dataToFilter(conditions);
-        }
-        Object.keys(needed).forEach((a) => {
-          updates[a] = item.get(a);
-        });
-        if (item.getMetaClass().isSemanticCached()) {
-          updates.__semantic = item.getMetaClass().getSemantics(item);
-        }
-        return _this.ds.update(
-          tn(rcm),
-          conditions,
-          updates,
-          {skipResult: true}
-        ).then(() => item);
-      })
-      .then((item) => {
-        let p = Promise.resolve();
-        cd.forEach((a) => {
-          let dep = item.property(a.join('.')).evaluate();
-          if (dep) {
-            p = p.then(() => refreshCaches(dep));
-          }
-        });
-        return p.then(() => item);
+    if (Array.isArray(item)) {
+      let p = Promise.resolve();
+      item.forEach((item) => {
+        p = p.then(() => refreshCaches(item));
       });
+      return p;
+    }
+    if (item instanceof Item) {
+      let props = item.getMetaClass().getPropertyMetas();
+      let needed = [];
+      props.forEach((p)=> {
+        if (p.cached) {
+          needed[p.name] = true;
+        }
+      });
+      let updates = {};
+
+      let eager = [];
+      if (item.getMetaClass().isSemanticCached()) {
+        eager.push(...item.getMetaClass().getForcedEnrichment());
+      }
+
+      let cd = item.getMetaClass().getCacheDependencies();
+
+      eager.push(...cd);
+
+      let p = eager.length ?
+        _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
+        Promise.resolve(item);
+
+      return p.then((item) => calcProperties(item, false, needed, true))
+        .then((item) => {
+          let rcm = getRootType(item.getMetaClass());
+          if (!conditions) {
+            conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, item.getItemId()));
+            conditions = dataToFilter(conditions);
+          }
+          Object.keys(needed).forEach((a) => {
+            updates[a] = item.get(a);
+          });
+          if (item.getMetaClass().isSemanticCached()) {
+            updates.__semantic = item.getMetaClass().getSemantics(item);
+          }
+          return _this.ds.update(
+            tn(rcm),
+            conditions,
+            updates,
+            {skipResult: true}
+          ).then(() => item);
+        })
+        .then((item) => {
+          let p = Promise.resolve();
+          cd.forEach((a) => {
+            let dep = item.property(a.join('.')).evaluate();
+            if (dep) {
+              p = p.then(() => refreshCaches(dep));
+            }
+          });
+          return p.then(() => item);
+        });
+    }
+    return Promise.resolve(item);
   }
 
   /**
