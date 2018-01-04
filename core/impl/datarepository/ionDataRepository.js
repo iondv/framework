@@ -141,8 +141,8 @@ function IonDataRepository(options) {
    * @param {Object[]} validators
    * @returns {Promise}
    */
-  this._setValidators = function (validators) {
-    return new Promise(function (resolve) { resolve(); });
+  this._setValidators = function () {
+    return Promise.resolve();
   };
 
   function tn(cm) {
@@ -242,7 +242,7 @@ function IonDataRepository(options) {
    * @private
    * @returns {Item | null}
    */
-  this._wrap = function (className, data, version, options) {
+  this._wrap = function (className, data, version) {
     let acm = this.meta.getMeta(className, version);
     delete data._id;
     return new Item(this.keyProvider.formKey(acm, data), data, acm);
@@ -557,7 +557,7 @@ function IonDataRepository(options) {
         if (item instanceof Item) {
           let cm = item.getMetaClass();
           let props = item.getProperties();
-          if (!pcl.hasOwnProperty(cm.getName())) {
+          if (!pcl.hasOwnProperty(cm.getName()) && !cm.isSemanticCached()) {
             pcl[cm.getName()] = true;
             formForced(cm.getForcedEnrichment(), implicitForced, options);
           }
@@ -642,7 +642,7 @@ function IonDataRepository(options) {
   function calcItemsProperties(items, options) {
     let calcs = Promise.resolve();
     items.forEach((item) => {
-      calcs = calcs.then(()=>calcProperties(item, options.needed));
+      calcs = calcs.then(()=>calcProperties(item, false, options.needed));
     });
     return calcs.then(() => items);
   }
@@ -1063,7 +1063,7 @@ function IonDataRepository(options) {
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
       .then((item) => options.skipEnrich ? item : enrich(item, options))
-      .then((item) => options.skipCalculations ? item : calcProperties(item, options.needed));
+      .then((item) => options.skipCalculations ? item : calcProperties(item, false, options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
@@ -1318,9 +1318,7 @@ function IonDataRepository(options) {
         if (!updates[pm.name]) {
           return options.dataSource.update(tn(rcm), clrf, clr);
         }
-        return options.dataSource.update(tn(rcm), clrf, clr).then(function (r) {
-          return setBrLink(rcm, conds, ups);
-        });
+        return options.dataSource.update(tn(rcm), clrf, clr).then(() => setBrLink(rcm, conds, ups));
       }).catch(function (err) {
         return err === '_NOT_UNLINKED_' ? Promise.resolve() : Promise.reject(err);
       });
@@ -1626,6 +1624,65 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {Item} item
+   * @param {{}} [conditions]
+   */
+  function refreshCaches(item, conditions) {
+    let props = item.getMetaClass().getPropertyMetas();
+    let needed = [];
+    props.forEach((p)=> {
+      if (p.cached) {
+        needed[p.name] = true;
+      }
+    });
+    let updates = {};
+
+    let eager = [];
+    if (item.getMetaClass().isSemanticCached()) {
+      eager.push(...item.getMetaClass().getForcedEnrichment());
+    }
+
+    let cd = item.getMetaClass().getCacheDependencies();
+
+    eager.push(...cd);
+
+    let p = eager.length ?
+      _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
+      Promise.resolve(item);
+
+    return p.then((item) => calcProperties(item, false, needed, true))
+      .then((item) => {
+        let rcm = getRootType(item.getMetaClass());
+        if (!conditions) {
+          conditions = formUpdatedData(rcm, _this.keyProvider.keyToData(rcm, item.getItemId()));
+          conditions = dataToFilter(conditions);
+        }
+        Object.keys(needed).forEach((a) => {
+          updates[a] = item.get(a);
+        });
+        if (item.getMetaClass().isSemanticCached()) {
+          updates.__semantic = item.getMetaClass().getSemantics(item);
+        }
+        return _this.ds.update(
+          tn(rcm),
+          conditions,
+          updates,
+          {skipResult: true}
+        ).then(() => item);
+      })
+      .then((item) => {
+        let p = Promise.resolve();
+        cd.forEach((a) => {
+          let dep = item.property(a.join('.')).evaluate();
+          if (dep) {
+            p = p.then(() => refreshCaches(dep));
+          }
+        });
+        return p.then(() => item);
+      });
+  }
+
+  /**
    *
    * @param {String} classname
    * @param {Object} data
@@ -1701,6 +1758,7 @@ function IonDataRepository(options) {
         })
         .then((item) => updateBackRefs(item, cm, data))
         .then((item) => refUpdator(item, refUpdates, changeLogger))
+        .then((item) => refreshCaches(item))
         .then((item) => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then((item) =>
           options.skipResult ? null :
@@ -1715,7 +1773,7 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(changeLogger, options))
-        .then((item) => item ? calcProperties(item, options.skipResult) : null);
+        .then((item) => item ? calcProperties(item, options.skipResult, null) : null);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1835,6 +1893,7 @@ function IonDataRepository(options) {
             return updateBackRefs(item, cm, data, id);
           })
           .then((item) => refUpdator(item, refUpdates, changeLogger))
+          .then((item) => refreshCaches(item, conditions))
           .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
             if (!suppresEvent) {
@@ -1990,6 +2049,7 @@ function IonDataRepository(options) {
             return item;
           }
         })
+        .then((item) => refreshCaches(item, conditions))
         .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then((item) =>
           bubble(
@@ -2288,7 +2348,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this._put = function (master, collection, details, changeLogger, options) {
+  this._put = function (master, collection, details, changeLogger) {
     return _editCollection(master, collection, details, changeLogger, true);
   };
 
@@ -2301,7 +2361,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @returns {Promise}
    */
-  this._eject = function (master, collection, details, changeLogger, options) {
+  this._eject = function (master, collection, details, changeLogger) {
     return _editCollection(master, collection, details, changeLogger, false);
   };
 
