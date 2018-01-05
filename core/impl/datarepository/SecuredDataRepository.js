@@ -327,11 +327,12 @@ function SecuredDataRepository(options) {
       if (props.hasOwnProperty(nm)) {
         let p = props[nm];
         if (p.getType() === PropertyTypes.REFERENCE) {
-          result.push(classPrefix + p.meta._refClass.getCanonicalName());
           let ri = p.evaluate();
+          result.push(classPrefix + p.meta._refClass.getCanonicalName());
           if (ri instanceof Item) {
+            result.push(classPrefix + ri.getClassName());
             result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
-            Array.prototype.push.apply(result, attrResources(ri));
+            result.push(...attrResources(ri));
           } else if (p.getValue()) {
             result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue());
           }
@@ -359,21 +360,23 @@ function SecuredDataRepository(options) {
         if (p.getType() === PropertyTypes.REFERENCE) {
           let ri = p.evaluate();
           let tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
+          let rperm = permissions[tmp] || {};
+          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+
           if (ri instanceof Item) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
+            rperm = merge(true, permissions[tmp] || {}, rperm);
+            rcperm = merge(true, permissions[classPrefix + ri.getClassName()] || {}, rcperm);
             if (!ri.permissions) {
               ri.permissions =
-                merge(true, permissions[tmp] || {}, permissions[classPrefix + p.meta._refClass.getCanonicalName()]);
+                merge(true, rperm, rcperm);
             }
             ri.attrPermissions = attrPermissions(ri, permissions);
           }
 
-          let rperm = permissions[tmp] || {};
-          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
-
           result[p.getName()][Permissions.READ] =
             iperm[Permissions.READ] &&
-            rcperm[Permissions.READ];
+            (rperm[Permissions.READ] || rcperm[Permissions.READ]);
 
           if (p.meta.backRef) {
             result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] &&
@@ -440,18 +443,6 @@ function SecuredDataRepository(options) {
             permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
             permissions[classPrefix + item.getClassName()] || {}
           );
-          return aclProvider.getPermissions(options.user.id(), attrResources(item));
-        })
-        .then((ap) => {
-          item.attrPermissions = attrPermissions(item, ap);
-          if (workflow) {
-            return workflow.getStatus(item, options).then((status) => {
-              item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-              item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
-            });
-          }
-        })
-        .then(() => {
           if (roleConf) {
             let result = Promise.resolve();
             Object.keys(roleConf).forEach((role) => {
@@ -483,6 +474,16 @@ function SecuredDataRepository(options) {
               }
             });
             return result;
+          }
+        })
+        .then(() => aclProvider.getPermissions(options.user.id(), attrResources(item)))
+        .then((ap) => {
+          item.attrPermissions = attrPermissions(item, ap);
+          if (workflow) {
+            return workflow.getStatus(item, options).then((status) => {
+              item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+              item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
+            });
           }
         })
         .then(() => item);
