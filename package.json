@@ -61,6 +61,7 @@
     "moment-timezone": "^0.5.14",
     "mongodb": "^2.2.33",
     "morgan": "^1.9.0",
+    "nearley": "^2.11.0",
     "oauth2-server": "^3.0.0",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",

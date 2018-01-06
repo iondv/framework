@@ -4,7 +4,7 @@ function QueryParser() {
 
   /**
    * @param {String} query
-   * @returns {Promise}
+   * @returns {{}}
    */
   this.parse = function (query) {
     return this._parse(query);
