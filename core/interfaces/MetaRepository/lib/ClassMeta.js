@@ -1,7 +1,7 @@
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
+'use strict';
 const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
@@ -190,7 +190,9 @@ function ClassMeta(metaObject) {
         result[nm] = this.propertyMetas[nm];
       }
     }
-    return Object.values(result);
+    return Object.values(result).sort((a, b) => {
+      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+    });
   };
 
   this.isJournaling = function () {

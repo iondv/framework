@@ -26,6 +26,7 @@ module.exports = {
   format: require('./date/dateFormat'),
   concat: require('./string/concat'),
   substr: require('./string/substr'),
+  pad: require('./string/pad'),
   element: require('./arrays/element'),
   collect: require('./process/collect'),
   if: require('./condition/if'),

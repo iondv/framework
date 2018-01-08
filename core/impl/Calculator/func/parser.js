@@ -80,27 +80,6 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     return null;
   }
 
-  if (nm.indexOf('.') < 0) {
-    if (obj.hasOwnProperty(nm)) {
-      return obj[nm];
-    }
-  } else {
-    let pth = nm.split('.');
-    let ctx = obj;
-    for (let i = 0; i < pth.length; i++) {
-      if (ctx.hasOwnProperty(pth[i])) {
-        ctx = ctx[pth[i]];
-        if (typeof ctx !== 'object' || !ctx) {
-          return ctx;
-        }
-      }
-    }
-  }
-
-  if (obj.$context) {
-    return objProp(obj.$context, nm, dataRepoGetter);
-  }
-
   if (obj instanceof Item) {
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
@@ -174,6 +153,27 @@ function objProp(obj, nm, dataRepoGetter, needed) {
        default: return p.evaluate();
      }
     }
+  }
+
+  if (nm.indexOf('.') < 0) {
+    if (obj.hasOwnProperty(nm)) {
+      return obj[nm];
+    }
+  } else {
+    let pth = nm.split('.');
+    let ctx = obj;
+    for (let i = 0; i < pth.length; i++) {
+      if (ctx.hasOwnProperty(pth[i])) {
+        ctx = ctx[pth[i]];
+        if (typeof ctx !== 'object' || !ctx) {
+          return ctx;
+        }
+      }
+    }
+  }
+
+  if (obj.$context) {
+    return objProp(obj.$context, nm, dataRepoGetter);
   }
 
   return null;
