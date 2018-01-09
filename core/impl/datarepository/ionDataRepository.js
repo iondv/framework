@@ -1543,11 +1543,11 @@ function IonDataRepository(options) {
       bd.type = c.getCanonicalName() + '.' + eventType;
       bd.origin = e;
       return _this.trigger(bd)
-        .then(function (e2) {
+        .then((e2) => {
           if (e && Array.isArray(e.results)) {
             e2.results = e.results.concat(Array.isArray(e2.results) ? e2.results : []);
           }
-          return Promise.resolve(e2);
+          return e2;
         });
     };
   }
@@ -1560,19 +1560,12 @@ function IonDataRepository(options) {
    */
   function bubble(eventType, cm, data) {
     let c = cm;
-    let p = null;
+    let p = Promise.resolve();
     while (c) {
-      if (p) {
-        p = p.then(trgr(c, eventType, data));
-      } else {
-        p = trgr(c, eventType, data)();
-      }
+      p = p.then(trgr(c, eventType, data));
       c = c.getAncestor();
     }
-    if (p) {
-      return p;
-    }
-    return Promise.reject(new Error('Не передан класс объекта события.'));
+    return p;
   }
 
   function preWriteEventHandler(updates) {
@@ -1891,7 +1884,7 @@ function IonDataRepository(options) {
           .catch(wrapDsError('editItem', classname, null, null, cm))
           .then((data) => {
             if (!data) {
-              return Promise.reject(new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`}));
+              throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`});
             }
             let item = _this._wrap(data._class, data, data._classVer);
             if (updates._editor) {
@@ -2090,39 +2083,31 @@ function IonDataRepository(options) {
   this._deleteItem = function (classname, id, changeLogger, options) {
     let cm = this.meta.getMeta(classname);
     let rcm = getRootType(cm);
-    let base = null;
-    let dt = formUpdatedData(rcm, this.keyProvider.keyToData(rcm, id));
-    let item = this._wrap(classname, dt);
+    let item = null;
 
-    let conditions = dataToFilter(dt);
     let filter;
-    let p = prepareFilterValues(cm, conditions, []).then((f) => {filter = f;});
-    if (changeLogger) {
-      p = p
-        .then(() => this.ds.get(tn(rcm), filter))
-        .then((b) => {
-          base = b;
-          return bubble(
-            'pre-delete',
-            cm,
-            {
-              id: id,
-              item: b && this._wrap(cm.getCanonicalName(), b, cm.getVersion()),
-              user: options.user
-            }
-          );
-        });
-    } else {
-      p = bubble(
-        'pre-delete',
-        cm,
-        {
-          id: id,
-          user: options.user
+    return this._getItem(classname, id, options)
+      .then((found) => {
+        if (!found) {
+          throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`});
         }
-      );
-    }
-    return p
+        item = found;
+        let dt = formUpdatedData(rcm, this.keyProvider.keyToData(rcm, id));
+        let conditions = dataToFilter(dt);
+        return prepareFilterValues(cm, conditions, []);
+      })
+      .then((f) => {
+        filter = f;
+        return bubble(
+          'pre-delete',
+          cm,
+          {
+            id: id,
+            item: item,
+            user: options.user
+          }
+        );
+      })
       .then((e)=> {
         if (e && e.canceled) {
           return Promise.resolve(EVENT_CANCELED);
@@ -2134,23 +2119,17 @@ function IonDataRepository(options) {
         if (result === EVENT_CANCELED) {
           return Promise.resolve(EVENT_CANCELED);
         }
-        return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: base, updates: {}});
-      })
-      .then(
-        (result) => {
-          if (result === EVENT_CANCELED) {
-            return Promise.resolve();
-          }
-          return bubble(
+        return logChanges(changeLogger, {type: EventType.DELETE, item: item, base: item.base, updates: {}})
+          .then(() => bubble(
             'delete',
-            cm,
+            item.getMetaClass(),
             {
               id: id,
               user: options.user
             }
-          );
-        }
-      );
+          ))
+          .then((e) => refreshCaches(item).then(() => e));
+      });
   };
 
   /**
@@ -2437,9 +2416,7 @@ function IonDataRepository(options) {
               return _this._getList(detailCm.getCanonicalName(), options);
             }
           } else {
-            return Promise.reject(
-              new IonError(Errors.ITEM_NOT_FOUND, {info: `${master.getClassName()}@${master.getItemId()}`})
-            );
+            throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${master.getClassName()}@${master.getItemId()}`});
           }
         });
     }
