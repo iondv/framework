@@ -1878,7 +1878,7 @@ function IonDataRepository(options) {
               tn(rcm),
               conditions,
               updates,
-              {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)}
+              {skipResult: false}
             );
           })
           .catch(wrapDsError('editItem', classname, null, null, cm))
