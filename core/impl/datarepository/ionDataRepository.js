@@ -430,7 +430,7 @@ function IonDataRepository(options) {
 
   function getEnrichList(options) {
     return function () {
-      let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, linksByRef} = options;
+      let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, linksByRef, needed} = options;
       return _this._getList(cn,
         {
           sort: sort,
@@ -439,7 +439,8 @@ function IonDataRepository(options) {
           forceEnrichment: forced,
           ___implicitEnrichment: implForced,
           ___loaded: loaded,
-          linksByRef
+          linksByRef,
+          needed
         }
       ).then((items) => {
         if (!items || items.length === 0) {
@@ -532,7 +533,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, options) {
-    let {nestingDepth, forceEnrichment, __loaded, linksByRef, ___implicitEnrichment} = options;
+    let {nestingDepth, forceEnrichment, __loaded, linksByRef, ___implicitEnrichment, needed} = options;
     nestingDepth = nestingDepth || 0;
     let src = Array.isArray(src2) ? src2 : [src2];
     let srcByKey = {};
@@ -627,7 +628,8 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: __loaded,
                 attr: attrs[nm],
-                linksByRef
+                linksByRef,
+                needed: needed ? [] : null
               }));
           }
         }
@@ -662,6 +664,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
+    console.log(options.needed);
     options = clone(options || {});
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
