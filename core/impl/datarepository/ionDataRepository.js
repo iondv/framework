@@ -664,7 +664,6 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    console.log(options.needed);
     options = clone(options || {});
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
