@@ -433,7 +433,7 @@ function prepareFilterOption(cm, filter, joins, numGen, context) {
  * @param {DataSource} ds
  * @returns {Promise}
  */
-function prepareFilterValues(cm, filter, joins, ds) {
+function prepareFilterValues(cm, filter, joins) {
   try {
     return Promise.resolve(prepareFilterOption(cm, filter, joins, new NumGenerator()));
   } catch (e) {
@@ -814,16 +814,18 @@ module.exports.loadFiles = loadFiles;
 /**
  * @param {Item} item
  * @param {Boolean} [skip]
+ * @param {Array} [needed]
+ * @param {Boolean} [cached]
  * @returns {Promise}
  */
-function calcProperties(item, skip, needed) {
+function calcProperties(item, skip, needed, cached) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
   let calculations = Promise.resolve();
   let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
-    if (p._formula && (!needed || needed.hasOwnProperty(p.name))) {
+    if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
       calculations = calculations.then(()=>p._formula.apply(item))
         .then((result) => {
           item.calculated[p.name] = result;
