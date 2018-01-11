@@ -285,6 +285,7 @@ function SecuredDataRepository(options) {
           list.permissions = listPermissions;
           let result = Promise.resolve();
           let clearedList = [];
+          clearedList.total = list.total;
           list.forEach(
             (item) =>
               result = result
