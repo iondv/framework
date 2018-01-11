@@ -81,6 +81,9 @@ function objProp(obj, nm, dataRepoGetter, needed) {
   }
 
   if (obj instanceof Item) {
+    if (nm[0] === '$') {
+      nm = nm.substring(1);
+    }
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
@@ -166,7 +169,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
       if (ctx.hasOwnProperty(pth[i])) {
         ctx = ctx[pth[i]];
         if (ctx instanceof Item) {
-          if (i < length - 1) {
+          if (i < pth.length - 1) {
             return objProp(ctx, pth.slice(i + 1).join('.'), dataRepoGetter, needed);
           } else {
             return ctx;
@@ -243,7 +246,7 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
   }
 
   if (formula[0] === '$') {
-    return propertyGetter(formula.substring(1), dataRepoGetter);
+    return propertyGetter(formula, dataRepoGetter);
   }
 
   return formula;
@@ -272,7 +275,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   if (formula === null || typeof formula !== 'object') {
     if (typeof formula === 'string') {
       if (formula[0] === '$') {
-        return propertyGetter(formula.substring(1), dataRepoGetter);
+        return propertyGetter(formula, dataRepoGetter);
       }
     }
     return formula;
