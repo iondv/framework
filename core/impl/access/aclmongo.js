@@ -152,7 +152,7 @@ function MongoAcl(config) {
           return resolve(res);
         }
 
-        _this.acl.allowedPermissions(_this.globalMarker, r, function (err, perm) {
+        _this.acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
           if (err) {
             return reject(err);
           }

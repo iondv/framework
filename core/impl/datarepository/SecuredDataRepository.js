@@ -434,14 +434,21 @@ function SecuredDataRepository(options) {
           globalMarker,
           classPrefix + item.getClassName(),
           itemPrefix + item.getClassName() + '@' + item.getItemId()
-        ])
+        ],
+        true)
         .then((permissions) => {
-          if (roleConf && (!permissions[globalMarker] || !permissions[globalMarker][Permissions.READ])) {
-            delete permissions[classPrefix + item.getClassName()][Permissions.READ];
+          if (roleConf /*&& (!permissions[globalMarker] || !permissions[globalMarker][Permissions.READ])*/) {
+            if (permissions[classPrefix + item.getClassName()]) {
+              delete permissions[classPrefix + item.getClassName()][Permissions.READ];
+            }
+            if (permissions[globalMarker]) {
+              delete permissions[globalMarker][Permissions.READ];
+            }
           }
-          item.permissions = merge(
+          item.permissions = merge(true,
             permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
-            permissions[classPrefix + item.getClassName()] || {}
+            permissions[classPrefix + item.getClassName()] || {},
+            permissions[globalMarker] || {}
           );
           if (roleConf) {
             let result = Promise.resolve();
@@ -456,7 +463,7 @@ function SecuredDataRepository(options) {
                   }
                   if (options.user.isMe(actor)) {
                     result = result
-                      .then(() => aclProvider.getPermissions(role, resid))
+                      .then(() => aclProvider.getPermissions(role, resid, true))
                       .then((permissions) => {
                         if (permissions[resid]) {
                           for (let p in permissions[resid]) {
