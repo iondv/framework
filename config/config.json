@@ -108,7 +108,7 @@
           "authCallbacks": ["[[auth.callback]]"],
           "publicRegistration": "[[auth.registration]]",
           "exclude": "[[auth.exclude]]",
-          "acl": "ion://[[auth.aclProvider]]",
+          "acl": "ion://aclProvider",
           "inactiveTimeout": "[[auth.inactivityTimeout]]",
           "passwordLifetime": "[[auth.passwordLifeTime]]",
           "passwordMinLength": "[[auth.passwordMinLength]]",

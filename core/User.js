@@ -32,6 +32,10 @@ function User(data, coactors, tz) {
     ca[id] = true;
   };
 
+  this.coactors = function () {
+    return Object.keys(ca);
+  };
+
   this.timeZone = function () {
     return timezone;
   };
