@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Created by kras on 24.08.16.
  */
@@ -49,7 +50,7 @@ di('boot', config.bootstrap,
           name: name,
           pwd: pwd
         },
-        (err, u) => err ? reject(err) : resolve(scope)
+        (err) => err ? reject(err) : resolve(scope)
       );
     })
   )
