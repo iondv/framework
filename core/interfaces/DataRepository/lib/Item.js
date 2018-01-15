@@ -260,6 +260,9 @@ Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
   if (typeof semanticGetter === 'function') {
     return semanticGetter.call(this, dateCallback, circular);
   }
+  if (this.classMeta.isSemanticCached()) {
+    return this.base.__semantic;
+  }
   return this.classMeta.getSemantics(this, dateCallback, circular);
 };
 
