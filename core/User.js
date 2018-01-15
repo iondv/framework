@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Created by krasilneg on 07.06.17.
  */
@@ -29,6 +30,10 @@ function User(data, coactors, tz) {
 
   this.addCoactor = function (id) {
     ca[id] = true;
+  };
+
+  this.coactors = function () {
+    return Object.keys(ca);
   };
 
   this.timeZone = function () {

@@ -207,7 +207,9 @@ function ClassMeta(metaObject) {
         result[nm] = this.propertyMetas[nm];
       }
     }
-    return Object.values(result);
+    return Object.values(result).sort((a, b) => {
+      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+    });
   };
 
   this.isJournaling = function () {

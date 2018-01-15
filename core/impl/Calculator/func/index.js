@@ -27,6 +27,7 @@ module.exports = {
   format: require('./date/dateFormat'),
   concat: require('./string/concat'),
   substr: require('./string/substr'),
+  pad: require('./string/pad'),
   upper: require('./string/upper'),
   lower: require('./string/lower'),
   element: require('./arrays/element'),
