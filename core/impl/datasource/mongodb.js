@@ -230,13 +230,13 @@ function MongoDs(config) {
     return openDb()
       .then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        return new Promise(function (resolve, reject) {
-          _this.db.collection(type, {strict: true}, function (err, c) {
+        return new Promise((resolve, reject) => {
+          _this.db.collection(type, {strict: true}, (err, c) => {
             if (!c) {
               try {
                 _this.db.createCollection(type)
                   .then(resolve)
-                  .catch(e => reject(wrapError(err, 'create', type)));
+                  .catch(e => reject(wrapError(e, 'create', type)));
               } catch (e) {
                 return reject(e);
               }
