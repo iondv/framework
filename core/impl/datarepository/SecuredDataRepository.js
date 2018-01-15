@@ -248,11 +248,10 @@ function SecuredDataRepository(options) {
    * @return {Item}
    */
   function cenzor(item) {
-    if (item.permissions[Permissions.READ]) {
-      return item;
+    if (!item.permissions[Permissions.READ]) {
+      item.emptify();
     }
-    let data = {};
-    return dataRepo.wrap(item.getClassName(), data);
+    return item;
   }
 
   /**
@@ -487,12 +486,35 @@ function SecuredDataRepository(options) {
         .then(() => aclProvider.getPermissions(options.user.id(), attrResources(item)))
         .then((ap) => {
           item.attrPermissions = attrPermissions(item, ap);
+          let props = item.getProperties();
+          let w = Promise.resolve();
+          Object.values(props).forEach((p) => {
+            let items;
+            if (p.meta.type === PropertyTypes.REFERENCE) {
+              items = p.evaluate();
+              if (items instanceof Item) {
+                items = [items];
+              }
+            } else if (p.meta.type === PropertyTypes.COLLECTION) {
+              items = p.evaluate();
+            }
+            if (Array.isArray(items)) {
+              items.forEach((ri) => {
+                w = w
+                  .then(() => setItemPermissions(options)(ri))
+                  .then(cenzor);
+              });
+            }
+          });
           if (workflow) {
-            return workflow.getStatus(item, options).then((status) => {
-              item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-              item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
-            });
+            w = w
+              .then(() => workflow.getStatus(item, options))
+              .then((status) => {
+                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+                item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
+              });
           }
+          return w;
         })
         .then(() => item);
     };
