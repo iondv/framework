@@ -1144,26 +1144,6 @@ function IonDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
-   * @param {{}} pm
-   * @param {{}} updates
-   * @param {User} user
-   * @returns {Function}
-   */
-  function calcDefault(cm, pm, updates, user) {
-    return function () {
-      return Promise.resolve(pm._dvFormula.apply({$context: _this._wrap(cm.getCanonicalName(), updates), $uid: user ? user.id() : null}))
-        .then((result) => {
-          try {
-            updates[pm.name] = cast(result, pm.type);
-          } catch (err) {
-          }
-          return updates;
-        });
-    };
-  }
-
-  /**
-   * @param {ClassMeta} cm
    * @param {{}} updates
    * @param {Boolean} onlyDefaults
    * @param {String} uid
@@ -1181,12 +1161,11 @@ function IonDataRepository(options) {
     let keys = cm.getKeyProperties();
     let calcs = Promise.resolve(updates);
 
-    for (let i = 0;  i < properties.length; i++) {
-      let pm = properties[i];
+    properties.forEach((pm) => {
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
           updates[pm.name] = [];
-          continue;
+          return;
         }
 
         if (pm.autoassigned && (pm.defaultValue === null || pm.defaultValue === '') && !onlyDefaults) {
@@ -1210,7 +1189,22 @@ function IonDataRepository(options) {
           if (v === '$$uid') {
             updates[pm.name] = user ? user.id() : null;
           } else if (pm._dvFormula) {
-            calcs = calcs.then(calcDefault(cm, pm, updates, user));
+            if (!pm.autoassigned || !onlyDefaults) {
+              calcs = calcs
+                .then(() => {
+                  return pm._dvFormula.apply({
+                    $context: _this._wrap(cm.getCanonicalName(), updates),
+                    $uid: user ? user.id() : null
+                  });
+                })
+                .then((result) => {
+                  try {
+                    updates[pm.name] = cast(result, pm.type);
+                  } catch (err) {
+                  }
+                  return updates;
+                });
+            }
           } else {
             try {
               updates[pm.name] = cast(v, pm.type);
@@ -1221,7 +1215,7 @@ function IonDataRepository(options) {
           throw new IonError(Errors.NO_KEY_SPEC, {info: cm.getCaption() + '.' + pm.caption});
         }
       }
-    }
+    });
 
     return calcs;
   }
