@@ -107,6 +107,23 @@ function ClassMeta(metaObject) {
     return item.getItemId();
   };
 
+  this.isSemanticCached = function () {
+    return this.plain.semanticCached;
+  };
+
+  this.getCacheDependencies = function () {
+    let result = [];
+    if (this.getAncestor()) {
+      result.push(...this.getAncestor().getCacheDependencies());
+    }
+    if (Array.isArray(this.plain.cacheDependencies)) {
+      this.plain.cacheDependencies.forEach((a) => {
+        result.push(a.split('.'));
+      });
+    }
+    return result;
+  };
+
   this.getSemanticAttrs = function () {
     return this.plain.semantic && this._semanticAttrs.length ?
       this._semanticAttrs :
