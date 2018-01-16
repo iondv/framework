@@ -26,14 +26,28 @@ function AclMetaMap(options) {
   }
 
   /**
+   * @param {ClassMeta} cm
+   */
+  function locateMap(cm) {
+    if (options.map.hasOwnProperty(cm.getCanonicalName())) {
+      return options.map[cm.getCanonicalName()];
+    }
+    if (cm.getAncestor()) {
+      return locateMap(cm.getAncestor());
+    }
+    return null;
+  }
+
+
+  /**
    * @param {Item} item
    * @param {Function} cb
    * @param {Boolean} breakOnResult
    * @param {*} result
    */
   function jump(item, cb, breakOnResult, result) {
-    if (options.map.hasOwnProperty(item.getClassName())) {
-      let config = options.map[item.getClassName()];
+    let config = locateMap(item.getMetaClass());
+    if (config) {
       if (Array.isArray(config.jumps)) {
         let items = [];
         let p = Promise.resolve();
@@ -53,7 +67,7 @@ function AclMetaMap(options) {
                 Array.prototype.push.apply(items, d);
               } else {
                 p = p.then(() => options.dataRepo.getAssociationsList(item, j)).then((coll) => {
-                  Array.prototype.push.apply(items, coll);
+                  items.push(...coll);
                 });
               }
             }
@@ -76,11 +90,14 @@ function AclMetaMap(options) {
 
     return p
       .then((item) => {
-        if (!item || !options.map.hasOwnProperty(item.getClassName())) {
+        if (!item) {
+          return Promise.resolve(result);
+        }
+        let config = locateMap(item.getMetaClass());
+        if (!config) {
           return Promise.resolve(result);
         }
 
-        let config = options.map[item.getClassName()];
         let sid = item.get(config.sidAttribute);
         let p = skipCb || !sid ? Promise.resolve(result) : cb(sid);
         return p.then((result) => {
@@ -220,7 +237,7 @@ function AclMetaMap(options) {
             if (coactors.indexOf(sid) < 0) {
               coactors.push(sid);
             }
-            options.acl.getCoactors(sid)
+            return options.acl.getCoactors(sid)
               .then((r2) => {
                 if (Array.isArray(r2)) {
                   r2.forEach((r) => {
@@ -255,8 +272,8 @@ function AclMetaMap(options) {
     if (events.length) {
       options.dataRepo.on(events, (e) => {
         if (e.item) {
-          if (options.map.hasOwnProperty(e.item.getClassName())) {
-            let me = options.map[e.item.getClassName()];
+          let me = locateMap(e.item.getMetaClass());
+          if (me) {
             // if (e.type === e.item.getClassName() + '.create' || e.updates && e.updates.hasOwnProperty(me.sidAttribute)) {
             let sid = e.item.get(me.sidAttribute);
             if (sid) {
