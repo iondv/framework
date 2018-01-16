@@ -41,7 +41,7 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'application'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
     new Promise(function (resolve, reject) {

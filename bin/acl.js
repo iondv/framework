@@ -68,7 +68,7 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => params.aclDir ?
     aclImport(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
