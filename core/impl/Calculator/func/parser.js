@@ -81,6 +81,9 @@ function objProp(obj, nm, dataRepoGetter, needed) {
   }
 
   if (obj instanceof Item) {
+    if (nm[0] === '$') {
+      nm = nm.substring(1);
+    }
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
@@ -89,7 +92,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
         nm4 = nm4.substr(0, nm.indexOf('.'));
       }
       let ri = objProp(obj, nm2, dataRepoGetter, {[nm4]: true});
-      let rp = ri instanceof Promise? ri : Promise.resolve(ri);
+      let rp = ri instanceof Promise ? ri : Promise.resolve(ri);
       return rp.then((ri) => {
         if (ri instanceof Item) {
           return objProp(ri, nm3, dataRepoGetter);
@@ -117,41 +120,41 @@ function objProp(obj, nm, dataRepoGetter, needed) {
 
     let p = obj.property(nm);
     if (p) {
-     switch (p.meta.type) {
-       case PropertyTypes.REFERENCE: {
-         let v = p.evaluate();
-         if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
-           let dr = dataRepoGetter();
-           if (dr instanceof DataRepository) {
-             if (p.meta.backRef) {
-               if (!obj.getItemId()) {
-                 return null;
-               }
-               return dr.getList(p.meta._refClass.getCanonicalName(),
-                 {
-                   filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
-                   needed: needed || {}
-                 })
-                 .then((items) => items.length ? items[0] : null);
-             } else {
-               return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
-             }
-           }
-         }
-         return v;
-       }break;
-       case PropertyTypes.COLLECTION: {
-         let v = p.evaluate();
-         if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
-           let dr = dataRepoGetter();
-           if (dr instanceof DataRepository) {
-             return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}});
-           }
-         }
-         return v;
-       }break;
-       default: return p.evaluate();
-     }
+      switch (p.meta.type) {
+        case PropertyTypes.REFERENCE: {
+          let v = p.evaluate();
+          if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
+            let dr = dataRepoGetter();
+            if (dr instanceof DataRepository) {
+              if (p.meta.backRef) {
+                if (!obj.getItemId()) {
+                  return null;
+                }
+                return dr.getList(p.meta._refClass.getCanonicalName(),
+                  {
+                    filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
+                    needed: needed || {}
+                  })
+                  .then((items) => items.length ? items[0] : null);
+              } else {
+                return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
+              }
+            }
+          }
+          return v;
+        }break;
+        case PropertyTypes.COLLECTION: {
+          let v = p.evaluate();
+          if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
+            let dr = dataRepoGetter();
+            if (dr instanceof DataRepository) {
+              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}});
+            }
+          }
+          return v;
+        }break;
+        default: return p.evaluate();
+      }
     }
   }
 
@@ -165,6 +168,13 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     for (let i = 0; i < pth.length; i++) {
       if (ctx.hasOwnProperty(pth[i])) {
         ctx = ctx[pth[i]];
+        if (ctx instanceof Item) {
+          if (i < pth.length - 1) {
+            return objProp(ctx, pth.slice(i + 1).join('.'), dataRepoGetter, needed);
+          } else {
+            return ctx;
+          }
+        }
         if (typeof ctx !== 'object' || !ctx) {
           return ctx;
         }
@@ -236,7 +246,7 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
   }
 
   if (formula[0] === '$') {
-    return propertyGetter(formula.substring(1), dataRepoGetter);
+    return propertyGetter(formula, dataRepoGetter);
   }
 
   return formula;
@@ -248,7 +258,7 @@ function byRefConstructor(f, args) {
 
 function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   /*
-  if (!isNaN(formula)) {
+  If (!isNaN(formula)) {
     return Number(formula);
   }
   */
@@ -265,7 +275,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   if (formula === null || typeof formula !== 'object') {
     if (typeof formula === 'string') {
       if (formula[0] === '$') {
-        return propertyGetter(formula.substring(1), dataRepoGetter);
+        return propertyGetter(formula, dataRepoGetter);
       }
     }
     return formula;

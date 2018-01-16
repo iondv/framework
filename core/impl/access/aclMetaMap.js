@@ -7,6 +7,7 @@ const AclProvider = require('core/interfaces/AclProvider');
 const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
+const Logger = require('core/interfaces/Logger');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
 
@@ -17,6 +18,7 @@ const F = require('core/FunctionCodes');
  * @param {DataRepository} options.dataRepo
  * @param {AclProvider} options.acl
  * @param {{}} options.accessManager
+ * @param {Logger} options.log
  * @constructor
  */
 function AclMetaMap(options) {
@@ -143,6 +145,12 @@ function AclMetaMap(options) {
           }
           return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
         });
+      })
+      .catch((err) => {
+        if (options.log instanceof Logger) {
+          options.log.warn(err.message || err);
+        }
+        return Promise.resolve();
       });
   }
 
