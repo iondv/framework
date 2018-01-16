@@ -61,8 +61,7 @@ function toScalar(v, context, type, lang) {
 
   if (typeof v === 'string') {
     switch (type) {
-      case PropertyTypes.DATETIME:
-      {
+      case PropertyTypes.DATETIME: {
         v = strToDate(v, lang);
         return v;
       }
@@ -149,7 +148,7 @@ function vt(cm, property) {
  * @returns {{}}
  */
 function produceFilter(condition, type, rcm, context, lang) {
-  var args = ['$'+condition.property];
+  var args = ['$' + condition.property];
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
     let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
     if (tmp) {
@@ -329,7 +328,8 @@ function ConditionParser(condition, rcm, context, lang) {
     }
   }
   return null;
-  //throw new Error('Мета условий выборки не соответствует спецификации!');
+  // Throw new Error('Мета условий выборки не соответствует спецификации!');
 }
 
 module.exports = ConditionParser;
+module.exports.toScalar = toScalar;
