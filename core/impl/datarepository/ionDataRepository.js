@@ -1615,8 +1615,13 @@ function IonDataRepository(options) {
   /**
    * @param {Item} item
    * @param {{}} [conditions]
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipCacheRefresh]
    */
-  function refreshCaches(item, conditions) {
+  function refreshCaches(item, conditions, options) {
+    if (options && options.skipCacheRefresh) {
+      return Promise.resolve(item);
+    }
     if (Array.isArray(item)) {
       let p = Promise.resolve();
       item.forEach((item) => {
@@ -1692,6 +1697,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
+   * @param {Boolean} [options.skipCacheRefresh]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1757,7 +1763,7 @@ function IonDataRepository(options) {
         })
         .then((item) => updateBackRefs(item, cm, data))
         .then((item) => refUpdator(item, refUpdates, changeLogger))
-        .then((item) => refreshCaches(item))
+        .then((item) => refreshCaches(item, null, options))
         .then((item) => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then((item) =>
           options.skipResult ? null :
@@ -1789,6 +1795,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
+   * @param {Boolean} [options.skipCacheRefresh]
    * @param {Boolean} [suppresEvent]
    * @returns {Promise}
    */
@@ -1892,7 +1899,7 @@ function IonDataRepository(options) {
             return updateBackRefs(item, cm, data, id);
           })
           .then((item) => refUpdator(item, refUpdates, changeLogger))
-          .then((item) => refreshCaches(item, conditions))
+          .then((item) => refreshCaches(item, conditions, options))
           .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
             if (!suppresEvent) {
@@ -1931,6 +1938,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
+   * @param {Boolean} [options.skipCacheRefresh]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -2048,7 +2056,7 @@ function IonDataRepository(options) {
             return item;
           }
         })
-        .then((item) => refreshCaches(item, conditions))
+        .then((item) => refreshCaches(item, conditions, options))
         .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then((item) =>
           bubble(
@@ -2075,6 +2083,7 @@ function IonDataRepository(options) {
    * @param {ChangeLogger} [changeLogger]
    * @param {{}} [options]
    * @param {User} [options.user]
+   * @param {Boolean} [options.skipCacheRefresh]
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
     let cm = this.meta.getMeta(classname);
@@ -2124,7 +2133,7 @@ function IonDataRepository(options) {
               user: options.user
             }
           ))
-          .then((e) => refreshCaches(item).then(() => e));
+          .then((e) => refreshCaches(item, null, options).then(() => e));
       });
   };
 
