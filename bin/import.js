@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Created by kras on 10.07.16.
  */
@@ -41,7 +42,7 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'aclProvider']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
     worker(params.src, scope.dbSync, scope.metaRepo, scope.dataRepo, sysLog,
