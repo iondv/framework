@@ -511,7 +511,8 @@ gulp.task('deploy', function (done) {
         .then((scope) => di('app',
           extend(true, config.di, scope.settings.get('plugins') || {}),
           {},
-          'boot'))
+          'boot',
+          ['application', 'aclProvider']))
         .then((scope) => alias(scope, scope.settings.get('di-alias')));
     })
     .then((scp) => {
