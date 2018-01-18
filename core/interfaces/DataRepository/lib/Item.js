@@ -45,6 +45,22 @@ function Item(id, base, classMeta) {
 
   this.slCacheClean = true;
 
+  this.emptify = function () {
+    this.id = null;
+
+    this.base = {};
+
+    this.references = {};
+
+    this.collections = {};
+
+    this.calculated = {};
+
+    this.files = {};
+
+    this.slCacheClean = true;
+  };
+
   this.getItemId = function () {
     return this.id;
   };
