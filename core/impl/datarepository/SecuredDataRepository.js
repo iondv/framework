@@ -522,6 +522,16 @@ function SecuredDataRepository(options) {
       return p
         .then((permissions) => {
           item.permissions = permissions;
+          if (
+            item.permissions[Permissions.FULL] ||
+            (
+              item.permissions[Permissions.READ] &&
+              item.permissions[Permissions.WRITE] &&
+              item.permissions[Permissions.DELETE]
+            )
+          ) {
+            return;
+          }
           if (roleConf) {
             let result = Promise.resolve();
             Object.keys(roleConf).forEach((role) => {
@@ -562,56 +572,47 @@ function SecuredDataRepository(options) {
             aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, ap))))
         .then((ap) => {
           item.attrPermissions = ap;
-          let w = Promise.resolve();
-
-          if (!noDrill) {
-            let props = item.getProperties();
-            let items = [];
-            Object.values(props).forEach((p) => {
-              if (p.meta.type === PropertyTypes.REFERENCE) {
-                let ri = p.evaluate();
-                if (ri instanceof Item) {
-                  items.push(ri);
+          return (
+            workflow ?
+              workflow.getStatus(item, options)
+                .then((status) => {
+                  item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+                  item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
+                }) :
+              Promise.resolve()
+          ).then(() => {
+            if (!noDrill && item.permissions[Permissions.READ]) {
+              let props = item.getProperties();
+              let items = [];
+              Object.values(props).forEach((p) => {
+                if (p.meta.type === PropertyTypes.REFERENCE) {
+                  let ri = p.evaluate();
+                  if (ri instanceof Item) {
+                    items.push(ri);
+                  }
+                } else if (p.meta.type === PropertyTypes.COLLECTION) {
+                  let collection = p.evaluate();
+                  if (Array.isArray(collection)) {
+                    items.push(...collection);
+                  }
                 }
-              } else if (p.meta.type === PropertyTypes.COLLECTION) {
-                let collection = p.evaluate();
-                if (Array.isArray(collection)) {
-                  items.push(...collection);
-                }
-              }
-            });
+              });
 
-            if (Array.isArray(items) && items.length) {
-              if (!permMap) {
-                w = w.then(() => getPermMap(items, options));
-              } else {
-                w = w.then(() =>clone(permMap));
-              }
-              w = w
-                .then((permMap) => {
+              if (Array.isArray(items) && items.length) {
+                return (
+                  permMap ? Promise.resolve(clone(permMap)) : getPermMap(items, options)
+                ).then((permMap) => {
                   let w1 = Promise.resolve();
-
                   items.forEach((ri) => {
                     if (ri.getItemId()) {
-                      w1 = w1
-                        .then(() => setItemPermissions(options, permMap)(ri));
+                      w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
                     }
                   });
-
                   return w1;
                 });
+              }
             }
-          }
-
-          if (workflow) {
-            w = w
-              .then(() => workflow.getStatus(item, options))
-              .then((status) => {
-                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-                item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
-              });
-          }
-          return w;
+          });
         })
         .then(() => item);
     };
@@ -690,7 +691,12 @@ function SecuredDataRepository(options) {
     let opts = clone(moptions);
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
-    return dataRepo.getItem(obj, id || '', opts).then(setItemPermissions(opts));
+    return dataRepo.getItem(obj, id || '', opts)
+      .then(item =>
+        item ? getPermMap([item], moptions)
+          .then((permMap) => setItemPermissions(opts, permMap)(item)) :
+          item
+      );
   }
 
   /**
