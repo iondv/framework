@@ -2069,7 +2069,6 @@ function MongoDs(config) {
         return checkAggregation(type, options, plan);
       })
       .then((plan) => {
-        console.log('plan:', JSON.stringify(plan));
         return new Promise((resolve, reject) => {
           try {
             c.aggregate(plan || [], {allowDiskUse: true}, (err, result) => {
