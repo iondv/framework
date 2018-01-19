@@ -573,9 +573,13 @@ function IonDataRepository(options) {
                 ) && nestingDepth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  if (typeof item.references[nm] === 'undefined') {
+                    prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  }
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
-                  prepareColEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  if (typeof item.collections[nm] === 'undefined') {
+                    prepareColEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  }
                 }
               }
             }
