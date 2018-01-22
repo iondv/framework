@@ -736,7 +736,7 @@ function MongoDs(config) {
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
               return {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
-            } else if (oper === Operations.NOT_EMPTY) {
+            } else if (oper === Operations.EMPTY) {
               return {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
@@ -1371,7 +1371,9 @@ function MongoDs(config) {
               if (name[0] !== '$') {
                 result[prefix && name.indexOf('.') < 0 ? addPrefix(name, prefix) : name] = tmp;
               } else {
-                if (!Array.isArray(tmp) || name === '$and' || name === '$or' || name === '$not' || name === '$nor') {
+                if (!Array.isArray(tmp) ||
+                  name === '$and' || name === '$or' || name === '$not' ||
+                  name === '$nor' || name === "$cond") {
                   result[name] = tmp;
                 } else {
                   let {attr, right} = argsToSides(tmp);
