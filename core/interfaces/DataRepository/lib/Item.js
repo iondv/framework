@@ -45,6 +45,22 @@ function Item(id, base, classMeta) {
 
   this.slCacheClean = true;
 
+  this.emptify = function () {
+    this.id = null;
+
+    this.base = {};
+
+    this.references = {};
+
+    this.collections = {};
+
+    this.calculated = {};
+
+    this.files = {};
+
+    this.slCacheClean = true;
+  };
+
   this.getItemId = function () {
     return this.id;
   };
@@ -79,8 +95,8 @@ function Item(id, base, classMeta) {
    * @returns {Item | null}
    */
   this.getAggregate = function (name) {
-    var props = this.getProperties();
-    var p = props[name];
+    let props = this.getProperties();
+    let p = props[name];
     if (p && p.getType() === PropertyTypes.REFERENCE) {
       return this.references[name] || null;
     }
@@ -92,8 +108,8 @@ function Item(id, base, classMeta) {
    * @returns {Array | null}
    */
   this.getAggregates = function (name) {
-    var props = this.getProperties();
-    var p = props[name];
+    let props = this.getProperties();
+    let p = props[name];
     if (p && p.getType() === PropertyTypes.COLLECTION && this.collections) {
       return this.collections[name] || null;
     }
@@ -106,8 +122,8 @@ function Item(id, base, classMeta) {
     }
 
     if (_this.base.hasOwnProperty(name)) {
-      var props = _this.getProperties();
-      var p = props[name];
+      let props = _this.getProperties();
+      let p = props[name];
       if (p && (
         p.getType() === PropertyTypes.FILE ||
         p.getType() === PropertyTypes.IMAGE ||
@@ -124,7 +140,7 @@ function Item(id, base, classMeta) {
   }
 
   function setToBase(name,value) {
-    var p = _this.property(name);
+    let p = _this.property(name);
     if (p) {
       if (value instanceof Item) {
         _this.references[name] = value;
@@ -179,9 +195,9 @@ function Item(id, base, classMeta) {
   };
 
   this.set = function (name, value) {
-    var dot = name.indexOf('.');
+    let dot = name.indexOf('.');
     if (dot > -1) {
-      var i = this.getAggregate(name.substring(0, dot));
+      let i = this.getAggregate(name.substring(0, dot));
       if (i) {
         i.set(name.substring(dot + 1), value);
       }
@@ -195,9 +211,9 @@ function Item(id, base, classMeta) {
    * @param {ClassMeta} cm
    */
   function findPropertyMeta(nm, cm) {
-    var dot, pm;
+    let dot;
     if ((dot = nm.indexOf('.')) > -1) {
-      pm = cm.getPropertyMeta(nm.substring(0, dot));
+      let pm = cm.getPropertyMeta(nm.substring(0, dot));
       if (!pm) {
         throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
       }
@@ -215,7 +231,7 @@ function Item(id, base, classMeta) {
    * @returns {Property | null}
    */
   this.property = function (name) {
-    var props = this.getProperties();
+    let props = this.getProperties();
     if (props.hasOwnProperty(name)) {
       return props[name];
     } else {
@@ -228,14 +244,14 @@ function Item(id, base, classMeta) {
   };
 
   function initClassProps(cm) {
-    var pm = cm.getPropertyMetas();
-    for (var i = 0; i < pm.length; i++) {
+    if (cm.getAncestor()) {
+      initClassProps(cm.getAncestor());
+    }
+    let pm = cm.getPropertyMetas();
+    for (let i = 0; i < pm.length; i++) {
       if (pm[i].type !== PropertyTypes.STRUCT) {
         _this.properties[pm[i].name] = new Property(_this, pm[i]);
       }
-    }
-    if (cm.getAncestor()) {
-      initClassProps(cm.getAncestor());
     }
   }
 
@@ -259,6 +275,9 @@ Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
   circular[this.getClassName() + '@' + this.getItemId()] = true;
   if (typeof semanticGetter === 'function') {
     return semanticGetter.call(this, dateCallback, circular);
+  }
+  if (this.classMeta.isSemanticCached()) {
+    return this.base.__semantic;
   }
   return this.classMeta.getSemantics(this, dateCallback, circular);
 };

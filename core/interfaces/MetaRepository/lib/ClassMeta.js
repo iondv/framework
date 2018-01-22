@@ -1,16 +1,63 @@
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
-
-const ConditionParser = require('core/ConditionParser');
+'use strict';
 const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
 
-function ClassMeta(metaObject) {
+function sysPm(name) {
+  return {
+    orderNumber: 0,
+    name: name,
+    caption: name,
+    type: 0,
+    size: 500,
+    decimals: 0,
+    allowedFileTypes: null,
+    maxFileCount: 0,
+    nullable: true,
+    readonly: true,
+    indexed: false,
+    unique: false,
+    autoassigned: false,
+    hint: null,
+    defaultValue: null,
+    refClass: "",
+    itemsClass: "",
+    backRef: "",
+    backColl: "",
+    binding: "",
+    semantic: null,
+    selConditions: [],
+    selSorting: [],
+    selectionProvider: null,
+    indexSearch: false,
+    eagerLoading: false,
+    formula: null
+  };
+}
 
-  var _this = this;
+/**
+ * @param {ClassMeta} cm
+ */
+function loadPropertyMetas(cm) {
+  let properties = cm.plain.properties.sort(function (a,b) {
+    return a.orderNumber - b.orderNumber;
+  });
+
+  if (!cm.plain.ancestor) {
+    cm.propertyMetas.__class = sysPm('__class');
+    cm.propertyMetas.__classTitle = sysPm('__classTitle');
+  }
+
+  for (let i = 0; i < properties.length; i++) {
+    let pm = clone(properties[i]);
+    cm.propertyMetas[properties[i].name] = pm;
+  }
+}
+
+function ClassMeta(metaObject) {
 
   this.plain = metaObject;
 
@@ -25,6 +72,8 @@ function ClassMeta(metaObject) {
   this._semanticAttrs = [];
 
   this._semanticFunc = null;
+
+  loadPropertyMetas(this);
 
   this.getVersion = function () {
     return this.plain.version;
@@ -56,6 +105,23 @@ function ClassMeta(metaObject) {
     }
 
     return item.getItemId();
+  };
+
+  this.isSemanticCached = function () {
+    return this.plain.semanticCached;
+  };
+
+  this.getCacheDependencies = function () {
+    let result = [];
+    if (this.getAncestor()) {
+      result.push(...this.getAncestor().getCacheDependencies());
+    }
+    if (Array.isArray(this.plain.cacheDependencies)) {
+      this.plain.cacheDependencies.forEach((a) => {
+        result.push(a.split('.'));
+      });
+    }
+    return result;
   };
 
   this.getSemanticAttrs = function () {
@@ -128,16 +194,22 @@ function ClassMeta(metaObject) {
   };
 
   this.getPropertyMetas = function () {
-    let result = [];
+    let result = {};
+    if (this.getAncestor()) {
+      let apm = this.getAncestor().getPropertyMetas();
+      apm.forEach((pm) => {
+        result[pm.name] = pm;
+      });
+    }
+
     for (let nm in this.propertyMetas) {
       if (this.propertyMetas.hasOwnProperty(nm)) {
-        result.push(this.propertyMetas[nm]);
+        result[nm] = this.propertyMetas[nm];
       }
     }
-    if (this.getAncestor()) {
-      result = result.concat(this.getAncestor().getPropertyMetas());
-    }
-    return result;
+    return Object.values(result).sort((a, b) => {
+      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+    });
   };
 
   this.isJournaling = function () {

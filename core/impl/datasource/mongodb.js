@@ -230,13 +230,13 @@ function MongoDs(config) {
     return openDb()
       .then(function () {
         // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
-        return new Promise(function (resolve, reject) {
-          _this.db.collection(type, {strict: true}, function (err, c) {
+        return new Promise((resolve, reject) => {
+          _this.db.collection(type, {strict: true}, (err, c) => {
             if (!c) {
               try {
                 _this.db.createCollection(type)
                   .then(resolve)
-                  .catch(e => reject(wrapError(err, 'create', type)));
+                  .catch(e => reject(wrapError(e, 'create', type)));
               } catch (e) {
                 return reject(e);
               }
@@ -278,10 +278,10 @@ function MongoDs(config) {
          */
         function (result) {
           if (result && result.c && result.c.counters) {
-            var inc = {};
-            var act = false;
-            var counters = result.c.counters;
-            for (var nm in counters) {
+            let inc = {};
+            let act = false;
+            let counters = result.c.counters;
+            for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 inc['counters.' + nm] =
                   result.c.steps && result.c.steps.hasOwnProperty(nm) ? result.c.steps[nm] : 1;
@@ -299,7 +299,7 @@ function MongoDs(config) {
                     if (err) {
                       return reject(err);
                     }
-                    for (var nm in result.value.counters) {
+                    for (let nm in result.value.counters) {
                       if (result.value.counters.hasOwnProperty(nm)) {
                         data[nm] = result.value.counters[nm];
                       }
@@ -342,7 +342,7 @@ function MongoDs(config) {
           if (err) {
             return reject(err);
           }
-          var excludes = {};
+          let excludes = {};
           for (let i = 0; i < indexes.length; i++) {
             if (indexes[i].unique && indexes[i].sparse) {
               for (let nm in indexes[i].key) {
@@ -361,26 +361,25 @@ function MongoDs(config) {
   }
 
   function prepareGeoJSON(data) {
-    var tmp, tmp2, i;
-    for (var nm in data) {
+    for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         if (typeof data[nm] === 'object' && data[nm] && data[nm].type && (data[nm].geometry || data[nm].features)) {
           switch (data[nm].type) {
             case 'Feature': {
-              tmp = clone(data[nm], true);
+              let tmp = clone(data[nm], true);
               delete tmp.geometry;
               data[nm] = data[nm].geometry;
               data['__geo__' + nm + '_f'] = tmp;
             }
               break;
             case 'FeatureCollection': {
-              tmp = {
+              let tmp = {
                 type: 'GeometryCollection',
                 geometries: []
               };
-              tmp2 = clone(data[nm], true);
+              let tmp2 = clone(data[nm], true);
 
-              for (i = 0; i < tmp2.features.length; i++) {
+              for (let i = 0; i < tmp2.features.length; i++) {
                 tmp.geometries.push(tmp2.features[i].geometry);
                 delete tmp2.features[i].geometry;
               }
@@ -396,7 +395,7 @@ function MongoDs(config) {
   }
 
   this._insert = function (type, data, opts) {
-    var options = opts || {};
+    let options = opts || {};
     return getCollection(type).then(
       function (c) {
         return autoInc(type, data)
@@ -435,10 +434,10 @@ function MongoDs(config) {
          * @param {{ai: Collection, c: {counters:{}, steps:{}}}} result
          */
         function (result) {
-          var act = false;
-          var up = {};
+          let act = false;
+          let up = {};
           if (result && result.c && result.c.counters) {
-            var counters = result.c.counters;
+            let counters = result.c.counters;
             for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
                 if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
@@ -1568,6 +1567,7 @@ function MongoDs(config) {
     let resultAttrs = [];
     let prefilter, postfilter, redactFilter, jl;
     let doGroup = false;
+    let fetchFields = false;
     let analise = {
       needRedact: false,
       needPostFilter: false
@@ -1584,7 +1584,6 @@ function MongoDs(config) {
         let expr = {$group: {}};
         expr.$group._id = null;
         let attrs = {_id: false};
-        let fetchFields = false;
         if (options.fields) {
           for (let tmp in options.fields) {
             if (options.fields.hasOwnProperty(tmp)) {
@@ -1715,7 +1714,7 @@ function MongoDs(config) {
         }
       }
 
-      if (doGroup || result.length) {
+      if (doGroup || result.length || (fetchFields && forcedStages.length)) {
         Array.prototype.push.apply(result, groupStages);
       }
 
