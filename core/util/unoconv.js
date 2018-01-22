@@ -5,26 +5,7 @@ const mime = require('mime');
 const {Readable} = require('stream');
 
 const unoconv = exports = module.exports = {};
-/*
-  Let stderr = [];
 
-  cp.stdout.on('data', (data) => {
-    console.log(data);
-    rs.push(data);
-  });
-
-  cp.stderr.on('data', (data) => {
-    console.log('err', data);
-    stderr.push(data);
-  });
-
-  cp.on('exit', () => {
-    if (stderr.length) {
-      console.log(Buffer.concat(stderr).toString());
-      return rs.emit('error', new Error(Buffer.concat(stderr).toString()));
-    }
-    rs.push(null);
-  });*/
 function readStream(cp) {
   let missedErrors = [];
   let stderr = [];
@@ -38,7 +19,6 @@ function readStream(cp) {
   }
 
   cp.stdout.on('error', onMissedError);
-  cp.stdout.on('data', (data) => {console.log(data);});
   cp.stderr.on('data', onStdErr);
 
   return function () {
@@ -55,11 +35,10 @@ function readStream(cp) {
 
       cp.stdout.on('data', ondata);
       cp.stdout.on('error', onerror);
-      // Cp.stdout.on('end', onend);
+      cp.stdout.on('end', onend);
       cp.stdout.resume();
 
       function ondata(chunk) {
-        console.log('ondata', chunk);
         cp.stdout.pause();
         cleanup();
         resolve(chunk);
@@ -79,7 +58,7 @@ function readStream(cp) {
       function cleanup() {
         cp.stdout.removeListener('data', ondata);
         cp.stdout.removeListener('error', onerror);
-        // Cp.stdout.removeListener('end', onend);
+        cp.stdout.removeListener('end', onend);
       }
     });
   };
@@ -91,10 +70,8 @@ function stdoutStream(cp) {
   let reader = readStream(cp);
 
   rs._read = function () {
-    console.log('reading');
     reader()
       .then(chunk => {
-        console.log(chunk);
         this.push(chunk);
       })
       .catch(err => this.emit('error', err));
