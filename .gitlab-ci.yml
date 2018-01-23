@@ -11,7 +11,7 @@ stages:
     tags:
         - dapp
     script:
-        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/pre-compile_platform.sh | bash
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/platform-pre-compile.sh | bash
     artifacts:
         name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
         expire_in: 6 mos
@@ -44,7 +44,7 @@ stages:
     tags:
         - testing
     script:
-        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_protractor_platform.sh | bash
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/platform-test_protractor.sh | bash
     variables:
         TEST_SELENIUM_ADDR: "selenium-hub.kube.local"
         TEST_SELENIUM_PORT: 80
