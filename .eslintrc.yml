@@ -17,15 +17,41 @@ rules: # Описание правил https://eslint.org/docs/rules/
   for-direction: error # Недостижимые циклы for - Откл.в recommended
   getter-return: error # Геттеры не содержат return - Откл.в recommended
   no-await-in-loop: error # Await в циклах - не позволяет запустить в них код асинхронно. Лучше Promise.all - Откл.в recommended
+  # no-compare-neg-zero
+  # no-cond-assign
   no-console: warn # Использование консольного вывода в продакшене не рекомендуется - Изм.recommended: error
+  # no-constant-condition
+  # no-control-regex
+  # no-debugger
+  # no-dupe-args
+  # no-dupe-keys
+  # no-duplicate-case
+  # no-empty
+  # no-empty-character-class
+  # no-ex-assign
+  # no-extra-boolean-cast
+  # no-extra-semi
+  # no-func-assign
+  # no-inner-declarations
+  # no-invalid-regexp
+  # no-irregular-whitespace
+  # no-obj-calls
   no-prototype-builtins: warn # Использование вызовов метода Object.prototype в объекте - Изм.recommended: error
+  # no-regex-spaces
+  # no-sparse-arrays
   no-template-curly-in-string: warn # Использование шаблонов не в кавчках ` - Откл.в recommended
+  # no-unexpected-multiline
+  # no-unreachable
+  # no-unsafe-finally
+  # no-unsafe-negation
+  # use-isnan
   valid-jsdoc: # Валдиация jsDoc - Откл.в recommended
     - warn
     - {requireReturn: false, # Не требуем обязательный return
       requireReturnType: true, # Требуется тип возвращаемого значения
       requireParamDescription: true, # Требуется описание параметра
       requireReturnDescription: true} # Требуется описание возвращаемого значения
+  # valid-typeof
 
   # Best Practices -
   accessor-pairs: warn # Обязательность и сеттера и геттера в объекте, если есть хоть один - Откл.в recommended
@@ -45,15 +71,19 @@ rules: # Описание правил https://eslint.org/docs/rules/
   eqeqeq: warn # Строгое сравнение с типами, без приведения - Откл.в recommended
   guard-for-in: warn # Проверка на свойство в циклах for-in - Откл.в recommended
   no-caller: error # Запрет на caller - выводится из JS  - Откл.в recommended
+  # no-case-declarations
   no-div-regex: error # Требование экранирования литералов regexp - Откл.в recommended
   no-else-return: warn # Не требуется else с return - Откл.в recommended
   no-empty-function: warn # Запрет пустых функций (нужен хотя бы комментарий) - Откл.в recommended
+  # no-empty-pattern
   no-eq-null: error # Запрет на сравнение с нулем без приведения типов  - Откл.в recommended
   no-eval: error # Запрет на eval - Откл.в recommended
   no-extend-native: error # Запрет на изменение свойств и методов нативных объектов - Откл.в recommended
   no-extra-bind: error # Использование bind без this - Откл.в recommended
   no-extra-label: error # Запрет использовани ярасширенных меток - Откл.в recommended
+  # no-fallthrough
   no-floating-decimal: error # Запрет чисел с плав.точкой без числа перед точкой - Откл.в recommended
+  # no-global-assign
   no-implicit-coercion: warn # Запрет на неявные преобразования типов - Откл.в recommended
   no-implied-eval: error # Запрет на неявный вызов eval - Откл.в recommended
   no-invalid-this: error # Запрет на this вне классов и подобных объектов - Откл.в recommended
@@ -68,18 +98,23 @@ rules: # Описание правил https://eslint.org/docs/rules/
   no-new: error # Запрет на конструкт, без присваивания результатов - Откл.в recommended
   no-new-func: error # Запрет на использования конструктора функций - Откл.в recommended
   no-new-wrappers: error # Запрет на конструктор объектов JS - Откл.в recommended
+  # no-octal
   no-octal-escape: error # Запрет на восмеричное исчисление через esc последовательность - Откл.в recommended
-  # no-param-reassign: warn # Запрет изменения параметров функций - нужно присваивание новым переменным - ошибка если использовать arguemnt[] (не надо использовать argument[] )))) - Откл.в recommended
+  no-param-reassign: off # Запрет изменения параметров функций - нужно присваивание новым переменным - ошибка если использовать arguemnt[] (не надо использовать argument[] )))) - Откл.в recommended
   no-proto: error # Запрещенная свойство Object - Откл.в recommended
+  # no-redeclare
   no-return-assign: warn # Запрет присваивание в return - Откл.в recommended
   no-return-await: error # Запрет на возврат async в return - Откл.в recommended
+  # no-self-assign
   no-self-compare: error # Запрет на сравнение с самим собой - Откл.в recommended
   no-sequences: error # Запрет на использование нескольких выражений через запятую - Откл.в recommended
   no-throw-literal: warn # Запрет на неявное создание объекта Error в throw - Откл.в recommended
   no-unmodified-loop-condition: error # Запрет использования немодифицируемых условий в циклах - Откл.в recommended
   no-unused-expressions: warn # Запрет на неиспользуемые выражения - Откл.в recommended
+  # no-unused-labels
   no-useless-call: warn # Запрет на неоптимальный вызов call и apply - Откл.в recommended
   no-useless-concat: warn # Запрет на склеивание строк констант - Откл.в recommended
+  # no-useless-escape
   no-useless-return: warn # Запрет на путсые операнды в return - Откл.в recommended
   no-void: error # Запрет на устаревший тип void - Откл.в recommended
   no-warning-comments: # Предупреждения, для разработческих комментов для продуктива - Откл.в recommended
@@ -95,6 +130,9 @@ rules: # Описание правил https://eslint.org/docs/rules/
   strict: warn # Обязательность strict режим - не нужна в модулях - Откл.в recommended
 
   # Variables
+  init-declarations: off
+  no-catch-shadow: off
+  # no-delete-var
   no-label-var: error
   no-restricted-globals: # Запрещено использовать нижеследующие глобальные переменные - Откл.в recommended
     - error
@@ -105,8 +143,10 @@ rules: # Описание правил https://eslint.org/docs/rules/
        "hoist": "all",  # Запрет переобъявления с таким же именем везде
        "allow": [] } # Нет исключений
   no-shadow-restricted-names: error # Запрет переопределения типов стандарта JS
+  # no-undef
   no-undef-init: error # Запрет инициализации переменной как неопределена присваиванием undefined
   no-undefined: warn # Предупрежение переопределения или сравнения с undefined
+  # no-unused-vars
   no-use-before-define: # Запрет на использование переменной, раньше объявления
     - error
     - functions: false # За исключением функций
@@ -281,8 +321,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
   no-mixed-operators: # Запрет на смешение операндов в одном выражении без скобок
     - warn
     - allowSamePrecedence: true
-  no-mixed-spaces-and-tabs: # Запрет смешивания пробелов и табуляций
-    - error
+  # no-mixed-spaces-and-tabs
   no-multi-assign: # Запрет мультиприсваивания
     - error
   no-multiple-empty-lines: # Запрет на множественные пустые линии
@@ -400,4 +439,13 @@ rules: # Описание правил https://eslint.org/docs/rules/
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
     - error
     - always
+  arrow-spacing: # Пробелы после скобок и перед кривыми скобками
+    - error
+    - { "before": false, "after": false }
+  # constructor-super: # eslint:recommended Вызов конструктора только из расширенного класса
+  generator-star-spacing: # Пробелы вокруг звездочки в генераторах
+    - warn
+    - {"before": false, "after": true}
+  # no-class-assign
+  no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
 
