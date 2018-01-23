@@ -445,4 +445,31 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - {"before": false, "after": true}
   # no-class-assign
   no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
-
+  # no-const-assign
+  # no-dupe-class-members
+  no-duplicate-imports: warn # Запрет нескольких строк импорта из одного модуля
+  # no-new-symbol
+  ## no-restricted-imports # Список запрещенных к импорту модулей
+  # no-this-before-super
+  no-useless-computed-key: error # Запрет нефункциональных вычислимых ключей через литералы
+  no-useless-constructor: error # Запрет использования вызова нефункциональных конструкторов
+  no-useless-rename: error # Запрет на использование нефункциолнальных переименований в импорт/экспорте/объявлении
+  no-var: warn # Предупреждение использования var, вместо let и const
+  object-shorthand: warn # Рекомендация использовать сокращенное наименование назнваий свойств равных переменным или анонимным функциям
+  prefer-arrow-callback: warn # Преимущество у стрелочных функций в калбеке - сохранение уровня scope
+  prefer-const: warn # Преимущественное использование const для функций которые не переопределяются
+  prefer-destructuring: warn # Преимуществео в явной деструктуризации массивов с числами в индексах и объектов с переменными одинкавыми именами
+  prefer-numeric-literals: warn # Преимущество у прямого использования бинарных, окта и шестнацеричной записи значений для сравнения, перед конвертацией через ParseInt
+  prefer-rest-params: warn # Преимущество использование ...args переприсваивания, вместо arguments для переменного кол-ва аргументов, т.к. arguments не имеет прототипа Array
+  prefer-spread: warn # Преимуещство разбиения массива на аргументы в параметра ...args, вместо apply к объекту
+  prefer-template: warn # Преимущество использования литеральных шаблонов `` перед контакенцией строк с переменными
+  # require-yield
+  rest-spread-spacing: # Использование пробела в рест и спреад операторах запрещено
+    - error
+    - never
+  sort-imports: off # Сортировка импортируемы операторов
+  symbol-description: warn # Использование описания в Symbol
+  template-curly-spacing: error # Запрещены пробелы в переменных в шаблонах после/перед скобок
+  yield-star-spacing: # Запрещены пробелы после/перед звездочкой в генераторах
+  - error
+  - after
