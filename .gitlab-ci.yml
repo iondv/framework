@@ -101,7 +101,7 @@ Testing Review:
     <<: *JobTest
     only:
         - branches
-    allow_failure: true
+    allow_failure: false
 ion-workflow:
     tags:
         - kube-deploy
@@ -109,6 +109,7 @@ ion-workflow:
         - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_ion_workflow.sh | bash
     only:
         - branches
+    allow_failure: false
 ### CLEAN SECTION
 Clean:
   type: clean
