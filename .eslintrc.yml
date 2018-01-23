@@ -6,7 +6,7 @@ env:
   node: true # Node.js global variables and Node.js scoping
   # mongo: true # MongoDB global variables Не понятно нужно ли
 globals:
-  app: true
+  app: true # Разрешена глобальная переменная app
   # var2: false
 extends: 'eslint:recommended'
 parserOptions:
@@ -32,7 +32,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
   array-callback-return: warn # Обязательность куегкт или калбека в методах массива - Откл.в recommended
   block-scoped-var: warn # Использование переменной вне блока объявления - Откл.в recommended
   class-methods-use-this: warn # Методы не использующие this - должны объявляться static - Откл.в recommended
-  complexity: # Цикломатическая сложность - т.е. кол-во веток/путей в функции
+  complexity: # Цикломатическая сложность - т.е. кол-во веток/путей в функции. По идее если больше 10ти - функцию надо разбивать
     - warn
     - 10 # В jshint было 10 (рек. в wiki) - recommended: 20
   consistent-return: warn # Требование значение для функции return - Откл.в recommended
@@ -92,7 +92,8 @@ rules: # Описание правил https://eslint.org/docs/rules/
   vars-on-top: warn # Требование расположения объявлений var вверху функций - Откл.в recommended
   wrap-iife: error # Оформление скобками немедленный вызов функций при объявлении - Откл.в recommended
   yoda: warn # Предупреждение при yoda сравнениях 5 > abc или 'текст' === strVal - Откл.в recommended
-  strict: warn # Обязательный strict режим - Откл.в recommended
+  strict: warn # Обязательность strict режим - не нужна в модулях - Откл.в recommended
+
   # Variables
   no-label-var: error
   no-restricted-globals: # Запрещено использовать нижеследующие глобальные переменные - Откл.в recommended
@@ -134,13 +135,14 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - {
         "paths": [ # Запрещенные библиотеки - как fs, js-zip и т.п.
-          {"name": "lib/convert-import-util", "message": "Библиотека импорта вывдена в node_modules"},
+          {"name": "lib/convert-import-util", "message": "Библиотека импорта выведена в node_modules"},
           {"name": "async", "message": "Библиотека async использует имя из ES6"}
         ],
         "patterns": ["/lib/meta-update/*"] # Запрет на паттерны
       }
   no-sync: # Запрет на синхронные функции в продакшн коде
     - error
+
   # Stylistic Issues
   array-bracket-newline: # Новая линия после скобок в массивах запрещена
     - warn
@@ -157,14 +159,13 @@ rules: # Описание правил https://eslint.org/docs/rules/
   brace-style: # Тип скобок - стандартный, разрешены на одной строке
     - warn
     - 1tbs
-    - allowSingleLine": true
+    - allowSingleLine: true
   camelcase: # Стиль камелКейс, в т.ч. для свойств объектов
     - warn
-  capitalized-comments:
+  capitalized-comments: # Заголовки в комментариях с большой буквы
     - warn
     - always
-    - ignoreInlineComments: true
-    - ignoreConsecutiveComments: true
+    - {"ignoreInlineComments": true, "ignoreConsecutiveComments": true}
   comma-dangle: # Запрет запяты в конце в массивах, объектах, функциях и т.д.
     - error
     - never
@@ -187,28 +188,216 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - never
   func-name-matching: # Запрет на переприсваивание имени функций переменной с другим именем
     - error
-
-  indent:
+  func-names: # Именнованные функции по необходимости при присваивании для облегчения дебага анонимных функций
+    - warn
+    - as-needed
+  # func-style: # Стиль функций - объявлением или присваиванием
+  function-paren-newline: # Параметры функции с новой строки
+    - warn
+    - never
+  id-blacklist: # Запрещенные названия переменных и функций (параметры, наименование объектов разрешены)
+    - error
+    - data
+    - e
+    - cb
+    - callback
+  id-length: # Длина идентификаторов.
+    - warn
+    - { "min": 2 , "max": 25, # Минимальная длина идентификаторов 2 символа, максимальная 25
+        "properties": "never", # Проверка в свойствах объектов отключена
+        "exceptions": ["i", "j", "k"]} # Игнорируем идентификаторы циклов
+  id-match: # Совпадение идентификаторов с маской
+    - warn
+    - "^[a-z]+([A-Z][a-z]+)*$" # TODO для констант и для _this
+    - { "properties": true, # Проверять также в свойствах
+       "onlyDeclarations": true} # Только в объявлениях переменных
+  implicit-arrow-linebreak: # Запрещаем перенос строки в стрелочных функциях без фигурных скобок
+    - warn
+    - beside
+  indent: # Количество отступов TODO естт параметры для разных сущостей - например var, case и т.д.
     - warn
     - 2
-  linebreak-style:
+  #jsx-quotes: # Тип кавычек в jsx
+  #  - off
+  key-spacing: # Размещение пробелов в свойствах объектов, в том числе вертикальное выравнивание (не указано сейчас) для нескольких свойств
+    - error
+    - { "beforeColon": false, "afterColon": true}
+  keyword-spacing: # Пробелмы перед ключевыми словами, есть доп. параметры для if, do, while
+    - error
+    - { "before": true, "after": true }
+  line-comment-position: # Расположение строковых комментариев, до или сбоку.
+    - warn
+    - position: "beside"
+  linebreak-style: # Стиль переносов
     - error
     - unix
-  quotes:
+  lines-around-comment: # Перенос строк, до или после комментариев блочных или строковых комментариев, в том числе в зависимости от местоположения. Игнорирует типовые паттерны eslint и т.д.
+    - warn
+    - {"beforeBlockComment": true, "allowBlockStart": true, "allowObjectStart": true, "allowArrayStart": true} # Новая строка до блочнык комментов, но в начале блока и объекта не обязательно
+  lines-between-class-members:
+    - warn
+    - always
+  max-depth: # Количество вложений блоков
+    - warn
+    - 4
+  max-len: # Максимальная длина строки для кода (можно добавить с комментами, можно игнорировать строки, регэксп, урл и т.п.
+    - warn
+    - code: 120
+  max-lines: # Максимальное кол-во строк в файле - по умолчанию 300
+    - warn
+    # - 1024 # Увеличить до 1024
+  max-nested-callbacks: # Максимальная вложенность калбеков (по умолчанию 10)
+    - warn
+    - 4
+  max-params: # Максимальное количество параметров (по умолчанию 3)
+    - warn
+    - 5
+  max-statements: # Количество объявлений в блоке функции (по умолчанию 10ть), есть параметр игнорировать вначале функции.
+    - warn
+  max-statements-per-line: # Количество блоков в строке, по умолчанию 1
+    - warn
+  multiline-comment-style: # Параметры многстрочных комментариев. По умолчанию требуетс звездочка с пробелом перед каждой строкой, закрывающая с новой строки
+    - warn
+  multiline-ternary: # Вычисляемое выражение присваивания - однстрочное и многстрочное - для вложенных
+    - warn
+    - always-multiline
+  new-cap: # Заглавная буква у конструкторов, требование при new для конструкторов указание с большой буквы. Есть параметры исключений
+    - error
+  new-parens: # Наличине скобок, при вызове конструтора
+    - error
+  newline-per-chained-call: # Требование новой строки при вызове цепочки методов: d3.select("body").selectAll
+    - warn
+    - ignoreChainWithDepth: 2 # Игнорировать цепочки до 2 методов.
+  no-array-constructor: # Запрет использования конструктороа массивов с параметрами, кроме задания размера
+    - error
+  no-bitwise: # Запрет двоичных операций, часто являющихся опечаткой логических
+    - error
+  no-continue: # Не рекомендуется использовать continue из-за ухудщения тестирования кода и появления ошибок пропуска вычислений в циклах
+    - warn
+  no-inline-comments: # Запрет использования строчных комментариев
+    - off
+  no-lonely-if: # Зарпет отдельный if после else в блоке, надо else if
+    - warn
+  no-mixed-operators: # Запрет на смешение операндов в одном выражении без скобок
+    - warn
+    - allowSamePrecedence: true
+  no-mixed-spaces-and-tabs: # Запрет смешивания пробелов и табуляций
+    - error
+  no-multi-assign: # Запрет мультиприсваивания
+    - error
+  no-multiple-empty-lines: # Запрет на множественные пустые линии
+    - warn
+    - { "max": 2, "maxEOF": 1 } # Максимум 2 пустые линии, в конце файла 1
+  no-negated-condition: # Запрет на отрицательные выражения в условиях с если
+    - warn
+  no-nested-ternary: # Предупрежение для сложных операций условного присваивания
+    - warn
+  no-new-object: # Запрет конструктора Object
+    - error
+  no-plusplus: # Запрет на ++ и --
+    - off
+  no-restricted-syntax: # Запрет на использование синтаксиса JS, на основе селекторов https://eslint.org/docs/developer-guide/selectors
+    - error
+    - WithStatement # Запрет использования with
+    - { "selector": "CallExpression[callee.name='setTimeout'][arguments.length!=2]",
+        "message": "setTimeout должен иметь два аргумента"} # Запрет не 2х аргументов для setTimeout
+  no-tabs: # Запрет табуляторов
+    - error
+  no-ternary: # Запрет условного присваивания
+    - off
+  no-trailing-spaces: # Запрет концевых пробелов в строке
+    - warn
+  no-underscore-dangle: # Запрет на подчеркивание в переменных
+    - warn
+    - allow:
+      - _this
+  no-unneeded-ternary: # Исключение ненужны условных операторов присваивания
+    - warn
+  no-whitespace-before-property: # Запрет пробела перед свойством
+    - error
+  nonblock-statement-body-position: # Запрет условия без блока, кроме однострочных
+    - error
+  object-curly-newline: # Запрет объявления объекта с переносом строк, кроме многострочных
+    - warn
+    - minProperties: 2 # Минимальное кол-во свойств в объекте для переноса
+  object-curly-spacing: # Запрет пробелов возле скобок в объектах
+    - warn
+  object-property-newline: # Свойства объектов с новой строки - удобно смотреть при сравнении изменений в коммитах - т.к. покажется не весь объект, а только измененные свойства
+    - off
+  one-var: # Объявления переменных в одном var - запрещено
+    - warn
+    - never
+  one-var-declaration-per-line: # Одна присваивание в одной строке
+    - warn
+    - always
+  operator-assignment: # Использование сокращения операторов x+=y
+    - off
+  operator-linebreak: # Перенос строки после операнда + или подобных
+    - warn
+    - after
+  padded-blocks: # Пустые строки после и до скобок в блоке
+    - warn
+    - never
+  padding-line-between-statements: # Пустые строки между выражениями, в примере после переменных
+    - off
+    # - warn
+    #- { blankLine: "always", prev: ["const", "let", "var"], next: "*"}
+    #- { blankLine: "any",    prev: ["const", "let", "var"], next: ["const", "let", "var"]}
+  quote-props: # Кавычки в именах свойств объектов
+    - warn
+    - as-needed
+    - keywords: true
+  quotes: # Тип кавычек - одиночные
     - error
     - single
-  semi:
-    - error
-    - always
-  require-jsdoc:
+  require-jsdoc: # Требование документирования jsDocs
     - warn
     - require: {FunctionDeclaration: true, # Определение функций
                 MethodDefinition: false, # Определение методов
                 ClassDeclaration: true, # Определения классов
                 ArrowFunctionExpression: false, # Стрелочные выражения - объявление стрелочной функции в контексте выражения
                 FunctionExpression: true} # Функциональные выражение var f = function - объявление функции в контексте какого-либо выражения
+  semi: # Требование Точки с запятой
+    - error
+    - always
+  semi-spacing: # Пробел после точки с запятой, если в одной строке, по умолчанию после
+    - warn
+  semi-style: # Стиль размещения точки запятой, в конце выражения
+    - warn
+  sort-keys: # Сортировка имен свойств - для ускорения поиска
+    - off
+    #- warn
+    #- asc
+    #- {natural: true}
+  sort-vars: # Сортировка имено переменных, при объявлении в одном var
+    - off
+  space-before-blocks: # Пробел перед блоком
+    - warn
+  space-before-function-paren: # Пробел перед параметрами функции
+    - warn
+    - {"anonymous": "never", "named": "always"}
+  space-in-parens: # Пробел в скобках, по умолчанию никгода
+    - warn
+  space-infix-ops: # Пробел в операндах вычисления
+    - warn
+  space-unary-ops: # Пробел в унарных операциях
+    - warn
+  spaced-comment: # Пробел в начале комментария. По умолчанию всегда
+    - warn
+  switch-colon-spacing: # Пробел после двоеточния в switch
+    - warn
+  template-tag-spacing: # Пробел после тег и литерала - по умолчанию запрещен
+    - warn
+  unicode-bom: # Использование BOM в unicode, по умолчанию запрещено
+    - warn
+  wrap-regex: # Предупреждение использования regexp без скобок - исключение путанница с делением /foo/.test
+    - off
 
   # ECMAScript 6
-
-
+  arrow-body-style: # Кривые скобки для всех стрелочных функций
+    - error
+    - always
+  arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
+    - error
+    - always
 

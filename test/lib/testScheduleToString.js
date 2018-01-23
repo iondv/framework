@@ -1,13 +1,25 @@
 /**
  * Created by Vasiliy Ermilov (ermilov.work@yandex.ru) on 12/22/16.
  */
-'use strict';
 
 const scheduleToString = require('core/util/schedule').scheduleToString;
-let a = ['q','e'];
+let a = ['q', 'e'];
+let b = 1;
 
-var schedule1 = {
-  description: 'Недельное расписание',
+b++;
+setTimeout(()=>{},2,3);
+let ssd = {
+  'while': 1
+}
+
+function s() {
+  let _this = this;
+  console.log('', _this);
+}
+
+
+var schedule = {
+  description: 'Недельное расписание', // Проверка
   occurs: [
     {
       weekday: 4,
