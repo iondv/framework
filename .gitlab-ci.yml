@@ -44,7 +44,7 @@ stages:
     tags:
         - testing
     script:
-        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_protractor.sh | bash
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_protractor_platform.sh | bash
     variables:
         TEST_SELENIUM_ADDR: "selenium-hub.kube.local"
         TEST_SELENIUM_PORT: 80
