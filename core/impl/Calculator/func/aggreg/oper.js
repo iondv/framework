@@ -3,7 +3,9 @@
  */
 'use strict';
 const calc = require('../util').calculate;
+const F = require('core/FunctionCodes');
 
+// jshint maxcomplexity
 module.exports = function (collFunc, af) {
   /**
    * @param {DataRepository} dataRepo
@@ -12,7 +14,7 @@ module.exports = function (collFunc, af) {
   return function (dataRepo) {
     return function (args) {
       return function () {
-        return calc(this, args, 5, function (args) {
+        return calc(this, args, 5, (args) => {
           if (args.length > 0) {
             if (Array.isArray(args[0])) {
               return collFunc(
@@ -23,13 +25,39 @@ module.exports = function (collFunc, af) {
                 args.length > 4 ? args[4] : null
               );
             } else if (typeof args[0] === 'string') {
-              let opts = args.length > 2 && typeof args[2] === 'object' ? {filter: args[2]} : {};
-              let oper = {};
-              oper['$' + af] = args[1];
-              opts.aggregates = {result: oper};
-              return dataRepo.aggregate(args[0], opts).then(function (data) {
-                return Promise.resolve(data.result);
-              });
+              let opts = {};
+              let p = Promise.resolve();
+              if (args.length > 2 && args[2] && typeof args[2] === 'object') {
+                let f = [];
+                for (let attr in args[2]) {
+                  if (args[2].hasOwnProperty(attr)) {
+                    let val =  args[2][attr];
+                    if (typeof val === 'function') {
+                      p.then(() => val.apply(this));
+                    } else {
+                      p = p.then(() => val)
+                    }
+                    p = p.then((val) => {
+                      f.push({[F.EQUAL]: ['$' + attr, val]});
+                    })
+                  }
+                }
+                p = p.then(() => {
+                  if (f.length) {
+                    opts.filter = f.length > 1 ? {[F.AND]: f} : f[0];
+                  }
+                });
+              }
+              return p
+                .then(() => {
+                  opts.aggregates = {result: {[af]: ['$' + args[1]]}};
+                  return dataRepo.aggregate(args[0], opts);
+                }).then((data) => {
+                  if (data.length) {
+                    return data[0].result;
+                  }
+                  return 0;
+                });
             } else {
               return null;
             }

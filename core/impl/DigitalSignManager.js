@@ -45,14 +45,11 @@ function DigitalSignManager(options) {
    * @returns {Promise}
    */
   this._signingAvailable = function (item, action, preprocessor) {
-    return new Promise(function (resolve, reject) {
-      var p = getPreprocessor(preprocessor);
-      if (p) {
-        return p.applicable(item, {action: action}).then(resolve).catch(reject);
-      }
-
-      resolve(options.defaultResult);
-    });
+    let p = getPreprocessor(preprocessor);
+    if (p) {
+      return p.applicable(item, {action: action});
+    }
+    return Promise.resolve(options.defaultResult ? true : false);
   };
 
   /**
@@ -62,23 +59,21 @@ function DigitalSignManager(options) {
    * @returns {Promise}
    */
   this._getDataForSigning = function (item, action, preprocessor) {
-    return new Promise(function (resolve, reject) {
-      var p = getPreprocessor(preprocessor);
-      if (p) {
-        return p.process(item, {action: action}).then(resolve).catch(reject);
-      }
+    let p = getPreprocessor(preprocessor);
+    if (p) {
+      return p.process(item, {action: action});
+    }
 
-      if (options.defaultResult) {
-        return resolve(
-          {
-            mimeType: 'application/json',
-            content: buf(JSON.stringify(item.base), 'utf-8')
-          }
-        );
-      }
+    if (options.defaultResult) {
+      return Promise.resolve(
+        {
+          mimeType: 'application/json',
+          content: buf(JSON.stringify(item.base), 'utf-8')
+        }
+      );
+    }
 
-      resolve(null);
-    });
+    return Promise.resolve(null);
   };
 
   /**
@@ -89,48 +84,46 @@ function DigitalSignManager(options) {
    * @returns {Promise}
    */
   this._persistSignature = function (id, data, signature, attributes) {
-    return new Promise(function (resolve, reject) {
-      var i;
-      if (!options.dataSource) {
-        reject(new Error('Не настроен источник данных.'));
-      }
+    if (!options.dataSource) {
+        throw new Error('Не настроен источник данных.');
+    }
 
-      if (Array.isArray(signature)) {
-        for (i = 0; i < signature.length; i++) {
-          if (typeof signature[i] !== 'string') {
-            signature[i] = base64.fromByteArray(signature[i]);
-          }
-        }
-      } else {
+    if (Array.isArray(signature)) {
+      for (let i = 0; i < signature.length; i++) {
         if (typeof signature[i] !== 'string') {
-          signature = base64.fromByteArray(signature);
+          signature[i] = base64.fromByteArray(signature[i]);
         }
       }
+    } else {
+      if (typeof signature !== 'string') {
+        signature = base64.fromByteArray(signature);
+      }
+    }
 
-      if (Array.isArray(data)) {
-        for (i = 0; i < data.length; i++) {
-          if (typeof data[i].content !== 'string') {
-            data[i].content = base64.fromByteArray(data[i].content);
-          }
-        }
-      } else {
-        if (typeof data.content !== 'string') {
-          data.content = base64.fromByteArray(data.content);
+    if (Array.isArray(data)) {
+      for (let i = 0; i < data.length; i++) {
+        if (typeof data[i].content !== 'string') {
+          data[i].content = base64.fromByteArray(data[i].content);
         }
       }
-
-      var pp;
-
-      if (options.signaturePreprocessor &&
-        typeof options.signaturePreprocessor.processSignature === 'function') {
-        pp = options.signaturePreprocessor.processSignature(attributes, signature, data);
-      } else {
-        pp = new Promise(function (r) {r(signature);});
+    } else {
+      if (typeof data.content !== 'string') {
+        data.content = base64.fromByteArray(data.content);
       }
+    }
 
-      pp.then(
-        function (signature) {
-          return options.dataSource.insert('ion_signatures',
+    let pp;
+
+    if (options.signaturePreprocessor &&
+      typeof options.signaturePreprocessor.processSignature === 'function') {
+      pp = options.signaturePreprocessor.processSignature(attributes, signature, data);
+    } else {
+      pp = Promise.resolve(signature);
+    }
+
+    return pp
+      .then((signature) => {
+        return options.dataSource.insert('ion_signatures',
             {
               id: id,
               timeStamp: new Date(),
@@ -140,13 +133,13 @@ function DigitalSignManager(options) {
             }
           );
         }
-      ).then(function (result) {
-        resolve({
+      )
+      .then((result) => {
+        return {
           id: result.id,
           timeStamp: result.timeStamp
-        });
-      }).catch(reject);
-    });
+        };
+      });
   };
 
   /**
@@ -158,43 +151,42 @@ function DigitalSignManager(options) {
    * @returns {Promise}
    */
   this._getSignatures = function (id, since, till, opts) {
-    return new Promise(function (resolve, reject) {
-      if (!options.dataSource) {
-        reject(new Error('Не настроен источник данных.'));
-      }
+    if (!options.dataSource) {
+      throw new Error('Не настроен источник данных.');
+    }
 
-      var and = [];
+    let and = [];
 
-      if (id) {
-        and.push({[F.EQUAL]: ['$id', id]});
-      }
+    if (id) {
+      and.push({[F.EQUAL]: ['$id', id]});
+    }
 
-      if (since && till) {
-        and.push({
-          [F.AND]: [
-            {[F.GREATER_OR_EQUAL]: ['$timeStamp', since]},
-            {[F.LESS_OR_EQUAL]: ['$timeStamp', till]}
-          ]
-        });
-      } else if (since) {
-        and.push({[F.GREATER_OR_EQUAL]: ['$timeStamp', since]});
-      }
+    if (since && till) {
+      and.push({
+        [F.AND]: [
+          {[F.GREATER_OR_EQUAL]: ['$timeStamp', since]},
+          {[F.LESS_OR_EQUAL]: ['$timeStamp', till]}
+        ]
+      });
+    } else if (since) {
+      and.push({[F.GREATER_OR_EQUAL]: ['$timeStamp', since]});
+    }
 
-      if (!and.length) {
-        reject('Не указаны параметры выборки!');
-      }
+    if (!and.length) {
+      throw new Error('Не указаны параметры выборки!');
+    }
 
-      options.dataSource.fetch('ion_signatures',
+    return options.dataSource.fetch('ion_signatures',
         {
           filter: and.length > 1 ? {[F.AND]: and} : and[0],
           sort: {timeStamp: 1}
         }
-      ).
-      then(
-        function (signatures) {
-          var result = [];
-          var sign, data, i;
-          for (i = 0; i < signatures.length; i++) {
+      )
+      .then(
+        (signatures) => {
+          let result = [];
+          for (let i = 0; i < signatures.length; i++) {
+            let sign, data;
             if (!opts.asBase64) {
               if (Array.isArray(signatures[i].signature)) {
                 sign = [];
@@ -235,11 +227,9 @@ function DigitalSignManager(options) {
             );
           }
 
-          resolve(result);
+          return result;
         }
-      ).
-      catch(reject);
-    });
+      );
   };
 
   /**
@@ -247,11 +237,7 @@ function DigitalSignManager(options) {
    * @returns {Promise}
    */
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      options.dataSource.ensureIndex('ion_signatures', [{id: 1}, {timeStamp: 1}], {unique: true}).
-      then(resolve).
-      catch(reject);
-    });
+    return options.dataSource.ensureIndex('ion_signatures', [{id: 1}, {timeStamp: 1}], {unique: true});
   };
 }
 

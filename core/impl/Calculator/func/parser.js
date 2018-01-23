@@ -3,7 +3,7 @@ const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 
-// jshint maxstatements: 50, maxcomplexity: 25
+// jshint maxstatements: 50, maxcomplexity: 30
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -271,6 +271,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
     return formula;
   }
 
+  let result = {};
   for (let func in formula) {
     if (formula.hasOwnProperty(func)) {
       if (func[0] === '&') {
@@ -285,12 +286,11 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
         }
         return f(args);
       } else {
-        warn('Не найдена функция ' + func);
+        result[func] = parseObject(formula[func], funcLib, warn, dataRepoGetter);
       }
     }
   }
-
-  return formula;
+  return result;
 }
 
 module.exports = function (formula, lib, warn, dataRepoGetter) {

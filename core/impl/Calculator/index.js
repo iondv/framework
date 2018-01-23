@@ -8,12 +8,15 @@ const stdLib = require('./func');
 const clone = require('clone');
 const aggreg = require('./func/aggreg');
 const data = require('./func/data');
+const sequence = require('./func/sequence');
 const DataRepository = require('core/interfaces/DataRepository').DataRepository;
+const SequenceProvider = require('core/interfaces/SequenceProvider');
 const parser = require('./func/parser');
 
 /**
  * @param {{}} options
  * @param {DataRepository | String} options.dataRepo
+ * @param {SequenceProvider} options.sequenceProvider
  * @param {Logger} [options.log]
  * @constructor
  */
@@ -34,6 +37,9 @@ function Calculator(options) {
         funcLib.min = aggreg.min(dataRepo);
         funcLib.merge = aggreg.merge(dataRepo);
         funcLib.get = data.get(dataRepo);
+    }
+    if (options.sequenceProvider instanceof SequenceProvider) {
+      funcLib.next = sequence.next(options.sequenceProvider);
     }
     return Promise.resolve();
   };

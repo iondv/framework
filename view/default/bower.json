@@ -15,6 +15,7 @@
   "dependencies": {
     "bootstrap": "3.3.5",
     "moment": "latest",
-    "moment-timezone": "latest"
+    "moment-timezone": "latest",
+    "jquery": "~2"
   }
 }
