@@ -11,3 +11,5 @@ rules:
   no-iterator: error # Запрет испльзования __iterator__ в скриптах - Откл.в recommended
   no-script-url: error # Запрет для javascript:url - анало eval - Откл.в recommended
   strict: off # Не обязательный strict режим для скриптов
+  no-var: off # Разрешаем использования var
+
