@@ -1,4 +1,4 @@
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+'use strict';
 /**
  * Created by kras on 20.07.16.
  */

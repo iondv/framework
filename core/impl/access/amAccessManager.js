@@ -33,10 +33,8 @@ function MongoAclAccessManager(config) {
    * @private
    */
   this._init = function () {
-    return new Promise(function (resolve, reject) {
-      _this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
-      resolve();
-    });
+    _this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
+    return Promise.resolve();
   };
 
   /**
@@ -83,6 +81,7 @@ function MongoAclAccessManager(config) {
    */
   this._assignRoles = function (subjects, roles) {
     subjects  = Array.isArray(subjects) ? subjects : [subjects];
+    roles = Array.isArray(roles) ? roles : [roles];
     let roleChunks = _.chunk(roles, 10);
     return chain(roles, (role) => _this._defineRole(role))
       .then(() =>
@@ -101,6 +100,8 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
+    roles = Array.isArray(roles) ? roles : [roles];
+    resources = Array.isArray(resources) ? resources : [resources];
     let roleChunks = _.chunk(roles, 10);
     let resChunks = _.chunk(resources, 10);
     return chain(roles, (role) => _this._defineRole(role))
@@ -121,6 +122,7 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
+    resources = Array.isArray(resources) ? resources : [resources];
     let resChunks = _.chunk(resources, 10);
     return chain(roles, function (role) {
       return chain(resChunks, (resc) => new Promise((resolve, reject) => {
@@ -135,6 +137,7 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._unassignRoles = function (subjects, roles) {
+    roles = Array.isArray(roles) ? roles : [roles];
     let roleChunks = _.chunk(roles, 10);
     return chain(subjects, function (subject) {
       return chain(roleChunks, (rolesc) => new Promise((resolve, reject) => {

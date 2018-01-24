@@ -15,7 +15,7 @@ module.exports = function (args) {
       if (lang) {
         d.locale(lang);
       }
-      return d.format(String(format) || 'L');
+      return d.format(String(format || 'L'));
     });
   };
 };

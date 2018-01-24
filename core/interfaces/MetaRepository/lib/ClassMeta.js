@@ -1,7 +1,7 @@
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 12.04.16.
  */
+'use strict';
 const clone = require('clone');
 
 /* jshint maxstatements: 30, evil: true */
@@ -107,6 +107,23 @@ function ClassMeta(metaObject) {
     return item.getItemId();
   };
 
+  this.isSemanticCached = function () {
+    return this.plain.semanticCached;
+  };
+
+  this.getCacheDependencies = function () {
+    let result = [];
+    if (this.getAncestor()) {
+      result.push(...this.getAncestor().getCacheDependencies());
+    }
+    if (Array.isArray(this.plain.cacheDependencies)) {
+      this.plain.cacheDependencies.forEach((a) => {
+        result.push(a.split('.'));
+      });
+    }
+    return result;
+  };
+
   this.getSemanticAttrs = function () {
     return this.plain.semantic && this._semanticAttrs.length ?
       this._semanticAttrs :
@@ -190,7 +207,9 @@ function ClassMeta(metaObject) {
         result[nm] = this.propertyMetas[nm];
       }
     }
-    return Object.values(result);
+    return Object.values(result).sort((a, b) => {
+      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+    });
   };
 
   this.isJournaling = function () {
