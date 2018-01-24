@@ -3,20 +3,6 @@
  */
 
 const scheduleToString = require('core/util/schedule').scheduleToString;
-let a = ['q', 'e'];
-let b = 1;
-
-b++;
-setTimeout(()=>{},2,3);
-let ssd = {
-  'while': 1
-}
-
-function s() {
-  let _this = this;
-  console.log('', _this);
-}
-
 
 var schedule = {
   description: 'Недельное расписание', // Проверка
@@ -86,4 +72,4 @@ var schedule = {
   ]
 };
 
-console.log(scheduleToString(schedule1));
+

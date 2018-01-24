@@ -411,7 +411,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
   space-before-function-paren: # Пробел перед параметрами функции
     - warn
-    - {"anonymous": "never", "named": "always"}
+    - {"anonymous": "never", "named": "never"}
   space-in-parens: # Пробел в скобках, по умолчанию никгода
     - warn
   space-infix-ops: # Пробел в операндах вычисления
@@ -436,9 +436,9 @@ rules: # Описание правил https://eslint.org/docs/rules/
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
     - error
     - always
-  arrow-spacing: # Пробелы после скобок и перед кривыми скобками
+  arrow-spacing: # Пробелы после скобок и перед кривыми скобками в стрелочных функциях
     - error
-    - { "before": false, "after": false }
+    - { "before": true, "after": true }
   # constructor-super: # eslint:recommended Вызов конструктора только из расширенного класса
   generator-star-spacing: # Пробелы вокруг звездочки в генераторах
     - warn
