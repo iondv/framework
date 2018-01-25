@@ -1,5 +1,3 @@
-// jscs:disable requireCapitalizedComments
-
 /**
  * Created by kras on 25.02.16.
  */
@@ -83,7 +81,9 @@ const FUNC_OPERS = {
   [Operations.FORMAT]: '$dateToString'
 };
 
-// jshint maxstatements: 150, maxcomplexity: 60, maxdepth: 10, maxparams: 8
+const OPERS = Object.values(QUERY_OPERS).concat(Object.values(FUNC_OPERS));
+
+// jshint maxstatements: 150, maxcomplexity: 65, maxdepth: 10, maxparams: 8
 
 /**
  * @param {{ uri: String, options: Object }} config
@@ -817,7 +817,7 @@ function MongoDs(config) {
     return e;
   }
 
-  function prepareConditions(conditions, part, parent, nottop, part2, parent2) {
+  function prepareConditions(conditions, part, parent, nottop) {
     if (Array.isArray(conditions)) {
       for (let i = 0; i < conditions.length; i++) {
         prepareConditions(conditions[i], i, conditions, false, part, parent);
@@ -1172,6 +1172,7 @@ function MongoDs(config) {
             break;
           } else {
             let jalias = prefix;
+            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, analise, counter, jalias);
             if (name.indexOf('.') > 0) {
               analise.needPostFilter = true;
               jalias = name.substr(0, name.indexOf('.'));
@@ -1188,7 +1189,6 @@ function MongoDs(config) {
               }
             }
 
-            let tmp = producePrefilter(attributes, find[name], joins, explicitJoins, analise, counter, jalias);
             if (name === '$or') {
               if (Array.isArray(tmp)) {
                 for (let i = 0; i < tmp.length; i++) {
@@ -1243,8 +1243,7 @@ function MongoDs(config) {
               } else {
                 if (
                   name[0] === '$' &&
-                  Array.isArray(tmp) &&
-                  !(name === '$and' || name === '$or' || name === 'not' || name === 'nor' || name === '$in')
+                  Array.isArray(tmp) && !(name === '$and' || name === '$or' || name === 'not' || name === 'nor' || name === '$in' || name === '$cond')
                 ) {
                   result = IGNORE;
                   break;
@@ -1266,6 +1265,9 @@ function MongoDs(config) {
                 } else if (name[0] === '$') {
                   if (allowInPrefilter.indexOf(name) < 0) {
                     result = IGNORE;
+                    if (OPERS.indexOf(name) < 0) {
+                      attributes.push(name.substr(1));
+                    }
                     analise.needRedact = true;
                     break;
                   } else {
@@ -2157,7 +2159,7 @@ function MongoDs(config) {
         if (aggregation) {
           return new Promise((resolve, reject) => {
             fetch(c, opts, aggregation,
-              (r, amount) => {
+              (r) => {
                 let p;
                 if (Array.isArray(r)) {
                   p = Promise.resolve(r);
