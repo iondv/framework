@@ -1159,6 +1159,21 @@ function IonDataRepository(options) {
     let keys = cm.getKeyProperties();
     let calcs = Promise.resolve(updates);
 
+    let calcContext = {
+      $context: _this._wrap(cm.getCanonicalName(), updates),
+      $uid: user ? user.id() : null
+    };
+
+    let props = {};
+    if (user) {
+      props = user.properties();
+      for (let p in props) {
+        if (props.hasOwnProperty(p)) {
+          calcContext['$' + p] = props[p];
+        }
+      }
+    }
+
     properties.forEach((pm) => {
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
@@ -1186,14 +1201,13 @@ function IonDataRepository(options) {
           let v = pm.defaultValue;
           if (v === '$$uid') {
             updates[pm.name] = user ? user.id() : null;
+          } else if (typeof v === 'string' && props.hasOwnProperty(v.substr(2))) {
+            updates[pm.name] = props[v.substr(2)];
           } else if (pm._dvFormula) {
             if (!pm.autoassigned || !onlyDefaults) {
               calcs = calcs
                 .then(() => {
-                  return pm._dvFormula.apply({
-                    $context: _this._wrap(cm.getCanonicalName(), updates),
-                    $uid: user ? user.id() : null
-                  });
+                  return pm._dvFormula.apply(calcContext);
                 })
                 .then((result) => {
                   try {
