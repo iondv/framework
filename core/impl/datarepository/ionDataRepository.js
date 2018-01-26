@@ -296,7 +296,8 @@ function IonDataRepository(options) {
    */
   function prepareRefEnrichment(item, property, attrs, loaded, linksByRef) {
     let refc = property.meta._refClass;
-    if (refc) {
+    item.references = item.references || {};
+    if (refc && !item.references[property.getName()]) {
       let pn = item.classMeta.getName() + '.' + property.getName();
       if (!attrs.hasOwnProperty(pn)) {
         attrs[pn] = {
@@ -318,9 +319,6 @@ function IonDataRepository(options) {
       }
 
       if (v) {
-        if (typeof item.references === 'undefined') {
-          item.references = {};
-        }
         /**
          * @type {Item}
          */
@@ -349,7 +347,7 @@ function IonDataRepository(options) {
   function prepareColEnrichment(item, property, attrs, loaded, linksByRef) {
     let refc = property.meta._refClass;
     item.collections = item.collections || {};
-    if (refc) {
+    if (refc && !item.collections[property.getName()]) {
       let pn = item.classMeta.getName() + '.' + property.getName();
       if (!attrs.hasOwnProperty(pn)) {
         attrs[pn] = {
