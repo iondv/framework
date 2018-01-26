@@ -1,76 +1,124 @@
-cache:
-    key: ionportal
-    paths:
-    - node_modules/
 stages:
+    - pre-compile
     - compile
-    - test
     - deploy
-Compile:
-    type: compile
+    - test
+    - undeploy
+    - clean
+.PreCompile: &JobPreCompile
+    image: docker.iondv.ru/kube/docker/mocha
+    type: pre-compile
     tags:
-        - build-02
-    only:
-        - master
-        - develop
-        - raw
+        - dapp
     script:
-    - npm install
-    - echo $'auth.denyTop=false\ndb.uri=mongodb://127.0.0.1:27017/ion\ndb.name=ion\ndb.user=root\ndb.pwd=ION-sql1\nserver.port1=8888\nserver.port2=8889\nserver.port3=3000\nmodule.default=registry\nfs.storageRoot=./files\nfs.urlBase=/files' > config/config.ini
-    - export NODE_PATH=`pwd -P`
-    - gulp build
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/platform-pre-compile.sh | bash
     artifacts:
-        name: "$CI_BUILD_STAGE_$CI_BUILD_REF_NAME"
-        expire_in: 20 min
-        untracked: true
-GenerateDocs:
+        name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
+        expire_in: 6 mos
+        when: on_success
+        paths:
+           - Dappfile
+    when: manual
+    allow_failure: false
+.Compile: &JobCompile
     type: compile
     tags:
-        - build-02
-    only:
-        - develop
+        - dapp
     script:
-    - npm install -g jsdoc-to-markdown
-    - git clone http://jenkins:$JENKINS_PASS@git.iondv.ru/ION/platform.wiki.git
-    - find * -type d -not -path "node_modules*" -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'mkdir "platform.wiki/developer_reference/${0}"' {} \;
-    - find * -type d -not -path "node_modules*" -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'jsdoc2md ${0}/*.js > "platform.wiki/developer_reference/${0}.md"' {} \;
-    - git config --global user.email "jenkins@example.com"
-    - git config --global user.name "Jenkins"
-    - cd platform.wiki
-    - git add .
-    - git commit -m "develop ref" || true
-    - git push
-Testing:
-  type: test
-  tags:
-    - test-01
-  only:
-        - master
-        - develop
-        - raw
-  script:
-    - C:\MongoDB\bin\mongo ion --eval "db.dropDatabase()"
-    - $env:NODE_ENV = "development"
-    - $env:NODE_PATH = pwd
-    - $env:DEBUG = "ION:*"
-    - npm install
-    - gulp setup
-    - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_DEV
-."http://docker.local:Random platforma":
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/compile_with_dapp_stages.sh | bash
+    allow_failure: false
+    #when: manual
+.Deploy: &JobDeploy
   type: deploy
   tags:
-    - docker-01
-  only:
-        - master
-        - develop
-        - raw
+    - kube-deploy
   script:
-    - sudo docker stop $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
-    - sudo docker rm $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
-    - sudo docker run --name $PJ_DOCKER_NAME$CI_BUILD_REF_NAME -d -e NODE_PATH=/var/www -e DEBUG=ION:* -e NODE_ENV=development -p 8888 -p 22 iondvww supervisord
-    - export DEBUG=ION:*
-    - sudo docker cp ../platform $PJ_DOCKER_NAME$CI_BUILD_REF_NAME:/var/www
-    - sudo docker exec $PJ_DOCKER_NAME$CI_BUILD_REF_NAME bash -c 'sleep 3 && node /var/www/bin/import.js'
-    - sudo docker restart $PJ_DOCKER_NAME$CI_BUILD_REF_NAME
-    - "curl -X POST -F token=$DevAndTestToken -F ref=$CI_BUILD_REF_NAME https://git.iondv.ru/api/v3/projects/34/trigger/builds"
-    - sudo docker port $PJ_DOCKER_NAME$CI_BUILD_REF_NAME 8888 | sed -r 's/'0.0.0.0'+/http:\/\/192.168.0.228/g'
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/deploy_review_on_kube.sh | bash
+  variables:
+    GIT_STRATEGY: none
+    NAMESPACE: "review"
+  when: on_success
+.Test: &JobTest
+    image: docker.iondv.ru/kube/docker/protractor
+    type: test
+    tags:
+        - testing
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/platform-test_protractor.sh | bash
+    variables:
+        TEST_SELENIUM_ADDR: "selenium-hub.kube.local"
+        TEST_SELENIUM_PORT: 80
+        ION_TEST_LOGIN: "user"
+        ION_TEST_PASSWORD: "${userpassword}"
+        ION_TEST_URL: "http://${CI_COMMIT_REF_SLUG}.${CI_PROJECT_NAME}.kube.local"
+    allow_failure: false
+    when: on_success
+.BackendTest: &BackendTest
+    type: test
+    tags:
+        - kube-deploy
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_backend.sh | bash
+    allow_failure: false
+#Builds on platform
+Pre-Compile:
+    <<: *JobPreCompile
+    only:
+        - branches
+Compile:
+  <<: *JobCompile
+  only:
+    - branches
+  dependencies:
+    - Pre-Compile
+Deploy review:
+  <<: *JobDeploy
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    url: http://${CI_COMMIT_REF_SLUG}.${CI_PROJECT_NAME}.kube.local
+    on_stop: stop_review
+  only:
+    - branches
+stop_review:
+  type: undeploy
+  tags:
+    - kube-deploy
+  variables:
+    GIT_STRATEGY: none
+    NAMESPACE: review
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/undeploy_review.sh | bash
+  after_script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/dapp_stages_cleanup.sh | bash
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    action: stop
+  only:
+    - branches
+### TEST SECITONS
+Testing Review:
+    <<: *JobTest
+    only:
+        - branches
+    allow_failure: false
+ion-workflow:
+    tags:
+        - kube-deploy
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_ion_workflow.sh | bash
+    only:
+        - branches
+    allow_failure: false
+### CLEAN SECTION
+Clean:
+  type: clean
+  tags:
+    - dapp
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/drop_dapp.sh | bash
+  when: manual
+  only:
+    - branches
+  before_script:
+    - curl -fsSL https://git.iondv.ru/ION/functional_tests/raw/master/stage_access.py | python

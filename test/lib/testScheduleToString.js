@@ -1,13 +1,11 @@
 /**
  * Created by Vasiliy Ermilov (ermilov.work@yandex.ru) on 12/22/16.
  */
-'use strict';
 
 const scheduleToString = require('core/util/schedule').scheduleToString;
-let a = ['q','e'];
 
-var schedule1 = {
-  description: 'Недельное расписание',
+var schedule = {
+  description: 'Недельное расписание', // Проверка
   occurs: [
     {
       weekday: 4,
@@ -74,4 +72,4 @@ var schedule1 = {
   ]
 };
 
-console.log(scheduleToString(schedule1));
+

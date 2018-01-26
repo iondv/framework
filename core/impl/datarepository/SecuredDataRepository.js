@@ -279,7 +279,8 @@ function SecuredDataRepository(options) {
         permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
-      permMap[item.getClassName() + '@' + item.getItemId()].__attr = attrPermissions(item, permissions) || {};
+      permMap[item.getClassName() + '@' + item.getItemId()].__attr =
+        attrPermissions(item, permMap[item.getClassName() + '@' + item.getItemId()], permissions) || {};
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
         if (p.meta.type === PropertyTypes.REFERENCE || p.meta.type === PropertyTypes.COLLECTION) {
@@ -413,10 +414,11 @@ function SecuredDataRepository(options) {
    * @param {{}} permissions
    * @returns {{}}
    */
-  function attrPermissions(item, permissions) {
+  function attrPermissions(item, ipermissions, permissions) {
     let props = item.getProperties();
     let result = {};
-    let iperm = item.permissions || {};
+    let global = permissions[globalMarker] || {};
+    let iperm = merge(true, ipermissions || {}, global);
     for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
         let p = props[nm];
@@ -424,18 +426,14 @@ function SecuredDataRepository(options) {
         if (p.getType() === PropertyTypes.REFERENCE) {
           let ri = p.evaluate();
           let tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
-          let rperm = permissions[tmp] || {};
-          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+          let rperm = merge(true, permissions[tmp] || {}, global);
+          let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
 
           if (ri instanceof Item) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
             rperm = merge(true, permissions[tmp] || {}, rperm);
             rcperm = merge(true, permissions[classPrefix + ri.getClassName()] || {}, rcperm);
-            if (!ri.permissions) {
-              ri.permissions =
-                merge(true, rperm, rcperm);
-            }
-            ri.attrPermissions = attrPermissions(ri, permissions);
+            ri.attrPermissions = attrPermissions(ri, merge(true, rperm, rcperm), permissions);
           }
 
           result[p.getName()][Permissions.READ] =
@@ -461,7 +459,7 @@ function SecuredDataRepository(options) {
           result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || rperm[Permissions.DELETE];
 
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          let rcperm = permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {};
+          let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
           result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && rcperm[Permissions.READ];
 
           result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && rcperm[Permissions.WRITE];
@@ -522,6 +520,16 @@ function SecuredDataRepository(options) {
       return p
         .then((permissions) => {
           item.permissions = permissions;
+          if (
+            item.permissions[Permissions.FULL] ||
+            (
+              item.permissions[Permissions.READ] &&
+              item.permissions[Permissions.WRITE] &&
+              item.permissions[Permissions.DELETE]
+            )
+          ) {
+            return;
+          }
           if (roleConf) {
             let result = Promise.resolve();
             Object.keys(roleConf).forEach((role) => {
@@ -556,15 +564,22 @@ function SecuredDataRepository(options) {
             return result;
           }
         })
+        .then(() =>
+          workflow ?
+            workflow.getStatus(item, options)
+              .then((status) => {
+                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+                item.attrPermissions = status.propertyPermissions || {};
+              }) :
+            Promise.resolve()
+        )
         .then(() => noDrill ? null :
           ((statics && statics.__attr) ?
             clone(statics.__attr) :
-            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, ap))))
+            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, ap))))
         .then((ap) => {
-          item.attrPermissions = ap;
-          let w = Promise.resolve();
-
-          if (!noDrill) {
+          item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+          if (!noDrill && item.permissions[Permissions.READ]) {
             let props = item.getProperties();
             let items = [];
             Object.values(props).forEach((p) => {
@@ -582,36 +597,19 @@ function SecuredDataRepository(options) {
             });
 
             if (Array.isArray(items) && items.length) {
-              if (!permMap) {
-                w = w.then(() => getPermMap(items, options));
-              } else {
-                w = w.then(() =>clone(permMap));
-              }
-              w = w
-                .then((permMap) => {
-                  let w1 = Promise.resolve();
-
-                  items.forEach((ri) => {
-                    if (ri.getItemId()) {
-                      w1 = w1
-                        .then(() => setItemPermissions(options, permMap)(ri));
-                    }
-                  });
-
-                  return w1;
+              return (
+                permMap ? Promise.resolve(clone(permMap)) : getPermMap(items, options)
+              ).then((permMap) => {
+                let w1 = Promise.resolve();
+                items.forEach((ri) => {
+                  if (ri.getItemId()) {
+                    w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
+                  }
                 });
+                return w1;
+              });
             }
           }
-
-          if (workflow) {
-            w = w
-              .then(() => workflow.getStatus(item, options))
-              .then((status) => {
-                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-                item.attrPermissions = merge(false, true, item.attrPermissions || {}, status.propertyPermissions);
-              });
-          }
-          return w;
         })
         .then(() => item);
     };
@@ -690,7 +688,14 @@ function SecuredDataRepository(options) {
     let opts = clone(moptions);
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
-    return dataRepo.getItem(obj, id || '', opts).then(setItemPermissions(opts));
+    return dataRepo.getItem(obj, id || '', opts)
+      .then(item =>
+        item ? getPermMap([item], moptions)
+          .then((permMap) => {
+            return setItemPermissions(opts, permMap)(item);
+          }) :
+          item
+      );
   }
 
   /**
