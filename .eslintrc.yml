@@ -199,7 +199,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
   brace-style: # Тип скобок - стандартный, разрешены на одной строке
     - warn
     - 1tbs
-    - allowSingleLine: true
+    - { "allowSingleLine": true }
   camelcase: # Стиль камелКейс, в т.ч. для свойств объектов
     - warn
   capitalized-comments: # Заголовки в комментариях с большой буквы
