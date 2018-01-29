@@ -2474,7 +2474,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._recache = function (item) {
-    return refreshCaches(item, conditions, options);
+    return refreshCaches(item, null, {});
   };
 }
 
