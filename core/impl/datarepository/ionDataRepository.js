@@ -274,8 +274,8 @@ function IonDataRepository(options) {
    * @param {{}} loaded
    */
   function checkLoaded(refc, id, loaded) {
-    if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' +id)) {
-      return loaded[refc.getCanonicalName() + '@' +id];
+    if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + id)) {
+      return loaded[refc.getCanonicalName() + '@' + id];
     }
     let descs = refc.getDescendants();
     for (let i = 0; i < descs.length; i++) {
@@ -2470,6 +2470,14 @@ function IonDataRepository(options) {
    */
   this.setImageStorage = function (storage) {
     this.imageStorage = storage;
+  };
+
+  /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  this._recache = function (item) {
+    return refreshCaches(item, null, {});
   };
 }
 
