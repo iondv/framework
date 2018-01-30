@@ -193,7 +193,7 @@ function DsMetaRepository(options) {
     } catch (err) {
       throw err;
     }
-    throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') +' не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') + ' не найден в пространстве имен ' + namespace + '!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -218,7 +218,7 @@ function DsMetaRepository(options) {
     } else {
       let ns = formNS(namespace);
       for (let nm  in classMeta) {
-        if (classMeta.hasOwnProperty(nm) && ns === nm) {
+        if (classMeta.hasOwnProperty(nm) && ns === nm || !namespace) {
           for (let cn in classMeta[nm]) {
             if (classMeta[nm].hasOwnProperty(cn)) {
               if (version) {

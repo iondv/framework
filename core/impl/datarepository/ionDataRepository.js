@@ -274,8 +274,8 @@ function IonDataRepository(options) {
    * @param {{}} loaded
    */
   function checkLoaded(refc, id, loaded) {
-    if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' +id)) {
-      return loaded[refc.getCanonicalName() + '@' +id];
+    if (loaded.hasOwnProperty(refc.getCanonicalName() + '@' + id)) {
+      return loaded[refc.getCanonicalName() + '@' + id];
     }
     let descs = refc.getDescendants();
     for (let i = 0; i < descs.length; i++) {
@@ -571,9 +571,13 @@ function IonDataRepository(options) {
                 ) && nestingDepth >= _this.maxEagerDepth
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  if (typeof item.references[nm] === 'undefined') {
+                    prepareRefEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  }
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
-                  prepareColEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  if (typeof item.collections[nm] === 'undefined') {
+                    prepareColEnrichment(item, props[nm], attrs, __loaded, linksByRef);
+                  }
                 }
               }
             }
@@ -1211,7 +1215,7 @@ function IonDataRepository(options) {
                 })
                 .then((result) => {
                   try {
-                    updates[pm.name] = cast(result, pm.type);
+                    updates[pm.name] = cast(result instanceof Item ? result.getItemId() : result, pm.type);
                   } catch (err) {
                   }
                   return updates;
@@ -1720,17 +1724,17 @@ function IonDataRepository(options) {
 
       let refUpdates = {};
       let da = {};
-      let updates = data || {};
+      let updates;
 
       return bubble(
         'pre-create',
         cm,
         {
-          data: updates,
+          data: data,
           user: options.user
         })
-        .then(preWriteEventHandler(updates))
-        .then(function () {
+        .then(preWriteEventHandler(data))
+        .then(() => {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           return autoAssign(cm, updates, false, options.user);
         })
@@ -1750,6 +1754,7 @@ function IonDataRepository(options) {
             }
             updates[creatorAttr] = options.user.id();
           }
+
           return _this.ds.insert(
             tn(rcm),
             updates,
@@ -1836,7 +1841,7 @@ function IonDataRepository(options) {
         let base;
         let refUpdates = {};
         let da = {};
-        let updates = data || {};
+        let updates;
 
         if (cm.getChangeTracker()) {
           updates[cm.getChangeTracker()] = new Date();
@@ -1855,7 +1860,7 @@ function IonDataRepository(options) {
               {
                 id: id,
                 item: b && _this._wrap(b._class, b, b._classVer),
-                data: updates,
+                data: data,
                 user: options.user
               });
           });
@@ -1866,14 +1871,14 @@ function IonDataRepository(options) {
               cm,
               {
                 id: id,
-                data: updates,
+                data: data,
                 user: options.user
               }
             );
         }
 
         return p
-          .then(preWriteEventHandler(updates))
+          .then(preWriteEventHandler(data))
           .then(() => {
             updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
             checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
@@ -1968,7 +1973,7 @@ function IonDataRepository(options) {
 
       let refUpdates = {};
       let da = {};
-      let updates = data || {};
+      let updates;
       let conditionsData;
       let event = EventType.UPDATE;
       let conditions = null;
@@ -2004,7 +2009,7 @@ function IonDataRepository(options) {
                 {
                   id: id,
                   item: b && _this._wrap(b._class, b, b._classVer),
-                  data: updates,
+                  data: data,
                   user: options.user
                 });
             });
@@ -2014,16 +2019,16 @@ function IonDataRepository(options) {
               cm,
               {
                 id: id,
-                data: updates,
+                data: data,
                 user: options.user
               }
             );
           }
         })
-        .then(preWriteEventHandler(updates))
+        .then(preWriteEventHandler(data))
         .then(() => {
           let fileSavers = [];
-          updates = formUpdatedData(cm, updates, true, refUpdates, da) || {};
+          updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           prepareFileSavers(id || JSON.stringify(conditionsData), cm, fileSavers, updates);
           return Promise.all(fileSavers);
         })
@@ -2479,6 +2484,14 @@ function IonDataRepository(options) {
    */
   this.setImageStorage = function (storage) {
     this.imageStorage = storage;
+  };
+
+  /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  this._recache = function (item) {
+    return refreshCaches(item, null, {});
   };
 }
 
