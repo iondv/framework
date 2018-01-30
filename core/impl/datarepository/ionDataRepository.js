@@ -1273,10 +1273,10 @@ function IonDataRepository(options) {
           }
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
-          if (v === '$$uid') {
-            updates[pm.name] = user ? user.id() : null;
-          } else if (typeof v === 'string' && props.hasOwnProperty(v.substr(2))) {
-            updates[pm.name] = props[v.substr(2)];
+          if (typeof v === 'string' && v.length > 1 && v[0] === '$') {
+            if (calcContext.hasOwnProperty(v.substr(1))) {
+              updates[pm.name] = calcContext[v.substr(1)];
+            }
           } else if (pm._dvFormula) {
             if (!pm.autoassigned || !onlyDefaults) {
               calcs = calcs
@@ -1913,10 +1913,6 @@ function IonDataRepository(options) {
         let da = {};
         let updates;
 
-        if (cm.getChangeTracker()) {
-          updates[cm.getChangeTracker()] = new Date();
-        }
-
         let p;
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
@@ -1951,6 +1947,9 @@ function IonDataRepository(options) {
           .then(preWriteEventHandler(data))
           .then(() => {
             updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
+            if (cm.getChangeTracker()) {
+              updates[cm.getChangeTracker()] = new Date();
+            }
             checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
             let fileSavers = [];
             prepareFileSavers(id, cm, fileSavers, updates);
