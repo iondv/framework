@@ -2265,10 +2265,10 @@ function MongoDs(config) {
       }
 
       if (act) {
-        return new Promise(function (resolve, reject) {
-          getCollection(AUTOINC_COLLECTION).then(
-            function (c) {
-              c.findOne({__type: type}, function (err, r) {
+        return getCollection(AUTOINC_COLLECTION)
+          .then((c) => {
+            return new Promise((resolve, reject) => {
+              c.findOne({__type: type}, (err, r) => {
                 if (err) {
                   return reject(err);
                 }
@@ -2285,17 +2285,11 @@ function MongoDs(config) {
                   {__type: type},
                   {$set: {counters: data, steps: steps, adjust: adjustable}},
                   {upsert: true},
-                  function (err) {
-                    if (err) {
-                      return reject(err);
-                    }
-                    resolve();
-                  }
+                  (err) => err ? reject(err) : resolve
                 );
               });
-            }
-          ).catch(e => reject(e));
-        });
+            });
+          });
       }
     }
     return Promise.resolve();

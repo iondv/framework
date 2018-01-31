@@ -377,7 +377,6 @@ function MongoDbSync(options) {
           }
         }
       }
-
       if (Object.keys(inc).length > 0) {
         return getSysColl(AUTOINC_COLL).then((autoinc) => {
           return new Promise((resolve, reject) => {
