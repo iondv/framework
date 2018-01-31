@@ -118,6 +118,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */
@@ -133,6 +134,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */
@@ -150,6 +152,7 @@ function DataRepository() {
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */

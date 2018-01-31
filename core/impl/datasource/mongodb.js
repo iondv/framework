@@ -905,6 +905,7 @@ function MongoDs(config) {
    * @param {Boolean} options.upsert
    * @param {Boolean} options.bulk
    * @param {Boolean} options.skipResult
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
      */
   function doUpdate(type, conditions, data, options) {
@@ -954,13 +955,13 @@ function MongoDs(config) {
                       }
                       let p;
                       if (options.skipResult) {
-                        p = options.upsert ? adjustAutoInc(type, updates.$set) : Promise.resolve();
+                        p = (options.upsert && options.adjustAutoInc) ? adjustAutoInc(type, updates.$set) : null;
                       } else {
                         if (updates.$set) {
                           adjustSetKeys(conditions, updates.$set);
                         }
                         p = _this._get(type, conditions, {}).then(function (r) {
-                          return options.upsert ? adjustAutoInc(type, r) : Promise.resolve(r);
+                          return (options.upsert && options.adjustAutoInc) ? adjustAutoInc(type, r) : r;
                         });
                       }
                       p.then(resolve).catch(reject);
@@ -2228,7 +2229,7 @@ function MongoDs(config) {
     var steps = {};
     var act = false;
     if (properties) {
-      for (var nm in properties) {
+      for (let nm in properties) {
         if (properties.hasOwnProperty(nm)) {
           data[nm] = 0;
           steps[nm] = properties[nm];
