@@ -253,6 +253,14 @@ function DataRepository() {
   this.bulkDelete = function (classname, options) {
     return this._bulkDelete(classname, options || {});
   };
+
+  /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  this.recache = function (item) {
+    return this._recache(item);
+  };
 }
 
 module.exports = DataRepository;
