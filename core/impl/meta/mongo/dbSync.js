@@ -368,8 +368,13 @@ function MongoDbSync(options) {
       let cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
       let inc = {};
       for (let i = 0; i < cm.properties.length; i++) {
-        if (cm.properties[i].type === 6 && cm.properties[i].autoassigned === true) {
-          inc[cm.properties[i].name] = 0;
+        let p = cm.properties[i];
+        if (p.type === 6 && p.autoassigned === true) {
+          if (p.unique || (Array.isArray(cm.keys) && cm.keys.length === 1 && cm.keys[0] === p.name)) {
+            inc[p.name] = {step: 1, adjust: true};
+          } else {
+            inc[p.name] = 1;
+          }
         }
       }
 

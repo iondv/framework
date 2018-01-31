@@ -315,9 +315,8 @@ function MongoDs(config) {
   }
 
   function excludeNulls(data, excludes) {
-    var nm;
-    var unsets = {};
-    for (nm in data) {
+    let unsets = {};
+    for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         if (data[nm] === null && excludes.hasOwnProperty(nm)) {
           delete data[nm];
@@ -425,7 +424,7 @@ function MongoDs(config) {
     );
   };
 
-  function adjustAutoInc(type, data) {
+  function adjustAutoInc(type, data, adjustAutoInc) {
     if (!data) {
       return Promise.resolve();
     }
@@ -440,7 +439,12 @@ function MongoDs(config) {
             let counters = result.c.counters;
             for (let nm in counters) {
               if (counters.hasOwnProperty(nm)) {
-                if (data && data.hasOwnProperty(nm) && counters[nm] < data[nm]) {
+                if (
+                  data &&
+                  data.hasOwnProperty(nm) &&
+                  counters[nm] < data[nm] &&
+                  (adjustAutoInc || result.c.adjust && result.c.adjust[nm])
+                ) {
                   up['counters.' + nm] = data[nm];
                   act = true;
                 }
@@ -955,14 +959,13 @@ function MongoDs(config) {
                       }
                       let p;
                       if (options.skipResult) {
-                        p = (options.upsert && options.adjustAutoInc) ? adjustAutoInc(type, updates.$set) : null;
+                        p = options.upsert ? adjustAutoInc(type, updates.$set, options.adjustAutoInc) : null;
                       } else {
                         if (updates.$set) {
                           adjustSetKeys(conditions, updates.$set);
                         }
-                        p = _this._get(type, conditions, {}).then(function (r) {
-                          return (options.upsert && options.adjustAutoInc) ? adjustAutoInc(type, r) : r;
-                        });
+                        p = _this._get(type, conditions, {})
+                          .then((r) => options.upsert ? adjustAutoInc(type, r, options.adjustAutoInc) : r);
                       }
                       p.then(resolve).catch(reject);
                     });
@@ -985,11 +988,29 @@ function MongoDs(config) {
   }
 
   this._update = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, {bulk: options.bulk, skipResult: options.skipResult});
+    return doUpdate(
+      type,
+      conditions,
+      data,
+      {
+        bulk: options.bulk,
+        skipResult: options.skipResult,
+        adjustAutoInc: options.adjustAutoInc
+      }
+    );
   };
 
   this._upsert = function (type, conditions, data, options) {
-    return doUpdate(type, conditions, data, {upsert: true, skipResult: options.skipResult});
+    return doUpdate(
+      type,
+      conditions,
+      data,
+      {
+        upsert: true,
+        skipResult: options.skipResult,
+        adjustAutoInc: options.adjustAutoInc
+      }
+    );
   };
 
   this._delete = function (type, conditions) {
@@ -1019,10 +1040,9 @@ function MongoDs(config) {
   }
 
   function wind(attributes) {
-    var tmp, tmp2, i;
-    tmp = {};
-    tmp2 = {_id: false};
-    for (i = 0; i < attributes.length; i++) {
+    let tmp = {};
+    let tmp2 = {_id: false};
+    for (let i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = '$' + attributes[i];
       tmp2[attributes[i]] = '$_id.' + attributes[i];
     }
@@ -1030,9 +1050,8 @@ function MongoDs(config) {
   }
 
   function clean(attributes) {
-    var tmp = {};
-    var i;
-    for (i = 0; i < attributes.length; i++) {
+    let tmp = {};
+    for (let i = 0; i < attributes.length; i++) {
       tmp[attributes[i]] = 1;
     }
     return {$project: tmp};
@@ -1054,18 +1073,17 @@ function MongoDs(config) {
         throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
       }
       joins.forEach(function (join) {
-        var tmp;
-        var left = (prefix ? prefix + '.' : '') + join.left;
+        let left = (prefix ? prefix + '.' : '') + join.left;
         if (join.many) {
           left = '__uw_' + join.left;
-          tmp = clean(attributes);
+          let tmp = clean(attributes);
           tmp.$project[left] = '$' + (prefix ? prefix + '.' : '') + join.left;
           attributes.push(left);
           result.push(tmp);
           result.push({$unwind: {path: '$' + left, preserveNullAndEmptyArrays: true}});
         }
 
-        tmp = {
+        let tmp = {
           from: join.table,
           localField: left,
           foreignField: join.right,
@@ -1510,7 +1528,7 @@ function MongoDs(config) {
    * @param {{}} joinedSources
    */
   function checkAttrLexem(lexem, attributes, joinedSources) {
-    var tmp = lexem.indexOf('.') < 0 ? lexem : lexem.substr(0, lexem.indexOf('.'));
+    let tmp = lexem.indexOf('.') < 0 ? lexem : lexem.substr(0, lexem.indexOf('.'));
     if (tmp[0] === '$' && !joinedSources.hasOwnProperty(tmp)) {
       tmp = tmp.substr(1);
       if (attributes.indexOf(tmp) < 0) {
@@ -1771,12 +1789,11 @@ function MongoDs(config) {
   }
 
   function mergeGeoJSON(data) {
-    var tmp, tmp2, i;
-    for (var nm in data) {
+    for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
-        tmp = data['__geo__' + nm + '_f'];
+        let tmp = data['__geo__' + nm + '_f'];
         if (tmp) {
-          tmp2 = data[nm];
+          let tmp2 = data[nm];
           delete data['__geo__' + nm + '_f'];
           switch (tmp.type) {
             case 'Feature': {
@@ -1785,7 +1802,7 @@ function MongoDs(config) {
             }
               break;
             case 'FeatureCollection': {
-              for (i = 0; i < tmp2.geometries.length; i++) {
+              for (let i = 0; i < tmp2.geometries.length; i++) {
                 tmp.features[i].geometry = tmp2.geometries[i];
               }
               data[nm] = tmp;
@@ -2019,7 +2036,7 @@ function MongoDs(config) {
    */
   this._iterator = function (type, options) {
     options = clone(options) || {};
-    var c;
+    let c;
     return getCollection(type).then(
       function (col) {
         c = col;
@@ -2225,14 +2242,24 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._ensureAutoincrement = function (type, properties) {
-    var data = {};
-    var steps = {};
-    var act = false;
+    let data = {};
+    let steps = {};
+    let adjustable = {};
+    let act = false;
     if (properties) {
       for (let nm in properties) {
         if (properties.hasOwnProperty(nm)) {
           data[nm] = 0;
-          steps[nm] = properties[nm];
+          if (properties[nm] && typeof properties[nm] === 'object') {
+            if (properties[nm].step) {
+              steps[nm] = parseInt(properties[nm].step);
+            }
+            if (properties[nm].adjust) {
+              adjustable[nm] = true;
+            }
+          } else {
+            steps[nm] = parseInt(properties[nm]);
+          }
           act = true;
         }
       }
@@ -2247,7 +2274,7 @@ function MongoDs(config) {
                 }
 
                 if (r && r.counters) {
-                  for (var nm in r.counters) {
+                  for (let nm in r.counters) {
                     if (r.counters.hasOwnProperty(nm) && data.hasOwnProperty(nm)) {
                       data[nm] = r.counters[nm];
                     }
@@ -2256,7 +2283,7 @@ function MongoDs(config) {
 
                 c.updateOne(
                   {__type: type},
-                  {$set: {counters: data, steps: steps}},
+                  {$set: {counters: data, steps: steps, adjust: adjustable}},
                   {upsert: true},
                   function (err) {
                     if (err) {
