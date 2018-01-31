@@ -1233,6 +1233,21 @@ function IonDataRepository(options) {
     let keys = cm.getKeyProperties();
     let calcs = Promise.resolve(updates);
 
+    let calcContext = {
+      $context: _this._wrap(cm.getCanonicalName(), updates),
+      $uid: user ? user.id() : null
+    };
+
+    let props = {};
+    if (user) {
+      props = user.properties();
+      for (let p in props) {
+        if (props.hasOwnProperty(p)) {
+          calcContext['$' + p] = props[p];
+        }
+      }
+    }
+
     properties.forEach((pm) => {
       if (typeof updates[pm.name] === 'undefined') {
         if (pm.type === PropertyTypes.COLLECTION && !pm.backRef) {
@@ -1258,16 +1273,15 @@ function IonDataRepository(options) {
           }
         } else if (pm.defaultValue !== null && pm.defaultValue !== '') {
           let v = pm.defaultValue;
-          if (v === '$$uid') {
-            updates[pm.name] = user ? user.id() : null;
+          if (typeof v === 'string' && v.length > 1 && v[0] === '$') {
+            if (calcContext.hasOwnProperty(v.substr(1))) {
+              updates[pm.name] = calcContext[v.substr(1)];
+            }
           } else if (pm._dvFormula) {
             if (!pm.autoassigned || !onlyDefaults) {
               calcs = calcs
                 .then(() => {
-                  return pm._dvFormula.apply({
-                    $context: _this._wrap(cm.getCanonicalName(), updates),
-                    $uid: user ? user.id() : null
-                  });
+                  return pm._dvFormula.apply(calcContext);
                 })
                 .then((result) => {
                   try {
@@ -1899,10 +1913,6 @@ function IonDataRepository(options) {
         let da = {};
         let updates;
 
-        if (cm.getChangeTracker()) {
-          updates[cm.getChangeTracker()] = new Date();
-        }
-
         let p;
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
@@ -1937,6 +1947,9 @@ function IonDataRepository(options) {
           .then(preWriteEventHandler(data))
           .then(() => {
             updates = formUpdatedData(cm, data, false, refUpdates, da) || {};
+            if (cm.getChangeTracker()) {
+              updates[cm.getChangeTracker()] = new Date();
+            }
             checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
             let fileSavers = [];
             prepareFileSavers(id, cm, fileSavers, updates);
