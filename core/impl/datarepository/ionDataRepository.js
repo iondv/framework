@@ -1764,6 +1764,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1808,7 +1809,10 @@ function IonDataRepository(options) {
           return _this.ds.insert(
             tn(rcm),
             updates,
-            {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)}
+            {
+              skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates),
+              adjustAutoInc: options.adjustAutoInc
+            }
           );
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
@@ -1863,10 +1867,11 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
-   * @param {Boolean} [suppresEvent]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @param {Boolean} [supressEvent]
    * @returns {Promise}
    */
-  this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
+  this._editItem = function (classname, id, data, changeLogger, options, supressEvent) {
     options = clone(options) || {};
     if (!id) {
       return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
@@ -1897,7 +1902,7 @@ function IonDataRepository(options) {
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
             base = b;
-            if (suppresEvent) {
+            if (supressEvent) {
               return Promise.resolve();
             }
             return bubble(
@@ -1911,7 +1916,7 @@ function IonDataRepository(options) {
               });
           });
         } else {
-          p = suppresEvent ? Promise.resolve() :
+          p = supressEvent ? Promise.resolve() :
             bubble(
               'pre-edit',
               cm,
@@ -1947,7 +1952,7 @@ function IonDataRepository(options) {
               tn(rcm),
               conditions,
               updates,
-              {skipResult: false}
+              {skipResult: false, adjustAutoInc: options.adjustAutoInc}
             );
           })
           .catch(wrapDsError('editItem', classname, null, null, cm))
@@ -1968,7 +1973,7 @@ function IonDataRepository(options) {
           .then((item) => refreshCaches(item, conditions, options))
           .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
-            if (!suppresEvent) {
+            if (!supressEvent) {
               return bubble(
                 'edit',
                 item.getMetaClass(),
@@ -2005,6 +2010,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -2092,7 +2098,10 @@ function IonDataRepository(options) {
           }
         })
         .then(() => {
-          let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
+          let opts = {
+            skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates),
+            adjustAutoInc: options.adjustAutoInc
+          };
           return conditions ?
             _this.ds.upsert(tn(rcm), conditions, updates, opts) :
             _this.ds.insert(tn(rcm), updates, opts);
