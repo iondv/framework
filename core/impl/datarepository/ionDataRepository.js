@@ -439,30 +439,6 @@ function IonDataRepository(options) {
     }
   }
 
-  function mergeLoaded(item, loaded, linksByRef) {
-    if (linksByRef && loaded.hasOwnProperty(item.getClassName() + '@' + item.getItemId())) {
-      let ldd = loaded[item.getClassName() + '@' + item.getItemId()];
-      if (ldd && item !== ldd) {
-        for (let nm in item.references) {
-          if (item.references.hasOwnProperty(nm)) {
-            if (!ldd[nm]) {
-              ldd.references[nm] = item.references[nm];
-            }
-          }
-        }
-        for (let nm in item.collections) {
-          if (item.collections.hasOwnProperty(nm)) {
-            if (!ldd[nm]) {
-              ldd.collections[nm] = item.collections[nm];
-            }
-          }
-        }
-      }
-      return ldd;
-    }
-    return item;
-  }
-
   function getEnrichList(options) {
     let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, linksByRef, needed} = options;
     return _this._getList(cn,
@@ -593,9 +569,13 @@ function IonDataRepository(options) {
       let pcl = {};
       for (let i = 0; i < src.length; i++) {
         if (src[i] instanceof Item) {
-          let ldd = mergeLoaded(src[i], ___loaded, linksByRef);
-          ___loaded[src[i].getClassName() + '@' + src[i].getItemId()] = ldd;
-          srcByKey[src[i].getItemId()] = ldd;
+          if (linksByRef && ___loaded[src[i].getClassName() + '@' + src[i].getItemId()]) {
+            srcByKey[src[i].getItemId()] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
+            src[i] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
+          } else {
+            ___loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+            srcByKey[src[i].getItemId()] = src[i];
+          }
         }
       }
 
