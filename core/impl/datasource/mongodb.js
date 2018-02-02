@@ -959,12 +959,15 @@ function MongoDs(config) {
                       }
                       let p;
                       if (options.skipResult) {
-                        p = options.upsert ? adjustAutoInc(type, updates.$set, options.adjustAutoInc) : null;
+                        p = options.upsert ?
+                          adjustAutoInc(type, updates.$set, options.adjustAutoInc) :
+                          Promise.resolve();
                       } else {
                         if (updates.$set) {
                           adjustSetKeys(conditions, updates.$set);
                         }
-                        p = _this._get(type, conditions, {})
+                        p = _this
+                          ._get(type, conditions, {})
                           .then((r) => options.upsert ? adjustAutoInc(type, r, options.adjustAutoInc) : r);
                       }
                       p.then(resolve).catch(reject);
