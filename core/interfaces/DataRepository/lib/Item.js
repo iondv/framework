@@ -45,6 +45,22 @@ function Item(id, base, classMeta) {
 
   this.slCacheClean = true;
 
+  this.emptify = function () {
+    this.id = null;
+
+    this.base = {};
+
+    this.references = {};
+
+    this.collections = {};
+
+    this.calculated = {};
+
+    this.files = {};
+
+    this.slCacheClean = true;
+  };
+
   this.getItemId = function () {
     return this.id;
   };
@@ -259,6 +275,9 @@ Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
   circular[this.getClassName() + '@' + this.getItemId()] = true;
   if (typeof semanticGetter === 'function') {
     return semanticGetter.call(this, dateCallback, circular);
+  }
+  if (this.classMeta.isSemanticCached()) {
+    return this.base.__semantic;
   }
   return this.classMeta.getSemantics(this, dateCallback, circular);
 };

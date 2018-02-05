@@ -88,19 +88,19 @@ function prepareData(v) {
  * @return {Object | null}
  */
 function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
-  var updates, pm, nm, dot, tmp;
-  updates = {};
-  var empty = true;
-  for (nm in data) {
+  let updates = {};
+  let empty = true;
+  for (let nm in data) {
     if (data.hasOwnProperty(nm)) {
       empty = false;
+      let dot;
       if ((dot = nm.indexOf('.')) >= 0) {
         if (refUpdates) {
           if (opts) {
             opts.refUpdates = true;
           }
-          tmp = nm.substring(0, dot);
-          pm = cm.getPropertyMeta(tmp);
+          let tmp = nm.substring(0, dot);
+          let pm = cm.getPropertyMeta(tmp);
           if (pm) {
             if (pm.type === PropertyTypes.REFERENCE) {
               if (!refUpdates.hasOwnProperty(tmp)) {
@@ -111,12 +111,11 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
           }
         }
       } else {
-        pm = cm.getPropertyMeta(nm);
+        let pm = cm.getPropertyMeta(nm);
         if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(prepareData(data[nm]), pm);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
-              updates[nm] = data[nm];
+              updates[nm] = castValue(prepareData(data[nm]), pm);
             }
             if (pm.type === PropertyTypes.REFERENCE && pm.backRef) {
               if (opts) {
@@ -433,7 +432,7 @@ function prepareFilterOption(cm, filter, joins, numGen, context) {
  * @param {DataSource} ds
  * @returns {Promise}
  */
-function prepareFilterValues(cm, filter, joins, ds) {
+function prepareFilterValues(cm, filter, joins) {
   try {
     return Promise.resolve(prepareFilterOption(cm, filter, joins, new NumGenerator()));
   } catch (e) {
@@ -814,16 +813,18 @@ module.exports.loadFiles = loadFiles;
 /**
  * @param {Item} item
  * @param {Boolean} [skip]
+ * @param {Array} [needed]
+ * @param {Boolean} [cached]
  * @returns {Promise}
  */
-function calcProperties(item, skip, needed) {
+function calcProperties(item, skip, needed, cached) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
   let calculations = Promise.resolve();
   let props = item.getMetaClass().getPropertyMetas();
   props.forEach((p)=> {
-    if (p._formula && (!needed || needed.hasOwnProperty(p.name))) {
+    if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
       calculations = calculations.then(()=>p._formula.apply(item))
         .then((result) => {
           item.calculated[p.name] = result;
