@@ -1,6 +1,7 @@
 @{%
 
 const F=require('./../../../FunctionCodes');
+const {Attr}=require('./../classes');
 
 %}
 
@@ -23,7 +24,7 @@ expression ->
 expressionBody -> expressionNode _ expressionType _ expressionNode {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
 
 expressionNode -> 
-  attribute {% id %}
+  attribute {% d => { return new Attr(d[0]) } %}
   | string {% id %}
   | number {% id %}
 
@@ -56,7 +57,10 @@ mathType ->
   | "*" {% d => { return 'MUL' } %}
   | "/" {% d => { return 'DIV' } %}
 
-attribute -> [$_a-zA-Z] [$_a-zA-Z0-9-]:* {% d => { return d[0] + d[1].join('')} %}
+attribute -> 
+  [$_a-zA-Z] [$_a-zA-Z0-9-]:* {% d => { return d[0] + d[1].join('')} %} 
+  | "`" _string "`":* {% d => { return d[1] } %} 
+
 
 # Keywords
 # ==========
@@ -98,7 +102,7 @@ _string ->
   | _string _stringchar {% function(d) {return d[0] + d[1];} %}
  
 _stringchar ->
-  [^\\"] {% id %}
+  [^\\"`] {% id %}
   | "\\" [^] {% function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); } %}
  
 # Whitespace

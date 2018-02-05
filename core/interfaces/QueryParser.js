@@ -4,10 +4,11 @@ function QueryParser() {
 
   /**
    * @param {String} query
+   * @param {ClassMeta} cm
    * @returns {{}}
    */
-  this.parse = function (query) {
-    return this._parse(query);
+  this.parse = function (query, cm) {
+    return this._parse(query, cm);
   };
 
 }

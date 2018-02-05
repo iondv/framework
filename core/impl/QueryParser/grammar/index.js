@@ -5,6 +5,7 @@ function id(x) {return x[0]; }
 
 
 const F=require('./../../../FunctionCodes');
+const {Attr}=require('./../classes');
 
 var grammar = {
     Lexer: undefined,
@@ -15,7 +16,7 @@ var grammar = {
     {"name": "expression", "symbols": ["expressionBody"], "postprocess": id},
     {"name": "expression", "symbols": [{"literal":"("}, "_", "filter", "_", {"literal":")"}], "postprocess": d => { return d[2] }},
     {"name": "expressionBody", "symbols": ["expressionNode", "_", "expressionType", "_", "expressionNode"], "postprocess": d => { return {[F[d[2]]]: [d[0], d[4]]} }},
-    {"name": "expressionNode", "symbols": ["attribute"], "postprocess": id},
+    {"name": "expressionNode", "symbols": ["attribute"], "postprocess": d => { return new Attr(d[0]) }},
     {"name": "expressionNode", "symbols": ["string"], "postprocess": id},
     {"name": "expressionNode", "symbols": ["number"], "postprocess": id},
     {"name": "expressionType", "symbols": ["conditionType"]},
@@ -42,6 +43,9 @@ var grammar = {
     {"name": "attribute$ebnf$1", "symbols": []},
     {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", /[$_a-zA-Z0-9-]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "attribute", "symbols": [/[$_a-zA-Z]/, "attribute$ebnf$1"], "postprocess": d => { return d[0] + d[1].join('')}},
+    {"name": "attribute$ebnf$2", "symbols": []},
+    {"name": "attribute$ebnf$2", "symbols": ["attribute$ebnf$2", {"literal":"`"}], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "attribute", "symbols": [{"literal":"`"}, "_string", "attribute$ebnf$2"], "postprocess": d => { return d[1] }},
     {"name": "AND", "symbols": [/[Aa]/, /[Nn]/, /[Dd]/]},
     {"name": "OR", "symbols": [/[Oo]/, /[Rr]/]},
     {"name": "NOT", "symbols": [/[Nn]/, /[Oo]/, /[Tt]/]},
@@ -57,7 +61,7 @@ var grammar = {
     {"name": "string", "symbols": [{"literal":"\""}, "_string", {"literal":"\""}], "postprocess": function(d) {return d[1]; }},
     {"name": "_string", "symbols": [], "postprocess": function() {return ""; }},
     {"name": "_string", "symbols": ["_string", "_stringchar"], "postprocess": function(d) {return d[0] + d[1];}},
-    {"name": "_stringchar", "symbols": [/[^\\"]/], "postprocess": id},
+    {"name": "_stringchar", "symbols": [/[^\\"`]/], "postprocess": id},
     {"name": "_stringchar", "symbols": [{"literal":"\\"}, /[^]/], "postprocess": function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); }},
     {"name": "_", "symbols": []},
     {"name": "_", "symbols": ["_", /[\s]/], "postprocess": function() {}},
