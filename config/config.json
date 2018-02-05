@@ -96,6 +96,12 @@
           "dataSource": "ion://Db"
         }
       },
+      "notifier": {
+        "module": "core/impl/Notifier",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
