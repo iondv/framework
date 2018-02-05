@@ -439,30 +439,6 @@ function IonDataRepository(options) {
     }
   }
 
-  function mergeLoaded(item, loaded, linksByRef) {
-    if (linksByRef && loaded.hasOwnProperty(item.getClassName() + '@' + item.getItemId())) {
-      let ldd = loaded[item.getClassName() + '@' + item.getItemId()];
-      if (ldd && item !== ldd) {
-        for (let nm in item.references) {
-          if (item.references.hasOwnProperty(nm)) {
-            if (!ldd[nm]) {
-              ldd.references[nm] = item.references[nm];
-            }
-          }
-        }
-        for (let nm in item.collections) {
-          if (item.collections.hasOwnProperty(nm)) {
-            if (!ldd[nm]) {
-              ldd.collections[nm] = item.collections[nm];
-            }
-          }
-        }
-      }
-      return ldd;
-    }
-    return item;
-  }
-
   function getEnrichList(options) {
     let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, linksByRef, needed} = options;
     return _this._getList(cn,
@@ -593,9 +569,13 @@ function IonDataRepository(options) {
       let pcl = {};
       for (let i = 0; i < src.length; i++) {
         if (src[i] instanceof Item) {
-          let ldd = mergeLoaded(src[i], ___loaded, linksByRef);
-          ___loaded[src[i].getClassName() + '@' + src[i].getItemId()] = ldd;
-          srcByKey[src[i].getItemId()] = ldd;
+          if (linksByRef && ___loaded[src[i].getClassName() + '@' + src[i].getItemId()]) {
+            srcByKey[src[i].getItemId()] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
+            src[i] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
+          } else {
+            ___loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
+            srcByKey[src[i].getItemId()] = src[i];
+          }
         }
       }
 
@@ -614,7 +594,7 @@ function IonDataRepository(options) {
                 explicitForced.hasOwnProperty(nm) ||
                 nestingDepth > 0 ||
                 (
-                  props[nm].eagerLoading() && (!options.needed || options.needed.hasOwnProperty(nm)) ||
+                  props[nm].eagerLoading() /*&& (!options.needed || options.needed.hasOwnProperty(nm))*/ ||
                   implicitForced.hasOwnProperty(nm)
                 ) && nestingDepth >= _this.maxEagerDepth
               ) {
@@ -1784,6 +1764,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, options) {
@@ -1828,7 +1809,10 @@ function IonDataRepository(options) {
           return _this.ds.insert(
             tn(rcm),
             updates,
-            {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)}
+            {
+              skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates),
+              adjustAutoInc: options.adjustAutoInc
+            }
           );
         })
         .catch(wrapDsError('createItem', classname, null, null, cm))
@@ -1883,10 +1867,11 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
-   * @param {Boolean} [suppresEvent]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @param {Boolean} [supressEvent]
    * @returns {Promise}
    */
-  this._editItem = function (classname, id, data, changeLogger, options, suppresEvent) {
+  this._editItem = function (classname, id, data, changeLogger, options, supressEvent) {
     options = clone(options) || {};
     if (!id) {
       return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
@@ -1917,7 +1902,7 @@ function IonDataRepository(options) {
         if (changeLogger) {
           p = _this.ds.get(tn(rcm), conditions).then(function (b) {
             base = b;
-            if (suppresEvent) {
+            if (supressEvent) {
               return Promise.resolve();
             }
             return bubble(
@@ -1931,7 +1916,7 @@ function IonDataRepository(options) {
               });
           });
         } else {
-          p = suppresEvent ? Promise.resolve() :
+          p = supressEvent ? Promise.resolve() :
             bubble(
               'pre-edit',
               cm,
@@ -1967,7 +1952,7 @@ function IonDataRepository(options) {
               tn(rcm),
               conditions,
               updates,
-              {skipResult: false}
+              {skipResult: false, adjustAutoInc: options.adjustAutoInc}
             );
           })
           .catch(wrapDsError('editItem', classname, null, null, cm))
@@ -1988,7 +1973,7 @@ function IonDataRepository(options) {
           .then((item) => refreshCaches(item, conditions, options))
           .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
-            if (!suppresEvent) {
+            if (!supressEvent) {
               return bubble(
                 'edit',
                 item.getMetaClass(),
@@ -2025,6 +2010,7 @@ function IonDataRepository(options) {
    * @param {Boolean} [options.ignoreIntegrityCheck]
    * @param {User} [options.user]
    * @param {Boolean} [options.skipCacheRefresh]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, options) {
@@ -2112,7 +2098,10 @@ function IonDataRepository(options) {
           }
         })
         .then(() => {
-          let opts = {skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates)};
+          let opts = {
+            skipResult: options.skipResult && !(da.refUpdates || da.backRefUpdates),
+            adjustAutoInc: options.adjustAutoInc
+          };
           return conditions ?
             _this.ds.upsert(tn(rcm), conditions, updates, opts) :
             _this.ds.insert(tn(rcm), updates, opts);

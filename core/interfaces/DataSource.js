@@ -42,6 +42,7 @@ function DataSource() {
    * @param {{}} data
    * @param {{}} [options]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this.insert = function (type, data, options) {
@@ -55,6 +56,7 @@ function DataSource() {
    * @param {{}} [options]
    * @param {Boolean} [options.skipResult]
    * @param {Boolean} [options.bulk]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this.update = function (type, conditions, data, options) {
@@ -67,6 +69,7 @@ function DataSource() {
    * @param {{}} data
    * @param {{}} [options]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
   this.upsert = function (type, conditions, data, options) {
