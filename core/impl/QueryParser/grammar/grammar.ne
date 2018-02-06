@@ -12,6 +12,8 @@ const {Attr}=require('./../classes');
 filter -> 
   filter __ expressionType __ expression {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
   | notx __ filter {% d => { return {[F[d[0]]]: [d[2]]} } %}
+  | sizeNode {% id %}
+  | notNode {% id %}
   | expression {% id %}
 
 # Expression
@@ -21,12 +23,23 @@ expression ->
   expressionBody {% id %}
   | "(" _ filter _ ")" {% d => { return d[2] } %}
 
-expressionBody -> expressionNode _ expressionType _ expressionNode {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
+expressionBody -> 
+  expressionNode _ expressionType _ expressionNode {% d => { return {[F[d[2]]]: [d[0], d[4]]} } %}
 
 expressionNode -> 
   attribute {% d => { return new Attr(d[0]) } %}
   | string {% id %}
   | number {% id %}
+  | sizeNode {% id %}
+  | notNode {% id %}
+
+sizeNode ->
+  sizex __ expressionNode {% d => { return {[F[d[0]]]: [d[2]]} } %}
+  | "(" _ sizex __ expressionNode _ ")" {% d => { return {[F[d[2]]]: [d[4]]} } %}
+
+notNode -> 
+  notx __ expressionNode {% d => { return {[F[d[0]]]: [d[2]]} } %}
+  | "(" _ notx __ expressionNode _ ")" {% d => { return {[F[d[2]]]: [d[4]]} } %}
 
 expressionType -> 
   conditionType
@@ -44,12 +57,14 @@ conditionType ->
   | "<=" {% d => { return 'LESS_OR_EQUAL' } %}
   | ">=" {% d => { return 'GREATER_OR_EQUAL' } %}
   | "<>" {% d => { return 'EMPTY' } %}
+  | LIKE {% d => { return 'LIKE' } %}
 
 operationType -> 
   AND {% d => { return 'AND' } %}
   | OR {% d => { return 'OR' } %}
 
 notx -> NOT {% d => { return 'NOT' } %}
+sizex -> SIZE {% d => { return 'SIZE' } %}
 
 mathType -> 
   "+" {% d => { return 'ADD' } %}
@@ -68,6 +83,8 @@ attribute ->
 AND -> [Aa] [Nn] [Dd]
 OR -> [Oo] [Rr]
 NOT -> [Nn] [Oo] [Tt]
+LIKE -> [Ll] [Ii] [Kk] [Ee]
+SIZE -> [Ss] [Ii] [Zz] [Ee]
 
 # Primitives
 # ==========
