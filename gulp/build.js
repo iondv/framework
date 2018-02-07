@@ -68,7 +68,7 @@ function npm(path) {
   return function () {
     return new Promise(function (resolve, reject) {
       console.log('Установка пакетов бэкенда для пути ' + path);
-      run(path, 'npm', ['install', '--production'], resolve, reject);
+      run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
     });
   };
 }
