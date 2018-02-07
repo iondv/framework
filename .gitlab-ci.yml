@@ -10,8 +10,6 @@ stages:
   script:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/create_pipelines_stages.sh | bash
   allow_failure: false
-  variables:
-    GIT_STRATEGY: none
   when: manual
   artifacts:
     name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
