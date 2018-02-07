@@ -1,6 +1,7 @@
 const IAccountStorage = require('core/interfaces/AccountStorage');
 const User = require('core/User');
 const UserTypes = require('core/UserTypes');
+const F = require('core/FunctionCodes');
 const pwdHasher = require('password-hash-and-salt');
 const clone = require('clone');
 
@@ -9,7 +10,8 @@ class LocalAccountStorage extends IAccountStorage {
    * @param {{}} options
    * @param {DataSource} options.dataSource
    */
-  construct(options) {
+  constructor(options) {
+    super();
     this.ds = options.dataSource;
   }
 
@@ -34,12 +36,12 @@ class LocalAccountStorage extends IAccountStorage {
     }
 
     if (user.pwd) {
-      var hasher = pwdHasher(user.pwd);
+      let hasher = pwdHasher(user.pwd);
       hasher.hash(function (err, hash) {
         user.pwd = hash;
         user.pwdDate = new Date();
         user.disabled = false;
-        ds.insert('ion_user', user)
+        this.ds.insert('ion_user', user)
           .then(function (u) {
             callback(null, u);
           })
@@ -48,7 +50,7 @@ class LocalAccountStorage extends IAccountStorage {
           });
       });
     } else if (user.type !== UserTypes.LOCAL) {
-      ds.insert('ion_user', user)
+      this.ds.insert('ion_user', user)
         .then((u) => callback(null, new User(u)))
         .catch((err) => callback(err, null));
     } else {
@@ -97,11 +99,11 @@ class LocalAccountStorage extends IAccountStorage {
       id = un[0];
       type = un[1];
     }
-    return ds.get('ion_user',
+    return this.ds.get('ion_user',
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          {[F.EQUAL]: ['$id', username]},
+          {[F.EQUAL]: ['$id', id]},
           {
             [F.OR]: [
               {[F.EQUAL]: ['$disabled', false]},
@@ -167,7 +169,7 @@ class LocalAccountStorage extends IAccountStorage {
         }
       }
     }
-    return ds.update(
+    return this.ds.update(
       'ion_user',
       {
         [F.AND]: [
@@ -188,7 +190,16 @@ class LocalAccountStorage extends IAccountStorage {
   _list(filter, disabled) {
     let f = [];
     if (Array.isArray(filter) && filter.length) {
-      f.push({[F.IN]: ['$id', filter]});
+      let conds = [];
+      filter.forEach((id) => {
+        let parts = id.split('@');
+        conds.push({[F.AND]: [{[F.EQUAL]: ['$id', parts[0]]}, {[F.EQUAL]: ['$type', parts[1]]}]});
+      });
+      if (conds.length > 1) {
+        f.push({[F.OR]: conds});
+      } else {
+        f.push(conds[0]);
+      }
     }
     if (!disabled) {
       f.push({
@@ -199,10 +210,7 @@ class LocalAccountStorage extends IAccountStorage {
       });
     }
     return this.ds
-      .fetch('ion_user',
-        {
-          filter: f.length ? {[F.AND]: f} : null
-        })
+      .fetch('ion_user', {filter: f.length ? {[F.AND]: f} : null})
       .then((list) => {
         let result = [];
         list.forEach((u) => {

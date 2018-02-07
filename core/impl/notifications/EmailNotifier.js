@@ -10,7 +10,8 @@ class EmailNotifier extends INotificationSender {
    * @param {String} options.tplDir
    * @param {Logger} options.log
    */
-  construct(options) {
+  constructor(options) {
+    super();
     this.sender = options.sender;
     this.tplDir = options.tplDir ? resolvePath(options.tplDir) : null;
     this.log = options.log;

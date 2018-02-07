@@ -20,6 +20,14 @@ function User(data, coactors, tz) {
     return (data.properties && data.properties.email) || data.email;
   };
 
+  this.pwdDate = function () {
+    return data.pwdDate;
+  };
+
+  this.pwdHash = function () {
+    return data.pwd;
+  };
+
   this.toString = function () {
     return this.name();
   };

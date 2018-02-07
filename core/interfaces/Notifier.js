@@ -21,8 +21,16 @@ class Notifier {
   }
 
   /**
+   * @param {String} id
+   * @returns {Promise}
+   */
+  get(id) {
+    return this._get(id);
+  }
+
+  /**
    * @param {String} reciever
-   * @param {{offset: Number, count: Number, new: Boolean}} options
+   * @param {{offset: Number, count: Number, new: Boolean, since: Date}} options
    * @returns {Promise}
    */
   list(reciever, options) {

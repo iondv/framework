@@ -97,13 +97,13 @@
         }
       },
       "accounts": {
-        "module": "core/impl/AccountStorage",
+        "module": "core/impl/LocalAccountStorage",
         "options": {
           "dataSource": "ion://Db"
         }
       },
       "notifier": {
-        "module": "core/impl/Notifier",
+        "module": "core/impl/notifications/Notifier",
         "options": {
           "dataSource": "ion://Db",
           "accounts": "ion://accounts",
