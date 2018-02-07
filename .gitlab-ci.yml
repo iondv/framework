@@ -13,6 +13,13 @@ stages:
   variables:
     GIT_STRATEGY: none
   when: manual
+  artifacts:
+    name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
+    expire_in: 1 mos
+    when: on_success
+    paths:
+       - branch.json
+       - pipeline.json
 .check: &JobCheck
   type: check
   tags:
