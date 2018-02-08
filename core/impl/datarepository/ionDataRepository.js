@@ -76,7 +76,7 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 0 : options.maxEagerDepth);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 3 : options.maxEagerDepth);
 
   function getAttrs(key, cm) {
     if (cm) {
