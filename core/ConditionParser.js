@@ -48,6 +48,8 @@ function toScalar(v, context, type, lang) {
         v = p.getValue();
       } else if (context.hasOwnProperty(nm)) {
         v = context[nm];
+      } else {
+        v = null;
       }
       if (Array.isArray(v)) {
         let result = [];
@@ -107,7 +109,7 @@ function produceContainsFilter(rcm, condition, context, lang) {
       return {
         [Operations.CONTAINS]: [
           '$' + condition.property,
-          ConditionParser(condition.nestedConditions, pm._refClass, context)
+          ConditionParser(condition.nestedConditions, pm._refClass, context, lang)
         ]
       };
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
@@ -147,8 +149,16 @@ function vt(cm, property) {
  * @param {String} lang
  * @returns {{}}
  */
-function produceFilter(condition, type, rcm, context, lang) {
-  var args = ['$' + condition.property];
+function produceFilter(condition, type, rcm, context, lang, unar) {
+  let prop = condition.property;
+  let args = [];
+  if (prop[0] === '$') {
+    prop = toScalar([prop], context, PropertyTypes.STRING, lang);
+    args.push(prop);
+  } else {
+    args.push('$' + prop);
+  }
+
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
     let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
     if (tmp) {
@@ -157,7 +167,9 @@ function produceFilter(condition, type, rcm, context, lang) {
   } else if (condition.value) {
     args = args.concat(toScalar(condition.value, context, vt(rcm, condition.property), lang));
   } else {
-    args.push(null);
+    if (!unar) {
+      args.push(null);
+    }
   }
 
   return {[type]: args};
@@ -206,12 +218,13 @@ function produceAggregationOperation(condition, rcm, context, lang) {
  * @returns {Array | null}
  */
 function produceArray(conditions, rcm, context, lang) {
-  var tmp;
-  var result = [];
-  for (var i = 0; i < conditions.length; i++) {
-    tmp = ConditionParser(conditions[i], rcm, context, lang);
-    if (tmp) {
-      result.push(tmp);
+  let result = [];
+  if (Array.isArray(conditions)) {
+    for (let i = 0; i < conditions.length; i++) {
+      let tmp = ConditionParser(conditions[i], rcm, context, lang);
+      if (tmp) {
+        result.push(tmp);
+      }
     }
   }
   return result.length ? result : null;
@@ -238,16 +251,26 @@ function ConditionParser(condition, rcm, context, lang) {
         return '$' + condition.property;
       }
       switch (parseInt(condition.operation)) {
-        case ConditionTypes.EMPTY: return {[Operations.EMPTY]: ['$' + condition.property]};
-        case ConditionTypes.NOT_EMPTY: return {[Operations.NOT_EMPTY]: ['$' + condition.property]};
-        case ConditionTypes.CONTAINS: return produceContainsFilter(rcm, condition, context);
-        case ConditionTypes.EQUAL: return produceFilter(condition, Operations.EQUAL, rcm, context);
-        case ConditionTypes.NOT_EQUAL: return produceFilter(condition, Operations.NOT_EQUAL, rcm, context);
-        case ConditionTypes.LESS: return produceFilter(condition, Operations.LESS, rcm, context);
-        case ConditionTypes.MORE: return produceFilter(condition, Operations.GREATER, rcm, context);
-        case ConditionTypes.LESS_OR_EQUAL: return produceFilter(condition, Operations.LESS_OR_EQUAL, rcm, context);
-        case ConditionTypes.MORE_OR_EQUAL: return produceFilter(condition, Operations.GREATER_OR_EQUAL, rcm, context);
-        case ConditionTypes.LIKE: return produceFilter(condition, Operations.LIKE, rcm, context);
+        case ConditionTypes.EMPTY:
+          return produceFilter(condition, Operations.EMPTY, rcm, context, lang, true);
+        case ConditionTypes.NOT_EMPTY:
+          return produceFilter(condition, Operations.NOT_EMPTY, rcm, context, lang, true);
+        case ConditionTypes.CONTAINS:
+          return produceContainsFilter(rcm, condition, context, lang);
+        case ConditionTypes.EQUAL:
+          return produceFilter(condition, Operations.EQUAL, rcm, context, lang);
+        case ConditionTypes.NOT_EQUAL:
+          return produceFilter(condition, Operations.NOT_EQUAL, rcm, context, lang);
+        case ConditionTypes.LESS:
+          return produceFilter(condition, Operations.LESS, rcm, context, lang);
+        case ConditionTypes.MORE:
+          return produceFilter(condition, Operations.GREATER, rcm, context, lang);
+        case ConditionTypes.LESS_OR_EQUAL:
+          return produceFilter(condition, Operations.LESS_OR_EQUAL, rcm, context, lang);
+        case ConditionTypes.MORE_OR_EQUAL:
+          return produceFilter(condition, Operations.GREATER_OR_EQUAL, rcm, context, lang);
+        case ConditionTypes.LIKE:
+          return produceFilter(condition, Operations.LIKE, rcm, context, lang);
           /*
 
           Result[condition.property] = {
@@ -301,10 +324,10 @@ function ConditionParser(condition, rcm, context, lang) {
       } else if (Funcs.indexOf(oper) !== -1) {
         let tmp = [];
         if (Array.isArray(condition.value) && condition.value.length) {
-          tmp = tmp.concat(toScalar(condition.value, context));
+          tmp = tmp.concat(toScalar(condition.value, context, null, lang));
         }
         if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
-          tmp = tmp.concat(produceArray(condition.nestedConditions, rcm, context));
+          tmp = tmp.concat(produceArray(condition.nestedConditions, rcm, context, lang));
         }
         switch (oper) {
           case OperationTypes.DATE: return {[Operations.DATE]: tmp};
