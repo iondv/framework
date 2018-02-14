@@ -273,7 +273,7 @@ function SecuredDataRepository(options) {
    * @param {{}} permMap
    */
   function itemToPermMap(item, permissions, permMap) {
-    if (item.getItemId()) {
+    if (item && item.getItemId()) {
       permMap[item.getClassName() + '@' + item.getItemId()] = merge(true,
         permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
         permissions[classPrefix + item.getClassName()] || {},
@@ -291,7 +291,9 @@ function SecuredDataRepository(options) {
             }
             v.forEach((item) => {
               if (item instanceof Item) {
-                itemToPermMap(item, permissions, permMap);
+                if (!permMap[item.getClassName() + '@' + item.getItemId()]) {
+                  itemToPermMap(item, permissions, permMap);
+                }
               }
             });
           }
@@ -490,7 +492,7 @@ function SecuredDataRepository(options) {
      * @param {Item} item
      */
     return function (item) {
-      if (!item) {
+      if (!item || (item.permissions && item.attrPermissions)) {
         return Promise.resolve(item);
       }
       let roleConf = classRoleConfig(item.getMetaClass());
@@ -689,12 +691,10 @@ function SecuredDataRepository(options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
     return dataRepo.getItem(obj, id || '', opts)
-      .then(item =>
-        item ? getPermMap([item], moptions)
-          .then((permMap) => {
-            return setItemPermissions(opts, permMap)(item);
-          }) :
-          item
+      .then(item => item ?
+        getPermMap([item], moptions)
+          .then((permMap) => setItemPermissions(opts, permMap)(item)) :
+        item
       );
   }
 
