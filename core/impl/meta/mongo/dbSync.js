@@ -366,18 +366,22 @@ function MongoDbSync(options) {
      */
     return function (collection) {
       let cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
-      let inc = {};
+      let steps = {};
+      let adjustments = {};
+      let counters = {};
       for (let i = 0; i < cm.properties.length; i++) {
         let p = cm.properties[i];
         if (p.type === 6 && p.autoassigned === true) {
+          counters[p.name] = 0;
           if (p.unique || (Array.isArray(cm.keys) && cm.keys.length === 1 && cm.keys[0] === p.name)) {
-            inc[p.name] = {step: 1, adjust: true};
+            steps[p.name] = 1;
+            adjustments[p.name] = true;
           } else {
-            inc[p.name] = 1;
+            steps[p.name] = 1;
           }
         }
       }
-      if (Object.keys(inc).length > 0) {
+      if (Object.keys(steps).length > 0) {
         return getSysColl(AUTOINC_COLL).then((autoinc) => {
           return new Promise((resolve, reject) => {
             autoinc.find({__type: cn}).limit(1).next((err, c) => {
@@ -386,16 +390,26 @@ function MongoDbSync(options) {
               }
 
               if (c && c.counters) {
-                for (var nm in c.counters) {
-                  if (c.counters.hasOwnProperty(nm) && inc.hasOwnProperty(nm)) {
-                    inc[nm] = c.counters[nm];
+                for (let nm in c.counters) {
+                  if (
+                    c.counters.hasOwnProperty(nm) &&
+                    counters.hasOwnProperty(nm) &&
+                    typeof c.counters[nm] === 'number'
+                  ) {
+                    counters[nm] = c.counters[nm];
                   }
                 }
               }
 
               autoinc.updateOne(
                 {__type: cn},
-                {$set: {counters: inc}},
+                {
+                  $set: {
+                    counters: counters,
+                    steps: steps,
+                    adjust: adjustments
+                  }
+                },
                 {upsert: true},
                 (err) => err ? reject(err) :resolve(collection)
               );
