@@ -704,7 +704,7 @@ function DsMetaRepository(options) {
           propertyMetas[i].semanticGetter = createSemanticFunc(
             propertyMetas[i].semantic,
             propertyMetas[i]._refClass,
-            [],
+            cm._forcedEnrichment,
             null,
             propertyMetas[i].name
           );
