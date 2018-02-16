@@ -20,6 +20,7 @@ const clone = require('clone');
  * @param {CacheRepository} options.cache
  * @param {MetaRepository} options.meta
  * @param {ResourceStorage} options.fileStorage
+ * @param {String[]} [options.cachedClasses]
  * @constructor
  */
 function CachedDataRepository(options) {
@@ -46,77 +47,62 @@ function CachedDataRepository(options) {
    */
   var cache = options.cache || new CacheProxy();
 
+  function isCached(className) {
+    if (!Array.isArray(options.cachedClasses) || !options.cachedClasses.length) {
+      return true;
+    }
+    return options.cachedClasses.indexOf(className) >= 0;
+  }
+
   function objectToMD5(object) {
     return crypto.createHash('md5').update(JSON.stringify(object)).digest('hex');
   }
 
-  function cacheNext(item) {
-    return function () {
-      return cacheItem(item);
-    };
-  }
-
   function cacheList(className, options, list) {
-    var listId = 'l:' + className + ':' + objectToMD5(options);
-    var l = [];
-    var p = null;
-    for (var i = 0; i < list.length; i++) {
-      l.push({className: list[i].getClassName(), id: list[i].getItemId()});
-      if (p) {
-        p = p.then(cacheNext(list[i]));
-      } else {
-        p = cacheNext(list[i])();
-      }
+    let p = Promise.resolve();
+    if (!isCached(className)) {
+      return p;
     }
-    if (!p) {
-      p = Promise.resolve();
-    }
-    return p.then(function () {
-      return cache.set(listId, {items: l, total: list.total});
-    }).then(function () {
-      return cache.get('ll:' + className);
-    }).then(function (lists) {
-      lists = lists || [];
-      lists.push(listId);
-      return cache.set('ll:' + className, lists);
+    let listId = 'l:' + className + ':' + objectToMD5(options);
+    let l = [];
+    list.forEach((item) => {
+      l.push({className: item.getClassName(), id: item.getItemId()});
+      p = p.then(() => cacheItem(item));
     });
-  }
-
-  function uncacheNext(className, id, result, processed) {
-    return function () {
-      return uncacheItem(className, id, processed).then(function (item) {
-        if (item) {
-          result.push(item);
-        }
-        return Promise.resolve();
+    return p
+      .then(() => cache.set(listId, {items: l, total: list.total}))
+      .then(() => cache.get('ll:' + className))
+      .then((lists) => {
+        lists = lists || [];
+        lists.push(listId);
+        return cache.set('ll:' + className, lists);
       });
-    };
   }
 
   function uncacheList(className, options) {
-    var listId = 'l:' + className + ':' + objectToMD5(options);
+    if (!isCached(className)) {
+      return Promise.resolve(null);
+    }
+    let listId = 'l:' + className + ':' + objectToMD5(options);
     return cache.get(listId)
-      .then(function (list) {
+      .then((list) => {
         if (!list) {
-          return Promise.resolve(null);
+          return null;
         }
-        var p = null;
-        var result = [];
-        var processed = {};
-        for (var i = 0; i < list.items.length; i++) {
-          if (p) {
-            p = p.then(uncacheNext(list.items[i].className, list.items[i].id, result, processed));
-          } else {
-            p = uncacheNext(list.items[i].className, list.items[i].id, result, processed)();
-          }
-        }
+        let p = Promise.resolve();
+        let result = [];
+        let processed = {};
+        list.items.forEach((li) => {
+          p = p
+            .then(() => uncacheItem(li.className, li.id, processed))
+            .then((item) => {
+              if (item) {
+                result.push(item);
+              }
+            });
+        });
         result.total = list.total;
-        if (p) {
-          return p.then(function () {
-            return Promise.resolve(result);
-          });
-        }
-        return Promise.resolve(result);
+        return p.then(() => result);
       });
   }
 
@@ -124,81 +110,62 @@ function CachedDataRepository(options) {
    * @param {Item} item
    * @returns {Promise}
    */
-  function cacheItem(item) {
+  function cacheItem(item, eagerLoaded) {
+    if (!eagerLoaded && !isCached(item.getClassName())) {
+      return Promise.resolve();
+    }
     return cache.get(item.getClassName() + '@' + item.getItemId())
-      .then(function (existing) {
-        var nm, p;
-        var refs = existing ? existing.references : {};
-        var colls = existing ? existing.collections : {};
-
-        for (nm in item.references) {
-          if (item.references.hasOwnProperty(nm) && item.references[nm]) {
-            refs[nm] = {
-              className: item.references[nm].getClassName(),
-              id: item.references[nm].getItemId()
-            };
-            if (p) {
-              p = p.then(cacheNext(item.references[nm]));
-            } else {
-              p = cacheNext(item.references[nm])();
+      .then((existing) => {
+        let refs = existing ? existing.references : {};
+        let colls = existing ? existing.collections : {};
+        let p = Promise.resolve();
+        Object.keys(item.references)
+          .forEach((nm) => {
+            if (item.references[nm]) {
+              refs[nm] = {
+                className: item.references[nm].getClassName(),
+                id: item.references[nm].getItemId()
+              };
+              p = p.then(() => cacheItem(item.references[nm], true));
             }
-          }
-        }
-
-        for (nm in item.collections) {
-          if (item.collections.hasOwnProperty(nm) && item.collections[nm].length) {
-            colls[nm] = [];
-            for (let i = 0; i < item.collections[nm].length; i++) {
-              colls[nm].push({
-                className: item.collections[nm][i].getClassName(),
-                id: item.collections[nm][i].getItemId()
-              });
-              if (p) {
-                p = p.then(cacheNext(item.collections[nm][i]));
-              } else {
-                p = cacheNext(item.collections[nm][i])();
-              }
-            }
-          }
-        }
-
-        if (p) {
-          return p.then(function () {
-            return cache.set(
-              item.getClassName() + '@' + item.getItemId(),
-              {base: item.base, references: refs, collections: colls}
-            );
           });
-        }
-        return cache.set(
-          item.getClassName() + '@' + item.getItemId(),
-          {base: item.base, references: refs, collections: colls}
+
+        Object.keys(item.collections)
+          .forEach((nm) => {
+            if (item.collections[nm].length) {
+              colls[nm] = [];
+              item.collections[nm].forEach((tmp) => {
+                colls[nm].push({
+                  className: tmp.getClassName(),
+                  id: tmp.getItemId()
+                });
+                p = p.then(() => cacheItem(tmp, true));
+              });
+            }
+          });
+
+        return p.then(
+          () => cache.set(
+            item.getClassName() + '@' + item.getItemId(),
+            {
+              base: item.base,
+              references: refs,
+              collections: colls
+            }
+          )
         );
       });
   }
 
-  function uncacheRef(params, references, nm, processed) {
-    return function () {
-      return uncacheItem(params.className, params.id, processed).then(function (item) {
-        references[nm] = item;
-      });
-    };
-  }
-
-  function uncacheColItem(params, coll, processed) {
-    return function () {
-      return uncacheItem(params.className, params.id, processed).then(function (item) {
-        coll.push(item);
-      });
-    };
-  }
-
-  function uncacheItem(className, id, processed) {
+  function uncacheItem(className, id, processed, eagerLoaded) {
     if (className instanceof Item) {
       if (!id) {
         id = className.getItemId();
       }
       className = className.getClassName();
+    }
+    if (!eagerLoaded && !isCached(className)) {
+      return Promise.resolve(null);
     }
     if (processed && processed.hasOwnProperty(className + '@' + id)) {
       return Promise.resolve(processed[className + '@' + id]);
@@ -209,43 +176,38 @@ function CachedDataRepository(options) {
           return null;
         }
 
-        var result = _this._wrap(className, item.base);
+        let result = _this._wrap(className, item.base);
         processed = processed || {};
         processed[className + '@' + id] = result;
-        var p, nm;
-        for (nm in item.references) {
-          if (item.references.hasOwnProperty(nm)) {
-            if (p) {
-              p = p.then(uncacheRef(item.references[nm], result.references, nm, processed));
-            } else {
-              p = uncacheRef(item.references[nm], result.references, nm, processed)();
-            }
-          }
-        }
+        let p = Promise.resolve();
 
-        for (nm in item.collections) {
-          if (item.collections.hasOwnProperty(nm)) {
+        Object.keys(item.references)
+          .forEach(
+            (nm) => {
+              p = p
+                .then(() => uncacheItem(item.references[nm].className, item.references[nm].id, processed, true))
+                .then((ri) => {
+                  result.references[nm] = ri;
+                });
+            }
+          );
+
+        Object.keys(item.collections)
+          .forEach((nm) => {
             result.collections[nm] = [];
-            for (let i = 0; i < item.collections[nm].length; i++) {
-              if (p) {
-                p = p.then(uncacheColItem(item.collections[nm][i], result.collections[nm], processed));
-              } else {
-                p = uncacheColItem(item.collections[nm][i], result.collections[nm], processed)();
-              }
-            }
-          }
-        }
-
-        if (!p) {
-          p = Promise.resolve();
-        }
-        return p
-          .then(function () {
-            return loadFiles(result, fileStorage, imageStorage);
-          })
-          .then(function () {
-            return calcProperties(result);
+            item.collections[nm]
+              .forEach((tmp) => {
+                p = p
+                  .then(() => uncacheItem(tmp.className, tmp.id, processed, true))
+                  .then((item) => {
+                    result.collections[nm].push(item);
+                  });
+              });
           });
+
+        return p
+          .then(() => loadFiles(result, fileStorage, imageStorage))
+          .then(() => calcProperties(result));
       });
   }
 
@@ -284,22 +246,19 @@ function CachedDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    var opts = clone(options);
+    let opts = clone(options);
     return uncacheList(obj, opts)
-      .then(function (list) {
+      .then((list) => {
         if (list) {
-          return Promise.resolve(list);
+          return list;
         }
 
         return dataRepo.getList(obj, options)
-          .then(function (list) {
+          .then((list) => {
             if (!list) {
-              return Promise.resolve(list);
+              return list;
             }
-            return cacheList(obj, opts, list)
-              .then(function () {
-                return Promise.resolve(list);
-              });
+            return cacheList(obj, opts, list).then(() => list);
           });
       });
   };
@@ -339,12 +298,6 @@ function CachedDataRepository(options) {
       });
   };
 
-  function cleanList(listId) {
-    return function () {
-      return cache.set(listId, null);
-    };
-  }
-
   /**
    * @param {ClassMeta} cm
    * @returns {Function}
@@ -352,23 +305,14 @@ function CachedDataRepository(options) {
   function cleanClassLists(cm) {
     return function () {
       return cache.get('ll:' + cm.getCanonicalName())
-        .then(function (lists) {
-          var p;
+        .then((lists) => {
+          let p = Promise.resolve();
           if (lists) {
-            for (var i = 0; i < lists.length; i++) {
-              if (p) {
-                p = p.then(cleanList(lists[i]));
-              } else {
-                p = cleanList(lists[i])();
-              }
-            }
+            lists.forEach((listId) => {
+              p = p.then(() => cache.set(listId, null));
+            });
           }
-          if (!p) {
-            p = Promise.resolve();
-          }
-          return p.then(function () {
-            return cache.set('ll:' + cm.getCanonicalName(), null);
-          });
+          return p.then(() => cache.set('ll:' + cm.getCanonicalName(), null));
         });
     };
   }
@@ -381,19 +325,13 @@ function CachedDataRepository(options) {
     if (!item) {
       return Promise.resolve();
     }
-    var p;
-    var cm = item.getMetaClass();
+    let p = Promise.resolve();
+    let cm = item.getMetaClass();
     while (cm) {
-      if (p) {
-        p = p.then(cleanClassLists(cm));
-      } else {
-        p = cleanClassLists(cm)();
-      }
+      p = p.then(cleanClassLists(cm));
       cm = cm.getAncestor();
     }
-    return p.then(function () {
-      return Promise.resolve(item);
-    });
+    return p.then(() => item);
   }
 
   /**
@@ -439,7 +377,6 @@ function CachedDataRepository(options) {
   };
 
   /**
-   *
    * @param {String} classname
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
@@ -448,9 +385,7 @@ function CachedDataRepository(options) {
   this._deleteItem = function (classname, id, changeLogger, options) {
     return dataRepo.getItem(classname, id)
       .then(cleanLists)
-      .then(function () {
-        return dataRepo.deleteItem(classname, id, changeLogger, options);
-      });
+      .then(() => dataRepo.deleteItem(classname, id, changeLogger, options));
   };
 
   /**
