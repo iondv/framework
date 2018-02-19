@@ -387,7 +387,8 @@ function SecuredDataRepository(options) {
    * @param {Item} item
    * @returns {Array}
    */
-  function attrResources(item) {
+  function attrResources(item, processed) {
+    processed = processed || {};
     let props = item.getProperties();
     let result = [];
     for (let nm in props) {
@@ -397,9 +398,12 @@ function SecuredDataRepository(options) {
           let ri = p.evaluate();
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
           if (ri instanceof Item) {
+            processed[ri.getClassName() + '@' + ri.getItemId()] = true;
             result.push(classPrefix + ri.getClassName());
             result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
-            result.push(...attrResources(ri));
+            if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+              result.push(...attrResources(ri, processed));
+            }
           } else if (p.getValue()) {
             result.push(itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue());
           }
@@ -416,7 +420,8 @@ function SecuredDataRepository(options) {
    * @param {{}} permissions
    * @returns {{}}
    */
-  function attrPermissions(item, ipermissions, permissions) {
+  function attrPermissions(item, ipermissions, permissions, processed) {
+    processed = processed || {};
     let props = item.getProperties();
     let result = {};
     let global = permissions[globalMarker] || {};
@@ -435,7 +440,10 @@ function SecuredDataRepository(options) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
             rperm = merge(true, permissions[tmp] || {}, rperm);
             rcperm = merge(true, permissions[classPrefix + ri.getClassName()] || {}, rcperm);
-            ri.attrPermissions = attrPermissions(ri, merge(true, rperm, rcperm), permissions);
+            if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+              processed[ri.getClassName() + '@' + ri.getItemId()] = true;
+              ri.attrPermissions = attrPermissions(ri, merge(true, rperm, rcperm), permissions, processed);
+            }
           }
 
           result[p.getName()][Permissions.READ] =
