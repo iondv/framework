@@ -110,10 +110,13 @@ function CachedDataRepository(options) {
    * @param {Item} item
    * @returns {Promise}
    */
-  function cacheItem(item, eagerLoaded) {
+  function cacheItem(item, eagerLoaded, processed) {
+    processed = processed || {};
     if (!eagerLoaded && !isCached(item.getClassName())) {
       return Promise.resolve();
     }
+
+    processed[item.getClassName() + '@' + item.getItemId()] = true;
     return cache.get(item.getClassName() + '@' + item.getItemId())
       .then((existing) => {
         let refs = existing ? existing.references : {};
@@ -126,7 +129,9 @@ function CachedDataRepository(options) {
                 className: item.references[nm].getClassName(),
                 id: item.references[nm].getItemId()
               };
-              p = p.then(() => cacheItem(item.references[nm], true));
+              if (!processed[item.references[nm].getClassName() + '@' + item.references[nm].getItemId()]) {
+                p = p.then(() => cacheItem(item.references[nm], true, processed));
+              }
             }
           });
 
@@ -139,7 +144,9 @@ function CachedDataRepository(options) {
                   className: tmp.getClassName(),
                   id: tmp.getItemId()
                 });
-                p = p.then(() => cacheItem(tmp, true));
+                if (!processed[tmp.getClassName() + '@' + tmp.getItemId()]) {
+                  p = p.then(() => cacheItem(tmp, true, processed));
+                }
               });
             }
           });
