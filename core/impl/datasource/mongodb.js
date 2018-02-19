@@ -628,6 +628,39 @@ function MongoDs(config) {
                 }
                 return {[o]: parseCondition(c[oper])};
               }break;
+              case '$empty':
+              {
+                let args = parseCondition(c[oper]);
+                if (!args || !args.length) {
+                  return true;
+                }
+                let arg = args[0];
+                if (!arg) {
+                  return true;
+                }
+                if (typeof arg === 'string' && arg[0] === '$') {
+                  return {[arg]: {$empty: true}};
+                }
+                return false;
+              }
+                break;
+              case '$exists':
+              case '$nempty':
+              {
+                let args = parseCondition(c[oper]);
+                if (!args || !args.length) {
+                  return false;
+                }
+                let arg = args[0];
+                if (!arg) {
+                  return false;
+                }
+                if (typeof arg === 'string' && arg[0] === '$') {
+                  return {[arg]: {$empty: false}};
+                }
+                return true;
+              }
+                break;
               default: {
                 let args = parseCondition(c[oper]);
                 let {attr, right} = argsToSides(args);
@@ -650,10 +683,6 @@ function MongoDs(config) {
                     if (typeof right !== 'undefined') {
                       return {[attr]: {$regex: right, $options: 'i'}};
                     }break;
-                  case '$empty':
-                    return {[attr]: {$empty: true}};
-                  case '$exists':
-                    return {[attr]: {$empty: false}};
                 }
                 if (typeof right !== 'undefined') {
                   if (o === QUERY_OPERS[Operations.EQUAL]) {
@@ -824,7 +853,7 @@ function MongoDs(config) {
   function prepareConditions(conditions, part, parent, nottop) {
     if (Array.isArray(conditions)) {
       for (let i = 0; i < conditions.length; i++) {
-        prepareConditions(conditions[i], i, conditions, false, part, parent);
+        prepareConditions(conditions[i], i, conditions, false);
       }
     } else if (
         typeof conditions === 'object' && conditions &&
@@ -835,24 +864,22 @@ function MongoDs(config) {
           if (nm === '_id' && typeof conditions._id === 'string') {
             conditions._id = new mongo.ObjectID(conditions._id);
           } else if (nm === '$not' && nottop !== true) {
-            let tmp = prepareConditions(conditions[nm], nm, conditions, true, part, parent);
+            let tmp = prepareConditions(conditions[nm], nm, conditions, true);
             conditions.$nor = Array.isArray(tmp) ? tmp : [tmp];
             delete conditions[nm];
           } else if (nm === '$empty') {
-            if (parent && part) {
-              let tmp = conditions[nm] ? '$or' : '$nor';
-              delete parent[part];
-              parent[tmp] = [];
-              let tmp2 = {};
-              tmp2[part] = {$eq: ''};
-              parent[tmp].push(tmp2);
-              tmp2 = {};
-              tmp2[part] = {$eq: null};
-              parent[tmp].push(tmp2);
-              tmp2 = {};
-              tmp2[part] = {$exists: false};
-              parent[tmp].push(tmp2);
-            }
+            let tmp = conditions[nm] ? '$or' : '$nor';
+            delete parent[part];
+            parent[tmp] = [];
+            let tmp2 = {};
+            tmp2[part] = {$eq: ''};
+            parent[tmp].push(tmp2);
+            tmp2 = {};
+            tmp2[part] = {$eq: null};
+            parent[tmp].push(tmp2);
+            tmp2 = {};
+            tmp2[part] = {$exists: false};
+            parent[tmp].push(tmp2);
           } else if (nm === '$date') {
             parent[part] = fDate(conditions[nm]);
             break;
@@ -864,10 +891,10 @@ function MongoDs(config) {
             break;
           } else if (nm === '$joinExists' || nm === '$joinNotExists' || nm === '$joinSize') {
             if (conditions[nm].filter) {
-              prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false, part, parent);
+              prepareConditions(conditions[nm].filter, 'filter', conditions[nm], false);
             }
           } else {
-            prepareConditions(conditions[nm], nm, conditions, true, part, parent);
+            prepareConditions(conditions[nm], nm, conditions, true);
           }
         }
       }
@@ -1154,11 +1181,11 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, analise, counter, prefix);
-        if (tmp !== null) {
+        //if (tmp !== null) { // TODO Потенциальная жопа с парсингом аргументов логических атрибутов
           result.push(tmp);
-        }
+        //}
       }
-      return result.length ? result : null;
+      return result;
     } else if (typeof find === 'object' && find && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       let jsrc = {};
@@ -1213,14 +1240,19 @@ function MongoDs(config) {
 
             if (name === '$or') {
               if (Array.isArray(tmp)) {
+                let tmp2 = [];
                 for (let i = 0; i < tmp.length; i++) {
+                  if (tmp[i] === false) {
+                    continue;
+                  }
                   if (tmp[i] === true || tmp[i] === IGNORE) {
                     result = IGNORE;
                     break;
                   }
+                  tmp2.push(tmp[i]);
                 }
-                if (!result && tmp.length) {
-                  result = tmp.length > 1 ? {$or: tmp} : tmp[0];
+                if (!result && tmp2.length) {
+                  result = tmp2.length > 1 ? {$or: tmp2} : tmp2[0];
                 }
               } else {
                 result = IGNORE;
@@ -1230,14 +1262,19 @@ function MongoDs(config) {
               if (Array.isArray(tmp)) {
                 result = [];
                 for (let i = 0; i < tmp.length; i++) {
-                  if (tmp[i] !== true && tmp[i] !== IGNORE) {
+                  if (tmp[i] === false) {
+                    result = IGNORE;
+                    break;
+                  } else if (tmp[i] !== true && tmp[i] !== IGNORE) {
                     result.push(tmp[i]);
                   }
                 }
-                if (name === '$and') {
-                  result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : IGNORE;
-                } else {
-                  result = result.length ? {$nor: result} : IGNORE;
+                if (result !== IGNORE) {
+                  if (name === '$and') {
+                    result = result.length ? (result.length > 1 ? {$and: result} : result[0]) : IGNORE;
+                  } else {
+                    result = result.length ? {$nor: result} : IGNORE;
+                  }
                 }
                 break;
               } else {
@@ -1265,9 +1302,13 @@ function MongoDs(config) {
               } else {
                 if (
                   name[0] === '$' &&
-                  Array.isArray(tmp) && !(name === '$and' || name === '$or' || name === 'not' || name === 'nor' || name === '$in' || name === '$cond')
+                  Array.isArray(tmp) && !(
+                    name === '$empty' || name === '$and' || name === '$or' || name === 'not' ||
+                    name === 'nor' || name === '$in' || name === '$cond'
+                  )
                 ) {
                   result = IGNORE;
+                  analise.needRedact = true;
                   break;
                 }
 
@@ -1785,6 +1826,10 @@ function MongoDs(config) {
 
       if (result.length) {
         return Promise.resolve(result);
+      } else {
+        if (prefilter) {
+          options.filter = prefilter;
+        }
       }
 
       return Promise.resolve(false);
@@ -1953,6 +1998,7 @@ function MongoDs(config) {
         c = col;
         options.filter = parseCondition(options.filter);
         prepareConditions(options.filter);
+
         if (options.append) {
           tmpApp = 'tmp_' + cuid();
           options.to = tmpApp;
