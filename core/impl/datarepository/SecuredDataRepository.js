@@ -398,10 +398,10 @@ function SecuredDataRepository(options) {
           let ri = p.evaluate();
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
           if (ri instanceof Item) {
-            processed[ri.getClassName() + '@' + ri.getItemId()] = true;
             result.push(classPrefix + ri.getClassName());
             result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
             if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+              processed[ri.getClassName() + '@' + ri.getItemId()] = true;
               result.push(...attrResources(ri, processed));
             }
           } else if (p.getValue()) {
