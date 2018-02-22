@@ -74,7 +74,7 @@ function MetaKeyProvider(options) {
 
   /**
    * @param {ClassMeta} cm
-   * @param {String} data
+   * @param {Object} data
    * @returns {{} | null}
    * @private
    */
