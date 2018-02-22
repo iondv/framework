@@ -2010,7 +2010,7 @@ function IonDataRepository(options) {
     options = options || {};
 
     if (isEmpty(data)) {
-      return options.skipResult ?
+      return (options.skipResult || !id) ?
         Promise.resolve() :
         this._getItem(classname, id, {nestingDepth: options.nestingDepth});
     }
