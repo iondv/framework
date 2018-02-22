@@ -1738,6 +1738,7 @@ function MongoDs(config) {
       if (options.filter) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
+        console.log(JSON.stringify(prefilter), analise);
         if (analise.needRedact || analise.needPostFilter) {
           postfilter = producePostfilter(options.filter, lookups);
           redactFilter = produceRedactFilter(postfilter, lookups);
@@ -2139,7 +2140,9 @@ function MongoDs(config) {
    */
   this._aggregate = function (type, options) {
     options = clone(options || {});
+    console.log('1.', JSON.stringify(options.filter));
     options.filter = parseCondition(options.filter);
+    console.log('2.', JSON.stringify(options.filter));
     let c;
     let tmpApp = null;
     return getCollection(type)
@@ -2155,11 +2158,14 @@ function MongoDs(config) {
           tmpApp = 'tmp_' + cuid();
           options.to = tmpApp;
         }
+        console.log('3.', JSON.stringify(options.filter));
         return checkAggregation(type, options, plan);
       })
       .then((plan) => {
         return new Promise((resolve, reject) => {
           try {
+            console.log(type);
+            console.log(JSON.stringify(plan));
             c.aggregate(plan || [], {allowDiskUse: true}, (err, result) => {
               if (err) {
                 return reject(wrapError(err, 'aggregate', type));
