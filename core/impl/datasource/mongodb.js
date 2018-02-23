@@ -656,7 +656,7 @@ function MongoDs(config) {
                   return false;
                 }
                 if (typeof arg === 'string' && arg[0] === '$') {
-                  return {[arg]: {$empty: false}};
+                  return {[arg.substr(1)]: {$empty: false}};
                 }
                 return true;
               }
@@ -2156,6 +2156,7 @@ function MongoDs(config) {
           tmpApp = 'tmp_' + cuid();
           options.to = tmpApp;
         }
+
         return checkAggregation(type, options, plan);
       })
       .then((plan) => {
