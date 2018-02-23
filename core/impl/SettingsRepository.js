@@ -34,11 +34,14 @@ function SettingsRepository(options) {
     let writers = Promise.resolve();
     Object.keys(changed).forEach((nm) => {
       writers = writers.then(() => {
+        let f = {[F.EQUAL]: ['$name', nm]};
         let v = {value: registry[nm]};
         if (important.hasOwnProperty[nm] && important[nm]) {
           v.important = true;
+        } else {
+          f = {[F.AND]: [f, {[F.NOT_EQUAL]: ['$important', true]}]};
         }
-        return options.dataSource.upsert('ion_global_settings', {[F.EQUAL]: ['$name', nm]}, {v});
+        return options.dataSource.upsert('ion_global_settings', f, v);
       });
     });
     changed = {};
@@ -53,7 +56,7 @@ function SettingsRepository(options) {
   this.reset = function (preserveImportant = false) {
     let f = {};
     if (preserveImportant) {
-      f = {important: {$ne: true}};
+      f = {[F.NOT_EQUAL]: ['$important', true]};
     }
     return options.dataSource.delete('ion_global_settings', f);
   };
