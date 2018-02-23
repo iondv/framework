@@ -16,7 +16,23 @@ var IonLogger = require('core/impl/log/IonLogger');
 var sysLog = new IonLogger({});
 
 if (process.argv.length > 2) {
-  var app = process.argv[2];
+  let app = process.argv[2];
+  let resetSettings = false;
+  let overrideArrays = false;
+  let preserveModifiedSettings = false;
+  for (let i = 3; i < process.argv.length; i++) {
+    switch (process.argv[i]) {
+      case '--reset':
+        resetSettings = true;
+        break;
+      case '--rwa':
+        overrideArrays = true;
+        break;
+      case '--sms':
+        preserveModifiedSettings = true;
+        break;
+    }
+  }
 
   di('boot', config.bootstrap,
     {
@@ -24,7 +40,12 @@ if (process.argv.length > 2) {
     }, null, ['rtEvents', 'sessionHandler'])
     .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
     .then((scope) => alias(scope, scope.settings.get('di-alias')))
-    .then((scope) => worker(path.join(__dirname, '..', 'applications', app)).then(() => scope))
+    .then((scope) =>
+      worker(
+        path.join(__dirname, '..', 'applications', app),
+        {resetSettings, overrideArrays, preserveModifiedSettings}
+      ).then(() => scope)
+    )
     .then((scope) => scope.dataSources.disconnect())
     .then(() => {
       console.info('Настройка выполнена успешно.');

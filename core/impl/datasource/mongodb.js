@@ -1049,7 +1049,7 @@ function MongoDs(config) {
         return new Promise(function (resolve, reject) {
           conditions = parseCondition(conditions);
           prepareConditions(conditions);
-          c.deleteMany(conditions,
+          c.deleteMany(typeof conditions === 'object' ? conditions : {},
             function (err, result) {
               if (err) {
                 return reject(wrapError(err, 'delete', type));
