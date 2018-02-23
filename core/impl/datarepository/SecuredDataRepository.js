@@ -244,11 +244,12 @@ function SecuredDataRepository(options) {
    * @param {Item} item
    * @return {Item}
    */
-  function cenzor(item) {
+  function cenzor(item, processed) {
     if (!item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
     }
+    processed = processed || {};
     let props = item.getProperties();
     Object.values(props).forEach((p) => {
       if (p.meta.type === PropertyTypes.REFERENCE || p.meta.type === PropertyTypes.COLLECTION) {
@@ -257,7 +258,10 @@ function SecuredDataRepository(options) {
           v = Array.isArray(v) ? v : [v];
           v.forEach((item) => {
             if (item instanceof Item) {
-              cenzor(item);
+              if (!processed[item.getClassName() + '@' + item.getItemId()]) {
+                processed[item.getClassName() + '@' + item.getItemId()] = true;
+                cenzor(item, processed);
+              }
             }
           });
         }
