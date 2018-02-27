@@ -1,76 +1,60 @@
-cache:
-    key: ionportal
-    paths:
-    - node_modules/
+image: docker.iondv.ru/kube/docker/pygitlab:master
 stages:
-    - compile
-    - test
-    - deploy
-Compile:
-    type: compile
-    tags:
-        - build-02
-    only:
-        - master
-        - develop
-        - raw
-    script:
-    - npm install
-    - echo $'auth.denyTop=false\ndb.uri=mongodb://127.0.0.1:27017/ion\ndb.name=ion\ndb.user=root\ndb.pwd=ION-sql1\nserver.port1=8888\nserver.port2=8889\nserver.port3=3000\nmodule.default=registry\nfs.storageRoot=./files\nfs.urlBase=/files' > config/config.ini
-    - export NODE_PATH=`pwd -P`
-    - gulp build
-    artifacts:
-        name: "$CI_BUILD_STAGE_$CI_BUILD_REF_NAME"
-        expire_in: 20 min
-        untracked: true
-GenerateDocs:
-    type: compile
-    tags:
-        - build-02
-    only:
-        - develop
-    script:
-    - npm install -g jsdoc-to-markdown
-    - git clone http://jenkins:$JENKINS_PASS@git.iondv.ru/ION/platform.wiki.git
-    - find * -type d -not -path "node_modules*" -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'mkdir "platform.wiki/developer_reference/${0}"' {} \;
-    - find * -type d -not -path "node_modules*" -not -path "platform.wiki*" -not -path "applications*" -not -path "config*" -not -path "view*" -not -path "modules*" -exec sh -c 'jsdoc2md ${0}/*.js > "platform.wiki/developer_reference/${0}.md"' {} \;
-    - git config --global user.email "jenkins@example.com"
-    - git config --global user.name "Jenkins"
-    - cd platform.wiki
-    - git add .
-    - git commit -m "develop ref" || true
-    - git push
-Testing:
-  type: test
+    - create
+    - check
+    - delete
+.create: &JobCreate
+  type: create
   tags:
-    - test-01
-  only:
-        - master
-        - develop
-        - raw
+    - dapp
   script:
-    - C:\MongoDB\bin\mongo ion --eval "db.dropDatabase()"
-    - $env:NODE_ENV = "development"
-    - $env:NODE_PATH = pwd
-    - $env:DEBUG = "ION:*"
-    - npm install
-    - gulp setup
-    - start-job -ScriptBlock {node bin/www} -InitializationScript {cd "$Env:RUNNER_PATH\$Env:CI_PROJECT_DIR"} -Name $Env:PJ_DOCKER_NAME_DEV
-."http://docker.local:Random platforma":
-  type: deploy
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/create_pipelines_stages.sh | bash
+  allow_failure: false
+  when: manual
+  artifacts:
+    name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
+    expire_in: 1 mos
+    when: on_success
+    untracked: true
+.check: &JobCheck
+  type: check
   tags:
-    - docker-01
-  only:
-        - master
-        - develop
-        - raw
+    - kube-deploy
   script:
-    - sudo docker stop $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
-    - sudo docker rm $PJ_DOCKER_NAME$CI_BUILD_REF_NAME || true
-    - sudo docker run --name $PJ_DOCKER_NAME$CI_BUILD_REF_NAME -d -e NODE_PATH=/var/www -e DEBUG=ION:* -e NODE_ENV=development -p 8888 -p 22 iondvww supervisord
-    - export DEBUG=ION:*
-    - sudo docker cp ../platform $PJ_DOCKER_NAME$CI_BUILD_REF_NAME:/var/www
-    - sudo docker exec $PJ_DOCKER_NAME$CI_BUILD_REF_NAME bash -c 'sleep 3 && node /var/www/bin/import.js'
-    - sudo docker restart $PJ_DOCKER_NAME$CI_BUILD_REF_NAME
-    - "curl -X POST -F token=$DevAndTestToken -F ref=$CI_BUILD_REF_NAME https://git.iondv.ru/api/v3/projects/34/trigger/builds"
-    - sudo docker port $PJ_DOCKER_NAME$CI_BUILD_REF_NAME 8888 | sed -r 's/'0.0.0.0'+/http:\/\/192.168.0.228/g'
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/check_pipelines_stages.sh | bash
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    url: http://${CI_COMMIT_REF_SLUG}.develop-and-test.kube.local
+    on_stop: Delete
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  allow_failure: false
+.del: &JobDelete
+  type: delete
+  tags:
+    - kube-deploy
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/delete_pipelines_stages.sh | bash
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+Create:
+  <<: *JobCreate
+  only:
+    - branches
+Check:
+  <<: *JobCheck
+  only:
+    - branches
+  dependencies:
+    - Create
+Delete:
+  <<: *JobDelete
+  only:
+    - branches
+  dependencies:
+    - Create
