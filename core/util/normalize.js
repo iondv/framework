@@ -12,6 +12,7 @@ const clone = require('clone');
  * @param {Function} dateCallback
  * @param {{}} [options]
  * @param {Boolean | Number} [options.greedy]
+ * @param {Boolean} [options.skipSystemAttrs]
  * @param {Boolean} [options.byRef]
  * @param {{}} [processed]
  * @returns {{} | null}
@@ -54,10 +55,12 @@ function normalize(data, dateCallback, options, processed) {
 
     item = {};
 
-    item._creator = data.getCreator();
-    item._editor = data.getEditor();
-    item._id = data.getItemId();
-    item.__string = data.toString(null, dateCallback);
+    if (!options.skipSystemAttrs) {
+      item._creator = data.getCreator();
+      item._editor = data.getEditor();
+      item._id = data.getItemId();
+      item.__string = data.toString(null, dateCallback);
+    }
     processed[data.getClassName() + '@' + data.getItemId()] = item;
 
     for (let nm in props) {
@@ -80,7 +83,7 @@ function normalize(data, dateCallback, options, processed) {
           item[p.getName()] = p.getValue();
         }
 
-        if (p.meta.selectionProvider) {
+        if (p.meta.selectionProvider && !options.skipSystemAttrs) {
           item[p.getName() + '_str'] = p.getDisplayValue(dateCallback);
         }
       }
