@@ -69,7 +69,10 @@ function normalize(data, dateCallback, options, processed) {
          * @type {Property}
          */
         let p = props[nm];
-
+        if (options.skipSystemAttrs && (p.getName() === '__class' || p.getName() === '__classTitle')) {
+          continue;
+        }
+        
         if (p.getType() === PropertyTypes.REFERENCE) {
           let refItem = data.getAggregate(p.getName());
           if (refItem && typeof item[p.getName()] === 'undefined') {
