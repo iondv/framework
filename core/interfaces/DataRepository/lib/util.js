@@ -286,6 +286,9 @@ function prepareSize(cm, filter, joins, numGen, context) {
  * @returns {{}}
  */
 function prepareEmpty(cm, filter, empty, joins, numGen, context) {
+  if (!filter[0] || typeof filter[0] !== 'string') {
+    return empty ? true : false;
+  }
   let nm = filter[0].substr(1);
   if (nm.indexOf('.') < 0) {
     let pm = findPm(cm, nm);

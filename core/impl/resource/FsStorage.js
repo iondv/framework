@@ -97,7 +97,7 @@ function FsStorage(options) {
     function checkDest(filename, prompt) {
       return new Promise((resolve, reject) => {
         let result = path.join(_options.storageBase, pth, filename);
-        fs.access(result, (err, stats) => {
+        fs.access(result, (err) => {
           if (err) {
             resolve({path: pth, filename: filename});
             return;
@@ -188,6 +188,9 @@ function FsStorage(options) {
    * @returns {Promise}
    */
   this._fetch = function (ids) {
+    if (!Array.isArray(ids)) {
+      return Promise.resolve([]);
+    }
     return dataSource.fetch('ion_files', {filter: {[F.IN]: ['$id', ids]}})
       .then((files) => {
         let result = [];
@@ -265,32 +268,37 @@ function FsStorage(options) {
             );
             f.getContents()
               .then(respondFile(req, res))
-              .catch((err) => {res.status(404).send('File not found!');});
+              .catch(() => {
+                res.status(404).send('File not found!');
+              });
           } else if (data && data.type === resourceType.DIR) {
             if (data && (data.files.length || data.dirs.length)) {
               let ids = data.files.concat(data.dirs);
-              dataSource.fetch('ion_files', {filter: {[F.IN]: ['$id', ids]}})
-                .then((files) => {
-                  let dirLinks = [];
-                  let fileLinks = [];
-                  for (let i = 0; i < files.length; i++) {
-                    if (files[i].type === resourceType.FILE) {
-                      fileLinks.push({
-                        link: _options.urlBase + '/' + files[i].id,
-                        name: files[i].options.name || files[i].id
-                      });
+              if (Array.isArray(ids)) {
+                dataSource.fetch('ion_files', {filter: {[F.IN]: ['$id', ids]}})
+                  .then((files) => {
+                    let dirLinks = [];
+                    let fileLinks = [];
+                    for (let i = 0; i < files.length; i++) {
+                      if (files[i].type === resourceType.FILE) {
+                        fileLinks.push({
+                          link: _options.urlBase + '/' + files[i].id,
+                          name: files[i].options.name || files[i].id
+                        });
+                      }
+                      if (files[i].type === resourceType.DIR) {
+                        dirLinks.push({
+                          link: _options.urlBase + '/' + files[i].id,
+                          name: files[i].options.name || files[i].id
+                        });
+                      }
                     }
-                    if (files[i].type === resourceType.DIR) {
-                      dirLinks.push({
-                        link: _options.urlBase + '/' + files[i].id,
-                        name: files[i].options.name || files[i].id
-                      });
-                    }
-                  }
-                  respondDirectory(res, data.name, dirLinks, fileLinks);
-                }).catch(() => {
-                res.status(404).send('File (or directory) not found!');
-              });
+                    respondDirectory(res, data.name, dirLinks, fileLinks);
+                  })
+                  .catch(() => {
+                    res.status(404).send('File (or directory) not found!');
+                  });
+              }
             } else {
               res.status(200).send('Folder is empty!');
             }
@@ -327,7 +335,7 @@ function FsStorage(options) {
   * @returns {Promise}
   */
   this._getDir = function (id) {
-    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', 'id']})
+    return dataSource.get('ion_files', {[F.EQUAL]: ['$id', id]})
       .then(function (dir) {
         if (dir && dir.files.length) {
           return _this._fetch(dir.files)

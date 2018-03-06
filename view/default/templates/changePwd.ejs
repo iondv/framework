@@ -1,61 +1,83 @@
 <!DOCTYPE html>
 <html>
-<head><title>Платформа ION: Вход</title>
-  <meta name="robots" content="noindex,nofollow">
+<head>
+  <title>Платформа ION: Смена пароля</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
   <base id="baseUrl" href="<%=baseUrl%>">
-  <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/auth.css">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <link href="css/essentials.min.css" rel="stylesheet" type="text/css">
+  <link href="css/layout.min.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
 </head>
-<body>
-<div class="demo">
-  <h3>Смена пароля</h3>
 
-  <div class="auth-form">
-    <div class="msg-container">
-    <%
-    if (errors.length) {
-      errors.forEach(function (error) {
-    %>
-    <div id="error" class="error-msg"><%= error %></div>
-    <%
-      });
-    }
-    %>
+<body>
+<div class="padding-15">
+  <div class="login-box">
+    <% if(errors.length) { %>
+    <div id="error" class="alert alert-danger">
+      <% errors.forEach(function(error){ %>
+      <p><%= error %></p>
+      <% }); %>
     </div>
-    <form action="chpwd" method="post" id="reg-form">
-      <div><input type="password" name="password" placeholder="пароль" class="input password"></div>
-      <div><input type="password" name="password2" placeholder="повторите пароль" class="input password"></div>
-      <div class="buttons">
-        <button id="submit-btn" type="button">Изменить пароль</button>
-        <div class="forgot-password pull-left">
-          <a href="<%=baseUrl%>"><b>Вернуться в приложение</b></a>
+    <% } %>
+    <div id="errors" class="alert alert-danger" style="display: none"></div>
+
+    <form action="chpwd" method="post" id="reg-form" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Смена пароля</header>
+      <fieldset>
+        <section>
+          <label class="label">Новый пароль</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input type="password" name="password">
+            <b class="tooltip tooltip-top-right">Новый пароль</b>
+          </label>
+        </section>
+
+        <section>
+          <label class="label">Повтор пароля</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input type="password" name="password2">
+            <b class="tooltip tooltip-top-right">Повтор пароля</b>
+          </label>
+        </section>
+      </fieldset>
+
+      <footer>
+        <button id="submit-btn" type="button" class="btn btn-primary pull-left" style="margin-left:0;">
+          Изменить пароль
+        </button>
+        <div class="forgot-password pull-right">
+          <a href="/"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
         </div>
-      </div>
+      </footer>
     </form>
+
   </div>
 </div>
-</body>
 <script>
   jQuery(function(){
     var options = <%- JSON.stringify(options)%>;
-    var $msgContainer = $('div.msg-container');
-    var $submit = $('button#submit-btn');
-    var $regForm = $('form#reg-form');
-    var $pwd = $regForm.find('input[name="password"]');
-    var $pwd2 = $regForm.find('input[name="password2"]');
+    var $errors = $('#errors');
+    var $submit = $('#submit-btn');
+    var $regForm = $('#reg-form');
+    var $pwd = $regForm.find('[name="password"]');
+    var $pwd2 = $regForm.find('[name="password2"]');
     $submit.click(function(){
-      $msgContainer.empty();
+      $errors.hide();
       var pwd = $pwd.val();
       var pwd2 = $pwd2.val();
       var valid = true;
       var messages = [];
       if (pwd && pwd2 && pwd === pwd2) {
         if (options.pwdMinLength) {
-           if (pwd.length < options.pwdMinLength) {
-             valid = false;
-             messages.push('Минимальная длина пароля ' + options.pwdMinLength + ' символов');
-           }
+          if (pwd.length < options.pwdMinLength) {
+            valid = false;
+            messages.push('Минимальная длина пароля ' + options.pwdMinLength + ' символов');
+          }
         }
       } else {
         valid = false;
@@ -63,13 +85,14 @@
       }
       if (valid) {
         $regForm.submit();
-        $msgContainer.empty();
       } else if (messages.length) {
         for (var i = 0; i < messages.length; i++) {
-          $('<div/>').addClass('error-msg').html(messages[i]).appendTo($msgContainer);
+          $('<div/>').html(messages[i]).appendTo($errors);
         }
+        $errors.show();
       }
     });
   });
 </script>
+</body>
 </html>
