@@ -639,7 +639,7 @@ function MongoDs(config) {
                   return true;
                 }
                 if (typeof arg === 'string' && arg[0] === '$') {
-                  return {[arg]: {$empty: true}};
+                  return {[arg.substr(1)]: {$empty: true}};
                 }
                 return false;
               }
