@@ -37,22 +37,20 @@ class LocalAccountStorage extends IAccountStorage {
 
     if (user.pwd) {
       let hasher = pwdHasher(user.pwd);
-      hasher.hash(function (err, hash) {
-        user.pwd = hash;
-        user.pwdDate = new Date();
-        user.disabled = false;
-        this.ds.insert('ion_user', user)
-          .then(function (u) {
-            callback(null, u);
-          })
-          .catch(function (err) {
-            callback(err, null);
-          });
+      return new Promise((resolve, reject) => {
+        hasher.hash((err, hash) => {
+          user.pwd = hash;
+          user.pwdDate = new Date();
+          user.disabled = false;
+          this.ds.insert('ion_user', user)
+            .then((u) => {
+              resolve(u);
+            })
+            .catch(reject);
+        });
       });
     } else if (user.type !== UserTypes.LOCAL) {
-      this.ds.insert('ion_user', user)
-        .then((u) => callback(null, new User(u)))
-        .catch((err) => callback(err, null));
+      return this.ds.insert('ion_user', user).then((u) => new User(u));
     } else {
       throw new Error('Не передан пароль');
     }
