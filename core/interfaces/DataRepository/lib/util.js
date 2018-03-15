@@ -88,19 +88,19 @@ function prepareData(v) {
  * @return {Object | null}
  */
 function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
-  var updates, pm, nm, dot, tmp;
-  updates = {};
-  var empty = true;
-  for (nm in data) {
+  let updates = {};
+  let empty = true;
+  for (let nm in data) {
     if (data.hasOwnProperty(nm)) {
       empty = false;
+      let dot;
       if ((dot = nm.indexOf('.')) >= 0) {
         if (refUpdates) {
           if (opts) {
             opts.refUpdates = true;
           }
-          tmp = nm.substring(0, dot);
-          pm = cm.getPropertyMeta(tmp);
+          let tmp = nm.substring(0, dot);
+          let pm = cm.getPropertyMeta(tmp);
           if (pm) {
             if (pm.type === PropertyTypes.REFERENCE) {
               if (!refUpdates.hasOwnProperty(tmp)) {
@@ -111,12 +111,11 @@ function formUpdatedData(cm, data, setCollections, refUpdates, opts) {
           }
         }
       } else {
-        pm = cm.getPropertyMeta(nm);
+        let pm = cm.getPropertyMeta(nm);
         if (pm && pm.name !== '__class' && pm.name !== '__classTitle') {
           if (pm.type !== PropertyTypes.COLLECTION) {
-            data[nm] = castValue(prepareData(data[nm]), pm);
             if (!(pm.type === PropertyTypes.REFERENCE && pm.backRef)) {
-              updates[nm] = data[nm];
+              updates[nm] = castValue(prepareData(data[nm]), pm);
             }
             if (pm.type === PropertyTypes.REFERENCE && pm.backRef) {
               if (opts) {
@@ -287,6 +286,9 @@ function prepareSize(cm, filter, joins, numGen, context) {
  * @returns {{}}
  */
 function prepareEmpty(cm, filter, empty, joins, numGen, context) {
+  if (!filter[0] || typeof filter[0] !== 'string') {
+    return empty ? true : false;
+  }
   let nm = filter[0].substr(1);
   if (nm.indexOf('.') < 0) {
     let pm = findPm(cm, nm);

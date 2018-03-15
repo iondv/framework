@@ -65,7 +65,8 @@
             "saveUninitialized": true,
             "cookie": {
               "httpOnly": true,
-              "secure": false
+              "secure": false,
+              "maxAge": "[[auth.sessionLifeTime]]"
             }
           }
         }
@@ -120,7 +121,8 @@
           "blockPeriod": "[[auth.blockPeriod]]",
           "checkSignInAccess": "[[auth.checkSignInAccess]]",
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
-          "goHome": "[[auth.goHome]]"
+          "goHome": "[[auth.goHome]]",
+          "passports":[]
         }
       },
       "calculator": {

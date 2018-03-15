@@ -118,6 +118,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */
@@ -133,6 +134,7 @@ function DataRepository() {
    * @param {{}} [options]
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */
@@ -150,6 +152,7 @@ function DataRepository() {
    * @param {Number} [options.nestingDepth]
    * @param {Boolean} [options.autoAssign]
    * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
    * @param {User} [options.user]
    * @returns {Promise}
    */
@@ -252,6 +255,14 @@ function DataRepository() {
    */
   this.bulkDelete = function (classname, options) {
     return this._bulkDelete(classname, options || {});
+  };
+
+  /**
+   * @param {Item} item
+   * @returns {Promise}
+   */
+  this.recache = function (item) {
+    return this._recache(item);
   };
 }
 
