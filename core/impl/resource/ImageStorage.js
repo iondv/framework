@@ -5,7 +5,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const gm = require('gm');
+const gm = require('gm').subClass({imageMagick: true});
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -98,6 +98,8 @@ function ImageStorage(options) { // jshint ignore:line
               delete data.stream;
               data.buffer = buffer;
               return createThumbnails(data.buffer, name, o);
+            }).catch(e => {
+              return Promise.reject(e);
             });
         }
     } else {
