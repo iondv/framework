@@ -1,7 +1,9 @@
 'use strict';
+
 /**
  * Created by kras on 13.07.16.
  */
+
 const worker = require('lib/export');
 const config = require('../config');
 const di = require('core/di');

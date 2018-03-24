@@ -3,9 +3,7 @@
  */
 'use strict';
 
-function StoredFile(id, link, options, streamGetter) {
-  var _this = this;
-
+function StoredFile (id, link, options, streamGetter) {
   this.id = id;
 
   this.link = link;
@@ -18,6 +16,7 @@ function StoredFile(id, link, options, streamGetter) {
    * @returns {Promise}
    */
   this.getContents = function () {
+    let _this = this;
     return new Promise(function (resolve, reject) {
       if (typeof streamGetter === 'function') {
         try {

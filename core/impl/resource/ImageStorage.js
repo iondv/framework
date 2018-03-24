@@ -13,17 +13,20 @@ const path = require('path');
 // jshint maxcomplexity: 20
 
 /**
- * @param {String} id
- * @param {String} link
- * @param {StoredImage[]} thumbnails
- * @param {{}} [options]
- * @param {Function} [streamGetter]
+ * @param {StoredFile} file
  * @constructor
  */
-function StoredImage(id, link, thumbnails, options, streamGetter) {
-  StoredFile.apply(this, [id, link, options, streamGetter]);
+function StoredImage (file, thumbnails) {
+  StoredFile.apply(this, [file.id, file.link, file.options]);
+  this.file = file;
   this.thumbnails = thumbnails;
+  this.getContents = function() {
+    return this.file.getContents.apply(this.file, arguments);
+  }
 }
+
+StoredImage.prototype = Object.create(StoredFile.prototype);
+StoredImage.prototype.constructor = StoredImage;
 
 /**
  * @param {{}} options
@@ -121,7 +124,7 @@ function ImageStorage(options) { // jshint ignore:line
         }
         return fileStorage.accept(data, directory, ops);
       })
-      .then((file) => new StoredImage(file.id, file.link, thumbnails, file.options));
+      .then((file) => new StoredImage(file, thumbnails));
   }
 
   /**
@@ -204,7 +207,7 @@ function ImageStorage(options) { // jshint ignore:line
                 thumbs[thumb] = thumbById[tmp[i].options.thumbnails[thumb]];
               }
             }
-            result.push(new StoredImage(tmp[i].id, tmp[i].link, thumbs, tmp[i].options));
+            result.push(new StoredImage(tmp[i], thumbs));
           } else {
             result.push(tmp[i]);
           }
@@ -232,7 +235,7 @@ function ImageStorage(options) { // jshint ignore:line
         );
       });
     }
-    return new StoredImage(file.id, file.link, thumbs, file.options);
+    return new StoredImage(file, thumbs);
   }
 
   function thumbsStreamer(files) {
