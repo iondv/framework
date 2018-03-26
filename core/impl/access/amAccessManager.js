@@ -37,12 +37,23 @@ function MongoAclAccessManager(config) {
     return Promise.resolve();
   };
 
+  function fetchAllRoles() {
+    return options.dataSource.fetch(`${config.prefix ? config.prefix : 'ion_acl_'}_roles`, {});
+  }
+
+  function fetchAllResources() {
+    return options.dataSource.fetch(`${config.prefix ? config.prefix : 'ion_acl_'}_resources`, {});
+  }
+
   /**
    * @param {String} subject
    * @returns {Promise}
    */
   this._getRoles = function (subject) {
     return new Promise(function (resolve, reject) {
+      if (!subject) {
+        return fetchAllRoles().then(resolve).catch(reject);
+      }
       _this.acl.userRoles(subject, function (err, roles) {
         return err ? reject(err) : resolve(roles);
       });
@@ -56,6 +67,9 @@ function MongoAclAccessManager(config) {
    */
   this._getResources = function (roles, permissions) {
     return new Promise(function (resolve, reject) {
+      if (!roles) {
+        return fetchAllResources().then(resolve).catch(reject);
+      }
       var p = null;
       if (permissions) {
         p = Array.isArray(permissions) ? permissions.slice(0) : [permissions];
