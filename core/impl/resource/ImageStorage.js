@@ -99,7 +99,7 @@ function ImageStorage(options) { // jshint ignore:line
               data.buffer = buffer;
               return createThumbnails(data.buffer, name, o);
             });
-        }
+      }
     } else {
       thumbs = createThumbnails(data, ops.name || cuid(), o);
     }
@@ -119,7 +119,7 @@ function ImageStorage(options) { // jshint ignore:line
         }
         return fileStorage.accept(data, directory, ops);
       })
-      .then((file) => new StoredImage(file.id, file.link, thumbnails, file.options));
+      .then((file) => new StoredImage(file.id, file.link, thumbnails, file.options, fileStorage.stream(file)));
   }
 
   /**
@@ -202,7 +202,7 @@ function ImageStorage(options) { // jshint ignore:line
                 thumbs[thumb] = thumbById[tmp[i].options.thumbnails[thumb]];
               }
             }
-            result.push(new StoredImage(tmp[i].id, tmp[i].link, thumbs, tmp[i].options));
+            result.push(new StoredImage(tmp[i].id, tmp[i].link, thumbs, tmp[i].options, fileStorage.stream(tmp[i])));
           } else {
             result.push(tmp[i]);
           }
@@ -230,7 +230,7 @@ function ImageStorage(options) { // jshint ignore:line
         );
       });
     }
-    return new StoredImage(file.id, file.link, thumbs, file.options);
+    return new StoredImage(file.id, file.link, thumbs, file.options, fileStorage.stream(file));
   }
 
   function thumbsStreamer(files) {
@@ -390,6 +390,14 @@ function ImageStorage(options) { // jshint ignore:line
 
   this._fileRoute = function () {
     return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
+  };
+
+  /**
+   * @param {StoredFile} file
+   * @returns {Function}
+   */
+  this._stream = function (file) {
+    return fileStorage.stream(file);
   };
 }
 
