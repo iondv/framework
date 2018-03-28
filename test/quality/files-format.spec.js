@@ -15,7 +15,9 @@ describe('# Проверка соответствия файлов метада�
     let filesList = [];
     processDir(pathApp,
       (nm) => {return nm.substr(-5) === '.json';},
-      (fn) => {filesList.push(fn);},
+      (fn) => {if (fn.indexOf('node_modules') === -1) {
+        filesList.push(fn);
+      }},
       (err) => {console.error('Ошибка считывания файлов', err);});
     let errFiles = [];
     filesList.forEach((fn) => {
