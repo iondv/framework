@@ -830,7 +830,7 @@ function calcProperties(item, skip, needed, cached) {
     if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
       calculations = calculations.then(()=>p._formula.apply(item))
         .then((result) => {
-          item.calculated[p.name] = result;
+          item.calculated[p.name] = cast(result, p.type);
         });
     }
   });
