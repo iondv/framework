@@ -1,0 +1,14 @@
+{
+  "guid": "bbbeb500-de35-11e7-9350-81ad7b557d09",
+  "date": "2017-12-10T14:00:00.000Z",
+  "dateEnd": "2017-12-30T14:00:00.000Z",
+  "ownOrg": "191a45a0-de33-11e7-9350-81ad7b557d09",
+  "evaluation": "100",
+  "basicObjs": [
+    "072abd00-d8ae-11e7-95dc-eb14f520da96"
+  ],
+  "descript": "решение",
+  "basicObjPerform": "6c31db60-de31-11e7-9350-81ad7b557d09",
+  "_class": "evaluationPerform@project-management",
+  "_classVer": "31"
+}

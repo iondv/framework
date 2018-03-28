@@ -1,0 +1,12 @@
+{
+  "guid": "d57766b0-df96-11e7-9350-81ad7b557d09",
+  "name": "Первое мероприятие",
+  "datePlannedStart": "2017-12-13T14:00:00.000Z",
+  "datePlannedEnd": "2017-12-27T14:00:00.000Z",
+  "priority": "normal",
+  "state": "new",
+  "basicObj": "82ea2440-d650-11e7-a8e3-67e3e287cfdf",
+  "objectBasic": [],
+  "_class": "event@project-management",
+  "_classVer": "31"
+}

@@ -1,0 +1,21 @@
+{
+  "guid": "7fa0fa20-df0b-11e7-9350-81ad7b557d09",
+  "direction": null,
+  "typeProject": null,
+  "briefcase": null,
+  "priority": "normal",
+  "stage": "before", "status": "create",
+  "head": "abf37860-df05-11e7-9350-81ad7b557d09",
+  "curator": "abf37860-df05-11e7-9350-81ad7b557d09",
+  "administrator": "abf37860-df05-11e7-9350-81ad7b557d09",
+  "name": "Подготовка нормативно-правового акта \"Об определении органа исполнительной власти Хабаровского края, уполномоченного на взаимодействие с Министерством промышленности и торговли Российской Федерации по реализации мероприятий по поддержке модернизации и развития промышленных предприятий",
+  "code": "111111111111111",
+  "num": 2,
+  "dateStart": "2017-12-11T14:00:00.000Z",
+  "datePlannedStart": "2016-12-31T14:00:00.000Z",
+  "datePlannedEnd": "2017-03-31T14:00:00.000Z",
+  "stakeholders": [],
+  "objectBasic": [],
+  "_class": "project@project-management",
+  "_classVer": "31"
+}

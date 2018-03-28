@@ -1,0 +1,22 @@
+{
+  "guid": "c368c280-25ae-11e8-a06f-e355b1691031",
+  "ownOrg": "262ac5e0-d64e-11e7-a8e3-67e3e287cfdf",
+  "owner": "5793fe90-de31-11e7-9350-81ad7b557d09",
+  "name": "Наименование1",
+  "datePlannedStart": "2018-02-28T14:00:00.000Z",
+  "datePlannedEnd": "2018-03-30T14:00:00.000Z",
+  "dateStart": "2018-01-31T14:00:00.000Z",
+  "dateEnd": "2018-03-30T14:00:00.000Z",
+  "descript": "Описание1",
+  "state": "new",
+  "priority": "normal",
+  "objectBasic": [
+    "05f48bd0-25ae-11e8-813b-59a1ba038941"
+  ],
+  "code": "",
+  "project_code": "",
+  "project": null,
+  "duration": "[{\"caption\":\"Плановая длительность\"&#044;\"value\":\"\"}&#044;{\"caption\":\"Время до планового завершения\"&#044;\"value\":\"\"}]",
+  "_class": "event@project-management",
+  "_classVer": "31"
+}

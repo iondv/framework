@@ -1,0 +1,13 @@
+{
+  "guid": "af18db60-dfa1-11e7-9350-81ad7b557d09",
+  "priority": "low",
+  "date": "2017-12-14T14:00:00.000Z",
+  "initiator": "191f9e10-d8a7-11e7-8991-a574562dc770",
+  "state": "open",
+  "dateEnd": "2017-12-28T14:00:00.000Z",
+  "solution": "Второе предложение по решению",
+  "issues": "Второй проблемный вопрос",
+  "basicObj": "bf75d310-df05-11e7-9350-81ad7b557d09",
+  "_class": "problematic@project-management",
+  "_classVer": "31"
+}

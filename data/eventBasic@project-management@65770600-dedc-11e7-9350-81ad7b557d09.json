@@ -1,0 +1,13 @@
+{
+  "guid": "65770600-dedc-11e7-9350-81ad7b557d09",
+  "name": "Исполнение поручений",
+  "datePlannedStart": "2017-12-13T00:00:00.000Z",
+  "datePlannedEnd": "2017-12-27T00:00:00.000Z",
+  "dateStart": "2017-12-12T14:00:00.000Z",
+  "dateEnd": "2017-12-26T14:00:00.000Z",
+  "priority": "normal",
+  "state": "new",
+  "objectBasic": [],
+  "_class": "event@project-management",
+  "_classVer": "31"
+}

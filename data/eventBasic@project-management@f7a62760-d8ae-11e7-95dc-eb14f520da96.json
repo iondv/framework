@@ -1,0 +1,17 @@
+{
+  "guid": "f7a62760-d8ae-11e7-95dc-eb14f520da96",
+  "name": "Освещение актуальных вопросов, содержащихся в обращениях в рубрике \"Вопрос – ответ\" ",
+  "descript": "Освещение актуальных вопросов, содержащихся в обращениях в рубрике \"Вопрос – ответ\" ",
+  "datePlannedStart": "2017-03-31T14:00:00.000Z",
+  "dateStart": "2017-03-31T14:00:00.000Z",
+  "datePlannedEnd": "2018-11-30T14:00:00.000Z",
+  "dateEnd": "2018-11-30T14:00:00.000Z",
+  "ownOrg": "4a831000-d8ab-11e7-95dc-eb14f520da96",
+  "owner": "92738160-d8ab-11e7-95dc-eb14f520da96",
+  "priority": "normal",
+  "state": "new",
+  "basicObj": "c2602410-d8aa-11e7-95dc-eb14f520da96",
+  "objectBasic": [],
+  "_class": "event@project-management",
+  "_classVer": "31"
+}

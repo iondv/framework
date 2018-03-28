@@ -1,0 +1,15 @@
+{
+  "guid": "bde0f4d0-d64a-11e7-a8e3-67e3e287cfdf",
+  "name": "Создание аналитической информационной системы управления  проектной деятельностью (далее – ИС УП)",
+  "datePlannedStart": "2017-07-01T00:00:00.000Z",
+  "datePlannedEnd": "2017-12-14T14:00:00.000Z",
+  "state": "new",
+  "priority": "normal",
+  "basicObj": "8abbd8e0-d64a-11e7-a8e3-67e3e287cfdf",
+  "descript": "Создание аналитической информационной системы управления  проектной деятельностью (далее – ИС УП)",
+  "dateStart": "2017-06-30T14:00:00.000Z",
+  "dateEnd": "2017-12-14T14:00:00.000Z",
+  "objectBasic": [],
+  "_class": "event@project-management",
+  "_classVer": "31"
+}

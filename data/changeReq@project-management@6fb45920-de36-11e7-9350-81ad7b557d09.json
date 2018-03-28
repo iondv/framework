@@ -1,0 +1,15 @@
+{
+  "guid": "6fb45920-de36-11e7-9350-81ad7b557d09",
+  "changeOther": false,
+  "changeIndicators": true,
+  "changeParticipants": true,
+  "date": "2017-12-10T14:00:00.000Z",
+  "owner": "2a34dc70-d64e-11e7-a8e3-67e3e287cfdf",
+  "document": "6ee82f80-de36-11e7-9350-81ad7b557d09",
+  "changeBudget": false,
+  "changeTerms": false,
+  "changeResults": false,
+  "basicObj": "6c31db60-de31-11e7-9350-81ad7b557d09",
+  "_class": "changeReq@project-management",
+  "_classVer": "31"
+}

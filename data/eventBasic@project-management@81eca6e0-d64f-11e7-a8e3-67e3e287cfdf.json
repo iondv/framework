@@ -1,0 +1,19 @@
+{
+  "guid": "81eca6e0-d64f-11e7-a8e3-67e3e287cfdf",
+  "name": "Создание аналитической подсистемы оценки эффективности государственных программ ИС ГП ",
+  "datePlannedStart": "2017-07-01T00:00:00.000Z",
+  "datePlannedEnd": "2017-12-23T00:00:00.000Z",
+  "state": "new",
+  "priority": "normal",
+  "basicObj": "7a2e5760-d64e-11e7-a8e3-67e3e287cfdf",
+  "dateStart": "2017-06-30T14:00:00.000Z",
+  "dateEnd": "2017-12-22T14:00:00.000Z",
+  "ownOrg": "e84d9080-d64e-11e7-a8e3-67e3e287cfdf",
+  "owner": "f07e1b10-d655-11e7-a8e3-67e3e287cfdf",
+  "descript": "Создание аналитической подсистемы оценки эффективности государственных программ ИС ГП ",
+  "duration": "175",
+  "status": "26.228571428571428",
+  "objectBasic": [],
+  "_class": "event@project-management",
+  "_classVer": "31"
+}
