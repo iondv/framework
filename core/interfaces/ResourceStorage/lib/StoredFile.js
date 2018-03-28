@@ -16,8 +16,7 @@ function StoredFile (id, link, options, streamGetter) {
    * @returns {Promise}
    */
   this.getContents = function () {
-    let _this = this;
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (typeof streamGetter === 'function') {
         try {
           streamGetter((err, stream) => {
@@ -25,8 +24,8 @@ function StoredFile (id, link, options, streamGetter) {
               return reject(err);
             }
             return resolve({
-              name: _this.name,
-              options: _this.options,
+              name: this.name,
+              options: this.options,
               stream: stream
             });
           });
