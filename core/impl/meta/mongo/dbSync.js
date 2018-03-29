@@ -456,7 +456,7 @@ function MongoDbSync(options) {
             then(addAutoInc(classMeta)).then(addIndexes(classMeta, cm, namespace, chierarchy)).
             then(function () {
               delete classMeta._id;
-              log.log('Регистрирация класс ' + classMeta.name + '@' + namespace);
+              log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
               metaCollection.updateOne(
                 {
                   name: classMeta.name,
