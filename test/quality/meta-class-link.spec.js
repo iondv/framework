@@ -28,7 +28,12 @@ function checkMetaLinks(pathApplications, pathApp) {
     before('Инициализация меты', () => {
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'));
       navigation = getMetaFiles(path.join(pathApplications, pathApp, 'navigation'));
-      workflow = getMetaFiles(path.join(pathApplications, pathApp, 'workflows'));
+
+      try { // Отсутствие папки бизнес-процессов допустимо
+        workflow = getMetaFiles(path.join(pathApplications, pathApp, 'workflows'));
+      } catch (e) {
+        console.warn (e.message);
+      }
     });
     it('Связываем классы по навигации и что такие классы есть в мете', () => {
       let errMeta = [];
@@ -70,7 +75,12 @@ function checkMetaLinks(pathApplications, pathApp) {
     });
     it('Проверка представлений, для которых нет классов', () => {
       let errViews = [];
-      let view = getDirList(path.join(pathApplications, pathApp, 'views')).dirList;
+      let view = [];
+      try {
+        view = getDirList(path.join(pathApplications, pathApp, 'views')).dirList;
+      } catch (e) {
+        console.warn (e.message);
+      }
       view.forEach((viewName)=> {
         if (!meta[viewName] && viewName !== 'workflows') {
           errViews.push(viewName);
@@ -93,9 +103,44 @@ function checkMetaLinks(pathApplications, pathApp) {
         throw (new Error (`В файлах метаданных ссылки на некоректные классы ${errWF}`));
       }
     });
-    it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
-
+    it('Проверка лишних бизнес-процессов в представлениях', () => {
+      let errViews = [];
+      let view = [];
+      try {
+        view = getDirList(path.join(pathApplications, pathApp, 'views/workflows')).dirList;
+      } catch (e) {
+        console.warn (e.message);
+      }
+      view.forEach((viewName)=> {
+        if (!workflow[viewName]) {
+          errViews.push(viewName);
+          console.error(`Для представления бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
+        }
+      });
+      if (errViews.length) {
+        throw (new Error (`Представления для отстутствующих классов ${errViews}`));
+      }
     });
+  });
+  it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
+    let errState = [];
+    let errViews = [];
+    let view = [];
+    try {
+      view = getDirList(path.join(pathApplications, pathApp, 'views/workflows')).dirList;
+    } catch (e) {
+      console.warn (e.message);
+    }
+    view.forEach((viewName)=> {
+      if (!meta[viewName] && viewName !== 'workflows') {
+        errViews.push(viewName);
+        console.error(`Для представления ${viewName} отсутствует мета класса`);
+      }
+    });
+    if (errViews.length) {
+      throw (new Error (`Представления для отстутствующих классов ${errViews}`));
+    }
+
   });
 }
 
