@@ -130,6 +130,17 @@ class Notifier extends INotifier {
         });
   }
 
+  _withdraw(id) {
+    return this.ds.delete('ion_notification', {[F.EQUAL]: ['$id', id]})
+      .then(() => this.ds.delete('ion_notification_recievers', {[F.EQUAL]: ['$id', id]}))
+      .catch((err) => {
+        if (this.log) {
+          this.log.error(err);
+        }
+        throw new Error('Не удалось отозвать уведомление ' + id);
+      });
+  }
+
   /**
    * @param {String} reciever
    * @param {String} id

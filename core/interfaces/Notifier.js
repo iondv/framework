@@ -11,6 +11,10 @@ class Notifier {
     return this._notify(sender, recievers, message);
   }
 
+  withdraw(id) {
+    return this._withdraw(id);
+  }
+
   /**
    * @param {String} reciever
    * @param {String} id
