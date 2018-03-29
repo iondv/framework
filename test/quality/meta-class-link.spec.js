@@ -5,14 +5,14 @@
 
 const path = require('path');
 
-const getaDirList = require('test/lib/get-meta').getDirList;
+const getDirList = require('test/lib/get-meta').getDirList;
 const getMetaFiles = require('test/lib/get-meta').getMetaFiles;
 
 
 describe('# Проверка достижимости классов из навигации', function () {
   this.timeout(120000);
   const pathApplications = path.join(__dirname, '../../applications');
-  const appList = getaAppList(pathApplications);
+  const appList = getAppList(pathApplications);
   appList.forEach((pathApp)=> {
     checkMetaLinks(pathApplications, pathApp);
   })
@@ -66,8 +66,18 @@ function checkMetaLinks(pathApplications, pathApp) {
       }
       console.info('При анализе наследования добавлено ссылок на мету', Object.keys(metaLink).length - startingMetaLink);
     });
-    it.skip('Проверка представлений, для которых нет классов', () => {
-
+    it('Проверка представлений, для которых нет классов', () => {
+      let errViews = [];
+      let view = getDirList(path.join(pathApplications, pathApp, 'views')).dirList;
+      view.forEach((viewName)=> {
+        if (!meta[viewName] && viewName !== 'workflows') {
+          errViews.push(viewName);
+          console.error(`Для представления ${viewName} отсутствует мета класса`);
+        }
+      });
+      if (errViews.length) {
+        throw (new Error (`Представления для отстутствующих классов ${errViews}`));
+      }
     });
     it.skip('Проверка бизнес-процессов, для которых нет классов', () => {
 
@@ -75,8 +85,8 @@ function checkMetaLinks(pathApplications, pathApp) {
   });
 }
 
-function getaAppList(appSourcePath) {
-  return getaDirList(appSourcePath).dirList;
+function getAppList(appSourcePath) {
+  return getDirList(appSourcePath).dirList;
 }
 
 function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen = 0) {
