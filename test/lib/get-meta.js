@@ -35,7 +35,9 @@ function getMetaFiles(pathMeta) {
           meta[tempMetaClass.name] = tempMetaClass;
         } else if (metaType === 'navigation') {
           meta[tempMetaClass.code] = tempMetaClass;
-        } else {
+        } else if (metaType === 'workflows') {
+          meta[tempMetaClass.name] = tempMetaClass;
+        }else {
           console.error('Необрабатываемый тип меты', metaType);
         }
       } catch (err) {

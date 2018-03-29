@@ -22,11 +22,13 @@ function checkMetaLinks(pathApplications, pathApp) {
   describe(`Проверка достижимости классов из навигации в приложении ${pathApp}`, () => {
     let meta = {};
     let navigation = {};
+    let workflow = {};
     let metaLink = {};
     let metaCheckLink = [];
     before('Инициализация меты', () => {
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'));
       navigation = getMetaFiles(path.join(pathApplications, pathApp, 'navigation'));
+      workflow = getMetaFiles(path.join(pathApplications, pathApp, 'workflows'));
     });
     it('Связываем классы по навигации и что такие классы есть в мете', () => {
       let errMeta = [];
@@ -79,7 +81,19 @@ function checkMetaLinks(pathApplications, pathApp) {
         throw (new Error (`Представления для отстутствующих классов ${errViews}`));
       }
     });
-    it.skip('Проверка бизнес-процессов, для которых нет классов', () => {
+    it('Проверка бизнес-процессов, для которых нет классов', () => {
+      let errWF = [];
+      Object.keys(workflow).forEach((wfItem)=> { // Отбираем классы по бизнес-процессам
+        if (! meta[workflow[wfItem].wfClass]) {
+          console.error(`В бизнес-процессе ${wfItem} ссылка на отсутствующий калсс ${workflow[wfItem].wfClass}`);
+          errWF.push(workflow[wfItem].wfClass);
+        }
+      });
+      if (errWF.length) {
+        throw (new Error (`В файлах метаданных ссылки на некоректные классы ${errWF}`));
+      }
+    });
+    it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
 
     });
   });
