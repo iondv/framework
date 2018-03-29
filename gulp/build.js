@@ -408,17 +408,6 @@ gulp.task('minify:js', function (done) {
     });
 });
 
-function setup(appDir) { // Неиспользуемые переменные, scope, log
-  return function (deps) {
-    return deployer(appDir)
-      .then((dep) => {
-        console.log('Выполнена настройка приложения ' + appDir);
-        deps.push(dep);
-        return deps;
-      });
-  };
-}
-
 /**
  * Импорт данных приложения
  * @param {string} appDir каталог приложения
@@ -466,6 +455,7 @@ gulp.task('deploy', function (done) {
 
   let appDir = path.join(platformPath, 'applications');
   let applications = fs.readdirSync(appDir);
+  let apps = [];
   let deps = [];
 
   di('app', merge(true, config.bootstrap, config.di),
@@ -480,25 +470,32 @@ gulp.task('deploy', function (done) {
    */
     .then((scp) => {
       scope = scp;
-      let stage1;
+      let stage1 = Promise.resolve();
       try {
-        for (let i = 0; i < applications.length; i++) {
-          let stat = fs.statSync(path.join(appDir, applications[i]));
+        if (!applications.length) {
+          console.log('Нет приложений для установки.');
+          return scp.dataSources.disconnect();
+        }
+        let first = true;
+        applications.forEach((app) => {
+          let pth = path.join(appDir, app);
+          let stat = fs.statSync(pth);
           if (stat.isDirectory()) {
-            stage1 = stage1 ?
-              stage1.then(setup(path.join(appDir, applications[i]), scope, sysLog)) :
-              setup(path.join(appDir, applications[i]), scope, sysLog)(deps);
+            stage1 = stage1.then(() =>
+              deployer(pth, first ? {resetSettings: true, preserveModifiedSettings: true} : {})
+                .then((dep) => {
+                  console.log('Выполнена настройка приложения ' + app);
+                  apps.push(app);
+                  deps.push(dep);
+                })
+            );
           }
-        }
+        });
 
-        if (stage1) {
-          return stage1.then(() => {
-            console.log('Развертывание приложений завершено.');
-            return scp.dataSources.disconnect();
-          });
-        }
-        console.log('Нет приложений для установки.');
-        return scp.dataSources.disconnect();
+        return stage1.then(() => {
+          console.log('Развертывание приложений завершено.');
+          return scp.dataSources.disconnect();
+        });
       } catch (err) {
         return Promise.reject(err);
       }
@@ -518,21 +515,15 @@ gulp.task('deploy', function (done) {
     .then((scp) => {
       scope = scp;
       let stage2 = Promise.resolve();
-      for (let i = 0; i < applications.length; i++) {
-        let stat = fs.statSync(path.join(appDir, applications[i]));
+      for (let i = 0; i < apps.length; i++) {
+        let stat = fs.statSync(path.join(appDir, apps[i]));
         if (stat.isDirectory()) {
-          stage2 = stage2.then(appImporter(path.join(appDir, applications[i]), scope, sysLog, deps[i]));
+          stage2 = stage2.then(appImporter(path.join(appDir, apps[i]), scope, sysLog, deps[i]));
         }
       }
       return stage2.then(()=>{console.log('Импорт меты приложений завершен.');});
     })
-    .then(() => {
-      return new Promise((resolve) => {
-        scope.dataSources.disconnect()
-          .then(resolve)
-          .catch((err) => {console.error(err);resolve();});
-      });
-    })
+    .then(() => scope.dataSources.disconnect().catch((err) => console.error(err)))
     .then(() => done())
     .catch((err) => done(err));
 });

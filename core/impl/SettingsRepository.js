@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Created by kras on 18.08.16.
  */
@@ -12,9 +13,14 @@ function SettingsRepository(options) {
 
   let changed = {};
 
-  this.set = function (nm, value) {
+  let important = {};
+
+  this.set = function (nm, value, markImportant) {
     registry[nm] = value;
     changed[nm] = true;
+    if (markImportant) {
+      important[nm] = true;
+    }
   };
 
   this.get = function (nm) {
@@ -25,14 +31,34 @@ function SettingsRepository(options) {
   };
 
   this.apply = function () {
-    let writers = [];
-    for (let nm in changed) {
-      if (changed.hasOwnProperty(nm)) {
-        writers.push(options.dataSource.upsert('ion_global_settings', {[F.EQUAL]: ['$name', nm]}, {value: registry[nm]}));
-      }
-    }
+    let writers = Promise.resolve();
+    Object.keys(changed).forEach((nm) => {
+      writers = writers.then(() => {
+        let f = {[F.EQUAL]: ['$name', nm]};
+        let v = {value: registry[nm]};
+        if (important.hasOwnProperty[nm] && important[nm]) {
+          v.important = true;
+        } else {
+          f = {[F.AND]: [f, {[F.NOT_EQUAL]: ['$important', true]}]};
+        }
+        return options.dataSource.upsert('ion_global_settings', f, v);
+      });
+    });
     changed = {};
-    return Promise.all(writers);
+    important = {};
+    return writers;
+  };
+
+  /**
+   * @param {Boolean} preserveImportant
+   * @returns {Promise}
+   */
+  this.reset = function (preserveImportant = false) {
+    let f = {};
+    if (preserveImportant) {
+      f = {[F.NOT_EQUAL]: ['$important', true]};
+    }
+    return options.dataSource.delete('ion_global_settings', f);
   };
 
   this.init = function () {
