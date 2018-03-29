@@ -18,7 +18,12 @@ var cast = module.exports = function (value, type) {
     return result;
   }
 
-  if (type === PropertyTypes.STRING) {
+  if (
+    type === PropertyTypes.STRING ||
+    type === PropertyTypes.TEXT ||
+    type === PropertyTypes.HTML ||
+    type === PropertyTypes.URL
+  ) {
     return value.toString();
   }
 
