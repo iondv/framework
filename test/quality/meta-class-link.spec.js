@@ -95,7 +95,7 @@ function checkMetaLinks(pathApplications, ns, meta) {
                 }
               } else {
                 console.error(`В классе ${className} отсутствующий в мете связанный класс ${propClassName}`);
-                errMeta[propClassName] = true;
+                errMeta.push(propClassName);
               }
             }
           });
