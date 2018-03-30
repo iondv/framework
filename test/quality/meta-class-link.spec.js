@@ -213,7 +213,7 @@ function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen
       if (meta[className]) { // Класс есть в мете
         if (meta[className].ancestor) { // Есть родитель?
           const ancestorName = nz(meta[className].ancestor,
-            meta[className].namespace || className.substr(className.search('@')));
+            meta[className].namespace || className.substr(className.search('@') + 1));
           if (meta[ancestorName]) { // Родитель есть в классе меты
             if (metaLink[ancestorName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
               metaLink[className] = true;
