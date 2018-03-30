@@ -1,43 +1,69 @@
 const fs = require('fs');
 const path = require('path');
-const processDir = require('core/util/read').processDir;
+
+
+const ARR_NOTFOUND = -1;
+const JSON_EXT = '.json';
+/*
+Нормализация имени класса, с учётом нейспейса
+ */
+function nz(className, namespace) {
+  if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
+    return `${className}@${namespace}`;
+  }
+  return className;
+}
+module.exports.normilizeNamespase = nz;
 
 function getDirList(sourcePath) {
-  let fileList = [];
-  let dirList = [];
+  const fileList = [];
+  const dirList = [];
   try {
     fs.accessSync(sourcePath, fs.constants.F_OK);
-    let files = fs.readdirSync(sourcePath);
+    const files = fs.readdirSync(sourcePath);
     for (let i = 0; i < files.length; i++) {
-      let stat = fs.lstatSync(path.join(sourcePath, files[i]));
+      const stat = fs.lstatSync(path.join(sourcePath, files[i]));
       if (stat.isDirectory()) {
         dirList.push(files[i]);
       } else {
         fileList.push(files[i]);
       }
     }
-  } catch (e) {
-    throw e;
+  } catch (err) {
+    throw err;
   }
-  return {dirList, fileList};
+  return {
+    dirList,
+    fileList
+  };
 }
 module.exports.getDirList = getDirList;
 
-function getMetaFiles(pathMeta) {
-  let metaType = path.basename(pathMeta);
-  let meta = {};
+function getViewsList(sourcePath) {
+  const ns = path.basename(path.join(sourcePath, '..'));
+  const viewsList = getDirList(sourcePath).dirList;
+  viewsList.forEach((viewName, i) => {
+    viewsList[i] = nz(viewName, ns);
+  });
+  return viewsList;
+}
+module.exports.getViewsList = getViewsList;
+
+function getMetaFiles(pathMeta, meta = {}) {
+  const metaType = path.basename(pathMeta);
+  const ns = path.basename(path.join(pathMeta, '..'));
   processDir(pathMeta,
-    (nm) => {return nm.substr(-5) === '.json';},
+    (nm) => {return nm.substr(-JSON_EXT.length) === JSON_EXT;},
     (fn) => {
       try {
-        tempMetaClass = require(fn);
+        let tempMetaClass = require(fn);
         if (metaType === 'meta') {
-          meta[tempMetaClass.name] = tempMetaClass;
+          meta[nz(tempMetaClass.name, tempMetaClass.namespace || ns)] = tempMetaClass;
         } else if (metaType === 'navigation') {
           meta[tempMetaClass.code] = tempMetaClass;
         } else if (metaType === 'workflows') {
-          meta[tempMetaClass.name] = tempMetaClass;
-        }else {
+          meta[nz(tempMetaClass.name, ns)] = tempMetaClass;
+        } else {
           console.error('Необрабатываемый тип меты', metaType);
         }
       } catch (err) {
@@ -49,3 +75,25 @@ function getMetaFiles(pathMeta) {
 }
 
 module.exports.getMetaFiles = getMetaFiles;
+
+/*
+ * Основана на const processDir = require('core/util/read').processDir;
+ */
+function processDir(dir, filter, handler) {
+  try {
+    fs.accessSync(dir, fs.constants.F_OK);
+    let files = fs.readdirSync(dir);
+    for (let i = 0; i < files.length; i++) {
+      let fn = path.join(dir, files[i]);
+      let stat = fs.lstatSync(fn);
+      if (stat.isDirectory()) {
+        processDir(fn, filter, handler);
+      } else if (filter(files[i])) {
+        handler(fn);
+      }
+    }
+  } catch (err) {
+      throw err;
+  }
+}
+
