@@ -8,16 +8,24 @@ const JSON_EXT = '.json';
 Нормализация имени класса, с учётом нейспейса
  */
 function nz(className, namespace) {
-  // try {
-    if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
-      return `${className}@${namespace}`;
-    }
-  //} catch (err) {
-    //console.warn(err.message, className);
-  //}
+  if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
+    return `${className}@${namespace}`;
+  }
   return className;
 }
 module.exports.normilizeNamespase = nz;
+
+function getNS(className) {
+  let namespace = '';
+  if (className) {
+    let symNS = className.indexOf('@');
+    if (symNS !== ARR_NOTFOUND) {
+      return className.substring(++symNS);
+    }
+  }
+  return namespace;
+}
+module.exports.getNameSpace = getNS;
 
 function getDirList(sourcePath) {
   const fileList = [];

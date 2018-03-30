@@ -9,10 +9,14 @@ const getDirList = require('test/lib/get-meta').getDirList;
 const getMetaFiles = require('test/lib/get-meta').getMetaFiles;
 const getViewsList = require('test/lib/get-meta').getViewsList;
 const nz = require('test/lib/get-meta').normilizeNamespase;
+const getNs = require('test/lib/get-meta').getNameSpace;
 
 const TIMEOUT = 120000;
 const NAV_TYPE_LIST_CLASS = 1;
 const ARR_NOTFOUND = -1;
+const PROP_TYPE_LINK = 13;
+const PROP_TYPE_COL = 14;
+const SKIP_NS = ['viewlib', 'fias'];
 
 describe('# Проверка достижимости классов из навигации', function () {
   this.timeout(TIMEOUT);
@@ -24,9 +28,8 @@ describe('# Проверка достижимости классов из нав
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'), meta);
     }
   });
-
   appList.forEach((pathApp) => {
-    if (['viewlib', 'fias'].indexOf(pathApp) === ARR_NOTFOUND) {
+    if (SKIP_NS.indexOf(pathApp) === ARR_NOTFOUND) {
       checkMetaLinks(pathApplications, pathApp, meta);
     }
   });
@@ -72,8 +75,34 @@ function checkMetaLinks(pathApplications, ns, meta) {
       }
       console.info('При анализе навигации добавлено ссылок на мету', Object.keys(metaLink).length - startingMetaLink);
     });
-    it.skip('Связываем классы по ссылкам и коллекциям и что такие классы естьв  мете', () => {
-
+    it('Связываем классы по ссылкам и коллекциям и что такие классы есть в мете', () => {
+      const errMeta = [];
+      const startingMetaLink = Object.keys(metaLink).length;
+      Object.keys(meta).forEach((className) => { // Отбираем классы по мете
+        meta[className].properties = meta[className].properties || [];
+        if (SKIP_NS.indexOf(getNs(className)) === ARR_NOTFOUND) {
+          meta[className].properties.forEach((propItem) => {
+            if (propItem.type === PROP_TYPE_LINK || propItem.type === PROP_TYPE_COL) {
+              const propClassName = propItem.type === PROP_TYPE_LINK ?
+                nz(propItem.refClass, ns) :
+                nz(propItem.itemsClass, ns);
+              if (meta[propClassName]) { // Родитель есть в классе меты
+                if (!metaLink[propClassName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
+                  metaLink[propClassName] = true;
+                  metaCheckLink.push(propClassName);
+                }
+              } else {
+                console.error(`В классе ${className} отсутствующий в мете связанный класс ${propClassName}`);
+                errMeta[propClassName] = true;
+              }
+            }
+          });
+        }
+      });
+      if (errMeta.length) {
+        throw (new Error(`В ссылочных атрибутах указаны отсутствующие в мете классы ${errMeta}`));
+      }
+      console.info('При анализе ссылочных полей меты добавлено ссылок на мету', Object.keys(metaLink).length - startingMetaLink);
     });
 
     it('Проверяем связанные классы по иерархии наследования и проверяем что такие классы есть в мете', () => {
@@ -125,7 +154,8 @@ function checkMetaLinks(pathApplications, ns, meta) {
       viewWfList.forEach((viewName) => {
         if (!workflow[viewName]) {
           errViews.push(viewName);
-          console.error(`Для группы (папки) представления/статусов бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
+          console
+            .error(`Для группы (папки) представления/статусов бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
         }
       });
       if (errViews.length) {
@@ -138,7 +168,6 @@ function checkMetaLinks(pathApplications, ns, meta) {
       const errViews = [];
       viewWfListDir.forEach((wfViewDirName) => {
         const wfName = nz(wfViewDirName, ns);
-        const className = nz(workflow[wfName].wfClass, ns);
         const stateWfDir = getDirList(path.join(pathApplications, ns, 'views/workflows', wfViewDirName)).dirList;
         stateWfDir.forEach((wfState) => {
           let stateFound = false;
@@ -157,7 +186,8 @@ function checkMetaLinks(pathApplications, ns, meta) {
             viewClassName = nz(viewClassName.substr(0, viewClassName.length - '.json'.length), ns);
             if (!meta[viewClassName]) {
               errViews.push(`${wfViewDirName}.${wfState}:${viewClassName}`);
-              console.error(`Отсутствует класс меты по представлению ${viewClassName} для статуса ${wfState} БП ${wfName}`);
+              console
+                .error(`Отсутствует класс меты по представлению ${viewClassName} для статуса ${wfState} БП ${wfName}`);
             }
           });
         });
@@ -179,29 +209,31 @@ function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen
     errNames: {}
   };
   metaNames.forEach((className) => {
-    if (meta[className]) { // Класс есть в мете
-      if (meta[className].ancestor) { // Есть родитель?
-        const ancestorName = nz(meta[className].ancestor,
-          meta[className].namespace || className.substr(className.search('@')));
-        if (meta[ancestorName]) { // Родитель есть в классе меты
-          if (metaLink[ancestorName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
-            metaLink[className] = true;
-            metaCheckLink.push(className);
-          } else if (metaLink[className]) { // Наследник уже есть среди ссылочных объектов, значит достижим от навигации, добавляем родителя
-            metaLink[ancestorName] = true;
-            metaCheckLink.push(ancestorName);
+    if (SKIP_NS.indexOf(getNs(className)) === ARR_NOTFOUND) {
+      if (meta[className]) { // Класс есть в мете
+        if (meta[className].ancestor) { // Есть родитель?
+          const ancestorName = nz(meta[className].ancestor,
+            meta[className].namespace || className.substr(className.search('@')));
+          if (meta[ancestorName]) { // Родитель есть в классе меты
+            if (metaLink[ancestorName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
+              metaLink[className] = true;
+              metaCheckLink.push(className);
+            } else if (metaLink[className]) { // Наследник уже есть среди ссылочных объектов, значит достижим от навигации, добавляем родителя
+              metaLink[ancestorName] = true;
+              metaCheckLink.push(ancestorName);
+            } else {
+              checked.ancestor[className] = true;
+              checked.ancestor[ancestorName] = true;
+            }
           } else {
-            checked.ancestor[className] = true;
-            checked.ancestor[ancestorName] = true;
+            console.error(`В классе ${className} отсутствующий в мете родительский класс ${ancestorName}`);
+            checked.errNames[ancestorName] = true;
           }
-        } else {
-          console.error(`В классе ${className} отсутствующий в мете родительский класс ${ancestorName}`);
-          checked.errNames[ancestorName] = true;
         }
+      } else {
+        console.error(`В мете при проверке наследования, отсутствующий класс ${className}`);
+        checked.errNames[className] = true;
       }
-    } else {
-      console.error(`В мете при проверке наследования, отсутствующий класс ${className}`);
-      checked.errNames[className] = true;
     }
   });
   if (Object.keys(checked.ancestor).length &&
