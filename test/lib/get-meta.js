@@ -39,11 +39,13 @@ function getDirList(sourcePath) {
 }
 module.exports.getDirList = getDirList;
 
-function getViewsList(sourcePath) {
+function getViewsList(sourcePath, ignore) {
   const ns = path.basename(path.join(sourcePath, '..'));
-  const viewsList = getDirList(sourcePath).dirList;
-  viewsList.forEach((viewName, i) => {
-    viewsList[i] = nz(viewName, ns);
+  const viewsList = [];
+  getDirList(sourcePath).dirList.forEach((viewName) => {
+    if (ignore.indexOf(viewName) === ARR_NOTFOUND) {
+      viewsList.push(nz(viewName, ns));
+    }
   });
   return viewsList;
 }

@@ -12,6 +12,7 @@ const nz = require('test/lib/get-meta').normilizeNamespase;
 
 const TIMEOUT = 120000;
 const NAV_TYPE_LIST_CLASS = 1;
+const ARR_NOTFOUND = -1;
 
 describe('# Проверка достижимости классов из навигации', function () {
   this.timeout(TIMEOUT);
@@ -24,10 +25,8 @@ describe('# Проверка достижимости классов из нав
     }
   });
 
-
-  console.log('META', Object.keys(meta));
   appList.forEach((pathApp) => {
-    if (pathApp !== 'viewlib') {
+    if (['viewlib', 'fias'].indexOf(pathApp) === ARR_NOTFOUND) {
       checkMetaLinks(pathApplications, pathApp, meta);
     }
   });
@@ -35,7 +34,6 @@ describe('# Проверка достижимости классов из нав
 
 function checkMetaLinks(pathApplications, ns, meta) {
   describe(`Проверка достижимости классов из навигации в приложении ${ns}`, () => {
-
     let navigation = {}; // Мета навигации
     let workflow = {};  // Мета БП
     let viewList = []; // Список представлений
@@ -45,11 +43,11 @@ function checkMetaLinks(pathApplications, ns, meta) {
     before('Инициализация меты', () => {
       navigation = getMetaFiles(path.join(pathApplications, ns, 'navigation'));
       try { // Отсутствие папки бизнес-процессов, представлений допустимо
-        viewList = getViewsList(path.join(pathApplications, ns, 'views'));
+        viewList = getViewsList(path.join(pathApplications, ns, 'views'), 'workflows');
         workflow = getMetaFiles(path.join(pathApplications, ns, 'workflows'));
         viewWfList = getViewsList(path.join(pathApplications, ns, 'views/workflows'));
       } catch (err) {
-        // console.warn(err.message);
+        console.warn(err.message);
       }
     });
     it('Связываем классы по навигации и что такие классы есть в мете', () => {
@@ -76,17 +74,17 @@ function checkMetaLinks(pathApplications, ns, meta) {
 
     });
 
-    it.skip('Проверяем связанные классы по иерархии наследования и проверяем что такие классы есть в мете', () => {
+    it('Проверяем связанные классы по иерархии наследования и проверяем что такие классы есть в мете', () => {
       const startingMetaLink = Object.keys(metaLink).length;
       const childFailedLink = checkAncestor(Object.keys(meta), meta, metaLink, metaCheckLink);
       if (Object.keys(childFailedLink.ancestor).length) {
-        console.warn('Классы проверенные от навигации, через ссылки и коллекции и иерархию наследования ' +
-          'по которым нет связей в мете',
-        Object.keys(childFailedLink.ancestor));
         /*
         * Не является ошибкой, т.к. классы могут быть на будующее
         * throw (new Error ('В файлах метаданных есть классы в иерархии, которые нигде не используются'));
         */
+        console.warn('Классы проверенные от навигации, через ссылки и коллекции и иерархию наследования ' +
+          'по которым нет связей в мете',
+        Object.keys(childFailedLink.ancestor));
       }
       if (Object.keys(childFailedLink.errNames).length) {
         throw (new
@@ -95,10 +93,10 @@ function checkMetaLinks(pathApplications, ns, meta) {
       console.info('При анализе наследования добавлено ссылок на мету',
         Object.keys(metaLink).length - startingMetaLink);
     });
-    it.skip('Проверка представлений, для которых нет классов', () => {
+    it('Проверка представлений, для которых нет классов', () => {
       const errViews = [];
       viewList.forEach((viewName) => {
-        if (!meta[viewName] && viewName !== 'workflows') {
+        if (!meta[viewName]) {
           errViews.push(viewName);
           console.error(`Для представления ${viewName} отсутствует мета класса`);
         }
@@ -134,8 +132,7 @@ function checkMetaLinks(pathApplications, ns, meta) {
     it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
       const errState = [];
       const errViews = [];
-
-      viewWf.forEach((viewName) => {
+      viewWfList.forEach((viewName) => {
         if (!meta[viewName] && viewName !== 'workflows') {
           errViews.push(viewName);
           console.error(`Для представления ${viewName} отсутствует мета класса`);
@@ -156,20 +153,22 @@ function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen
   metaNames.forEach((className) => {
     if (meta[className]) { // Класс есть в мете
       if (meta[className].ancestor) { // Есть родитель?
-        if (meta[meta[className].ancestor]) { // Родитель есть в классе меты
-          if (metaLink[meta[className].ancestor]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
-            metaLink[meta[className].name] = true;
-            metaCheckLink.push(meta[className].name);
-          } else if (metaLink[meta[className].name]) { // Наследник уже есть среди ссылочных объектов, значит достижим от навигации, добавляем родителя
-            metaLink[meta[className].ancestor] = true;
-            metaCheckLink.push(meta[className].ancestor);
+        const ancestorName = nz(meta[className].ancestor,
+          meta[className].namespace || className.substr(className.search('@')));
+        if (meta[ancestorName]) { // Родитель есть в классе меты
+          if (metaLink[ancestorName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
+            metaLink[className] = true;
+            metaCheckLink.push(className);
+          } else if (metaLink[className]) { // Наследник уже есть среди ссылочных объектов, значит достижим от навигации, добавляем родителя
+            metaLink[ancestorName] = true;
+            metaCheckLink.push(ancestorName);
           } else {
-            checked.ancestor[meta[className].name] = true;
-            checked.ancestor[meta[className].ancestor] = true;
+            checked.ancestor[className] = true;
+            checked.ancestor[ancestorName] = true;
           }
         } else {
-          console.error(`В классе ${className} отсутствующий в мете родительский класс ${meta[className].ancestor}`);
-          checked.errNames[meta[className].ancestor] = true;
+          console.error(`В классе ${className} отсутствующий в мете родительский класс ${ancestorName}`);
+          checked.errNames[ancestorName] = true;
         }
       }
     } else {
