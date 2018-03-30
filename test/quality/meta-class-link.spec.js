@@ -61,12 +61,14 @@ function checkMetaLinks(pathApplications, ns, meta) {
       Object.keys(navigation).forEach((navItem) => { // Отбираем классы по навигации
         if (navigation[navItem].type === NAV_TYPE_LIST_CLASS) {
           const className = nz(navigation[navItem].classname, ns);
-          if (meta[className]) {
-            metaLink[className] = true;
-            metaCheckLink.push(className);
-          } else {
-            console.error(`В навигации ${navItem} ссылка на отсутствующий класс ${className}`);
-            errMeta.push(className);
+          if (SKIP_NS.indexOf(getNs(className)) === ARR_NOTFOUND) {
+            if (meta[className]) {
+              metaLink[className] = true;
+              metaCheckLink.push(className);
+            } else {
+              console.error(`В навигации ${navItem} ссылка на отсутствующий класс ${className}`);
+              errMeta.push(className);
+            }
           }
         }
       });
