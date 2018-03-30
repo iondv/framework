@@ -73,7 +73,7 @@ function normalize(data, dateCallback, options, processed, keyProvider) {
         if (options.skipSystemAttrs && (p.getName() === '__class' || p.getName() === '__classTitle')) {
           continue;
         }
-        
+
         if (p.getType() === PropertyTypes.REFERENCE) {
           if (typeof item[p.getName()] === 'undefined') {
             let refItem = data.getAggregate(p.getName());
@@ -82,6 +82,8 @@ function normalize(data, dateCallback, options, processed, keyProvider) {
               item[p.getName()] = normalize(refItem, dateCallback, options, processed);
             } else if (val && keyProvider) {
               item[p.getName()] = keyProvider.keyToData(p.meta._refClass, val);
+              item[p.getName()]._id = val;
+              item[p.getName()]._class = p.meta._refClass.getCanonicalName();
             }
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
