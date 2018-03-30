@@ -8,9 +8,13 @@ const JSON_EXT = '.json';
 Нормализация имени класса, с учётом нейспейса
  */
 function nz(className, namespace) {
-  if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
-    return `${className}@${namespace}`;
-  }
+  // try {
+    if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
+      return `${className}@${namespace}`;
+    }
+  //} catch (err) {
+    //console.warn(err.message, className);
+  //}
   return className;
 }
 module.exports.normilizeNamespase = nz;
@@ -40,10 +44,12 @@ function getDirList(sourcePath) {
 module.exports.getDirList = getDirList;
 
 function getViewsList(sourcePath, ignore) {
-  const ns = path.basename(path.join(sourcePath, '..'));
+  const ns = path.basename(sourcePath) === 'workflows' ?
+    path.basename(path.join(sourcePath, '../..')) :
+    path.basename(path.join(sourcePath, '..'));
   const viewsList = [];
   getDirList(sourcePath).dirList.forEach((viewName) => {
-    if (ignore.indexOf(viewName) === ARR_NOTFOUND) {
+    if (!ignore || ignore.indexOf(viewName) === ARR_NOTFOUND) {
       viewsList.push(nz(viewName, ns));
     }
   });

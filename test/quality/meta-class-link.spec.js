@@ -39,13 +39,15 @@ function checkMetaLinks(pathApplications, ns, meta) {
     let viewList = []; // Список представлений
     const metaLink = {}; // Объект с элементами из названий классов меты провенный по связям
     const metaCheckLink = []; // Массив названий классов для проверки
-    let viewWfList = []; // Папки представлений бизнес-процессов
+    let viewWfList = []; // Названия классов для представлений бизнес-процессов
+    let viewWfListDir = []; // Папки статусов и представления бизнес-процессов
     before('Инициализация меты', () => {
       navigation = getMetaFiles(path.join(pathApplications, ns, 'navigation'));
       try { // Отсутствие папки бизнес-процессов, представлений допустимо
         viewList = getViewsList(path.join(pathApplications, ns, 'views'), 'workflows');
         workflow = getMetaFiles(path.join(pathApplications, ns, 'workflows'));
         viewWfList = getViewsList(path.join(pathApplications, ns, 'views/workflows'));
+        viewWfListDir = getDirList(path.join(pathApplications, ns, 'views/workflows')).dirList;
       } catch (err) {
         console.warn(err.message);
       }
@@ -105,41 +107,67 @@ function checkMetaLinks(pathApplications, ns, meta) {
         throw (new Error(`Представления для отстутствующих классов ${errViews}`));
       }
     });
-    it.skip('Проверка бизнес-процессов, для которых нет классов', () => {
+    it('Проверка бизнес-процессов, для которых нет классов', () => {
       const errWf = [];
       Object.keys(workflow).forEach((wfItem) => { // Отбираем классы по бизнес-процессам
-        if (!meta[workflow[wfItem].wfClass]) {
-          console.error(`В бизнес-процессе ${wfItem} ссылка на отсутствующий калсс ${workflow[wfItem].wfClass}`);
-          errWf.push(workflow[wfItem].wfClass);
+        const wfClassName = nz(workflow[wfItem].wfClass, ns);
+        if (!meta[wfClassName]) {
+          console.error(`В бизнес-процессе ${wfItem} ссылка на отсутствующий калсс ${wfClassName}`);
+          errWf.push(wfClassName);
         }
       });
       if (errWf.length) {
         throw (new Error(`В файлах метаданных ссылки на некоректные классы ${errWf}`));
       }
     });
-    it.skip('Проверка лишних бизнес-процессов в представлениях', () => {
+    it('Проверка групп(папок) статусов и представлений для отсутствующих бизнес-процессов', () => {
       const errViews = [];
       viewWfList.forEach((viewName) => {
         if (!workflow[viewName]) {
           errViews.push(viewName);
-          console.error(`Для представления бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
+          console.error(`Для группы (папки) представления/статусов бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
         }
       });
       if (errViews.length) {
-        throw (new Error(`Представления для отстутствующих классов ${errViews}`));
+        console.log('##', Object.keys(workflow));
+        throw (new Error(`Группы (папки) представления/статусов для отстутствующих бизнес процессов ${errViews}`));
       }
     });
-    it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
+    it('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
       const errState = [];
       const errViews = [];
-      viewWfList.forEach((viewName) => {
-        if (!meta[viewName] && viewName !== 'workflows') {
-          errViews.push(viewName);
-          console.error(`Для представления ${viewName} отсутствует мета класса`);
-        }
+      viewWfListDir.forEach((wfViewDirName) => {
+        const wfName = nz(wfViewDirName, ns);
+        const className = nz(workflow[wfName].wfClass, ns);
+        const stateWfDir = getDirList(path.join(pathApplications, ns, 'views/workflows', wfViewDirName)).dirList;
+        stateWfDir.forEach((wfState) => {
+          let stateFound = false;
+          workflow[wfName].states.forEach((stateItem) => {
+            if (stateItem.name === wfState) {
+              stateFound = true;
+            }
+          });
+          if (!stateFound) {
+            errState.push(`${wfViewDirName}.${wfState}`);
+            console.error(`Отсутствует статус ${wfState} в БП  ${wfName} отсутствует мета класса`);
+          }
+          const viewsWfOnState = getDirList(path.join(pathApplications,
+            ns, 'views/workflows', wfViewDirName, wfState)).fileList;
+          viewsWfOnState.forEach((viewClassName) => {
+            viewClassName = nz(viewClassName.substr(0, viewClassName.length - '.json'.length), ns);
+            if (!meta[viewClassName]) {
+              errViews.push(`${wfViewDirName}.${wfState}:${viewClassName}`);
+              console.error(`Отсутствует класс меты по представлению ${viewClassName} для статуса ${wfState} БП ${wfName}`);
+            }
+          });
+        });
       });
-      if (errViews.length) {
-        throw (new Error(`Представления для отстутствующих классов ${errViews}`));
+      let errMessage = errState.length ?
+        `Папки состояния с представлениями в бизнес-процессах не соотствуют статусам ${errState}` : '';
+      errMessage = errViews.length ?  errMessage + '\n' +
+        `Представления по папкам состояния в бизнес-процессах для отсутствюущих классов ${errViews}` : errMessage;
+      if (errMessage) {
+        throw (new Error(errMessage));
       }
     });
   });
