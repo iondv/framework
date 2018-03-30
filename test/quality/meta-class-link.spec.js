@@ -12,7 +12,7 @@ const getMetaFiles = require('test/lib/get-meta').getMetaFiles;
 describe('# Проверка достижимости классов из навигации', function () {
   this.timeout(120000);
   const pathApplications = path.join(__dirname, '../../applications');
-  const appList = getAppList(pathApplications);
+  const appList = getDirList(pathApplications).dirList;
   appList.forEach((pathApp)=> {
     checkMetaLinks(pathApplications, pathApp);
   })
@@ -20,17 +20,18 @@ describe('# Проверка достижимости классов из нав
 
 function checkMetaLinks(pathApplications, pathApp) {
   describe(`Проверка достижимости классов из навигации в приложении ${pathApp}`, () => {
-    let meta = {};
-    let navigation = {};
-    let workflow = {};
-    let metaLink = {};
-    let metaCheckLink = [];
+    let meta = {}; // Мета
+    let navigation = {}; // Мета навигации
+    let workflow = {};  // Мета БП
+    let metaLink = {}; // Объект с элементами из названий классов меты провенный по связям
+    let metaCheckLink = []; // Массив названий классов для проверки
+    let viewWF = []; // Папки представлений бизнес-процессов
     before('Инициализация меты', () => {
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'));
       navigation = getMetaFiles(path.join(pathApplications, pathApp, 'navigation'));
-
       try { // Отсутствие папки бизнес-процессов допустимо
         workflow = getMetaFiles(path.join(pathApplications, pathApp, 'workflows'));
+        viewWF = getDirList(path.join(pathApplications, pathApp, 'views/workflows')).dirList;
       } catch (e) {
         console.warn (e.message);
       }
@@ -75,13 +76,7 @@ function checkMetaLinks(pathApplications, pathApp) {
     });
     it('Проверка представлений, для которых нет классов', () => {
       let errViews = [];
-      let view = [];
-      try {
-        view = getDirList(path.join(pathApplications, pathApp, 'views')).dirList;
-      } catch (e) {
-        console.warn (e.message);
-      }
-      view.forEach((viewName)=> {
+      viewWF.forEach((viewName)=> {
         if (!meta[viewName] && viewName !== 'workflows') {
           errViews.push(viewName);
           console.error(`Для представления ${viewName} отсутствует мета класса`);
@@ -94,7 +89,7 @@ function checkMetaLinks(pathApplications, pathApp) {
     it('Проверка бизнес-процессов, для которых нет классов', () => {
       let errWF = [];
       Object.keys(workflow).forEach((wfItem)=> { // Отбираем классы по бизнес-процессам
-        if (! meta[workflow[wfItem].wfClass]) {
+        if (!meta[workflow[wfItem].wfClass]) {
           console.error(`В бизнес-процессе ${wfItem} ссылка на отсутствующий калсс ${workflow[wfItem].wfClass}`);
           errWF.push(workflow[wfItem].wfClass);
         }
@@ -105,13 +100,7 @@ function checkMetaLinks(pathApplications, pathApp) {
     });
     it('Проверка лишних бизнес-процессов в представлениях', () => {
       let errViews = [];
-      let view = [];
-      try {
-        view = getDirList(path.join(pathApplications, pathApp, 'views/workflows')).dirList;
-      } catch (e) {
-        console.warn (e.message);
-      }
-      view.forEach((viewName)=> {
+      viewWF.forEach((viewName)=> {
         if (!workflow[viewName]) {
           errViews.push(viewName);
           console.error(`Для представления бизнес-процесса ${viewName} отсутствует бизнес-процесс`);
@@ -125,13 +114,8 @@ function checkMetaLinks(pathApplications, pathApp) {
   it.skip('Проверка лишних статутусов и классов представлений, по которым нет меты в бизнес-процессах', () => {
     let errState = [];
     let errViews = [];
-    let view = [];
-    try {
-      view = getDirList(path.join(pathApplications, pathApp, 'views/workflows')).dirList;
-    } catch (e) {
-      console.warn (e.message);
-    }
-    view.forEach((viewName)=> {
+
+    viewWF.forEach((viewName)=> {
       if (!meta[viewName] && viewName !== 'workflows') {
         errViews.push(viewName);
         console.error(`Для представления ${viewName} отсутствует мета класса`);
@@ -142,10 +126,6 @@ function checkMetaLinks(pathApplications, pathApp) {
     }
 
   });
-}
-
-function getAppList(appSourcePath) {
-  return getDirList(appSourcePath).dirList;
 }
 
 function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen = 0) {
