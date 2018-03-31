@@ -174,10 +174,13 @@ function MongoAclAccessManager(config) {
     });
   };
 
-  this._defineRole = function (role, caption = null) {
+  this._defineRole = function (role, caption = null, description = null) {
     let data = {id: role};
     if (caption) {
       data.name = caption;
+    }
+    if (description) {
+      data.description = description;
     }
     return ds.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data);
   };
