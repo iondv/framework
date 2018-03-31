@@ -38,11 +38,11 @@ function MongoAclAccessManager(config) {
   };
 
   function fetchAllRoles() {
-    return ds.fetch(`${config.prefix ? config.prefix : 'ion_acl_'}roles`, {});
+    return ds.fetch('ion_security_role', {});
   }
 
   function fetchAllResources() {
-    return ds.fetch(`${config.prefix ? config.prefix : 'ion_acl_'}resources`, {});
+    return ds.fetch('ion_security_resource', {});
   }
 
   /**
