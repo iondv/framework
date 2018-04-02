@@ -10,10 +10,12 @@ const getMetaFiles = require('test/lib/get-meta').getMetaFiles;
 const getViewsList = require('test/lib/get-meta').getViewsList;
 const nz = require('test/lib/get-meta').normilizeNamespase;
 const getNs = require('test/lib/get-meta').getNameSpace;
+const getBn = require('test/lib/get-meta').getBaseName;
 
 const TIMEOUT = 120000;
 const NAV_TYPE_LIST_CLASS = 1;
 const ARR_NOTFOUND = -1;
+const ARR_START = 0;
 const PROP_TYPE_LINK = 13;
 const PROP_TYPE_COL = 14;
 const SKIP_NS = ['viewlib', 'fias'];
@@ -36,7 +38,7 @@ describe('# Проверка достижимости классов из нав
 });
 
 function checkMetaLinks(pathApplications, ns, meta) {
-  describe(`Проверка достижимости классов из навигации в приложении ${ns}`, () => {
+  describe(`Проверка достижимости классов из навигации и корректности ссылок на мету в приложении ${ns}`, () => {
     let navigation = {}; // Мета навигации
     let workflow = {};  // Мета БП
     let viewList = []; // Список представлений
@@ -95,7 +97,7 @@ function checkMetaLinks(pathApplications, ns, meta) {
                 }
               } else {
                 console.error(`В классе ${className} отсутствующий в мете связанный класс ${propClassName}`);
-                errMeta[propClassName] = true;
+                errMeta.push(propClassName);
               }
             }
           });
@@ -127,7 +129,7 @@ function checkMetaLinks(pathApplications, ns, meta) {
         Object.keys(metaLink).length - startingMetaLink);
     });
     it('Проверка представлений, для которых нет классов', () => {
-      const errViews = [];
+      let errViews = [];
       viewList.forEach((viewName) => {
         if (!meta[viewName]) {
           errViews.push(viewName);
@@ -135,7 +137,10 @@ function checkMetaLinks(pathApplications, ns, meta) {
         }
       });
       if (errViews.length) {
-        throw (new Error(`Представления для отстутствующих классов ${errViews}`));
+        errViews = checkSecificViews(errViews, path.join(pathApplications, ns, 'views'), navigation, meta, ns);
+        if (errViews.length) {
+          throw (new Error(`Представления для отстутствующих классов ${errViews}`));
+        }
       }
     });
     it('Проверка бизнес-процессов, для которых нет классов', () => {
@@ -185,7 +190,7 @@ function checkMetaLinks(pathApplications, ns, meta) {
           const viewsWfOnState = getDirList(path.join(pathApplications,
             ns, 'views/workflows', wfViewDirName, wfState)).fileList;
           viewsWfOnState.forEach((viewClassName) => {
-            viewClassName = nz(viewClassName.substr(0, viewClassName.length - '.json'.length), ns);
+            viewClassName = nz(viewClassName.substr(ARR_START, viewClassName.length - '.json'.length), ns);
             if (!meta[viewClassName]) {
               errViews.push(`${wfViewDirName}.${wfState}:${viewClassName}`);
               console
@@ -248,4 +253,66 @@ function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen
     });
   }
   return checked;
+}
+
+function checkSecificViews(errViews, viewsPath, navigation, meta, ns) {
+  const newErrViews = [];
+  const viewDirList = getDirList(viewsPath).dirList;
+
+  errViews.forEach((errViewItem) => {
+    const errVwItem = getBn(errViewItem);
+    let checked = false;
+    viewDirList.forEach((viewDir) => {
+      if (viewDir.indexOf(errVwItem) === ARR_START) {
+        checked = checkNavMetaView(viewDir, viewsPath, navigation, meta, ns);
+      }
+    });
+    if (!checked) {
+      newErrViews.push(errViewItem);
+      console.error(`Изменение представлений из навигации ${errViewItem} не подвтерждена мета навигации или класса`);
+    }
+  });
+  return newErrViews;
+}
+
+
+function checkNavMetaView(viewDir, viewsPath, navigation, meta, ns) {
+  let foundNavDir = false;
+  const viewList = getDirList(path.join(viewsPath, viewDir));
+  if (viewList.dirList.length) {
+    viewList.dirList.forEach((viewSubDir) => {
+      foundNavDir = checkNavMetaView(viewSubDir, path.join(viewsPath, viewDir), navigation, meta, ns);
+    });
+  } else if (viewList.fileList.length) {
+    // Проверяем что папка либо название класса, либо последний сегмент навигации
+    if (meta[nz(viewDir, ns)]) {
+      viewList.fileList.forEach((viewFileName) => {
+        if (['item.json', 'create.json', 'list.json'].indexOf(viewFileName) !== ARR_NOTFOUND) {
+          if (!foundNavDir) {
+            console.info('Дирректория %s является представлением класса',
+              path.join(viewsPath.substr(viewsPath.indexOf('views') + 'views/'.length), viewDir), nz(viewDir, ns));
+          }
+          foundNavDir = true;
+        }
+      });
+    } else {
+      Object.keys(navigation).forEach((navItem) => {
+        const navDir = getBn(viewDir);
+        if (navigation[navItem].type && navigation[navItem].type === NAV_TYPE_LIST_CLASS &&
+          navigation[navItem].code &&
+          navigation[navItem].code.substr(navigation[navItem].code.length - navDir.length) === getBn(viewDir)) {
+          viewList.fileList.forEach((viewFileName) => {
+            if (['item.json', 'create.json', 'list.json'].indexOf(viewFileName) !== ARR_NOTFOUND) {
+              if (!foundNavDir) {
+                console.info('Дирректория %s является измененым через навигацию %s представоением класса %s',
+                  viewDir, navigation[navItem].code, navigation[navItem].classname);
+              }
+              foundNavDir = true;
+            }
+          });
+        }
+      });
+    }
+  }
+  return foundNavDir;
 }
