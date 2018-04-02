@@ -97,6 +97,20 @@
           "dataSource": "ion://Db"
         }
       },
+      "accounts": {
+        "module": "core/impl/LocalAccountStorage",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
+      "notifier": {
+        "module": "core/impl/notifications/Notifier",
+        "options": {
+          "dataSource": "ion://Db",
+          "accounts": "ion://accounts",
+          "log": "ion://sysLog"
+        }
+      },
       "auth": {
         "module": "lib/auth",
         "initMethod": "init",
@@ -104,6 +118,7 @@
         "options": {
           "app": "ion://application",
           "logger": "ion://sysLog",
+          "accounts": "ion://accounts",
           "dataSource": "ion://Db",
           "denyTopLevel": "[[auth.denyTop]]",
           "authCallbacks": ["[[auth.callback]]"],
