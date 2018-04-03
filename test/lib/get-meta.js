@@ -16,16 +16,26 @@ function nz(className, namespace) {
 module.exports.normilizeNamespase = nz;
 
 function getNS(className) {
-  let namespace = '';
   if (className) {
-    let symNS = className.indexOf('@');
-    if (symNS !== ARR_NOTFOUND) {
-      return className.substring(++symNS);
+    let symNameSpace = className.indexOf('@');
+    if (symNameSpace !== ARR_NOTFOUND) {
+      return className.substring(++symNameSpace);
     }
   }
-  return namespace;
+  return '';
 }
 module.exports.getNameSpace = getNS;
+
+function getBaseName(className) {
+  if (className) {
+    const symNameSpace = className.indexOf('@');
+    if (symNameSpace !== ARR_NOTFOUND) {
+      return className.substring(0, symNameSpace);
+    }
+  }
+  return className;
+}
+module.exports.getBaseName = getBaseName;
 
 function getDirList(sourcePath) {
   const fileList = [];
