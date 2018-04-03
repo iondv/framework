@@ -98,7 +98,9 @@ function OwnCloudStorage(config) {
             password: config.password
           }
         };
-        callback(null, request.get(reqParams));
+        let request = request.get(reqParams);
+        request.on('error', (err) => console.log(err));
+        callback(null, request);
       } catch (err) {
         callback(err);
       }
