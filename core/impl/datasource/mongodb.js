@@ -639,7 +639,7 @@ function MongoDs(config) {
                   return true;
                 }
                 if (typeof arg === 'string' && arg[0] === '$') {
-                  return {[arg]: {$empty: true}};
+                  return {[arg.substr(1)]: {$empty: true}};
                 }
                 return false;
               }
@@ -1428,11 +1428,11 @@ function MongoDs(config) {
    * @param {String} [prefix]
    * @returns {*}
    */
-  function producePostfilter(find, explicitJoins, prefix) {
+  function producePostfilter(find, explicitJoins, prefix, forRedact) {
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePostfilter(find[i], explicitJoins, prefix);
+        let tmp = producePostfilter(find[i], explicitJoins, prefix, forRedact);
         if (tmp) {
           result.push(tmp);
         }
@@ -1447,7 +1447,7 @@ function MongoDs(config) {
           } else if (excludeFromPostfilter.indexOf(name) >= 0) {
             return undefined;
           } else {
-            let tmp = producePostfilter(find[name], explicitJoins, prefix);
+            let tmp = producePostfilter(find[name], explicitJoins, prefix, forRedact);
             if (tmp !== undefined) {
               result = result || {};
               if (name[0] !== '$') {
@@ -1460,6 +1460,9 @@ function MongoDs(config) {
                 } else {
                   let {attr, right} = argsToSides(tmp);
                   if (!attr) {
+                    if (forRedact) {
+                      return find;
+                    }
                     return undefined;
                   }
 
@@ -1478,6 +1481,7 @@ function MongoDs(config) {
               }
             }
           }
+          break;
         }
       }
       return result;
@@ -1564,7 +1568,17 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      let tmp = produceRedactFilter(find[name][oper], explicitJoins, prefix);
+                      if (Array.isArray(tmp) && oper !== '$in') {
+                        if (tmp.length === 0) {
+                          tmp = null;
+                        } else if (tmp.length === 1) {
+                          tmp = tmp[0];
+                        }
+                        result.push({$eq: [loperand, {[oper]: tmp}]});
+                      } else {
+                        result.push({[oper]: [loperand, tmp]});
+                      }
                     }
                   }
                 }
@@ -1731,6 +1745,8 @@ function MongoDs(config) {
         if (doGroup || fetchFields) {
           groupStages.push(expr);
           groupStages.push({$project: attrs});
+          attributes.push(...Object.keys(attrs));
+          attributes.filter((value, index, self) => self.indexOf(value) === index);
         }
       }
 
@@ -1740,7 +1756,7 @@ function MongoDs(config) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (analise.needRedact || analise.needPostFilter) {
-          postfilter = producePostfilter(options.filter, lookups);
+          postfilter = producePostfilter(options.filter, lookups, null, true);
           redactFilter = produceRedactFilter(postfilter, lookups);
           postfilter = producePrefilter([], postfilter, [], [], {});
         }
