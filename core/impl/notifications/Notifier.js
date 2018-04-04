@@ -171,13 +171,16 @@ class Notifier extends INotifier {
 
   /**
    * @param {String} reciever
-   * @param {{offset: Number, count: Number, new: Boolean, since: Date}} options
+   * @param {{sender: String, offset: Number, count: Number, new: Boolean, since: Date}} options
    * @returns {Promise}
    */
   _list(reciever, options) {
     let f = [];
     if (reciever) {
       f.push({[F.EQUAL]: ['$reciever', reciever]});
+    }
+    if (options.sender) {
+      f.push({[F.EQUAL]: ['$sender', options.sender]});
     }
     if (options.new) {
       f.push({[F.EMPTY]: ['$recieved']});

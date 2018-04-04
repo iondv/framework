@@ -22,6 +22,7 @@ if (process.argv.length > 2) {
 }
 
 let job = false;
+let notifier = null;
 
 di('boot', config.bootstrap,
   {
@@ -43,6 +44,7 @@ di('boot', config.bootstrap,
         typeof jobs[jobName] === 'object'
       ) {
         job = jobs[jobName];
+        notifier = scope.notifier;
         if (!job.worker) {
           throw new Error('Не указан рабочий компонент задания ' + jobName);
         }
@@ -60,14 +62,49 @@ di('boot', config.bootstrap,
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
       throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
     }
-    sysLog.info(new Date().toISOString() + ': Начало выполнения задания ' + jobName);
-    return typeof worker === 'function' ? worker() : worker.run();
+    let msg = new Date().toISOString() + ': Начало выполнения задания ' + jobName;
+    sysLog.info(msg);
+    let promise = Promise.resolve();
+    if (notifier && job.notify) {
+      promise = promise.then(() => notifier.notify({
+        message: msg,
+        sender: jobName,
+        recievers: job.notify
+      }));
+    };
+    return promise.then(() => {
+      return typeof worker === 'function' ? worker() : worker.run()
+    });
   })
   .then(()=>{
-    sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' выполнено');
-    process.exit(0);
+    let msg = new Date().toISOString() + ': Задание ' + jobName + ' выполнено';
+    sysLog.info(msg);
+    let p = Promise.resolve();
+    if (notifier && job.notify) {
+      p = p.then(() => notifier.notify({
+        message: msg,
+        sender: jobName,
+        recievers: job.notify
+      }));
+    }
+    return p.then(() => {
+      process.exit(0)
+    });
   })
   .catch((err) => {
     sysLog.error(err);
-    process.exit(130);
+    let p = Promise.resolve();
+    if (notifier && job.notify) {
+      p = p.then(() => notifier.notify({
+        message: err,
+        sender: jobName,
+        recievers: job.notify
+      }));
+    }
+    p.catch(err2 => {
+      sysLog.error(err);
+    })
+    .finally(() => {
+      process.exit(130);
+    });
   });
