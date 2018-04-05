@@ -388,7 +388,7 @@ function MongoDs(config) {
               break;
           }
         } else if (data[nm] instanceof Date) {
-          if (data[nm].utcOffset) {
+          if (typeof data[nm].utcOffset !== 'undefined') {
             data[nm + '__tzoffset'] = data[nm].utcOffset;
             delete data[nm].utcOffset;
           }
@@ -1900,7 +1900,7 @@ function MongoDs(config) {
         }
 
         if (data[nm] instanceof Date) {
-          if (data[nm + '__tzoffset']) {
+          if (typeof data[nm + '__tzoffset'] !== 'undefined') {
             data[nm].utcOffset = data[nm + '__tzoffset'];
             delete data[nm + '__tzoffset'];
           }

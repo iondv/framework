@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = {
-  LOCAL: 0,
-  UTC: 1
+  REAL: 0,
+  LOCALIZED: 1,
+  UTC: 2
 };

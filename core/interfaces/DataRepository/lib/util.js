@@ -63,8 +63,24 @@ function castValue(value, pm) {
 
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
-    if (pm.size === DateTypes.UTC && v.utcOffset) {
-      delete v.utcOffset;
+    switch (pm.mode) {
+      case DateTypes.REAL:
+        if (typeof v.utcOffset !== 'undefined') {
+          delete v.utcOffset;
+        }
+        break;
+      case DateTypes.LOCALIZED:
+        if (typeof v.utcOffset === 'undefined') {
+          v.utcOffset = v.getTimezoneOffset();
+        }
+        break;
+      case DateTypes.UTC:
+      {
+        let offset = v.utcOffset || v.getTimezoneOffset();
+        v.setUTCMinutes(v.getUTCMinutes() + offset);
+        v.utcOffset = 0;
+      }
+        break;
     }
   }
   return v;
