@@ -193,6 +193,7 @@ class Notifier extends INotifier {
       {
         fields: {
           id: '$id',
+          reciever: '$reciever',
           recieved: '$recieved',
           date: '$n.date',
           sender: '$n.sender',
