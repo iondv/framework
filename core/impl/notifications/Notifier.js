@@ -193,8 +193,6 @@ class Notifier extends INotifier {
       {
         fields: {
           id: '$id',
-          reciever: '$reciever',
-          recieved: '$recieved',
           date: '$n.date',
           sender: '$n.sender',
           subject: '$n.subject',
@@ -211,6 +209,7 @@ class Notifier extends INotifier {
           }
         ],
         sort: {date: -1},
+        distinct: true,
         offset: options.offset,
         count: options.count,
         countTotal: options.countTotal

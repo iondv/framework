@@ -62,13 +62,14 @@ di('boot', config.bootstrap,
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
       throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
     }
-    let msg = new Date().toISOString() + ': Начало выполнения задания ' + jobName;
+    let msg = 'Начало выполнения задания ' + jobName;
     sysLog.info(msg);
     let promise = Promise.resolve();
     if (notifier && job.notify) {
       promise = promise.then(() => notifier.notify({
+        subject: jobName,
         message: msg,
-        sender: jobName,
+        sender: job.sender,
         recievers: job.notify
       }));
     };
@@ -77,13 +78,14 @@ di('boot', config.bootstrap,
     });
   })
   .then(()=>{
-    let msg = new Date().toISOString() + ': Задание ' + jobName + ' выполнено';
+    let msg = 'Задание ' + jobName + ' выполнено';
     sysLog.info(msg);
     let p = Promise.resolve();
     if (notifier && job.notify) {
       p = p.then(() => notifier.notify({
+        subject: jobName,
         message: msg,
-        sender: jobName,
+        sender: job.sender,
         recievers: job.notify
       }));
     }
@@ -96,8 +98,9 @@ di('boot', config.bootstrap,
     let p = Promise.resolve();
     if (notifier && job.notify) {
       p = p.then(() => notifier.notify({
+        subject: jobName,
         message: err,
-        sender: jobName,
+        sender: job.sender,
         recievers: job.notify
       }));
     }
