@@ -3,6 +3,7 @@
  */
 'use strict';
 const PropertyTypes = require('core/PropertyTypes');
+const DateTypes = require('core/DateTypes');
 const cast = require('core/cast');
 const strToDate = require('core/strToDate');
 const ConditionParser = require('core/ConditionParser');
@@ -60,7 +61,29 @@ function castValue(value, pm) {
     return value;
   }
 
-  return cast(value, pm.type);
+  let v = cast(value, pm.type);
+  if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
+    switch (pm.mode) {
+      case DateTypes.REAL:
+        if (typeof v.utcOffset !== 'undefined') {
+          delete v.utcOffset;
+        }
+        break;
+      case DateTypes.LOCALIZED:
+        if (typeof v.utcOffset === 'undefined') {
+          v.utcOffset = v.getTimezoneOffset();
+        }
+        break;
+      case DateTypes.UTC:
+      {
+        let offset = v.utcOffset || v.getTimezoneOffset();
+        v.setUTCMinutes(v.getUTCMinutes() + offset);
+        v.utcOffset = 0;
+      }
+        break;
+    }
+  }
+  return v;
 }
 
 module.exports.castValue = castValue;
