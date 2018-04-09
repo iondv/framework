@@ -99,7 +99,7 @@ function ImageStorage(options) { // jshint ignore:line
               data.buffer = buffer;
               return createThumbnails(data.buffer, name, o);
             });
-        }
+      }
     } else {
       thumbs = createThumbnails(data, ops.name || cuid(), o);
     }
@@ -263,16 +263,17 @@ function ImageStorage(options) { // jshint ignore:line
   function respondFile(req, res) {
     return function (file) {
       if (file && file.stream) {
+        let options = file.options || {};
         res.status(200);
         res.set('Content-Disposition',
           (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
           '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
-        res.set('Content-Type', file.options.mimetype || 'application/octet-stream');
-        if (file.options.size) {
-          res.set('Content-Length', file.options.size);
+        res.set('Content-Type', options.mimetype || 'application/octet-stream');
+        if (options.size) {
+          res.set('Content-Length', options.size);
         }
-        if (file.options.encoding) {
-          res.set('Content-Encoding', file.options.encoding);
+        if (options.encoding) {
+          res.set('Content-Encoding', options.encoding);
         }
         file.stream.pipe(res);
       } else {
@@ -314,6 +315,7 @@ function ImageStorage(options) { // jshint ignore:line
             let name = path.basename(imageId);
             name = thumbType + '_' + name.replace(/\.\w+$/, '.' + format);
             let stream = gm(image.stream).resize(ds[thumbType].width, ds[thumbType].height).setFormat(format).stream();
+            image.stream.resume();
             return {name, stream, options: image.options};
           })
           .then(respondFile(req, res))
