@@ -57,11 +57,12 @@ di('boot', config.bootstrap,
   .then((scope) =>
     worker(
       params.dst,
-      scope.metaRepo,
-      scope.dataRepo,
-      scope.auth,
-      scope.roleAccessManager,
       {
+        metaRepo: scope.metaRepo,
+        dataRepo: scope.dataRepo,
+        workflows: scope.workflows,
+        auth: scope.workflows,
+        accessManager: scope.roleAccessManager,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,

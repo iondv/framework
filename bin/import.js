@@ -45,8 +45,13 @@ di('boot', config.bootstrap,
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'aclProvider']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
-    worker(params.src, scope.dbSync, scope.metaRepo, scope.dataRepo, sysLog,
+    worker(params.src,
       {
+        sync: scope.dbSync,
+        metaRepo: scope.metaRepo,
+        dataRepo: scope.dataRepo,
+        workflows: scope.workflows,
+        log: sysLog,
         namespace: params.ns,
         ignoreIntegrityCheck: params.ignoreIntegrityCheck,
         skip: params.skip

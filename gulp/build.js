@@ -427,7 +427,12 @@ function appImporter(appDir, scope, log, dep) {
       (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
     return aclImport(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
       .catch((err) => log.error(err))
-      .then(() => importer(appDir, scope.dbSync, scope.metaRepo, scope.dataRepo, log, {
+      .then(() => importer(appDir, {
+        sync: scope.dbSync,
+        metaRepo: scope.metaRepo,
+        dataRepo: scope.dataRepo,
+        workflows: scope.workflows,
+        log: log,
         namespace: ns,
         // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка,
         // ещё не импортированы
