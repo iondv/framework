@@ -47,9 +47,10 @@ di('boot', config.bootstrap,
   .then((scope) =>
     worker(
       params.dst,
-      scope.metaRepo,
-      scope.dataRepo,
       {
+        metaRepo: scope.metaRepo,
+        dataRepo: scope.dataRepo,
+        workflows: scope.workflows,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
