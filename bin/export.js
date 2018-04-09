@@ -50,7 +50,7 @@ di('boot', config.bootstrap,
       'app',
       extend(true, config.di, scope.settings.get('plugins') || {}),
       {}, 'boot',
-      ['auth', 'aclProvider', 'roleAccessManager']
+      ['auth', 'aclProvider']
     )
   )
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
@@ -61,7 +61,7 @@ di('boot', config.bootstrap,
         metaRepo: scope.metaRepo,
         dataRepo: scope.dataRepo,
         workflows: scope.workflows,
-        auth: scope.workflows,
+        accounts: scope.accounts,
         accessManager: scope.roleAccessManager,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
