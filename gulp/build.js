@@ -484,6 +484,7 @@ gulp.task('deploy', function (done) {
             stage1 = stage1.then(() =>
               deployer(pth, first ? {resetSettings: true, preserveModifiedSettings: true} : {})
                 .then((dep) => {
+                  first = false;
                   console.log('Выполнена настройка приложения ' + app);
                   apps.push(app);
                   deps.push(dep);
