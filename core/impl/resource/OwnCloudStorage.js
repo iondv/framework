@@ -98,7 +98,16 @@ function OwnCloudStorage(config) {
             password: config.password
           }
         };
-        callback(null, request.get(reqParams));
+        let getStream = request.get(reqParams);
+        getStream.pause();
+        getStream
+          .on('error', (err) => callback(new Error('problems requesting the file')))
+          .on('response', (res) => {
+            if (res.statusCode !== 200) {
+              return callback(new Error('file not found'));
+            }
+            callback(null, getStream);
+          });
       } catch (err) {
         callback(err);
       }
@@ -294,23 +303,20 @@ function OwnCloudStorage(config) {
   function respondFile(req, res) {
     return (file) => {
       if (file && file.stream) {
-        file.stream.on('response', (response) => {
-          if (response.statusCode === 200) {
-            res.status(200);
-            res.set('Content-Disposition',
-              (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
-              '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
-            res.set(
-              'Content-Type',
-              response.headers['content-type'] || file.options.mimetype || 'application/octet-stream'
-            );
-            res.set('Content-Length', response.headers['content-length'] || file.options.size);
-            res.set('Content-Encoding', response.headers['content-encoding'] || file.options.encoding);
-            file.stream.pipe(res);
-          } else {
-            res.status(404).send('File not found!');
-          }
-        });
+        let options = file.options || {};
+        res.status(200);
+        res.set('Content-Disposition',
+          (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(file.name) +
+          '";filename*=UTF-8\'\'' + encodeURIComponent(file.name));
+        res.set('Content-Type', options.mimetype || 'application/octet-stream');
+        if (options.size) {
+          res.set('Content-Length', options.size);
+        }
+        if (options.encoding) {
+          res.set('Content-Encoding', options.encoding);
+        }
+        file.stream.pipe(res);
+        file.stream.resume();
       } else {
         res.status(404).send('File not found!');
       }
