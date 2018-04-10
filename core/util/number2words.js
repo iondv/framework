@@ -63,7 +63,7 @@ function parseNumber(number, count, isCurr) {
   }
 
   if (count === 0 && isCurr) {
-    numeral = numeral + plural(number, rusRubles);
+    numeral = `(${numeral.trim()}) ${plural(number, rusRubles)}`;
   } else if (count === 1) {
     if (numeral !== '  ') {
       numeral = numeral + plural(number, ['тысяча ', 'тысячи ', 'тысяч ']);
@@ -81,27 +81,16 @@ function parseNumber(number, count, isCurr) {
 }
 
 function parseDecimals(number) {
-  number = '' + number;
   let text = plural(number, ['копейка', 'копейки', 'копеек']);
 
-  if (number == 0) {
-    number = 'ноль';
-  } else {
-    let first = number.substr(0, 1);
-    let second = number.substr(1, 2);
-    number = words[1][first];
-    number += number ? ' ' : '';
-    if (second == 1) {
-      number += 'одна';
-    } else if (second == 2) {
-      number += 'две';
-    } else {
-      number += words[0][second];
-    }
+  if (number === 0) {
+    number = '00';
+  } else if (number < 10) {
+    number = '0' + number;
   }
 
-  return ' ' + number + ' ' + text;
-}
+  return number + ' ' + text;
+};
 
 function rubles(number, isCurr) {
   if (!number) {
@@ -156,8 +145,8 @@ function rubles(number, isCurr) {
 
   numeral = numeral.replace(/\s+/g, ' ');
 
-  if (decimals && isCurr) {
-    numeral = numeral + parseDecimals(parseFloat(decimals));
+  if (isCurr) {
+    numeral = `${number} ${numeral} ${parseDecimals(parseFloat(decimals))}`;
   }
 
   return numeral;
