@@ -84,7 +84,7 @@ function parseDecimals(number) {
   number = '' + number;
   let text = plural(number, ['копейка', 'копейки', 'копеек']);
 
-  if (number === 0) {
+  if (number == 0) {
     number = 'ноль';
   } else {
     let first = number.substr(0, 1);
