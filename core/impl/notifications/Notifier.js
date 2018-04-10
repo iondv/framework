@@ -180,7 +180,7 @@ class Notifier extends INotifier {
       f.push({[F.EQUAL]: ['$reciever', reciever]});
     }
     if (options.sender) {
-      f.push({[F.EQUAL]: ['$sender', options.sender]});
+      f.push({[F.EQUAL]: ['$n.sender', options.sender]});
     }
     if (options.new) {
       f.push({[F.EMPTY]: ['$recieved']});
