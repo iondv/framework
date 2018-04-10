@@ -55,11 +55,13 @@ function WorkflowProvider(options) {
    * @returns {{}}
    */
   function buildContext(item, options) {
-    let context = {$context: item, $uid: options.user.id()};
-    let props = options.user.properties();
-    for (let nm in props) {
-      if (props.hasOwnProperty(nm)) {
-        context[nm] = props[nm];
+    let context = {$context: item, $uid: options.user && options.user.id()};
+    if (options.user) {
+      let props = options.user.properties();
+      for (let nm in props) {
+        if (props.hasOwnProperty(nm)) {
+          context[nm] = props[nm];
+        }
       }
     }
     return context;
@@ -141,28 +143,30 @@ function WorkflowProvider(options) {
                 state.expired = state.expires.getTime() < new Date().getTime();
               }
 
-              for (let j = 0; j < stage.itemPermissions.length; j++) {
-                if (
-                  tOptions.user.isMe(stage.itemPermissions[j].role) ||
-                  tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
-                ) {
-                  addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
-                }
-              }
-
-              for (let j = 0; j < stage.propertyPermissions.length; j++) {
-                for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
+              if (tOptions.user) {
+                for (let j = 0; j < stage.itemPermissions.length; j++) {
                   if (
-                    tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
-                    tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
+                    tOptions.user.isMe(stage.itemPermissions[j].role) ||
+                    tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
                   ) {
-                    if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
-                      propertyPermissions[stage.propertyPermissions[j].property] = {};
+                    addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
+                  }
+                }
+
+                for (let j = 0; j < stage.propertyPermissions.length; j++) {
+                  for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
+                    if (
+                      tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
+                      tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
+                    ) {
+                      if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
+                        propertyPermissions[stage.propertyPermissions[j].property] = {};
+                      }
+                      addPermissions(
+                        propertyPermissions[stage.propertyPermissions[j].property],
+                        stage.propertyPermissions[j].permissions[k].permissions
+                      );
                     }
-                    addPermissions(
-                      propertyPermissions[stage.propertyPermissions[j].property],
-                      stage.propertyPermissions[j].permissions[k].permissions
-                    );
                   }
                 }
               }
@@ -178,7 +182,7 @@ function WorkflowProvider(options) {
 
                   rp2 = rp2.then((allowed) => {
                     if (allowed) {
-                      if (Array.isArray(transition.roles) && transition.roles.length) {
+                      if (tOptions.user && Array.isArray(transition.roles) && transition.roles.length) {
                         let available = false;
                         for (let k = 0; k < transition.roles.length; k++) {
                           if (
@@ -443,15 +447,29 @@ function WorkflowProvider(options) {
     }
     let context = buildContext(item, tOptions);
 
+    if (wf.startState === state) {
+      return options.dataSource.delete(tableName,
+        {
+          [F.AND]: [
+            {[F.EQUAL]: ['$item', item.getClassName() + '@' + item.getItemId()]},
+            {[F.EQUAL]: ['$workflow', workflow]}
+          ]
+        }
+      ).then(()=>item);
+    }
+
     return _this._getStatus(item, tOptions)
       .then((status) => {
+        if (status[workflow] && status[workflow].stage === state) {
+          return Promise.resolve(item);
+        }
+        /*
         if (status.stages.hasOwnProperty(workflow)) {
           return Promise.reject(new IonError(Errors.IN_WORKFLOW, {workflow: wf.caption}));
         }
+         */
         if (!wf.statesByName.hasOwnProperty(state)) {
-          return Promise.reject(
-            new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption})
-          );
+          throw new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption});
         }
 
         let target = wf.statesByName[state];

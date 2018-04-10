@@ -759,6 +759,9 @@ function DsMetaRepository(options) {
               let pms = cm.getPropertyMetas();
               for (let j = 0; j < pms.length; j++) {
                 let pm = pms[j];
+                if (typeof pm.mode === 'undefined') {
+                  pm.mode = 0;
+                }
                 if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
                   try {
                     pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);

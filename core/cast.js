@@ -35,7 +35,8 @@ var cast = module.exports = function (value, type) {
         return Boolean(value);
       }
     }break;
-    case PropertyTypes.DATETIME: return value ? new Date(value) : null;
+    case PropertyTypes.DATETIME:
+      return value ? (value instanceof Date ? value : new Date(value)) : null;
     case PropertyTypes.REAL:
     case PropertyTypes.DECIMAL: {
       value = parseFloat(value);
