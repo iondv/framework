@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/ion-portal.git", 
     "type": "git"
   }, 
-  "version": "1.8.50", 
+  "version": "1.8.51", 
   "dependencies": {
     "base64-js": "^1.2.1", 
     "locale": "^0.1.0", 
