@@ -28,6 +28,9 @@ var setParam = false;
 process.argv.forEach(function (val) {
   if (val === '--file-dir') {
     setParam = 'fileDir';
+  } else if (val === '--acl') {
+    params.exportAcl = 'json';
+    setParam = 'exportAcl';
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
   } else if (val === '--nodata') {
@@ -42,7 +45,14 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'aclProvider']))
+  .then((scope) =>
+    di(
+      'app',
+      extend(true, config.di, scope.settings.get('plugins') || {}),
+      {}, 'boot',
+      ['auth', 'aclProvider']
+    )
+  )
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) =>
     worker(
@@ -51,9 +61,12 @@ di('boot', config.bootstrap,
         metaRepo: scope.metaRepo,
         dataRepo: scope.dataRepo,
         workflows: scope.workflows,
+        accounts: scope.accounts,
+        accessManager: scope.roleAccessManager,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
+        exportAcl: params.exportAcl,
         fileDir: params.fileDir,
         lastVersion: params.ver === '-last'
       }).then(()=>scope)

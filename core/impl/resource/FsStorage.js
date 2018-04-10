@@ -131,14 +131,14 @@ function FsStorage(options) {
               writer.on('finish', () => {resolve(path.join(check.path, check.filename));});
               reader.pipe(writer);
             } else {
-              fs.writeFile(dest, d, (err) => err ? reject(err) :resolve(path.join(check.path, check.filename)));
+              fs.writeFile(dest, d, (err) => err ? reject(err) : resolve(path.join(check.path, check.filename)));
             }
           });
         });
       })
       .then((pth) => { // TODO ОПределять mime-type и content-type
           return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
-      })
+        })
       .then((r) =>
         new StoredFile(
             r.id,
@@ -182,6 +182,14 @@ function FsStorage(options) {
       });
     };
   }
+
+  /**
+   * @param {StoredFile} file
+   * @returns {Function}
+   */
+  this._stream = function (file) {
+    return streamGetter(file);
+  };
 
   /**
    * @param {String[]} ids
@@ -368,18 +376,18 @@ function FsStorage(options) {
     };
     return dataSource.insert('ion_files', dirObject)
       .then((dir) => {
-        dir.link = _options.urlBase + '/' + id;
-        if (parentDirId) {
-          return dataSource.get('ion_files', {[F.EQUAL]: ['$id', parentDirId]})
-              .then((parentDir) => {
-                if (parentDir && dir.id) {
-                  parentDir.dirs.push(dir.id);
-                  return dataSource.update('ion_files', {[F.EQUAL]: ['$id', parentDir.id]}, parentDir)
-                    .then(() => fetch ? dir : null);
-                } else {
-                  return Promise.reject('нет такой директории');
-                }
-              });
+          dir.link = _options.urlBase + '/' + id;
+          if (parentDirId) {
+            return dataSource.get('ion_files', {[F.EQUAL]: ['$id', parentDirId]})
+                .then((parentDir) => {
+                  if (parentDir && dir.id) {
+                    parentDir.dirs.push(dir.id);
+                    return dataSource.update('ion_files', {[F.EQUAL]: ['$id', parentDir.id]}, parentDir)
+                      .then(() => fetch ? dir : null);
+                  } else {
+                    return Promise.reject('нет такой директории');
+                  }
+                });
           } else {
             return fetch ? dir : null;
           }
