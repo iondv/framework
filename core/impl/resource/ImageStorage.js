@@ -5,7 +5,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const gm = require('gm');
+const gm = require('gm').subClass({imageMagick: true});
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -37,8 +37,8 @@ function ImageStorage(options) { // jshint ignore:line
   var fileStorage = options.fileStorage;
 
   let uploadThumbnails = true;
-  if (options.fileStorage.fileOptionsSupport) {
-    uploadThumbnails = options.fileStorage.fileOptionsSupport();
+  if (fileStorage.fileOptionsSupport) {
+    uploadThumbnails = fileStorage.fileOptionsSupport();
   }
 
   function createThumbnails(source, name, opts) {
@@ -94,11 +94,11 @@ function ImageStorage(options) { // jshint ignore:line
         thumbs = createThumbnails(data.path, name, o);
       } else if (typeof data.stream !== 'undefined') {
         thumbs = imageToBuffer(data.stream)
-            .then(buffer => {
-              delete data.stream;
-              data.buffer = buffer;
-              return createThumbnails(data.buffer, name, o);
-            });
+          .then(buffer => {
+            delete data.stream;
+            data.buffer = buffer;
+            return createThumbnails(data.buffer, name, o);
+          });
       }
     } else {
       thumbs = createThumbnails(data, ops.name || cuid(), o);

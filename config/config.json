@@ -202,6 +202,31 @@
           }
         }
       },
+      "htmlStorage": {
+        "module": "core/impl/resource/ImageStorage",
+        "options": {
+          "fileStorage": "ion://fileStorage",
+          "urlBase": "/html",
+          "thumbnails": {
+            "tiny": {
+              "width": 50,
+              "height": 50
+            },
+            "small": {
+              "width": 100,
+              "height": 100
+            },
+            "medium": {
+              "width": 300,
+              "height": 300
+            },
+            "preview": {
+              "width": 500,
+              "height": 500
+            }
+          }
+        }
+      },
       "keyProv": {
         "name": "keyProvider",
         "module": "core/impl/meta/keyProvider",
