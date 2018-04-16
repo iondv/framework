@@ -1,8 +1,23 @@
 image: docker.iondv.ru/kube/docker/pygitlab:master
+before_script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/stage_access.sh | bash
 stages:
+    - semver
     - create
     - check
-    - delete
+    - autover
+.semver: &JobSemver
+  type: semver
+  tags:
+    - kube-deploy
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/autoversion.sh | bash
+  when: manual
+  artifacts:
+    name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
+    expire_in: 1 week 
+    when: on_success
+    untracked: true    
 .create: &JobCreate
   type: create
   tags:
@@ -13,7 +28,7 @@ stages:
   when: manual
   artifacts:
     name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
-    expire_in: 1 mos
+    expire_in: 1 week 
     when: on_success
     untracked: true
 .check: &JobCheck
@@ -22,13 +37,13 @@ stages:
     - kube-deploy
   script:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/check_pipelines_stages.sh | bash
+  when: manual
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
     url: http://${CI_COMMIT_REF_SLUG}.develop-and-test.kube.local
-    on_stop: Delete
+    #on_stop: Delete
   variables:
     GIT_STRATEGY: none
-  when: manual
   allow_failure: false
 .del: &JobDelete
   type: delete
@@ -42,6 +57,14 @@ stages:
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
     action: stop
+.pushver: &JobPushVer
+  type: autover
+  tags:
+    - kube-deploy
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/push_autover.sh | bash
+  allow_failure: false
+  when: on_success
 Create:
   <<: *JobCreate
   only:
@@ -52,9 +75,23 @@ Check:
     - branches
   dependencies:
     - Create
-Delete:
-  <<: *JobDelete
+Patch:
+  <<: *JobSemver
   only:
-    - branches
+    - develop
+Minor:
+  <<: *JobSemver
+  only:
+    - develop
+Major:
+  <<: *JobSemver
+  only:
+    - develop
+Push version:
+  <<: *JobPushVer
+  only:
+    - develop
   dependencies:
-    - Create
+    - Patch
+    - Minor
+    - Major

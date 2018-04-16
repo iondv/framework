@@ -283,8 +283,20 @@ function SecuredDataRepository(options) {
         permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
-      permMap[item.getClassName() + '@' + item.getItemId()].__attr =
-        attrPermissions(item, permMap[item.getClassName() + '@' + item.getItemId()], permissions) || {};
+      /*
+       let roleConf = classRoleConfig(item.getMetaClass());
+       if (
+       !roleConf &&
+       (
+       permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] ||
+       permissions[classPrefix + item.getClassName()] ||
+       permissions[globalMarker]
+       )
+       ) {
+       permMap[item.getClassName() + '@' + item.getItemId()].__attr =
+       attrPermissions(item, permMap[item.getClassName() + '@' + item.getItemId()], permissions) || {};
+       }
+       */
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
         if (p.meta.type === PropertyTypes.REFERENCE || p.meta.type === PropertyTypes.COLLECTION) {

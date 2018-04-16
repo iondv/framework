@@ -359,7 +359,7 @@ function MongoDs(config) {
     );
   }
 
-  function prepareGeoJSON(data) {
+  function prepareData(data) {
     for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         if (typeof data[nm] === 'object' && data[nm] && data[nm].type && (data[nm].geometry || data[nm].features)) {
@@ -387,6 +387,11 @@ function MongoDs(config) {
             }
               break;
           }
+        } else if (data[nm] instanceof Date) {
+          if (typeof data[nm].utcOffset !== 'undefined') {
+            data[nm + '__tzoffset'] = data[nm].utcOffset;
+            delete data[nm].utcOffset;
+          }
         }
       }
     }
@@ -400,7 +405,7 @@ function MongoDs(config) {
         return autoInc(type, data)
             .then(
               function (data) {
-                return cleanNulls(c, type, prepareGeoJSON(data));
+                return cleanNulls(c, type, prepareData(data));
               }
             ).then(
               function (data) {
@@ -962,7 +967,7 @@ function MongoDs(config) {
 
     return getCollection(type).then(
       function (c) {
-        return cleanNulls(c, type, prepareGeoJSON(data))
+        return cleanNulls(c, type, prepareData(data))
           .then(
             function (data) {
               return new Promise(function (resolve, reject) {
@@ -1745,6 +1750,8 @@ function MongoDs(config) {
         if (doGroup || fetchFields) {
           groupStages.push(expr);
           groupStages.push({$project: attrs});
+          attributes.push(...Object.keys(attrs));
+          attributes.filter((value, index, self) => self.indexOf(value) === index);
         }
       }
 
@@ -1869,7 +1876,7 @@ function MongoDs(config) {
     });
   }
 
-  function mergeGeoJSON(data) {
+  function processData(data) {
     for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         let tmp = data['__geo__' + nm + '_f'];
@@ -1889,6 +1896,13 @@ function MongoDs(config) {
               data[nm] = tmp;
             }
               break;
+          }
+        }
+
+        if (data[nm] instanceof Date) {
+          if (typeof data[nm + '__tzoffset'] !== 'undefined') {
+            data[nm].utcOffset = data[nm + '__tzoffset'];
+            delete data[nm + '__tzoffset'];
           }
         }
       }
@@ -2061,7 +2075,7 @@ function MongoDs(config) {
                   });
                 }
               }).then((docs) => {
-                docs.forEach(mergeGeoJSON);
+                docs.forEach(processData);
                 if (amount !== null) {
                   docs.total = amount;
                 }
@@ -2090,7 +2104,7 @@ function MongoDs(config) {
               return reject(err);
             }
             if (r) {
-              return resolve(mergeGeoJSON(r));
+              return resolve(processData(r));
             }
             resolve(null);
           });
@@ -2276,7 +2290,7 @@ function MongoDs(config) {
                   });
                 }
                 p.then((docs) => {
-                  docs.forEach(mergeGeoJSON);
+                  docs.forEach(processData);
                   resolve(docs.length ? docs[0] : null);
                 }).catch(reject);
               },
@@ -2292,7 +2306,7 @@ function MongoDs(config) {
                 if (err) {
                   return reject(wrapError(err, 'get', type));
                 }
-                resolve(mergeGeoJSON(result));
+                resolve(processData(result));
               });
             } catch (err) {
               throw wrapError(err, 'get', type);

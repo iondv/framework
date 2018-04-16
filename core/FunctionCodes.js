@@ -47,5 +47,6 @@ module.exports = {
   IFNULL: 'ifNull',
   LITERAL: 'literal',
   SIZE: 'size',
-  FORMAT: 'format'
+  FORMAT: 'format',
+  NUMBER_TO_WORDS: 'number2words'
 };
