@@ -1,4 +1,6 @@
 image: docker.iondv.ru/kube/docker/pygitlab:master
+before_script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/stage_access.sh | bash
 stages:
     - semver
     - create
@@ -8,8 +10,6 @@ stages:
   type: semver
   tags:
     - kube-deploy
-  before_script:
-    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/ssh_before_script.sh | bash
   script:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/autoversion.sh | bash
   when: manual

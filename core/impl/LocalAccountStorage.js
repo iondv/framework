@@ -35,7 +35,7 @@ class LocalAccountStorage extends IAccountStorage {
       user.id = user.name;
     }
 
-    if (user.pwd) {
+    if (typeof user.pwd === 'string') {
       let hasher = pwdHasher(user.pwd);
       return new Promise((resolve, reject) => {
         hasher.hash((err, hash) => {
@@ -49,6 +49,11 @@ class LocalAccountStorage extends IAccountStorage {
             .catch(reject);
         });
       });
+    } else if (user.pwd && user.pwd.hash) {
+      user.pwd = user.pwd.hash;
+      user.pwdDate = new Date();
+      user.disabled = false;
+      return this.ds.insert('ion_user', user);
     } else if (user.type !== UserTypes.LOCAL) {
       return this.ds.insert('ion_user', user).then((u) => new User(u));
     } else {
