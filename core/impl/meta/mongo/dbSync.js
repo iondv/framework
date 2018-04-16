@@ -9,7 +9,7 @@ const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30, maxcomplexity: 30 */
+/* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
@@ -231,9 +231,8 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return (collection) => {
-      function createIndexPromise(properties, unique, nullable) {
+      function createIndexPromise(props, unique, nullable) {
         return function () {
-          let props = typeof properties === 'string' ? [properties] : properties;
           let opts = {};
           if (unique) {
             opts.unique = true;
@@ -244,16 +243,9 @@ function MongoDbSync(options) {
 
           let indexDef = {};
           if (Array.isArray(props)) {
-            for (let i = 0; i < props.length; i++) {
-              let type = propMetas[props[i]] ? propMetas[props[i]].type : null;
-              if (type === PropertyTypes.TEXT || type === PropertyTypes.HTML) {
-                log.warn(`Атрибут ${props[i]} класса ${cm.name}@${namespace} является текстовым, либо гипертекстовым и не может быть индексирован.`);
-                return Promise.resolve();
-              }
-              if (props[i]) {
-                indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
-              }
-            }
+            props.forEach((p) => {
+              indexDef[p.name] = (p.type === PropertyTypes.GEO) ? '2dsphere' : 1;
+            });
           }
 
           if (Object.getOwnPropertyNames(indexDef).length === 0) {
@@ -313,30 +305,25 @@ function MongoDbSync(options) {
 
 
       let fullText = [];
-      let propMetas = {};
-      let promise = Promise.resolve();
-
+      let props = {};
       if (Array.isArray(h)) {
-        h.forEach((anc) => fillProps(propMetas, anc));
+        h.forEach((anc) => fillProps(props, anc));
       }
 
-      promise = promise.then(createIndexPromise(cm.key, true));
+      let promise = createIndexPromise(cm.key, true);
       promise = promise.then(createIndexPromise('_class', false, false));
 
       for (let i = 0; i < cm.properties.length; i++) {
-        propMetas[cm.properties[i].name] = cm.properties[i];
+        props[cm.properties[i].name] = cm.properties[i];
         if (
-          cm.properties[i].type === PropertyTypes.REFERENCE ||
+          (cm.properties[i].type === PropertyTypes.REFERENCE ||
           cm.properties[i].indexed ||
-          cm.properties[i].unique
+          cm.properties[i].unique) &&
+          cm.properties[i].type !== PropertyTypes.TEXT &&
+          cm.properties[i].type !== PropertyTypes.HTML
         ) {
-          promise = promise.then(
-            createIndexPromise(
-              cm.properties[i].name,
-              cm.properties[i].unique,
-              cm.properties[i].nullable
-            )
-          );
+          promise = promise
+            .then(createIndexPromise([cm.properties[i]], cm.properties[i].unique, cm.properties[i].nullable));
         }
 
         if (
@@ -359,15 +346,24 @@ function MongoDbSync(options) {
       if (cm.compositeIndexes) {
         for (let i = 0; i < cm.compositeIndexes.length; i++) {
           let nlbl = false;
+          let skip = false;
+          let iprops = [];
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-            if (propMetas[cm.compositeIndexes[i].properties[j]].nullable) {
-              nlbl = true;
+            if (
+              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.TEXT ||
+              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.HTML
+            ) {
+              skip = true;
               break;
             }
+            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+              nlbl = true;
+            }
+            iprops.push(props[cm.compositeIndexes[i].properties[j]]);
           }
-          promise = promise.then(
-            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, nlbl)
-          );
+          if (!skip) {
+            promise = promise.then(createIndexPromise(iprops, cm.compositeIndexes[i].unique, nlbl));
+          }
         }
       }
 
