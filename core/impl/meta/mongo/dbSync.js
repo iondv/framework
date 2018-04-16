@@ -231,8 +231,9 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return (collection) => {
-      function createIndexPromise(props, unique, nullable, type) {
+      function createIndexPromise(properties, unique, nullable) {
         return function () {
+          let props = typeof properties === 'string' ? [properties] : properties;
           let opts = {};
           if (unique) {
             opts.unique = true;
@@ -242,10 +243,13 @@ function MongoDbSync(options) {
           }
 
           let indexDef = {};
-          if (typeof props === 'string') {
-            indexDef = props;
-          } else if (Array.isArray(props)) {
+          if (Array.isArray(props)) {
             for (let i = 0; i < props.length; i++) {
+              let type = propMetas[props[i]] ? propMetas[props[i]].type : null;
+              if (type === PropertyTypes.TEXT || type === PropertyTypes.HTML) {
+                log.warn(`Атрибут ${props[i]} класса ${cm.name}@${namespace} является текстовым, либо гипертекстовым и не может быть индексирован.`);
+                return Promise.resolve();
+              }
               if (props[i]) {
                 indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
               }
@@ -307,18 +311,20 @@ function MongoDbSync(options) {
         }
       }
 
-      let promise = createIndexPromise(cm.key, true)();
-      promise = promise.then(createIndexPromise('_class', false));
 
       let fullText = [];
-      let props = {};
+      let propMetas = {};
+      let promise = Promise.resolve();
 
       if (Array.isArray(h)) {
-        h.forEach((anc) => fillProps(props, anc));
+        h.forEach((anc) => fillProps(propMetas, anc));
       }
-      
+
+      promise = promise.then(createIndexPromise(cm.key, true));
+      promise = promise.then(createIndexPromise('_class', false, false));
+
       for (let i = 0; i < cm.properties.length; i++) {
-        props[cm.properties[i].name] = cm.properties[i];
+        propMetas[cm.properties[i].name] = cm.properties[i];
         if (
           cm.properties[i].type === PropertyTypes.REFERENCE ||
           cm.properties[i].indexed ||
@@ -328,8 +334,7 @@ function MongoDbSync(options) {
             createIndexPromise(
               cm.properties[i].name,
               cm.properties[i].unique,
-              cm.properties[i].nullable,
-              cm.properties[i].type
+              cm.properties[i].nullable
             )
           );
         }
@@ -355,7 +360,7 @@ function MongoDbSync(options) {
         for (let i = 0; i < cm.compositeIndexes.length; i++) {
           let nlbl = false;
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+            if (propMetas[cm.compositeIndexes[i].properties[j]].nullable) {
               nlbl = true;
               break;
             }
