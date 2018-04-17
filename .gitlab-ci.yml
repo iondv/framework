@@ -24,10 +24,6 @@ stages:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/stage_access.sh | bash
   script:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/check_pipelines_stages.sh | bash
-  environment:
-    name: testing/$CI_COMMIT_REF_SLUG
-    url: http://${CI_COMMIT_REF_SLUG}.develop-and-test.kube.local
-    #on_stop: Delete
   variables:
     GIT_STRATEGY: none
   when: manual
