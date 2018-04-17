@@ -162,7 +162,7 @@ function Scheduler(options) {
       throw new Error(`Переданы некорректные параметры задания.`);
     }
     jobs[jobName] = jobSettings;
-    options.settings.set('jobs', jobs);
+    options.settings.set('jobs', jobs, true);
     return options.settings.apply();
   };
 
@@ -180,7 +180,7 @@ function Scheduler(options) {
         let jobs = options.settings.get('jobs');
         if (jobs.hasOwnProperty(job)) {
           delete jobs[job];
-          options.settings.set('jobs', jobs);
+          options.settings.set('jobs', jobs, true);
           return options.settings.apply();
         }
         return Promise.resolve();
