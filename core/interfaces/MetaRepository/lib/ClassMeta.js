@@ -208,7 +208,7 @@ function ClassMeta(metaObject) {
       }
     }
     return Object.values(result).sort((a, b) => {
-      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+      return (a.orderNumber || 0) - (b.orderNumber || 0);
     });
   };
 
