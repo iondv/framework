@@ -171,13 +171,16 @@ class Notifier extends INotifier {
 
   /**
    * @param {String} reciever
-   * @param {{offset: Number, count: Number, new: Boolean, since: Date}} options
+   * @param {{sender: String, offset: Number, count: Number, new: Boolean, since: Date}} options
    * @returns {Promise}
    */
   _list(reciever, options) {
     let f = [];
     if (reciever) {
       f.push({[F.EQUAL]: ['$reciever', reciever]});
+    }
+    if (options.sender) {
+      f.push({[F.EQUAL]: ['$n.sender', options.sender]});
     }
     if (options.new) {
       f.push({[F.EMPTY]: ['$recieved']});
@@ -190,7 +193,6 @@ class Notifier extends INotifier {
       {
         fields: {
           id: '$id',
-          recieved: '$recieved',
           date: '$n.date',
           sender: '$n.sender',
           subject: '$n.subject',
@@ -207,6 +209,7 @@ class Notifier extends INotifier {
           }
         ],
         sort: {date: -1},
+        distinct: true,
         offset: options.offset,
         count: options.count,
         countTotal: options.countTotal
