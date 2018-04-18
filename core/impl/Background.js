@@ -7,15 +7,13 @@ const merge = require('merge');
 
 function Background() {
 
-  let seq = 1;
-
   let pool = {};
 
   let results = {};
 
   let workers = {};
 
-  this.start = function (uid, name, options) {
+  this.start = function (uid, name, sid, options) {
     if (typeof workers[name] === 'undefined') {
       throw new Error('Task is not registered in background!');
     }
@@ -28,8 +26,10 @@ function Background() {
     if (typeof pool[uid][name] === 'undefined') {
       pool[uid][name] = {};
     }
+    if (typeof pool[uid][name][sid] !== 'undefined') {
+      throw new Error('Task ' + name + '[' + sid + '] is already running!');
+    }
 
-    let sid = seq++;
 
     let args = ['-task', name, '-uid', uid];
     for (let nm in options) {
