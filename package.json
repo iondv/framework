@@ -1,14 +1,14 @@
 {
-  "license": "MIT", 
-  "name": "ion-web-platform", 
-  "engines": {
-    "node": ">=8.9.1"
-  }, 
   "lint-staged": {
     "*.js": [
       "eslint --fix", 
       "git add"
     ]
+  }, 
+  "license": "MIT", 
+  "name": "ion-web-platform", 
+  "engines": {
+    "node": ">=8.9.1"
   }, 
   "directories": {
     "test": "test"
@@ -21,20 +21,20 @@
     "url": "https://git.iondv.ru/ION/ion-portal.git", 
     "type": "git"
   }, 
-  "version": "1.8.51", 
+  "version": "1.8.52", 
   "dependencies": {
     "base64-js": "^1.2.1", 
     "locale": "^0.1.0", 
-    "request": "^2.83.0", 
-    "cuid": "^1.3.8", 
-    "ini": "^1.3.5", 
+    "connect-mongo": "^2.0.0", 
     "jsonwebtoken": "^8.1.0", 
+    "ini": "^1.3.5", 
+    "cuid": "^1.3.8", 
     "gm": "^1.23.0", 
     "jssc": "^0.2.6", 
     "ejs-locals": "^1.0.2", 
     "uuid": "^3.1.0", 
     "base64-stream": "^0.1.3", 
-    "sendmail": "^1.2.0", 
+    "cookie-parser": "^1.4.3", 
     "redis": "^2.8.0", 
     "xmldom": "^0.1.27", 
     "passport": "^0.4.0", 
@@ -43,9 +43,9 @@
     "memcached": "^2.2.2", 
     "ejs": "^2.5.7", 
     "xpath": "0.0.27", 
-    "oauth2-server": "^3.0.0", 
+    "morgan": "^1.9.0", 
     "extend": "^3.0.1", 
-    "cookie-parser": "^1.4.3", 
+    "sendmail": "^1.2.0", 
     "mongodb": "^2.2.33", 
     "clone": "^2.1.1", 
     "express": "^4.16.2", 
@@ -61,18 +61,18 @@
     "serve-favicon": "^2.4.5", 
     "lodash": "^4.17.4", 
     "password-hash-and-salt": "^0.1.4", 
-    "connect-mongo": "^2.0.0", 
+    "request": "^2.83.0", 
     "body-parser": "^1.18.2", 
     "merge": "^1.2.0", 
     "connect-flash": "^0.1.1", 
-    "morgan": "^1.9.0", 
+    "oauth2-server": "^3.0.0", 
     "acl": "^0.4.11"
   }, 
   "scripts": {
-    "TESTprecommit": "lint-staged", 
+    "start": "node bin/www", 
     "setup": "gulp install", 
     "lint": "eslint --fix", 
-    "start": "node bin/www", 
+    "TESTprecommit": "lint-staged", 
     "build": "gulp build", 
     "test": "gulp test"
   }, 
@@ -81,10 +81,10 @@
     "gulp-json-schema": "latest", 
     "gulp-less": "latest", 
     "gulp": "latest", 
-    "gulp-rename": "latest", 
+    "gulp-clean-css": "latest", 
     "eslint": "^4.12.1", 
     "gulp-jsmin": "latest", 
-    "gulp-clean-css": "latest", 
+    "gulp-rename": "latest", 
     "husky": "^0.14.3", 
     "run-sequence": "latest"
   }, 
