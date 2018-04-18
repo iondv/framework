@@ -2,13 +2,16 @@
 
 class Notifier {
   /**
-   * @param {String} sender
-   * @param {String[]} recievers
-   * @param {String} message
+   * @param {{}} notification
+   * @param {{} | String} notification.message
+   * @param {String} [notification.sender]
+   * @param {String[] | String} [notification.recievers]
+   * @param {String} [notification.subject]
+   * @param {{}} [notification.dispatch]
    * @returns {Promise}
    */
-  notify(sender, recievers, message) {
-    return this._notify(sender, recievers, message);
+  notify(notification) {
+    return this._notify(notification);
   }
 
   withdraw(id) {
