@@ -46,7 +46,7 @@ di('boot', config.bootstrap,
       throw new Error('Рабочий компонент фоновой процедуры ' + params.task + ' не имеет метода запуска');
     }
     sysLog.info(new Date().toISOString() + ': Начало выполнения фоновой процедуры ' + params.task);
-    return typeof worker === 'function' ? worker() : worker.run();
+    return typeof worker === 'function' ? worker(params) : worker.run(params);
   })
   .then((result)=> {
     if (typeof process.send === 'function') {
