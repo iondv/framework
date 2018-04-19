@@ -74,11 +74,17 @@ function MongoSequenceProvider(options) {
             if (err) {
               return reject(err);
             }
-            let res = {};
-            result.forEach((o) => {
-              res[o.name] = o.value;
+            result.toArray((err, docs) => {
+              if (err) {
+                return reject(err);
+              }
+              let res = {};
+              docs.forEach((o) => {
+                res[o.name] = o.value;
+              });
+              result.close();
+              resolve(res);
             });
-            resolve(res);
           });
       });
     });
