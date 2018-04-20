@@ -13,6 +13,7 @@ class LocalAccountStorage extends IAccountStorage {
   constructor(options) {
     super();
     this.ds = options.dataSource;
+    this.passwordMinLength = options.passwordMinLength;
   }
 
   init() {
@@ -118,7 +119,7 @@ class LocalAccountStorage extends IAccountStorage {
       .then(user => {
           if (user) {
             if (!user.pwd || !pwd) {
-              if (!user.pwd && passwordMinLength && pwd) {
+              if (!user.pwd && this.passwordMinLength && pwd) {
                 throw new Error('Учетная запись не защищена паролем.');
               }
               return user;
@@ -138,10 +139,10 @@ class LocalAccountStorage extends IAccountStorage {
               });
             });
           }
-          throw new Error('Пользователь не зарегистрирован.');
+	  return null;
         }
       )
-      .then((user) => new User(user));
+      .then((user) => user ? new User(user) : null);
   }
 
   /**
