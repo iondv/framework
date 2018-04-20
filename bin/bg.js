@@ -10,6 +10,7 @@ const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
+const path = require('path');
 errorSetup(config.lang || 'ru');
 
 let params = {};
@@ -27,16 +28,17 @@ process.argv.forEach(function (val) {
 });
 
 let context = {};
-if (params.config) {
-  context = require(params.config).di;
+if (params.path) {
+  context = require(path.join(params.path, 'config')).di;
 }
 
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}, context || {}), {}, 'boot', ['auth']))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background'])
+  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'background']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then(() => di('bg', context, {}, 'app', ['background'], params.path))
   .then((scope) => {
     let worker = scope[params.task];
     if (!worker) {
