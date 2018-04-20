@@ -42,7 +42,6 @@ function checkValue(conf, dv) {
   }
   if (Array.isArray(conf)) {
     if (conf.length) {
-      let res = false;
       for (let i = 0; i < conf.length; i++) {
         if (typeof conf[i] === 'number') {
           if (conf[i] === dv) {
@@ -52,7 +51,7 @@ function checkValue(conf, dv) {
           return true;
         }
       }
-      return res;
+      return false;
     }
   } else if (typeof conf === 'number') {
     if (dv % conf !== 0) {

@@ -1963,14 +1963,14 @@ function MongoDs(config) {
       if (options.sort) {
         r = r.sort(options.sort);
       }
-    }
 
-    if (options.offset) {
-      r = r.skip(options.offset);
-    }
+      if (options.offset) {
+        r = r.skip(options.offset);
+      }
 
-    if (options.count) {
-      r = r.limit(options.count);
+      if (options.count) {
+        r = r.limit(options.count);
+      }
     }
 
     r.batchSize(options.batchSize || options.count || 1);
