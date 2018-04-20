@@ -1,14 +1,14 @@
 {
-  "license": "MIT", 
-  "name": "ion-web-platform", 
-  "engines": {
-    "node": ">=8.9.1"
-  }, 
   "lint-staged": {
     "*.js": [
       "eslint --fix", 
       "git add"
     ]
+  }, 
+  "license": "MIT", 
+  "name": "ion-web-platform", 
+  "engines": {
+    "node": ">=8.9.1"
   }, 
   "directories": {
     "test": "test"
@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/ion-portal.git", 
     "type": "git"
   }, 
-  "version": "1.8.51", 
+  "version": "1.8.53", 
   "dependencies": {
     "base64-js": "^1.2.1", 
     "locale": "^0.1.0", 
