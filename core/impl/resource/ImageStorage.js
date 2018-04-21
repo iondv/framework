@@ -123,6 +123,13 @@ function ImageStorage(options) { // jshint ignore:line
   }
 
   /**
+   * @returns {ResourceStorage}
+   */
+  this.getFileStorage = function () {
+    return fileStorage;
+  }
+
+  /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} [directory]
    * @param {{}} [opts]
