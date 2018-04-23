@@ -16,7 +16,7 @@ const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
 
-/* jshint maxcomplexity: 20, maxstatements: 30 */
+/* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
  * @param {{storageBase: String, urlBase: String, dataSource: DataSource, fragmentation: String}} options
  * @constructor

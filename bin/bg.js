@@ -9,6 +9,7 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const extendDi = require('core/extendModuleDi');
 const extend = require('extend');
 const path = require('path');
 errorSetup(config.lang || 'ru');
@@ -28,8 +29,10 @@ process.argv.forEach(function (val) {
 });
 
 let context = {};
+let moduleName = 'bg';
 if (params.path) {
   context = require(path.join(params.path, 'config')).di;
+  moduleName = path.basename(params.path);
 }
 
 di('boot', config.bootstrap,
@@ -38,7 +41,7 @@ di('boot', config.bootstrap,
   }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background'])
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'background']))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
-  .then(() => di('bg', context, {}, 'app', ['background'], params.path))
+  .then(() => di(moduleName, extendDi(moduleName, context), {}, 'app', ['background'], params.path))
   .then((scope) => {
     let worker = scope[params.task];
     if (!worker) {
