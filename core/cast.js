@@ -18,7 +18,12 @@ var cast = module.exports = function (value, type) {
     return result;
   }
 
-  if (type === PropertyTypes.STRING) {
+  if (
+    type === PropertyTypes.STRING ||
+    type === PropertyTypes.TEXT ||
+    type === PropertyTypes.HTML ||
+    type === PropertyTypes.URL
+  ) {
     return value.toString();
   }
 
@@ -30,7 +35,8 @@ var cast = module.exports = function (value, type) {
         return Boolean(value);
       }
     }break;
-    case PropertyTypes.DATETIME: return value ? new Date(value) : null;
+    case PropertyTypes.DATETIME:
+      return value ? (value instanceof Date ? value : new Date(value)) : null;
     case PropertyTypes.REAL:
     case PropertyTypes.DECIMAL: {
       value = parseFloat(value);

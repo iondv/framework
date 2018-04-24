@@ -16,12 +16,40 @@ function User(data, coactors, tz) {
     return data.name || this.id();
   };
 
+  this.type = function () {
+    return data.type;
+  };
+
+  this.email = function () {
+    return (data.properties && data.properties.email) || data.email;
+  };
+
+  this.pwdDate = function () {
+    return data.pwdDate;
+  };
+
+  this.pwdHash = function () {
+    return data.pwd;
+  };
+
   this.toString = function () {
     return this.name();
   };
 
   this.properties = function () {
     return data.properties || {};
+  };
+
+  this.setTz = function (tz) {
+    timezone = tz;
+  };
+
+  this.setCoactors = function (ca2) {
+    ca = Object.assign(ca, ca2);
+  };
+
+  this.setProperties = function (properties) {
+    data.properties = Object.assign(data.properties || {}, properties);
   };
 
   this.isMe = function (sid) {

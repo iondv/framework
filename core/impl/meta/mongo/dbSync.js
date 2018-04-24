@@ -160,7 +160,7 @@ function MongoDbSync(options) {
    * @param {String} namespace
    * @returns {Promise}
    */
-  function findClassRoot(cm, namespace, metaCollection, done) {
+  function findClassRoot(cm, namespace, metaCollection, done, h) {
     if (!cm.ancestor) {
       return done(null, cm);
     }
@@ -177,7 +177,10 @@ function MongoDbSync(options) {
         return done(err);
       }
       if (anc) {
-        findClassRoot(anc, namespace, metaCollection, done);
+        if (Array.isArray(h)) {
+          h.unshift(anc);
+        }
+        findClassRoot(anc, namespace, metaCollection, done, h);
       } else {
         done(new Error('Класс ' + cn.name + '@' + namespace + ' не найден!'));
       }
@@ -223,7 +226,7 @@ function MongoDbSync(options) {
    * @param {String} namespace
    * @private
    */
-  function addIndexes(cm, rcm, namespace) {
+  function addIndexes(cm, rcm, namespace, h) {
     /**
      * @param {Collection} collection
      */
@@ -298,11 +301,22 @@ function MongoDbSync(options) {
         };
       }
 
+      function fillProps(props, cm) {
+        for (let i = 0; i < cm.properties.length; i++) {
+          props[cm.properties[i].name] = cm.properties[i];
+        }
+      }
+
       let promise = createIndexPromise(cm.key, true)();
       promise = promise.then(createIndexPromise('_class', false));
 
       let fullText = [];
       let props = {};
+
+      if (Array.isArray(h)) {
+        h.forEach((anc) => fillProps(props, anc));
+      }
+      
       for (let i = 0; i < cm.properties.length; i++) {
         props[cm.properties[i].name] = cm.properties[i];
         if (
@@ -339,15 +353,15 @@ function MongoDbSync(options) {
 
       if (cm.compositeIndexes) {
         for (let i = 0; i < cm.compositeIndexes.length; i++) {
-          let tmp = false;
+          let nlbl = false;
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
             if (props[cm.compositeIndexes[i].properties[j]].nullable) {
-              tmp = true;
+              nlbl = true;
               break;
             }
           }
           promise = promise.then(
-            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, tmp)
+            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, nlbl)
           );
         }
       }
@@ -366,18 +380,22 @@ function MongoDbSync(options) {
      */
     return function (collection) {
       let cn = (cm.namespace ? cm.namespace + '_' : '') + cm.name;
-      let inc = {};
+      let steps = {};
+      let adjustments = {};
+      let counters = {};
       for (let i = 0; i < cm.properties.length; i++) {
         let p = cm.properties[i];
         if (p.type === 6 && p.autoassigned === true) {
+          counters[p.name] = 0;
           if (p.unique || (Array.isArray(cm.keys) && cm.keys.length === 1 && cm.keys[0] === p.name)) {
-            inc[p.name] = {step: 1, adjust: true};
+            steps[p.name] = 1;
+            adjustments[p.name] = true;
           } else {
-            inc[p.name] = 1;
+            steps[p.name] = 1;
           }
         }
       }
-      if (Object.keys(inc).length > 0) {
+      if (Object.keys(steps).length > 0) {
         return getSysColl(AUTOINC_COLL).then((autoinc) => {
           return new Promise((resolve, reject) => {
             autoinc.find({__type: cn}).limit(1).next((err, c) => {
@@ -386,16 +404,26 @@ function MongoDbSync(options) {
               }
 
               if (c && c.counters) {
-                for (var nm in c.counters) {
-                  if (c.counters.hasOwnProperty(nm) && inc.hasOwnProperty(nm)) {
-                    inc[nm] = c.counters[nm];
+                for (let nm in c.counters) {
+                  if (
+                    c.counters.hasOwnProperty(nm) &&
+                    counters.hasOwnProperty(nm) &&
+                    typeof c.counters[nm] === 'number'
+                  ) {
+                    counters[nm] = c.counters[nm];
                   }
                 }
               }
 
               autoinc.updateOne(
                 {__type: cn},
-                {$set: {counters: inc}},
+                {
+                  $set: {
+                    counters: counters,
+                    steps: steps,
+                    adjust: adjustments
+                  }
+                },
                 {upsert: true},
                 (err) => err ? reject(err) :resolve(collection)
               );
@@ -419,16 +447,16 @@ function MongoDbSync(options) {
         namespace = classMeta.namespace || namespace || null;
         classMeta.namespace = namespace;
         return new Promise((resolve, reject) => {
+          let chierarchy = [];
           findClassRoot(classMeta, namespace, metaCollection, (err, cm) => {
             if (err) {
               return reject(err);
             }
             createCollection(cm, namespace).
-            then(addAutoInc(classMeta)).
-            then(addIndexes(classMeta, cm, namespace)).
+            then(addAutoInc(classMeta)).then(addIndexes(classMeta, cm, namespace, chierarchy)).
             then(function () {
               delete classMeta._id;
-              log.log('Регистрирация класс ' + classMeta.name + '@' + namespace);
+              log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
               metaCollection.updateOne(
                 {
                   name: classMeta.name,
@@ -446,7 +474,8 @@ function MongoDbSync(options) {
                 }
               );
             }).catch(reject);
-          });
+            },
+            chierarchy);
         });
       });
   };

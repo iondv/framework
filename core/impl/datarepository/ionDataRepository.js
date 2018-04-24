@@ -76,7 +76,7 @@ function IonDataRepository(options) {
 
   this.namespaceSeparator = options.namespaceSeparator || '_';
 
-  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 0 : options.maxEagerDepth);
+  this.maxEagerDepth = -(isNaN(options.maxEagerDepth) ? 3 : options.maxEagerDepth);
 
   function getAttrs(key, cm) {
     if (cm) {
@@ -293,9 +293,8 @@ function IonDataRepository(options) {
    * @param {{}} attrs
    * @param {{}} reenrich
    * @param {{}} loaded
-   * @param {Boolean} [linksByRef]
    */
-  function prepareRefEnrichment(item, property, attrs, loaded, linksByRef) {
+  function prepareRefEnrichment(item, property, attrs, loaded) {
     let refc = property.meta._refClass;
     item.references = item.references || {};
     if (refc) {
@@ -326,17 +325,14 @@ function IonDataRepository(options) {
           attrs[pn].filter.push(() => {
             let ldd = null;
             if (!property.meta.backRef && (ldd = checkLoaded(refc, v, loaded))) {
-              ldd = linksByRef ? ldd : _this._wrap(ldd.getClassName(), ldd.base);
               item.references[property.getName()] = ldd;
-              if (linksByRef) {
-                attrs[pn].reenrich[ldd.getItemId()] = ldd;
-              }
+              attrs[pn].reenrich[ldd.getItemId()] = ldd;
               return null;
             }
             return v;
           });
         }
-      } else if (linksByRef) {
+      } else {
         attrs[pn].reenrich[item.references[property.getName()].getItemId()] = item.references[property.getName()];
       }
     }
@@ -348,9 +344,8 @@ function IonDataRepository(options) {
    * @param {{}} attrs
    * @param {{}} reenrich
    * @param {{}} loaded
-   * @param {Boolean} [linksByRef]
    */
-  function prepareColEnrichment(item, property, attrs, loaded, linksByRef) {
+  function prepareColEnrichment(item, property, attrs, loaded) {
     let refc = property.meta._refClass;
     item.collections = item.collections || {};
     if (refc) {
@@ -391,13 +386,8 @@ function IonDataRepository(options) {
                 if (!attrs[pn].sort) {
                   let ldd = checkLoaded(refc, v, loaded);
                   if (ldd) {
-                    ldd = linksByRef ?
-                      ldd :
-                      _this._wrap(ldd.getClassName(), ldd.base);
                     item.collections[property.getName()].push(ldd);
-                    if (linksByRef) {
-                      attrs[pn].reenrich[ldd.getItemId()] = ldd;
-                    }
+                    attrs[pn].reenrich[ldd.getItemId()] = ldd;
                     return null;
                   }
                 }
@@ -416,7 +406,7 @@ function IonDataRepository(options) {
             delete attrs[pn].colFilter;
           }
         }
-      } else if (linksByRef) {
+      } else {
         item.collections[property.getName()].forEach((citem) => {
           attrs[pn].reenrich[citem.getItemId()] = citem;
         });
@@ -440,7 +430,7 @@ function IonDataRepository(options) {
   }
 
   function getEnrichList(options) {
-    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, linksByRef, needed} = options;
+    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed} = options;
     return _this._getList(cn,
       {
         sort: sort,
@@ -449,7 +439,6 @@ function IonDataRepository(options) {
         forceEnrichment: forced,
         ___implicitEnrichment: implForced,
         ___loaded: loaded,
-        linksByRef,
         needed
       }
     ).then((items) => {
@@ -531,20 +520,6 @@ function IonDataRepository(options) {
           }
         }
       }
-      let reenrich = Object.values(attr.reenrich);
-      if (reenrich.length) {
-        enrich(
-          reenrich,
-          {
-            nestingDepth: depth - 1,
-            forceEnrichment: forced,
-            ___implicitEnrichment: implForced,
-            ___loaded: loaded,
-            linksByRef,
-            needed
-          }
-        );
-      }
     });
   }
 
@@ -554,9 +529,12 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   function enrich(src2, options) {
-    let {nestingDepth, forceEnrichment, ___loaded, linksByRef, ___implicitEnrichment, needed} = options;
-    nestingDepth = nestingDepth || 0;
     let src = Array.isArray(src2) ? src2 : [src2];
+    if (!src.length) {
+      return Promise.resolve(src2);
+    }
+    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed} = options;
+    nestingDepth = nestingDepth || 0;
     let srcByKey = {};
     let explicitForced = {};
     let implicitForced = {};
@@ -569,7 +547,7 @@ function IonDataRepository(options) {
       let pcl = {};
       for (let i = 0; i < src.length; i++) {
         if (src[i] instanceof Item) {
-          if (linksByRef && ___loaded[src[i].getClassName() + '@' + src[i].getItemId()]) {
+          if (___loaded[src[i].getClassName() + '@' + src[i].getItemId()]) {
             srcByKey[src[i].getItemId()] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
             src[i] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
           } else {
@@ -600,11 +578,11 @@ function IonDataRepository(options) {
               ) {
                 if (props[nm].getType() === PropertyTypes.REFERENCE) {
                   if (typeof item.references[nm] === 'undefined') {
-                    prepareRefEnrichment(item, props[nm], attrs, ___loaded, linksByRef);
+                    prepareRefEnrichment(item, props[nm], attrs, ___loaded);
                   }
                 } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
                   if (typeof item.collections[nm] === 'undefined') {
-                    prepareColEnrichment(item, props[nm], attrs, ___loaded, linksByRef);
+                    prepareColEnrichment(item, props[nm], attrs, ___loaded);
                   }
                 }
               }
@@ -681,9 +659,24 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                linksByRef,
                 needed: needed ? [] : null
               });
+            } else {
+              let reenrich = Object.values(attrs[nm].reenrich);
+              let fe = explicitForced[attrs[nm].attrName];
+
+              if (reenrich.length && fe && fe.length) {
+                return enrich(
+                  reenrich,
+                  {
+                    nestingDepth: nestingDepth - 1,
+                    forceEnrichment: fe,
+                    ___implicitEnrichment: [],
+                    ___loaded,
+                    needed: needed ? [] : null
+                  }
+                );
+              }
             }
           });
       });
@@ -734,14 +727,14 @@ function IonDataRepository(options) {
       cm,
       {
         options: $options
-      }).then(() => prepareFilterValues(cm, $options.filter, $options.joins)).
-    then(function (filter) {
-      $options.filter = filter;
-      return _this.ds.fetch(tn(rcm), $options);
-    }).
-    catch(wrapDsError('getList', obj)).
-    then(
-      function (data) {
+      })
+      .then(() => prepareFilterValues(cm, $options.filter, $options.joins))
+      .then((filter) => {
+        $options.filter = filter;
+        return _this.ds.fetch(tn(rcm), $options);
+      })
+      .catch(wrapDsError('getList', obj))
+      .then((data) => {
         let result = [];
         let fl = [];
         try {
@@ -759,10 +752,9 @@ function IonDataRepository(options) {
         return Promise.all(fl).then(function () {
           return Promise.resolve(result);
         });
-      }
-    ).
-    then((result) => enrich(result, options)).
-    then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
+      })
+      .then((result) => enrich(result, options))
+      .then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
   function ItemIterator(iterator, options) {
@@ -2017,7 +2009,7 @@ function IonDataRepository(options) {
     options = options || {};
 
     if (isEmpty(data)) {
-      return options.skipResult ?
+      return (options.skipResult || !id) ?
         Promise.resolve() :
         this._getItem(classname, id, {nestingDepth: options.nestingDepth});
     }
