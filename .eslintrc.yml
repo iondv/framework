@@ -235,12 +235,12 @@ rules: # Описание правил https://eslint.org/docs/rules/
   function-paren-newline: # Параметры функции с новой строки
     - warn
     - never
-  id-blacklist: # Запрещенные названия переменных и функций (параметры, наименование объектов разрешены)
-    - error
-    - data
-    - e
-    - cb
-    - callback
+  # id-blacklist: # Запрещенные названия переменных и функций (параметры, наименование объектов разрешены)
+   # - error
+   # - data
+   # - e
+   # - cb
+   # - callback
   id-length: # Длина идентификаторов.
     - warn
     - { "min": 2 , "max": 25, # Минимальная длина идентификаторов 2 символа, максимальная 25
@@ -432,7 +432,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
 
   # ECMAScript 6
   arrow-body-style: # Кривые скобки для всех стрелочных функций
-    - error
+    - off
     - always
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
     - error
@@ -445,7 +445,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - {"before": false, "after": true}
   # no-class-assign
-  no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
+  # no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
   # no-const-assign
   # no-dupe-class-members
   no-duplicate-imports: warn # Запрет нескольких строк импорта из одного модуля
