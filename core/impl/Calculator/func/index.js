@@ -38,5 +38,6 @@ module.exports = {
   contains: require('./data/contains'),
   like: require('./string/like'),
   in: require('./arrays/in'),
-  size: require('./data/size')
+  size: require('./data/size'),
+  number2words: require('./produce/number2words')
 };

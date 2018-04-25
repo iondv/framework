@@ -161,6 +161,14 @@ function ResourceStorage() {
     }
     return false;
   };
+
+  /**
+   * @param {StoredFile} file
+   * @returns {Function}
+   */
+  this.stream = function (file) {
+    return this._stream(file);
+  };
 }
 
 module.exports.ResourceStorage = ResourceStorage;

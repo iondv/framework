@@ -1,9 +1,6 @@
 /**
  * Тестируем проверку соответствия файлов меты формату JSON
  */
-
-'use strict';
-
 const path = require('path');
 
 const processDir = require('core/util/read').processDir;
@@ -13,25 +10,24 @@ describe('# Проверка соответствия файлов метада�
   const pathApp = path.join(__dirname, '../../applications');
   it('Проверка соответствия формату JSON в ' + pathApp, (done) => {
     let filesList = [];
+    let errFiles = [];
     processDir(pathApp,
       (nm) => {return nm.substr(-5) === '.json';},
-      (fn) => {filesList.push(fn);},
+      (fn) => {if (fn.indexOf('node_modules') === -1) {
+        filesList.push(fn);
+        try {
+          require(fn);
+        } catch (err) {
+          errFiles.push(fn);
+          console.error('Ошибка в', err.message);
+        }
+      }},
       (err) => {console.error('Ошибка считывания файлов', err);});
-    let errFiles = [];
-    filesList.forEach((fn) => {
-      try {
-        require(fn);
-      } catch (err) {
-        errFiles.push(fn);
-        console.error('Ошибка в', err.message);
-      }
-    });
     if (errFiles.length) {
       done(new Error ('В файлах метаданных и данных ошибка в формате JSON'));
     } else {
       console.info('Проверенно JSON файлов', filesList.length);
       done();
     }
-
   });
 });

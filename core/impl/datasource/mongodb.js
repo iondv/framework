@@ -359,7 +359,7 @@ function MongoDs(config) {
     );
   }
 
-  function prepareGeoJSON(data) {
+  function prepareData(data) {
     for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         if (typeof data[nm] === 'object' && data[nm] && data[nm].type && (data[nm].geometry || data[nm].features)) {
@@ -387,6 +387,11 @@ function MongoDs(config) {
             }
               break;
           }
+        } else if (data[nm] instanceof Date) {
+          if (typeof data[nm].utcOffset !== 'undefined') {
+            data[nm + '__tzoffset'] = data[nm].utcOffset;
+            delete data[nm].utcOffset;
+          }
         }
       }
     }
@@ -400,7 +405,7 @@ function MongoDs(config) {
         return autoInc(type, data)
             .then(
               function (data) {
-                return cleanNulls(c, type, prepareGeoJSON(data));
+                return cleanNulls(c, type, prepareData(data));
               }
             ).then(
               function (data) {
@@ -639,7 +644,7 @@ function MongoDs(config) {
                   return true;
                 }
                 if (typeof arg === 'string' && arg[0] === '$') {
-                  return {[arg]: {$empty: true}};
+                  return {[arg.substr(1)]: {$empty: true}};
                 }
                 return false;
               }
@@ -962,7 +967,7 @@ function MongoDs(config) {
 
     return getCollection(type).then(
       function (c) {
-        return cleanNulls(c, type, prepareGeoJSON(data))
+        return cleanNulls(c, type, prepareData(data))
           .then(
             function (data) {
               return new Promise(function (resolve, reject) {
@@ -1428,11 +1433,11 @@ function MongoDs(config) {
    * @param {String} [prefix]
    * @returns {*}
    */
-  function producePostfilter(find, explicitJoins, prefix) {
+  function producePostfilter(find, explicitJoins, prefix, forRedact) {
     if (Array.isArray(find)) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
-        let tmp = producePostfilter(find[i], explicitJoins, prefix);
+        let tmp = producePostfilter(find[i], explicitJoins, prefix, forRedact);
         if (tmp) {
           result.push(tmp);
         }
@@ -1447,7 +1452,7 @@ function MongoDs(config) {
           } else if (excludeFromPostfilter.indexOf(name) >= 0) {
             return undefined;
           } else {
-            let tmp = producePostfilter(find[name], explicitJoins, prefix);
+            let tmp = producePostfilter(find[name], explicitJoins, prefix, forRedact);
             if (tmp !== undefined) {
               result = result || {};
               if (name[0] !== '$') {
@@ -1460,6 +1465,9 @@ function MongoDs(config) {
                 } else {
                   let {attr, right} = argsToSides(tmp);
                   if (!attr) {
+                    if (forRedact) {
+                      return find;
+                    }
                     return undefined;
                   }
 
@@ -1478,6 +1486,7 @@ function MongoDs(config) {
               }
             }
           }
+          break;
         }
       }
       return result;
@@ -1564,7 +1573,17 @@ function MongoDs(config) {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
                     } else {
-                      result.push({[oper]: [loperand, produceRedactFilter(find[name][oper], explicitJoins, prefix)]});
+                      let tmp = produceRedactFilter(find[name][oper], explicitJoins, prefix);
+                      if (Array.isArray(tmp) && oper !== '$in') {
+                        if (tmp.length === 0) {
+                          tmp = null;
+                        } else if (tmp.length === 1) {
+                          tmp = tmp[0];
+                        }
+                        result.push({$eq: [loperand, {[oper]: tmp}]});
+                      } else {
+                        result.push({[oper]: [loperand, tmp]});
+                      }
                     }
                   }
                 }
@@ -1731,6 +1750,8 @@ function MongoDs(config) {
         if (doGroup || fetchFields) {
           groupStages.push(expr);
           groupStages.push({$project: attrs});
+          attributes.push(...Object.keys(attrs));
+          attributes.filter((value, index, self) => self.indexOf(value) === index);
         }
       }
 
@@ -1740,7 +1761,7 @@ function MongoDs(config) {
         jl = joins.length;
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (analise.needRedact || analise.needPostFilter) {
-          postfilter = producePostfilter(options.filter, lookups);
+          postfilter = producePostfilter(options.filter, lookups, null, true);
           redactFilter = produceRedactFilter(postfilter, lookups);
           postfilter = producePrefilter([], postfilter, [], [], {});
         }
@@ -1855,7 +1876,7 @@ function MongoDs(config) {
     });
   }
 
-  function mergeGeoJSON(data) {
+  function processData(data) {
     for (let nm in data) {
       if (data.hasOwnProperty(nm)) {
         let tmp = data['__geo__' + nm + '_f'];
@@ -1875,6 +1896,13 @@ function MongoDs(config) {
               data[nm] = tmp;
             }
               break;
+          }
+        }
+
+        if (data[nm] instanceof Date) {
+          if (typeof data[nm + '__tzoffset'] !== 'undefined') {
+            data[nm].utcOffset = data[nm + '__tzoffset'];
+            delete data[nm + '__tzoffset'];
           }
         }
       }
@@ -1935,14 +1963,14 @@ function MongoDs(config) {
       if (options.sort) {
         r = r.sort(options.sort);
       }
-    }
 
-    if (options.offset) {
-      r = r.skip(options.offset);
-    }
+      if (options.offset) {
+        r = r.skip(options.offset);
+      }
 
-    if (options.count) {
-      r = r.limit(options.count);
+      if (options.count) {
+        r = r.limit(options.count);
+      }
     }
 
     r.batchSize(options.batchSize || options.count || 1);
@@ -2047,7 +2075,7 @@ function MongoDs(config) {
                   });
                 }
               }).then((docs) => {
-                docs.forEach(mergeGeoJSON);
+                docs.forEach(processData);
                 if (amount !== null) {
                   docs.total = amount;
                 }
@@ -2076,7 +2104,7 @@ function MongoDs(config) {
               return reject(err);
             }
             if (r) {
-              return resolve(mergeGeoJSON(r));
+              return resolve(processData(r));
             }
             resolve(null);
           });
@@ -2262,7 +2290,7 @@ function MongoDs(config) {
                   });
                 }
                 p.then((docs) => {
-                  docs.forEach(mergeGeoJSON);
+                  docs.forEach(processData);
                   resolve(docs.length ? docs[0] : null);
                 }).catch(reject);
               },
@@ -2278,7 +2306,7 @@ function MongoDs(config) {
                 if (err) {
                   return reject(wrapError(err, 'get', type));
                 }
-                resolve(mergeGeoJSON(result));
+                resolve(processData(result));
               });
             } catch (err) {
               throw wrapError(err, 'get', type);

@@ -727,14 +727,14 @@ function IonDataRepository(options) {
       cm,
       {
         options: $options
-      }).then(() => prepareFilterValues(cm, $options.filter, $options.joins)).
-    then(function (filter) {
-      $options.filter = filter;
-      return _this.ds.fetch(tn(rcm), $options);
-    }).
-    catch(wrapDsError('getList', obj)).
-    then(
-      function (data) {
+      })
+      .then(() => prepareFilterValues(cm, $options.filter, $options.joins))
+      .then((filter) => {
+        $options.filter = filter;
+        return _this.ds.fetch(tn(rcm), $options);
+      })
+      .catch(wrapDsError('getList', obj))
+      .then((data) => {
         let result = [];
         let fl = [];
         try {
@@ -752,10 +752,9 @@ function IonDataRepository(options) {
         return Promise.all(fl).then(function () {
           return Promise.resolve(result);
         });
-      }
-    ).
-    then((result) => enrich(result, options)).
-    then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
+      })
+      .then((result) => enrich(result, options))
+      .then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
   function ItemIterator(iterator, options) {

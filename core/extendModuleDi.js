@@ -3,7 +3,7 @@
  */
 'use strict';
 const di = require('./di');
-const extend = require('extend');
+const extend = require('core/extend');
 
 /**
  * @param {String} moduleName
