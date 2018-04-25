@@ -13,6 +13,7 @@ class LocalAccountStorage extends IAccountStorage {
   constructor(options) {
     super();
     this.ds = options.dataSource;
+    this.passwordMinLength = options.passwordMinLength;
   }
 
   init() {
@@ -135,10 +136,10 @@ class LocalAccountStorage extends IAccountStorage {
               });
             });
           }
-          throw new Error('Пользователь не зарегистрирован.');
+	  return null;
         }
       )
-      .then((user) => new User(user));
+      .then((user) => user ? new User(user) : null);
   }
 
   /**

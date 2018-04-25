@@ -9,7 +9,7 @@ const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30, maxcomplexity: 30 */
+/* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
   var _this = this;
@@ -231,7 +231,7 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return (collection) => {
-      function createIndexPromise(props, unique, nullable, type) {
+      function createIndexPromise(props, unique, nullable) {
         return function () {
           let opts = {};
           if (unique) {
@@ -242,14 +242,10 @@ function MongoDbSync(options) {
           }
 
           let indexDef = {};
-          if (typeof props === 'string') {
-            indexDef = props;
-          } else if (Array.isArray(props)) {
-            for (let i = 0; i < props.length; i++) {
-              if (props[i]) {
-                indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
-              }
-            }
+          if (Array.isArray(props)) {
+            props.forEach((p) => {
+              indexDef[p.name] = (p.type === PropertyTypes.GEO) ? '2dsphere' : 1;
+            });
           }
 
           if (Object.getOwnPropertyNames(indexDef).length === 0) {
@@ -307,31 +303,27 @@ function MongoDbSync(options) {
         }
       }
 
-      let promise = createIndexPromise(cm.key, true)();
-      promise = promise.then(createIndexPromise('_class', false));
 
       let fullText = [];
       let props = {};
-
       if (Array.isArray(h)) {
         h.forEach((anc) => fillProps(props, anc));
       }
-      
+
+      let promise = createIndexPromise(cm.key, true);
+      promise = promise.then(createIndexPromise('_class', false, false));
+
       for (let i = 0; i < cm.properties.length; i++) {
         props[cm.properties[i].name] = cm.properties[i];
         if (
-          cm.properties[i].type === PropertyTypes.REFERENCE ||
+          (cm.properties[i].type === PropertyTypes.REFERENCE ||
           cm.properties[i].indexed ||
-          cm.properties[i].unique
+          cm.properties[i].unique) &&
+          cm.properties[i].type !== PropertyTypes.TEXT &&
+          cm.properties[i].type !== PropertyTypes.HTML
         ) {
-          promise = promise.then(
-            createIndexPromise(
-              cm.properties[i].name,
-              cm.properties[i].unique,
-              cm.properties[i].nullable,
-              cm.properties[i].type
-            )
-          );
+          promise = promise
+            .then(createIndexPromise([cm.properties[i]], cm.properties[i].unique, cm.properties[i].nullable));
         }
 
         if (
@@ -354,15 +346,24 @@ function MongoDbSync(options) {
       if (cm.compositeIndexes) {
         for (let i = 0; i < cm.compositeIndexes.length; i++) {
           let nlbl = false;
+          let skip = false;
+          let iprops = [];
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
-              nlbl = true;
+            if (
+              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.TEXT ||
+              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.HTML
+            ) {
+              skip = true;
               break;
             }
+            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+              nlbl = true;
+            }
+            iprops.push(props[cm.compositeIndexes[i].properties[j]]);
           }
-          promise = promise.then(
-            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, nlbl)
-          );
+          if (!skip) {
+            promise = promise.then(createIndexPromise(iprops, cm.compositeIndexes[i].unique, nlbl));
+          }
         }
       }
 
