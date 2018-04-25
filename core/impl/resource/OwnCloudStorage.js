@@ -114,17 +114,6 @@ function OwnCloudStorage(config) {
     };
   }
 
-  /**
-   * @param {StoredFile} file
-   * @returns {Function}
-   */
-  this._stream = function (file) {
-    if (file instanceof StoredFile) {
-      return streamGetter(file.id);
-    }
-    return Promise.resolve(null);
-  };
-
   function checkDir(dir) {
     dir = parseDirId(dir);
     let reqParams = {
