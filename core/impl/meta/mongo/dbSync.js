@@ -310,7 +310,7 @@ function MongoDbSync(options) {
         h.forEach((anc) => fillProps(props, anc));
       }
 
-      let promise = createIndexPromise(cm.key, true);
+      let promise = createIndexPromise(cm.key, true)();
       promise = promise.then(createIndexPromise('_class', false, false));
 
       for (let i = 0; i < cm.properties.length; i++) {

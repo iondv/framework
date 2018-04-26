@@ -44,7 +44,7 @@ function OwnCloudStorage(config) {
   function escape(str) {
     let parts = str.split('/');
     let result = [];
-    parts.forEach(p => {
+    parts.forEach((p) => {
       let r = encodeURIComponent(p);
       r = r.replace(/\(/g, '%28');
       r = r.replace(/\)/g, '%29');
@@ -53,7 +53,7 @@ function OwnCloudStorage(config) {
     return result.join('/');
   }
 
-  function urlResolver(uri, part) {
+  function urlResolver(uri) {
     if (arguments.length > 1) {
       let result = uri;
       for (let i = 1; i < arguments.length; i++) {
@@ -89,7 +89,7 @@ function OwnCloudStorage(config) {
   }
 
   function streamGetter(filePath) {
-    return function (callback) {
+    return (callback) => {
       try {
         let reqParams = {
           uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, filePath)),
@@ -98,14 +98,36 @@ function OwnCloudStorage(config) {
             password: config.password
           }
         };
-        let getStream = request.get(reqParams);
+
+        let obtained = false;
+        let getStream = request.get(reqParams).on('error', (err) => {
+          if (!obtained) {
+            getStream.resume();
+            callback(err);
+          }
+        });
         getStream.pause();
         getStream
-          .on('error', (err) => callback(new Error('problems requesting the file')))
           .on('response', (res) => {
+            obtained = true;
             if (res.statusCode !== 200) {
-              return callback(new Error('file not found'));
+              return callback(new Error('Не удалось получить файл из удаленного хранилища! Код ошибки (' + res.statusCode + ').'));
             }
+
+            let piper = getStream.pipe;
+            let on = getStream.on;
+            getStream.pipe = function (dest) {
+              piper.call(this, dest);
+              getStream.resume();
+              return dest;
+            };
+            getStream.on = function (event) {
+              on.apply(this, arguments);
+              if (event === 'data') {
+                getStream.resume();
+              }
+              return this;
+            };
             callback(null, getStream);
           });
       } catch (err) {
@@ -157,11 +179,11 @@ function OwnCloudStorage(config) {
   function mkdirp(path) {
     let dir = parseDirId(path);
     return checkDir(dir)
-      .then(exists => {
+      .then((exists) => {
         if (exists) {
           return true;
         }
-        let parts = dir.split('/').filter(v => v);
+        let parts = dir.split('/').filter((v) => v);
         let p;
         parts.forEach((part, i) => {
           if (i < parts.length - 1) {
@@ -228,7 +250,7 @@ function OwnCloudStorage(config) {
             }
           };
           return new Promise((resolve, reject) => {
-            reader.pipe(request.put(reqParams, (err, res, body) => {
+            reader.pipe(request.put(reqParams, (err, res) => {
               if (!err && (res.statusCode === 201 || res.statusCode === 204)) {
                 resolve(new StoredFile(id, urlResolver(slashChecker(urlBase), id), {name: fn}, streamGetter(id)));
               } else {
@@ -255,7 +277,7 @@ function OwnCloudStorage(config) {
       }
     };
     return new Promise((resolve,reject) => {
-      request.delete(reqParams, (err, res, body) => {
+      request.delete(reqParams, (err, res) => {
         if (!err && res.statusCode === 204) {
           return resolve(id);
         } else {
@@ -270,10 +292,10 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._fetch = function (ids) {
-    return new Promise(function (resolve,reject) {
+    return new Promise((resolve) => {
       let result = [];
       if (Array.isArray(ids)) {
-        ids.forEach(id => {
+        ids.forEach((id) => {
           let parts = id.split('/');
           result.push(
             new StoredFile(
@@ -305,7 +327,6 @@ function OwnCloudStorage(config) {
           res.set('Content-Encoding', options.encoding);
         }
         file.stream.pipe(res);
-        file.stream.resume();
       } else {
         res.status(404).send('File not found!');
       }
@@ -323,15 +344,15 @@ function OwnCloudStorage(config) {
       }
 
       _this.fetch([decodeURI(fileId)])
-        .then(files => {
+        .then((files) => {
           if (!files[0]) {
-            return res.status(404).send('File not found!');
+            return res.status(404).send('Файл не найден!');
           }
           return files[0].getContents()
             .then(respondFile(req, res))
-            .catch(err => res.status(404).send('File not found!'));
+            .catch(() => res.status(404).send('Файл не найден!'));
         })
-        .catch(err => {
+        .catch((err) => {
           res.status(500).send(err.message);
         });
     };
@@ -523,7 +544,7 @@ function OwnCloudStorage(config) {
       method: 'MOVE'
     };
     return new Promise((resolve,reject) => {
-      request(reqParams, (err, res, body) => {
+      request(reqParams, (err, res) => {
         if (!err && res.statusCode === 201) {
           resolve(urlResolver(slashChecker(dirId, fileName)));
         } else {
@@ -547,8 +568,9 @@ function OwnCloudStorage(config) {
     switch (level) {
       case ShareAccessLevel.READ: return '1';
       case ShareAccessLevel.WRITE: return '15';
+      default:
+        throw new Error('Некорректное значение уровня доступа!');
     }
-    throw new Error('Некорректное значение уровня доступа!');
   }
 
   /**
@@ -621,12 +643,12 @@ function OwnCloudStorage(config) {
       requester = Promise.resolve([parseShareId(share)]);
     }
     return requester
-      .then(shares => {
-        let promise;
-        shares.forEach(share => {
-          promise = promise ? promise.then(()=>shareDeleteConstr(share)) : shareDeleteConstr(share);
+      .then((shares) => {
+        let promise = Promise.resolve();
+        shares.forEach((share) => {
+          promise = promise.then(() => shareDeleteConstr(share));
         });
-        return promise.then(()=>true) || Promise.resolve(true);
+        return promise.then(() => true);
       });
   };
 
@@ -722,9 +744,9 @@ function OwnCloudStorage(config) {
    * @param {String} access
    * @returns {Promise}
    */
-  this._currentShare = function (id, access) {
+  this._currentShare = function (id/*, access*/) {
     return requestShares(parseDirId(id))
-      .then(shares => {
+      .then((shares) => {
         if (shares[0]) {
           return shares[0].url;
         }
