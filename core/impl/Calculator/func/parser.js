@@ -2,6 +2,7 @@
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
+const Errors = require('core/errors/data-repo');
 
 // jshint maxstatements: 50, maxcomplexity: 30
 function findComma(src, start) {
@@ -148,7 +149,13 @@ function objProp(obj, nm, dataRepoGetter, needed) {
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
             let dr = dataRepoGetter();
             if (dr instanceof DataRepository) {
-              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}});
+              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
+                .catch((err) => {
+                  if (err.code === Errors.ITEM_NOT_FOUND) {
+                    return null;
+                  }
+                  return Promise.reject(err);
+                });
             }
           }
           return v;
