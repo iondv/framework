@@ -63,11 +63,9 @@ function toScalar(v, context, type, lang) {
 
   if (typeof v === 'string') {
     switch (type) {
-      case PropertyTypes.DATETIME: {
+      case PropertyTypes.DATETIME:
         v = strToDate(v, lang);
         return v;
-      }
-        break;
       default:
         return cast(v, type);
     }
@@ -109,7 +107,7 @@ function produceContainsFilter(rcm, condition, context, lang) {
       return {
         [Operations.CONTAINS]: [
           '$' + condition.property,
-          ConditionParser(condition.nestedConditions, pm._refClass, context, lang)
+          conditionParser(condition.nestedConditions, pm._refClass, context, lang)
         ]
       };
     } else if (pm.type === PropertyTypes.STRING && condition.value) {
@@ -160,7 +158,7 @@ function produceFilter(condition, type, rcm, context, lang, unar) {
   }
 
   if (Array.isArray(condition.nestedConditions) && condition.nestedConditions.length) {
-    let tmp = ConditionParser(condition.nestedConditions[0], rcm, context);
+    let tmp = conditionParser(condition.nestedConditions[0], rcm, context);
     if (tmp) {
       args.push(tmp);
     }
@@ -203,7 +201,7 @@ function produceAggregationOperation(condition, rcm, context, lang) {
     }
   }
   var result = [an, av, pn];
-  var filter = ConditionParser(condition.nestedConditions, rcm, context, lang);
+  var filter = conditionParser(condition.nestedConditions, rcm, context, lang);
   if (!filter) {
     result.push(filter);
   }
@@ -221,7 +219,7 @@ function produceArray(conditions, rcm, context, lang) {
   let result = [];
   if (Array.isArray(conditions)) {
     for (let i = 0; i < conditions.length; i++) {
-      let tmp = ConditionParser(conditions[i], rcm, context, lang);
+      let tmp = conditionParser(conditions[i], rcm, context, lang);
       if (tmp) {
         result.push(tmp);
       }
@@ -237,8 +235,7 @@ function produceArray(conditions, rcm, context, lang) {
  * @param {String} lang
  * @returns {{} | null}
  */
-function ConditionParser(condition, rcm, context, lang) {
-  var result;
+function conditionParser(condition, rcm, context, lang) {
   if (Array.isArray(condition)) {
     let tmp = produceArray(condition, rcm, context, lang);
     if (tmp) {
@@ -344,7 +341,6 @@ function ConditionParser(condition, rcm, context, lang) {
           case OperationTypes.ABS: return {[Operations.ABS]: tmp};
           default: throw new Error('Некорректный тип операции!');
         }
-        return result;
       } else if (condition.value && condition.value.length) {
         return toScalar(condition.value, context, PropertyTypes.STRING, lang);
       }
@@ -354,5 +350,5 @@ function ConditionParser(condition, rcm, context, lang) {
   // Throw new Error('Мета условий выборки не соответствует спецификации!');
 }
 
-module.exports = ConditionParser;
+module.exports = conditionParser;
 module.exports.toScalar = toScalar;

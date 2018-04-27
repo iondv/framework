@@ -23,6 +23,9 @@ function StoredFile (id, link, options, streamGetter) {
             if (err) {
               return reject(err);
             }
+            if (!stream) {
+              return reject(new Error('Не удалось получить поток чтения файла.'));
+            }
             return resolve({
               name: this.name,
               options: this.options,

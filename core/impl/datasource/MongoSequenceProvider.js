@@ -16,7 +16,7 @@ function MongoSequenceProvider(options) {
      */
     let db = options.dataSource.connection();
     return new Promise((resolve, reject) => {
-      db.collection(COLLECTION, {strict: true}, function (err, c) {
+      db.collection(COLLECTION, {strict: true}, (err, c) => {
         if (!c) {
           try {
             db.createCollection(COLLECTION)
@@ -42,28 +42,49 @@ function MongoSequenceProvider(options) {
           {name: name},
           {$inc: {value: 1}},
           {returnOriginal: false, upsert: true},
-          function (err, result) {
+          (err, result) => err ? reject(err) : resolve(result.value.value)
+        );
+      });
+    });
+  };
+
+  this._reset = function (name, value) {
+    return collection().then((c) => {
+      return new Promise((resolve, reject) => {
+        c.update(
+          {name: name},
+          {value: value || 0},
+          {upsert: true},
+          (err) => {
             if (err) {
               return reject(err);
             }
-            resolve(result.value.value);
+            resolve();
           });
       });
     });
   };
 
-  this._reset = function (name) {
+  this._snapshot = function (name) {
     return collection().then((c) => {
       return new Promise((resolve, reject) => {
-        c.update(
-          {name: name},
-          {value: 0},
-          {upsert: true},
-          function (err, result) {
+        c.find(
+          name ? {name: name} : {},
+          (err, result) => {
             if (err) {
               return reject(err);
             }
-            resolve();
+            result.toArray((err, docs) => {
+              if (err) {
+                return reject(err);
+              }
+              let res = {};
+              docs.forEach((o) => {
+                res[o.name] = o.value;
+              });
+              result.close();
+              resolve(res);
+            });
           });
       });
     });

@@ -116,12 +116,9 @@ class LocalAccountStorage extends IAccountStorage {
           }
         ]
       })
-      .then(user => {
+      .then((user) => {
           if (user) {
             if (!user.pwd || !pwd) {
-              if (!user.pwd && this.passwordMinLength && pwd) {
-                throw new Error('Учетная запись не защищена паролем.');
-              }
               return user;
             }
             if (!checker) {
@@ -182,7 +179,7 @@ class LocalAccountStorage extends IAccountStorage {
         ]
       },
       data
-    ).then(u => new User(u));
+    ).then((u) => new User(u));
   }
 
 
@@ -254,7 +251,7 @@ class LocalAccountStorage extends IAccountStorage {
    * @returns {Promise}
    */
   _disable(id) {
-    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: true}).then(()=>true);
+    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: true}).then(() => true);
   }
 
   /**
@@ -262,7 +259,7 @@ class LocalAccountStorage extends IAccountStorage {
    * @returns {Promise}
    */
   _enable(id) {
-    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: false}).then(()=>true);
+    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: false}).then(() => true);
   }
 }
 
