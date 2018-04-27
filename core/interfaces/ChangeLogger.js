@@ -82,7 +82,7 @@ function ChangeLogger() {
    * @param {{}} [base]
    * @returns {Promise}
    */
-  this.LogChange = function (type, objectClass, objectId, updates, base) {
+  this.logChange = function (type, objectClass, objectId, updates, base) {
     if (!logRecordTypes.hasOwnProperty(type.toUpperCase())) {
       throw new Error('Неверно указан тип записи журнала изменений!');
     }
@@ -116,7 +116,7 @@ function ChangeLogger() {
     }
 
     if (since && till && since.getTime() > till.getTime()) {
-      var tmp = till;
+      let tmp = till;
       till = since;
       since = tmp;
     }

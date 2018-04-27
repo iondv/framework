@@ -49,7 +49,7 @@ function MongoDbSync(options) {
   function sysIndexer(tableType) {
     return (collection) => {
       switch (tableType) {
-        case 'meta': {
+        case 'meta':
           return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
@@ -62,8 +62,7 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
               );
           });
-        }break;
-        case 'view': {
+        case 'view':
           return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
@@ -78,8 +77,7 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
             );
           });
-        }break;
-        case 'nav': {
+        case 'nav':
           return new Promise(function (resolve, reject) {
             collection.createIndex({
                 namespace: 1,
@@ -93,12 +91,11 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
             );
           });
-        }break;
-        case 'user_type': {
+        case 'user_type':
           return Promise.resolve(collection);
-        }break;
+        default:
+          throw new Error('Unsupported table type specified!');
       }
-      throw new Error('Unsupported table type specified!');
     };
   }
 
@@ -110,11 +107,10 @@ function MongoDbSync(options) {
       case 'nav': tn = _this.navTableName; break;
       case 'user_type': tn = _this.userTypeTableName; break;
       case 'workflow': tn = _this.workflowTableName; break;
+      default:
+        throw new Error('Unsupported meta type specified!');
     }
 
-    if (!tn) {
-      return Promise.reject('Unsupported meta type specified!');
-    }
     return new Promise((resolve, reject) => {
       db().collection(tn, {strict: true}, (err, collection) => {
         if (collection) {
@@ -244,10 +240,13 @@ function MongoDbSync(options) {
           let indexDef = {};
           if (Array.isArray(props)) {
             props.forEach((p) => {
-              indexDef[p.name] = (p.type === PropertyTypes.GEO) ? '2dsphere' : 1;
+              if (typeof p === 'object') {
+                indexDef[p.name] = (p.type === PropertyTypes.GEO) ? '2dsphere' : 1;
+              } else if (typeof p === 'string') {
+                indexDef[p] = 1;
+              }
             });
           }
-
           if (Object.getOwnPropertyNames(indexDef).length === 0) {
             return Promise.resolve();
           }
@@ -310,17 +309,20 @@ function MongoDbSync(options) {
         h.forEach((anc) => fillProps(props, anc));
       }
 
-      let promise = createIndexPromise(cm.key, true)();
-      promise = promise.then(createIndexPromise('_class', false, false));
+      let promise = cm.key ? createIndexPromise(Array.isArray(cm.key) ? cm.key : [cm.key], true)() : Promise.resolve();
+      if (!cm.ancestor) {
+        promise = promise.then(createIndexPromise(['_class'], false));
+      }
 
       for (let i = 0; i < cm.properties.length; i++) {
-        props[cm.properties[i].name] = cm.properties[i];
+        let pm = cm.properties[i];
+        props[pm.name] = pm;
         if (
-          (cm.properties[i].type === PropertyTypes.REFERENCE ||
-          cm.properties[i].indexed ||
-          cm.properties[i].unique) &&
-          cm.properties[i].type !== PropertyTypes.TEXT &&
-          cm.properties[i].type !== PropertyTypes.HTML
+          (
+            pm.type === PropertyTypes.REFERENCE || pm.indexed || pm.unique
+          ) &&
+          pm.type !== PropertyTypes.TEXT &&
+          pm.type !== PropertyTypes.HTML
         ) {
           promise = promise
             .then(createIndexPromise([cm.properties[i]], cm.properties[i].unique, cm.properties[i].nullable));
