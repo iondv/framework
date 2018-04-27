@@ -353,22 +353,22 @@ function MongoDbSync(options) {
           let skip = false;
           let iprops = [];
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-            try {
+            let pmn = cm.compositeIndexes[i].properties[j];
+            if (!props.hasOwnProperty(pmn)) {
+              throw new Error(`Атрибут ${pmn} указанный в составном индексе отсутствует в классе "${cm.caption} (${cm.name})".`);
+            }
+
             if (
-              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.TEXT ||
-              props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.HTML
+              props[pmn].type === PropertyTypes.TEXT ||
+              props[pmn].type === PropertyTypes.HTML
             ) {
               skip = true;
               break;
             }
-            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
+            if (props[pmn].nullable) {
               nlbl = true;
             }
-            iprops.push(props[cm.compositeIndexes[i].properties[j]]);
-            } catch (e) {
-              console.error('Ошибка в классе %s(%s) композитном индексе %s атрибут %s с ошибкой\n',
-                cm.name, cm.caption, util.inspect(cm.compositeIndexes[i]), cm.compositeIndexes[i].properties[j], e);
-            }
+            iprops.push(props[pmn]);
           }
           if (!skip) {
             promise = promise.then(createIndexPromise(iprops, cm.compositeIndexes[i].unique, nlbl));
