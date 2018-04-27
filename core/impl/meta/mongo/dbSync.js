@@ -9,10 +9,12 @@ const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
 
+const util = require('util');
+
 /* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
-  var _this = this;
+  let _this = this;
 
   /**
    * @type {String}
@@ -349,6 +351,7 @@ function MongoDbSync(options) {
           let skip = false;
           let iprops = [];
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
+            try {
             if (
               props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.TEXT ||
               props[cm.compositeIndexes[i].properties[j]].type === PropertyTypes.HTML
@@ -360,6 +363,10 @@ function MongoDbSync(options) {
               nlbl = true;
             }
             iprops.push(props[cm.compositeIndexes[i].properties[j]]);
+            } catch (e) {
+              console.error('Ошибка в классе %s(%s) композитном индексе %s атрибут %s с ошибкой\n',
+                cm.name, cm.caption, util.inspect(cm.compositeIndexes[i]), cm.compositeIndexes[i].properties[j], e);
+            }
           }
           if (!skip) {
             promise = promise.then(createIndexPromise(iprops, cm.compositeIndexes[i].unique, nlbl));
