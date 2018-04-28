@@ -287,7 +287,7 @@ function SecuredDataRepository(options) {
       );
 
       permMap[item.getClassName() + '@' + item.getItemId()].__attr =
-       attrPermissions(item, permMap[item.getClassName() + '@' + item.getItemId()], permissions) || {};
+        attrPermMap(item, permissions) || {};
 
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
@@ -423,17 +423,10 @@ function SecuredDataRepository(options) {
     return result;
   }
 
-  /**
-   * @param {Item} item
-   * @param {{}} permissions
-   * @returns {{}}
-   */
-  function attrPermissions(item, ipermissions, permissions, processed) {
-    processed = processed || {};
+  function attrPermMap(item, permissions) {
     let props = item.getProperties();
     let result = {};
     let global = permissions[globalMarker] || {};
-    let iperm = merge(true, ipermissions || {}, global);
     for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
         let p = props[nm];
@@ -445,29 +438,10 @@ function SecuredDataRepository(options) {
           let rperm = merge(true, permissions[tmp] || {}, global);
           let rcperm = merge(true, permissions[classPrefix + cn] || {}, global);
 
-          /*
-          if (ri instanceof Item) {
-            tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
-            rperm = merge(true, permissions[tmp] || {}, rperm);
-            rcperm = merge(true, permissions[classPrefix + ri.getClassName()] || {}, rcperm);
-            if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
-              processed[ri.getClassName() + '@' + ri.getItemId()] = true;
-              ri.attrPermissions = attrPermissions(ri, merge(true, rperm, rcperm), permissions, processed);
-            }
-          }
-           */
-          result[p.getName()][Permissions.READ] =
-            iperm[Permissions.READ] &&
-            (rperm[Permissions.READ] || rcperm[Permissions.READ]);
+          result[p.getName()][Permissions.READ] = rperm[Permissions.READ] || rcperm[Permissions.READ];
 
           if (p.meta.backRef) {
-            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] &&
-              (
-                rperm[Permissions.WRITE] ||
-                rcperm[Permissions.WRITE]
-              );
-          } else {
-            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
+            result[p.getName()][Permissions.WRITE] = rperm[Permissions.WRITE] || rcperm[Permissions.WRITE];
           }
 
           result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
@@ -480,17 +454,53 @@ function SecuredDataRepository(options) {
 
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
-          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && rcperm[Permissions.READ];
+          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ];
 
-          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && rcperm[Permissions.WRITE];
+          result[p.getName()][Permissions.WRITE] = rcperm[Permissions.WRITE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = iperm[Permissions.WRITE] && rcperm[Permissions.USE];
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
 
           result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = true;
 
           result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = iperm[Permissions.WRITE] && rcperm[Permissions.DELETE];
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE];
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {Item} item
+   * @param {{}} permissions
+   * @returns {{}}
+   */
+  function attrPermissions(item, ipermissions, permissions) {
+    let props = item.getProperties();
+    let result = {};
+    let iperm = merge(true, ipermissions || {}, global);
+    for (let nm in props) {
+      if (props.hasOwnProperty(nm)) {
+        let p = props[nm];
+        let pperm = permissions[p.getName()] || {};
+        result[p.getName()] = {};
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && pperm[Permissions.READ];
+
+          if (p.meta.backRef) {
+            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && pperm[Permissions.WRITE];
+          } else {
+            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
+          }
+        } else if (p.getType() === PropertyTypes.COLLECTION) {
+          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && pperm[Permissions.READ];
+
+          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && pperm[Permissions.WRITE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = iperm[Permissions.WRITE] && pperm[Permissions.ATTR_CONTENT_CREATE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = iperm[Permissions.WRITE] && pperm[Permissions.ATTR_CONTENT_DELETE];
         } else {
           result[p.getName()][Permissions.READ] = iperm[Permissions.READ];
           result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
@@ -607,8 +617,8 @@ function SecuredDataRepository(options) {
         )
         .then(() => noDrill ? null :
           ((statics && statics.__attr) ?
-            clone(statics.__attr) :
-            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, ap))))
+            attrPermissions(item, item.permissions, clone(statics.__attr)) :
+            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
         .then((ap) => {
           item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           if (!noDrill && item.permissions[Permissions.READ]) {
