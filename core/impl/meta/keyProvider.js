@@ -59,13 +59,18 @@ function MetaKeyProvider(options) {
       let keyProps = cm.getKeyProperties();
       if (keyProps.length === 1) {
         let pm = cm.getPropertyMeta(keyProps[0]);
+        if (!pm) {
+          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+        }
         return {[keyProps[0]]: cast(id, pm.type)};
       }
       let sep = getSeparator(cm.getCanonicalName());
       let parts = id.split(sep);
-      let pm;
       for (let i = 0; i < keyProps.length; i++) {
-        pm = cm.getPropertyMeta(keyProps[i]);
+        let pm = cm.getPropertyMeta(keyProps[i]);
+        if (!pm) {
+          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+        }
         result[keyProps[i]] = cast(parts[i], pm.type);
       }
     }
