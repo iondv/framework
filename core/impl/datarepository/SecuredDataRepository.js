@@ -454,7 +454,7 @@ function SecuredDataRepository(options) {
 
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
-          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ];
+          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ] || classRoleConfig(p.meta._refClass);
 
           result[p.getName()][Permissions.WRITE] = rcperm[Permissions.WRITE];
 
