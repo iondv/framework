@@ -88,6 +88,8 @@ function SecuredDataRepository(options) {
   // var attrPrefix = options.attrPrefix || 'a:::';
   var globalMarker = options.globalMarker || '*';
 
+  var rolePermissionCache = {};
+
   this.init = function () {
     if (options.roleMap && options.accessManager instanceof RoleAccessManager) {
       /**
@@ -283,20 +285,10 @@ function SecuredDataRepository(options) {
         permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
-      /*
-       let roleConf = classRoleConfig(item.getMetaClass());
-       if (
-       !roleConf &&
-       (
-       permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] ||
-       permissions[classPrefix + item.getClassName()] ||
-       permissions[globalMarker]
-       )
-       ) {
-       permMap[item.getClassName() + '@' + item.getItemId()].__attr =
+
+      permMap[item.getClassName() + '@' + item.getItemId()].__attr =
        attrPermissions(item, permMap[item.getClassName() + '@' + item.getItemId()], permissions) || {};
-       }
-       */
+
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
         if (p.meta.type === PropertyTypes.REFERENCE || p.meta.type === PropertyTypes.COLLECTION) {
@@ -448,10 +440,12 @@ function SecuredDataRepository(options) {
         result[p.getName()] = {};
         if (p.getType() === PropertyTypes.REFERENCE) {
           let ri = p.evaluate();
-          let tmp = itemPrefix + p.meta._refClass.getCanonicalName() + '@' + p.getValue();
+          let cn = ri ? ri.getClassName() : p.meta._refClass.getCanonicalName();
+          let tmp = itemPrefix + cn + '@' + p.getValue();
           let rperm = merge(true, permissions[tmp] || {}, global);
-          let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
+          let rcperm = merge(true, permissions[classPrefix + cn] || {}, global);
 
+          /*
           if (ri instanceof Item) {
             tmp = itemPrefix + ri.getClassName() + '@' + ri.getItemId();
             rperm = merge(true, permissions[tmp] || {}, rperm);
@@ -461,7 +455,7 @@ function SecuredDataRepository(options) {
               ri.attrPermissions = attrPermissions(ri, merge(true, rperm, rcperm), permissions, processed);
             }
           }
-
+           */
           result[p.getName()][Permissions.READ] =
             iperm[Permissions.READ] &&
             (rperm[Permissions.READ] || rcperm[Permissions.READ]);
@@ -562,6 +556,9 @@ function SecuredDataRepository(options) {
               let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
               if (roleConf[role].attribute) {
                 let actor = item.property(roleConf[role].attribute).evaluate();
+                if (!actor) {
+                  actor = item.property(roleConf[role].attribute).getValue();
+                }
                 if (actor) {
                   actor = Array.isArray(actor) ? actor : [actor];
                   actor.forEach((actor) => {
@@ -570,8 +567,17 @@ function SecuredDataRepository(options) {
                     }
                     if (options.user.isMe(actor)) {
                       result = result
-                        .then(() => aclProvider.getPermissions(role, resid, true))
+                        .then(() => {
+                          if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
+                            return rolePermissionCache[role];
+                          }
+                          return aclProvider.getPermissions(role, resid, true);
+                        })
                         .then((permissions) => {
+                          if (!rolePermissionCache[role]) {
+                            rolePermissionCache[role] = {};
+                          }
+                          rolePermissionCache[role][resid] = permissions[resid] || {};
                           if (permissions[resid]) {
                             for (let p in permissions[resid]) {
                               if (permissions[resid].hasOwnProperty(p)) {
@@ -674,7 +680,7 @@ function SecuredDataRepository(options) {
       let fe = Array.isArray(opts.forceEnrichment) ? opts.forceEnrichment.slice(0) : [];
       opts.forceEnrichment = opts.forceEnrichment || [];
 
-      fe.forEach(elp => {
+      fe.forEach((elp) => {
         if (Array.isArray(elp)) {
           for (let i = 0; i < elp.length; i++) {
             let tmp = elp.slice(0, i);
@@ -695,7 +701,19 @@ function SecuredDataRepository(options) {
       for (let role in roleConf) {
         if (roleConf.hasOwnProperty(role)) {
           if (roleConf[role].attribute) {
-            opts.forceEnrichment.push(roleConf[role].attribute.split('.'));
+            let a = roleConf[role].attribute.split('.');
+            let p = cm.getPropertyMeta(a[0]);
+            if (p.type !== PropertyTypes.REFERENCE && p.type !== PropertyTypes.COLLECTION) {
+              continue;
+            }
+            if (p.type === PropertyTypes.REFERENCE) {
+              if (a.length === 1) {
+                a = [];
+              }
+            }
+            if (a.length) {
+              opts.forceEnrichment.push(a);
+            }
           }
         }
       }
@@ -715,7 +733,7 @@ function SecuredDataRepository(options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
     return dataRepo.getItem(obj, id || '', opts)
-      .then(item => item ?
+      .then((item) => item ?
         getPermMap([item], moptions)
           .then((permMap) => setItemPermissions(opts, permMap)(item)) :
         item
@@ -768,7 +786,7 @@ function SecuredDataRepository(options) {
           return accessible;
         }
         return getItem(classname, id, moptions)
-          .then((item)=>{
+          .then((item) => {
             if (!item) {
               return false;
             }
@@ -841,7 +859,7 @@ function SecuredDataRepository(options) {
           return accessible;
         }
         return getItem(classname, id, moptions)
-          .then((item)=>{
+          .then((item) => {
             if (!item) {
               return false;
             }
@@ -887,7 +905,7 @@ function SecuredDataRepository(options) {
         });
         return p.catch((e) => {
           return e === breaker ? Promise.resolve(false) : Promise.reject(e);
-        }).then(()=>true);
+        }).then(() => true);
       });
   }
 
