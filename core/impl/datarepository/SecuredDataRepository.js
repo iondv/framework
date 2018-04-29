@@ -438,33 +438,33 @@ function SecuredDataRepository(options) {
           let rperm = merge(true, permissions[tmp] || {}, global);
           let rcperm = merge(true, permissions[classPrefix + cn] || {}, global);
 
-          result[p.getName()][Permissions.READ] = rperm[Permissions.READ] || rcperm[Permissions.READ];
+          result[p.getName()][Permissions.READ] = rperm[Permissions.READ] || rcperm[Permissions.READ] || false;
 
           if (p.meta.backRef) {
-            result[p.getName()][Permissions.WRITE] = rperm[Permissions.WRITE] || rcperm[Permissions.WRITE];
+            result[p.getName()][Permissions.WRITE] = rperm[Permissions.WRITE] || rcperm[Permissions.WRITE] || false;
           }
 
-          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE] || false;
 
-          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = rcperm[Permissions.READ] || rperm[Permissions.READ];
+          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = rcperm[Permissions.READ] || rperm[Permissions.READ] || false;
 
-          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE] || rperm[Permissions.WRITE];
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE] || rperm[Permissions.WRITE] || false;
 
-          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || rperm[Permissions.DELETE];
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || rperm[Permissions.DELETE] || false;
 
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
-          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ] || classRoleConfig(p.meta._refClass);
+          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ] || Boolean(classRoleConfig(p.meta._refClass));
 
-          result[p.getName()][Permissions.WRITE] = rcperm[Permissions.WRITE];
+          result[p.getName()][Permissions.WRITE] = rcperm[Permissions.USE] || Boolean(classRoleConfig(p.meta._refClass));
 
-          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE];
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE] || false;
 
           result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = true;
 
-          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE];
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = rcperm[Permissions.WRITE] || Boolean(classRoleConfig(p.meta._refClass));
 
-          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE];
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || Boolean(classRoleConfig(p.meta._refClass));
         }
       }
     }
@@ -486,24 +486,37 @@ function SecuredDataRepository(options) {
         let pperm = permissions[p.getName()] || {};
         result[p.getName()] = {};
         if (p.getType() === PropertyTypes.REFERENCE) {
-          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && pperm[Permissions.READ];
+          result[p.getName()][Permissions.READ] = (iperm[Permissions.READ] || false) && pperm[Permissions.READ];
 
           if (p.meta.backRef) {
-            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && pperm[Permissions.WRITE];
+            result[p.getName()][Permissions.WRITE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.WRITE];
           } else {
-            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
+            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
           }
+
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_CREATE];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_VIEW];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_EDIT];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_DELETE];
+
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] && pperm[Permissions.READ];
+          result[p.getName()][Permissions.READ] = (iperm[Permissions.READ] || false) && pperm[Permissions.READ];
 
-          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] && pperm[Permissions.WRITE];
+          result[p.getName()][Permissions.WRITE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.WRITE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = iperm[Permissions.WRITE] && pperm[Permissions.ATTR_CONTENT_CREATE];
+          result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_CREATE];
 
-          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = iperm[Permissions.WRITE] && pperm[Permissions.ATTR_CONTENT_DELETE];
+          result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_VIEW];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = (iperm[Permissions.READ] || false) || pperm[Permissions.ATTR_CONTENT_EDIT];
+
+          result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_DELETE];
         } else {
-          result[p.getName()][Permissions.READ] = iperm[Permissions.READ];
-          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE];
+          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] || false;
+          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
         }
       }
     }
