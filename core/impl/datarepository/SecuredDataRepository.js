@@ -247,6 +247,9 @@ function SecuredDataRepository(options) {
    * @return {Item}
    */
   function cenzor(item, processed) {
+    if (!item) {
+      return item;
+    }
     if (!item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
@@ -698,29 +701,37 @@ function SecuredDataRepository(options) {
    * @returns {*}
    */
   function roleEnrichment(cm, opts) {
-    let roleConf = classRoleConfig(cm);
-    if (roleConf) {
-      let fe = Array.isArray(opts.forceEnrichment) ? opts.forceEnrichment.slice(0) : [];
-      opts.forceEnrichment = opts.forceEnrichment || [];
-
-      fe.forEach((elp) => {
-        if (Array.isArray(elp)) {
-          for (let i = 0; i < elp.length; i++) {
-            let tmp = elp.slice(0, i);
-            let pm = findPm(cm, tmp);
-            if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
-              let sub = {};
-              roleEnrichment(pm._refClass, sub);
-              if (Array.isArray(sub.forceEnrichment)) {
-                for (let j = 0; j < sub.forceEnrichment.length; j++) {
-                  opts.forceEnrichment.push(tmp.concat(sub.forceEnrichment[j]));
-                }
+    let fe = [];
+    if ((typeof opts.nestingDepth === 'number') && (opts.nestingDepth > 0)) {
+      Object.values(cm.getPropertyMetas()).forEach((pm) => {
+        if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+          fe.push([pm.name]);
+        }
+      });
+    } else {
+      fe = Array.isArray(opts.forceEnrichment) ? opts.forceEnrichment.slice(0) : [];
+    }
+    opts.forceEnrichment = opts.forceEnrichment || [];
+    fe.forEach((elp) => {
+      if (Array.isArray(elp)) {
+        for (let i = 0; i < elp.length; i++) {
+          let tmp = elp.slice(0, i + 1);
+          let pm = findPm(cm, tmp);
+          if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+            let sub = {nestingDepth: (opts.nestingDepth || 1) - 1};
+            roleEnrichment(pm._refClass, sub);
+            if (Array.isArray(sub.forceEnrichment)) {
+              for (let j = 0; j < sub.forceEnrichment.length; j++) {
+                opts.forceEnrichment.push(tmp.concat(sub.forceEnrichment[j]));
               }
             }
           }
         }
-      });
+      }
+    });
 
+    let roleConf = classRoleConfig(cm);
+    if (roleConf) {
       for (let role in roleConf) {
         if (roleConf.hasOwnProperty(role)) {
           if (roleConf[role].attribute) {
@@ -766,11 +777,11 @@ function SecuredDataRepository(options) {
   /**
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {{uid: String}} options
+   * @param {{uid: String}} moptions
    * @param {Number} [options.nestingDepth]
    */
   this._getItem = function (obj, id, moptions) {
-    return getItem(obj, id, moptions).then(checkReadPermission);
+    return getItem(obj, id, moptions).then(checkReadPermission).then(cenzor);
   };
 
   /**
@@ -990,9 +1001,16 @@ function SecuredDataRepository(options) {
    */
   this._getAssociationsList = function (master, collection, options) {
     return setItemPermissions(options, null, true)(master)
-      .then(function (m) {
+      .then((m) => {
         if (m.permissions[Permissions.READ]) {
-          return dataRepo.getAssociationsList(master, collection, options).then(listCenzor(options));
+          let opts = clone(options);
+          let p = m.property(collection);
+          if (!p) {
+            throw new Error('Ivalid collection name specified!');
+          }
+          let cm = p.meta._refClass;
+          roleEnrichment(cm, opts);
+          return dataRepo.getAssociationsList(master, collection, opts).then(listCenzor(opts));
         }
         throw new IonError(Errors.PERMISSION_LACK);
       });
