@@ -216,7 +216,7 @@ function WorkflowProvider(options) {
           }
         });
 
-        return rp.then(()=> {
+        return rp.then(() => {
           return {
             stages: result,
             itemPermissions: itemPermissions,

@@ -98,11 +98,11 @@ function ImageStorage(options) { // jshint ignore:line
         thumbs = createThumbnails(data.path, name, o);
       } else if (typeof data.stream !== 'undefined') {
         thumbs = imageToBuffer(data.stream)
-          .then(buffer => {
-            delete data.stream;
-            data.buffer = buffer;
-            return createThumbnails(data.buffer, name, o);
-          });
+          .then((buffer) => {
+              delete data.stream;
+              data.buffer = buffer;
+              return createThumbnails(data.buffer, name, o);
+            });
       }
     } else {
       thumbs = createThumbnails(data, ops.name || cuid(), o);
@@ -143,7 +143,7 @@ function ImageStorage(options) { // jshint ignore:line
     if (uploadThumbnails) {
       return acceptWithThumbnails(data, directory, opts);
     }
-    return fileStorage.accept(data, directory, opts).then(file => enrichThumbnails(file));
+    return fileStorage.accept(data, directory, opts).then((file) => enrichThumbnails(file));
   };
 
   /**
@@ -174,15 +174,15 @@ function ImageStorage(options) { // jshint ignore:line
   function thumbsLoader(files) {
     let thumbs = [];
     if (Array.isArray(files)) {
-      files.forEach(file => {
+      files.forEach((file) => {
         if (file.options.thumbnails) {
-          Object.keys(file.options.thumbnails).forEach(t => thumbs.push(file.options.thumbnails[t]));
+          Object.keys(file.options.thumbnails).forEach((t) => thumbs.push(file.options.thumbnails[t]));
         }
       });
     }
     let tmp = files;
     return fileStorage.fetch(thumbs)
-      .then(thumbnails => {
+      .then((thumbnails) => {
         let thumbById = {};
         let result = [];
         for (let i = 0; i < thumbnails.length; i++) {
@@ -218,7 +218,7 @@ function ImageStorage(options) { // jshint ignore:line
   function enrichThumbnails(file) {
     let thumbs = {};
     if (options.thumbnails) {
-      Object.keys(options.thumbnails).forEach(thumb => {
+      Object.keys(options.thumbnails).forEach((thumb) => {
         thumbs[thumb] = new StoredFile(
           file.id,
           slashChecker(`${options.urlBase}/${thumb}/${file.id}`),
@@ -235,7 +235,7 @@ function ImageStorage(options) { // jshint ignore:line
       return files;
     }
     let result = [];
-    files.forEach(file => result.push(enrichThumbnails(file)));
+    files.forEach((file) => result.push(enrichThumbnails(file)));
     return result;
   }
 
@@ -246,7 +246,7 @@ function ImageStorage(options) { // jshint ignore:line
   this._fetch = function (ids) {
     return new Promise(function (resolve, reject) {
       fileStorage.fetch(ids)
-        .then(files => {
+        .then((files) => {
           if (!uploadThumbnails) {
             return filesWrapper(files);
           }
@@ -298,13 +298,13 @@ function ImageStorage(options) { // jshint ignore:line
         }
 
         fileStorage.fetch([imageId])
-          .then(images => {
+          .then((images) => {
             if (!images[0]) {
               throw new Error('File not found!');
             }
             return images[0].getContents();
           })
-          .then(image => {
+          .then((image) => {
             if (!image || !image.stream) {
               throw new Error('File not found!');
             }
@@ -316,7 +316,7 @@ function ImageStorage(options) { // jshint ignore:line
             return {name, stream, options: image.options};
           })
           .then(respondFile(req, res))
-          .catch(err => res.status(500).send(err.message));
+          .catch((err) => res.status(500).send(err.message));
       } catch (err) {
         return next();
       }
@@ -389,14 +389,6 @@ function ImageStorage(options) { // jshint ignore:line
 
   this._fileRoute = function () {
     return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
-  };
-
-  /**
-   * @param {StoredFile} file
-   * @returns {Function}
-   */
-  this._stream = function (file) {
-    return fileStorage.stream(file);
   };
 }
 

@@ -9,10 +9,12 @@ const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
 
-/* jshint maxstatements: 30, maxcomplexity: 30 */
+const util = require('util');
+
+/* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {
 
-  var _this = this;
+  let _this = this;
 
   /**
    * @type {String}
@@ -49,7 +51,7 @@ function MongoDbSync(options) {
   function sysIndexer(tableType) {
     return (collection) => {
       switch (tableType) {
-        case 'meta': {
+        case 'meta':
           return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
@@ -62,8 +64,7 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
               );
           });
-        }break;
-        case 'view': {
+        case 'view':
           return new Promise((resolve, reject) => {
             collection.createIndex({
                 namespace: 1,
@@ -78,8 +79,7 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
             );
           });
-        }break;
-        case 'nav': {
+        case 'nav':
           return new Promise(function (resolve, reject) {
             collection.createIndex({
                 namespace: 1,
@@ -93,12 +93,11 @@ function MongoDbSync(options) {
               (err) => err ? reject(err) : resolve(collection)
             );
           });
-        }break;
-        case 'user_type': {
+        case 'user_type':
           return Promise.resolve(collection);
-        }break;
+        default:
+          throw new Error('Unsupported table type specified!');
       }
-      throw new Error('Unsupported table type specified!');
     };
   }
 
@@ -110,11 +109,10 @@ function MongoDbSync(options) {
       case 'nav': tn = _this.navTableName; break;
       case 'user_type': tn = _this.userTypeTableName; break;
       case 'workflow': tn = _this.workflowTableName; break;
+      default:
+        throw new Error('Unsupported meta type specified!');
     }
 
-    if (!tn) {
-      return Promise.reject('Unsupported meta type specified!');
-    }
     return new Promise((resolve, reject) => {
       db().collection(tn, {strict: true}, (err, collection) => {
         if (collection) {
@@ -231,7 +229,7 @@ function MongoDbSync(options) {
      * @param {Collection} collection
      */
     return (collection) => {
-      function createIndexPromise(props, unique, nullable, type) {
+      function createIndexPromise(props, unique, nullable) {
         return function () {
           let opts = {};
           if (unique) {
@@ -242,16 +240,15 @@ function MongoDbSync(options) {
           }
 
           let indexDef = {};
-          if (typeof props === 'string') {
-            indexDef = props;
-          } else if (Array.isArray(props)) {
-            for (let i = 0; i < props.length; i++) {
-              if (props[i]) {
-                indexDef[props[i]] = type === PropertyTypes.GEO ? '2dsphere' : 1;
+          if (Array.isArray(props)) {
+            props.forEach((p) => {
+              if (typeof p === 'object') {
+                indexDef[p.name] = (p.type === PropertyTypes.GEO) ? '2dsphere' : 1;
+              } else if (typeof p === 'string') {
+                indexDef[p] = 1;
               }
-            }
+            });
           }
-
           if (Object.getOwnPropertyNames(indexDef).length === 0) {
             return Promise.resolve();
           }
@@ -307,31 +304,30 @@ function MongoDbSync(options) {
         }
       }
 
-      let promise = createIndexPromise(cm.key, true)();
-      promise = promise.then(createIndexPromise('_class', false));
 
       let fullText = [];
       let props = {};
-
       if (Array.isArray(h)) {
         h.forEach((anc) => fillProps(props, anc));
       }
-      
+
+      let promise = cm.key ? createIndexPromise(Array.isArray(cm.key) ? cm.key : [cm.key], true)() : Promise.resolve();
+      if (!cm.ancestor) {
+        promise = promise.then(createIndexPromise(['_class'], false));
+      }
+
       for (let i = 0; i < cm.properties.length; i++) {
-        props[cm.properties[i].name] = cm.properties[i];
+        let pm = cm.properties[i];
+        props[pm.name] = pm;
         if (
-          cm.properties[i].type === PropertyTypes.REFERENCE ||
-          cm.properties[i].indexed ||
-          cm.properties[i].unique
+          (
+            pm.type === PropertyTypes.REFERENCE || pm.indexed || pm.unique
+          ) &&
+          pm.type !== PropertyTypes.TEXT &&
+          pm.type !== PropertyTypes.HTML
         ) {
-          promise = promise.then(
-            createIndexPromise(
-              cm.properties[i].name,
-              cm.properties[i].unique,
-              cm.properties[i].nullable,
-              cm.properties[i].type
-            )
-          );
+          promise = promise
+            .then(createIndexPromise([cm.properties[i]], cm.properties[i].unique, cm.properties[i].nullable));
         }
 
         if (
@@ -354,15 +350,29 @@ function MongoDbSync(options) {
       if (cm.compositeIndexes) {
         for (let i = 0; i < cm.compositeIndexes.length; i++) {
           let nlbl = false;
+          let skip = false;
+          let iprops = [];
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
-            if (props[cm.compositeIndexes[i].properties[j]].nullable) {
-              nlbl = true;
+            let pmn = cm.compositeIndexes[i].properties[j];
+            if (!props.hasOwnProperty(pmn)) {
+              throw new Error(`Атрибут ${pmn} указанный в составном индексе отсутствует в классе "${cm.caption} (${cm.name})".`);
+            }
+
+            if (
+              props[pmn].type === PropertyTypes.TEXT ||
+              props[pmn].type === PropertyTypes.HTML
+            ) {
+              skip = true;
               break;
             }
+            if (props[pmn].nullable) {
+              nlbl = true;
+            }
+            iprops.push(props[pmn]);
           }
-          promise = promise.then(
-            createIndexPromise(cm.compositeIndexes[i].properties, cm.compositeIndexes[i].unique, nlbl)
-          );
+          if (!skip) {
+            promise = promise.then(createIndexPromise(iprops, cm.compositeIndexes[i].unique, nlbl));
+          }
         }
       }
 

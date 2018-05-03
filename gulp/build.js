@@ -432,6 +432,7 @@ function appImporter(appDir, scope, log, dep) {
         metaRepo: scope.metaRepo,
         dataRepo: scope.dataRepo,
         workflows: scope.workflows,
+        sequences: scope.sequenceProvider,
         log: log,
         namespace: ns,
         // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка,

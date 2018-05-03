@@ -12,10 +12,18 @@ function SequenceProvider () {
 
   /**
    * @param {String} name
+   * @param {Number} [value]
    * @returns {Promise}
    */
-  this.reset = function (name) {
-    return this._reset(name);
+  this.reset = function (name, value) {
+    return this._reset(name, value);
+  };
+
+  /**
+   * @param {String} [name]
+   */
+  this.snapshot = function (name) {
+    return this._snapshot(name);
   };
 }
 
