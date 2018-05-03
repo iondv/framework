@@ -122,7 +122,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - {"terms": ["todo", "fixme", "xxx", "2del"], "location": "anywhere" }
   no-with: error # Запрет использования with - Откл.в recommended
   prefer-promise-reject-errors: warn # Предупреждение использования приведения к Error для reject - Откл.в recommended
-  radix: error # Требования указания исчисления для parseInt, если строка с 0 - Откл.в recommended
+  radix: off # Требования указания исчисления для parseInt, если строка с 0 - Откл.в recommended
   require-await: error # Требование await в async функциях  - Откл.в recommended
   vars-on-top: warn # Требование расположения объявлений var вверху функций - Откл.в recommended
   wrap-iife: error # Оформление скобками немедленный вызов функций при объявлении - Откл.в recommended
@@ -312,7 +312,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
   no-array-constructor: # Запрет использования конструктороа массивов с параметрами, кроме задания размера
     - error
   no-bitwise: # Запрет двоичных операций, часто являющихся опечаткой логических
-    - error
+    - off
   no-continue: # Не рекомендуется использовать continue из-за ухудщения тестирования кода и появления ошибок пропуска вычислений в циклах
     - warn
   no-inline-comments: # Запрет использования строчных комментариев

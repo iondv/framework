@@ -31,10 +31,10 @@ process.argv.forEach(function (val) {
   } else if (val === '--acl') {
     params.exportAcl = 'json';
     setParam = 'exportAcl';
-  } else if (val.substr(0, 2) === '--') {
-    setParam = val.substr(2);
   } else if (val === '--nodata') {
     params.skipData = true;
+  } else if (val.substr(0, 2) === '--') {
+    setParam = val.substr(2);
   } else if (setParam) {
     params[setParam] = val;
   }
@@ -61,15 +61,17 @@ di('boot', config.bootstrap,
         metaRepo: scope.metaRepo,
         dataRepo: scope.dataRepo,
         workflows: scope.workflows,
+        sequences: scope.sequenceProvider,
         accounts: scope.accounts,
         accessManager: scope.roleAccessManager,
+        log: scope.sysLog,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
         exportAcl: params.exportAcl,
         fileDir: params.fileDir,
         lastVersion: params.ver === '-last'
-      }).then(()=>scope)
+      }).then(() => scope)
   )
   .then((scope) => scope.dataSources.disconnect())
   .then(() => {
