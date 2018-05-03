@@ -23,6 +23,7 @@ const theme = require('lib/util/theme');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const Scheduler = require('core/impl/Scheduler');
+const Background = require('core/impl/Background');
 const SettingsRepository = require('core/impl/SettingsRepository');
 
 const errorSetup = require('core/error-setup');
@@ -92,7 +93,7 @@ var server = config.https ? https.createServer(config.https, app) : http.createS
 
 function onError(error) {
   sysLog.error(error);
-  server.close(function (err) {
+  server.close(() => {
     process.exit(130);
   });
 }
@@ -134,9 +135,10 @@ di('boot', config.bootstrap,
   .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
   .then((scope) => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => {
-	if (config.runJobs) {
+    if (config.runJobs) {
       scope.scheduler = new Scheduler({settings: scope.settings});
     }
+    scope.background = new Background();
     return scope;
   })
   .then((scope) => {
