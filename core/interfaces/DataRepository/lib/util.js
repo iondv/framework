@@ -40,15 +40,16 @@ function castValue(value, pm) {
       return null;
     }
 
-    var refkey = pm._refClass.getKeyProperties();
+    let refkey = pm._refClass.getKeyProperties();
 
     if (refkey.length > 1) {
       return String(value);
-    } else {
-      return castValue(value, pm._refClass.getPropertyMeta(refkey[0]));
     }
-
-    return value;
+    let rpm = pm._refClass.getPropertyMeta(refkey[0]);
+    if (!rpm) {
+      throw new Error(`Не найден атрибут "${refkey[0]}" класса "${pm._refClass.getCaption()}"!`);
+    }
+    return castValue(value, rpm);
   } else if (pm.type === PropertyTypes.BOOLEAN) {
     if (value === null) {
       if (pm.nullable) {
@@ -81,6 +82,8 @@ function castValue(value, pm) {
         v.utcOffset = 0;
       }
         break;
+      default:
+        throw new Error('Unsupported date mode specified!');
     }
   }
   return v;
@@ -542,7 +545,7 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         {
           searchBy: pm._refClass.getSemanticAttrs()
         }, sv, lang, false, '', depth - 1)
-        .then(()=> {
+        .then(() => {
           if (cor.length) {
             let aname = '$' + (prefix || '') + pm.name;
             or.push({[Operations.CONTAINS]: [aname, {[Operations.OR]: cor}]});
@@ -639,7 +642,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
   if (Array.isArray(opts.searchByRefs) && opts.searchByRefs.length) {
     let ids = [];
     let p = null;
-    opts.searchByRefs.forEach((opts)=>{
+    opts.searchByRefs.forEach((opts) => {
       p = p ?
         p.then(fillSearchIds(scope, cm, opts, ids, sv, lang, depth)) :
         fillSearchIds(scope, cm, opts, ids, sv, lang, depth)();
@@ -650,84 +653,82 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
     return p.then(() => {
       or.push(filterByItemIds(scope.keyProvider, cm, ids));
     });
-  } else {
-    if (!Array.isArray(opts.searchBy)) {
-      opts.searchBy = cm.getSemanticAttrs();
+  }
+  if (!Array.isArray(opts.searchBy)) {
+    opts.searchBy = cm.getSemanticAttrs();
+  }
+  let fullText = false;
+
+  let tmp = [];
+
+  let svals = [];
+  let smodes = opts.mode || [];
+  let start = 0;
+  if (opts.splitBy) {
+    svals = sv.split(new RegExp(opts.splitBy));
+    start = svals.length;
+  }
+
+  for (let i = 0; i < opts.searchBy.length; i++) {
+    if (i >= start) {
+      svals.push(opts.splitBy ? false : sv);
     }
-    let fullText = false;
-
-    let tmp = [];
-
-    let svals = [];
-    let smodes = opts.mode || [];
-    let start = 0;
-    if (opts.splitBy) {
-      svals = sv.split(new RegExp(opts.splitBy));
-      start = svals.length;
+    if (i + 1 > smodes.length) {
+      smodes.push('like');
     }
+  }
 
-    for (let i = 0; i < opts.searchBy.length; i++) {
-      if (i >= start) {
-        svals.push(opts.splitBy ? false : sv);
-      }
-      if (i + 1 > smodes.length) {
-        smodes.push('like');
-      }
-    }
+  let result;
+  svals.forEach((sval, i) => {
+    if (sval) {
+      let nm = opts.searchBy[i];
+      let d = depth && typeof depth === 'object' ? depth[nm] || 1 : depth;
 
-    let result;
-    svals.forEach((sval, i) => {
-      if (sval) {
-        let nm = opts.searchBy[i];
-        let d = depth && typeof depth === 'object' ? depth[nm] || 1 : depth;
-
-        if (nm.indexOf('.') >= 0) {
-          let path = nm.split('.');
-          let p = null;
-          let cm2 = cm;
-          for (let j = 0; j < path.length; j++) {
-            p = cm2.getPropertyMeta(path[j]);
-            if (p && p.type === PropertyTypes.REFERENCE) {
-              cm2 = p._refClass;
-            } else if (j < path.length - 1) {
-              p = null;
-              break;
-            }
-          }
-          if (p) {
-            result = result ? result.then(() => {
-              return attrSearchFilter(scope, cm, p, tmp, sval, lang,
-                (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-                d, smodes[i]);
-            }) :
-              attrSearchFilter(scope, cm, p, tmp, sval, lang,
-              (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i]);
-          }
-        } else {
-          let pm = cm.getPropertyMeta(nm);
-          if (pm) {
-            if (pm.indexSearch && useFullText) {
-              fullText = true;
-            }
-            result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-              attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
+      if (nm.indexOf('.') >= 0) {
+        let path = nm.split('.');
+        let p = null;
+        let cm2 = cm;
+        for (let j = 0; j < path.length; j++) {
+          p = cm2.getPropertyMeta(path[j]);
+          if (p && p.type === PropertyTypes.REFERENCE) {
+            cm2 = p._refClass;
+          } else if (j < path.length - 1) {
+            p = null;
+            break;
           }
         }
+        if (p) {
+          result = result ? result.then(() => {
+            return attrSearchFilter(scope, cm, p, tmp, sval, lang,
+              (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+              d, smodes[i]);
+          }) :
+            attrSearchFilter(scope, cm, p, tmp, sval, lang,
+              (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
+              d, smodes[i]);
+        }
+      } else {
+        let pm = cm.getPropertyMeta(nm);
+        if (pm) {
+          if (pm.indexSearch && useFullText) {
+            fullText = true;
+          }
+          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
+            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
+        }
       }
-    });
-
-    if (!result) {
-      result = Promise.resolve();
     }
-    return result.then(() => {
-      if (fullText) {
-        tmp.push({[Operations.FULL_TEXT_MATCH]: [sv]});
-      }
-      Array.prototype.push.apply(or, tmp);
-    });
+  });
+
+  if (!result) {
+    result = Promise.resolve();
   }
-  return Promise.resolve();
+  return result.then(() => {
+    if (fullText) {
+      tmp.push({[Operations.FULL_TEXT_MATCH]: [sv]});
+    }
+    Array.prototype.push.apply(or, tmp);
+  });
 }
 
 /**
@@ -741,21 +742,22 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
  */
 function textSearchFilter(scope, cm, opts, sv, lang, useFullText, prefix, depth) {
   let conds = [];
-  return searchFilter(scope, cm, conds, opts, sv, lang, true, null, depth || 1).then(()=>{
-    if (conds.length) {
-      if (conds.length === 1) {
-        conds = conds[0];
-      } else {
-        if (opts.joinBy === 'and') {
-          conds = {[Operations.AND]: conds};
+  return searchFilter(scope, cm, conds, opts, sv, lang, true, null, depth || 1)
+    .then(() => {
+      if (conds.length) {
+        if (conds.length === 1) {
+          conds = conds[0];
         } else {
-          conds = {[Operations.OR]: conds};
+          if (opts.joinBy === 'and') {
+            conds = {[Operations.AND]: conds};
+          } else {
+            conds = {[Operations.OR]: conds};
+          }
         }
+        return conds;
       }
-      return conds;
-    }
-    return null;
-  });
+      return null;
+    });
 }
 
 module.exports.textSearchFilter = textSearchFilter;
@@ -849,16 +851,16 @@ function calcProperties(item, skip, needed, cached) {
   }
   let calculations = Promise.resolve();
   let props = item.getMetaClass().getPropertyMetas();
-  props.forEach((p)=> {
+  props.forEach((p) => {
     if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
-      calculations = calculations.then(()=>p._formula.apply(item))
+      calculations = calculations.then(() => p._formula.apply(item))
         .then((result) => {
           item.calculated[p.name] = cast(result, p.type);
         });
     }
   });
 
-  return calculations.then(()=>item);
+  return calculations.then(() => item);
 }
 
 module.exports.calcProperties = calcProperties;

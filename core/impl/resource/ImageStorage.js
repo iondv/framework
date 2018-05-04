@@ -5,7 +5,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const gm = require('gm');
+const gm = require('gm').subClass({imageMagick: true});
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -13,17 +13,21 @@ const path = require('path');
 // jshint maxcomplexity: 20
 
 /**
- * @param {String} id
- * @param {String} link
- * @param {StoredImage[]} thumbnails
- * @param {{}} [options]
- * @param {Function} [streamGetter]
+ * @param {StoredFile} file
  * @constructor
  */
-function StoredImage(id, link, thumbnails, options, streamGetter) {
-  StoredFile.apply(this, [id, link, options, streamGetter]);
+function StoredImage (file, thumbnails) {
+  StoredFile.apply(this, [file.id, file.link, file.options]);
+  this.file = file;
   this.thumbnails = thumbnails;
+
+  this.getContents = function() {
+    return this.file.getContents();
+  };
 }
+
+StoredImage.prototype = Object.create(StoredFile.prototype);
+StoredImage.prototype.constructor = StoredImage;
 
 /**
  * @param {{}} options
@@ -66,8 +70,8 @@ function ImageStorage(options) { // jshint ignore:line
   }
 
   function imageToBuffer(source) {
-    return new Promise (function (resolve, reject) {
-      gm(source).quality(100).toBuffer(function (err, buf) {
+    return new Promise((resolve, reject) => {
+      gm(source).quality(100).toBuffer((err, buf) => {
         if (err) {
           return reject(err);
         }
@@ -94,7 +98,7 @@ function ImageStorage(options) { // jshint ignore:line
         thumbs = createThumbnails(data.path, name, o);
       } else if (typeof data.stream !== 'undefined') {
         thumbs = imageToBuffer(data.stream)
-            .then(buffer => {
+          .then((buffer) => {
               delete data.stream;
               data.buffer = buffer;
               return createThumbnails(data.buffer, name, o);
@@ -105,7 +109,7 @@ function ImageStorage(options) { // jshint ignore:line
     }
 
     if (!thumbs) {
-      return Promise.reject(new Error('Переданы не корректные данные!'));
+      return Promise.reject(new Error('Переданы некорректные данные!'));
     }
     let thumbnails = {};
     return thumbs
@@ -119,7 +123,7 @@ function ImageStorage(options) { // jshint ignore:line
         }
         return fileStorage.accept(data, directory, ops);
       })
-      .then((file) => new StoredImage(file.id, file.link, thumbnails, file.options, fileStorage.stream(file)));
+      .then((file) => new StoredImage(file, thumbnails));
   }
 
   /**
@@ -132,10 +136,7 @@ function ImageStorage(options) { // jshint ignore:line
     if (uploadThumbnails) {
       return acceptWithThumbnails(data, directory, opts);
     }
-    return fileStorage.accept(data, directory, opts).then(file => {
-      let ggg = enrichThumbnails(file);
-      return ggg;
-    });
+    return fileStorage.accept(data, directory, opts).then((file) => enrichThumbnails(file));
   };
 
   /**
@@ -143,49 +144,38 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._remove = function (id) {
-    return new Promise(function (resolve, reject) {
-      fileStorage.fetch([id]).
-      then(
+    return fileStorage.fetch([id])
+      .then(
         /**
          * @param {StoredFile[]} files
          */
-        function (files) {
-          var thumbs = [];
-          var thumb;
-          for (var i = 0; i < files.length; i++) {
-            if (files[i].options.thumbnails) {
-              for (thumb in files[i].options.thumbnails) {
-                if (files[i].options.thumbnails.hasOwnProperty(thumb)) {
-                  thumbs.push(fileStorage.remove(files[i].options.thumbnails[thumb]));
-                }
-              }
+        (files) => {
+          let thumbs = Promise.resolve();
+          files.forEach((f) => {
+            if (f.options.thumbnails) {
+              Object.keys(f.options.thumbnails).forEach((thumb) => {
+                thumbs = thumbs.then(() => fileStorage.remove(f.options.thumbnails[thumb]));
+              });
             }
-          }
-          return Promise.all(thumbs);
+          });
+          return thumbs;
         }
-      ).
-      then(
-        function () {
-          return fileStorage.remove(id);
-        }
-      ).
-      then(resolve).
-      catch(reject);
-    });
+      )
+      .then(() => fileStorage.remove(id));
   };
 
   function thumbsLoader(files) {
     let thumbs = [];
     if (Array.isArray(files)) {
-      files.forEach(file => {
+      files.forEach((file) => {
         if (file.options.thumbnails) {
-          Object.keys(file.options.thumbnails).forEach(t => thumbs.push(file.options.thumbnails[t]));
+          Object.keys(file.options.thumbnails).forEach((t) => thumbs.push(file.options.thumbnails[t]));
         }
       });
     }
     let tmp = files;
     return fileStorage.fetch(thumbs)
-      .then(thumbnails => {
+      .then((thumbnails) => {
         let thumbById = {};
         let result = [];
         for (let i = 0; i < thumbnails.length; i++) {
@@ -202,7 +192,7 @@ function ImageStorage(options) { // jshint ignore:line
                 thumbs[thumb] = thumbById[tmp[i].options.thumbnails[thumb]];
               }
             }
-            result.push(new StoredImage(tmp[i].id, tmp[i].link, thumbs, tmp[i].options, fileStorage.stream(tmp[i])));
+            result.push(new StoredImage(tmp[i], thumbs));
           } else {
             result.push(tmp[i]);
           }
@@ -221,7 +211,7 @@ function ImageStorage(options) { // jshint ignore:line
   function enrichThumbnails(file) {
     let thumbs = {};
     if (options.thumbnails) {
-      Object.keys(options.thumbnails).forEach(thumb => {
+      Object.keys(options.thumbnails).forEach((thumb) => {
         thumbs[thumb] = new StoredFile(
           file.id,
           slashChecker(`${options.urlBase}/${thumb}/${file.id}`),
@@ -230,15 +220,15 @@ function ImageStorage(options) { // jshint ignore:line
         );
       });
     }
-    return new StoredImage(file.id, file.link, thumbs, file.options, fileStorage.stream(file));
+    return new StoredImage(file, thumbs);
   }
 
-  function thumbsStreamer(files) {
+  function filesWrapper(files) {
     if (!Array.isArray(files)) {
       return files;
     }
     let result = [];
-    files.forEach(file => result.push(enrichThumbnails(file)));
+    files.forEach((file) => result.push(enrichThumbnails(file)));
     return result;
   }
 
@@ -249,9 +239,9 @@ function ImageStorage(options) { // jshint ignore:line
   this._fetch = function (ids) {
     return new Promise(function (resolve, reject) {
       fileStorage.fetch(ids)
-        .then(files => {
+        .then((files) => {
           if (!uploadThumbnails) {
-            return thumbsStreamer(files);
+            return filesWrapper(files);
           }
           return thumbsLoader(files);
         })
@@ -301,13 +291,13 @@ function ImageStorage(options) { // jshint ignore:line
         }
 
         fileStorage.fetch([imageId])
-          .then(images => {
+          .then((images) => {
             if (!images[0]) {
               throw new Error('File not found!');
             }
             return images[0].getContents();
           })
-          .then(image => {
+          .then((image) => {
             if (!image || !image.stream) {
               throw new Error('File not found!');
             }
@@ -319,7 +309,7 @@ function ImageStorage(options) { // jshint ignore:line
             return {name, stream, options: image.options};
           })
           .then(respondFile(req, res))
-          .catch(err => res.status(500).send(err.message));
+          .catch((err) => res.status(500).send(err.message));
       } catch (err) {
         return next();
       }
@@ -392,14 +382,6 @@ function ImageStorage(options) { // jshint ignore:line
 
   this._fileRoute = function () {
     return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
-  };
-
-  /**
-   * @param {StoredFile} file
-   * @returns {Function}
-   */
-  this._stream = function (file) {
-    return fileStorage.stream(file);
   };
 }
 

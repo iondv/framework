@@ -136,7 +136,7 @@ function ClassMeta(metaObject) {
 
   this.getKeyProperties = function () {
     if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
-      var anc = this.getAncestor();
+      let anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
       }
