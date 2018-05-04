@@ -16,10 +16,12 @@ function SettingsRepository(options) {
   let important = {};
 
   this.set = function (nm, value, markImportant) {
-    registry[nm] = value;
-    changed[nm] = true;
-    if (markImportant) {
-      important[nm] = true;
+    if (markImportant || !important[nm]) {
+      registry[nm] = value;
+      changed[nm] = true;
+      if (markImportant) {
+        important[nm] = true;
+      }
     }
   };
 
@@ -34,19 +36,17 @@ function SettingsRepository(options) {
     let writers = Promise.resolve();
     Object.keys(changed).forEach((nm) => {
       writers = writers.then(() => {
-        let f = {[F.EQUAL]: ['$name', nm]};
         let v = {value: registry[nm]};
-        if (important.hasOwnProperty[nm] && important[nm]) {
+        if (important.hasOwnProperty(nm) && important[nm]) {
           v.important = true;
-        } else {
-          f = {[F.AND]: [f, {[F.NOT_EQUAL]: ['$important', true]}]};
         }
-        return options.dataSource.upsert('ion_global_settings', f, v);
+        return options.dataSource.upsert('ion_global_settings', {[F.EQUAL]: ['$name', nm]}, v);
       });
     });
-    changed = {};
-    important = {};
-    return writers;
+    return writers.then((r) => {
+      changed = {};
+      return r;
+    });
   };
 
   /**
@@ -69,6 +69,9 @@ function SettingsRepository(options) {
         (settings) => {
           for (let i = 0; i < settings.length; i++) {
             registry[settings[i].name] = settings[i].value;
+            if (settings[i].important) {
+              important[settings[i].name] = true;
+            }
           }
           return Promise.resolve();
         }
