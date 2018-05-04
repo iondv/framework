@@ -301,6 +301,10 @@
           "calc": "ion://calculator"
         }
       },
+      "queryParser": {
+        "module": "core/impl/QueryParser",
+        "options": {}
+      },
       "cachedDataRepo": {
         "module": "core/impl/datarepository/CachedDataRepository",
         "options": {
