@@ -10,7 +10,7 @@ globals:
   # var2: false
 extends: 'eslint:recommended'
 parserOptions:
-  ecmaVersion: 6 # specify the version of ECMAScript
+  ecmaVersion: 2017  # specify the version of ECMAScript
   sourceType: module
 rules: # Описание правил https://eslint.org/docs/rules/
   # Possible Errors
