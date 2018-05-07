@@ -432,11 +432,13 @@ rules: # Описание правил https://eslint.org/docs/rules/
 
   # ECMAScript 6
   arrow-body-style: # Кривые скобки для всех стрелочных функций
-    - off
-    - always
+    - error
+    - as-needed
+    - {"requireReturnForObjectLiteral": true}
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
     - error
-    - always
+    - as-needed
+    - {"requireReturnForObjectLiteral": true}
   arrow-spacing: # Пробелы после скобок и перед кривыми скобками в стрелочных функциях
     - error
     - { "before": true, "after": true }
@@ -445,7 +447,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - {"before": false, "after": true}
   # no-class-assign
-  # no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
+  no-confusing-arrow: warn # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
   # no-const-assign
   # no-dupe-class-members
   no-duplicate-imports: warn # Запрет нескольких строк импорта из одного модуля
