@@ -62,7 +62,9 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - 10 # В jshint было 10 (рек. в wiki) - recommended: 20
   consistent-return: warn # Требование значение для функции return - Откл.в recommended
-  curly: error # Требования обязательно наличия скобок - Откл.в recommended
+  curly:
+    - error # Требования обязательно наличия скобок - Откл.в recommended
+    - multi-or-nest # Разрешены только однострочные операторы if, else, do, while без скобок или в одну строку или все остальное со скобками
   default-case: error # Обязательный default в switch - Откл.в recommended
   dot-location: # Размещение точки - Откл.в recommended
     - warn
