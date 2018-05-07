@@ -87,7 +87,6 @@
     "gulp-rename": "latest",
     "husky": "^0.14.3",
     "lint-staged": "^5.0.0",
-    "puppeteer": "^1.3.0",
     "run-sequence": "latest"
   },
   "homepage": "https://git.iondv.ru/ION/ion-portal",
