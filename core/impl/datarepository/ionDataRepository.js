@@ -2462,6 +2462,9 @@ function IonDataRepository(options) {
         }
       }
       options.filter = options.filter ? {[Operations.AND]: [filter, options.filter]} : filter;
+      if (onlyCount) {
+        return _this._getCount(detailCm.getCanonicalName(), options);
+      }
       return _this._getList(detailCm.getCanonicalName(), options);
     } else {
       let kp = detailCm.getKeyProperties();
@@ -2478,9 +2481,8 @@ function IonDataRepository(options) {
             options.filter = options.filter ? {[Operations.AND]: [options.filter, filter]} : filter;
             if (onlyCount) {
               return _this._getCount(detailCm.getCanonicalName(), options);
-            } else {
-              return _this._getList(detailCm.getCanonicalName(), options);
             }
+            return _this._getList(detailCm.getCanonicalName(), options);
           } else {
             throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${master.getClassName()}@${master.getItemId()}`});
           }
