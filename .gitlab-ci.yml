@@ -21,6 +21,7 @@ stages:
         when: on_success
         paths:
            - Dappfile
+           - /var/www/application/develop-and-test/test
     when: manual
     allow_failure: false
     variables:
@@ -33,6 +34,7 @@ stages:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/compile_with_dapp_stages.sh | bash
     allow_failure: false
     #when: manual
+    dependencies:
 .Deploy: &JobDeploy
   type: deploy
   tags:
@@ -45,6 +47,7 @@ stages:
     GIT_STRATEGY: none
     NAMESPACE: "review"
   when: on_success
+  dependencies:
 .Test: &JobTest
     image: $TESTIMAGE
     type: test
@@ -60,14 +63,8 @@ stages:
         ION_TEST_URL: "http://${CI_COMMIT_REF_SLUG}.${CI_PROJECT_NAME}.kube.local"
     allow_failure: false
     when: on_success
-.Callback: &Callback
-    image: $PYTHONIMAGE
-    type: callback
-    tags:
-        - kube-deploy
-    script:
-        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/callback_pipeline.sh | bash
-    allow_failure: false
+    dependencies:
+        - Pre-Compile
 .BackendTest: &BackendTest
     type: test
     tags:
@@ -111,6 +108,7 @@ stop_review:
     action: stop
   only:
     - branches
+  dependencies:
 ### TEST SECITONS
 Testing Review:
     <<: *JobTest
@@ -123,6 +121,7 @@ ion-workflow:
         - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_ion_workflow.sh | bash
     only:
         - branches
+    dependencies:
 ### CLEAN SECTION
 Clean:
   type: clean
@@ -135,6 +134,7 @@ Clean:
     - branches
   before_script:
     - curl -fsSL https://git.iondv.ru/ION/functional_tests/raw/master/stage_access.py | python
+  dependencies:
 .semver: &JobSemver
   image: docker.iondv.ru/kube/docker/pygitlab:master
   type: semver
@@ -149,6 +149,7 @@ Clean:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/push_autover.sh | bash
   when: manual
   allow_failure: true
+  dependencies:
 Patch:
   <<: *JobSemver
 Minor:
