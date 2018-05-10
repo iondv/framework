@@ -23,6 +23,8 @@ stages:
            - Dappfile
     when: manual
     allow_failure: false
+    variables:
+        GIT_STRATEGY: none
 .Compile: &JobCompile
     type: compile
     tags:
