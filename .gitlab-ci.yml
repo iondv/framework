@@ -21,7 +21,7 @@ stages:
         when: on_success
         paths:
            - Dappfile
-           - /var/www/application/develop-and-test/test
+           - /var/www/applications/develop-and-test/test
     when: manual
     allow_failure: false
     variables:
