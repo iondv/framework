@@ -251,7 +251,7 @@ function SecuredDataRepository(options) {
       return item;
     }
 
-    if (!item.permissions[Permissions.READ]) {
+    if (!item.permissions || !item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
     }
