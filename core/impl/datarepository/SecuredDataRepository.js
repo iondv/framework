@@ -250,10 +250,12 @@ function SecuredDataRepository(options) {
     if (!item) {
       return item;
     }
+
     if (!item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
     }
+
     processed = processed || {};
     let props = item.getProperties();
     Object.values(props).forEach((p) => {
@@ -536,120 +538,126 @@ function SecuredDataRepository(options) {
      * @param {Item} item
      */
     return function (item) {
-      if (!item || (item.permissions && item.attrPermissions)) {
+      if (!item) {
         return Promise.resolve(item);
       }
-      let roleConf = classRoleConfig(item.getMetaClass());
       let p;
-      let statics = permMap && permMap[item.getClassName() + '@' + item.getItemId()];
+      if (!item.permissions || !item.attrPermissions) {
+        let roleConf = classRoleConfig(item.getMetaClass());
+        let statics = permMap && permMap[item.getClassName() + '@' + item.getItemId()];
 
-      if (!statics) {
-        p = aclProvider.getPermissions(
-          options.user.id(), [
-            globalMarker,
-            classPrefix + item.getClassName(),
-            itemPrefix + item.getClassName() + '@' + item.getItemId()
-          ],
-          true)
-          .then((permissions) => {
-            return merge(true,
-              permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
-              permissions[classPrefix + item.getClassName()] || {},
-              permissions[globalMarker] || {}
-            );
-          });
-      } else {
-        let perms = clone(statics);
-        delete perms.__attr;
-        p = Promise.resolve(perms);
-      }
-      return p
-        .then((permissions) => {
-          item.permissions = permissions;
-          if (
-            item.permissions[Permissions.FULL] ||
-            (
-              item.permissions[Permissions.READ] &&
-              item.permissions[Permissions.WRITE] &&
-              item.permissions[Permissions.DELETE]
-            )
-          ) {
-            return;
-          }
-          if (roleConf) {
-            let result = Promise.resolve();
-            Object.keys(roleConf).forEach((role) => {
-              let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
-              if (roleConf[role].attribute) {
-                let actor = item.property(roleConf[role].attribute).evaluate();
-                if (!actor) {
-                  actor = item.property(roleConf[role].attribute).getValue();
-                }
-                if (actor) {
-                  actor = Array.isArray(actor) ? actor : [actor];
-                  actor.forEach((actor) => {
-                    if (actor instanceof Item) {
-                      actor = actor.getItemId();
-                    }
-                    if (options.user.isMe(actor)) {
-                      result = result
-                        .then(() => {
-                          if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
-                            return rolePermissionCache[role];
-                          }
-                          return aclProvider.getPermissions(role, resid, true);
-                        })
-                        .then((permissions) => {
-                          if (!rolePermissionCache[role]) {
-                            rolePermissionCache[role] = {};
-                          }
-                          rolePermissionCache[role][resid] = permissions[resid] || {};
-                          if (permissions[resid]) {
-                            for (let p in permissions[resid]) {
-                              if (permissions[resid].hasOwnProperty(p)) {
-                                if (!item.permissions[p]) {
-                                  item.permissions[p] = permissions[resid][p];
+        if (!statics) {
+          p = aclProvider.getPermissions(
+            options.user.id(), [
+              globalMarker,
+              classPrefix + item.getClassName(),
+              itemPrefix + item.getClassName() + '@' + item.getItemId()
+            ],
+            true)
+            .then((permissions) => {
+              return merge(true,
+                permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+                permissions[classPrefix + item.getClassName()] || {},
+                permissions[globalMarker] || {}
+              );
+            });
+        } else {
+          let perms = clone(statics);
+          delete perms.__attr;
+          p = Promise.resolve(perms);
+        }
+        p = p.then((permissions) => {
+            item.permissions = permissions;
+            if (
+              item.permissions[Permissions.FULL] ||
+              (
+                item.permissions[Permissions.READ] &&
+                item.permissions[Permissions.WRITE] &&
+                item.permissions[Permissions.DELETE]
+              )
+            ) {
+              return;
+            }
+            if (roleConf) {
+              let result = Promise.resolve();
+              Object.keys(roleConf).forEach((role) => {
+                let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
+                if (roleConf[role].attribute) {
+                  let actor = item.property(roleConf[role].attribute).evaluate();
+                  if (!actor) {
+                    actor = item.property(roleConf[role].attribute).getValue();
+                  }
+                  if (actor) {
+                    actor = Array.isArray(actor) ? actor : [actor];
+                    actor.forEach((actor) => {
+                      if (actor instanceof Item) {
+                        actor = actor.getItemId();
+                      }
+                      if (options.user.isMe(actor)) {
+                        result = result
+                          .then(() => {
+                            if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
+                              return rolePermissionCache[role];
+                            }
+                            return aclProvider.getPermissions(role, resid, true);
+                          })
+                          .then((permissions) => {
+                            if (!rolePermissionCache[role]) {
+                              rolePermissionCache[role] = {};
+                            }
+                            rolePermissionCache[role][resid] = permissions[resid] || {};
+                            if (permissions[resid]) {
+                              for (let p in permissions[resid]) {
+                                if (permissions[resid].hasOwnProperty(p)) {
+                                  if (!item.permissions[p]) {
+                                    item.permissions[p] = permissions[resid][p];
+                                  }
                                 }
                               }
                             }
-                          }
-                        });
-                    }
-                  });
+                          });
+                      }
+                    });
+                  }
                 }
-              }
-            });
-            return result;
-          }
-        })
-        .then(() =>
-          workflow ?
-            workflow.getStatus(item, options)
-              .then((status) => {
-                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-                item.attrPermissions = status.propertyPermissions || {};
-              }) :
-            Promise.resolve()
-        )
-        .then(() => noDrill ? null :
-          ((statics && statics.__attr) ?
-            attrPermissions(item, item.permissions, clone(statics.__attr)) :
-            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
-        .then((ap) => {
-          item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+              });
+              return result;
+            }
+          })
+          .then(() =>
+            workflow ?
+              workflow.getStatus(item, options)
+                .then((status) => {
+                  item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+                  item.attrPermissions = status.propertyPermissions || {};
+                }) :
+              Promise.resolve()
+          )
+          .then(() => noDrill ? null :
+            ((statics && statics.__attr) ?
+              attrPermissions(item, item.permissions, clone(statics.__attr)) :
+              aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
+          .then((ap) => {
+            item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+          });
+      } else {
+        p = Promise.resolve();
+      }
+      return p.then(
+        () => {
           if (!noDrill && item.permissions[Permissions.READ]) {
             let props = item.getProperties();
             let items = [];
             Object.values(props).forEach((p) => {
               if (p.meta.type === PropertyTypes.REFERENCE) {
                 let ri = p.evaluate();
-                if (ri instanceof Item) {
+                if ((ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)) {
                   items.push(ri);
                 }
               } else if (p.meta.type === PropertyTypes.COLLECTION) {
                 let collection = p.evaluate();
                 if (Array.isArray(collection)) {
-                  items.push(...collection);
+                  items.push(...collection.filter((ri) => (ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)));
                 }
               }
             });
@@ -660,9 +668,7 @@ function SecuredDataRepository(options) {
               ).then((permMap) => {
                 let w1 = Promise.resolve();
                 items.forEach((ri) => {
-                  if (ri.getItemId()) {
-                    w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
-                  }
+                  w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
                 });
                 return w1;
               });
