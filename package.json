@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/ion-portal.git",
     "type": "git"
   },
-  "version": "1.8.54",
+  "version": "1.8.55",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -71,22 +71,22 @@
   },
   "scripts": {
     "TESTprecommit": "lint-staged",
-    "setup": "gulp install",
+    "setup": "gulp deploy",
     "lint": "eslint --fix",
     "start": "node bin/www",
     "build": "gulp build",
     "test": "gulp test"
   },
   "devDependencies": {
-    "lint-staged": "^5.0.0",
+    "eslint": "^4.12.1",
+    "gulp": "latest",
+    "gulp-clean-css": "latest",
+    "gulp-jsmin": "latest",
     "gulp-json-schema": "latest",
     "gulp-less": "latest",
-    "gulp": "latest",
     "gulp-rename": "latest",
-    "eslint": "^4.12.1",
-    "gulp-jsmin": "latest",
-    "gulp-clean-css": "latest",
     "husky": "^0.14.3",
+    "lint-staged": "^5.0.0",
     "run-sequence": "latest"
   },
   "homepage": "https://git.iondv.ru/ION/ion-portal",

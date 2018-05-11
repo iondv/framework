@@ -53,7 +53,7 @@ function MongoSequenceProvider(options) {
       return new Promise((resolve, reject) => {
         c.update(
           {name: name},
-          {value: value || 0},
+          {$set: {value: value || 0}},
           {upsert: true},
           (err) => {
             if (err) {
