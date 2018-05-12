@@ -652,6 +652,14 @@ function OwnCloudStorage(config) {
       });
   };
 
+  function retriveXpathData(element, select) {
+    let selection = xpath.select(select, element);
+    if (selection && selection[0] && selection[0].firstChild) {
+      return selection[0].firstChild.nodeValue;
+    }
+    return null;
+  }
+
   function requestShares(id) {
     let reqObject = {
       uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
@@ -680,10 +688,23 @@ function OwnCloudStorage(config) {
             doc
           );
           for (let i = 0; i < elements.length; i++) {
-            let shareId = xpath.select('*[local-name()="id"]', elements[i])[0].firstChild.nodeValue;
-            let shareUrl = xpath.select('*[local-name()="url"]', elements[i])[0].firstChild.nodeValue;
+            let shareId = retriveXpathData(elements[i], '*[local-name()="id"]');
+            let shareType = retriveXpathData(elements[i], '*[local-name()="share_type"]');
+            let shareUrl = retriveXpathData(elements[i], '*[local-name()="url"]');
+            let permissions = retriveXpathData(elements[i], '*[local-name()="permissions"]');
+            let expiration = retriveXpathData(elements[i], '*[local-name()="expiration"]');
+            let shareWith = false;
+            if (shareType && shareType === '3') {
+              shareWith = retriveXpathData(elements[i], '*[local-name()="share_with"]');
+            }
             if (shareId) {
-              result.push({id: shareId, url: shareUrl});
+              result.push({
+                id: shareId,
+                passwordSet: Boolean(shareWith),
+                shareUrl,
+                permissions,
+                expiration
+              });
             }
           }
           resolve(result);
@@ -748,7 +769,7 @@ function OwnCloudStorage(config) {
     return requestShares(parseDirId(id))
       .then((shares) => {
         if (shares[0]) {
-          return shares[0].url;
+          return shares[0];
         }
         return null;
       });
