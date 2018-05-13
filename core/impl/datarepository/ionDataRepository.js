@@ -2441,6 +2441,10 @@ function IonDataRepository(options) {
       );
     }
 
+    if (!options.sort && Array.isArray(pm.selSorting) && pm.selSorting.length) {
+      options.sort = sortingParser(pm.selSorting);
+    }
+
     let detailCm = pm._refClass;
     if (!detailCm) {
       return Promise.reject(
