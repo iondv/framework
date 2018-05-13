@@ -703,6 +703,28 @@ function SecuredDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
+   * @param {Array} a
+   */
+  function reduceRefAttr(cm, a) {
+    let tmp = a.slice(0, a.length - 1);
+    let pm = findPm(cm, tmp);
+    if (pm.type !== PropertyTypes.REFERENCE && pm.type !== PropertyTypes.COLLECTION) {
+      return [];
+    }
+
+    if (pm.type === PropertyTypes.REFERENCE) {
+      let attr = a[a.length - 1];
+      let keys = pm._refClass.getKeyProperties();
+      if (keys.length === 1 && keys[0] === attr) {
+        return reduceRefAttr(cm, tmp);
+      }
+    }
+
+    return tmp;
+  }
+
+  /**
+   * @param {ClassMeta} cm
    * @param {{}} opts
    * @returns {*}
    */
@@ -742,17 +764,11 @@ function SecuredDataRepository(options) {
         if (roleConf.hasOwnProperty(role)) {
           if (roleConf[role].attribute) {
             let a = roleConf[role].attribute.split('.');
-            let p = cm.getPropertyMeta(a[0]);
-            if (p.type !== PropertyTypes.REFERENCE && p.type !== PropertyTypes.COLLECTION) {
-              continue;
-            }
-            if (p.type === PropertyTypes.REFERENCE) {
-              if (a.length === 1) {
-                a = [];
+            if (a.length > 1) {
+              a = reduceRefAttr(cm, a);
+              if (a.length) {
+                opts.forceEnrichment.push(a);
               }
-            }
-            if (a.length) {
-              opts.forceEnrichment.push(a);
             }
           }
         }
