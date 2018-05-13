@@ -659,7 +659,7 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                needed: needed ? [] : null
+                needed: needed ? {} : null
               });
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
@@ -673,7 +673,7 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed ? [] : null
+                    needed: needed ? {} : null
                   }
                 );
               }
@@ -1681,7 +1681,7 @@ function IonDataRepository(options) {
     }
     if (item instanceof Item) {
       let props = item.getMetaClass().getPropertyMetas();
-      let needed = [];
+      let needed = {};
       props.forEach((p) => {
         if (p.cached) {
           needed[p.name] = true;
