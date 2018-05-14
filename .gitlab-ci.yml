@@ -47,7 +47,6 @@ stages:
     GIT_STRATEGY: none
     NAMESPACE: "review"
   when: on_success
-  dependencies:
 .Test: &JobTest
     image: $TESTIMAGE
     type: test
@@ -108,7 +107,6 @@ stop_review:
     action: stop
   only:
     - branches
-  dependencies:
 ### TEST SECITONS
 Testing Review:
     <<: *JobTest
@@ -121,7 +119,6 @@ ion-workflow:
         - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_ion_workflow.sh | bash
     only:
         - branches
-    dependencies:
 ### CLEAN SECTION
 Clean:
   type: clean
@@ -139,7 +136,7 @@ Clean:
   image: docker.iondv.ru/kube/docker/pygitlab:master
   type: semver
   only:
-    - develop
+    - /^v\d{1,}.\d{1,}$/
   tags:
     - kube-deploy
   before_script:
@@ -149,7 +146,6 @@ Clean:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/push_autover.sh | bash
   when: manual
   allow_failure: true
-  dependencies:
 Patch:
   <<: *JobSemver
 Minor:
