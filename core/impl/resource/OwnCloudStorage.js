@@ -715,7 +715,7 @@ function OwnCloudStorage(config) {
     });
   }
 
-  function shareAccessConstructor(share, access) {
+  function shareUpdateConstructor(share, params) {
     let reqObject = {
       uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
       headers: {
@@ -725,9 +725,7 @@ function OwnCloudStorage(config) {
         user: config.login,
         password: config.password
       },
-      form: {
-        permissions: accessLevel(access)
-      }
+      form: params
     };
     return new Promise((resolve, reject) => {
       request.put(reqObject, (err, res) => {
@@ -747,13 +745,33 @@ function OwnCloudStorage(config) {
    */
   this._setShareAccess = function (id, access) {
     id = parseDirId(id);
+    const update = {permissions: accessLevel(access)};
     return requestShares(id)
       .then((shares) => {
         let promise;
         shares.forEach((share) => {
           promise = promise ?
-            promise.then(() => shareAccessConstructor(share, access)) :
-            shareAccessConstructor(share, access);
+            promise.then(() => shareUpdateConstructor(share, update)) :
+            shareUpdateConstructor(share, update);
+        });
+        return promise || Promise.resolve();
+      });
+  };
+
+  /**
+   * @param {String} id
+   * @param {{}} update
+   * @returns {Promise}
+   */
+  this._setShareUpdate = function (id, update) {
+    id = parseDirId(id);
+    return requestShares(id)
+      .then((shares) => {
+        let promise;
+        shares.forEach((share) => {
+          promise = promise ?
+            promise.then(() => shareUpdateConstructor(share, update)) :
+            shareUpdateConstructor(share, update);
         });
         return promise || Promise.resolve();
       });
