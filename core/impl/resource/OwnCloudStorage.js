@@ -4,6 +4,7 @@
 'use strict';
 
 const request = require('request');
+const moment = require('moment');
 const fs = require('fs');
 const url = require('url');
 const path = require('path');
@@ -573,18 +574,9 @@ function OwnCloudStorage(config) {
     }
   }
 
-  /**
-   *
-   * @param {String} id
-   * @param {String} access
-   * @returns {Promise}
-   */
-  this._share = function (id, access) {
+  function shareUpdateConstructor(share, params) {
     let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
-      qs: {
-        format: 'json'
-      },
+      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
       headers: {
         'OCS-APIRequest': true
       },
@@ -592,24 +584,108 @@ function OwnCloudStorage(config) {
         user: config.login,
         password: config.password
       },
-      form: {
-        path: id,
-        shareType: '3',
-        publicUpload: access === ShareAccessLevel.WRITE ? 'true' : 'false',
-        permissions: access ? accessLevel(access) : '8'
-      }
+      form: params
     };
-    return new Promise((resolve,reject) => {
-      request.post(reqObject, (err, res, body) => {
-        if (!err && res.statusCode === 200) {
-          if (typeof body === 'string') {
-            body = JSON.parse(body);
-          }
-          resolve(body.ocs && body.ocs.data.url);
+    return new Promise((resolve, reject) => {
+      request.put(reqObject, (err, res) => {
+        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
+          resolve(true);
         } else {
           return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
       });
+    });
+  }
+
+  function createShare(id, access, options) {
+    return new Promise((resolve,reject) => {
+      try {
+        let acs = access || options.permissions;
+        let form = {
+          path: id,
+          shareType: '3',
+          publicUpload: acs === ShareAccessLevel.WRITE ? 'true' : 'false',
+          permissions: acs ? accessLevel(acs) : '8'
+        };
+        if (options.password) {
+          form.password = options.password;
+        }
+        if (options.expiration) {
+          let expDate = moment(options.expiration).format('YYYY-MM-DD');
+          if (expDate && expDate !== 'Invalid date') {
+            form.expiration = expDate;
+          }
+        }
+        let reqObject = {
+          uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
+          qs: {
+            format: 'json'
+          },
+          headers: {
+            'OCS-APIRequest': true
+          },
+          auth: {
+            user: config.login,
+            password: config.password
+          },
+          form
+        };
+        request.post(reqObject, (err, res, body) => {
+          if (!err && res.statusCode === 200) {
+            if (typeof body === 'string') {
+              body = JSON.parse(body);
+            }
+            resolve(body.ocs && body.ocs.data.url);
+          } else {
+            return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+          }
+        });
+      } catch (e) {
+        return reject(e);
+      }
+    });
+  }
+
+  function updateShare(shareId, access, options) {
+    let promise = Promise.resolve();
+    if (access || options.permissions) {
+      promise = shareUpdateConstructor(shareId, {permissions: accessLevel(access || options.permissions)});
+    }
+    if (options.password) {
+      promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password}));
+    }
+    if (options.expiration) {
+      let expDate = moment(options.expiration).format('YYYY-MM-DD');
+      if (expDate && expDate !== 'Invalid date') {
+        promise = promise.then(() => shareUpdateConstructor(shareId, {expiration: expDate}));
+      }
+    }
+    return promise;
+  }
+
+  /**
+   *
+   * @param {String} id
+   * @param {String} access
+   * @param {{}} [options]
+   * @returns {Promise}
+   */
+  this._share = function (id, access, options) {
+    return new Promise((resolve, reject) => {
+      try {
+        requestShares(parseDirId(share))
+          .then((shares) => {
+            if (shares[0] && shares[0].id) {
+              return updateShare(shares[0].id, access, options);
+            } else {
+              return createShare(id, access, options);
+            }
+          })
+          .then(({link, options}) => resolve(new Share(link, options)))
+          .catch((err) => reject(err));
+      } catch (err) {
+        return reject(err);
+      }
     });
   };
 
@@ -715,29 +791,6 @@ function OwnCloudStorage(config) {
     });
   }
 
-  function shareUpdateConstructor(share, params) {
-    let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
-      headers: {
-        'OCS-APIRequest': true
-      },
-      auth: {
-        user: config.login,
-        password: config.password
-      },
-      form: params
-    };
-    return new Promise((resolve, reject) => {
-      request.put(reqObject, (err, res) => {
-        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-          resolve(true);
-        } else {
-          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
-        }
-      });
-    });
-  }
-
   /**
    * @param {String} id
    * @param {String} access
@@ -746,25 +799,6 @@ function OwnCloudStorage(config) {
   this._setShareAccess = function (id, access) {
     id = parseDirId(id);
     const update = {permissions: accessLevel(access)};
-    return requestShares(id)
-      .then((shares) => {
-        let promise;
-        shares.forEach((share) => {
-          promise = promise ?
-            promise.then(() => shareUpdateConstructor(share, update)) :
-            shareUpdateConstructor(share, update);
-        });
-        return promise || Promise.resolve();
-      });
-  };
-
-  /**
-   * @param {String} id
-   * @param {{}} update
-   * @returns {Promise}
-   */
-  this._setShareUpdate = function (id, update) {
-    id = parseDirId(id);
     return requestShares(id)
       .then((shares) => {
         let promise;
