@@ -323,7 +323,8 @@
           "meta": "ion://metaRepo",
           "acl": "ion://aclProvider",
           "keyProvider": "ion://keyProv",
-          "workflow": "ion://workflows"
+          "workflow": "ion://workflows",
+          "log": "ion://sysLog"
         }
       }
     }

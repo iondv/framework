@@ -12,6 +12,7 @@ const Permissions = require('core/Permissions');
 const merge = require('merge');
 const clone = require('clone');
 const PropertyTypes = require('core/PropertyTypes');
+const Logger = require('core/interfaces/Logger');
 // const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
@@ -708,6 +709,12 @@ function SecuredDataRepository(options) {
   function reduceRefAttr(cm, a) {
     let tmp = a.slice(0, a.length - 1);
     let pm = findPm(cm, tmp);
+    if (!pm) {
+      if (options.log instanceof Logger) {
+        options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + tmp.join('.') + ' класса ' + cm.getCanonicalName());
+      }
+      return [];
+    }
     if (pm.type !== PropertyTypes.REFERENCE && pm.type !== PropertyTypes.COLLECTION) {
       return [];
     }
