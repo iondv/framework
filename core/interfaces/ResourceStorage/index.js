@@ -57,7 +57,7 @@ function ResourceStorage() {
     if (typeof this._init === 'function') {
       return this._init();
     }
-    return new Promise(function (resolve) {resolve();});
+    return Promise.resolve();
   };
 
   /**

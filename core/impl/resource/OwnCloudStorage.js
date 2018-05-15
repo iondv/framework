@@ -15,6 +15,7 @@ const Dom = require('xmldom').DOMParser;
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
+const Share = require('core/interfaces/ResourceStorage/lib/Share');
 
 // jshint maxstatements: 100, maxcomplexity: 20
 
@@ -574,9 +575,9 @@ function OwnCloudStorage(config) {
     }
   }
 
-  function shareUpdateConstructor(share, params) {
+  function shareUpdateConstructor(shareId, params) {
     let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
+      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId)),
       headers: {
         'OCS-APIRequest': true
       },
@@ -587,9 +588,17 @@ function OwnCloudStorage(config) {
       form: params
     };
     return new Promise((resolve, reject) => {
-      request.put(reqObject, (err, res) => {
+      request.put(reqObject, (err, res, body) => {
         if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-          resolve(true);
+          try {
+            let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]');
+            if (result && result[0]) {
+              return resolve(result[0]);
+            }
+            return reject(new Error('Error while fetching share'));
+          } catch (err) {
+            reject(err);
+          }
         } else {
           return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
         }
@@ -604,7 +613,8 @@ function OwnCloudStorage(config) {
         let form = {
           path: id,
           shareType: '3',
-          publicUpload: acs === ShareAccessLevel.WRITE ? 'true' : 'false',
+          // publicUpload: acs === ShareAccessLevel.WRITE ? 'true' : 'false',
+          publicUpload: 'false',
           permissions: acs ? accessLevel(acs) : '8'
         };
         if (options.password) {
@@ -631,13 +641,33 @@ function OwnCloudStorage(config) {
           form
         };
         request.post(reqObject, (err, res, body) => {
-          if (!err && res.statusCode === 200) {
+          try {
             if (typeof body === 'string') {
               body = JSON.parse(body);
             }
-            resolve(body.ocs && body.ocs.data.url);
-          } else {
-            return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
+            if (!err && res.statusCode === 200) {
+              if (body.ocs && body.ocs.meta && body.ocs.meta.status === 'failure') {
+                return reject(new Error('Status code:' + body.ocs.meta.statuscode + '. ' + body.ocs.meta.message));
+              }
+              let result = {};
+              if (body.ocs && body.ocs.data) {
+                result = {
+                  id: body.ocs.data.id,
+                  passwordSet: Boolean(body.ocs.data.share_with),
+                  shareUrl: body.ocs.data.url,
+                  permissions: body.ocs.data.permissions,
+                  expiration: body.ocs.data.expiration
+                };
+              }
+              resolve(result);
+            } else {
+              let message = (body && body.ocs && body.ocs.meta && body.ocs.meta.message) ?
+                body.ocs.meta.message :
+                null;
+              reject(err || new Error('Status code:' + res.statusCode + '. ' + (message || 'Unknown error')));
+            }
+          } catch (err) {
+            return reject(err);
           }
         });
       } catch (e) {
@@ -673,15 +703,14 @@ function OwnCloudStorage(config) {
   this._share = function (id, access, options) {
     return new Promise((resolve, reject) => {
       try {
-        requestShares(parseDirId(share))
+        requestShares(parseDirId(id))
           .then((shares) => {
-            if (shares[0] && shares[0].id) {
+            if (shares && shares[0] && shares[0].id) {
               return updateShare(shares[0].id, access, options);
-            } else {
-              return createShare(id, access, options);
             }
+            return createShare(id, access, options);
           })
-          .then(({link, options}) => resolve(new Share(link, options)))
+          .then((data) => resolve(new Share(data.shareUrl, data)))
           .catch((err) => reject(err));
       } catch (err) {
         return reject(err);
@@ -736,6 +765,34 @@ function OwnCloudStorage(config) {
     return null;
   }
 
+  function parseShareXml(body, elementsSelector) {
+    let result = [];
+    let dom = new Dom();
+    let doc = dom.parseFromString(body);
+    let elements = xpath.select(elementsSelector, doc);
+    for (let i = 0; i < elements.length; i++) {
+      let shareId = retriveXpathData(elements[i], '*[local-name()="id"]');
+      let shareType = retriveXpathData(elements[i], '*[local-name()="share_type"]');
+      let shareUrl = retriveXpathData(elements[i], '*[local-name()="url"]');
+      let permissions = retriveXpathData(elements[i], '*[local-name()="permissions"]');
+      let expiration = retriveXpathData(elements[i], '*[local-name()="expiration"]');
+      let shareWith = false;
+      if (shareType && shareType === '3') {
+        shareWith = retriveXpathData(elements[i], '*[local-name()="share_with"]');
+      }
+      if (shareId) {
+        result.push({
+          id: shareId,
+          passwordSet: Boolean(shareWith),
+          shareUrl,
+          permissions,
+          expiration
+        });
+      }
+    }
+    return result;
+  }
+
   function requestShares(id) {
     let reqObject = {
       uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
@@ -756,33 +813,7 @@ function OwnCloudStorage(config) {
           return reject(err);
         }
         try {
-          let result = [];
-          let dom = new Dom();
-          let doc = dom.parseFromString(body);
-          let elements = xpath.select(
-            '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]',
-            doc
-          );
-          for (let i = 0; i < elements.length; i++) {
-            let shareId = retriveXpathData(elements[i], '*[local-name()="id"]');
-            let shareType = retriveXpathData(elements[i], '*[local-name()="share_type"]');
-            let shareUrl = retriveXpathData(elements[i], '*[local-name()="url"]');
-            let permissions = retriveXpathData(elements[i], '*[local-name()="permissions"]');
-            let expiration = retriveXpathData(elements[i], '*[local-name()="expiration"]');
-            let shareWith = false;
-            if (shareType && shareType === '3') {
-              shareWith = retriveXpathData(elements[i], '*[local-name()="share_with"]');
-            }
-            if (shareId) {
-              result.push({
-                id: shareId,
-                passwordSet: Boolean(shareWith),
-                shareUrl,
-                permissions,
-                expiration
-              });
-            }
-          }
+          let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]');
           resolve(result);
         } catch (err) {
           reject(err);
