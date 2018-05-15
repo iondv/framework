@@ -136,7 +136,7 @@ function ClassMeta(metaObject) {
 
   this.getKeyProperties = function () {
     if (!this.plain.key || Array.isArray(this.plain.key) && this.plain.key.length === 0) {
-      var anc = this.getAncestor();
+      let anc = this.getAncestor();
       if (anc !== null) {
         return anc.getKeyProperties();
       }
@@ -208,7 +208,7 @@ function ClassMeta(metaObject) {
       }
     }
     return Object.values(result).sort((a, b) => {
-      return (b.orderNumber || 0) - (a.orderNUmber || 0);
+      return (a.orderNumber || 0) - (b.orderNumber || 0);
     });
   };
 

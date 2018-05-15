@@ -14,7 +14,20 @@ const toAbsolutePath = require('core/system').toAbsolute;
  * @constructor
  */
 function Scheduler(options) {
-  let running = {};
+
+  const runningModes = {
+    STOPPED: 0,
+    RUNNED: 1,
+    MANUALLY: 2
+  };
+
+  this.RunningModes = function () {
+    return runningModes;
+  }
+
+
+  let runned = {};
+  let manually = {};
 
   function stopper(nm, ch) {
     return new Promise((resolve, reject) => {
@@ -22,7 +35,7 @@ function Scheduler(options) {
         let to = setTimeout(
           () => {
             if (options.log) {
-              options.log.warn(`Не удалось завершить задание ${nm} в отведенное время`);
+              options.log.warn(`Не удалось завершить задание ${nm} в отведенное время.`);
             }
             ch.removeAllListeners();
             resolve();
@@ -49,12 +62,12 @@ function Scheduler(options) {
    */
   this.stopAll = function () {
     let result = [];
-    for (let nm in running) {
-      if (running.hasOwnProperty(nm)) {
-        result.push(stopper(nm, running[nm]));
+    for (let nm in runned) {
+      if (runned.hasOwnProperty(nm)) {
+        result.push(stopper(nm, runned[nm]));
       }
     }
-    return Promise.all(result).then(()=> {running = {};});
+    return Promise.all(result).then(()=> {runned = {};});
   };
 
   /**
@@ -63,12 +76,15 @@ function Scheduler(options) {
    */
   this.run = function (job) {
     try {
-      if (!running.hasOwnProperty(job)) {
+      if (manually.hasOwnProperty(job)) {
+        throw new Error(`Задание ${job} уже запущено вручную.`);
+      }
+      if (!runned.hasOwnProperty(job)) {
         let jobs = options.settings.get('jobs');
         if (!jobs.hasOwnProperty(job)) {
-          throw new Error(`Задание ${job} не найдено в конфигурации`);
+          throw new Error(`Задание ${job} не найдено в конфигурации.`);
         }
-        running[job] = child.fork(toAbsolutePath('bin/job-runner'), [job], {stdio: ['pipe','inherit','inherit','ipc']});
+        runned[job] = child.fork(toAbsolutePath('bin/job-runner'), [job], {stdio: ['pipe','inherit','inherit','ipc']});
       }
       return Promise.resolve();
     } catch (err) {
@@ -80,12 +96,15 @@ function Scheduler(options) {
    * @param {String} job
    * @returns {Boolean}
    */
-  this.isRunning = function (job) {
+  this.RunningMode = function (job) {
     let jobs = options.settings.get('jobs');
-    if (!jobs.hasOwnProperty(job)) {
-      throw new Error(`Задание ${job} не найдено в конфигурации`);
+    if (runned.hasOwnProperty(job)) {
+      return runningModes.RUNNED;
+    } else if (manually.hasOwnProperty(job)) {
+      return runningModes.MANUALLY;
+    } else {
+      return runningModes.STOPPED;
     }
-    return running.hasOwnProperty(job);
   };
 
   /**
@@ -93,10 +112,38 @@ function Scheduler(options) {
    * @returns {Promise}
    */
   this.stop = function (job) {
-    if (running.hasOwnProperty(job)) {
-      return stopper(job, running[job]).then(() => delete running[job]);
+    if (manually.hasOwnProperty(job)) {
+      return Promise.reject(new Error(`Задание ${job} запущено вручную и не может быть прервано.`));
+    }
+    if (runned.hasOwnProperty(job)) {
+      return stopper(job, runned[job]).then(() => delete runned[job]);
     }
     return Promise.resolve();
+  };
+
+  /**
+   * @param {String} job
+   * @returns {Promise}
+   */
+  this.manualStart = function (job) {
+    try {
+      if (runned.hasOwnProperty(job)) {
+        throw new Error(`Задание ${job} уже запущено по расписанию.`);
+      }
+      if (!manually.hasOwnProperty(job)) {
+        let jobs = options.settings.get('jobs');
+        if (!jobs.hasOwnProperty(job)) {
+          throw new Error(`Задание ${job} не найдено в конфигурации`);
+        }
+        manually[job] = child.fork(toAbsolutePath('bin/job'), [job], {stdio: ['pipe','inherit','inherit','ipc']});
+        manually[job].on('exit', () => {
+          delete manually[job];
+        });
+      }
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -106,8 +153,8 @@ function Scheduler(options) {
     try {
       let jobs = options.settings.get('jobs');
       for (let nm in jobs) {
-        if (jobs.hasOwnProperty(nm) && !jobs[nm].disabled) {
-          running[nm] = child.fork(toAbsolutePath('bin/job-runner'), [nm], {stdio: ['pipe','inherit','inherit','ipc']});
+        if (jobs.hasOwnProperty(nm) && !manually.hasOwnProperty(nm) && !jobs[nm].disabled) {
+          runned[nm] = child.fork(toAbsolutePath('bin/job-runner'), [nm], {stdio: ['pipe','inherit','inherit','ipc']});
         }
       }
       return Promise.resolve();
@@ -132,7 +179,7 @@ function Scheduler(options) {
     let jobs = options.settings.get('jobs');
     for (let job in jobs) {
       if (jobs.hasOwnProperty(job)) {
-        jobs[job].isRunning = this.isRunning(job);
+        jobs[job].runningMode = this.RunningMode(job);
       }
     }
     return jobs;
@@ -144,7 +191,7 @@ function Scheduler(options) {
    */
   this.getJob = function (job) {
     let result = options.settings.get('jobs')[job];
-    result.isRunning = this.isRunning(job);
+    result.runningMode = this.RunningMode(job);
     return result;
   };
 
@@ -162,7 +209,7 @@ function Scheduler(options) {
       throw new Error(`Переданы некорректные параметры задания.`);
     }
     jobs[jobName] = jobSettings;
-    options.settings.set('jobs', jobs);
+    options.settings.set('jobs', jobs, true);
     return options.settings.apply();
   };
 
@@ -173,14 +220,17 @@ function Scheduler(options) {
   this.removeJob = function (job) {
     try {
       let promise = Promise.resolve();
-      if (this.isRunning(job)) {
+      if (this.RunningMode(job) === runningModes.MANUALLY) {
+        throw new Error(`Задание ${job} запущено вручную и не может быть удалено.`);
+      }
+      if (this.RunningMode(job) === runningModes.RUNNED) {
         promise = this.stop(job);
       }
       return promise.then(()=> {
         let jobs = options.settings.get('jobs');
         if (jobs.hasOwnProperty(job)) {
           delete jobs[job];
-          options.settings.set('jobs', jobs);
+          options.settings.set('jobs', jobs, true);
           return options.settings.apply();
         }
         return Promise.resolve();
