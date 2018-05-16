@@ -677,18 +677,20 @@ function OwnCloudStorage(config) {
   }
 
   function updateShare(shareId, access, options) {
-    let promise = Promise.resolve();
+    let promise = Promise.resolve({});
     if (access || options.permissions) {
       promise = shareUpdateConstructor(shareId, {permissions: accessLevel(access || options.permissions)});
     }
-    if (options.password) {
-      promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password}));
+    if (options.password || options.password === false) {
+      promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password || null}));
     }
     if (options.expiration) {
       let expDate = moment(options.expiration).format('YYYY-MM-DD');
       if (expDate && expDate !== 'Invalid date') {
         promise = promise.then(() => shareUpdateConstructor(shareId, {expiration: expDate}));
       }
+    } else if (options.expiration === false) {
+      promise = promise.then(() => shareUpdateConstructor(shareId, {expiration: ''}));
     }
     return promise;
   }
