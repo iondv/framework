@@ -659,7 +659,7 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                needed: needed ? [] : null
+                needed: needed ? {} : null
               });
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
@@ -673,7 +673,7 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed ? [] : null
+                    needed: needed ? {} : null
                   }
                 );
               }
@@ -1681,7 +1681,7 @@ function IonDataRepository(options) {
     }
     if (item instanceof Item) {
       let props = item.getMetaClass().getPropertyMetas();
-      let needed = [];
+      let needed = {};
       props.forEach((p) => {
         if (p.cached) {
           needed[p.name] = true;
@@ -2441,6 +2441,10 @@ function IonDataRepository(options) {
       );
     }
 
+    if (!options.sort && Array.isArray(pm.selSorting) && pm.selSorting.length) {
+      options.sort = sortingParser(pm.selSorting);
+    }
+
     let detailCm = pm._refClass;
     if (!detailCm) {
       return Promise.reject(
@@ -2462,6 +2466,9 @@ function IonDataRepository(options) {
         }
       }
       options.filter = options.filter ? {[Operations.AND]: [filter, options.filter]} : filter;
+      if (onlyCount) {
+        return _this._getCount(detailCm.getCanonicalName(), options);
+      }
       return _this._getList(detailCm.getCanonicalName(), options);
     } else {
       let kp = detailCm.getKeyProperties();
@@ -2478,9 +2485,8 @@ function IonDataRepository(options) {
             options.filter = options.filter ? {[Operations.AND]: [options.filter, filter]} : filter;
             if (onlyCount) {
               return _this._getCount(detailCm.getCanonicalName(), options);
-            } else {
-              return _this._getList(detailCm.getCanonicalName(), options);
             }
+            return _this._getList(detailCm.getCanonicalName(), options);
           } else {
             throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${master.getClassName()}@${master.getItemId()}`});
           }
