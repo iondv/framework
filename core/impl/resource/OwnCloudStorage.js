@@ -594,6 +594,13 @@ function OwnCloudStorage(config) {
             let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]');
             if (result && result[0]) {
               return resolve(result[0]);
+            } else {
+              const doc = new Dom().parseFromString(body);
+              const status = retriveXpathData(doc, '/*[local-name()="ocs"]/*[local-name()="meta"]/*[local-name()="status"]');
+              const message = retriveXpathData(doc, '/*[local-name()="ocs"]/*[local-name()="meta"]/*[local-name()="message"]');
+              if (status || message) {
+                return reject(new Error(`${status || ''}. ${message || ''}`));
+              }
             }
             return reject(new Error('Error while fetching share'));
           } catch (err) {
@@ -613,7 +620,6 @@ function OwnCloudStorage(config) {
         let form = {
           path: id,
           shareType: '3',
-          // publicUpload: acs === ShareAccessLevel.WRITE ? 'true' : 'false',
           publicUpload: 'false',
           permissions: acs ? accessLevel(acs) : '8'
         };
@@ -685,12 +691,15 @@ function OwnCloudStorage(config) {
       promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password || null}));
     }
     if (options.expiration) {
-      let expDate = moment(options.expiration).format('YYYY-MM-DD');
+      let expDate = null;
+      try {
+        expDate = moment(options.expiration).format('YYYY-MM-DD');
+      } catch(e) {}
       if (expDate && expDate !== 'Invalid date') {
-        promise = promise.then(() => shareUpdateConstructor(shareId, {expiration: expDate}));
+        promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: expDate}));
       }
     } else if (options.expiration === false) {
-      promise = promise.then(() => shareUpdateConstructor(shareId, {expiration: ''}));
+      promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: ''}));
     }
     return promise;
   }
