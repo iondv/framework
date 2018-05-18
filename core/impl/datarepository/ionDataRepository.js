@@ -182,17 +182,19 @@ function IonDataRepository(options) {
   /**
    * @param {Object} filter
    * @param {ClassMeta} cm
+   * @param {Boolean} excludeDescendants
    * @private
    */
-  function addDiscriminatorFilter(filter, cm) {
-    let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
+  function addDiscriminatorFilter(filter, cm, excludeDescendants) {
     let cnFilter = [cm.getCanonicalName()];
-    for (let i = 0; i < descendants.length; i++) {
-      cnFilter.push(descendants[i].getCanonicalName());
+    if (!excludeDescendants) {
+      let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
+      for (let i = 0; i < descendants.length; i++) {
+        cnFilter.push(descendants[i].getCanonicalName());
+      }
     }
 
     let df = {[Operations.IN]: ['$_class', cnFilter]};
-
     return !filter ? df : {[Operations.AND]: [df, filter]};
   }
 
@@ -251,7 +253,7 @@ function IonDataRepository(options) {
   /**
    *
    * @param {String | Item} obj
-   * @param {{filter: Object}} [options]
+   * @param {{filter: Object, excludeDescendants: Boolean}} [options]
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
@@ -261,7 +263,7 @@ function IonDataRepository(options) {
     let f = clone(options.filter);
     let j = clone(options.joins || []);
     f = addFilterByItem(f, obj);
-    f = addDiscriminatorFilter(f, cm);
+    f = addDiscriminatorFilter(f, cm, options.excludeDescendants);
     return prepareFilterValues(cm, f, j)
       .then(function (filter) {
         return _this.ds.count(tn(rcm), {filter: filter, joins: j});
@@ -707,6 +709,7 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    * @param {{}} [options.___loaded]
    * @param {{}} [options.needed]
+   * @param {Boolean} [options.excludeDescendants]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
@@ -719,7 +722,7 @@ function IonDataRepository(options) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
     $options.filter = addFilterByItem(options.filter, obj);
-    $options.filter = addDiscriminatorFilter(options.filter, cm);
+    $options.filter = addDiscriminatorFilter(options.filter, cm, options.excludeDescendants);
     $options.joins = options.joins || [];
 
     return bubble(
@@ -788,6 +791,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipCalculations]
+   * @param {Boolean} [options.excludeDescendants]
    * @param {{}} [options.___loaded]
    * @returns {Promise}
    */
@@ -801,7 +805,7 @@ function IonDataRepository(options) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
     opts.filter = addFilterByItem(opts.filter, obj);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.excludeDescendants);
     opts.joins = opts.joins || [];
     return bubble(
       'pre-iterate',
@@ -968,6 +972,7 @@ function IonDataRepository(options) {
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
+   * @param {Boolean} [options.excludeDescendants]
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
@@ -976,7 +981,7 @@ function IonDataRepository(options) {
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
     prepareResults(cm, opts, opts.joins);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.excludeDescendants);
     return prepareFilterValues(cm, opts.filter, opts.joins).
     then(function (filter) {
         opts.filter = filter;
@@ -996,6 +1001,7 @@ function IonDataRepository(options) {
    * @param {String[]} [options.attributes]
    * @param {String[]} [options.select]
    * @param {Boolean} [options.distinct]
+   * @param {Boolean} [options.excludeDescendants]
    * @returns {Promise}
    */
   this._rawData = function (className, options) {
@@ -1007,7 +1013,7 @@ function IonDataRepository(options) {
     for (let i = 0; i < props.length; i++) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.excludeDescendants);
     opts.joins = [];
     return prepareFilterValues(cm, opts.filter, opts.joins)
       .then(function (filter) {
@@ -1030,6 +1036,7 @@ function IonDataRepository(options) {
    * @param {{}} [options.needed]
    * @param {Boolean} [options.skipAutoAssign]
    * @param {Boolean} [options.reload]
+   * @param {Boolean} [options.excludeDescendants]
    */
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
@@ -1079,7 +1086,7 @@ function IonDataRepository(options) {
           return this._getItem(obj.getClassName(), obj.getItemId(), options);
         } else {
           opts.filter = addFilterByItem({}, obj);
-          opts.filter = addDiscriminatorFilter(opts.filter, cm);
+          opts.filter = addDiscriminatorFilter(opts.filter, cm, opts.excludeDescendants);
           opts.count = 1;
           opts.joins = [];
           fetcher = prepareFilterValues(cm, opts.filter, opts.joins)
@@ -2200,6 +2207,7 @@ function IonDataRepository(options) {
    * @param {{}} [options]
    * @param {Object} [options.filter]
    * @param {User} [options.user]
+   * @param {Boolean} [options.excludeDescendants]
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
@@ -2207,7 +2215,7 @@ function IonDataRepository(options) {
 
     let cm = _this.meta.getMeta(classname);
     let rcm = getRootType(cm);
-    options.filter = addDiscriminatorFilter(options.filter, cm);
+    options.filter = addDiscriminatorFilter(options.filter, cm, options.excludeDescendants);
     return prepareFilterValues(cm, options.filter, []).then((filter) => _this.ds.delete(tn(rcm), filter));
   };
 
@@ -2220,6 +2228,7 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
    * @param {User} [options.user]
+   * @param {Boolean} [options.excludeDescendants]
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
@@ -2237,7 +2246,7 @@ function IonDataRepository(options) {
       prepareFileSavers('bulk', cm, fileSavers, updates);
       checkRequired(cm, updates, true, true);
       return Promise.all(fileSavers)
-        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, [])))
+        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, options.excludeDescendants)))
         .then((filter) => {
           if (options.user) {
             updates._editor = options.user.id();
