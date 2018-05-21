@@ -14,6 +14,7 @@ const path = require('path');
 
 /**
  * @param {StoredFile} file
+ * @param {StoredFile[]} thumbnails
  * @constructor
  */
 function StoredImage (file, thumbnails) {
@@ -45,85 +46,55 @@ function ImageStorage(options) { // jshint ignore:line
     uploadThumbnails = options.fileStorage.fileOptionsSupport();
   }
 
-  function createThumbnails(source, name, opts) {
+  function createThumbnails(source, name) {
     let result = [];
     let ds = options.thumbnails;
-    let format;
     for (let thumb in ds) {
       if (ds.hasOwnProperty(thumb)) {
-        format = ds[thumb].format || 'png';
-        opts.thumbType = thumb;
-        result.push(
-          options.fileStorage.accept(
-            {name: thumb  + '_' + name.replace(/\.\w+$/, '.' + format),
-              stream: gm(source)
-              .resize(ds[thumb].width, ds[thumb].height)
-              .setFormat(format)
-              .stream()},
-            null,
-            opts
-          )
-        );
+        let format = ds[thumb].format || 'png';
+        result.push({
+          file: {
+            name: thumb  + '_' + name.replace(/\.\w+$/, '.' + format),
+            stream: gm(source).resize(ds[thumb].width, ds[thumb].height).setFormat(format).stream()
+          },
+          options: {thumbType: thumb}
+        });
       }
     }
-    return Promise.all(result);
+    return result;
   }
 
-  function imageToBuffer(source) {
-    return new Promise((resolve, reject) => {
-      gm(source).quality(100).toBuffer((err, buf) => {
+  function streamToBuffer (stream) {
+    return new Promise ((resolve, reject) => {
+      return gm(stream).quality(100).toBuffer((err, buffer) => {
         if (err) {
           return reject(err);
         }
-        return resolve(buf);
+        return resolve(buffer);
       });
     });
   }
 
-  function acceptWithThumbnails(data, directory, opts) {
-    let ops = opts || {};
-    let o = clone(ops);
-    let mime = ops.mimetype || ops.mimeType || data.mimetype || data.mimeType;
-
-    if (mime && mime.indexOf('image/') !== 0) {
-      return Promise.reject(new Error('Переданные данные не являются изображением!'));
-    }
-    let thumbs;
-    if (typeof data === 'object' &&
-      (typeof data.originalname !== 'undefined' || typeof data.name !== 'undefined')) {
-      let name = ops.name || data.originalname || data.name || cuid();
-      if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
-        thumbs = createThumbnails(data.buffer, name, o);
-      } else if (typeof data.path !== 'undefined') {
-        thumbs = createThumbnails(data.path, name, o);
-      } else if (typeof data.stream !== 'undefined') {
-        thumbs = imageToBuffer(data.stream)
-          .then((buffer) => {
-              delete data.stream;
-              data.buffer = buffer;
-              return createThumbnails(data.buffer, name, o);
-            });
-      }
-    } else {
-      thumbs = createThumbnails(data, ops.name || cuid(), o);
-    }
-
-    if (!thumbs) {
-      return Promise.reject(new Error('Переданы некорректные данные!'));
-    }
-    let thumbnails = {};
-    return thumbs
-      .then((files) => {
-        if (files) {
-          ops.thumbnails = {};
-          for (let i = 0; i < files.length; i++) {
-            thumbnails[files[i].options.thumbType] = files[i];
-            ops.thumbnails[files[i].options.thumbType] = files[i].id;
-          }
-        }
-        return fileStorage.accept(data, directory, ops);
-      })
-      .then((file) => new StoredImage(file, thumbnails));
+  function getVirtualThumbnails (file) {
+    return file.getContents()
+      .then((contents) => streamToBuffer(contents.stream))
+      .then((buffer) => createThumbnails(buffer, file.name))
+      .then((thumbs) => {
+        let result = [];
+        thumbs.forEach((t) => {
+          result.push(
+            new StoredFile(
+              t.file.name,
+              null,
+              Object.assign(clone(file.options), t.options),
+              function (callback) {
+                return callback(null, t.file.stream);
+              }
+            )
+          );
+        });
+        return result;
+      });
   }
 
   /**
@@ -133,10 +104,67 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._accept = function (data, directory, opts) {
-    if (uploadThumbnails) {
-      return acceptWithThumbnails(data, directory, opts);
+    let thumbnails = {};
+    let mime = ops.mimetype || ops.mimeType || data.mimetype || data.mimeType;
+
+    if (mime && mime.indexOf('image/') !== 0) {
+      return Promise.reject(new Error('Переданные данные не являются изображением!'));
     }
-    return fileStorage.accept(data, directory, opts).then((file) => enrichThumbnails(file));
+
+    let p = Promise.resolve();
+
+    if (uploadThumbnails) {
+      p = p.then(() => {
+          if (typeof data === 'object') {
+            if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
+              return data.buffer;
+            } else if (typeof data.path !== 'undefined') {
+              return data.path;
+            } else if (typeof data.stream !== 'undefined') {
+              return streamToBuffer(data.stream)
+                .then((buffer) => {
+                  delete data.stream;
+                  data.buffer = buffer;
+                  return data.buffer;
+                });
+            }
+          }
+          return data;
+        })
+        .then((source) => createThumbnails(source, opts.name || data.originalname || data.name || cuid()))
+        .then((thumbs) => {
+          let tp = Promise.resolve();
+          let th_ids = {};
+          thumbs.forEach((t) => {
+            tp = tp.then(() => options.fileStorage.accept(t.file, null, Object.assign(clone(opts), t.options)))
+              .then(thf => {
+                thumbnails[thf.options.thumbType] = thf;
+                th_ids[thf.options.thumbType] = thf.id;
+              });
+          });
+          return tp.then(() => th_ids);
+        });
+    }
+
+    p = p.then((thumbnails_ids) => {
+      let o = clone(opts);
+      if (thumbnails_ids) {
+        o.thumbnails = thumbnails_ids;
+      }
+      return fileStorage.accept(data, directory, o);
+    });
+
+    if (!uploadThumbnails) {
+      p = p.then((file) => {
+        return getVirtualThumbnails(file)
+          .then((thumbs) => {
+            thumbnails = thumbs;
+            return file;
+          });
+        });
+    }
+
+    return p.then((file) => new StoredImage(file, thumbnails));
   };
 
   /**
@@ -201,53 +229,24 @@ function ImageStorage(options) { // jshint ignore:line
       });
   }
 
-  function slashChecker(path) {
-    if (path && path.slice(0, 1) !== '/') {
-      return '/' + path;
-    }
-    return path || '';
-  }
-
-  function enrichThumbnails(file) {
-    let thumbs = {};
-    if (options.thumbnails) {
-      Object.keys(options.thumbnails).forEach((thumb) => {
-        thumbs[thumb] = new StoredFile(
-          file.id,
-          slashChecker(`${options.urlBase}/${thumb}/${file.id}`),
-          file.options,
-          null
-        );
-      });
-    }
-    return new StoredImage(file, thumbs);
-  }
-
-  function filesWrapper(files) {
-    if (!Array.isArray(files)) {
-      return files;
-    }
-    let result = [];
-    files.forEach((file) => result.push(enrichThumbnails(file)));
-    return result;
-  }
-
   /**
    * @param {String[]} ids
    * @returns {Promise}
    */
   this._fetch = function (ids) {
-    return new Promise(function (resolve, reject) {
-      fileStorage.fetch(ids)
-        .then((files) => {
-          if (!uploadThumbnails) {
-            return filesWrapper(files);
-          }
-          return thumbsLoader(files);
-        })
-        .then(resolve)
-        .catch(reject);
-    });
+    fileStorage.fetch(ids)
+      .then((files) => {
+        if (!uploadThumbnails) {
+          let p = Promise.resolve();
+          let images = [];
+          files.forEach((file) => {
+            p = p.then(getVirtualThumbnails(file))
+              .then((thumbnails) => images.push(new StoredImage(file, thumbnails)));
+          });
+          return p.then(() => images);
+        }
+        return thumbsLoader(files);
+      });
   };
 
   function respondFile(req, res) {
@@ -277,18 +276,23 @@ function ImageStorage(options) { // jshint ignore:line
    */
   this._fileMiddle = function () {
     return function (req, res, next) {
+      let ds = options.thumbnails;
+      let thumbType = ds && Object.keys(ds).indexOf(req.params.thumb) > -1 ? req.params.thumb : null;
+      let imageId = req.params.id;
+
+      if (!thumbType || !imageId) {
+        return next();
+      }
+
+      ???
+
       try {
         if (uploadThumbnails) {
           return next();
         }
-        let ds = options.thumbnails;
-        let thumbType, imageId;
-        thumbType = ds && Object.keys(ds).indexOf(req.params.thumb) > -1 ? req.params.thumb : null;
-        imageId = req.params.id;
 
-        if (!thumbType || !imageId) {
-          return next();
-        }
+
+
 
         fileStorage.fetch([imageId])
           .then((images) => {
