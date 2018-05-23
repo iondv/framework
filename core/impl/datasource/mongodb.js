@@ -686,7 +686,7 @@ function MongoDs(config) {
                 switch (o) {
                   case '$regex':
                     if (typeof right !== 'undefined') {
-                      return {[attr]: {$regex: right, $options: 'i'}};
+                      return {[attr]: {$regex: new RegExp(right), $options: 'i'}};
                     }break;
                 }
                 if (typeof right !== 'undefined') {
