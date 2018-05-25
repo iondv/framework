@@ -44,6 +44,7 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
+ * @param {Logger} [options.log]
  * @constructor
  */
 function ImageStorage(options) { // jshint ignore:line
@@ -119,6 +120,9 @@ function ImageStorage(options) { // jshint ignore:line
       let o = clone(file.options);
       delete o.thumbnails;
       o.thumbType = thumb;
+      let format = options.thumbnails[thumb].format || 'png';
+      o.name = thumb + '_' + o.name.replace(/\.\w+$/, '.' + format);
+      o.mimeType = 'image/' + format;
 
       thumbnails[thumb] = new StoredFile(
         file.options.thumbnails[thumb],
@@ -126,7 +130,13 @@ function ImageStorage(options) { // jshint ignore:line
         o,
         (callback) => {
           fileStorage.fetch([file.options.thumbnails[thumb]])
-            .then((f) => callback(null, f.getContents()))
+            .then((f) => {
+              if (!f.length) {
+                throw new Error('Thumbnail not found!');
+              }
+              return f[0].getContents();
+            })
+            .then((c) => callback(null, c.stream))
             .catch((e) => callback(e));
         }
       );
@@ -189,6 +199,7 @@ function ImageStorage(options) { // jshint ignore:line
             let format = options.thumbnails[thumb].format || 'png';
             let o = clone(opts);
             o.thumbType = thumb;
+            o.mimeType = 'image/' + format;
 
             tp = tp
               .then(
@@ -285,53 +296,39 @@ function ImageStorage(options) { // jshint ignore:line
         return res.status(404).send('Thumbnail not found!');
       }
 
-      return fileStorage.fetch([imageId])
+      return this.fetch([imageId])
         .then((images) => {
           if (!images[0]) {
             throw new Error('Image not found!');
           }
-
-          if (storeThumbnails) {
-            let thumbId = images[0].options.thumbnails[thumbType];
-            if (thumbId) {
-              return fileStorage.fetch([thumbId])
-                .then((thumbs) => {
-                  if (!thumbs[0]) {
-                    throw new Error('Thumbnail not found!');
-                  }
-                  return thumbs[0].getContents();
-                });
-            }
-            throw new Error('The image does not have a thumbnail!');
-          } else {
-            return images[0].getContents()
-              .then((contents) => {
-                contents.stream = thumbnail(contents.stream, options.thumbnails[thumbType]);
-                return contents;
-              });
-          }
-        })
-        .then((thumb) => {
-          if (thumb && thumb.stream) {
+          let thumb = images[0].thumbnails && images[0].thumbnails[thumbType];
+          if (thumb) {
             let o = thumb.options || {};
-            res.status(200);
-            res.set('Content-Disposition',
-              (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
-              '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
-            res.set('Content-Type', o.mimetype || 'application/octet-stream');
-            if (o.size) {
-              res.set('Content-Length', o.size);
-            }
-            if (o.encoding) {
-              res.set('Content-Encoding', o.encoding);
-            }
-            thumb.stream.pipe(res);
+            return thumb.getContents().then((c) => {
+              res.status(200);
+              res.set('Content-Disposition',
+                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
+                '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
+              res.set('Content-Type', o.mimetype || 'application/octet-stream');
+              if (o.size) {
+                res.set('Content-Length', o.size);
+              }
+              if (o.encoding) {
+                res.set('Content-Encoding', o.encoding);
+              }
+              c.stream.pipe(res);
+            });
           } else {
             res.status(404).send('Thumbnail not found!');
           }
         })
-        .catch((err) => res.status(500).send(err.message));
-    };
+        .catch((err) => {
+          if (options.log) {
+            options.log.error(err);
+          }
+          res.status(500).send(err.message || err);
+        });
+    }.bind(this);
   };
 
   /**
