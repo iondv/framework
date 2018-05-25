@@ -41,71 +41,96 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {ResourceStorage} options.fileStorage
  * @param {{}} options.thumbnails
  * @param {{}} options.urlBase
- * @param {String} options.thumbsDirectoryMode
- * @param {String} options.thumbsDirectory
+ * @param {Boolean} options.storeThumbnails
+ * @param {String} [options.thumbsDirectoryMode]
+ * @param {String} [options.thumbsDirectory]
  * @constructor
  */
 function ImageStorage(options) { // jshint ignore:line
 
   var fileStorage = options.fileStorage;
 
-  let uploadThumbnails = true;
-  if (options.fileStorage.fileOptionsSupport) {
-    uploadThumbnails = options.fileStorage.fileOptionsSupport();
+  let storeThumbnails = (options.storeThumbnails !== false);
+  if (typeof options.fileStorage.fileOptionsSupport === 'function') {
+    storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
 
-  function createThumbnail(source, name, thumbType, opts) {
-    let ds = options.thumbnails;
-    let format = ds[thumbType].format || 'png';
-    let o = clone(opts);
-    o.thumbType = thumbType;
-    return {
-      name: thumbType  + '_' + name.replace(/\.\w+$/, '.' + format),
-      stream: gm(source).resize(ds[thumbType].width, ds[thumbType].height).setFormat(format).stream(),
-      options: o
-    };
-  }
-
-  function createThumbnails(source, name, opts) {
-    let result = [];
-    let ds = options.thumbnails;
-    for (let thumb in ds) {
-      if (ds.hasOwnProperty(thumb)) {
-        result.push(createThumbnail(source, name, thumb, opts));
-      }
-    }
-    return result;
+  function thumbnail(source, opts) {
+    let format = opts.format || 'png';
+    return gm(source).resize(opts.width, opts.height).setFormat(format).stream();
   }
 
   function streamToBuffer (stream) {
     return new Promise ((resolve, reject) => {
-      return gm(stream).quality(100).toBuffer((err, buffer) => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(buffer);
-      });
+      let bufs = [];
+      stream.on('data', (d) => bufs.push(d));
+      stream.on('end', () => resolve(Buffer.concat(bufs)));
+      stream.on('error', (e) => reject(e));
     });
   }
 
-  function getVirtualThumbnails (file) {
-    return file.getContents()
-      .then((contents) => streamToBuffer(contents.stream))
-      .then((buffer) => createThumbnails(buffer, file.name, file.options))
-      .then((thumbs) => {
-        let result = {};
-        thumbs.forEach((t) => {
-          result[t.options.thumbType] = new StoredFile(
-            t.name,
-            `${options.urlBase}/${t.options.thumbType}/${file.id}`,
-            t.options,
-            function (callback) {
-              return callback(null, t.stream);
+  /**
+   * @param {StoredFile} file
+   * @param {{}} thumbnails
+   * @returns {*}
+   */
+  function setThumbnails(file, thumbnails) {
+    Object.keys(options.thumbnails).forEach((thumb) => {
+      let o = clone(file.options);
+      o.thumbType = thumb;
+
+      thumbnails[thumb] = new StoredFile(
+        file.id + '_' + thumb,
+        `${options.urlBase}/${thumb}/${file.id}`,
+        o,
+        (callback) => {
+          if (file.buffer) {
+            callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+          } else {
+            if (file.loading) {
+              file.onloaded.push(() => {
+                callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+              });
+            } else {
+              file.loading = true;
+              file.onloaded = [];
+              streamToBuffer(file.getContents().stream)
+                .then((buff) => {
+                  file.buffer = buff;
+                  file.loading = false;
+                  file.onloaded.forEach((f) => f());
+                  callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+                })
+                .catch((e) => callback(e));
             }
-          );
-        });
-        return result;
-      });
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * @param {StoredFile} file
+   * @param {{}} thumbnails
+   * @returns {*}
+   */
+  function loadThumbnails(file, thumbnails) {
+    Object.keys(file.options.thumbnails).forEach((thumb) => {
+      let o = clone(file.options);
+      delete o.thumbnails;
+      o.thumbType = thumb;
+
+      thumbnails[thumb] = new StoredFile(
+        file.options.thumbnails[thumb],
+        `${options.urlBase}/${thumb}/${file.id}`,
+        o,
+        (callback) => {
+          fileStorage.fetch([file.options.thumbnails[thumb]])
+            .then((f) => callback(null, f.getContents()))
+            .catch((e) => callback(e));
+        }
+      );
+    });
   }
 
   /**
@@ -124,7 +149,7 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (uploadThumbnails) {
+    if (storeThumbnails && options.thumbnails) {
       p = p.then(() => {
           if (typeof data === 'object') {
             if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
@@ -142,53 +167,63 @@ function ImageStorage(options) { // jshint ignore:line
           }
           return data;
         })
-        .then((source) => createThumbnails(source, opts.name || data.originalname || data.name || cuid(), opts))
-        .then((thumbs) => {
-          let thumbDirectory =  null;
+        .then((source) => {
+          let thumbDirectory;
           switch (options.thumbsDirectoryMode) {
-            case thumbsDirectoryModes.RELATIVE: {
-              thumbDirectory = path.join(directory || "", options.thumbsDirectory || "");
-            } break;
-            case thumbsDirectoryModes.ABSOLUTE: {
-              thumbDirectory = options.thumbsDirectory;
-            } break;
+            case thumbsDirectoryModes.RELATIVE:
+              thumbDirectory = path.join(directory || '', options.thumbsDirectory || '');
+              break;
+            case thumbsDirectoryModes.ABSOLUTE:
+              thumbDirectory = options.thumbsDirectory || null;
+              break;
+            default:
+              thumbDirectory = null;
+              break;
           }
           let tp = Promise.resolve();
           let th_ids = {};
-          thumbs.forEach((t) => {
-            tp = tp.then(() => options.fileStorage.accept(
-              {name: t.name, stream: t.stream},
-              thumbDirectory,
-              t.options
-            ))
-            .then((thf) => {
-              thumbnails[thf.options.thumbType] = thf;
-              th_ids[thf.options.thumbType] = thf.id;
-            });
+
+          let nm = opts.name || data.originalname || data.name || cuid();
+
+          Object.keys(options.thumbnails).forEach((thumb) => {
+            let format = options.thumbnails[thumb].format || 'png';
+            let o = clone(opts);
+            o.thumbType = thumb;
+
+            tp = tp
+              .then(
+                () => options.fileStorage.accept(
+                  {
+                    name: thumb + '_' + nm.replace(/\.\w+$/, '.' + format),
+                    stream: thumbnail(source, options.thumbnails[thumb])
+                  },
+                  thumbDirectory,
+                  o)
+              )
+              .then(
+                (thf) => {
+                  thumbnails[thumb] = thf;
+                  th_ids[thumb] = thf.id;
+                }
+              );
           });
           return tp.then(() => th_ids);
         });
     }
 
-    p = p.then((thumbnails_ids) => {
+    return p.then((thumbnails_ids) => {
       let o = clone(opts);
       if (thumbnails_ids) {
         o.thumbnails = thumbnails_ids;
       }
       return fileStorage.accept(data, directory, o);
+    }).then((file) => {
+      if (!storeThumbnails) {
+        setThumbnails(file, thumbnails);
+        file = file.clone();
+      }
+      return new StoredImage(file, thumbnails);
     });
-
-    if (!uploadThumbnails) {
-      p = p.then((file) => {
-        return getVirtualThumbnails(file)
-          .then((thumbs) => {
-            thumbnails = thumbs;
-            return file;
-          });
-        });
-    }
-
-    return p.then((file) => new StoredImage(file, thumbnails));
   };
 
   /**
@@ -196,62 +231,25 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Promise}
    */
   this._remove = function (id) {
-    return fileStorage.fetch([id])
-      .then(
-        /**
-         * @param {StoredFile[]} files
-         */
-        (files) => {
-          let thumbs = Promise.resolve();
-          files.forEach((f) => {
-            if (f.options.thumbnails) {
-              Object.keys(f.options.thumbnails).forEach((thumb) => {
-                thumbs = thumbs.then(() => fileStorage.remove(f.options.thumbnails[thumb]));
-              });
-            }
-          });
-          return thumbs;
-        }
-      )
-      .then(() => fileStorage.remove(id));
-  };
-
-  function thumbsLoader(files) {
-    let thumbs = [];
-    if (Array.isArray(files)) {
-      files.forEach((file) => {
-        if (file.options.thumbnails) {
-          Object.keys(file.options.thumbnails).forEach((t) => thumbs.push(file.options.thumbnails[t]));
-        }
-      });
-    }
-    let tmp = files;
-    return fileStorage.fetch(thumbs)
-      .then((thumbnails) => {
-        let thumbById = {};
-        let result = [];
-        for (let i = 0; i < thumbnails.length; i++) {
-          thumbById[thumbnails[i].id] = thumbnails[i];
-        }
-        for (let i = 0; i < tmp.length; i++) {
-          if (tmp[i].options.thumbnails) {
-            let thumbs = {};
-            for (let thumb in tmp[i].options.thumbnails) {
-              if (
-                tmp[i].options.thumbnails.hasOwnProperty(thumb) &&
-                thumbById.hasOwnProperty(tmp[i].options.thumbnails[thumb])
-              ) {
-                thumbs[thumb] = thumbById[tmp[i].options.thumbnails[thumb]];
+    let p = Promise.resolve();
+    if (storeThumbnails) {
+      p = p.then(() => fileStorage.fetch([id])
+        .then(
+          (files) => {
+            let thumbs = Promise.resolve();
+            files.forEach((f) => {
+              if (f.options.thumbnails) {
+                Object.keys(f.options.thumbnails).forEach((thumb) => {
+                  thumbs = thumbs.then(() => fileStorage.remove(f.options.thumbnails[thumb]));
+                });
               }
-            }
-            result.push(new StoredImage(tmp[i], thumbs));
-          } else {
-            result.push(tmp[i]);
+            });
+            return thumbs;
           }
-        }
-        return result;
-      });
-  }
+        ));
+    }
+    return p.then(() => fileStorage.remove(id));
+  };
 
   /**
    * @param {String[]} ids
@@ -260,16 +258,18 @@ function ImageStorage(options) { // jshint ignore:line
   this._fetch = function (ids) {
     return fileStorage.fetch(ids)
       .then((files) => {
-        if (!uploadThumbnails) {
-          let p = Promise.resolve();
-          let images = [];
-          files.forEach((file) => {
-            p = p.then(() => getVirtualThumbnails(file))
-              .then((thumbnails) => images.push(new StoredImage(file, thumbnails)));
-          });
-          return p.then(() => images);
-        }
-        return thumbsLoader(files);
+        let images = [];
+        files.forEach((file) => {
+          let thumbnails = {};
+          if (storeThumbnails && file.options && file.options.thumbnails) {
+            loadThumbnails(file, thumbnails);
+          } else {
+            setThumbnails(file, thumbnails);
+            file = file.clone();
+          }
+          images.push(new StoredImage(file, thumbnails));
+        });
+        return images;
       });
   };
 
@@ -277,13 +277,12 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {Function}
    */
   this._fileMiddle = function () {
-    return function (req, res, next) {
-      let ds = options.thumbnails;
-      let thumbType = ds && Object.keys(ds).indexOf(req.params.thumb) > -1 ? req.params.thumb : null;
+    return function (req, res) {
+      let thumbType = (options.thumbnails && options.thumbnails[req.params.thumb] && req.params.thumb) || null;
       let imageId = req.params.id;
 
       if (!thumbType || !imageId) {
-        return next();
+        return res.status(404).send('Thumbnail not found!');
       }
 
       return fileStorage.fetch([imageId])
@@ -292,7 +291,7 @@ function ImageStorage(options) { // jshint ignore:line
             throw new Error('Image not found!');
           }
 
-          if (uploadThumbnails) {
+          if (storeThumbnails) {
             let thumbId = images[0].options.thumbnails[thumbType];
             if (thumbId) {
               return fileStorage.fetch([thumbId])
@@ -306,7 +305,10 @@ function ImageStorage(options) { // jshint ignore:line
             throw new Error('The image does not have a thumbnail!');
           } else {
             return images[0].getContents()
-              .then((contents) => createThumbnail(contents.stream, path.basename(imageId), thumbType, contents.options));
+              .then((contents) => {
+                contents.stream = thumbnail(contents.stream, options.thumbnails[thumbType]);
+                return contents;
+              });
           }
         })
         .then((thumb) => {

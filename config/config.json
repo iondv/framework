@@ -182,8 +182,8 @@
         "options": {
           "fileStorage": "ion://fileStorage",
           "urlBase": "/images",
-          "thumbsDirectoryMode": "absolute",
-          "thumbsDirectory": "thumbnails",
+          "thumbsDirectoryMode": "[[fs.thumbDirMode]]",
+          "thumbsDirectory": "[[fs.thumbDir]]",
           "thumbnails": {
             "tiny": {
               "width": 50,
