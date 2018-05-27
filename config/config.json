@@ -180,8 +180,11 @@
       "imageStorage": {
         "module": "core/impl/resource/ImageStorage",
         "options": {
+          "log": "ion://sysLog",
           "fileStorage": "ion://fileStorage",
           "urlBase": "/images",
+          "thumbsDirectoryMode": "[[fs.thumbDirMode]]",
+          "thumbsDirectory": "[[fs.thumbDir]]",
           "thumbnails": {
             "tiny": {
               "width": 50,
