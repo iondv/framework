@@ -60,7 +60,9 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - 10 # В jshint было 10 (рек. в wiki) - recommended: 20
   consistent-return: warn # Требование значение для функции return - Откл.в recommended
-  curly: error # Требования обязательно наличия скобок - Откл.в recommended
+  curly:
+    - error # Требования обязательно наличия скобок - Откл.в recommended
+    - multi-or-nest # Разрешены только однострочные операторы if, else, do, while без скобок или в одну строку или все остальное со скобками
   default-case: error # Обязательный default в switch - Откл.в recommended
   dot-location: # Размещение точки - Откл.в recommended
     - warn
@@ -383,13 +385,13 @@ rules: # Описание правил https://eslint.org/docs/rules/
 
   # ECMAScript 6
   arrow-body-style: # Кривые скобки для всех стрелочных функций
-    - warn
+    - error
     - as-needed
-    - { "requireReturnForObjectLiteral": true }
+    - {"requireReturnForObjectLiteral": true}
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
-    - warn
+    - error
     - as-needed
-    - { "requireForBlockBody": true }
+    - {"requireReturnForObjectLiteral": true}
   arrow-spacing: # Пробелы после скобок и перед кривыми скобками в стрелочных функциях
     - error
     - { "before": true, "after": true }
@@ -398,7 +400,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
     - warn
     - {"before": false, "after": true}
   # no-class-assign
-  # no-confusing-arrow: error # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
+  no-confusing-arrow: warn # Запрет использования стрелочной функции в местах, где может быть спутана с операндом сравнения
   # no-const-assign
   # no-dupe-class-members
   no-duplicate-imports: warn # Запрет нескольких строк импорта из одного модуля
