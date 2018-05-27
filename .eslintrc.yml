@@ -391,7 +391,7 @@ rules: # Описание правил https://eslint.org/docs/rules/
   arrow-parens: # Скобки параметров для всех стрелочных функций (помогает избегать ошибки => и >=)
     - error
     - as-needed
-    - {"requireReturnForObjectLiteral": true}
+    - {"requireForBlockBody": true}
   arrow-spacing: # Пробелы после скобок и перед кривыми скобками в стрелочных функциях
     - error
     - { "before": true, "after": true }
