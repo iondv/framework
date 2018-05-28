@@ -185,7 +185,7 @@ function OwnCloudStorage(config) {
         if (exists) {
           return true;
         }
-        let parts = dir.split('/').filter((v) => v);
+        let parts = dir.split('/').filter(v => v);
         let p;
         parts.forEach((part, i) => {
           if (i < parts.length - 1) {
@@ -691,12 +691,9 @@ function OwnCloudStorage(config) {
       promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password || null}));
     }
     if (options.expiration) {
-      let expDate = null;
-      try {
-        expDate = moment(options.expiration).format('YYYY-MM-DD');
-      } catch(e) {}
-      if (expDate && expDate !== 'Invalid date') {
-        promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: expDate}));
+      let expDate = moment(options.expiration);
+      if (expDate.isValid()) {
+        promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: expDate.format('YYYY-MM-DD')}));
       }
     } else if (options.expiration === false) {
       promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: ''}));
@@ -721,8 +718,8 @@ function OwnCloudStorage(config) {
             }
             return createShare(id, access, options);
           })
-          .then((data) => resolve(new Share(data.shareUrl, data)))
-          .catch((err) => reject(err));
+          .then(data => resolve(new Share(data.shareUrl, data)))
+          .catch(err => reject(err));
       } catch (err) {
         return reject(err);
       }
