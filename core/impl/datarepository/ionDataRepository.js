@@ -659,7 +659,7 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                needed: needed ? [] : null
+                needed: needed ? {} : null
               });
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
@@ -673,7 +673,7 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed ? [] : null
+                    needed: needed ? {} : null
                   }
                 );
               }
@@ -1681,7 +1681,7 @@ function IonDataRepository(options) {
     }
     if (item instanceof Item) {
       let props = item.getMetaClass().getPropertyMetas();
-      let needed = [];
+      let needed = {};
       props.forEach((p) => {
         if (p.cached) {
           needed[p.name] = true;
@@ -2439,6 +2439,10 @@ function IonDataRepository(options) {
       return Promise.reject(
         new IonError(Errors.NO_COLLECTION, {info: `${master.getClassName()}@${master.getItemId()}`, attr: collection})
       );
+    }
+
+    if (!options.sort && Array.isArray(pm.selSorting) && pm.selSorting.length) {
+      options.sort = sortingParser(pm.selSorting);
     }
 
     let detailCm = pm._refClass;

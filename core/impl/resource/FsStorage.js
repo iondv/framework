@@ -466,6 +466,10 @@ function FsStorage(options) {
   this._shareRoute = function () {
     return _options.shareBase + '/:id';
   };
+
+  this.fileOptionsSupport = function () {
+    return true;
+  };
 }
 
 FsStorage.prototype = new ResourceStorage();

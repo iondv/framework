@@ -40,6 +40,13 @@ function StoredFile (id, link, options, streamGetter) {
       }
     });
   };
+
+  /**
+   * @returns {StoredFile}
+   */
+  this.clone = function () {
+    return new StoredFile(this.id, this.link, this.options, streamGetter);
+  };
 }
 
 module.exports = StoredFile;
