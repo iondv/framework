@@ -15,6 +15,7 @@ const merge = require('merge');
 const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
+const Share = require('core/interfaces/ResourceStorage/lib/Share');
 
 /* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
@@ -118,8 +119,7 @@ function FsStorage(options) {
     }
 
     return checkDest(fn)
-      .then((check) => {
-        return new Promise((resolve, reject) => {
+      .then(check => new Promise((resolve, reject) => {
           mkdirp(path.join(_options.storageBase, check.path), (err) => {
             if (err) {
               return reject(err);
@@ -137,15 +137,15 @@ function FsStorage(options) {
               writer.on('finish', () => {resolve(path.join(check.path, check.filename));});
               reader.pipe(writer);
             } else {
-              fs.writeFile(dest, d, (err) => err ? reject(err) : resolve(path.join(check.path, check.filename)));
+              fs.writeFile(dest, d, err => err ? reject(err) : resolve(path.join(check.path, check.filename)));
             }
           });
-        });
-      })
-      .then((pth) => { // TODO ОПределять mime-type и content-type
-          return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
         })
-      .then((r) =>
+      )
+      .then(pth => // TODO ОПределять mime-type и content-type
+        dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE})
+      )
+      .then(r =>
         new StoredFile(
             r.id,
             _options.urlBase + '/' + r.id,
@@ -440,14 +440,26 @@ function FsStorage(options) {
       });
   };
 
+  /**
+   *
+   * @param {String} id
+   * @param {String} [access]
+   * @param {{}} [options]
+   * @returns {Promise<Share>}
+   */
   this._share = function (id) {
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', id]}, {shared: true})
-      .then(() => _options.shareBase + '/' + id);
+      .then(() => new Share(_options.shareBase + '/' + id, {}));
   };
 
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise<Share>}
+   */
   this._currentShare  = function (id) {
-    return _options.shareBase + '/' + id;
+    return Promise.resolve(new Share(_options.shareBase + '/' + id, {}));
   };
 
   this._deleteShare = function (share) {
@@ -457,6 +469,24 @@ function FsStorage(options) {
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', fileId]}, {shared: false})
       .then(() => true);
+  };
+
+  /**
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this._setShareAccess = function () {
+    return Promise.resolve();
+  };
+
+  /**
+   * @param {String} id
+   * @param {{}} options
+   * @returns {Promise<Share>}
+   */
+  this._setShareOptions = function (id) {
+    return Promise.resolve(new Share(_options.shareBase + '/' + id, {}));
   };
 
   this._fileRoute = function () {

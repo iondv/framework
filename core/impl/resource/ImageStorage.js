@@ -380,12 +380,51 @@ function ImageStorage(options) { // jshint ignore:line
     return fileStorage.ejectFile(dirId, fileId);
   };
 
-  this._share = function (id) {
-    return fileStorage.share(id);
+  /**
+   *
+   * @param {String} id
+   * @param {String} [access]
+   * @param {{}} [options]
+   * @returns {Promise<Share>}
+   */
+  this.share = function (id, access, options) {
+    return fileStorage.share(id, access, options);
   };
 
-  this._currentShare = function (id) {
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise<Share>}
+   */
+  this.currentShare = function (id) {
     return fileStorage.currentShare(id);
+  };
+
+  /**
+   *
+   * @param {String} share
+   * @returns {Promise}
+   */
+  this.deleteShare = function (share) {
+    return fileStorage.deleteShare(share);
+  };
+
+  /**
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this.setShareAccess = function (id, access) {
+    return fileStorage.setShareAccess(id, access);
+  };
+
+  /**
+   * @param {String} id
+   * @param {{}} options
+   * @returns {Promise<Share>}
+   */
+  this.setShareOptions = function (id, options) {
+    return fileStorage.setShareOptions(id, options);
   };
 
   /**
@@ -397,6 +436,10 @@ function ImageStorage(options) { // jshint ignore:line
 
   this._fileRoute = function () {
     return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
+  };
+
+  this._shareRoute = function () {
+    return fileStorage.shareRoute();
   };
 }
 
