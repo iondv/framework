@@ -70,6 +70,12 @@ class LocalAccountStorage extends IAccountStorage {
    */
   _setPassword(id, oldpwd, pwd) {
     let hasher = pwdHasher(pwd);
+    let type = UserTypes.LOCAL;
+    if (id.indexOf('@') > 0) {
+      let un = id.split('@');
+      id = un[0];
+      type = un[1];
+    }
     return new Promise((resolve, reject) => {
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
@@ -82,7 +88,14 @@ class LocalAccountStorage extends IAccountStorage {
           hasher.hash((err, hash) => {
             let pwd = hash;
             let pwdDate = new Date();
-            this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {pwd, pwdDate})
+            this.ds.update(
+                'ion_user',
+                {[F.AND]: [
+                  {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
+                  {[F.EQUAL]: ['$id', id]}
+                ]},
+                {pwd, pwdDate}
+              )
               .then(() => resolve(true))
               .catch(reject);
           });
