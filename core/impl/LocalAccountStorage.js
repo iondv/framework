@@ -56,7 +56,7 @@ class LocalAccountStorage extends IAccountStorage {
       user.disabled = false;
       return this.ds.insert('ion_user', user);
     } else if (user.type !== UserTypes.LOCAL) {
-      return this.ds.insert('ion_user', user).then((u) => new User(u));
+      return this.ds.insert('ion_user', user).then(u => new User(u));
     } else {
       throw new Error('Не передан пароль');
     }
@@ -130,29 +130,28 @@ class LocalAccountStorage extends IAccountStorage {
         ]
       })
       .then((user) => {
-          if (user) {
-            if (!user.pwd || !pwd) {
-              return user;
-            }
-            if (!checker) {
-              return user;
-            }
-            return new Promise((resolve, reject) => {
-              checker.verifyAgainst(user.pwd, (err, verified) => {
-                if (verified) {
-                  return resolve(user);
-                }
-                if (!err) {
-                  err = new Error('Неверно указан пароль.');
-                }
-                return reject(err);
-              });
-            });
+        if (user) {
+          if (!user.pwd || !pwd) {
+            return user;
           }
-	  return null;
+          if (!checker) {
+            return user;
+          }
+          return new Promise((resolve, reject) => {
+            checker.verifyAgainst(user.pwd, (err, verified) => {
+              if (verified) {
+                return resolve(user);
+              }
+              if (!err) {
+                err = new Error('Неверно указан пароль.');
+              }
+              return reject(err);
+            });
+          });
         }
-      )
-      .then((user) => user ? new User(user) : null);
+        return null;
+      })
+      .then(user => user ? new User(user) : null);
   }
 
   /**
@@ -192,7 +191,7 @@ class LocalAccountStorage extends IAccountStorage {
         ]
       },
       data
-    ).then((u) => new User(u));
+    ).then(u => new User(u));
   }
 
 
