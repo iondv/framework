@@ -229,6 +229,10 @@ function ClassMeta(metaObject) {
     }
     return this.plain.editorTracker;
   };
+
+  this.isAbstract = function () {
+    return this.plain.abstract;
+  };
 }
 
 module.exports = ClassMeta;
