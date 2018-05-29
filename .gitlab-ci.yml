@@ -1,37 +1,142 @@
-image: docker.iondv.ru/kube/docker/pygitlab:master
 stages:
-    - create
-    - check
-    - semver
-.create: &JobCreate
-  type: create
+    - pre-compile
+    - compile
+    - deploy
+    - test
+    - semver    
+    - undeploy
+    - clean
+.PreCompile: &JobPreCompile
+    image: docker.iondv.ru/kube/docker/mocha
+    type: pre-compile
+    tags:
+        - dapp
+    before_script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/before_pre-compile.sh | bash
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/pre-compile.sh | bash
+    artifacts:
+        name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
+        expire_in: 6 mos
+        when: on_success
+        paths:
+           - Dappfile
+           - test
+    when: manual
+    allow_failure: false
+    variables:
+        GIT_STRATEGY: none
+.Compile: &JobCompile
+    type: compile
+    tags:
+        - dapp
+    script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/compile_with_dapp_stages.sh | bash
+    allow_failure: false
+    #when: manual
+    dependencies:
+.Deploy: &JobDeploy
+  type: deploy
+  tags:
+    - kube-deploy
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/deploy_review_on_kube.sh | bash
+  after_script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/after_deploy.sh | bash
+  variables:
+    GIT_STRATEGY: none
+    NAMESPACE: "review"
+  when: on_success
+.Test: &JobTest
+    image: $TESTIMAGE
+    type: test
+    tags:
+        - testing
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_protractor.sh | bash
+    variables:
+        TEST_SELENIUM_ADDR: "selenium-hub.kube.local"
+        TEST_SELENIUM_PORT: 80
+        ION_TEST_LOGIN: "user"
+        ION_TEST_PASSWORD: "${userpassword}"
+        ION_TEST_URL: "http://${CI_COMMIT_REF_SLUG}.${CI_PROJECT_NAME}.kube.local"
+    allow_failure: false
+    when: on_success
+    dependencies:
+        - Pre-Compile
+.BackendTest: &BackendTest
+    type: test
+    tags:
+        - kube-deploy
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_backend.sh | bash
+    allow_failure: false
+#Builds on platform
+Pre-Compile:
+    <<: *JobPreCompile
+    only:
+        - branches
+Compile:
+  <<: *JobCompile
+  only:
+    - branches
+  dependencies:
+    - Pre-Compile
+Deploy review:
+  <<: *JobDeploy
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    url: http://${CI_COMMIT_REF_SLUG}.${CI_PROJECT_NAME}.kube.local
+    on_stop: stop_review
+  only:
+    - branches
+stop_review:
+  type: undeploy
+  tags:
+    - kube-deploy
+  variables:
+    GIT_STRATEGY: none
+    NAMESPACE: review
+  script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/undeploy_review.sh | bash
+  after_script:
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/dapp_stages_cleanup.sh | bash
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    action: stop
+  only:
+    - branches
+### TEST SECITONS
+Testing Review:
+    <<: *JobTest
+    only:
+        - branches
+ion-workflow:
+    tags:
+        - kube-deploy
+    script:
+        - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/test_ion_workflow.sh | bash
+    only:
+        - branches
+### CLEAN SECTION
+Clean:
+  type: clean
   tags:
     - dapp
   script:
-    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/create_pipelines_stages.sh | bash
-  artifacts:
-    name: "$CI_JOB_STAGE_$CI_BUILD_REF_NAME"
-    expire_in: 1 week 
-    when: on_success
-    untracked: true
-  allow_failure: false
+    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/drop_dapp.sh | bash
   when: manual
-.check: &JobCheck
-  type: check
-  tags:
-    - kube-deploy
+  only:
+    - branches
   before_script:
-    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/stage_access.sh | bash
-  script:
-    - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/check_pipelines_stages.sh | bash
-  variables:
-    GIT_STRATEGY: none
-  when: manual
-  allow_failure: false
+    - curl -fsSL https://git.iondv.ru/ION/functional_tests/raw/master/stage_access.py | python
+  dependencies:
 .semver: &JobSemver
+  image: docker.iondv.ru/kube/docker/pygitlab:master
   type: semver
   only:
-    - develop
+    - /^v\d{1,}.\d{1,}$/
   tags:
     - kube-deploy
   before_script:
@@ -41,16 +146,6 @@ stages:
     - curl -fsSL https://git.iondv.ru/kube/stages/raw/master/push_autover.sh | bash
   when: manual
   allow_failure: true
-Create:
-  <<: *JobCreate
-  only:
-    - branches
-Check:
-  <<: *JobCheck
-  only:
-    - branches
-  dependencies:
-    - Create
 Patch:
   <<: *JobSemver
 Minor:

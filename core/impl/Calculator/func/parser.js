@@ -82,9 +82,6 @@ function objProp(obj, nm, dataRepoGetter, needed) {
   }
 
   if (obj instanceof Item) {
-    if (nm[0] === '$') {
-      nm = nm.substring(1);
-    }
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
@@ -253,7 +250,7 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
   }
 
   if (formula[0] === '$') {
-    return propertyGetter(formula, dataRepoGetter);
+    return propertyGetter(formula.substring(1), dataRepoGetter);
   }
 
   return formula;
@@ -282,7 +279,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   if (formula === null || typeof formula !== 'object') {
     if (typeof formula === 'string') {
       if (formula[0] === '$') {
-        return propertyGetter(formula, dataRepoGetter);
+        return propertyGetter(formula.substring(1), dataRepoGetter);
       }
     }
     return formula;

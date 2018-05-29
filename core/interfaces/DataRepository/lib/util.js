@@ -841,7 +841,7 @@ module.exports.loadFiles = loadFiles;
 /**
  * @param {Item} item
  * @param {Boolean} [skip]
- * @param {Array} [needed]
+ * @param {{}} [needed]
  * @param {Boolean} [cached]
  * @returns {Promise}
  */
