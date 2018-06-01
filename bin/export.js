@@ -18,6 +18,7 @@ var params = {
   ver: null,
   ns: '',
   skipData: false,
+  skipFiles: false,
   fileDir: false
 };
 
@@ -33,6 +34,8 @@ process.argv.forEach(function (val) {
     setParam = 'exportAcl';
   } else if (val === '--nodata') {
     params.skipData = true;
+  } else if (val === '--nofiles') {
+    params.skipFiles = true;
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
   } else if (setParam) {
@@ -68,6 +71,7 @@ di('boot', config.bootstrap,
         namespace: params.ns,
         version: params.ver !== '-last' ? params.ver : null,
         skipData: params.skipData,
+        skipFiles: params.skipFiles,
         exportAcl: params.exportAcl,
         fileDir: params.fileDir,
         lastVersion: params.ver === '-last'
