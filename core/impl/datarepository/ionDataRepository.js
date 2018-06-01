@@ -1755,6 +1755,9 @@ function IonDataRepository(options) {
     options = options || {};
     try {
       let cm = _this.meta.getMeta(classname, version);
+      if (cm.isAbstract()) {
+        throw new Error('Обьект абстрактного класса не может быть создан!');
+      }
       let rcm = getRootType(cm);
 
       let refUpdates = {};
@@ -2006,6 +2009,11 @@ function IonDataRepository(options) {
 
     try {
       let cm = _this.meta.getMeta(classname, version);
+
+      if (cm.isAbstract()) {
+        throw new Error('Обьект абстрактного класса не может быть создан!');
+      }
+      
       let rcm = getRootType(cm);
 
       let refUpdates = {};
