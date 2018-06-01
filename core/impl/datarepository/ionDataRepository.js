@@ -557,6 +557,8 @@ function IonDataRepository(options) {
         }
       }
 
+      let needed2 = needed ? {} : null;
+
       for (let i = 0; i < src.length; i++) {
         let item = src[i];
         if (item instanceof Item) {
@@ -584,6 +586,12 @@ function IonDataRepository(options) {
                   if (typeof item.collections[nm] === 'undefined') {
                     prepareColEnrichment(item, props[nm], attrs, ___loaded);
                   }
+                }
+              }
+
+              if (needed && needed.hasOwnProperty(nm)) {
+                if (props[nm].meta._formula) {
+                  needed2 = null;
                 }
               }
             }
@@ -659,7 +667,7 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                needed: needed ? {} : null
+                needed: needed2
               });
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
@@ -673,7 +681,7 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed ? {} : null
+                    needed: needed2
                   }
                 );
               }
@@ -736,22 +744,17 @@ function IonDataRepository(options) {
       .catch(wrapDsError('getList', obj))
       .then((data) => {
         let result = [];
-        let fl = [];
-        try {
-          for (let i = 0; i < data.length; i++) {
-            result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            fl.push(loadFiles(result[i], _this.fileStorage, _this.imageStorage));
-          }
-        } catch (err) {
-          return Promise.reject(err);
-        }
+        let fl = Promise.resolve();
+        data.forEach((d) => {
+          let wd = _this._wrap(d._class, d, d._classVer);
+          result.push(wd);
+          fl = fl.then(() => loadFiles(wd, _this.fileStorage, _this.imageStorage));
+        });
 
         if (typeof data.total !== 'undefined' && data.total !== null) {
           result.total = data.total;
         }
-        return Promise.all(fl).then(function () {
-          return Promise.resolve(result);
-        });
+        return fl.then(() => result);
       })
       .then(result => enrich(result, options))
       .then(result => options.skipCalculations ? result : calcItemsProperties(result, options));
@@ -759,10 +762,12 @@ function IonDataRepository(options) {
 
   function ItemIterator(iterator, options) {
     this._next = function () {
-      return iterator.next().then(function (data) {
+      iterator.next().then((data) => {
         if (data) {
           let item = _this._wrap(data._class, data, data._classVer);
-          return loadFiles(item, _this.fileStorage, _this.imageStorage).then(item => enrich(item, options)).then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
+          return loadFiles(item, _this.fileStorage, _this.imageStorage)
+            .then(item => enrich(item, options))
+            .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
         }
         return Promise.resolve(null);
       });
@@ -1140,16 +1145,15 @@ function IonDataRepository(options) {
       return storage.accept(updates[pm.name]).then(function (f) {
         updates[pm.name] = f.id;
         return Promise.resolve();
-      }).catch((err) => Promise.reject(
-        new IonError(
+      }).catch((err) => {
+        throw new IonError(
           Errors.FILE_ATTR_SAVE,
           {
             attr: pm.caption,
             info: `${cm.getCanonicalName()}@${id}`
           },
-          err
-        )
-      ));
+          err);
+      });
     }
   }
 
@@ -2137,7 +2141,6 @@ function IonDataRepository(options) {
   };
 
   /**
-   *
    * @param {String} classname
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
