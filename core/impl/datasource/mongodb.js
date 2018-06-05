@@ -1775,7 +1775,7 @@ function MongoDs(config) {
         prefilter = producePrefilter(attributes, options.filter, joins, lookups, analise, counter);
         if (analise.needRedact || analise.needPostFilter) {
           postfilter = producePostfilter(options.filter, lookups, null, true);
-          redactFilter = produceRedactFilter(prefilter, lookups);
+          redactFilter = produceRedactFilter(postfilter, lookups);
           postfilter = producePrefilter([], postfilter, [], [], {});
         }
       }
