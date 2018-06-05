@@ -20,7 +20,7 @@ const PROP_TYPE_LINK = 13;
 const PROP_TYPE_COL = 14;
 const SKIP_NS = ['viewlib', 'fias'];
 
-describe('# Проверка достижимости классов из навигации', function () {
+describe('# Проверка достижимости классов из навигации и валидности ссылок', function () {
   this.timeout(TIMEOUT);
   const pathApplications = path.join(__dirname, '../../applications');
   const appList = getDirList(pathApplications).dirList;
@@ -81,23 +81,37 @@ function checkMetaLinks(pathApplications, ns, meta) {
     });
     it('Связываем классы по ссылкам и коллекциям и что такие классы есть в мете', () => {
       const errMeta = [];
+      const errMetaLink = [];
       const startingMetaLink = Object.keys(metaLink).length;
       Object.keys(meta).forEach((className) => { // Отбираем классы по мете
         meta[className].properties = meta[className].properties || [];
         if (SKIP_NS.indexOf(getNs(className)) === ARR_NOTFOUND) {
           meta[className].properties.forEach((propItem) => {
             if (propItem.type === PROP_TYPE_LINK || propItem.type === PROP_TYPE_COL) {
-              const propClassName = propItem.type === PROP_TYPE_LINK ?
+              const linkClassName = propItem.type === PROP_TYPE_LINK ?
                 nz(propItem.refClass, ns) :
                 nz(propItem.itemsClass, ns);
-              if (meta[propClassName]) { // Родитель есть в классе меты
-                if (!metaLink[propClassName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
-                  metaLink[propClassName] = true;
-                  metaCheckLink.push(propClassName);
+              if (meta[linkClassName]) { // Родитель есть в классе меты
+                if (!metaLink[linkClassName]) { // Родитель уже есть среди ссылочных объектов, значит достижим от навигации, добавляем наследника
+                  metaLink[linkClassName] = true;
+                  metaCheckLink.push(linkClassName);
+                }
+                if(propItem.backRef || propItem.backColl) { // Связь по обратной ссылки - дополинтельно проверяем наличие атрибута для связи
+                  const propRef = propItem.backRef ? propItem.backRef : propItem.backColl;
+                  const linkClassPropFound = checkLinkProp(meta, linkClassName, propRef, ns);
+                  if(className === 'risk@project-management') {
+                    console.log('#### risk', linkClassName, propRef)
+                  }
+
+                  if(!linkClassPropFound) {
+                    console.error(`Для класса ${className}.${propItem.name} по обратной ссылке отсутствует атрибут`,
+                    `${linkClassName}.${propRef}`);
+                    errMetaLink.push(`${className}.${propItem.name}<=${linkClassName}.${propRef}`);
+                  }
                 }
               } else {
-                console.error(`В классе ${className} отсутствующий в мете связанный класс ${propClassName}`);
-                errMeta.push(propClassName);
+                console.error(`В классе ${className} отсутствующий в мете связанный класс ${linkClassName}`);
+                errMeta.push(`${className}.${propItem.name}=>${linkClassName}`);
               }
             }
           });
@@ -105,6 +119,9 @@ function checkMetaLinks(pathApplications, ns, meta) {
       });
       if (errMeta.length) {
         throw (new Error(`В ссылочных атрибутах указаны отсутствующие в мете классы ${errMeta}`));
+      }
+      if (errMetaLink.length) {
+        throw (new Error(`В обратных ссылках и коллекциях указаны атрибуты, отсутствующие в классах ${errMetaLink}`));
       }
       console.info('При анализе ссылочных полей меты добавлено ссылок на мету', Object.keys(metaLink).length - startingMetaLink);
     });
@@ -166,7 +183,6 @@ function checkMetaLinks(pathApplications, ns, meta) {
         }
       });
       if (errViews.length) {
-        console.log('##', Object.keys(workflow));
         throw (new Error(`Группы (папки) представления/статусов для отстутствующих бизнес процессов ${errViews}`));
       }
     });
@@ -208,6 +224,23 @@ function checkMetaLinks(pathApplications, ns, meta) {
       }
     });
   });
+}
+
+function checkLinkProp(meta, linkClassName, propRef, ns) {
+  let linkClassPropFound = false;
+  meta[linkClassName].properties.forEach(linkClassProp => {
+    if(propRef === linkClassProp.name) {
+      linkClassPropFound = true;
+    }
+  });
+  if(linkClassName === 'eventOnly@project-management' && propRef === 'taskResponse') {
+    console.log('#### risk<=event', linkClassPropFound)
+  }
+  if (!linkClassPropFound && meta[linkClassName].ancestor) { // Атрибут не найден, найден родитель
+    linkClassPropFound = checkLinkProp(meta, nz(meta[linkClassName].ancestor, ns), propRef, ns);
+  }
+
+  return linkClassPropFound;
 }
 
 function checkAncestor(metaNames, meta, metaLink, metaCheckLink, childNotLinkLen = 0) {

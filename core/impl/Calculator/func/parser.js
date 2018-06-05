@@ -2,6 +2,7 @@
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
+const Errors = require('core/errors/data-repo');
 
 // jshint maxstatements: 50, maxcomplexity: 30
 function findComma(src, start) {
@@ -81,9 +82,6 @@ function objProp(obj, nm, dataRepoGetter, needed) {
   }
 
   if (obj instanceof Item) {
-    if (nm[0] === '$') {
-      nm = nm.substring(1);
-    }
     if (nm.indexOf('.') > 0) {
       let nm2 = nm.substr(0, nm.indexOf('.'));
       let nm3 = nm.substr(nm.indexOf('.') + 1);
@@ -148,7 +146,13 @@ function objProp(obj, nm, dataRepoGetter, needed) {
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
             let dr = dataRepoGetter();
             if (dr instanceof DataRepository) {
-              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}});
+              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
+                .catch((err) => {
+                  if (err.code === Errors.ITEM_NOT_FOUND) {
+                    return null;
+                  }
+                  return Promise.reject(err);
+                });
             }
           }
           return v;
@@ -246,7 +250,7 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
   }
 
   if (formula[0] === '$') {
-    return propertyGetter(formula, dataRepoGetter);
+    return propertyGetter(formula.substring(1), dataRepoGetter);
   }
 
   return formula;
@@ -275,7 +279,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   if (formula === null || typeof formula !== 'object') {
     if (typeof formula === 'string') {
       if (formula[0] === '$') {
-        return propertyGetter(formula, dataRepoGetter);
+        return propertyGetter(formula.substring(1), dataRepoGetter);
       }
     }
     return formula;

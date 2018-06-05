@@ -216,7 +216,7 @@ function WorkflowProvider(options) {
           }
         });
 
-        return rp.then(()=> {
+        return rp.then(() => {
           return {
             stages: result,
             itemPermissions: itemPermissions,
@@ -267,7 +267,7 @@ function WorkflowProvider(options) {
         stage: nextState.name,
         since: new Date()
       }
-    ).then(()=>item);
+    ).then(() => item);
   }
 
   function calcAssignmentValue(updates, item, assignment, options) {
@@ -285,7 +285,7 @@ function WorkflowProvider(options) {
     }
 
     let v = assignment.value;
-    v = v && typeof v === 'string' && v[0] === '$' ?
+    v = (v && typeof v === 'string' && v[0] === '$') ?
       ctx.hasOwnProperty(v.substring(1)) ? ctx[v.substring(1)] : item.get(v.substring(1)) :
       v;
     updates[assignment.key] = v;
@@ -455,7 +455,7 @@ function WorkflowProvider(options) {
             {[F.EQUAL]: ['$workflow', workflow]}
           ]
         }
-      ).then(()=>item);
+      ).then(() => item);
     }
 
     return _this._getStatus(item, tOptions)

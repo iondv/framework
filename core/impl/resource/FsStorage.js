@@ -16,7 +16,7 @@ const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
 
-/* jshint maxcomplexity: 20, maxstatements: 30 */
+/* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
  * @param {{storageBase: String, urlBase: String, dataSource: DataSource, fragmentation: String}} options
  * @constructor
@@ -57,8 +57,14 @@ function FsStorage(options) {
       pth = pth.slice(1);
     }
     switch (_options.fragmentation) {
-      case 'hour':pth = path.join(pth, m.format('HH'));break;
-      case 'minute':pth = path.join(pth, m.format('mm'));break;
+      case 'hour':
+        pth = path.join(pth, m.format('HH'));
+        break;
+      case 'minute':
+        pth = path.join(pth, m.format('mm'));
+        break;
+      default:
+        break;
     }
 
     let d, fn;
@@ -182,14 +188,6 @@ function FsStorage(options) {
       });
     };
   }
-
-  /**
-   * @param {StoredFile} file
-   * @returns {Function}
-   */
-  this._stream = function (file) {
-    return streamGetter(file);
-  };
 
   /**
    * @param {String[]} ids
@@ -467,6 +465,10 @@ function FsStorage(options) {
 
   this._shareRoute = function () {
     return _options.shareBase + '/:id';
+  };
+
+  this.fileOptionsSupport = function () {
+    return true;
   };
 }
 

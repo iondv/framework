@@ -72,12 +72,10 @@ di('boot', config.bootstrap,
         sender: job.sender,
         recievers: job.notify
       }));
-    };
-    return promise.then(() => {
-      return typeof worker === 'function' ? worker() : worker.run()
-    });
+    }
+    return promise.then(() => (typeof worker === 'function') ? worker() : worker.run());
   })
-  .then(()=>{
+  .then(() => {
     let msg = 'Задание ' + jobName + ' выполнено';
     sysLog.info(msg);
     let p = Promise.resolve();
@@ -90,7 +88,7 @@ di('boot', config.bootstrap,
       }));
     }
     return p.then(() => {
-      process.exit(0)
+      process.exit(0);
     });
   })
   .catch((err) => {
@@ -104,7 +102,7 @@ di('boot', config.bootstrap,
         recievers: job.notify
       }));
     }
-    p.catch(err2 => {
+    p.catch(() => {
       sysLog.error(err);
     })
     .finally(() => {
