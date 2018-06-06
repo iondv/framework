@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by krasilneg on 19.12.16.
  */
@@ -68,11 +69,11 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
-  .then((scope) => params.aclDir ?
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
+  .then(scope => params.aclDir ?
     aclImport(params.aclDir, scope.roleAccessManager, sysLog, scope.auth).then(() => scope) : scope)
-  .then((scope) => params.users.length ?
+  .then(scope => params.users.length ?
     scope.roleAccessManager.assignRoles(params.users, params.roles).then(() => scope) : scope)
   .then((scope) => {
     if (params.resources.length || params.permissions.length) {
