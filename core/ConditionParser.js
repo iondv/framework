@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off */
 /**
  * Created by Данил on 10.10.2016.
  */
@@ -59,6 +60,7 @@ function toScalar(v, context, type, lang) {
         return result;
       }
     }
+    return v;
   }
 
   if (typeof v === 'string') {

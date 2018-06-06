@@ -1,10 +1,10 @@
+/* eslint no-invalid-this:off */
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 const Errors = require('core/errors/data-repo');
 
-// jshint maxstatements: 50, maxcomplexity: 30
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -119,7 +119,8 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     let p = obj.property(nm);
     if (p) {
       switch (p.meta.type) {
-        case PropertyTypes.REFERENCE: {
+        case PropertyTypes.REFERENCE:
+        {
           let v = p.evaluate();
           if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
             let dr = dataRepoGetter();
@@ -133,14 +134,14 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                     filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
                     needed: needed || {}
                   })
-                  .then((items) => items.length ? items[0] : null);
+                  .then(items => items.length ? items[0] : null);
               } else {
                 return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
               }
             }
           }
           return v;
-        }break;
+        }
         case PropertyTypes.COLLECTION: {
           let v = p.evaluate();
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
@@ -156,7 +157,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
             }
           }
           return v;
-        }break;
+        }
         default: return p.evaluate();
       }
     }
