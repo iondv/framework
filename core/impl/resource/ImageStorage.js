@@ -6,7 +6,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const gm = require('gm').subClass({imageMagick: true});
+const sharp = require('sharp');
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -61,7 +61,7 @@ function ImageStorage(options) { // jshint ignore:line
 
   function thumbnail(source, opts) {
     let format = opts.format || 'png';
-    return gm(source).resize(opts.width, opts.height).setFormat(format).stream();
+    return sharp(source).resize(opts.width, opts.height).max().toFormat(format);
   }
 
   function streamToBuffer(stream) {

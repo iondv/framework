@@ -144,7 +144,7 @@ function FsStorage(options) {
           });
         })
       )
-      .then(pth => dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE})) // TODO ОПределять mime-type и content-type
+      .then(pth => dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE})) // TODO Определять mime-type и content-type
       .then(r =>
         new StoredFile(
             r.id,
