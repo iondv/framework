@@ -9,11 +9,12 @@ class AccountStorage {
 
   /**
    * @param {String} id
-   * @param {String} pwd
+   * @param {String} oldPwd
+   * @param {String} newPwd
    * @returns {Promise}
    */
-  setPassword(id, pwd) {
-    return this._setPassword(id, pwd);
+  setPassword(id, oldPwd, newPwd) {
+    return this._setPassword(id, oldPwd, newPwd);
   }
 
   /**
