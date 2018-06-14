@@ -181,7 +181,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
           }
         }
         if (typeof ctx !== 'object' || !ctx) {
-          return ctx;
+          break;
         }
       }
     }
