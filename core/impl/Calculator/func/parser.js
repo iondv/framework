@@ -39,6 +39,10 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
       bp = openBracketPos + 1;
       while (open > 0) {
         closeBracketPos = argsSrc.indexOf(')', bp);
+        if (closeBracketPos < 0) {
+          throw new Error('Ошибка синтаксиса формулы во фрагменте "' + argsSrc + '".');
+        }
+
         openBracketPos = argsSrc.indexOf('(', bp);
 
         if (closeBracketPos > -1 || openBracketPos > -1) {
@@ -238,7 +242,11 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
 
     if (funcLib.hasOwnProperty(func)) {
       let f = funcLib[func];
-      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
+      let closeBracketPos = formula.lastIndexOf(')');
+      if (closeBracketPos < 0) {
+        throw new Error('Ошибка синтаксиса формулы во фрагменте "' + formula + '"');
+      }
+      let args = parseArgs(formula.substring(pos + 1, closeBracketPos).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
 
       if (byRef) {
         return function () {return f(args);};
