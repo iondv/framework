@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off  */
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
@@ -133,14 +134,14 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                     filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
                     needed: needed || {}
                   })
-                  .then((items) => items.length ? items[0] : null);
+                  .then(items => items.length ? items[0] : null);
               } else {
                 return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
               }
             }
           }
           return v;
-        }break;
+        }
         case PropertyTypes.COLLECTION: {
           let v = p.evaluate();
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
@@ -156,7 +157,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
             }
           }
           return v;
-        }break;
+        }
         default: return p.evaluate();
       }
     }
