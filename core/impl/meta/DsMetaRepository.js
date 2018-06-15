@@ -1,5 +1,5 @@
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-// jscs:disable requireCapitalizedComments
+/* eslint no-invalid-this:off */
+
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 08.04.16.
  */
@@ -10,7 +10,7 @@ const MetaRepository = MetaRepositoryModule.MetaRepository;
 const ClassMeta = MetaRepositoryModule.ClassMeta;
 const PropertyTypes = require('core/PropertyTypes');
 const Calculator = require('core/interfaces/Calculator');
-const ConditionParser = require('core/ConditionParser');
+const conditionParser = require('core/ConditionParser');
 const clone = require('clone');
 const merge = require('merge');
 
@@ -122,10 +122,8 @@ function DsMetaRepository(options) {
 
   function assignVm(coll, vm) {
     let cn = vm.className;
-    let namespaced = true;
     if (cn.indexOf('@') < 0) {
       cn = cn + '@' + vm.namespace;
-      namespaced = false;
     }
     let vp = viewPath(vm.path, cn);
     if (!coll.hasOwnProperty(vp)) {
@@ -202,17 +200,20 @@ function DsMetaRepository(options) {
 
   this._listMeta = function (ancestor, version, direct, namespace) {
     let result = [];
+
+    function fillDescendants(src) {
+      result = result.concat(src);
+      for (let i = 0; i < src.length; i++) {
+        fillDescendants(src[i].getDescendants());
+      }
+    }
+
     if (ancestor) {
       let cm = getFromMeta(ancestor, version, namespace);
       if (direct) {
         return cm.getDescendants();
       } else {
-        (function fillDescendants(src) {
-          result = result.concat(src);
-          for (let i = 0; i < src.length; i++) {
-            fillDescendants(src[i].getDescendants());
-          }
-        })(cm.getDescendants());
+        fillDescendants(cm.getDescendants());
         return result;
       }
     } else {
@@ -305,7 +306,7 @@ function DsMetaRepository(options) {
         result.push(src[code]);
       }
     }
-    result.sort((a, b) => {return a.orderNumber - b.orderNumber;});
+    result.sort((a, b) => a.orderNumber - b.orderNumber);
     return result;
   };
 
@@ -538,7 +539,7 @@ function DsMetaRepository(options) {
             for (let j = 0; j < matrix.length; j++) {
               if (matrix[j].conditions) {
                 if (Array.isArray(matrix[j].conditions)) {
-                  matrix[j].conditions = ConditionParser(matrix[j].conditions, cm, null);
+                  matrix[j].conditions = conditionParser(matrix[j].conditions, cm, null);
                 }
                 matrix[j]._checker = options.calc.parseFormula(matrix[j].conditions);
               }
@@ -657,10 +658,10 @@ function DsMetaRepository(options) {
    */
   function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
     let result;
-    let re = /^\w[\w\.]*\w$/;
+    let re = /^\w[\w.]*\w$/;
     let parts = semantic.split('|');
     for (let i = 0; i < parts.length; i++) {
-      let tmp = /^([^\s\[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
+      let tmp = /^([^\s[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
       if (tmp) {
         if (semanticAttrs && re.test(tmp[1])) {
           semanticAttrs.push(tmp[1]);
@@ -808,7 +809,7 @@ function DsMetaRepository(options) {
 
   function sortViewElements(src) {
     if (typeof src.columns !== 'undefined' && src.columns.length) {
-      src.columns.sort((a, b) => {return a.orderNumber - b.orderNumber;});
+      src.columns.sort((a, b) => a.orderNumber - b.orderNumber);
       for (let i = 0; i < src.columns.length; i++) {
         sortViewElements(src.columns[i]);
       }
@@ -930,7 +931,7 @@ function DsMetaRepository(options) {
           wf.statesByName[wf.states[j].name] = wf.states[j];
           if (wf.states[j].conditions) {
             if (Array.isArray(wf.states[j].conditions)) {
-              wf.states[j].conditions = ConditionParser(wf.states[j].conditions, wfCm);
+              wf.states[j].conditions = conditionParser(wf.states[j].conditions, wfCm);
             }
             if (wf.states[j].conditions) {
               wf.states[j]._checker = options.calc.parseFormula(wf.states[j].conditions);
@@ -957,7 +958,7 @@ function DsMetaRepository(options) {
 
           if (wf.transitions[j].conditions) {
             if (Array.isArray(wf.transitions[j].conditions)) {
-              wf.transitions[j].conditions = ConditionParser(wf.transitions[j].conditions, wfCm);
+              wf.transitions[j].conditions = conditionParser(wf.transitions[j].conditions, wfCm);
             }
             if (wf.transitions[j].conditions) {
               wf.transitions[j]._checker = options.calc.parseFormula(wf.transitions[j].conditions);
@@ -1048,7 +1049,7 @@ function DsMetaRepository(options) {
 
         for (let name in navMeta.nodes[ns]) {
           if (navMeta.nodes[ns].hasOwnProperty(name)) {
-            navMeta.nodes[ns][name].children.sort((a, b) => {return a.orderNumber - b.orderNumber;});
+            navMeta.nodes[ns][name].children.sort((a, b) => a.orderNumber - b.orderNumber);
           }
         }
       }
