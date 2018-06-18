@@ -423,6 +423,17 @@ function SecuredDataRepository(options) {
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
+          let coll = p.evaluate();
+          if (Array.isArray(coll)) {
+            coll.forEach((ri) => {
+              result.push(classPrefix + ri.getClassName());
+              result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
+              if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+                processed[ri.getClassName() + '@' + ri.getItemId()] = true;
+                result.push(...attrResources(ri, processed));
+              }
+            });
+          }
         }
       }
     }
