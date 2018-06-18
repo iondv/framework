@@ -102,12 +102,12 @@ function SecuredDataRepository(options) {
         Object.keys(options.roleMap[cn]).forEach((role) => {
           let conf = options.roleMap[cn][role];
           if (conf.resource && conf.resource.id) {
-            result = result.then(() => {
-              return am
+            result = result
+              .then(() => am
                 .defineRole(role, conf.caption)
                 .then(() => am.assignRoles([role], [role]))
-                .then(() => am.defineResource(conf.resource.id, conf.resource.caption));
-            });
+                .then(() => am.defineResource(conf.resource.id, conf.resource.caption))
+              );
           }
         });
       });
@@ -423,6 +423,17 @@ function SecuredDataRepository(options) {
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
+          let coll = p.evaluate();
+          if (Array.isArray(coll)) {
+            coll.forEach((ri) => {
+              result.push(classPrefix + ri.getClassName());
+              result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
+              if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+                processed[ri.getClassName() + '@' + ri.getItemId()] = true;
+                result.push(...attrResources(ri, processed));
+              }
+            });
+          }
         }
       }
     }
@@ -555,13 +566,13 @@ function SecuredDataRepository(options) {
               itemPrefix + item.getClassName() + '@' + item.getItemId()
             ],
             true)
-            .then((permissions) => {
-              return merge(true,
+            .then(permissions =>
+              merge(true,
                 permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
                 permissions[classPrefix + item.getClassName()] || {},
                 permissions[globalMarker] || {}
-              );
-            });
+              )
+            );
         } else {
           let perms = clone(statics);
           delete perms.__attr;
@@ -637,7 +648,7 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr)) :
-              aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
+              aclProvider.getPermissions(options.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
           .then((ap) => {
             item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           });
@@ -658,7 +669,7 @@ function SecuredDataRepository(options) {
               } else if (p.meta.type === PropertyTypes.COLLECTION) {
                 let collection = p.evaluate();
                 if (Array.isArray(collection)) {
-                  items.push(...collection.filter((ri) => (ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)));
+                  items.push(...collection.filter(ri => (ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)));
                 }
               }
             });
@@ -796,9 +807,9 @@ function SecuredDataRepository(options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
     return dataRepo.getItem(obj, id || '', opts)
-      .then((item) => item ?
+      .then(item => item ?
         getPermMap([item], moptions)
-          .then((permMap) => setItemPermissions(opts, permMap)(item)) :
+          .then(permMap => setItemPermissions(opts, permMap)(item)) :
         item
       );
   }
@@ -966,9 +977,7 @@ function SecuredDataRepository(options) {
             return Promise.resolve();
           });
         });
-        return p.catch((e) => {
-          return e === breaker ? Promise.resolve(false) : Promise.reject(e);
-        }).then(() => true);
+        return p.catch(e => breaker ? false : Promise.reject(e)).then(() => true);
       });
   }
 

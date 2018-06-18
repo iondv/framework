@@ -1,3 +1,4 @@
+/* eslint no-process-exit:off */
 'use strict';
 /**
  * Created by krasilneg on 19.07.17.
@@ -28,8 +29,8 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope
@@ -48,12 +49,12 @@ di('boot', config.bootstrap,
         if (!job.worker) {
           throw new Error('Не указан рабочий компонент задания ' + jobName);
         }
-        return di('job', jobs[jobName].di || {}, {}, 'app')
-          .then((scope) => {return scope;});
+        return di('job', jobs[jobName].di || {}, {}, 'app');
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');
       }
-    })
+    }
+  )
   .then((scope) => {
     let worker = scope[job.worker];
     if (!worker) {
@@ -105,7 +106,7 @@ di('boot', config.bootstrap,
     p.catch(() => {
       sysLog.error(err);
     })
-    .finally(() => {
+      .then(() => {
       process.exit(130);
     });
   });
