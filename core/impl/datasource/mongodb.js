@@ -853,9 +853,12 @@ function MongoDs(config) {
                 }
               }
               switch (oper) {
-                case DsOperations.JOIN_EXISTS: return {$gt: ['$' + j.alias + '_size', 0]};
-                case DsOperations.JOIN_NOT_EXISTS: return {$eq: ['$' + j.alias + '_size', 0]};
-                case DsOperations.JOIN_SIZE: return '$' + j.alias + '_size';
+                case DsOperations.JOIN_EXISTS:
+                  return {$ifNull: ['$' + j.alias, false]};
+                case DsOperations.JOIN_NOT_EXISTS:
+                  return {$ifNull: ['$' + j.alias, true]};
+                case DsOperations.JOIN_SIZE:
+                  throw new Error('JOIN_SIZE operation not supported!');
                 default:
                   break;
               }
@@ -1141,19 +1144,9 @@ function MongoDs(config) {
         result.push({$lookup: tmp});
         attributes.push(join.alias);
 
-        tmp = clean(attributes);
-        tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
-        attributes.push(join.alias + '_size');
-        result.push(tmp);
+        result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
 
-        if (!join.onlySize || Array.isArray(join.join)) {
-          result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
-        }
-        /*
-        if (Array.isArray(join.join)) {
-          processJoins(attributes, join.join, result, join.alias);
-        }
-        */
+        result.push(clean(attributes));
       });
     }
   }
@@ -1826,7 +1819,6 @@ function MongoDs(config) {
       if (Array.isArray(options.joins)) {
         options.joins.forEach(processJoin(attributes, joinedSources, lookups, tmpCollections, null, null, joins));
       }
-
       if (options.fields || options.aggregates) {
         let expr = {$group: {}};
         expr.$group._id = null;
@@ -1852,9 +1844,10 @@ function MongoDs(config) {
             doGroup = true;
             groupStages.push(expr2);
             groupStages.push({$project: attrs});
+            doGroup = parseAgregators(options.aggregates, expr, attrs, attributes, joinedSources, lookups, joins, counter) || doGroup;
+          } else {
+            doGroup = parseAgregators(preaggregates, expr, attrs, attributes, joinedSources, lookups, joins, counter) || doGroup;
           }
-
-          doGroup = parseAgregators(options.aggregates, expr, attrs, attributes, joinedSources, lookups, joins, counter) || doGroup;
         }
 
         if (doGroup || fetchFields) {
@@ -1863,11 +1856,13 @@ function MongoDs(config) {
               groupStages.push(expr);
               groupStages.push({$project: attrs});
             } else {
-              groupStages.push({$project: expr.$group._id});
+              let gc = clone(expr.$group._id);
+              gc['_id'] = false;
+              groupStages.push({$project: gc});
             }
           }
           attributes.push(...Object.keys(attrs));
-          attributes.filter((value, index, self) => self.indexOf(value) === index);
+          attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
         }
       }
 
