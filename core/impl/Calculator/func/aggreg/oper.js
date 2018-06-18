@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off */
 /**
  * Created by kras on 03.11.16.
  */
@@ -32,14 +33,19 @@ module.exports = function (collFunc, af) {
                 for (let attr in args[2]) {
                   if (args[2].hasOwnProperty(attr)) {
                     let val =  args[2][attr];
+                    let oper = F.EQUAL;
+                    if (Array.isArray(val) && val.length > 1) {
+                      oper = val[0];
+                      val = val[1];
+                    }
                     if (typeof val === 'function') {
                       p.then(() => val.apply(this));
                     } else {
-                      p = p.then(() => val)
+                      p = p.then(() => val);
                     }
                     p = p.then((val) => {
-                      f.push({[F.EQUAL]: ['$' + attr, val]});
-                    })
+                      f.push({[oper]: ['$' + attr, val]});
+                    });
                   }
                 }
                 p = p.then(() => {
