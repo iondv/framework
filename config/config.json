@@ -320,7 +320,7 @@
       "securedDataRepo": {
         "module": "core/impl/datarepository/SecuredDataRepository",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "data": "ion://cachedDataRepo",
           "meta": "ion://metaRepo",
