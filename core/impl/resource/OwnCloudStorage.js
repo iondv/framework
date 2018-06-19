@@ -72,11 +72,24 @@ function OwnCloudStorage(config) {
     return uri;
   }
 
+  function trimSlashes(str) {
+    let result = str;
+    if (result) {
+      while (result.slice(0, 1) === '/') {
+        result = result.slice(1);
+      }
+      while (result.slice(-1) === '/') {
+        result = result.slice(0, -1);
+      }
+    }
+    return result;
+  }
+
   function urlConcat(part) {
     if (arguments.length > 1) {
-      let result = slashChecker(arguments[0]);
+      let result = trimSlashes(arguments[0]) + '/';
       for (let i = 1; i < arguments.length; i++) {
-        result += slashChecker(arguments[i]);
+        result += trimSlashes(arguments[i]) + '/';
       }
       return result;
     }
@@ -94,7 +107,7 @@ function OwnCloudStorage(config) {
     return (callback) => {
       try {
         let reqParams = {
-          uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, filePath)),
+          uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, filePath)),
           auth: {
             user: config.login,
             password: config.password
@@ -243,7 +256,7 @@ function OwnCloudStorage(config) {
 
       return (directory ? mkdirp(directory) : Promise.resolve())
         .then(() => {
-          let id = urlResolver(slashChecker(directory) || '', fn);
+          let id = urlConcat(directory || '', fn);
           let reqParams = {
             uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
             auth: {
@@ -272,7 +285,7 @@ function OwnCloudStorage(config) {
    */
   this._remove = function (id) {
     let reqParams = {
-      uri: encodeURI(urlResolver(config.url, urlTypes.WEBDAV, id)),
+      uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
       auth: {
         user: config.login,
         password: config.password
