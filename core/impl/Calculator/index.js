@@ -9,7 +9,6 @@ const clone = require('clone');
 const aggreg = require('./func/aggreg');
 const data = require('./func/data');
 const sequence = require('./func/sequence');
-const DataRepository = require('core/interfaces/DataRepository').DataRepository;
 const SequenceProvider = require('core/interfaces/SequenceProvider');
 const parser = require('./func/parser');
 
@@ -24,25 +23,19 @@ function Calculator(options) {
 
   let funcLib = clone(stdLib);
 
-  let drg = null;
+  if (options.dataRepo) {
+    funcLib.sum = aggreg.sum(options.dataRepo);
+    funcLib.count = aggreg.count(options.dataRepo);
+    funcLib.avg = aggreg.avg(options.dataRepo);
+    funcLib.max = aggreg.max(options.dataRepo);
+    funcLib.min = aggreg.min(options.dataRepo);
+    funcLib.merge = aggreg.merge(options.dataRepo);
+    funcLib.get = data.get(options.dataRepo);
+  }
+  if (options.sequenceProvider instanceof SequenceProvider) {
+    funcLib.next = sequence.next(options.sequenceProvider);
+  }
 
-  this.init = function (scope) {
-    drg = function () {return typeof options.dataRepo === 'string' ? scope[options.dataRepo] : options.dataRepo};
-    let dataRepo = drg();
-    if (dataRepo instanceof DataRepository) {
-        funcLib.sum = aggreg.sum(dataRepo);
-        funcLib.count = aggreg.count(dataRepo);
-        funcLib.avg = aggreg.avg(dataRepo);
-        funcLib.max = aggreg.max(dataRepo);
-        funcLib.min = aggreg.min(dataRepo);
-        funcLib.merge = aggreg.merge(dataRepo);
-        funcLib.get = data.get(dataRepo);
-    }
-    if (options.sequenceProvider instanceof SequenceProvider) {
-      funcLib.next = sequence.next(options.sequenceProvider);
-    }
-    return Promise.resolve();
-  };
 
   function warn(msg) {
     (options.log || console).warn(msg);
@@ -52,7 +45,7 @@ function Calculator(options) {
    * @param {String | {}} formula
    */
   this._parseFormula = function (formula) {
-    return parser(formula, funcLib, warn, drg);
+    return parser(formula, funcLib, warn, () => options.dataRepo);
   };
 }
 

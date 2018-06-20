@@ -142,10 +142,8 @@
       },
       "calculator": {
         "module": "core/impl/Calculator",
-        "initMethod": "init",
-        "initLevel": 1,
         "options": {
-          "dataRepo": "dataRepo",
+          "dataRepo": "lazy://dataRepo",
           "sequenceProvider": "ion://sequenceProvider"
         }
       },
@@ -301,7 +299,7 @@
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
           "dataRepo": "ion://dataRepo",
-          "calc": "ion://calculator"
+          "calc": "lazy://calculator"
         }
       },
       "queryParser": {

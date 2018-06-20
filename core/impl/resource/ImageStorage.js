@@ -64,9 +64,9 @@ function ImageStorage(options) { // jshint ignore:line
   function streamToBuffer (stream) {
     return new Promise ((resolve, reject) => {
       let bufs = [];
-      stream.on('data', (d) => bufs.push(d));
+      stream.on('data', d => bufs.push(d));
       stream.on('end', () => resolve(Buffer.concat(bufs)));
-      stream.on('error', (e) => reject(e));
+      stream.on('error', e => reject(e));
     });
   }
 
@@ -95,14 +95,15 @@ function ImageStorage(options) { // jshint ignore:line
             } else {
               file.loading = true;
               file.onloaded = [];
-              streamToBuffer(file.getContents().stream)
+              file.getContents()
+                .then(c => streamToBuffer(c.stream))
                 .then((buff) => {
                   file.buffer = buff;
                   file.loading = false;
-                  file.onloaded.forEach((f) => f());
+                  file.onloaded.forEach(f => f());
                   callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
                 })
-                .catch((e) => callback(e));
+                .catch(e => callback(e));
             }
           }
         }
@@ -136,8 +137,8 @@ function ImageStorage(options) { // jshint ignore:line
               }
               return f[0].getContents();
             })
-            .then((c) => callback(null, c.stream))
-            .catch((e) => callback(e));
+            .then(c => callback(null, c.stream))
+            .catch(e => callback(e));
         }
       );
     });
