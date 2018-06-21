@@ -1,3 +1,4 @@
+/* eslint no-process-exit:off */
 'use strict';
 /* eslint no-process-exit:off */
 /**
@@ -53,7 +54,8 @@ di('boot', config.bootstrap,
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');
       }
-    })
+    }
+  )
   .then((scope) => {
     let worker = scope[job.worker];
     if (!worker) {
@@ -105,7 +107,7 @@ di('boot', config.bootstrap,
     p.catch(() => {
       sysLog.error(err);
     })
-    .finally(() => {
+      .then(() => {
       process.exit(130);
     });
   });

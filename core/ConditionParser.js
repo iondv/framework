@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off */
 /**
  * Created by Данил on 10.10.2016.
  */
