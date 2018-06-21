@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -16,7 +17,7 @@ errorSetup(config.lang || 'ru');
 
 let params = {};
 
-var setParam = false;
+let setParam = false;
 
 // jshint maxstatements: 40, maxcomplexity: 20
 
@@ -38,9 +39,9 @@ if (params.path) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'background']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background', 'application'])
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'background', 'application']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(() => di(moduleName, extendDi(moduleName, context), {}, 'app', ['background'], params.path))
   .then((scope) => {
     let worker = scope[params.task];
@@ -53,7 +54,7 @@ di('boot', config.bootstrap,
     sysLog.info(new Date().toISOString() + ': Начало выполнения фоновой процедуры ' + params.task);
     return typeof worker === 'function' ? worker(params) : worker.run(params);
   })
-  .then((result)=> {
+  .then((result) => {
     if (typeof process.send === 'function') {
       process.send(result);
     }

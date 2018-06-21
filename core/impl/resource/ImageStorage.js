@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off */
 /**
  * Created by kras on 04.10.16.
  */
@@ -5,7 +6,7 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const gm = require('gm').subClass({imageMagick: true});
+const sharp = require('sharp');
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -39,6 +40,8 @@ StoredImage.prototype.constructor = StoredImage;
 /**
  * @param {{}} options
  * @param {ResourceStorage} options.fileStorage
+ * @param {{}} options.app
+ * @param {Auth} options.auth
  * @param {{}} options.thumbnails
  * @param {{}} options.urlBase
  * @param {Boolean} options.storeThumbnails
@@ -58,15 +61,15 @@ function ImageStorage(options) { // jshint ignore:line
 
   function thumbnail(source, opts) {
     let format = opts.format || 'png';
-    return gm(source).resize(opts.width, opts.height).setFormat(format).stream();
+    return sharp(source).resize(opts.width, opts.height).max().toFormat(format);
   }
 
-  function streamToBuffer (stream) {
+  function streamToBuffer(stream) {
     return new Promise ((resolve, reject) => {
       let bufs = [];
-      stream.on('data', (d) => bufs.push(d));
+      stream.on('data', d => bufs.push(d));
       stream.on('end', () => resolve(Buffer.concat(bufs)));
-      stream.on('error', (e) => reject(e));
+      stream.on('error', e => reject(e));
     });
   }
 
@@ -95,14 +98,15 @@ function ImageStorage(options) { // jshint ignore:line
             } else {
               file.loading = true;
               file.onloaded = [];
-              streamToBuffer(file.getContents().stream)
+              file.getContents()
+                .then(f => streamToBuffer(f.stream))
                 .then((buff) => {
                   file.buffer = buff;
                   file.loading = false;
-                  file.onloaded.forEach((f) => f());
+                  file.onloaded.forEach(f => f());
                   callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
                 })
-                .catch((e) => callback(e));
+                .catch(e => callback(e));
             }
           }
         }
@@ -136,8 +140,8 @@ function ImageStorage(options) { // jshint ignore:line
               }
               return f[0].getContents();
             })
-            .then((c) => callback(null, c.stream))
-            .catch((e) => callback(e));
+            .then(c => callback(null, c.stream))
+            .catch(e => callback(e));
         }
       );
     });
@@ -232,6 +236,12 @@ function ImageStorage(options) { // jshint ignore:line
       if (!storeThumbnails) {
         setThumbnails(file, thumbnails);
         file = file.clone();
+      } else {
+        for (let thumb in thumbnails) {
+          if (thumbnails.hasOwnProperty(thumb)) {
+            thumbnails[thumb].link = `${options.urlBase}/${thumb}/${file.id}`;
+          }
+        }
       }
       return new StoredImage(file, thumbnails);
     });
@@ -284,10 +294,7 @@ function ImageStorage(options) { // jshint ignore:line
       });
   };
 
-  /**
-   * @returns {Function}
-   */
-  this._fileMiddle = function () {
+  function fileMiddle() {
     return function (req, res) {
       let thumbType = (options.thumbnails && options.thumbnails[req.params.thumb] && req.params.thumb) || null;
       let imageId = req.params.id;
@@ -329,7 +336,7 @@ function ImageStorage(options) { // jshint ignore:line
           res.status(500).send(err.message || err);
         });
     }.bind(this);
-  };
+  }
 
   /**
    *
@@ -395,8 +402,14 @@ function ImageStorage(options) { // jshint ignore:line
     fileStorage = storage;
   };
 
-  this._fileRoute = function () {
-    return options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)';
+  /**
+   * @returns {Promise}
+   */
+  this._init = function () {
+    if (options.app && options.auth && options.urlBase) {
+      options.app.get(options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)', options.auth.verifier(), fileMiddle.apply(this));
+    }
+    return Promise.resolve();
   };
 }
 

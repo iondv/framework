@@ -18,7 +18,9 @@ const xss = require('xss');
 
 /* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
- * @param {{storageBase: String, urlBase: String, dataSource: DataSource, fragmentation: String}} options
+ * @param {{storageBase: String, urlBase: String, fragmentation: String, app: {}}} options
+ * @param {DataSource} options.dataSource
+ * @param {Auth} options.auth
  * @constructor
  */
 function FsStorage(options) {
@@ -40,7 +42,7 @@ function FsStorage(options) {
   delete options.dataSource;
   var _options = clone(options) || {};
   _options.urlBase = _options.urlBase  || '';
-  _options.shareBase = _options.shareBase  || '/share';
+  _options.shareBase = _options.shareBase || '';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');
 
   /**
@@ -118,8 +120,8 @@ function FsStorage(options) {
     }
 
     return checkDest(fn)
-      .then((check) => {
-        return new Promise((resolve, reject) => {
+      .then(check =>
+        new Promise((resolve, reject) => {
           mkdirp(path.join(_options.storageBase, check.path), (err) => {
             if (err) {
               return reject(err);
@@ -137,15 +139,13 @@ function FsStorage(options) {
               writer.on('finish', () => {resolve(path.join(check.path, check.filename));});
               reader.pipe(writer);
             } else {
-              fs.writeFile(dest, d, (err) => err ? reject(err) : resolve(path.join(check.path, check.filename)));
+              fs.writeFile(dest, d, err => err ? reject(err) : resolve(path.join(check.path, check.filename)));
             }
           });
-        });
-      })
-      .then((pth) => { // TODO ОПределять mime-type и content-type
-          return dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE});
         })
-      .then((r) =>
+      )
+      .then(pth => dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE})) // TODO Определять mime-type и content-type
+      .then(r =>
         new StoredFile(
             r.id,
             _options.urlBase + '/' + r.id,
@@ -316,21 +316,18 @@ function FsStorage(options) {
     };
   }
 
-  this._shareMiddle = function () {
-    return urlAccessor(_options.shareBase, {[F.EQUAL]: ['$shared', true]});
-  };
-
-  /**
-   * @returns {Function}
-   */
-  this._fileMiddle = function () {
-    return urlAccessor(_options.urlBase);
-  };
-
   /**
    * @returns {Promise}
    */
   this._init = function () {
+    if (options.app) {
+      if (_options.shareBase) {
+        options.app.get(_options.shareBase + '/:id', urlAccessor(_options.shareBase, {[F.EQUAL]: ['$shared', true]}));
+      }
+      if (options.auth && _options.urlBase) {
+        options.app.get(_options.urlBase + '/:id', options.auth.verifier(), urlAccessor(_options.urlBase));
+      }
+    }
     return dataSource.ensureIndex('ion_files', {id: 1}, {unique: true})
         .then(() => dataSource.ensureIndex('ion_files', {path: 1}));
   };
@@ -441,30 +438,32 @@ function FsStorage(options) {
   };
 
   this._share = function (id) {
+    if (!_options.shareBase) {
+      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
+    }
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', id]}, {shared: true})
       .then(() => _options.shareBase + '/' + id);
   };
 
   this._currentShare  = function (id) {
+    if (!_options.shareBase) {
+      throw new Error('Не настроен базовый URL файлов с общим доступом!');
+    }
     return _options.shareBase + '/' + id;
   };
 
   this._deleteShare = function (share) {
+    if (!_options.shareBase) {
+      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
+    }
+
     let basePath = url.parse(_options.shareBase).path;
     let fileId = share.replace(basePath + '/', '');
 
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', fileId]}, {shared: false})
       .then(() => true);
-  };
-
-  this._fileRoute = function () {
-    return _options.urlBase + '/:id';
-  };
-
-  this._shareRoute = function () {
-    return _options.shareBase + '/:id';
   };
 
   this.fileOptionsSupport = function () {

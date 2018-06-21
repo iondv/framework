@@ -147,14 +147,16 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
       modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
     }
 
-    let f = require(modulePath);
+    let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
-      result = new f(opts);
+      result = new F(opts);
     } else {
-      result = function(){return f.call(scope, opts);};
+      result = function () {
+        return F.call(scope, opts);
+      };
       if (component.initMethod) {
-        result[component.initMethod] = f[component.initMethod];
+        result[component.initMethod] = F[component.initMethod];
       }
     }
     scope[name] = result;
