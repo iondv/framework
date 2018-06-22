@@ -40,7 +40,7 @@ function FsStorage(options) {
   }
 
   delete options.dataSource;
-  var _options = clone(options) || {};
+  var _options = clone(options, false, 1) || {};
   _options.urlBase = _options.urlBase  || '';
   _options.shareBase = _options.shareBase || '';
   _options.storageBase = path.resolve(path.join(__dirname, '..', '..', '..'), _options.storageBase || './files');

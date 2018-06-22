@@ -469,7 +469,7 @@ gulp.task('deploy', function (done) {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler', 'application'])
+    ['rtEvents', 'sessionHandler', 'application'])
   /**
    * @param {Object} scp
    * @param {Object} scp.dataSources
