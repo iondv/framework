@@ -73,7 +73,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
     if (typeof options === 'string') {
       if (options.substr(0, 6) === 'ion://') {
         let nm = options.substr(6);
-        if (!nm) {
+        if (!nm || skip && skip.indexOf(nm) >= 0) {
           return null;
         }
         if (scope.hasOwnProperty(nm)) {
@@ -82,13 +82,16 @@ function processOptions(options, scope, components, init, skip, cwd) {
         if (components.hasOwnProperty(nm)) {
           return loadComponent(nm, components[nm], scope, components, init, skip, cwd);
         }
-        if (skip && skip.indexOf(nm) === -1) {
-          throw new Error('Не найден компонент с именем ' + nm + '.');
-        } else {
+        throw new Error('Не найден компонент с именем ' + nm + '.');
+      } else if (options.substr(0, 7) === 'lazy://') {
+        let nm = options.substr(7);
+        if (!nm && skip && skip.indexOf(nm) >= 0) {
           return null;
         }
-      } else if (options.substr(0, 7) === 'lazy://') {
-        return createProxy(scope, options.substr(7));
+        if (components.hasOwnProperty(nm)) {
+          return createProxy(scope, options.substr(7));
+        }
+        throw new Error('Не найден компонент с именем ' + nm + '.');
       }
       return options;
     } else if (options instanceof Array) {

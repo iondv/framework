@@ -252,7 +252,7 @@ function SecuredDataRepository(options) {
       return item;
     }
 
-    if (!item.permissions || !item.permissions[Permissions.READ]) {
+    if (item.permissions && !item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
     }
@@ -317,7 +317,7 @@ function SecuredDataRepository(options) {
   }
 
   function getPermMap(list, options) {
-    if (!list.length) {
+    if (!list.length || !options.user) {
       return Promise.resolve({});
     }
     let resources = [globalMarker];
@@ -550,7 +550,7 @@ function SecuredDataRepository(options) {
      * @param {Item} item
      */
     return function (item) {
-      if (!item) {
+      if (!item || !options.user) {
         return Promise.resolve(item);
       }
       let p;
@@ -796,7 +796,7 @@ function SecuredDataRepository(options) {
   }
 
   function checkReadPermission(item) {
-    if (item && !item.permissions[Permissions.READ]) {
+    if (item && item.permissions && !item.permissions[Permissions.READ]) {
       throw new IonError(Errors.PERMISSION_LACK);
     }
     return item;
@@ -833,8 +833,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, moptions) {
-    return aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE])
-      .then(function (accessible) {
+    return (moptions.user ?
+      aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE]) :
+      Promise.resolve(true))
+      .then((accessible) => {
         if (accessible) {
           let opts = clone(moptions);
           let cm = options.meta.getMeta(classname);
@@ -848,6 +850,9 @@ function SecuredDataRepository(options) {
   };
 
   function checkWritePermission(classname, id, moptions) {
+    if (!moptions.user) {
+      return Promise.resolve(true);
+    }
     return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
@@ -864,7 +869,7 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
-            return item.permissions[Permissions.WRITE];
+            return !item.permissions || item.permissions[Permissions.WRITE];
           });
       });
   }
@@ -921,8 +926,11 @@ function SecuredDataRepository(options) {
   };
 
   function checkDeletePermission(classname, id, moptions) {
+    if (!moptions.user) {
+      return Promise.resolve(true);
+    }
     return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
-      .then(function (permissions) {
+      .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE] ||
           permissions[itemPrefix + classname + '@' + id] &&
@@ -937,7 +945,7 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
-            return item.permissions[Permissions.DELETE];
+            return !item.permissions || item.permissions[Permissions.DELETE];
           });
       });
   }
@@ -963,15 +971,15 @@ function SecuredDataRepository(options) {
   function checkCollectionWriteAccess(master, details, options) {
     return setItemPermissions(options, null, true)(master)
       .then((m) => {
-        if (!m.permissions[Permissions.WRITE]) {
+        if (m.permissions && !m.permissions[Permissions.WRITE]) {
           return false;
         }
         let p = Promise.resolve();
         let breaker = '_____UNUSABLE____';
-        details.forEach(function (d) {
+        details.forEach((d) => {
           p = p.then(() => setItemPermissions(options, null, true)(d));
           p = p.then((di) => {
-            if (!di.permissions[Permissions.USE]) {
+            if (di.permissions && !di.permissions[Permissions.USE]) {
               return Promise.reject(breaker);
             }
             return Promise.resolve();
@@ -1040,7 +1048,7 @@ function SecuredDataRepository(options) {
   this._getAssociationsList = function (master, collection, options) {
     return setItemPermissions(options, null, true)(master)
       .then((m) => {
-        if (m.permissions[Permissions.READ]) {
+        if (!m.permissions || m.permissions[Permissions.READ]) {
           let opts = clone(options);
           let p = m.property(collection);
           if (!p) {
@@ -1065,7 +1073,7 @@ function SecuredDataRepository(options) {
   this._getAssociationsCount = function (master, collection, options) {
     return setItemPermissions(options, null, true)(master)
       .then(function (m) {
-        if (m.permissions[Permissions.READ]) {
+        if (!m.permissions || m.permissions[Permissions.READ]) {
           return dataRepo.getAssociationsCount(master, collection, options);
         }
         throw new IonError(Errors.PERMISSION_LACK);
@@ -1084,9 +1092,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
-    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
-      .then(function (permissions) {
+    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+      .then((permissions) => {
         if (
+          !permissions ||
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE]
         ) {
@@ -1104,9 +1113,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
-    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
-      .then(function (permissions) {
+    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+      .then((permissions) => {
         if (
+          !permissions ||
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE]
         ) {

@@ -177,7 +177,7 @@
           "shareBase": "[[fs.shareBase]]",
           "dataSource": "ion://Db",
           "app": "ion://application",
-          "auth": "ion://auth"
+          "auth": "lazy://auth"
         }
       },
       "imageStorage": {
@@ -189,7 +189,7 @@
           "fileStorage": "ion://fileStorage",
           "urlBase": "/images",
           "app": "ion://application",
-          "auth": "ion://auth",
+          "auth": "lazy://auth",
           "thumbsDirectoryMode": "[[fs.thumbDirMode]]",
           "thumbsDirectory": "[[fs.thumbDir]]",
           "thumbnails": {
