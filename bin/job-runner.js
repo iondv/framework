@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -112,26 +113,26 @@ function checkRun(launch) {
 function calcCheckInterval(launch, dv) {
   if (typeof launch === 'object') {
     if (launch.sec || launch.second) {
-      return 1000;
+      return 500;
     }
 
     if (launch.min || launch.minute) {
-      return 60000;
+      return 30000;
     }
 
     if (launch.hour) {
-      return 3600000;
+      return 1800000;
     }
 
     if (launch.day || launch.dayOfYear || launch.weekday) {
-      return 86400000;
+      return 43200000;
     }
 
     if (launch.week) {
-      return 604800000;
+      return 302400000;
     }
 
-    return 2592000000;
+    return 1296000000;
   }
   return dv;
 }
@@ -139,9 +140,9 @@ function calcCheckInterval(launch, dv) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope
@@ -173,14 +174,14 @@ di('boot', config.bootstrap,
         if (typeof job.launch === 'object') {
           runImmediate = false;
           checkInterval = job.launch.check || calcCheckInterval(job.launch, checkInterval);
-          runTimeout = job.launch.timeout || 3600000;
+          runTimeout = job.launch.timeout || checkInterval;
         } else {
           runImmediate = true;
           checkInterval = parseInt(job.launch);
           runTimeout = checkInterval;
         }
 
-        let starter = function () {
+        let starter = () => {
           let run = true;
           if (!runImmediate) {
             run = checkRun(job.launch);
@@ -196,26 +197,23 @@ di('boot', config.bootstrap,
             ch.on('exit', () => {
               clearTimeout(rto);
             });
-            clearTimeout(interval);
-            interval = setTimeout(starter, checkInterval);
-          } else {
-            clearTimeout(interval);
-            interval = setTimeout(starter, 500);
           }
+          if (interval) {
+            clearTimeout(interval);
+          }
+          interval = setTimeout(starter, checkInterval);
         };
 
-        interval = setTimeout(starter, 500);
         sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
+        starter();
       } else {
         throw new Error('Задание ' + jobName + ' не найдено');
       }
     }
   )
   .catch((err) => {
-    try {
+    if (interval) {
       clearInterval(interval);
-    } catch (e) {
-
     }
     sysLog.error(err);
     process.exit(130);

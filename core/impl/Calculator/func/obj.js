@@ -1,9 +1,9 @@
+/* eslint no-invalid-this: off, no-sync: off */
 /**
  * Created by kras on 03.11.16.
  */
 'use strict';
-const ac = require('./util').argCalcPromise;
-const acSync = require('./util').argCalcSync;
+const ac = require('./util').args;
 
 function countResult(args) {
   var result = {};
@@ -22,11 +22,11 @@ function countResult(args) {
 }
 
 module.exports = function (args) {
-  return function (sync) {
-    if (sync) {
-      let cArgs = acSync(this, args);
-      return countResult(cArgs);
+  return function () {
+    let result = ac(this, args);
+    if (result instanceof Promise) {
+      return result.then(cArgs => countResult(cArgs));
     }
-    return ac(this, args).then(cArgs => countResult(cArgs));
+    return countResult(result);
   };
 };

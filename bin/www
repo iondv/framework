@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-// jscs:disable requireCapitalizedComments
+/* eslint no-process-exit:off, no-sync:off */
 'use strict';
 
 const path = require('path');
@@ -14,7 +13,7 @@ const fs = require('fs');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const FileStreamRotator = require('file-stream-rotator');
-const Morgan = require('morgan');
+const morgan = require('morgan');
 
 
 const config = require('../config');
@@ -56,9 +55,9 @@ if (process.env.NODE_ENV !== 'development') {
     verbose: false,
     date_format: 'YYYY-MM-DD'
   });
-  app.use(Morgan('combined', {stream: accessLogStream}));
+  app.use(morgan('combined', {stream: accessLogStream}));
 } else {
-  app.use(Morgan('dev'));
+  app.use(morgan('dev'));
 }
 
 // Мидлвара сохранения сообщений в сессии перед редиректом
@@ -132,8 +131,8 @@ di('boot', config.bootstrap,
     application: app,
     sysLog: sysLog
   })
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot'))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then((scope) => {
     if (config.runJobs) {
       scope.scheduler = new Scheduler({settings: scope.settings});
@@ -168,29 +167,10 @@ di('boot', config.bootstrap,
 
       app.locals.defaultModule = defaultModule;
 
-      app.get('/', function (req, res) {
+      app.get('/', (req, res) => {
         res.redirect(app.locals.baseUrl + defaultModule);
       });
 
-      if (scope.fileStorage) {
-        let route = scope.fileStorage.shareRoute();
-        if (route) {
-          app.get(route, scope.fileStorage.shareMiddle());
-        }
-      }
-
-      if (scope.fileStorage) {
-        let route = scope.fileStorage.fileRoute();
-        if (route) {
-          app.get(route, scope.auth.verifier(), scope.fileStorage.fileMiddle());
-        }
-      }
-      if (scope.imageStorage) {
-        let route = scope.imageStorage.fileRoute();
-        if (route) {
-          app.get(route, scope.auth.verifier(), scope.imageStorage.fileMiddle());
-        }
-      }
       scope.auth.setTopLevelAuth();
 
       if (scope.oauth) {

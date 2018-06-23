@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const TRUE_STATUS = ['Мердж', 'Версия'];
 
 if (!process.env.ION_JIRA_USER || !process.env.ION_JIRA_PASSWORD) {
   console.warn('Тест пропущен, т.к. не заданы учетные данны для джира в ION_JIRA_USER и ION_JIRA_PASSWORD');
@@ -13,7 +14,7 @@ if (!process.env.ION_JIRA_USER || !process.env.ION_JIRA_PASSWORD) {
 
 describe('# Проверка статуса бизнес-процесса по задаче "мердж"', function () {
   this.timeout(60000);
-  it('Для текущей ветки в гит, должен быть установлен статус "Мердж" в Jira', (done) => {
+  it('Для текущей ветки в гит, должен быть установлен статус "Мердж" или "Версия" в Jira', (done) => {
     if (process.env.CI_COMMIT_REF_SLUG) {
       checkEnvBranch(done);
     } else {
@@ -47,13 +48,13 @@ function checkGitBranch(done) {
             checkMergeStatus(taskCode)
               .then((status) => {
                 console.log('Компонент ' + folder + ' с веткой задачи ' + taskCode + ' имеет статус:', status);
-                if (!onceErr && status !== 'Мердж') {
+                if (!onceErr && TRUE_STATUS.includes(status)) {
                   onceErr = true;
                   done(new Error('Компонент ' + folder + ' с веткой задачи ' + taskCode + ' имеет статус ' + status +
-                    ' вместо Мердж'));
+                    ' вместо Мердж или Версия'));
                 }
                 if (!onceErr && ++qntCheckRes === tasksCodeToCheck.length) {
-                  console.log('Проверенные статусы Мердж у задач:', tasksCodeToCheck.toString());
+                  console.log('Проверенные статусы Мердж/Версия у задач:', tasksCodeToCheck.toString());
                   done();
                 }
               })
@@ -83,11 +84,11 @@ function checkEnvBranch(done) {
   checkMergeStatus(taskCode)
     .then((status) => {
       console.log('Компоненты с веткой задачи ' + taskCode + ' имеет статус:', status);
-      if (status !== 'Мердж') {
+      if (TRUE_STATUS.includes(status)) {
         done(new Error('Компоненты с веткой задачи ' + taskCode + ' имеет статус ' + status +
-          ' вместо Мердж'));
+          ' вместо Мердж иди Версия'));
       } else {
-        console.log('Проверенные статусы Мердж у задачи', taskCode);
+        console.log('Проверенные статусы Мердж/Версия у задачи', taskCode);
         done();
       }
     })
