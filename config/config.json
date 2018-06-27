@@ -170,19 +170,26 @@
       "fileStorage": {
         "module": "core/impl/resource/FsStorage",
         "initMethod":"init",
-        "initLevel": 1,
+        "initLevel": 3,
         "options": {
           "storageBase": "[[fs.storageRoot]]",
           "urlBase": "[[fs.urlBase]]",
-          "dataSource": "ion://Db"
+          "shareBase": "[[fs.shareBase]]",
+          "dataSource": "ion://Db",
+          "app": "ion://application",
+          "auth": "lazy://auth"
         }
       },
       "imageStorage": {
         "module": "core/impl/resource/ImageStorage",
+        "initMethod": "init",
+        "initLevel": 3,
         "options": {
           "log": "ion://sysLog",
           "fileStorage": "ion://fileStorage",
           "urlBase": "/images",
+          "app": "ion://application",
+          "auth": "lazy://auth",
           "thumbsDirectoryMode": "[[fs.thumbDirMode]]",
           "thumbsDirectory": "[[fs.thumbDir]]",
           "thumbnails": {

@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by kras on 13.07.16.
  */
@@ -47,17 +48,17 @@ process.argv.forEach(function (val) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler'])
-  .then((scope) =>
+  }, null, ['rtEvents', 'sessionHandler', 'application'])
+  .then(scope =>
     di(
       'app',
       extend(true, config.di, scope.settings.get('plugins') || {}),
       {}, 'boot',
-      ['auth', 'aclProvider']
+      ['auth', 'aclProvider', 'application']
     )
   )
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
-  .then((scope) =>
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
+  .then(scope =>
     worker(
       params.dst,
       {
@@ -77,7 +78,7 @@ di('boot', config.bootstrap,
         lastVersion: params.ver === '-last'
       }).then(() => scope)
   )
-  .then((scope) => scope.dataSources.disconnect())
+  .then(scope => scope.dataSources.disconnect())
   .then(() => {
     console.info('Экспорт выполнен успешно.', params.dst);
     process.exit(0);

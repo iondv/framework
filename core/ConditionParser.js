@@ -60,7 +60,6 @@ function toScalar(v, context, type, lang) {
         return result;
       }
     }
-    return v;
   }
 
   if (typeof v === 'string') {

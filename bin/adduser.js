@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by kras on 24.08.16.
  */
@@ -41,20 +42,20 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'application'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
-  .then((scope) =>
-    new Promise(function (resolve, reject) {
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['application', 'aclProvider']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
+  .then(scope =>
+    new Promise((resolve, reject) => {
       scope.auth.register(
         {
           name: name,
           pwd: pwd
         },
-        (err) => err ? reject(err) : resolve(scope)
+        err => err ? reject(err) : resolve(scope)
       );
     })
   )
-  .then((scope) => scope.dataSources.disconnect())
+  .then(scope => scope.dataSources.disconnect())
   .then(() => {
     console.info('Пользователь успешно зарегистрирован.');
     process.exit(0);

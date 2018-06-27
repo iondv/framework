@@ -1,5 +1,6 @@
 /* eslint no-process-exit:off */
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -28,8 +29,8 @@ let notifier = null;
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
