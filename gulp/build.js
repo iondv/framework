@@ -426,7 +426,7 @@ function appImporter(appDir, scope, log, dep) {
     console.log('Импорт меты приложения ' + appDir + ' выполняется в ' +
       (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
     return aclImport(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
-      .catch((err) => log.error(err))
+      .catch(err => log.error(err))
       .then(() => importer(appDir, {
         sync: scope.dbSync,
         metaRepo: scope.metaRepo,
@@ -469,7 +469,7 @@ gulp.task('deploy', function (done) {
       sysLog: sysLog
     },
     null,
-    ['auth', 'rtEvents', 'sessionHandler'])
+    ['rtEvents', 'sessionHandler', 'application'])
   /**
    * @param {Object} scp
    * @param {Object} scp.dataSources
@@ -507,18 +507,18 @@ gulp.task('deploy', function (done) {
         return Promise.reject(err);
       }
     })
-    .then(() => {
-      return di('boot', config.bootstrap,
+    .then(() =>
+      di('boot', config.bootstrap,
         {
           sysLog: sysLog
         }, null, ['rtEvents', 'sessionHandler', 'application'])
-        .then((scope) => di('app',
+        .then(scope => di('app',
           extend(true, config.di, scope.settings.get('plugins') || {}),
           {},
           'boot',
           ['application', 'aclProvider']))
-        .then((scope) => alias(scope, scope.settings.get('di-alias')));
-    })
+        .then(scope => alias(scope, scope.settings.get('di-alias')))
+    )
     .then((scp) => {
       scope = scp;
       let stage2 = Promise.resolve();
@@ -528,14 +528,16 @@ gulp.task('deploy', function (done) {
           stage2 = stage2.then(appImporter(path.join(appDir, apps[i]), scope, sysLog, deps[i]));
         }
       }
-      return stage2.then(()=>{console.log('Импорт меты приложений завершен.');});
+      return stage2.then(() => {
+        console.log('Импорт меты приложений завершен.');
+      });
     })
-    .then(() => scope.dataSources.disconnect().catch((err) => console.error(err)))
+    .then(() => scope.dataSources.disconnect().catch(err => console.error(err)))
     .then(() => done())
-    .catch((err) => done(err));
+    .catch(err => done(err));
 });
 
-gulp.task('assemble', function (done) {
+gulp.task('assemble', (done) => {
   console.log('Сборка и развертывание платформы и приложений ION.');
   runSequence('build', 'deploy', function (err) {
     if (!err) {
