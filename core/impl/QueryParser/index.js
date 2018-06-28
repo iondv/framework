@@ -1,4 +1,5 @@
 const IQueryParser = require('core/interfaces/QueryParser');
+const PropertyTypes = require('core/PropertyTypes');
 const nearley = require('nearley');
 const grammar = require('./grammar');
 const {Attr} = require('./classes');
@@ -20,6 +21,20 @@ function QueryParser() {
     return results[0];
   }
 
+  function findPropertyMeta(name, cm) {
+    var pm = cm.getPropertyMeta(name);
+    var dot;
+    if (pm) {
+      return pm;
+    } else if ((dot = name.indexOf('.')) >= 0) {
+      pm =  cm.getPropertyMeta(name.substring(0, dot));
+      if (pm && pm.type === PropertyTypes.REFERENCE) {
+        return findPropertyMeta(name.substring(dot + 1), pm._refClass);
+      }
+    }
+    return null;
+  }
+
   function parseAttrs(obj, cm) {
     if (Array.isArray(obj)) {
       let results = [];
@@ -28,10 +43,10 @@ function QueryParser() {
     } else {
       if (obj instanceof Attr) {
         let value = obj.value;
-        let pm = cm.getPropertyMeta(value);
+        let pm = findPropertyMeta(value, cm);
         if (!pm) {
           let propertyMetas = cm.getPropertyMetas();
-          propertyMetas.forEach(p => {
+          propertyMetas.forEach((p) => {
             if (p.caption === value) {
               pm = p;
             }
@@ -43,7 +58,7 @@ function QueryParser() {
         return '$' + pm.name;
       } else if (typeof obj === 'object') {
         let result = {};
-        Object.keys(obj).forEach(k => {
+        Object.keys(obj).forEach((k) => {
           result[k] = parseAttrs(obj[k], cm);
         });
         return result;

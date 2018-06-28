@@ -73,7 +73,7 @@ mathType ->
   | "/" {% d => { return 'DIV' } %}
 
 attribute -> 
-  [$_a-zA-Z] [$_a-zA-Z0-9-]:* {% d => { return d[0] + d[1].join('')} %} 
+  [$_a-zA-Z] [$_a-zA-Z0-9-.]:* {% d => { return d[0] + d[1].join('')} %} 
   | "`" _string "`":* {% d => { return d[1] } %} 
 
 

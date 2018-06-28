@@ -1,7 +1,7 @@
-// Generated automatically by nearley
+// Generated automatically by nearley, version 2.13.0
 // http://github.com/Hardmath123/nearley
 (function () {
-function id(x) {return x[0]; }
+function id(x) { return x[0]; }
 
 
 const F=require('./../../../FunctionCodes');
@@ -51,7 +51,7 @@ var grammar = {
     {"name": "mathType", "symbols": [{"literal":"*"}], "postprocess": d => { return 'MUL' }},
     {"name": "mathType", "symbols": [{"literal":"/"}], "postprocess": d => { return 'DIV' }},
     {"name": "attribute$ebnf$1", "symbols": []},
-    {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", /[$_a-zA-Z0-9-]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", /[$_a-zA-Z0-9-.]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "attribute", "symbols": [/[$_a-zA-Z]/, "attribute$ebnf$1"], "postprocess": d => { return d[0] + d[1].join('')}},
     {"name": "attribute$ebnf$2", "symbols": []},
     {"name": "attribute$ebnf$2", "symbols": ["attribute$ebnf$2", {"literal":"`"}], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
