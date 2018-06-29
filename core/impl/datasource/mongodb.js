@@ -862,6 +862,8 @@ function MongoDs(config) {
                 default:
                   break;
               }
+            } else if (oper === Operations.LIKE) {
+              throw new Error('Операция LIKE не может быть использована в выражении для поля выборки.');
             } else {
               return {[o]: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)};
             }
