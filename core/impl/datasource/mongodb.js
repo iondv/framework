@@ -844,7 +844,7 @@ function MongoDs(config) {
               }
 
               let jsrc = {};
-              let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+              let pj = processJoin(attributes, jsrc, explicitJoins, [], null, counter);
               pj(j);
 
               for (let ja in jsrc) {
@@ -858,7 +858,7 @@ function MongoDs(config) {
                 case DsOperations.JOIN_NOT_EXISTS:
                   return {$ifNull: ['$' + j.alias, true]};
                 case DsOperations.JOIN_SIZE:
-                  throw new Error('JOIN_SIZE operation not supported!');
+                  return '$' + j.alias + '_size';
                 default:
                   break;
               }
@@ -1143,7 +1143,12 @@ function MongoDs(config) {
         };
         result.push({$lookup: tmp});
         attributes.push(join.alias);
-
+        if (join.passSize) {
+          tmp = clean(attributes);
+          tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
+          attributes.push(join.alias + '_size');
+          result.push(tmp);
+        }
         result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
 
         result.push(clean(attributes));
@@ -1217,7 +1222,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object' && find && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, [], prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists' || name === '$joinSize') {
