@@ -265,7 +265,7 @@ function AclMetaMap(options) {
       for (let cn in options.map) {
         if (options.map.hasOwnProperty(cn)) {
           let me = options.map[cn];
-          if (me.sidAttribute && !me.isEntry) {
+          if (me.sidAttribute && !me.isEntry && me.createRole) {
             events.push(cn + '.create');
             events.push(cn + '.edit');
           }
