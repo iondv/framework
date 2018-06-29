@@ -72,10 +72,16 @@ mathType ->
   | "*" {% d => { return 'MUL' } %}
   | "/" {% d => { return 'DIV' } %}
 
-attribute -> 
-  [$_a-zA-Z] [$_a-zA-Z0-9-.]:* {% d => { return d[0] + d[1].join('')} %} 
-  | "`" _string "`":* {% d => { return d[1] } %} 
 
+_subattribute -> "." _attribute {% d => { return d[1] } %}
+
+_attribute -> 
+  [$_a-zA-Z] [$_a-zA-Z0-9-]:* {% d => { return d[0] + d[1].join('')} %} 
+  | "`" _string "`" {% d => { return d[1] } %}
+  
+attribute -> 
+  _attribute
+  | _attribute _subattribute:+ {% d => { return d[0] + '.' + d[1].join('.') } %}
 
 # Keywords
 # ==========
