@@ -65,12 +65,9 @@ function run(path, command, args, resolve, reject) {
 }
 
 function npm(path) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      console.log('Установка пакетов бэкенда для пути ' + path);
-      run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
-    });
-  };
+  return new Promise(function (resolve, reject) {
+    run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
+  });
 }
 
 function copyResources(src, dest, msg) {
@@ -138,37 +135,41 @@ function bower(p) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Установка пакетов фронтенда для пути ' + p);
-        run(p, 'bower', ['install', '--config.interactive=false'], function () {
-          let srcDir = path.join(p, bc.directory);
-          try {
-            fs.accessSync(srcDir);
-          } catch (err) {
-            resolve();
-            return;
-          }
-          try {
-            let vendorModules = fs.readdirSync(srcDir);
-            let copyers, copyer;
-            copyers = [];
-            if (bc.vendorDir) {
-              for (let i = 0; i < vendorModules.length; i++) {
-                copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
-                if (copyer) {
-                  copyers.push(copyer);
-                }
-              }
-            } else {
-              console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
-            }
-            if (copyers.length) {
-              Promise.all(copyers).then(resolve).catch(reject);
+        npm(p)
+          .then(function () {
+            let srcDir = path.join(p, bc.directory);
+            try {
+              fs.accessSync(srcDir);
+            } catch (err) {
+              resolve();
               return;
             }
-          } catch (error) {
-            return reject(error);
-          }
-          resolve();
-        }, reject);
+            try {
+              let vendorModules = fs.readdirSync(srcDir);
+              let copyers, copyer;
+              copyers = [];
+              if (bc.vendorDir) {
+                for (let i = 0; i < vendorModules.length; i++) {
+                  copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
+                  if (copyer) {
+                    copyers.push(copyer);
+                  }
+                }
+              } else {
+                console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
+              }
+              if (copyers.length) {
+                Promise.all(copyers).then(resolve).catch(reject);
+                return;
+              }
+            } catch (error) {
+              return reject(error);
+            }
+            resolve();
+          })
+          .catch((error) => {
+            reject(error);
+          });
       } catch (error) {
         reject(error);
       }
@@ -259,6 +260,7 @@ function buildDir(start, dir) {
   for (let i = 0; i < modules.length; i++) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
+      console.log('Установка пакетов бэкенда для пути ' + path.join(modulesDir, modules[i]));
       f = f.then(npm(path.join(modulesDir, modules[i])));
     }
   }
@@ -266,7 +268,8 @@ function buildDir(start, dir) {
 }
 
 gulp.task('build:npm', function (done) {
-  let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
+  console.log('Установка пакетов бэкенда для пути ' + platformPath);
+  let w = buildDir(buildDir(npm(platformPath), 'modules'), 'applications');
 
   w.then(function () {
     done();
