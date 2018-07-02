@@ -153,7 +153,7 @@ function MongoDs(config) {
    */
   function openDb() {
     return new Promise(function (resolve, reject) {
-      if (_this.db && _this.isOpen) {
+      if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
         return resolve(_this.db);
       } else if (_this.db && _this.busy) {
         _this.db.once('isOpen', function () {
@@ -161,6 +161,10 @@ function MongoDs(config) {
         });
       } else {
         _this.busy = true;
+        _this.isOpen = false;
+        if (!config.options.poolSize) {
+          config.options.poolSize = 20;
+        }
         client.connect(config.uri, config.options, function (err, db) {
           if (err) {
             reject(err);
@@ -193,7 +197,7 @@ function MongoDs(config) {
   }
 
   this._connection = function () {
-    if (this.isOpen) {
+    if (this.isOpen && this.db && this.db.serverConfig.isConnected()) {
       return this.db;
     }
     return null;
@@ -204,7 +208,7 @@ function MongoDs(config) {
   };
 
   this._close = function () {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (_this.db && _this.isOpen) {
         _this.busy = true;
         _this.db.close(true, function (err) {
@@ -844,7 +848,7 @@ function MongoDs(config) {
               }
 
               let jsrc = {};
-              let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+              let pj = processJoin(attributes, jsrc, explicitJoins, [], null, counter);
               pj(j);
 
               for (let ja in jsrc) {
@@ -858,7 +862,7 @@ function MongoDs(config) {
                 case DsOperations.JOIN_NOT_EXISTS:
                   return {$ifNull: ['$' + j.alias, true]};
                 case DsOperations.JOIN_SIZE:
-                  throw new Error('JOIN_SIZE operation not supported!');
+                  return '$' + j.alias + '_size';
                 default:
                   break;
               }
@@ -1143,7 +1147,12 @@ function MongoDs(config) {
         };
         result.push({$lookup: tmp});
         attributes.push(join.alias);
-
+        if (join.passSize) {
+          tmp = clean(attributes);
+          tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
+          attributes.push(join.alias + '_size');
+          result.push(tmp);
+        }
         result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
 
         result.push(clean(attributes));
@@ -1217,7 +1226,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object' && find && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, [], prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists' || name === '$joinSize') {
