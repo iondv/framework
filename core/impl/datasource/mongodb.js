@@ -153,7 +153,7 @@ function MongoDs(config) {
    */
   function openDb() {
     return new Promise(function (resolve, reject) {
-      if (_this.db && _this.isOpen) {
+      if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
         return resolve(_this.db);
       } else if (_this.db && _this.busy) {
         _this.db.once('isOpen', function () {
@@ -161,6 +161,10 @@ function MongoDs(config) {
         });
       } else {
         _this.busy = true;
+        _this.isOpen = false;
+        if (!config.options.poolSize) {
+          config.options.poolSize = 20;
+        }
         client.connect(config.uri, config.options, function (err, db) {
           if (err) {
             reject(err);
@@ -193,7 +197,7 @@ function MongoDs(config) {
   }
 
   this._connection = function () {
-    if (this.isOpen) {
+    if (this.isOpen && this.db && this.db.serverConfig.isConnected()) {
       return this.db;
     }
     return null;
@@ -204,7 +208,7 @@ function MongoDs(config) {
   };
 
   this._close = function () {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (_this.db && _this.isOpen) {
         _this.busy = true;
         _this.db.close(true, function (err) {
