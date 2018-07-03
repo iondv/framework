@@ -22,6 +22,7 @@ stages:
         paths:
            - Dappfile
            - test
+           - package.json
     when: manual
     allow_failure: false
     variables:
