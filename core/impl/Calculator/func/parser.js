@@ -173,21 +173,12 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     }
   } else {
     let pth = nm.split('.');
-    let ctx = obj;
-    for (let i = 0; i < pth.length; i++) {
-      if (ctx.hasOwnProperty(pth[i])) {
-        ctx = ctx[pth[i]];
-        if (ctx instanceof Item) {
-          if (i < pth.length - 1) {
-            return objProp(ctx, pth.slice(i + 1).join('.'), dataRepoGetter, needed);
-          } else {
-            return ctx;
-          }
-        }
-        if (typeof ctx !== 'object' || !ctx) {
-          break;
-        }
+    if (obj.hasOwnProperty(pth[0])) {
+      let ctx = obj[pth[0]];
+      if (!ctx || typeof ctx !== 'object') {
+        return ctx;
       }
+      return objProp(ctx, pth.slice(1).join('.'), dataRepoGetter, needed);
     }
   }
 

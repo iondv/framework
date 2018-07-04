@@ -62,7 +62,7 @@ function toScalar(v, context, type, lang) {
     }
   }
 
-  if (typeof v === 'string') {
+  if (typeof v === 'string' && v[0] !== '$') {
     switch (type) {
       case PropertyTypes.DATETIME:
         v = strToDate(v, lang);
