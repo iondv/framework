@@ -1862,15 +1862,10 @@ function MongoDs(config) {
         }
 
         if (doGroup || fetchFields) {
-          if (expr.$group._id) {
-            if (Object.keys(expr.$group).length > 1) {
-              groupStages.push(expr);
-              groupStages.push({$project: attrs});
-            } else {
-              let gc = clone(expr.$group._id);
-              gc['_id'] = false;
-              groupStages.push({$project: gc});
-            }
+          if (expr.$group._id && Object.keys(expr.$group).length === 1) {
+            let gc = clone(expr.$group._id);
+            gc['_id'] = false;
+            groupStages.push({$project: gc});
           } else {
             groupStages.push(expr);
             groupStages.push({$project: attrs});
