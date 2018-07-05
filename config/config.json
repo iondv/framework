@@ -36,9 +36,9 @@
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
-                  "socketTimeoutMS": "[[db.operTimeOut]]"
+                  "socketTimeoutMS": "[[db.operTimeOut]]",
+                  "poolSize": "[[db.poolSize]]"
                 },
-                "connectionLimit": 10,
                 "user": "[[db.user]]",
                 "password": "[[db.pwd]]"
               }
@@ -59,6 +59,7 @@
         "options": {
           "app": "ion://application",
           "dataSource": "ion://Db",
+          "log": "ion://sysLog",
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
@@ -86,6 +87,7 @@
         "initMethod": "init",
         "initLevel": 1,
         "options":{
+          "log": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       },
@@ -170,19 +172,26 @@
       "fileStorage": {
         "module": "core/impl/resource/FsStorage",
         "initMethod":"init",
-        "initLevel": 1,
+        "initLevel": 3,
         "options": {
           "storageBase": "[[fs.storageRoot]]",
           "urlBase": "[[fs.urlBase]]",
-          "dataSource": "ion://Db"
+          "shareBase": "[[fs.shareBase]]",
+          "dataSource": "ion://Db",
+          "app": "ion://application",
+          "auth": "lazy://auth"
         }
       },
       "imageStorage": {
         "module": "core/impl/resource/ImageStorage",
+        "initMethod": "init",
+        "initLevel": 3,
         "options": {
           "log": "ion://sysLog",
           "fileStorage": "ion://fileStorage",
           "urlBase": "/images",
+          "app": "ion://application",
+          "auth": "lazy://auth",
           "thumbsDirectoryMode": "[[fs.thumbDirMode]]",
           "thumbsDirectory": "[[fs.thumbDir]]",
           "thumbnails": {
@@ -320,7 +329,7 @@
       "securedDataRepo": {
         "module": "core/impl/datarepository/SecuredDataRepository",
         "initMethod": "init",
-        "initLevel": 1,
+        "initLevel": 2,
         "options": {
           "data": "ion://cachedDataRepo",
           "meta": "ion://metaRepo",

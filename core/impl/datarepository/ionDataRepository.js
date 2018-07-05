@@ -82,7 +82,7 @@ function IonDataRepository(options) {
     if (cm) {
       if (Array.isArray(key)) {
         let result = [];
-        key.forEach((k) => result.push(getAttrs(k, cm)));
+        key.forEach(k => result.push(getAttrs(k, cm)));
         return result;
       }
       let attr = cm.getPropertyMeta(key);
@@ -182,16 +182,21 @@ function IonDataRepository(options) {
   /**
    * @param {Object} filter
    * @param {ClassMeta} cm
+   * @param {Boolean} [skipSc]
    * @private
    */
-  function addDiscriminatorFilter(filter, cm) {
-    let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
-    let cnFilter = [cm.getCanonicalName()];
-    for (let i = 0; i < descendants.length; i++) {
-      cnFilter.push(descendants[i].getCanonicalName());
+  function addDiscriminatorFilter(filter, cm, skipSc = false) {
+    let df;
+    if (skipSc) {
+      df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
+    } else {
+      let cnFilter = [cm.getCanonicalName()];
+      let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
+      for (let i = 0; i < descendants.length; i++) {
+        cnFilter.push(descendants[i].getCanonicalName());
+      }
+      df = {[Operations.IN]: ['$_class', cnFilter]};
     }
-
-    let df = {[Operations.IN]: ['$_class', cnFilter]};
 
     return !filter ? df : {[Operations.AND]: [df, filter]};
   }
@@ -251,7 +256,7 @@ function IonDataRepository(options) {
   /**
    *
    * @param {String | Item} obj
-   * @param {{filter: Object}} [options]
+   * @param {{filter: Object, skipSubClasses: Boolean}} [options]
    * @returns {Promise}
    */
   this._getCount  = function (obj, options) {
@@ -261,7 +266,7 @@ function IonDataRepository(options) {
     let f = clone(options.filter);
     let j = clone(options.joins || []);
     f = addFilterByItem(f, obj);
-    f = addDiscriminatorFilter(f, cm);
+    f = addDiscriminatorFilter(f, cm, options.skipSubClasses);
     return prepareFilterValues(cm, f, j)
       .then(function (filter) {
         return _this.ds.count(tn(rcm), {filter: filter, joins: j});
@@ -557,6 +562,8 @@ function IonDataRepository(options) {
         }
       }
 
+      let needed2 = needed ? {} : null;
+
       for (let i = 0; i < src.length; i++) {
         let item = src[i];
         if (item instanceof Item) {
@@ -584,6 +591,12 @@ function IonDataRepository(options) {
                   if (typeof item.collections[nm] === 'undefined') {
                     prepareColEnrichment(item, props[nm], attrs, ___loaded);
                   }
+                }
+              }
+
+              if (needed && needed.hasOwnProperty(nm)) {
+                if (props[nm].meta._formula) {
+                  needed2 = null;
                 }
               }
             }
@@ -659,7 +672,7 @@ function IonDataRepository(options) {
                 implForced: implicitForced[attrs[nm].attrName],
                 loaded: ___loaded,
                 attr: attrs[nm],
-                needed: needed ? {} : null
+                needed: needed2
               });
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
@@ -673,7 +686,7 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed ? {} : null
+                    needed: needed2
                   }
                 );
               }
@@ -707,6 +720,7 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    * @param {{}} [options.___loaded]
    * @param {{}} [options.needed]
+   * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
@@ -719,7 +733,7 @@ function IonDataRepository(options) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
     $options.filter = addFilterByItem(options.filter, obj);
-    $options.filter = addDiscriminatorFilter(options.filter, cm);
+    $options.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
     $options.joins = options.joins || [];
 
     return bubble(
@@ -736,35 +750,30 @@ function IonDataRepository(options) {
       .catch(wrapDsError('getList', obj))
       .then((data) => {
         let result = [];
-        let fl = [];
-        try {
-          for (let i = 0; i < data.length; i++) {
-            result[i] = _this._wrap(data[i]._class, data[i], data[i]._classVer);
-            fl.push(loadFiles(result[i], _this.fileStorage, _this.imageStorage));
-          }
-        } catch (err) {
-          return Promise.reject(err);
-        }
+        let fl = Promise.resolve();
+        data.forEach((d) => {
+          let wd = _this._wrap(d._class, d, d._classVer);
+          result.push(wd);
+          fl = fl.then(() => loadFiles(wd, _this.fileStorage, _this.imageStorage));
+        });
 
         if (typeof data.total !== 'undefined' && data.total !== null) {
           result.total = data.total;
         }
-        return Promise.all(fl).then(function () {
-          return Promise.resolve(result);
-        });
+        return fl.then(() => result);
       })
-      .then((result) => enrich(result, options))
-      .then((result) => options.skipCalculations ? result : calcItemsProperties(result, options));
+      .then(result => enrich(result, options))
+      .then(result => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
   function ItemIterator(iterator, options) {
     this._next = function () {
-      return iterator.next().then(function (data) {
+      iterator.next().then((data) => {
         if (data) {
           let item = _this._wrap(data._class, data, data._classVer);
-          return loadFiles(item, _this.fileStorage, _this.imageStorage).
-          then((item) => enrich(item, options)).
-          then((item) => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
+          return loadFiles(item, _this.fileStorage, _this.imageStorage)
+            .then(item => enrich(item, options))
+            .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
         }
         return Promise.resolve(null);
       });
@@ -788,6 +797,7 @@ function IonDataRepository(options) {
    * @param {Number} [options.nestingDepth]
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipCalculations]
+   * @param {Boolean} [options.skipSubClasses]
    * @param {{}} [options.___loaded]
    * @returns {Promise}
    */
@@ -801,7 +811,7 @@ function IonDataRepository(options) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
     opts.filter = addFilterByItem(opts.filter, obj);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     opts.joins = opts.joins || [];
     return bubble(
       'pre-iterate',
@@ -968,6 +978,7 @@ function IonDataRepository(options) {
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
+   * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
@@ -976,7 +987,7 @@ function IonDataRepository(options) {
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
     prepareResults(cm, opts, opts.joins);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     return prepareFilterValues(cm, opts.filter, opts.joins).
     then(function (filter) {
         opts.filter = filter;
@@ -996,6 +1007,7 @@ function IonDataRepository(options) {
    * @param {String[]} [options.attributes]
    * @param {String[]} [options.select]
    * @param {Boolean} [options.distinct]
+   * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
   this._rawData = function (className, options) {
@@ -1007,7 +1019,7 @@ function IonDataRepository(options) {
     for (let i = 0; i < props.length; i++) {
       options.fields[props[i].name] = '$' + props[i].name;
     }
-    opts.filter = addDiscriminatorFilter(opts.filter, cm);
+    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     opts.joins = [];
     return prepareFilterValues(cm, opts.filter, opts.joins)
       .then(function (filter) {
@@ -1065,7 +1077,7 @@ function IonDataRepository(options) {
       }
 
       fetcher = fp
-        .then((f) => _this.ds.get(tn(rcm), f, opts))
+        .then(f => _this.ds.get(tn(rcm), f, opts))
         .then((data) => {
           if (data) {
             let item = _this._wrap(data._class, data, data._classVer);
@@ -1107,8 +1119,8 @@ function IonDataRepository(options) {
     }
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
-      .then((item) => options.skipEnrich ? item : enrich(item, options))
-      .then((item) => options.skipCalculations ? item : calcProperties(item, false, options.needed));
+      .then(item => options.skipEnrich ? item : enrich(item, options))
+      .then(item => options.skipCalculations ? item : calcProperties(item, false, options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
@@ -1142,16 +1154,15 @@ function IonDataRepository(options) {
       return storage.accept(updates[pm.name]).then(function (f) {
         updates[pm.name] = f.id;
         return Promise.resolve();
-      }).catch((err) => Promise.reject(
-        new IonError(
+      }).catch((err) => {
+        throw new IonError(
           Errors.FILE_ATTR_SAVE,
           {
             attr: pm.caption,
             info: `${cm.getCanonicalName()}@${id}`
           },
-          err
-        )
-      ));
+          err);
+      });
     }
   }
 
@@ -1250,9 +1261,7 @@ function IonDataRepository(options) {
           } else if (pm._dvFormula) {
             if (!pm.autoassigned || !onlyDefaults) {
               calcs = calcs
-                .then(() => {
-                  return pm._dvFormula.apply(calcContext);
-                })
+                .then(() => pm._dvFormula.apply(calcContext))
                 .then((result) => {
                   updates[pm.name] = cast(result instanceof Item ? result.getItemId() : result, pm.type);
                   return updates;
@@ -1702,7 +1711,7 @@ function IonDataRepository(options) {
         _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
         Promise.resolve(item);
 
-      return p.then((item) => calcProperties(item, false, needed, true))
+      return p.then(item => calcProperties(item, false, needed, true))
         .then((item) => {
           let rcm = getRootType(item.getMetaClass());
           if (!conditions) {
@@ -1755,6 +1764,9 @@ function IonDataRepository(options) {
     options = options || {};
     try {
       let cm = _this.meta.getMeta(classname, version);
+      if (cm.isAbstract()) {
+        throw new Error('Обьект абстрактного класса не может быть создан!');
+      }
       let rcm = getRootType(cm);
 
       let refUpdates = {};
@@ -1816,11 +1828,11 @@ function IonDataRepository(options) {
           }
           return logChanges(changeLogger, {type: EventType.CREATE, item: item, updates: updates});
         })
-        .then((item) => updateBackRefs(item, cm, data))
-        .then((item) => refUpdator(item, refUpdates, changeLogger))
-        .then((item) => refreshCaches(item, null, options))
-        .then((item) => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
-        .then((item) =>
+        .then(item => updateBackRefs(item, cm, data))
+        .then(item => refUpdator(item, refUpdates, changeLogger))
+        .then(item => refreshCaches(item, null, options))
+        .then(item => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then(item =>
           options.skipResult ? null :
           bubble(
             'create',
@@ -1833,7 +1845,7 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(changeLogger, options))
-        .then((item) => item ? calcProperties(item, options.skipResult, null) : null);
+        .then(item => item ? calcProperties(item, options.skipResult, null) : null);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -1950,12 +1962,10 @@ function IonDataRepository(options) {
             }
             return logChanges(changeLogger, {type: EventType.UPDATE, item: item, base: base, updates: updates});
           })
-          .then((item) => {
-            return updateBackRefs(item, cm, data, id);
-          })
-          .then((item) => refUpdator(item, refUpdates, changeLogger))
-          .then((item) => refreshCaches(item, conditions, options))
-          .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
+          .then(item => updateBackRefs(item, cm, data, id))
+          .then(item => refUpdator(item, refUpdates, changeLogger))
+          .then(item => refreshCaches(item, conditions, options))
+          .then(item => loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
             if (!supressEvent) {
               return bubble(
@@ -1968,10 +1978,10 @@ function IonDataRepository(options) {
                 }
               );
             }
-            return Promise.resolve({item: item});
+            return {item: item};
           })
           .then(writeEventHandler(changeLogger, options))
-          .then((item) => calcProperties(item, options.skipResult));
+          .then(item => calcProperties(item, options.skipResult));
       } else {
         return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
       }
@@ -2008,6 +2018,11 @@ function IonDataRepository(options) {
 
     try {
       let cm = _this.meta.getMeta(classname, version);
+
+      if (cm.isAbstract()) {
+        throw new Error('Обьект абстрактного класса не может быть создан!');
+      }
+      
       let rcm = getRootType(cm);
 
       let refUpdates = {};
@@ -2114,9 +2129,9 @@ function IonDataRepository(options) {
             return item;
           }
         })
-        .then((item) => refreshCaches(item, conditions, options))
-        .then((item) => loadFiles(item, _this.fileStorage, _this.imageStorage))
-        .then((item) =>
+        .then(item => refreshCaches(item, conditions, options))
+        .then(item => loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then(item =>
           bubble(
             'save',
             item.getMetaClass(),
@@ -2128,14 +2143,13 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(changeLogger, options))
-        .then((item) => calcProperties(item, options.skipResult));
+        .then(item => calcProperties(item, options.skipResult));
     } catch (err) {
       return Promise.reject(err);
     }
   };
 
   /**
-   *
    * @param {String} classname
    * @param {String} id
    * @param {ChangeLogger} [changeLogger]
@@ -2191,7 +2205,7 @@ function IonDataRepository(options) {
               user: options.user
             }
           ))
-          .then((e) => refreshCaches(item, null, options).then(() => e));
+          .then(e => refreshCaches(item, null, options).then(() => e));
       });
   };
 
@@ -2208,7 +2222,7 @@ function IonDataRepository(options) {
     let cm = _this.meta.getMeta(classname);
     let rcm = getRootType(cm);
     options.filter = addDiscriminatorFilter(options.filter, cm);
-    return prepareFilterValues(cm, options.filter, []).then((filter) => _this.ds.delete(tn(rcm), filter));
+    return prepareFilterValues(cm, options.filter, []).then(filter => _this.ds.delete(tn(rcm), filter));
   };
 
   /**
@@ -2220,6 +2234,7 @@ function IonDataRepository(options) {
    * @param {String[][]} [options.forceEnrichment]
    * @param {Boolean} [options.skipResult]
    * @param {User} [options.user]
+   * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
@@ -2237,7 +2252,7 @@ function IonDataRepository(options) {
       prepareFileSavers('bulk', cm, fileSavers, updates);
       checkRequired(cm, updates, true, true);
       return Promise.all(fileSavers)
-        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, [])))
+        .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, options.skipSubClasses)))
         .then((filter) => {
           if (options.user) {
             updates._editor = options.user.id();

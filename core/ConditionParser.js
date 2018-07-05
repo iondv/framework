@@ -1,3 +1,4 @@
+/* eslint no-invalid-this:off */
 /**
  * Created by Данил on 10.10.2016.
  */
@@ -40,6 +41,9 @@ function toScalar(v, context, type, lang) {
   }
 
   if (typeof v === 'string' && v[0] === '$') {
+    if (v === '$$now') {
+      return new Date();
+    }
     if (context) {
       let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
       let nm = v.substring(1);

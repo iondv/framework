@@ -31,26 +31,6 @@ function ResourceStorage() {
   };
 
   /**
-   * @returns {Function}
-   */
-  this.fileMiddle = function () {
-    if (typeof this._fileMiddle === 'function') {
-      return this._fileMiddle();
-    }
-    return function (req, res, next) { next(); };
-  };
-
-  /**
-   * @returns {Function}
-   */
-  this.shareMiddle = function () {
-    if (typeof this._shareMiddle === 'function') {
-      return this._shareMiddle();
-    }
-    return function (req, res, next) { next(); };
-  };
-
-  /**
    * @returns {Promise}
    */
   this.init = function () {
@@ -146,20 +126,6 @@ function ResourceStorage() {
    */
   this.setShareAccess  = function (id, access) {
     return this._setShareAccess(id, access);
-  };
-
-  this.fileRoute = function () {
-    if (typeof this._fileRoute === 'function') {
-      return this._fileRoute();
-    }
-    return false;
-  };
-
-  this.shareRoute = function () {
-    if (typeof this._shareRoute === 'function') {
-      return this._shareRoute();
-    }
-    return false;
   };
 }
 
