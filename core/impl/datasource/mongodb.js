@@ -790,9 +790,21 @@ function MongoDs(config) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
-              return {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $and: [
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$ne: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.EMPTY) {
-              return {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $or: [
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$eq: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
             } else if (oper === Operations.DATE_ADD) {
