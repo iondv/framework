@@ -37,7 +37,7 @@ function ResourceStorage() {
     if (typeof this._init === 'function') {
       return this._init();
     }
-    return new Promise(function (resolve) {resolve();});
+    return Promise.resolve();
   };
 
   /**
@@ -93,20 +93,20 @@ function ResourceStorage() {
    *
    * @param {String} id
    * @param {String} [access]
-   * @returns {Promise}
+   * @param {{}} [options]
+   * @returns {Promise<Share>}
    */
-  this.share = function (id, access) {
-    return this._share(id, access);
+  this.share = function (id, access, options) {
+    return this._share(id, access, options);
   };
 
   /**
    *
    * @param {String} id
-   * @param {String} [access]
-   * @returns {Promise}
+   * @returns {Promise<Share>}
    */
-  this.currentShare = function (id, access) {
-    return this._currentShare(id, access);
+  this.currentShare = function (id) {
+    return this._currentShare(id);
   };
 
   /**
@@ -119,7 +119,6 @@ function ResourceStorage() {
   };
 
   /**
-   *
    * @param {String} id
    * @param {String} access
    * @returns {Promise}
@@ -127,7 +126,31 @@ function ResourceStorage() {
   this.setShareAccess  = function (id, access) {
     return this._setShareAccess(id, access);
   };
+
+  /**
+   * @param {String} id
+   * @param {{}} options
+   * @returns {Promise<Share>}
+   */
+  this.setShareOptions = function (id, options) {
+    return this._setShareOptions(id, options);
+  };
+
+  this.fileRoute = function () {
+    if (typeof this._fileRoute === 'function') {
+      return this._fileRoute();
+    }
+    return false;
+  };
+
+  this.shareRoute = function () {
+    if (typeof this._shareRoute === 'function') {
+      return this._shareRoute();
+    }
+    return false;
+  };
 }
 
 module.exports.ResourceStorage = ResourceStorage;
 module.exports.StoredFile = require('./lib/StoredFile');
+module.exports.Share = require('./lib/Share');
