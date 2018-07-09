@@ -377,10 +377,6 @@ function OwnCloudStorage(config) {
     };
   }
 
-  this._fileRoute = function () {
-    return urlBase + '/:id(([^/]+/?[^/]+)*)';
-  };
-
   function parseDirId(id) {
     let result = null;
     let urlObj = url.parse(id, true);
