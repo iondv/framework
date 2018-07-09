@@ -153,7 +153,7 @@ function MongoDs(config) {
    */
   function openDb() {
     return new Promise(function (resolve, reject) {
-      if (_this.db && _this.isOpen) {
+      if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
         return resolve(_this.db);
       } else if (_this.db && _this.busy) {
         _this.db.once('isOpen', function () {
@@ -161,6 +161,10 @@ function MongoDs(config) {
         });
       } else {
         _this.busy = true;
+        _this.isOpen = false;
+        if (!config.options.poolSize) {
+          config.options.poolSize = 20;
+        }
         client.connect(config.uri, config.options, function (err, db) {
           if (err) {
             reject(err);
@@ -193,7 +197,7 @@ function MongoDs(config) {
   }
 
   this._connection = function () {
-    if (this.isOpen) {
+    if (this.isOpen && this.db && this.db.serverConfig.isConnected()) {
       return this.db;
     }
     return null;
@@ -204,7 +208,7 @@ function MongoDs(config) {
   };
 
   this._close = function () {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (_this.db && _this.isOpen) {
         _this.busy = true;
         _this.db.close(true, function (err) {
@@ -786,9 +790,21 @@ function MongoDs(config) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
-              return {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $and: [
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$ne: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.EMPTY) {
-              return {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $or: [
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$eq: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
             } else if (oper === Operations.DATE_ADD) {
@@ -844,7 +860,7 @@ function MongoDs(config) {
               }
 
               let jsrc = {};
-              let pj = processJoin(attributes, jsrc, explicitJoins, null, counter);
+              let pj = processJoin(attributes, jsrc, explicitJoins, [], null, counter);
               pj(j);
 
               for (let ja in jsrc) {
@@ -858,10 +874,12 @@ function MongoDs(config) {
                 case DsOperations.JOIN_NOT_EXISTS:
                   return {$ifNull: ['$' + j.alias, true]};
                 case DsOperations.JOIN_SIZE:
-                  throw new Error('JOIN_SIZE operation not supported!');
+                  return '$' + j.alias + '_size';
                 default:
                   break;
               }
+            } else if (oper === Operations.LIKE) {
+              throw new Error('Операция LIKE не может быть использована в выражении для поля выборки.');
             } else {
               return {[o]: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)};
             }
@@ -1143,7 +1161,12 @@ function MongoDs(config) {
         };
         result.push({$lookup: tmp});
         attributes.push(join.alias);
-
+        if (join.passSize) {
+          tmp = clean(attributes);
+          tmp.$project[join.alias + '_size'] = {$size: '$' + join.alias};
+          attributes.push(join.alias + '_size');
+          result.push(tmp);
+        }
         result.push({$unwind: {path: '$' + join.alias, preserveNullAndEmptyArrays: true}});
 
         result.push(clean(attributes));
@@ -1217,7 +1240,7 @@ function MongoDs(config) {
     } else if (typeof find === 'object' && find && !(find instanceof Date) && !(find instanceof mongo.ObjectID)) {
       let result;
       let jsrc = {};
-      let pj = processJoin(attributes, jsrc, explicitJoins, prefix, counter);
+      let pj = processJoin(attributes, jsrc, explicitJoins, [], prefix, counter);
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
           if (name === '$joinExists' || name === '$joinNotExists' || name === '$joinSize') {
@@ -1851,15 +1874,13 @@ function MongoDs(config) {
         }
 
         if (doGroup || fetchFields) {
-          if (expr.$group._id) {
-            if (Object.keys(expr.$group).length > 1) {
-              groupStages.push(expr);
-              groupStages.push({$project: attrs});
-            } else {
-              let gc = clone(expr.$group._id);
-              gc['_id'] = false;
-              groupStages.push({$project: gc});
-            }
+          if (expr.$group._id && Object.keys(expr.$group).length === 1) {
+            let gc = clone(expr.$group._id);
+            gc['_id'] = false;
+            groupStages.push({$project: gc});
+          } else {
+            groupStages.push(expr);
+            groupStages.push({$project: attrs});
           }
           attributes.push(...Object.keys(attrs));
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
