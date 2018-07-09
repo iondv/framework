@@ -351,9 +351,13 @@ function OwnCloudStorage(config) {
   /**
    * @returns {Function}
    */
-  this._fileMiddle = function () {
+  function fileMiddle() {
     return function (req, res, next) {
-      let fileId = req.params.id;
+      let originalUrl = req.originalUrl;
+      if (!originalUrl) {
+        return next();
+      }
+      let fileId = originalUrl.replace(urlBase, '');
       if (!fileId) {
         return next();
       }
@@ -371,17 +375,10 @@ function OwnCloudStorage(config) {
           res.status(500).send(err.message);
         });
     };
-  };
+  }
 
   this._fileRoute = function () {
     return urlBase + '/:id(([^/]+/?[^/]+)*)';
-  };
-
-  /**
-   * @returns {Promise}
-   */
-  this._init = function () {
-    return Promise.resolve();
   };
 
   function parseDirId(id) {
@@ -881,6 +878,18 @@ function OwnCloudStorage(config) {
 
   this.fileOptionsSupport = function () {
     return false;
+  };
+
+  /**
+   * @returns {Promise}
+   */
+  this._init = function () {
+    if (config.app) {
+      if (config.auth && urlBase) {
+        config.app.get(urlBase + '/:id*', config.auth.verifier(), fileMiddle());
+      }
+    }
+    return Promise.resolve();
   };
 }
 
