@@ -314,24 +314,35 @@ function ImageStorage(options) { // jshint ignore:line
           let thumb = images[0].thumbnails && images[0].thumbnails[thumbType];
           if (thumb) {
             let o = thumb.options || {};
-            return thumb.getContents().then((c) => {
-              res.status(200);
-              res.set('Content-Disposition',
-                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
-                '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
-              res.set('Content-Type', o.mimetype || 'application/octet-stream');
-              if (o.size) {
-                res.set('Content-Length', o.size);
-              }
-              if (o.encoding) {
-                res.set('Content-Encoding', o.encoding);
-              }
-              let stream = c.stream;
-              if (true) {
-                stream = stream.pipe(watermarkPipe('hello world', 200, 200));
-              }
-              stream.pipe(res);
-            });
+            return thumb.getContents()
+              .then((c) => {
+                const condition = true;
+                if (condition) {
+                  const {width, height} = options.thumbnails[thumbType];
+                  return watermarkPipe(c.stream, {text: 'Hello world', width, height});
+                }
+                return c.stream;
+              })
+              .then((stream) => {
+                res.status(200);
+                res.set('Content-Disposition',
+                  (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
+                  '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
+                res.set('Content-Type', o.mimetype || 'application/octet-stream');
+                if (o.size) {
+                  res.set('Content-Length', o.size);
+                }
+                if (o.encoding) {
+                  res.set('Content-Encoding', o.encoding);
+                }
+                stream.on('error', (err) => {
+                  if (options.log) {
+                    options.log.error(err);
+                  }
+                  res.status(404).send('Thumbnail not found!');
+                });
+                stream.pipe(res);
+              });
           } else {
             res.status(404).send('Thumbnail not found!');
           }
