@@ -12,6 +12,7 @@ const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
 const system = require('core/system');
+const {watermarkPipe} = require('core/util/watermark-overlay');
 
 const thumbsDirectoryModes = {
   IGNORE: 'ignore',
@@ -147,23 +148,6 @@ function ImageStorage(options) { // jshint ignore:line
         }
       );
     });
-  }
-
-  function applyWatermark(buffer) {
-    let overlay;
-    if (options.watermark.file) {
-      overlay = system.toAbsolute(options.watermark.file);
-    } else if (options.watermark.text) {
-      let text = options.watermark.text;
-      let cnvs = canvas.createCanvas(w, h);
-      let ctx = cnvs.getContext('2d');
-      ctx.font = '';
-      ctx.fillText(text, l, t);
-      text
-    } else {
-      throw new Error('Не указано содержимое водяного знака.');
-    }
-    return sharp(buffer).overlayWith(overlay, {cutout: true});
   }
 
   /**
@@ -342,7 +326,11 @@ function ImageStorage(options) { // jshint ignore:line
               if (o.encoding) {
                 res.set('Content-Encoding', o.encoding);
               }
-              c.stream.pipe(res);
+              let stream = c.stream;
+              if (true) {
+                stream = stream.pipe(watermarkPipe('hello world', 200, 200));
+              }
+              stream.pipe(res);
             });
           } else {
             res.status(404).send('Thumbnail not found!');
