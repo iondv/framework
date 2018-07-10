@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -139,9 +140,9 @@ function calcCheckInterval(launch, dv) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler'])
-  .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
-  .then((scope) => alias(scope, scope.settings.get('di-alias')))
+  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
+  .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
      * @param {{}} scope
