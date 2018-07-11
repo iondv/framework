@@ -36,16 +36,11 @@ function Calculator(options) {
     funcLib.next = sequence.next(options.sequenceProvider);
   }
 
-
-  function warn(msg) {
-    (options.log || console).warn(msg);
-  }
-
   /**
    * @param {String | {}} formula
    */
   this._parseFormula = function (formula) {
-    return parser(formula, funcLib, warn, () => options.dataRepo);
+    return parser(formula, funcLib, () => options.dataRepo);
   };
 }
 
