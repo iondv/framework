@@ -1,5 +1,6 @@
 const sharp = require('sharp');
 const Canvas = require('canvas-prebuilt');
+const {toAbsolute} = require('core/system');
 
 function adjustFontSize(ctx, text, font, fontSize, imgWidth) {
   const fontParams = `${fontSize}px ${font}`;
@@ -11,13 +12,17 @@ function adjustFontSize(ctx, text, font, fontSize, imgWidth) {
   return fontParams;
 }
 
-function imgOverlay({overlayPath, width, height}) {
-  let overlay = sharp(overlayPath);
+function imgOverlay({
+  overlayPath,
+  width,
+  height
+}) {
+  let overlay = sharp(toAbsolute(overlayPath));
   return overlay
     .metadata()
     .then((meta) => {
-      let ovWidth = meta.width > width / 2 ? width / 2 : meta.width;
-      let ovHeight = meta.height > height / 2 ? height / 2 : meta.height;
+      let ovWidth = meta.width > width / 2 ? parseInt(width / 2, 10) : meta.width;
+      let ovHeight = meta.height > height / 2 ? parseInt(height / 2, 10) : meta.height;
       return overlay
         .resize(ovWidth, ovHeight)
         .background({r: 0, g: 0, b: 0, alpha: 0})
@@ -31,7 +36,7 @@ function captionOverlay({
   width,
   height,
   font = 'Arial',
-  fontSize = 480,
+  fontSize = 48,
   fontColor = 'rgba(255, 255, 255, 0.7)'
 }) {
   const canvas = new Canvas(width, height);
@@ -49,37 +54,37 @@ function captionOverlay({
   return canvas.toBuffer();
 }
 
-function watermarkApplier(imgPath, outputPath, text, width, height) {
-  return new Promise((resolve, reject) => {
-    const overlay = captionOverlay({text, width, height});
-    sharp(imgPath)
-      .png()
-      .overlayWith(overlay, {gravity: sharp.gravity.southeast})
-      .toFile(outputPath, (err, info) => {
-        if (err) {
-          return reject(err);
-        }
-        console.log(err, info);
-      });
-
-  });
+function produceOverlay(meta, options) {
+  options.width = options.width || meta.width;
+  options.height = options.height || meta.height;
+  options.width = meta.width < options.width ? meta.width : options.width;
+  options.height = meta.height < options.height ? meta.height : options.height;
+  options.text = options.text || '';
+  if (options.overlayPath) {
+    return imgOverlay(options);
+  }
+  return captionOverlay(options);
 }
 
-function watermarkPipe(imgStream, {overlayPath, text, width, height}) {
+function watermarkApplier(imgSource, options) {
+  let image = sharp(imgSource);
+  return image
+    .metadata()
+    .then(meta => produceOverlay(meta, options))
+    .then(overlay => image.png()
+      .overlayWith(overlay, {gravity: sharp.gravity.southeast})
+      .toFormat(options.format || 'png')
+      .toBuffer()
+    );
+}
+
+function watermarkStream(imgStream, options) {
   return new Promise((resolve, reject) => {
     let image = sharp();
 
     image
       .metadata()
-      .then((meta) => {
-        width = meta.width < width ? meta.width : width;
-        height = meta.height < height ? meta.height : height;
-        text = text || '';
-        if (overlayPath) {
-          return imgOverlay({overlayPath, width, height});
-        }
-        return captionOverlay({text, width, height});
-      })
+      .then(meta => produceOverlay(meta, options))
       .then((overlay) => {
         const overlayStream = image
           .png()
@@ -93,5 +98,5 @@ function watermarkPipe(imgStream, {overlayPath, text, width, height}) {
   });
 }
 
-exports.watermarkPipe = watermarkPipe;
+exports.watermarkStream = watermarkStream;
 exports.watermarkApplier = watermarkApplier;

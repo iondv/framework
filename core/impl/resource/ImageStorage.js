@@ -7,12 +7,11 @@
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const sharp = require('sharp');
-const canvas = require('canvas-prebuilt');
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
-const system = require('core/system');
-const {watermarkPipe} = require('core/util/watermark-overlay');
+const watermarkStream = require('core/util/watermark-overlay').watermarkStream;
+const watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
 
 const thumbsDirectoryModes = {
   IGNORE: 'ignore',
@@ -50,6 +49,7 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
+ * @param {{}} [options.watermark]
  * @param {Logger} [options.log]
  * @constructor
  */
@@ -150,6 +150,24 @@ function ImageStorage(options) { // jshint ignore:line
     });
   }
 
+  function getDataContents(data) {
+    if (typeof data === 'object') {
+      if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
+        return data.buffer;
+      } else if (typeof data.path !== 'undefined') {
+        return data.path;
+      } else if (typeof data.stream !== 'undefined') {
+        return streamToBuffer(data.stream)
+          .then((buffer) => {
+            delete data.stream;
+            data.buffer = buffer;
+            return data.buffer;
+          });
+      }
+    }
+    return data;
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} [directory]
@@ -166,24 +184,25 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (storeThumbnails && options.thumbnails) {
-      p = p.then(() => {
+    if (options.watermark && options.watermark.accept) {
+      let name = opts.name || data.originalname || data.name || '';
+      let watermarkOptions = clone(options.watermark);
+      watermarkOptions.format = path.extname(name).slice(1);
+      p = p.then(() => getDataContents(data))
+        .then(source => watermarkApplier(source, watermarkOptions))
+        .then((buf) => {
           if (typeof data === 'object') {
-            if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
-              return data.buffer;
-            } else if (typeof data.path !== 'undefined') {
-              return data.path;
-            } else if (typeof data.stream !== 'undefined') {
-              return streamToBuffer(data.stream)
-                .then((buffer) => {
-                  delete data.stream;
-                  data.buffer = buffer;
-                  return data.buffer;
-                });
-            }
+            delete data.stream;
+            delete data.path;
+            data.buffer = buf;
+          } else {
+            data = buf;
           }
-          return data;
-        })
+        });
+    }
+
+    if (storeThumbnails && options.thumbnails) {
+      p = p.then(() => getDataContents(data))
         .then((source) => {
           let thumbDirectory;
           switch (options.thumbsDirectoryMode) {
@@ -316,10 +335,13 @@ function ImageStorage(options) { // jshint ignore:line
             let o = thumb.options || {};
             return thumb.getContents()
               .then((c) => {
-                const condition = true;
-                if (condition) {
-                  const {width, height} = options.thumbnails[thumbType];
-                  return watermarkPipe(c.stream, {text: 'Hello world', width, height});
+                if (options.watermark && options.watermark.middle) {
+                  let watermarkOptions = clone(options.watermark);
+                  watermarkOptions.height = options.thumbnails[thumbType].height;
+                  watermarkOptions.width =  options.thumbnails[thumbType].width;
+                  thumb.name = thumb.name.replace(/\.\w+$/, '.png');
+                  o.mimeType = 'image/png';
+                  return watermarkStream(c.stream, watermarkOptions);
                 }
                 return c.stream;
               })
