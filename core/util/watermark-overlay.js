@@ -2,21 +2,37 @@ const sharp = require('sharp');
 const Canvas = require('canvas-prebuilt');
 const {toAbsolute} = require('core/system');
 
+/**
+ * @param {{}} ctx
+ * @param {String} text
+ * @param {String} font
+ * @param {Number} fontSize
+ * @param {Number} imgWidth
+ * @returns {String}
+ */
 function adjustFontSize(ctx, text, font, fontSize, imgWidth) {
   const fontParams = `${fontSize}px ${font}`;
-  ctx.font = fontParams;
-  const textWidth = ctx.measureText(text).width;
-  if (textWidth > imgWidth / 2) {
-    return adjustFontSize(ctx, text, font, fontSize - 1, imgWidth);
+  if (font && fontSize > 0) {
+    ctx.font = fontParams;
+    const textWidth = ctx.measureText(text).width;
+    if (textWidth > imgWidth / 2) {
+      return adjustFontSize(ctx, text, font, fontSize - 1, imgWidth);
+    }
   }
   return fontParams;
 }
 
-function imgOverlay({
-  overlayPath,
-  width,
-  height
-}) {
+/**
+ * @param {{}} options
+ * @param {String} options.overlayPath
+ * @param {String} options.width
+ * @param {Number} options.height
+ * @returns {Promise}
+ */
+function imgOverlay({overlayPath, width, height}) {
+  if (!overlayPath || !width || !height) {
+    return Promise.reject(new Error('не переданы необходимые параметры для watermark'));
+  }
   let overlay = sharp(toAbsolute(overlayPath));
   return overlay
     .metadata()
@@ -31,14 +47,23 @@ function imgOverlay({
     });
 }
 
-function captionOverlay({
-  text,
-  width,
-  height,
-  font = 'Arial',
-  fontSize = 48,
-  fontColor = 'rgba(255, 255, 255, 0.7)'
-}) {
+/**
+ * @param {{}} options
+ * @param {String} options.text
+ * @param {String} options.width
+ * @param {Number} options.height
+ * @param {String} options.font
+ * @param {String} options.fontSize
+ * @param {Number} options.fontColor
+ * @returns {Promise}
+ */
+function captionOverlay({text, width, height, font, fontSize, fontColor}) {
+  text = text || '';
+  width = width || 0;
+  height = height || 0;
+  font = font || 'Arial';
+  fontSize = fontSize || 48;
+  fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
 
@@ -54,6 +79,11 @@ function captionOverlay({
   return canvas.toBuffer();
 }
 
+/**
+ * @param {{}} meta
+ * @param {{}} options
+ * @returns {Promise|Buffer}
+ */
 function produceOverlay(meta, options) {
   options.width = options.width || meta.width;
   options.height = options.height || meta.height;
@@ -66,35 +96,50 @@ function produceOverlay(meta, options) {
   return captionOverlay(options);
 }
 
+/**
+ * @param {String|Buffer} imgSource
+ * @param {{}} options
+ * @returns {Promise}
+ */
 function watermarkApplier(imgSource, options) {
+  let format = options.format || 'png';
   let image = sharp(imgSource);
   return image
     .metadata()
     .then(meta => produceOverlay(meta, options))
     .then(overlay => image.png()
       .overlayWith(overlay, {gravity: sharp.gravity.southeast})
-      .toFormat(options.format || 'png')
+      .toFormat(format.toLowerCase())
       .toBuffer()
     );
 }
 
+/**
+ * @param {Stream} imgStream
+ * @param {{}} options
+ * @returns {Promise}
+ */
 function watermarkStream(imgStream, options) {
   return new Promise((resolve, reject) => {
-    let image = sharp();
+    try {
+      let image = sharp();
 
-    image
-      .metadata()
-      .then(meta => produceOverlay(meta, options))
-      .then((overlay) => {
-        const overlayStream = image
-          .png()
-          .overlayWith(overlay, {gravity: sharp.gravity.southeast});
-        return resolve(overlayStream);
-      })
-      .catch(err => reject(err));
+      image
+        .metadata()
+        .then(meta => produceOverlay(meta, options))
+        .then((overlay) => {
+          const overlayStream = image
+            .png()
+            .overlayWith(overlay, {gravity: sharp.gravity.southeast});
+          return resolve(overlayStream);
+        })
+        .catch(err => reject(err));
 
-    imgStream.on('error', err => reject(err));
-    imgStream.pipe(image);
+      imgStream.on('error', err => reject(err));
+      imgStream.pipe(image);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
