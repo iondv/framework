@@ -4,9 +4,9 @@
  */
 
 function User(data, coactors, tz) {
-  var ca = coactors || {};
+  let ca = coactors || {};
 
-  var timezone = tz;
+  let timezone = tz;
 
   this.id = function () {
     return data.id + (data.type ? '@' + data.type : '');

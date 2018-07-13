@@ -1,10 +1,10 @@
+/* eslint no-invalid-this:off */
 'use strict';
 const {DataRepository, Item} = require('core/interfaces/DataRepository');
 const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 const Errors = require('core/errors/data-repo');
 
-// jshint maxstatements: 50, maxcomplexity: 30
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
 
@@ -39,6 +39,10 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
       bp = openBracketPos + 1;
       while (open > 0) {
         closeBracketPos = argsSrc.indexOf(')', bp);
+        if (closeBracketPos < 0) {
+          throw new Error('Ошибка синтаксиса формулы во фрагменте "' + argsSrc + '".');
+        }
+
         openBracketPos = argsSrc.indexOf('(', bp);
 
         if (closeBracketPos > -1 || openBracketPos > -1) {
@@ -119,7 +123,8 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     let p = obj.property(nm);
     if (p) {
       switch (p.meta.type) {
-        case PropertyTypes.REFERENCE: {
+        case PropertyTypes.REFERENCE:
+        {
           let v = p.evaluate();
           if ((p.getValue() || p.meta.backRef) && !v && typeof dataRepoGetter === 'function') {
             let dr = dataRepoGetter();
@@ -133,14 +138,14 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                     filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
                     needed: needed || {}
                   })
-                  .then((items) => items.length ? items[0] : null);
+                  .then(items => items.length ? items[0] : null);
               } else {
                 return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
               }
             }
           }
           return v;
-        }break;
+        }
         case PropertyTypes.COLLECTION: {
           let v = p.evaluate();
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
@@ -156,7 +161,7 @@ function objProp(obj, nm, dataRepoGetter, needed) {
             }
           }
           return v;
-        }break;
+        }
         default: return p.evaluate();
       }
     }
@@ -168,21 +173,12 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     }
   } else {
     let pth = nm.split('.');
-    let ctx = obj;
-    for (let i = 0; i < pth.length; i++) {
-      if (ctx.hasOwnProperty(pth[i])) {
-        ctx = ctx[pth[i]];
-        if (ctx instanceof Item) {
-          if (i < pth.length - 1) {
-            return objProp(ctx, pth.slice(i + 1).join('.'), dataRepoGetter, needed);
-          } else {
-            return ctx;
-          }
-        }
-        if (typeof ctx !== 'object' || !ctx) {
-          return ctx;
-        }
+    if (obj.hasOwnProperty(pth[0])) {
+      let ctx = obj[pth[0]];
+      if (!ctx || typeof ctx !== 'object') {
+        return ctx;
       }
+      return objProp(ctx, pth.slice(1).join('.'), dataRepoGetter, needed);
     }
   }
 
@@ -238,7 +234,11 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
 
     if (funcLib.hasOwnProperty(func)) {
       let f = funcLib[func];
-      let args = parseArgs(formula.substring(pos + 1, formula.lastIndexOf(')')).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
+      let closeBracketPos = formula.lastIndexOf(')');
+      if (closeBracketPos < 0) {
+        throw new Error('Ошибка синтаксиса формулы во фрагменте "' + formula + '"');
+      }
+      let args = parseArgs(formula.substring(pos + 1, closeBracketPos).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
 
       if (byRef) {
         return function () {return f(args);};

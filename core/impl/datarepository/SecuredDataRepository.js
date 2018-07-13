@@ -12,6 +12,7 @@ const Permissions = require('core/Permissions');
 const merge = require('merge');
 const clone = require('clone');
 const PropertyTypes = require('core/PropertyTypes');
+const Logger = require('core/interfaces/Logger');
 // const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
@@ -101,12 +102,12 @@ function SecuredDataRepository(options) {
         Object.keys(options.roleMap[cn]).forEach((role) => {
           let conf = options.roleMap[cn][role];
           if (conf.resource && conf.resource.id) {
-            result = result.then(() => {
-              return am
+            result = result
+              .then(() => am
                 .defineRole(role, conf.caption)
                 .then(() => am.assignRoles([role], [role]))
-                .then(() => am.defineResource(conf.resource.id, conf.resource.caption));
-            });
+                .then(() => am.defineResource(conf.resource.id, conf.resource.caption))
+              );
           }
         });
       });
@@ -247,10 +248,15 @@ function SecuredDataRepository(options) {
    * @return {Item}
    */
   function cenzor(item, processed) {
-    if (!item.permissions[Permissions.READ]) {
+    if (!item) {
+      return item;
+    }
+
+    if (item.permissions && !item.permissions[Permissions.READ]) {
       item.emptify();
       return item;
     }
+
     processed = processed || {};
     let props = item.getProperties();
     Object.values(props).forEach((p) => {
@@ -311,7 +317,7 @@ function SecuredDataRepository(options) {
   }
 
   function getPermMap(list, options) {
-    if (!list.length) {
+    if (!list.length || !options.user) {
       return Promise.resolve({});
     }
     let resources = [globalMarker];
@@ -417,6 +423,17 @@ function SecuredDataRepository(options) {
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           result.push(classPrefix + p.meta._refClass.getCanonicalName());
+          let coll = p.evaluate();
+          if (Array.isArray(coll)) {
+            coll.forEach((ri) => {
+              result.push(classPrefix + ri.getClassName());
+              result.push(itemPrefix + ri.getClassName() + '@' + ri.getItemId());
+              if (!processed[ri.getClassName() + '@' + ri.getItemId()]) {
+                processed[ri.getClassName() + '@' + ri.getItemId()] = true;
+                result.push(...attrResources(ri, processed));
+              }
+            });
+          }
         }
       }
     }
@@ -533,120 +550,126 @@ function SecuredDataRepository(options) {
      * @param {Item} item
      */
     return function (item) {
-      if (!item || (item.permissions && item.attrPermissions)) {
+      if (!item || !options.user) {
         return Promise.resolve(item);
       }
-      let roleConf = classRoleConfig(item.getMetaClass());
       let p;
-      let statics = permMap && permMap[item.getClassName() + '@' + item.getItemId()];
+      if (!item.permissions || !item.attrPermissions) {
+        let roleConf = classRoleConfig(item.getMetaClass());
+        let statics = permMap && permMap[item.getClassName() + '@' + item.getItemId()];
 
-      if (!statics) {
-        p = aclProvider.getPermissions(
-          options.user.id(), [
-            globalMarker,
-            classPrefix + item.getClassName(),
-            itemPrefix + item.getClassName() + '@' + item.getItemId()
-          ],
-          true)
-          .then((permissions) => {
-            return merge(true,
-              permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
-              permissions[classPrefix + item.getClassName()] || {},
-              permissions[globalMarker] || {}
+        if (!statics) {
+          p = aclProvider.getPermissions(
+            options.user.id(), [
+              globalMarker,
+              classPrefix + item.getClassName(),
+              itemPrefix + item.getClassName() + '@' + item.getItemId()
+            ],
+            true)
+            .then(permissions =>
+              merge(true,
+                permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+                permissions[classPrefix + item.getClassName()] || {},
+                permissions[globalMarker] || {}
+              )
             );
-          });
-      } else {
-        let perms = clone(statics);
-        delete perms.__attr;
-        p = Promise.resolve(perms);
-      }
-      return p
-        .then((permissions) => {
-          item.permissions = permissions;
-          if (
-            item.permissions[Permissions.FULL] ||
-            (
-              item.permissions[Permissions.READ] &&
-              item.permissions[Permissions.WRITE] &&
-              item.permissions[Permissions.DELETE]
-            )
-          ) {
-            return;
-          }
-          if (roleConf) {
-            let result = Promise.resolve();
-            Object.keys(roleConf).forEach((role) => {
-              let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
-              if (roleConf[role].attribute) {
-                let actor = item.property(roleConf[role].attribute).evaluate();
-                if (!actor) {
-                  actor = item.property(roleConf[role].attribute).getValue();
-                }
-                if (actor) {
-                  actor = Array.isArray(actor) ? actor : [actor];
-                  actor.forEach((actor) => {
-                    if (actor instanceof Item) {
-                      actor = actor.getItemId();
-                    }
-                    if (options.user.isMe(actor)) {
-                      result = result
-                        .then(() => {
-                          if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
-                            return rolePermissionCache[role];
-                          }
-                          return aclProvider.getPermissions(role, resid, true);
-                        })
-                        .then((permissions) => {
-                          if (!rolePermissionCache[role]) {
-                            rolePermissionCache[role] = {};
-                          }
-                          rolePermissionCache[role][resid] = permissions[resid] || {};
-                          if (permissions[resid]) {
-                            for (let p in permissions[resid]) {
-                              if (permissions[resid].hasOwnProperty(p)) {
-                                if (!item.permissions[p]) {
-                                  item.permissions[p] = permissions[resid][p];
+        } else {
+          let perms = clone(statics);
+          delete perms.__attr;
+          p = Promise.resolve(perms);
+        }
+        p = p.then((permissions) => {
+            item.permissions = permissions;
+            if (
+              item.permissions[Permissions.FULL] ||
+              (
+                item.permissions[Permissions.READ] &&
+                item.permissions[Permissions.WRITE] &&
+                item.permissions[Permissions.DELETE]
+              )
+            ) {
+              return;
+            }
+            if (roleConf) {
+              let result = Promise.resolve();
+              Object.keys(roleConf).forEach((role) => {
+                let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
+                if (roleConf[role].attribute) {
+                  let actor = item.property(roleConf[role].attribute).evaluate();
+                  if (!actor) {
+                    actor = item.property(roleConf[role].attribute).getValue();
+                  }
+                  if (actor) {
+                    actor = Array.isArray(actor) ? actor : [actor];
+                    actor.forEach((actor) => {
+                      if (actor instanceof Item) {
+                        actor = actor.getItemId();
+                      }
+                      if (options.user.isMe(actor)) {
+                        result = result
+                          .then(() => {
+                            if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
+                              return rolePermissionCache[role];
+                            }
+                            return aclProvider.getPermissions(role, resid, true);
+                          })
+                          .then((permissions) => {
+                            if (!rolePermissionCache[role]) {
+                              rolePermissionCache[role] = {};
+                            }
+                            rolePermissionCache[role][resid] = permissions[resid] || {};
+                            if (permissions[resid]) {
+                              for (let p in permissions[resid]) {
+                                if (permissions[resid].hasOwnProperty(p)) {
+                                  if (!item.permissions[p]) {
+                                    item.permissions[p] = permissions[resid][p];
+                                  }
                                 }
                               }
                             }
-                          }
-                        });
-                    }
-                  });
+                          });
+                      }
+                    });
+                  }
                 }
-              }
-            });
-            return result;
-          }
-        })
-        .then(() =>
-          workflow ?
-            workflow.getStatus(item, options)
-              .then((status) => {
-                item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
-                item.attrPermissions = status.propertyPermissions || {};
-              }) :
-            Promise.resolve()
-        )
-        .then(() => noDrill ? null :
-          ((statics && statics.__attr) ?
-            attrPermissions(item, item.permissions, clone(statics.__attr)) :
-            aclProvider.getPermissions(options.user.id(), attrResources(item)).then((ap) => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
-        .then((ap) => {
-          item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+              });
+              return result;
+            }
+          })
+          .then(() =>
+            workflow ?
+              workflow.getStatus(item, options)
+                .then((status) => {
+                  item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
+                  item.attrPermissions = status.propertyPermissions || {};
+                }) :
+              Promise.resolve()
+          )
+          .then(() => noDrill ? null :
+            ((statics && statics.__attr) ?
+              attrPermissions(item, item.permissions, clone(statics.__attr)) :
+              aclProvider.getPermissions(options.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
+          .then((ap) => {
+            item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+          });
+      } else {
+        p = Promise.resolve();
+      }
+      return p.then(
+        () => {
           if (!noDrill && item.permissions[Permissions.READ]) {
             let props = item.getProperties();
             let items = [];
             Object.values(props).forEach((p) => {
               if (p.meta.type === PropertyTypes.REFERENCE) {
                 let ri = p.evaluate();
-                if (ri instanceof Item) {
+                if ((ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)) {
                   items.push(ri);
                 }
               } else if (p.meta.type === PropertyTypes.COLLECTION) {
                 let collection = p.evaluate();
                 if (Array.isArray(collection)) {
-                  items.push(...collection);
+                  items.push(...collection.filter(ri => (ri instanceof Item) && (!ri.permissions || !ri.attrPermissions)));
                 }
               }
             });
@@ -657,9 +680,7 @@ function SecuredDataRepository(options) {
               ).then((permMap) => {
                 let w1 = Promise.resolve();
                 items.forEach((ri) => {
-                  if (ri.getItemId()) {
-                    w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
-                  }
+                  w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
                 });
                 return w1;
               });
@@ -694,48 +715,78 @@ function SecuredDataRepository(options) {
 
   /**
    * @param {ClassMeta} cm
+   * @param {Array} a
+   */
+  function reduceRefAttr(cm, a) {
+    let tmp = a.slice(0, a.length - 1);
+    let pm = findPm(cm, tmp);
+    if (!pm) {
+      if (options.log instanceof Logger) {
+        options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + tmp.join('.') + ' класса ' + cm.getCanonicalName());
+      }
+      return [];
+    }
+    if (pm.type !== PropertyTypes.REFERENCE && pm.type !== PropertyTypes.COLLECTION) {
+      return [];
+    }
+
+    if (pm.type === PropertyTypes.REFERENCE) {
+      let attr = a[a.length - 1];
+      let keys = pm._refClass.getKeyProperties();
+      if (keys.length === 1 && keys[0] === attr) {
+        return reduceRefAttr(cm, tmp);
+      }
+    }
+
+    return tmp;
+  }
+
+  /**
+   * @param {ClassMeta} cm
    * @param {{}} opts
    * @returns {*}
    */
   function roleEnrichment(cm, opts) {
-    let roleConf = classRoleConfig(cm);
-    if (roleConf) {
-      let fe = Array.isArray(opts.forceEnrichment) ? opts.forceEnrichment.slice(0) : [];
-      opts.forceEnrichment = opts.forceEnrichment || [];
-
-      fe.forEach((elp) => {
-        if (Array.isArray(elp)) {
-          for (let i = 0; i < elp.length; i++) {
-            let tmp = elp.slice(0, i);
-            let pm = findPm(cm, tmp);
-            if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
-              let sub = {};
-              roleEnrichment(pm._refClass, sub);
-              if (Array.isArray(sub.forceEnrichment)) {
-                for (let j = 0; j < sub.forceEnrichment.length; j++) {
-                  opts.forceEnrichment.push(tmp.concat(sub.forceEnrichment[j]));
-                }
+    let fe = [];
+    if ((typeof opts.nestingDepth === 'number') && (opts.nestingDepth > 0)) {
+      Object.values(cm.getPropertyMetas()).forEach((pm) => {
+        if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+          fe.push([pm.name]);
+        }
+      });
+    } else {
+      fe = Array.isArray(opts.forceEnrichment) ? opts.forceEnrichment.slice(0) : [];
+    }
+    opts.forceEnrichment = opts.forceEnrichment || [];
+    fe.forEach((elp) => {
+      if (Array.isArray(elp)) {
+        for (let i = 0; i < elp.length; i++) {
+          let tmp = elp.slice(0, i + 1);
+          let pm = findPm(cm, tmp);
+          if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)) {
+            let sub = {nestingDepth: (opts.nestingDepth || 1) - 1};
+            roleEnrichment(pm._refClass, sub);
+            if (Array.isArray(sub.forceEnrichment)) {
+              for (let j = 0; j < sub.forceEnrichment.length; j++) {
+                opts.forceEnrichment.push(tmp.concat(sub.forceEnrichment[j]));
               }
             }
           }
         }
-      });
+      }
+    });
 
+    let roleConf = classRoleConfig(cm);
+    if (roleConf) {
       for (let role in roleConf) {
         if (roleConf.hasOwnProperty(role)) {
           if (roleConf[role].attribute) {
             let a = roleConf[role].attribute.split('.');
-            let p = cm.getPropertyMeta(a[0]);
-            if (p.type !== PropertyTypes.REFERENCE && p.type !== PropertyTypes.COLLECTION) {
-              continue;
-            }
-            if (p.type === PropertyTypes.REFERENCE) {
-              if (a.length === 1) {
-                a = [];
+            if (a.length > 1) {
+              a = reduceRefAttr(cm, a);
+              if (a.length) {
+                opts.forceEnrichment.push(a);
               }
-            }
-            if (a.length) {
-              opts.forceEnrichment.push(a);
             }
           }
         }
@@ -745,7 +796,7 @@ function SecuredDataRepository(options) {
   }
 
   function checkReadPermission(item) {
-    if (item && !item.permissions[Permissions.READ]) {
+    if (item && item.permissions && !item.permissions[Permissions.READ]) {
       throw new IonError(Errors.PERMISSION_LACK);
     }
     return item;
@@ -756,9 +807,9 @@ function SecuredDataRepository(options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
     return dataRepo.getItem(obj, id || '', opts)
-      .then((item) => item ?
+      .then(item => item ?
         getPermMap([item], moptions)
-          .then((permMap) => setItemPermissions(opts, permMap)(item)) :
+          .then(permMap => setItemPermissions(opts, permMap)(item)) :
         item
       );
   }
@@ -766,11 +817,11 @@ function SecuredDataRepository(options) {
   /**
    * @param {String | Item} obj
    * @param {String} [id]
-   * @param {{uid: String}} options
+   * @param {{uid: String}} moptions
    * @param {Number} [options.nestingDepth]
    */
   this._getItem = function (obj, id, moptions) {
-    return getItem(obj, id, moptions).then(checkReadPermission);
+    return getItem(obj, id, moptions).then(checkReadPermission).then(cenzor);
   };
 
   /**
@@ -782,8 +833,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, moptions) {
-    return aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE])
-      .then(function (accessible) {
+    return (moptions.user ?
+      aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE]) :
+      Promise.resolve(true))
+      .then((accessible) => {
         if (accessible) {
           let opts = clone(moptions);
           let cm = options.meta.getMeta(classname);
@@ -797,6 +850,9 @@ function SecuredDataRepository(options) {
   };
 
   function checkWritePermission(classname, id, moptions) {
+    if (!moptions.user) {
+      return Promise.resolve(true);
+    }
     return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
@@ -813,7 +869,7 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
-            return item.permissions[Permissions.WRITE];
+            return !item.permissions || item.permissions[Permissions.WRITE];
           });
       });
   }
@@ -870,8 +926,11 @@ function SecuredDataRepository(options) {
   };
 
   function checkDeletePermission(classname, id, moptions) {
+    if (!moptions.user) {
+      return Promise.resolve(true);
+    }
     return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
-      .then(function (permissions) {
+      .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE] ||
           permissions[itemPrefix + classname + '@' + id] &&
@@ -886,7 +945,7 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
-            return item.permissions[Permissions.DELETE];
+            return !item.permissions || item.permissions[Permissions.DELETE];
           });
       });
   }
@@ -912,23 +971,21 @@ function SecuredDataRepository(options) {
   function checkCollectionWriteAccess(master, details, options) {
     return setItemPermissions(options, null, true)(master)
       .then((m) => {
-        if (!m.permissions[Permissions.WRITE]) {
+        if (m.permissions && !m.permissions[Permissions.WRITE]) {
           return false;
         }
         let p = Promise.resolve();
         let breaker = '_____UNUSABLE____';
-        details.forEach(function (d) {
+        details.forEach((d) => {
           p = p.then(() => setItemPermissions(options, null, true)(d));
           p = p.then((di) => {
-            if (!di.permissions[Permissions.USE]) {
+            if (di.permissions && !di.permissions[Permissions.USE]) {
               return Promise.reject(breaker);
             }
             return Promise.resolve();
           });
         });
-        return p.catch((e) => {
-          return e === breaker ? Promise.resolve(false) : Promise.reject(e);
-        }).then(() => true);
+        return p.catch(e => breaker ? false : Promise.reject(e)).then(() => true);
       });
   }
 
@@ -990,9 +1047,16 @@ function SecuredDataRepository(options) {
    */
   this._getAssociationsList = function (master, collection, options) {
     return setItemPermissions(options, null, true)(master)
-      .then(function (m) {
-        if (m.permissions[Permissions.READ]) {
-          return dataRepo.getAssociationsList(master, collection, options).then(listCenzor(options));
+      .then((m) => {
+        if (!m.permissions || m.permissions[Permissions.READ]) {
+          let opts = clone(options);
+          let p = m.property(collection);
+          if (!p) {
+            throw new Error('Ivalid collection name specified!');
+          }
+          let cm = p.meta._refClass;
+          roleEnrichment(cm, opts);
+          return dataRepo.getAssociationsList(master, collection, opts).then(listCenzor(opts));
         }
         throw new IonError(Errors.PERMISSION_LACK);
       });
@@ -1009,7 +1073,7 @@ function SecuredDataRepository(options) {
   this._getAssociationsCount = function (master, collection, options) {
     return setItemPermissions(options, null, true)(master)
       .then(function (m) {
-        if (m.permissions[Permissions.READ]) {
+        if (!m.permissions || m.permissions[Permissions.READ]) {
           return dataRepo.getAssociationsCount(master, collection, options);
         }
         throw new IonError(Errors.PERMISSION_LACK);
@@ -1028,9 +1092,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
-    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
-      .then(function (permissions) {
+    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+      .then((permissions) => {
         if (
+          !permissions ||
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE]
         ) {
@@ -1048,9 +1113,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
-    return aclProvider.getPermissions(options.user.id(), [classPrefix + classname])
-      .then(function (permissions) {
+    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+      .then((permissions) => {
         if (
+          !permissions ||
           permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE]
         ) {
