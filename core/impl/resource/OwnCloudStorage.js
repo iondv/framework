@@ -311,15 +311,17 @@ function OwnCloudStorage(config) {
       let result = [];
       if (Array.isArray(ids)) {
         ids.forEach((id) => {
-          let parts = id.split('/');
-          result.push(
-            new StoredFile(
-              id,
-              urlResolver(slashChecker(urlBase), id),
-              {name: parts[parts.length - 1]},
-              streamGetter(id)
-            )
-          );
+          if (typeof id === 'string') {
+            let parts = id.split('/');
+            result.push(
+              new StoredFile(
+                id,
+                urlResolver(slashChecker(urlBase), id),
+                {name: parts[parts.length - 1]},
+                streamGetter(id)
+              )
+            );
+          }
         });
       }
       resolve(result);
