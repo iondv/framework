@@ -287,19 +287,20 @@ function parseObject(formula, funcLib, dataRepoGetter, byRefMask, byRef) {
   let result = {};
   for (let func in formula) {
     if (formula.hasOwnProperty(func)) {
+      let args = formula[func];
       if (func[0] === '&') {
         func = func.substr(1);
         byRef = true;
       }
       if (funcLib.hasOwnProperty(func)) {
         let f = funcLib[func];
-        let args = parseObject(formula[func], funcLib, dataRepoGetter, f.byRefMask);
+        args = parseObject(args, funcLib, dataRepoGetter, f.byRefMask);
         if (byRef) {
           return byRefConstructor(f, args);
         }
         return f(args);
       } else {
-        result[func] = parseObject(formula[func], funcLib, dataRepoGetter);
+        result[func] = parseObject(args, funcLib, dataRepoGetter);
       }
     }
   }
