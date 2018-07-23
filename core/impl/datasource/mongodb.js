@@ -1975,7 +1975,7 @@ function MongoDs(config) {
         }
 
         if (!onlyCount) {
-          if (options.sort && Object.keys(options.sort).length > 0) {
+          if (options.sort && Object.keys(options.sort).length) {
             result.push({$sort: options.sort});
           }
         }
@@ -2091,7 +2091,7 @@ function MongoDs(config) {
         r = c.find(options.filter || {});
       }
 
-      if (options.sort) {
+      if (options.sort && Object.keys(options.sort).length) {
         r = r.sort(options.sort);
       }
 

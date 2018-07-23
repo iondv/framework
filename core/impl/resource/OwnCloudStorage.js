@@ -624,6 +624,7 @@ function OwnCloudStorage(config) {
   function createShare(id, access, options) {
     return new Promise((resolve,reject) => {
       try {
+        options = options || {};
         let acs = access || options.permissions;
         let form = {
           path: id,
