@@ -629,8 +629,7 @@ function OwnCloudStorage(config) {
         let form = {
           path: id,
           shareType: '3',
-          publicUpload: 'false',
-          permissions: acs ? accessLevel(acs) : '8'
+          publicUpload: 'false'
         };
         if (options.password) {
           form.password = options.password;
@@ -664,17 +663,25 @@ function OwnCloudStorage(config) {
               if (body.ocs && body.ocs.meta && body.ocs.meta.status === 'failure') {
                 return reject(new Error('Status code:' + body.ocs.meta.statuscode + '. ' + body.ocs.meta.message));
               }
-              let result = {};
-              if (body.ocs && body.ocs.data) {
-                result = {
-                  id: body.ocs.data.id,
-                  passwordSet: Boolean(body.ocs.data.share_with),
-                  shareUrl: body.ocs.data.url,
-                  permissions: body.ocs.data.permissions,
-                  expiration: body.ocs.data.expiration
-                };
+              if (!body.ocs || !body.ocs.data) {
+                return reject(new Error('Unknown result of operation'));
               }
-              resolve(result);
+              let result = {
+                id: body.ocs.data.id,
+                passwordSet: Boolean(body.ocs.data.share_with),
+                shareUrl: body.ocs.data.url,
+                permissions: body.ocs.data.permissions,
+                expiration: body.ocs.data.expiration
+              };
+              if (acs === ShareAccessLevel.READ) {
+                return resolve(result);
+              }
+              shareUpdateConstructor(result.id, {permissions: acs ? accessLevel(acs) : '8'})
+                .then((upd) => {
+                  result.permissions = upd.permissions;
+                  resolve(result);
+                })
+                .catch(reject);
             } else {
               let message = (body && body.ocs && body.ocs.meta && body.ocs.meta.message) ?
                 body.ocs.meta.message :
