@@ -26,8 +26,8 @@ function getValue(context, nm) {
     return context[nm];
   }
 
-  if (context.$item instanceof Item) {
-    return getValue(context.$item, nm);
+  if (context.$context instanceof Item) {
+    return getValue(context.$context, nm);
   }
 
   return null;
