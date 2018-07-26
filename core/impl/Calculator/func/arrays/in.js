@@ -6,7 +6,7 @@ module.exports = function (args) {
     return calc(this, args, null,
       function (args) {
         let arr = [];
-        let v = null;
+        let v = args.length ? args[0] : null;
         if (args.length > 1) {
           if (Array.isArray(args[1])) {
             arr = args[1];
