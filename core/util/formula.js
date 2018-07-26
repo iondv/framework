@@ -36,17 +36,17 @@ function getValue(context, nm) {
 function parametrize(formula, context) {
   if (typeof formula === 'string' && formula.length > 1 && formula[0] === ':') {
     return getValue(context, formula.substr(1));
-  } else if (formula && typeof formula === 'object') {
-    let result = {};
-    for (let nm in formula) {
-      result[nm] = parametrize(formula[nm], context);
-    }
-    return result;
   } else if (Array.isArray(formula)) {
     let result = [];
     formula.forEach((v) => {
       result.push(parametrize(v, context));
     });
+    return result;
+  } else if (formula && typeof formula === 'object') {
+    let result = {};
+    for (let nm in formula) {
+      result[nm] = parametrize(formula[nm], context);
+    }
     return result;
   }
   return formula;
