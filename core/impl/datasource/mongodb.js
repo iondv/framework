@@ -1874,8 +1874,8 @@ function MongoDs(config) {
         }
 
         if (doGroup || fetchFields) {
-		  groupStages.push(expr);
-		  groupStages.push({$project: attrs});
+          groupStages.push(expr);
+          groupStages.push({$project: attrs});
           attributes.push(...Object.keys(attrs));
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
         }
