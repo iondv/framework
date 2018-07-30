@@ -769,9 +769,9 @@ function OwnCloudStorage(config) {
       try {
         requestShares(parseDirId(id))
           .then((shares) => {
-            let shares = [];
+            let result = [];
             let promise = Promise.resolve();
-            let addShare = shareInfo => shares.push(new Share(shareInfo.shareUrl, shareInfo));
+            let addShare = shareInfo => result.push(new Share(shareInfo.shareUrl, shareInfo));
             if (options && Array.isArray(options.shareWith) && Array.isArray(config.users)) {
               options.shareWith.forEach((sw) => {
                 let user = config.users.filter(u => u.name === sw)[0];
@@ -796,9 +796,16 @@ function OwnCloudStorage(config) {
                 promise = promise.then(() => createShare(id, access, shareOptions(options)).then(addShare));
               }
             }
-            return promise;
+            return promise.then(() => result);
           })
-          .then(() => resolve(shares))
+          .then((result) => {
+            if (result.length > 1) {
+              return resolve(result);
+            } else if (result.length === 1) {
+              return resolve(result[0]);
+            }
+            return resolve(null);
+          })
           .catch(err => reject(err));
       } catch (err) {
         return reject(err);
