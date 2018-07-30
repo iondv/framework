@@ -628,7 +628,6 @@ function OwnCloudStorage(config) {
         let acs = access || options.permissions;
         let form = {
           path: id,
-          shareType: '3',
           publicUpload: 'false'
         };
         if (options.password) {
@@ -639,6 +638,12 @@ function OwnCloudStorage(config) {
           if (expDate && expDate !== 'Invalid date') {
             form.expiration = expDate;
           }
+        }
+        if (options.shareWith) {
+          form.shareWith = options.shareWith;
+          form.shareType = '0';
+        } else {
+          form.shareType = '3';
         }
         let reqObject = {
           uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
@@ -717,11 +722,46 @@ function OwnCloudStorage(config) {
     return promise;
   }
 
+  function parseUserPermissions(user) {
+    let permissions = 1;
+    if (user.permissions) {
+      if (user.permissions.update === true) {
+        permissions |= 2;
+      }
+      if (user.permissions.create === true) {
+        permissions |= 4;
+      }
+      if (user.permissions.delete === true) {
+        permissions |= 8;
+      }
+      if (user.permissions.share === true) {
+        permissions |= 16;
+      }
+    }
+    return permissions;
+  }
+
+  function shareOptions(obj, user) {
+    let result = {};
+    let properties = ['permissions', 'expiration', 'password'];
+    properties.forEach((name) => {
+      if (typeof obj[name] !== 'undefined') {
+        result[name] = obj[name];
+      }
+    });
+    if (user) {
+      result.shareWith = user.name;
+      result.permissions = parseUserPermissions(user);
+    }
+    return result;
+  }
+
   /**
    *
    * @param {String} id
    * @param {String} access
    * @param {{}} [options]
+   * @param {Array} [options.shareWith]
    * @returns {Promise}
    */
   this._share = function (id, access, options) {
@@ -729,12 +769,36 @@ function OwnCloudStorage(config) {
       try {
         requestShares(parseDirId(id))
           .then((shares) => {
-            if (shares && shares[0] && shares[0].id) {
-              return updateShare(shares[0].id, access, options);
+            let shares = [];
+            let promise = Promise.resolve();
+            let addShare = shareInfo => shares.push(new Share(shareInfo.shareUrl, shareInfo));
+            if (options && Array.isArray(options.shareWith) && Array.isArray(config.users)) {
+              options.shareWith.forEach((sw) => {
+                let user = config.users.filter(u => u.name === sw)[0];
+                if (typeof user === 'undefined') {
+                  return;
+                }
+                let currentShare = shares.filter(s => s.share_type == 0 && s.share_with === sw)[0];
+                if (typeof currentShare !== 'undefined') {
+                  promise = promise.then(() => updateShare(currentShare.id, null, options).then(addShare));
+                } else {
+                  promise = promise.then(() => createShare(id, null, options).then(addShare));
+                }
+              });
+            } else {
+              let publicShare;
+              if (Array.isArray(shares) && shares.length > 0) {
+                publicShare = shares.filter(s => s.share_type == 3)[0];
+              }
+              if (typeof publicShare !== 'undefined') {
+                promise = promise.then(() => updateShare(publicShare.id, access, shareOptions(options)).then(addShare));
+              } else {
+                promise = promise.then(() => createShare(id, access, shareOptions(options)).then(addShare));
+              }
             }
-            return createShare(id, access, options);
+            return promise;
           })
-          .then(data => resolve(new Share(data.shareUrl, data)))
+          .then(() => resolve(shares))
           .catch(err => reject(err));
       } catch (err) {
         return reject(err);
