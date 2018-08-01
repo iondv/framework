@@ -49,7 +49,6 @@ function WorkflowProvider(options) {
   }
 
   /**
-   *
    * @param {Item} item
    * @param {{user: User}} options
    * @returns {{}}

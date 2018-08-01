@@ -44,6 +44,13 @@ function toScalar(v, context, type, lang) {
     if (v === '$$now') {
       return new Date();
     }
+
+    if (v === '$$today') {
+      v = new Date();
+      v.setHours(0, 0, 0, 0);
+      return v;
+    }
+
     if (context) {
       let item = context instanceof Item ? context : context.$item instanceof Item ? context.$item : null;
       let nm = v.substring(1);
