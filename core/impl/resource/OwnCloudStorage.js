@@ -857,10 +857,10 @@ function OwnCloudStorage(config) {
     return requestShares(id)
       .then((shares) => {
         let promise;
-        shares.forEach((share) => {
+        shares.forEach((shareOptions) => {
           promise = promise ?
-            promise.then(() => shareUpdateConstructor(share, update)) :
-            shareUpdateConstructor(share, update);
+            promise.then(() => shareUpdateConstructor(shareOptions.id, update)) :
+            shareUpdateConstructor(shareOptions.id, update);
         });
         return promise || Promise.resolve();
       });
