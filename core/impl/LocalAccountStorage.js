@@ -56,7 +56,7 @@ class LocalAccountStorage extends IAccountStorage {
       user.disabled = false;
       return this.ds.insert('ion_user', user);
     } else if (user.type !== UserTypes.LOCAL) {
-      return this.ds.insert('ion_user', user).then((u) => new User(u));
+      return this.ds.insert('ion_user', user).then(u => new User(u));
     } else {
       throw new Error('Не передан пароль');
     }
@@ -70,6 +70,12 @@ class LocalAccountStorage extends IAccountStorage {
    */
   _setPassword(id, oldpwd, pwd) {
     let hasher = pwdHasher(pwd);
+    let type = UserTypes.LOCAL;
+    if (id.indexOf('@') > 0) {
+      let un = id.split('@');
+      id = un[0];
+      type = un[1];
+    }
     return new Promise((resolve, reject) => {
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
@@ -82,7 +88,14 @@ class LocalAccountStorage extends IAccountStorage {
           hasher.hash((err, hash) => {
             let pwd = hash;
             let pwdDate = new Date();
-            this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {pwd, pwdDate})
+            this.ds.update(
+                'ion_user',
+                {[F.AND]: [
+                  {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
+                  {[F.EQUAL]: ['$id', id]}
+                ]},
+                {pwd, pwdDate}
+              )
               .then(() => resolve(true))
               .catch(reject);
           });
@@ -117,29 +130,28 @@ class LocalAccountStorage extends IAccountStorage {
         ]
       })
       .then((user) => {
-          if (user) {
-            if (!user.pwd || !pwd) {
-              return user;
-            }
-            if (!checker) {
-              return user;
-            }
-            return new Promise((resolve, reject) => {
-              checker.verifyAgainst(user.pwd, (err, verified) => {
-                if (verified) {
-                  return resolve(user);
-                }
-                if (!err) {
-                  err = new Error('Неверно указан пароль.');
-                }
-                return reject(err);
-              });
-            });
+        if (user) {
+          if (!user.pwd || !pwd) {
+            return user;
           }
-	  return null;
+          if (!checker) {
+            return user;
+          }
+          return new Promise((resolve, reject) => {
+            checker.verifyAgainst(user.pwd, (err, verified) => {
+              if (verified) {
+                return resolve(user);
+              }
+              if (!err) {
+                err = new Error('Неверно указан пароль.');
+              }
+              return reject(err);
+            });
+          });
         }
-      )
-      .then((user) => user ? new User(user) : null);
+        return null;
+      })
+      .then(user => user ? new User(user) : null);
   }
 
   /**
@@ -179,7 +191,7 @@ class LocalAccountStorage extends IAccountStorage {
         ]
       },
       data
-    ).then((u) => new User(u));
+    ).then(u => new User(u));
   }
 
 

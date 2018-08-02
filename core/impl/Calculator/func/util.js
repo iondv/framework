@@ -10,11 +10,15 @@ function argCalc(context, args, argCount) {
   let n = argCount ? (args.length > argCount ? argCount : args.length) : args.length;
   let async = false;
   for (let i = 0; i < n; i++) {
-    let tmp = typeof args[i] === 'function' ?
-      args[i].apply(context) :
-        /*typeof args[i] === 'string' && typeof context[args[i]] !== 'undefined' ?
-          context[args[i]] :*/
-          args[i];
+    let tmp = null;
+    if (Array.isArray(args[i])) {
+      tmp = argCalc(context, args[i], null);
+    } else if (typeof args[i] === 'function') {
+      tmp = args[i].apply(context);
+    } else {
+      tmp = args[i];
+    }
+
     async = tmp instanceof Promise ? true : async;
     calc.push(tmp);
   }
@@ -25,7 +29,7 @@ function argCalc(context, args, argCount) {
 }
 
 function seqPromiseConstructor(context, v) {
-  var tmp;
+  let tmp;
   if (typeof v === 'function') {
     tmp = v.apply(context);
   }
@@ -73,7 +77,7 @@ function sequence(context, args, interrupt) {
 }
 
 function worker(context, args, argLimit, cb) {
-  var args2 = argCalc(context, args, argLimit);
+  let args2 = argCalc(context, args, argLimit);
   if (args2 instanceof Promise) {
     return args2.then(function (args) {
       try {

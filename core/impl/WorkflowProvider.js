@@ -49,7 +49,6 @@ function WorkflowProvider(options) {
   }
 
   /**
-   *
    * @param {Item} item
    * @param {{user: User}} options
    * @returns {{}}
@@ -320,7 +319,8 @@ function WorkflowProvider(options) {
 
     let transition = wf.transitionsByName[name];
 
-    return _this._getStatus(item, tOptions).then(function (status) {
+    return _this._getStatus(item, tOptions)
+      .then((status) => {
         if (status.stages.hasOwnProperty(workflow)) {
           if (status.stages[workflow].next.hasOwnProperty(name)) {
             if (wf.transitionsByName.hasOwnProperty(name)) {
@@ -408,7 +408,7 @@ function WorkflowProvider(options) {
                       }
                       return item;
                     })
-                    .then((item) => move(item, workflow, nextState));
+                    .then(item => move(item, workflow, nextState));
                 });
             }
           }
@@ -527,7 +527,7 @@ function WorkflowProvider(options) {
               return item;
             }
           )
-          .then((item) => move(item, workflow, target));
+          .then(item => move(item, workflow, target));
       });
   };
 

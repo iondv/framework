@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-process-exit:off */
 /**
  * Created by kras on 22.08.16.
  */
@@ -31,22 +32,24 @@ if (process.argv.length > 2) {
       case '--sms':
         preserveModifiedSettings = true;
         break;
+      default:
+        break;
     }
   }
 
   di('boot', config.bootstrap,
     {
       sysLog: sysLog
-    }, null, ['rtEvents', 'sessionHandler'])
-    .then((scope) => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth']))
-    .then((scope) => alias(scope, scope.settings.get('di-alias')))
-    .then((scope) =>
+    }, null, ['rtEvents', 'sessionHandler', 'application'])
+    .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
+    .then(scope => alias(scope, scope.settings.get('di-alias')))
+    .then(scope =>
       worker(
         path.join(__dirname, '..', 'applications', app),
         {resetSettings, overrideArrays, preserveModifiedSettings}
       ).then(() => scope)
     )
-    .then((scope) => scope.dataSources.disconnect())
+    .then(scope => scope.dataSources.disconnect())
     .then(() => {
       console.info('Настройка выполнена успешно.');
       process.exit(0);
