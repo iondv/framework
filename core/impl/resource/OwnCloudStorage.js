@@ -846,23 +846,53 @@ function OwnCloudStorage(config) {
     });
   }
 
+  function requestShareById(shareId) {
+    let reqObject = {
+      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
+      headers: {
+        'OCS-APIRequest': true
+      },
+      auth: {
+        user: config.login,
+        password: config.password
+      }
+    };
+    return new Promise((resolve, reject) => {
+      request.get(reqObject, (err, res, body) => {
+        if (err) {
+          return reject(err);
+        }
+        try {
+          let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]');
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
   /**
    * @param {String} id
    * @param {String} access
    * @returns {Promise}
    */
   this._setShareAccess = function (id, access) {
-    id = parseDirId(id);
+    let requester;
+    try {
+      requester = requestShares(parseDirId(id));
+    } catch (e) {
+      requester = requestShareById(parseShareId(id));
+    }
     const update = {permissions: accessLevel(access)};
-    return requestShares(id)
+    return requester
       .then((shares) => {
-        let promise;
+        shares = Array.isArray(shares) ? shares : [shares];
+        let promise = Promise.resolve();
         shares.forEach((shareOptions) => {
-          promise = promise ?
-            promise.then(() => shareUpdateConstructor(shareOptions.id, update)) :
-            shareUpdateConstructor(shareOptions.id, update);
+          promise = promise.then(() => shareUpdateConstructor(shareOptions.id, update));
         });
-        return promise || Promise.resolve();
+        return promise;
       });
   };
 
