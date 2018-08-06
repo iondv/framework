@@ -16,6 +16,8 @@ const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStora
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
+const SharesApi = require('./SharesApi');
+const {urlResolver, slashChecker} = require('./util');
 
 // jshint maxstatements: 100, maxcomplexity: 20
 
@@ -27,15 +29,15 @@ function OwnCloudStorage(config) {
 
   let _this = this;
 
-  let urlBase = config.urlBase  || '';
+  const urlBase = config.urlBase  || '';
 
-  let ownCloudUrl = url.parse(config.url, true);
+  const ownCloudUrl = url.parse(config.url, true);
 
-  let urlTypes = {
+  const sharesApi = new SharesApi(config);
+
+  const urlTypes = {
     INDEX: 'index.php/apps/files/?dir=/',
-    WEBDAV: `remote.php/dav/files/${config.login}/`,
-    OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
-    SHARE: 'index.php/s/'
+    WEBDAV: `remote.php/dav/files/${config.login}/`
   };
 
   let resourceType = {
@@ -53,23 +55,6 @@ function OwnCloudStorage(config) {
       result.push(r);
     });
     return result.join('/');
-  }
-
-  function urlResolver(uri) {
-    if (arguments.length > 1) {
-      let result = uri;
-      for (let i = 1; i < arguments.length; i++) {
-        let tmp = arguments[i];
-        if (tmp) {
-          if (tmp[0] === '/') {
-            tmp = tmp.substr(1);
-          }
-          result = url.resolve(result, tmp);
-        }
-      }
-      return result;
-    }
-    return uri;
   }
 
   function trimSlashes(str) {
@@ -94,13 +79,6 @@ function OwnCloudStorage(config) {
       return result;
     }
     return part;
-  }
-
-  function slashChecker(path) {
-    if (path && path.slice(-1) !== '/') {
-      return path   + '/';
-    }
-    return path || '';
   }
 
   function streamGetter(filePath) {
@@ -402,24 +380,6 @@ function OwnCloudStorage(config) {
     }
   }
 
-  function parseShareId(id) {
-    let result = null;
-    let urlObj = url.parse(id, true);
-    if (urlObj.host === ownCloudUrl.host) {
-      if (urlObj.path.indexOf(urlTypes.SHARE) > -1) {
-        result = urlObj.path.replace('/' + urlTypes.SHARE, '');
-      }
-    } else if (!urlObj.host) {
-      result = id;
-    }
-
-    if (result) {
-      return result;
-    } else {
-      throw new Error('Передан неправильный адрес share');
-    }
-  }
-
   /**
    * @param {String} id
    * @returns {Promise}
@@ -574,277 +534,133 @@ function OwnCloudStorage(config) {
     return _this.remove(urlResolver(slashChecker(dirId), fileId));
   };
 
-  function accessLevel(level) {
-    switch (level) {
-      case ShareAccessLevel.READ: return '1';
-      case ShareAccessLevel.WRITE: return '15';
-      default:
-        throw new Error('Некорректное значение уровня доступа!');
-    }
-  }
-
-  function shareUpdateConstructor(shareId, params) {
-    let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), shareId)),
-      headers: {
-        'OCS-APIRequest': true
-      },
-      auth: {
-        user: config.login,
-        password: config.password
-      },
-      form: params
-    };
-    return new Promise((resolve, reject) => {
-      request.put(reqObject, (err, res, body) => {
-        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-          try {
-            let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]');
-            if (result && result[0]) {
-              return resolve(result[0]);
-            } else {
-              const doc = new Dom().parseFromString(body);
-              const status = retriveXpathData(doc, '/*[local-name()="ocs"]/*[local-name()="meta"]/*[local-name()="status"]');
-              const message = retriveXpathData(doc, '/*[local-name()="ocs"]/*[local-name()="meta"]/*[local-name()="message"]');
-              if (status || message) {
-                return reject(new Error(`${status || ''}. ${message || ''}`));
-              }
-            }
-            return reject(new Error('Error while fetching share'));
-          } catch (err) {
-            reject(err);
-          }
-        } else {
-          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
-        }
-      });
-    });
-  }
-
   function createShare(id, access, options) {
-    return new Promise((resolve,reject) => {
-      try {
-        options = options || {};
-        let acs = access || options.permissions;
-        let form = {
-          path: id,
-          shareType: '3',
-          publicUpload: 'false'
-        };
-        if (options.password) {
-          form.password = options.password;
-        }
-        if (options.expiration) {
-          let expDate = moment(options.expiration).format('YYYY-MM-DD');
-          if (expDate && expDate !== 'Invalid date') {
-            form.expiration = expDate;
-          }
-        }
-        let reqObject = {
-          uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
-          qs: {
-            format: 'json'
-          },
-          headers: {
-            'OCS-APIRequest': true
-          },
-          auth: {
-            user: config.login,
-            password: config.password
-          },
-          form
-        };
-        request.post(reqObject, (err, res, body) => {
-          try {
-            if (typeof body === 'string') {
-              body = JSON.parse(body);
-            }
-            if (!err && res.statusCode === 200) {
-              if (body.ocs && body.ocs.meta && body.ocs.meta.status === 'failure') {
-                return reject(new Error('Status code:' + body.ocs.meta.statuscode + '. ' + body.ocs.meta.message));
-              }
-              if (!body.ocs || !body.ocs.data) {
-                return reject(new Error('Unknown result of operation'));
-              }
-              let result = {
-                id: body.ocs.data.id,
-                passwordSet: Boolean(body.ocs.data.share_with),
-                shareUrl: body.ocs.data.url,
-                permissions: body.ocs.data.permissions,
-                expiration: body.ocs.data.expiration
-              };
-              if (acs === ShareAccessLevel.READ) {
-                return resolve(result);
-              }
-              shareUpdateConstructor(result.id, {permissions: acs ? accessLevel(acs) : '8'})
-                .then((upd) => {
-                  result.permissions = upd.permissions;
-                  resolve(result);
-                })
-                .catch(reject);
-            } else {
-              let message = (body && body.ocs && body.ocs.meta && body.ocs.meta.message) ?
-                body.ocs.meta.message :
-                null;
-              reject(err || new Error('Status code:' + res.statusCode + '. ' + (message || 'Unknown error')));
-            }
-          } catch (err) {
-            return reject(err);
-          }
-        });
-      } catch (e) {
-        return reject(e);
+    options = options || {};
+    let acs = access || options.permissions;
+    let form = {
+      path: id,
+      shareType: '3',
+      publicUpload: 'false'
+    };
+    if (options.password) {
+      form.password = options.password;
+    }
+    if (options.expiration) {
+      let expDate = moment(options.expiration).format('YYYY-MM-DD');
+      if (expDate && expDate !== 'Invalid date') {
+        form.expiration = expDate;
       }
-    });
+    }
+    return sharesApi.create(form)
+      .then((shares) => {
+        let result = Array.isArray(shares) ? shares[0] : shares;
+        if (acs === ShareAccessLevel.READ) {
+          return result;
+        }
+        return sharesApi.update(result.id, {permissions: acs ? sharesApi.accessLevel(acs) : '8'})
+          .then((upd) => {
+            result.permissions = upd.permissions;
+            return result;
+          });
+      });
   }
 
   function updateShare(shareId, access, options) {
     let promise = Promise.resolve({});
     if (access || options.permissions) {
-      promise = shareUpdateConstructor(shareId, {permissions: accessLevel(access || options.permissions)});
+      promise = sharesApi.update(shareId, {permissions: sharesApi.accessLevel(access || options.permissions)});
     }
     if (options.password || options.password === false) {
-      promise = promise.then(() => shareUpdateConstructor(shareId, {password: options.password || null}));
+      promise = promise.then(() => sharesApi.update(shareId, {password: options.password || null}));
     }
     if (options.expiration) {
       let expDate = moment(options.expiration);
       if (expDate.isValid()) {
-        promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: expDate.format('YYYY-MM-DD')}));
+        promise = promise.then(() => sharesApi.update(shareId, {expireDate: expDate.format('YYYY-MM-DD')}));
       }
     } else if (options.expiration === false) {
-      promise = promise.then(() => shareUpdateConstructor(shareId, {expireDate: ''}));
+      promise = promise.then(() => sharesApi.update(shareId, {expireDate: ''}));
     }
     return promise;
+  }
+
+  function findShare(token) {
+    return sharesApi.get()
+      .then((shares) => {
+        let result;
+        if (Array.isArray(shares)) {
+          result = shares.filter(s => s.token === token)[0];
+        }
+        if (!result) {
+          throw new Error('share not found');
+        }
+        return result;
+      });
+  }
+
+  function requestShare(path) {
+    let id;
+    try {
+      id = parseDirId(path);
+    } catch (e) {
+      // Do nothing
+    }
+    if (typeof id !== 'undefined') {
+      return sharesApi.get(id);
+    } else {
+      try {
+        id = sharesApi.parseToken(path);
+      } catch (e) {
+        // Do nothing
+      }
+      if (typeof id !== 'undefined') {
+        return findShare(id);
+      }
+    }
+    return Promise.reject(new Error('Передан неправильный путь до share'));
   }
 
   /**
    *
    * @param {String} id
-   * @param {String} access
+   * @param {String} [access]
    * @param {{}} [options]
-   * @returns {Promise}
+   * @returns {Promise<Share>}
    */
   this._share = function (id, access, options) {
-    return new Promise((resolve, reject) => {
-      try {
-        requestShares(parseDirId(id))
-          .then((shares) => {
-            if (shares && shares[0] && shares[0].id) {
-              return updateShare(shares[0].id, access, options);
-            }
-            return createShare(id, access, options);
-          })
-          .then(data => resolve(new Share(data.shareUrl, data)))
-          .catch(err => reject(err));
-      } catch (err) {
-        return reject(err);
-      }
-    });
+    let dirId;
+    try {
+      dirId = parseDirId(id);
+    } catch (err) {
+      return Promise.reject(new Error('Передан неправильный путь до директории'));
+    }
+    return sharesApi.get(dirId)
+      .then((shares) => {
+        let extShare = Array.isArray(shares) ? shares[0] : shares;
+        if (extShare) {
+          return updateShare(extShare.id, access, options);
+        }
+        return createShare(id, access, options);
+      })
+      .then(data => new Share(data.shareUrl, data));
   };
 
-  function shareDeleteConstr(share) {
-    let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), slashChecker(urlTypes.OCS), share.id)),
-      headers: {
-        'OCS-APIRequest': true
-      },
-      auth: {
-        user: config.login,
-        password: config.password
-      }
-    };
-    return new Promise((resolve, reject) => {
-      request.delete(reqObject, (err, res) => {
-        if (!err && (res.statusCode === 100 || res.statusCode === 200)) {
-          resolve(true);
-        } else {
-          return reject(err || new Error('Status code:' + res.statusCode + '. ' + res.body.message));
-        }
-      });
-    });
-  }
-
-  this._deleteShare = function (share) {
-    let requester;
-    try {
-      requester = requestShares(parseDirId(share));
-    } catch (e) {
-      requester = Promise.resolve([parseShareId(share)]);
-    }
-    return requester
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this._deleteShare = function (id) {
+    return requestShare(id)
       .then((shares) => {
+        shares = Array.isArray(shares) ? shares : [shares];
         let promise = Promise.resolve();
         shares.forEach((share) => {
-          promise = promise.then(() => shareDeleteConstr(share));
+          promise = promise.then(() => sharesApi.delete(share.id));
         });
         return promise.then(() => true);
       });
   };
-
-  function retriveXpathData(element, select) {
-    let selection = xpath.select(select, element);
-    if (selection && selection[0] && selection[0].firstChild) {
-      return selection[0].firstChild.nodeValue;
-    }
-    return null;
-  }
-
-  function parseShareXml(body, elementsSelector) {
-    let result = [];
-    let dom = new Dom();
-    let doc = dom.parseFromString(body);
-    let elements = xpath.select(elementsSelector, doc);
-    for (let i = 0; i < elements.length; i++) {
-      let shareId = retriveXpathData(elements[i], '*[local-name()="id"]');
-      let shareType = retriveXpathData(elements[i], '*[local-name()="share_type"]');
-      let shareUrl = retriveXpathData(elements[i], '*[local-name()="url"]');
-      let permissions = retriveXpathData(elements[i], '*[local-name()="permissions"]');
-      let expiration = retriveXpathData(elements[i], '*[local-name()="expiration"]');
-      let shareWith = false;
-      if (shareType && shareType === '3') {
-        shareWith = retriveXpathData(elements[i], '*[local-name()="share_with"]');
-      }
-      if (shareId) {
-        result.push({
-          id: shareId,
-          passwordSet: Boolean(shareWith),
-          shareUrl,
-          permissions,
-          expiration
-        });
-      }
-    }
-    return result;
-  }
-
-  function requestShares(id) {
-    let reqObject = {
-      uri: encodeURI(urlResolver(slashChecker(config.url), urlTypes.OCS)),
-      qs: {
-        path: id
-      },
-      headers: {
-        'OCS-APIRequest': true
-      },
-      auth: {
-        user: config.login,
-        password: config.password
-      }
-    };
-    return new Promise((resolve, reject) => {
-      request.get(reqObject, (err, res, body) => {
-        if (err) {
-          return reject(err);
-        }
-        try {
-          let result = parseShareXml(body, '/*[local-name()="ocs"]/*[local-name()="data"]/*[local-name()="element"]');
-          resolve(result);
-        } catch (err) {
-          reject(err);
-        }
-      });
-    });
-  }
 
   /**
    * @param {String} id
@@ -852,34 +668,25 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._setShareAccess = function (id, access) {
-    id = parseDirId(id);
-    const update = {permissions: accessLevel(access)};
-    return requestShares(id)
+    const update = {permissions: sharesApi.accessLevel(access)};
+    return requestShare(id)
       .then((shares) => {
-        let promise;
+        shares = Array.isArray(shares) ? shares : [shares];
+        let promise = Promise.resolve();
         shares.forEach((shareOptions) => {
-          promise = promise ?
-            promise.then(() => shareUpdateConstructor(shareOptions.id, update)) :
-            shareUpdateConstructor(shareOptions.id, update);
+          promise = promise.then(() => sharesApi.update(shareOptions.id, update));
         });
-        return promise || Promise.resolve();
+        return promise;
       });
   };
 
   /**
    *
    * @param {String} id
-   * @param {String} access
-   * @returns {Promise}
+   * @returns {Promise<Share>}
    */
-  this._currentShare = function (id/*, access*/) {
-    return requestShares(parseDirId(id))
-      .then((shares) => {
-        if (shares[0]) {
-          return shares[0];
-        }
-        return null;
-      });
+  this._currentShare = function (id) {
+    return requestShare(id).then(shares => Array.isArray(shares) ? shares[0] : shares);
   };
 
   this.fileOptionsSupport = function () {
