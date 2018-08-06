@@ -97,7 +97,7 @@ function MongoAcl(config) {
                                         acl.isAllowed(_this.globalMarker, _this.globalMarker, Permissions.FULL,
                                           (err, res) => {
                                             if (!pr(err, res)) {
-                                              return false;
+                                              resolve(false);
                                             }
                                           }
                                         );
