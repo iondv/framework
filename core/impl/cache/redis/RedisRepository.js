@@ -20,6 +20,7 @@ function RedisRepository(config) {
 
   var rHost = config.host || 'localhost';
   var rPort = config.port || '6379';
+  var lifetime = config.lifetime || 60;
   var client = null;
   var available = false;
 
@@ -58,7 +59,7 @@ function RedisRepository(config) {
         return resolve();
       }
       try {
-        client.set(key, JSON.stringify(value));
+        client.set(key, JSON.stringify(value), 'EX', lifetime);
       } finally {
         resolve();
       }

@@ -241,7 +241,7 @@
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
-          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "serverLocations": "[[cache.memcached.locations]]" ,
           "connectOptions": {
             "maxKeySize": "[[cache.memcached.maxKeySize]]",
             "maxExpiration": "[[cache.memcached.maxExpiration]]",
