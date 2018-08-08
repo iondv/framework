@@ -15,10 +15,11 @@ const clone = require('clone');
  * @param {Boolean} [options.skipSystemAttrs]
  * @param {Boolean} [options.byRef]
  * @param {{}} [processed]
+ * @param {KeyProvider} [keyProvider]
  * @returns {{} | null}
  * @private
  */
-function normalize(data, dateCallback, options, processed) {
+function normalize(data, dateCallback, options, processed, keyProvider) {
   options = options || {};
   processed = processed || {};
   if (Array.isArray(data)) {
@@ -72,11 +73,18 @@ function normalize(data, dateCallback, options, processed) {
         if (options.skipSystemAttrs && (p.getName() === '__class' || p.getName() === '__classTitle')) {
           continue;
         }
-        
+
         if (p.getType() === PropertyTypes.REFERENCE) {
-          let refItem = data.getAggregate(p.getName());
-          if (refItem && typeof item[p.getName()] === 'undefined') {
-            item[p.getName()] = normalize(refItem, dateCallback, options, processed);
+          if (typeof item[p.getName()] === 'undefined') {
+            let refItem = data.getAggregate(p.getName());
+            let val = p.getValue();
+            if (refItem) {
+              item[p.getName()] = normalize(refItem, dateCallback, options, processed);
+            } else if (val && keyProvider) {
+              item[p.getName()] = keyProvider.keyToData(p.meta._refClass, val);
+              item[p.getName()]._id = val;
+              item[p.getName()]._class = p.meta._refClass.getCanonicalName();
+            }
           }
         } else if (p.getType() === PropertyTypes.COLLECTION) {
           if (typeof item[p.getName()] === 'undefined') {
