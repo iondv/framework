@@ -4,5 +4,9 @@
 'use strict';
 const c = require('../arithmetic/incOper');
 
-module.exports = c((a, b) => (a || '') + (b || ''), '');
+function s(v) {
+  return (v === null || v === false || typeof v === 'undefined') ? '' : String(v);
+}
+
+module.exports = c((a, b) => s(a) + s(b), '');
 

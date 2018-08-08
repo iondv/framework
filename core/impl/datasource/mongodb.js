@@ -790,9 +790,21 @@ function MongoDs(config) {
           let o = QUERY_OPERS[oper] || FUNC_OPERS[oper];
           if (o) {
             if (oper === Operations.NOT_EMPTY) {
-              return {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $and: [
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$ne: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$ne: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.EMPTY) {
-              return {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']};
+              return {
+                $or: [
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'null']},
+                  {$eq: [{$type: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0]}, 'missing']},
+                  {$eq: [parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)[0], '']}
+                ]
+              };
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
             } else if (oper === Operations.DATE_ADD) {
@@ -1862,15 +1874,13 @@ function MongoDs(config) {
         }
 
         if (doGroup || fetchFields) {
-          if (expr.$group._id) {
-            if (Object.keys(expr.$group).length > 1) {
-              groupStages.push(expr);
-              groupStages.push({$project: attrs});
-            } else {
-              let gc = clone(expr.$group._id);
-              gc['_id'] = false;
-              groupStages.push({$project: gc});
-            }
+          if (expr.$group._id && Object.keys(expr.$group).length === 1) {
+            let gc = clone(expr.$group._id);
+            gc['_id'] = false;
+            groupStages.push({$project: gc});
+          } else {
+            groupStages.push(expr);
+            groupStages.push({$project: attrs});
           }
           attributes.push(...Object.keys(attrs));
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
@@ -1965,7 +1975,7 @@ function MongoDs(config) {
         }
 
         if (!onlyCount) {
-          if (options.sort) {
+          if (options.sort && Object.keys(options.sort).length) {
             result.push({$sort: options.sort});
           }
         }
@@ -2081,7 +2091,7 @@ function MongoDs(config) {
         r = c.find(options.filter || {});
       }
 
-      if (options.sort) {
+      if (options.sort && Object.keys(options.sort).length) {
         r = r.sort(options.sort);
       }
 

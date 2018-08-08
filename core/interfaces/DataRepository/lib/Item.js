@@ -146,6 +146,9 @@ function Item(id, base, classMeta) {
         _this.references[name] = value;
         _this.base[name] = value.getItemId();
       } else {
+        if (p.getType() === PropertyTypes.REFERENCE) {
+          delete _this.references[name];
+        }
         _this.base[name] = value;
       }
       if (_this.properties && !_this.slCacheClean) {
