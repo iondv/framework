@@ -620,6 +620,40 @@ function OwnCloudStorage(config) {
     return Promise.reject(new Error('Передан неправильный путь до share'));
   }
 
+  function parseUserPermissions(user) {
+    let permissions = 1;
+    if (user.permissions) {
+      if (user.permissions.update === true) {
+        permissions |= 2;
+      }
+      if (user.permissions.create === true) {
+        permissions |= 4;
+      }
+      if (user.permissions.delete === true) {
+        permissions |= 8;
+      }
+      if (user.permissions.share === true) {
+        permissions |= 16;
+      }
+    }
+    return permissions;
+  }
+
+  function shareOptions(obj, user) {
+    let result = {};
+    let properties = ['permissions', 'expiration', 'password'];
+    properties.forEach((name) => {
+      if (typeof obj[name] !== 'undefined') {
+        result[name] = obj[name];
+      }
+    });
+    if (user) {
+      result.shareWith = user.name;
+      result.permissions = parseUserPermissions(user);
+    }
+    return result;
+  }
+
   /**
    *
    * @param {String} id
@@ -637,13 +671,43 @@ function OwnCloudStorage(config) {
     }
     return sharesApi.get(dirId)
       .then((shares) => {
-        let extShare = Array.isArray(shares) ? shares[0] : shares;
-        if (extShare) {
-          return updateShare(extShare.id, access, options);
+        let result = [];
+        let promise = Promise.resolve();
+        let addShare = shareInfo => result.push(new Share(shareInfo.shareUrl, shareInfo));
+        if (options && Array.isArray(options.shareWith) && Array.isArray(config.users)) {
+          options.shareWith.forEach((sw) => {
+            const user = config.users.filter(u => u.name === sw)[0];
+            if (typeof user === 'undefined') {
+              return;
+            }
+            let currentShare = shares.filter(s => parseInt(s.share_type) === 0 && s.share_with === sw)[0];
+            if (typeof currentShare !== 'undefined') {
+              promise = promise.then(() => updateShare(currentShare.id, null, shareOptions(options, user)).then(addShare));
+            } else {
+              promise = promise.then(() => createShare(id, null, shareOptions(options, user)).then(addShare));
+            }
+          });
+        } else {
+          let publicShare;
+          if (Array.isArray(shares) && shares.length > 0) {
+            publicShare = shares.filter(s => parseInt(s.share_type) === 3)[0];
+          }
+          if (typeof publicShare !== 'undefined') {
+            promise = promise.then(() => updateShare(publicShare.id, access, shareOptions(options)).then(addShare));
+          } else {
+            promise = promise.then(() => createShare(id, access, shareOptions(options)).then(addShare));
+          }
         }
-        return createShare(id, access, options);
+        return promise.then(() => result);
       })
-      .then(data => new Share(data.shareUrl, data));
+      .then((result) => {
+        if (result.length > 1) {
+          return result;
+        } else if (result.length === 1) {
+          return result[0];
+        }
+        return null;
+      });
   };
 
   /**
