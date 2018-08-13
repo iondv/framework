@@ -536,10 +536,10 @@ function OwnCloudStorage(config) {
 
   function createShare(id, access, options) {
     options = options || {};
-    let acs = access || options.permissions;
-    let form = {
+    const acs = access || options.permissions;
+    const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+    const form = {
       path: id,
-      shareType: '3',
       publicUpload: 'false'
     };
     if (options.password) {
@@ -551,13 +551,19 @@ function OwnCloudStorage(config) {
         form.expiration = expDate;
       }
     }
+    if (options.shareWith) {
+      form.shareWith = options.shareWith;
+      form.shareType = '0';
+    } else {
+      form.shareType = '3';
+    }
     return sharesApi.create(form)
       .then((shares) => {
         let result = Array.isArray(shares) ? shares[0] : shares;
-        if (acs === ShareAccessLevel.READ) {
+        if (permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
           return result;
         }
-        return sharesApi.update(result.id, {permissions: acs ? sharesApi.accessLevel(acs) : '8'})
+        return sharesApi.update(result.id, {permissions})
           .then((upd) => {
             result.permissions = upd.permissions;
             return result;
@@ -568,7 +574,9 @@ function OwnCloudStorage(config) {
   function updateShare(shareId, access, options) {
     let promise = Promise.resolve({});
     if (access || options.permissions) {
-      promise = sharesApi.update(shareId, {permissions: sharesApi.accessLevel(access || options.permissions)});
+      const acs = access || options.permissions;
+      const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+      promise = sharesApi.update(shareId, {permissions});
     }
     if (options.password || options.password === false) {
       promise = promise.then(() => sharesApi.update(shareId, {password: options.password || null}));
@@ -639,7 +647,10 @@ function OwnCloudStorage(config) {
     return permissions;
   }
 
-  function shareOptions(obj, user) {
+  function getShareOptions(obj, user) {
+    if (!obj) {
+      return obj;
+    }
     let result = {};
     let properties = ['permissions', 'expiration', 'password'];
     properties.forEach((name) => {
@@ -682,9 +693,9 @@ function OwnCloudStorage(config) {
             }
             let currentShare = shares.filter(s => parseInt(s.share_type) === 0 && s.share_with === sw)[0];
             if (typeof currentShare !== 'undefined') {
-              promise = promise.then(() => updateShare(currentShare.id, null, shareOptions(options, user)).then(addShare));
+              promise = promise.then(() => updateShare(currentShare.id, null, getShareOptions(options, user)).then(addShare));
             } else {
-              promise = promise.then(() => createShare(id, null, shareOptions(options, user)).then(addShare));
+              promise = promise.then(() => createShare(dirId, null, getShareOptions(options, user)).then(addShare));
             }
           });
         } else {
@@ -693,9 +704,9 @@ function OwnCloudStorage(config) {
             publicShare = shares.filter(s => parseInt(s.share_type) === 3)[0];
           }
           if (typeof publicShare !== 'undefined') {
-            promise = promise.then(() => updateShare(publicShare.id, access, shareOptions(options)).then(addShare));
+            promise = promise.then(() => updateShare(publicShare.id, access, getShareOptions(options)).then(addShare));
           } else {
-            promise = promise.then(() => createShare(id, access, shareOptions(options)).then(addShare));
+            promise = promise.then(() => createShare(dirId, access, getShareOptions(options)).then(addShare));
           }
         }
         return promise.then(() => result);
