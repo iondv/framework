@@ -494,7 +494,7 @@ function spFilter(cm, pm, or, svre, prefix) {
  * @returns {RegExp | String}
  */
 function createSearchRegexp(search, mode, asString) {
-  var result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
+  let result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
   if (mode === 'contains') {
     result = result.replace(/\s+/g, '\\s+');
   } else if (mode === 'starts') {

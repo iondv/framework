@@ -1874,14 +1874,8 @@ function MongoDs(config) {
         }
 
         if (doGroup || fetchFields) {
-          if (expr.$group._id && Object.keys(expr.$group).length === 1) {
-            let gc = clone(expr.$group._id);
-            gc['_id'] = false;
-            groupStages.push({$project: gc});
-          } else {
-            groupStages.push(expr);
-            groupStages.push({$project: attrs});
-          }
+          groupStages.push(expr);
+          groupStages.push({$project: attrs});
           attributes.push(...Object.keys(attrs));
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
         }
@@ -1975,7 +1969,7 @@ function MongoDs(config) {
         }
 
         if (!onlyCount) {
-          if (options.sort) {
+          if (options.sort && Object.keys(options.sort).length) {
             result.push({$sort: options.sort});
           }
         }
@@ -2091,7 +2085,7 @@ function MongoDs(config) {
         r = c.find(options.filter || {});
       }
 
-      if (options.sort) {
+      if (options.sort && Object.keys(options.sort).length) {
         r = r.sort(options.sort);
       }
 
