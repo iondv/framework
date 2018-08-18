@@ -558,7 +558,7 @@ function SecuredDataRepository(options) {
         if (v instanceof Item) {
           v = v.getItemId();
         }
-        if (user.isMe(actor)) {
+        if (user.isMe(v)) {
           return true;
         }
       }
@@ -710,7 +710,7 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr)) :
-              aclProvider.getPermissions(options.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
+              aclProvider.getPermissions(moptions.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
           .then((ap) => {
             item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           });
