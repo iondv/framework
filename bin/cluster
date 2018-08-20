@@ -1,20 +1,69 @@
 #!/usr/bin/env node
 const cluster = require('cluster');
-const worker = require('./worker');
-const numWorkers = 4;
+const config = require('../config');
+const IonLogger = require('core/impl/log/IonLogger');
 
-if (cluster.isMaster) {
-  console.log(`Master ${process.pid} is running`);
+const configWorker = config.cluster ? config.cluster.worker || {} : {};
+const configMaster = config.cluster ? config.cluster.master || {} : {};
 
-  // Fork workers.
-  for (let i = 0; i < numWorkers; i++) {
-    cluster.fork();
+const numWorkers = process.env.WORKER_COUNT || configWorker.count || 2;
+const killTimeout = configWorker.killTimeout || 60000;
+const sysLog = new IonLogger(config.log || {});
+
+let workersToStop = [];
+let stopping = false;
+
+cluster.setupMaster(Object.assign(configMaster, {exec: 'bin/www'}));
+
+function startWorkers() {
+  if (!stopping) {
+    for (let i = Object.keys(cluster.workers).length; i < numWorkers; i++) {
+      cluster.fork();
+    }
   }
-
-  cluster.on('exit', (worker, code, signal) => {
-    console.log(`worker ${worker.process.pid} died`);
-  });
-} else {
-  worker();
-  console.log(`Worker ${process.pid} started`);
 }
+
+function stopWorker(worker) {
+  sysLog.warn(`Остановка приложения ION (pid:${worker.process.pid})`);
+  worker.disconnect();
+  const killTimer = setTimeout(() => worker.kill(), killTimeout);
+  killTimer.unref();
+}
+
+function stopNextWorker() {
+  const worker = cluster.workers[workersToStop.pop()];
+  if (worker) {
+    stopWorker(worker);
+  }
+}
+
+function stopAllWorkers() {
+  stopping = true;
+  sysLog.error('Остановка всех приложений ION');
+  for (let id in cluster.workers) {
+    stopWorker(cluster.workers[id]);
+  }
+}
+
+cluster.on('exit', (worker) => {
+  sysLog.warn(`Приложение ION (pid:${worker.process.pid}) отключено`);
+  startWorkers();
+});
+
+cluster.on('listening', (worker, address) => {
+  sysLog.info(
+    `Приложение ION (pid:${worker.process.pid}) запущено по адресу ${address.address || 'localhost'}:${address.port}`
+  );
+  stopNextWorker();
+});
+
+process.on('SIGHUP', () => {
+  sysLog.warn('Перезагрузка приложений ION');
+  workersToStop = Object.keys(cluster.workers);
+  stopNextWorker();
+});
+
+process.on('SIGTERM', () => stopAllWorkers());
+
+sysLog.info(`Запуск кластера приложений ION (pid:${process.pid})`);
+startWorkers();
