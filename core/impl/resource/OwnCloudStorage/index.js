@@ -536,10 +536,10 @@ function OwnCloudStorage(config) {
 
   function createShare(id, access, options) {
     options = options || {};
-    let acs = access || options.permissions;
-    let form = {
+    const acs = access || options.permissions;
+    const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+    const form = {
       path: id,
-      shareType: '3',
       publicUpload: 'false'
     };
     if (options.password) {
@@ -551,13 +551,19 @@ function OwnCloudStorage(config) {
         form.expiration = expDate;
       }
     }
+    if (options.shareWith) {
+      form.shareWith = options.shareWith;
+      form.shareType = '0';
+    } else {
+      form.shareType = '3';
+    }
     return sharesApi.create(form)
       .then((shares) => {
         let result = Array.isArray(shares) ? shares[0] : shares;
-        if (acs === ShareAccessLevel.READ) {
+        if (permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
           return result;
         }
-        return sharesApi.update(result.id, {permissions: acs ? sharesApi.accessLevel(acs) : '8'})
+        return sharesApi.update(result.id, {permissions})
           .then((upd) => {
             result.permissions = upd.permissions;
             return result;
@@ -568,7 +574,9 @@ function OwnCloudStorage(config) {
   function updateShare(shareId, access, options) {
     let promise = Promise.resolve({});
     if (access || options.permissions) {
-      promise = sharesApi.update(shareId, {permissions: sharesApi.accessLevel(access || options.permissions)});
+      const acs = access || options.permissions;
+      const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+      promise = sharesApi.update(shareId, {permissions});
     }
     if (options.password || options.password === false) {
       promise = promise.then(() => sharesApi.update(shareId, {password: options.password || null}));
@@ -620,11 +628,49 @@ function OwnCloudStorage(config) {
     return Promise.reject(new Error('Передан неправильный путь до share'));
   }
 
+  function parseUserPermissions(user) {
+    let permissions = 1;
+    if (user.permissions) {
+      if (user.permissions.update === true) {
+        permissions |= 2;
+      }
+      if (user.permissions.create === true) {
+        permissions |= 4;
+      }
+      if (user.permissions.delete === true) {
+        permissions |= 8;
+      }
+      if (user.permissions.share === true) {
+        permissions |= 16;
+      }
+    }
+    return permissions;
+  }
+
+  function getShareOptions(obj, user) {
+    if (!obj) {
+      return obj;
+    }
+    let result = {};
+    let properties = ['permissions', 'expiration', 'password'];
+    properties.forEach((name) => {
+      if (typeof obj[name] !== 'undefined') {
+        result[name] = obj[name];
+      }
+    });
+    if (user) {
+      result.shareWith = user.name;
+      result.permissions = parseUserPermissions(user);
+    }
+    return result;
+  }
+
   /**
    *
    * @param {String} id
    * @param {String} [access]
    * @param {{}} [options]
+   * @param {Array} [options.shareWith]
    * @returns {Promise<Share>}
    */
   this._share = function (id, access, options) {
@@ -636,13 +682,43 @@ function OwnCloudStorage(config) {
     }
     return sharesApi.get(dirId)
       .then((shares) => {
-        let extShare = Array.isArray(shares) ? shares[0] : shares;
-        if (extShare) {
-          return updateShare(extShare.id, access, options);
+        let result = [];
+        let promise = Promise.resolve();
+        let addShare = shareInfo => result.push(new Share(shareInfo.shareUrl, shareInfo));
+        if (options && Array.isArray(options.shareWith) && Array.isArray(config.users)) {
+          options.shareWith.forEach((sw) => {
+            const user = config.users.filter(u => u.name === sw)[0];
+            if (typeof user === 'undefined') {
+              return;
+            }
+            let currentShare = shares.filter(s => parseInt(s.share_type) === 0 && s.share_with === sw)[0];
+            if (typeof currentShare !== 'undefined') {
+              promise = promise.then(() => updateShare(currentShare.id, null, getShareOptions(options, user)).then(addShare));
+            } else {
+              promise = promise.then(() => createShare(dirId, null, getShareOptions(options, user)).then(addShare));
+            }
+          });
+        } else {
+          let publicShare;
+          if (Array.isArray(shares) && shares.length > 0) {
+            publicShare = shares.filter(s => parseInt(s.share_type) === 3)[0];
+          }
+          if (typeof publicShare !== 'undefined') {
+            promise = promise.then(() => updateShare(publicShare.id, access, getShareOptions(options)).then(addShare));
+          } else {
+            promise = promise.then(() => createShare(dirId, access, getShareOptions(options)).then(addShare));
+          }
         }
-        return createShare(id, access, options);
+        return promise.then(() => result);
       })
-      .then(data => new Share(data.shareUrl, data));
+      .then((result) => {
+        if (result.length > 1) {
+          return result;
+        } else if (result.length === 1) {
+          return result[0];
+        }
+        return null;
+      });
   };
 
   /**
