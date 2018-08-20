@@ -52,14 +52,33 @@
           "dataSource": "ion://Db"
         }
       },
+      "mongoSessionStorage": {
+        "module": "lib/session/storage/mongo-smw",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
+      "memcacheSessionStorage": {
+        "module": "lib/session/storage/memcache-smw",
+        "options": {
+          "hosts": "[[cache.memcached.locations]]"
+        }
+      },
+      "redisSessionStorage": {
+        "module": "lib/session/storage/redis-smw",
+        "options": {
+          "host": "[[cache.redis.host]]",
+          "port": "[[cache.redis.port]]"
+        }
+      },
       "sessionHandler": {
         "module": "lib/session",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
           "app": "ion://application",
-          "dataSource": "ion://Db",
           "log": "ion://sysLog",
+          "storage": "ion://mongoSessionStorage",
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
@@ -241,7 +260,7 @@
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
-          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "serverLocations": "[[cache.memcached.locations]]",
           "connectOptions": {
             "maxKeySize": "[[cache.memcached.maxKeySize]]",
             "maxExpiration": "[[cache.memcached.maxExpiration]]",

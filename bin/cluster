@@ -13,7 +13,7 @@ const sysLog = new IonLogger(config.log || {});
 let workersToStop = [];
 let stopping = false;
 
-cluster.setupMaster(Object.assign(configMaster, {exec: 'bin/www'}));
+cluster.setupMaster(Object.assign({}, configMaster, {exec: 'bin/www'}));
 
 function startWorkers() {
   if (!stopping) {
