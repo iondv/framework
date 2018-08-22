@@ -21,7 +21,7 @@ if (cluster.isMaster) {
   if (numWorkers > cpus) {
     numWorkers = cpus;
   }
-  var stopping = false;
+  let stopping = false;
 
   if (clusterConfig.master && typeof clusterConfig.master === 'object') {
     cluster.setupMaster(clusterConfig.master);
