@@ -52,25 +52,6 @@
           "dataSource": "ion://Db"
         }
       },
-      "mongoSessionStorage": {
-        "module": "lib/session/storage/mongo-smw",
-        "options": {
-          "dataSource": "ion://Db"
-        }
-      },
-      "memcacheSessionStorage": {
-        "module": "lib/session/storage/memcache-smw",
-        "options": {
-          "hosts": "[[cache.memcached.locations]]"
-        }
-      },
-      "redisSessionStorage": {
-        "module": "lib/session/storage/redis-smw",
-        "options": {
-          "host": "[[cache.redis.host]]",
-          "port": "[[cache.redis.port]]"
-        }
-      },
       "sessionHandler": {
         "module": "lib/session",
         "initMethod": "init",
@@ -78,7 +59,10 @@
         "options": {
           "app": "ion://application",
           "log": "ion://sysLog",
-          "storage": "ion://mongoSessionStorage",
+          "storage": {
+            "type": "mongodb",
+            "dataSource": "ion://Db"
+          },
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
@@ -353,6 +337,13 @@
           "acl": "ion://aclProvider",
           "keyProvider": "ion://keyProv",
           "workflow": "ion://workflows",
+          "log": "ion://sysLog"
+        }
+      },
+      "background": {
+        "module": "core/impl/Background",
+        "options": {
+          "dataSource": "ion://Db",
           "log": "ion://sysLog"
         }
       }
