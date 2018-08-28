@@ -555,7 +555,7 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
   } else {
     let aname = '$' + (prefix || '') + pm.name;
     let floatv, datev;
-    if (pm.indexed && !pm.formula) {
+    if (pm.indexed) {
       if (
         pm.type === PropertyTypes.STRING ||
         pm.type === PropertyTypes.URL ||

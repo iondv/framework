@@ -259,10 +259,11 @@ function DataRepository() {
 
   /**
    * @param {Item} item
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this.recache = function (item) {
-    return this._recache(item);
+  this.recache = function (item, options) {
+    return this._recache(item, options);
   };
 }
 
