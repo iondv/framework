@@ -1694,6 +1694,7 @@ function IonDataRepository(options) {
    * @param {{}} [conditions]
    * @param {{}} [options]
    * @param {Boolean} [options.skipCacheRefresh]
+   * @param {Boolean} [options.skipCacheDependencies]
    */
   function refreshCaches(item, conditions, options) {
     if (options && options.skipCacheRefresh) {
@@ -1721,9 +1722,11 @@ function IonDataRepository(options) {
         eager.push(...item.getMetaClass().getForcedEnrichment());
       }
 
-      let cd = item.getMetaClass().getCacheDependencies();
-
-      eager.push(...cd);
+      let cd = [];
+      if (!options || !options.skipCacheDependencies) {
+        cd.push(...item.getMetaClass().getCacheDependencies());
+        eager.push(...cd);
+      }
 
       let p = eager.length ?
         _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
@@ -2597,10 +2600,11 @@ function IonDataRepository(options) {
 
   /**
    * @param {Item} item
+   * @param {{}} [options]
    * @returns {Promise}
    */
-  this._recache = function (item) {
-    return refreshCaches(item, null, {});
+  this._recache = function (item, options) {
+    return refreshCaches(item, null, options);
   };
 }
 
