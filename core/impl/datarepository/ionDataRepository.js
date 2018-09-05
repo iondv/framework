@@ -1173,7 +1173,24 @@ function IonDataRepository(options) {
   function checkRequired(cm, data, lazy, warn) {
     let props = cm.getPropertyMetas();
     let invalidAttrs = [];
+    let result = Promise.resolve();
     for (let i = 0; i < props.length; i++) {
+      if (
+        props[i].type === PropertyTypes.REFERENCE &&
+        Array.isArray(props[i].allowedSubclasses) &&
+        props[i].allowedSubclasses.length &&
+        data.hasOwnProperty(props[i].name) &&
+        data[props[i].name]
+      ) {
+        result = result
+          .then(() => _this._getItem(props[i]._refClass.getCanonicalName(), data[props[i].name], {needed: {}}))
+          .then((check) => {
+            if (!isSubclassAllowed(cm, props[i].allowedSubclasses, check.getMetaClass())) {
+              throw new Error(`Обьекты класса "${check.getMetaClass().getCaption()}" недопустимы в ссылке "${cm.getCaption()}.${props[i].caption}".`);
+            }
+          });
+      }
+
       if (
         props[i].type !== PropertyTypes.COLLECTION &&
         props[i].name !== '__class' &&
@@ -1194,6 +1211,7 @@ function IonDataRepository(options) {
         options.log.warn('Ошибка контроля целостности сохраняемого объекта', err.message);
       }
     }
+    return result;
   }
 
   /**
@@ -1785,8 +1803,8 @@ function IonDataRepository(options) {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           return autoAssign(cm, updates, false, options.user);
         })
+        .then(() => checkRequired(cm, updates, false, options.ignoreIntegrityCheck))
         .then(() => {
-          checkRequired(cm, updates, false, options.ignoreIntegrityCheck);
           let fileSavers = [];
           prepareFileSavers('new', cm, fileSavers, updates);
           return Promise.all(fileSavers);
@@ -1931,7 +1949,9 @@ function IonDataRepository(options) {
             if (cm.getChangeTracker()) {
               updates[cm.getChangeTracker()] = new Date();
             }
-            checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
+            return checkRequired(cm, updates, true, options.ignoreIntegrityCheck);
+          })
+          .then(() => {
             let fileSavers = [];
             prepareFileSavers(id, cm, fileSavers, updates);
             return Promise.all(fileSavers);
@@ -2022,7 +2042,7 @@ function IonDataRepository(options) {
       if (cm.isAbstract()) {
         throw new Error('Обьект абстрактного класса не может быть создан!');
       }
-      
+
       let rcm = getRootType(cm);
 
       let refUpdates = {};
@@ -2249,9 +2269,11 @@ function IonDataRepository(options) {
         updates[cm.getChangeTracker()] = new Date();
       }
       let fileSavers = [];
-      prepareFileSavers('bulk', cm, fileSavers, updates);
-      checkRequired(cm, updates, true, true);
-      return Promise.all(fileSavers)
+      return checkRequired(cm, updates, true, true)
+        .then(() => {
+          prepareFileSavers('bulk', cm, fileSavers, updates);
+          return Promise.all(fileSavers);
+        })
         .then(() => prepareFilterValues(cm, addDiscriminatorFilter(options.filter, cm, options.skipSubClasses)))
         .then((filter) => {
           if (options.user) {
@@ -2295,18 +2317,28 @@ function IonDataRepository(options) {
             let updates = {};
             let act = false;
             for (let k = 0; k < collections.length; k++) {
-              let src = m.base[collections[k]] || [];
-              for (let j = 0; j < details.length; j++) {
-                if (details[j]) {
-                  if (action === 'eject') {
-                    src.splice(src.indexOf(details[j].getItemId()), 1);
-                  } else if (src.indexOf(details[j].getItemId()) < 0) {
-                    src.push(details[j].getItemId());
+              let pm = m.getMetaClass().getPropertyMeta(collections[k]);
+              if (pm && pm.type === PropertyTypes.COLLECTION) {
+                let src = m.base[collections[k]] || [];
+                for (let j = 0; j < details.length; j++) {
+                  if (details[j]) {
+                    if (action === 'eject') {
+                      src.splice(src.indexOf(details[j].getItemId()), 1);
+                    } else if (src.indexOf(details[j].getItemId()) < 0) {
+                      if (
+                        !Array.isArray(pm.allowedSubclasses) ||
+                        isSubclassAllowed(m.getMetaClass(), pm.allowedSubclasses, details[j].getMetaClass())
+                      ) {
+                        src.push(details[j].getItemId());
+                      } else {
+                        throw new Error(`Обьекты класса "${details[j].getMetaClass().getCaption()}" недопустимы в коллекции "${m.getMetaClass().getCaption()}.${pm.caption}".`);
+                      }
+                    }
                   }
                 }
+                updates[collections[k]] = src;
+                act = true;
               }
-              updates[collections[k]] = src;
-              act = true;
             }
             if (act) {
               let mrcm = getRootType(m.getMetaClass());
@@ -2316,6 +2348,10 @@ function IonDataRepository(options) {
         });
     });
     return worker;
+  }
+
+  function isSubclassAllowed(mc, asc, sc) {
+    return (asc.indexOf(sc.getCanonicalName()) >= 0) || (asc.indexOf(sc.getName()) >= 0 && sc.getNamespace() === mc.getNamespace());
   }
 
   /**
@@ -2336,26 +2372,34 @@ function IonDataRepository(options) {
 
     let event = master.getMetaClass().getCanonicalName() + '.' + collection + '.' + (operation ? 'put' : 'eject');
 
+    let asc = [];
+    if (Array.isArray(pm.allowedSubclasses) && pm.allowedSubclasses.length) {
+      asc = pm.allowedSubclasses;
+    }
+
     if (pm.backRef) {
       let update = {};
       update[pm.backRef] = operation ? (pm.binding ? master.get(pm.binding) : master.getItemId()) : null;
 
-      let writers = [];
-      for (let i = 0; i < details.length; i++) {
-        writers.push(_this._editItem(details[i].getMetaClass().getCanonicalName(), details[i].getItemId(), update));
-      }
+      let writers = Promise.resolve();
+      details.forEach((d) => {
+        if (!asc.length || isSubclassAllowed(master.getMetaClass(), asc, d.getMetaClass())) {
+          writers = writers.then(() => _this._editItem(d.getClassName(), d.getItemId(), update));
+        } else {
+          throw new Error(`Обьекты класса "${d.getMetaClass().getCaption()}" недопустимы в коллекции "${master.getMetaClass().getCaption()}.${pm.caption}".`);
+        }
+      });
 
-      return Promise.all(writers)
-        .then(function () {
-          return _this.trigger({
+      return writers
+        .then(() => _this.trigger({
             type: event,
             master: master,
             details: details
-          });
-        });
+          })
+        );
     } else {
       return editCollections([master], [collection], details, operation ? 'put' : 'eject')
-        .then(function () {
+        .then(() => {
           if (pm.backColl) {
             let colls = [];
             for (let i = 0; i < details.length; i++) {
