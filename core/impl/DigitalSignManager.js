@@ -190,21 +190,17 @@ function DigitalSignManager(options) {
             if (!opts.asBase64) {
               if (Array.isArray(signatures[i].signature)) {
                 sign = [];
-                for (i = 0; i < signatures[i].signature.length; i++) {
-                  sign.push(base64.toByteArray(signatures[i].signature[i]));
-                }
+                signatures[i].signature.forEach((sig) => sign.push(base64.toByteArray(sig)));
               } else if (typeof signatures[i].signature === 'string') {
                 sign = base64.toByteArray(signatures[i].signature);
               }
 
               if (Array.isArray(signatures[i].data)) {
                 data = [];
-                for (i = 0; i < signatures[i].data.length; i++) {
-                  data.push({
-                    mimeType: signatures[i].data[i].mimeType,
-                    content: base64.toByteArray(signatures[i].data[i].content)
-                  });
-                }
+                signatures[i].data.forEach((dt) => data.push({
+                  mimeType: dt.mimeType,
+                  content: base64.toByteArray(dt.content)
+                }));
               } else if (typeof signatures[i].signature === 'string') {
                 data = {
                   mimeType: signatures[i].data.mimeType,

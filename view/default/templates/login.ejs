@@ -7,8 +7,7 @@
   <base id="baseUrl" href="<%=baseUrl%>">
   <link rel="shortcut icon" href="/favicon.ico">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
-  <link href="css/essentials.min.css" rel="stylesheet" type="text/css">
-  <link href="css/layout.min.css" rel="stylesheet" type="text/css">
+  <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
@@ -55,11 +54,11 @@
         </button>
         <div class="forgot-password pull-right">
           <% if (canRegister) { %>
-          <a href="register"><b>Зарегистрироваться</b></a>
+          <a class="btn btn-link" href="register"><b>Зарегистрироваться</b></a>
           <% } %>
           <% if (goHome) { %>
           &nbsp;&nbsp;
-          <a href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
+          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
           <% } %>
         </div>
       </footer>
