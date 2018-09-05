@@ -1,5 +1,5 @@
 {
-  "name": "ion-platform",
+  "name": "iondv-framework",
   "lint-staged": {
     "*.js": [
       "eslint --fix",
@@ -18,10 +18,10 @@
   },
   "private": true,
   "repository": {
-    "url": "https://git.iondv.ru/ION/ion-portal.git",
+    "url": "https://git.iondv.ru/ION/platform.git",
     "type": "git"
   },
-  "version": "1.16.0",
+  "version": "1.17.0",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -89,7 +89,7 @@
     "lint-staged": "^5.0.0",
     "run-sequence": "latest"
   },
-  "homepage": "https://git.iondv.ru/ION/ion-portal",
+  "homepage": "https://git.iondv.ru/ION/platform",
   "delDependence": {
     "passport-vkontakte": "latest",
     "stream-buffers": "latest",
