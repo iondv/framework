@@ -60,6 +60,7 @@ function AclMock() {
  * @param {AclProvider} [options.acl]
  * @param {WorkflowProvider} [options.workflow]
  * @param {{}} [options.accessManager]
+ * @param {Calculator} [options.calc]
  * @constructor
  */
 function SecuredDataRepository(options) {
@@ -540,17 +541,69 @@ function SecuredDataRepository(options) {
     return result;
   }
 
+
+  function checkSid(sid, item, user) {
+    let actor = sid;
+    if (sid && sid[0] === '$') {
+      let pn = sid.substr(1);
+      actor = item.property(pn).evaluate();
+      if (!actor) {
+        actor = item.property(pn).getValue();
+      }
+    }
+    if (actor) {
+      actor = Array.isArray(actor) ? actor : [actor];
+      for (let i = 0; i < actor.length; i++) {
+        let v = actor[i];
+        if (v instanceof Item) {
+          v = v.getItemId();
+        }
+        if (user.isMe(v)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  function checkSidsDisj(sids, item, user) {
+    if (Array.isArray(sids)) {
+      for (let i = 0; i < sids.length; i++) {
+        let r = (Array.isArray(sids[i])) ? checkSidsConj(sids[i], item, user) : checkSid(sids[i], item, user);
+        if (r) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      return checkSid(sids, item, user);
+    }
+  }
+
+  function checkSidsConj(sids, item, user) {
+    if (Array.isArray(sids)) {
+      for (let i = 0; i < sids.length; i++) {
+        let r = (Array.isArray(sids[i])) ? checkSidsDisj(sids[i], item, user) : checkSid(sids[i], item, user);
+        if (!r) {
+          return false;
+        }
+      }
+      return sids.length ? true : false;
+    } else {
+      return checkSid(sids, item, user);
+    }
+  }
+
   /**
-   * @param {{user: User}} options
+   * @param {{user: User}} moptions
    * @param {{}} [permMap]
    * @returns {Promise.<TResult>}
    */
-  function setItemPermissions(options, permMap, noDrill) {
+  function setItemPermissions(moptions, permMap, noDrill) {
     /**
      * @param {Item} item
      */
     return function (item) {
-      if (!item || !options.user) {
+      if (!item || !moptions.user) {
         return Promise.resolve(item);
       }
       let p;
@@ -560,7 +613,7 @@ function SecuredDataRepository(options) {
 
         if (!statics) {
           p = aclProvider.getPermissions(
-            options.user.id(), [
+            moptions.user.id(), [
               globalMarker,
               classPrefix + item.getClassName(),
               itemPrefix + item.getClassName() + '@' + item.getItemId()
@@ -594,42 +647,51 @@ function SecuredDataRepository(options) {
               let result = Promise.resolve();
               Object.keys(roleConf).forEach((role) => {
                 let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
+                let sid = [];
+                if (Array.isArray(roleConf[role].sids)) {
+                  sid.push(...roleConf[role].sids);
+                }
                 if (roleConf[role].attribute) {
-                  let actor = item.property(roleConf[role].attribute).evaluate();
-                  if (!actor) {
-                    actor = item.property(roleConf[role].attribute).getValue();
-                  }
-                  if (actor) {
-                    actor = Array.isArray(actor) ? actor : [actor];
-                    actor.forEach((actor) => {
-                      if (actor instanceof Item) {
-                        actor = actor.getItemId();
+                  sid.push('$' + roleConf[role].attribute);
+                }
+
+                if (sid.length) {
+                  if (checkSidsDisj(sid, item, moptions.user)) {
+                    result = result.then(() => true);
+                    if (roleConf[role].conditions && options.calc) {
+                      if (typeof roleConf[role].__conditions === 'undefined') {
+                        roleConf[role].__conditions = options.calc.parseFormula(roleConf[role].conditions);
                       }
-                      if (options.user.isMe(actor)) {
-                        result = result
-                          .then(() => {
-                            if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
-                              return rolePermissionCache[role];
-                            }
-                            return aclProvider.getPermissions(role, resid, true);
-                          })
-                          .then((permissions) => {
-                            if (!rolePermissionCache[role]) {
-                              rolePermissionCache[role] = {};
-                            }
-                            rolePermissionCache[role][resid] = permissions[resid] || {};
-                            if (permissions[resid]) {
-                              for (let p in permissions[resid]) {
-                                if (permissions[resid].hasOwnProperty(p)) {
-                                  if (!item.permissions[p]) {
-                                    item.permissions[p] = permissions[resid][p];
-                                  }
-                                }
+                      if (roleConf[role].__conditions) {
+                        result = result.then(() => roleConf[role].__conditions.apply(item));
+                      }
+                    }
+
+                    result = result
+                      .then((applicable) => {
+                        if (!applicable) {
+                          return {};
+                        }
+                        if (rolePermissionCache[role] && rolePermissionCache[role][resid]) {
+                          return rolePermissionCache[role];
+                        }
+                        return aclProvider.getPermissions(role, resid, true);
+                      })
+                      .then((permissions) => {
+                        if (!rolePermissionCache[role]) {
+                          rolePermissionCache[role] = {};
+                        }
+                        rolePermissionCache[role][resid] = permissions[resid] || {};
+                        if (permissions[resid]) {
+                          for (let p in permissions[resid]) {
+                            if (permissions[resid].hasOwnProperty(p)) {
+                              if (!item.permissions[p]) {
+                                item.permissions[p] = permissions[resid][p];
                               }
                             }
-                          });
-                      }
-                    });
+                          }
+                        }
+                      });
                   }
                 }
               });
@@ -638,7 +700,7 @@ function SecuredDataRepository(options) {
           })
           .then(() =>
             workflow ?
-              workflow.getStatus(item, options)
+              workflow.getStatus(item, moptions)
                 .then((status) => {
                   item.permissions = merge(false, true, item.permissions || {}, status.itemPermissions);
                   item.attrPermissions = status.propertyPermissions || {};
@@ -648,7 +710,7 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr)) :
-              aclProvider.getPermissions(options.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
+              aclProvider.getPermissions(moptions.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap)))))
           .then((ap) => {
             item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           });
@@ -676,11 +738,11 @@ function SecuredDataRepository(options) {
 
             if (Array.isArray(items) && items.length) {
               return (
-                permMap ? Promise.resolve(clone(permMap)) : getPermMap(items, options)
+                permMap ? Promise.resolve(clone(permMap)) : getPermMap(items, moptions)
               ).then((permMap) => {
                 let w1 = Promise.resolve();
                 items.forEach((ri) => {
-                  w1 = w1.then(() => setItemPermissions(options, permMap)(ri));
+                  w1 = w1.then(() => setItemPermissions(moptions, permMap)(ri));
                 });
                 return w1;
               });

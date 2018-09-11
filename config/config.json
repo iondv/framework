@@ -334,7 +334,8 @@
           "acl": "ion://aclProvider",
           "keyProvider": "ion://keyProv",
           "workflow": "ion://workflows",
-          "log": "ion://sysLog"
+          "log": "ion://sysLog",
+          "calc": "lazy://calculator"
         }
       }
     }
