@@ -79,6 +79,17 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, byRefMask) {
   return result;
 }
 
+function lazyLoader(obj, name, f) {
+  if (!obj.__lazy_loaders) {
+    obj.__lazy_loaders = {};
+  }
+  if (!obj.__lazy_loaders[name]) {
+    obj.__lazy_loaders[name] = f()/*.then((r) => {delete obj.__lazy_loaders[name];return r;})*/;
+  }
+  return obj.__lazy_loaders[name];
+}
+
+
 function objProp(obj, nm, dataRepoGetter, needed) {
   if (!nm) {
     return null;
@@ -132,14 +143,21 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                 if (!obj.getItemId()) {
                   return null;
                 }
-                return dr.getList(p.meta._refClass.getCanonicalName(),
-                  {
-                    filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
-                    needed: needed || {}
-                  })
-                  .then(items => items.length ? items[0] : null);
+                return lazyLoader(obj, p.getName(),
+                  () =>
+                    dr.getList(
+                      p.meta._refClass.getCanonicalName(),
+                      {
+                        filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
+                        needed: needed || {}
+                      })
+                      .then(items => items.length ? items[0] : null)
+                );
               } else {
-                return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
+                return lazyLoader(obj, p.getName(),
+                  () =>
+                    dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}})
+                );
               }
             }
           }
@@ -150,13 +168,14 @@ function objProp(obj, nm, dataRepoGetter, needed) {
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
             let dr = dataRepoGetter();
             if (dr instanceof DataRepository) {
-              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
+              return lazyLoader(obj, p.getName(), () => dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
                 .catch((err) => {
                   if (err.code === Errors.ITEM_NOT_FOUND) {
                     return null;
                   }
                   return Promise.reject(err);
-                });
+                })
+              );
             }
           }
           return v;
