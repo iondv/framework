@@ -102,6 +102,7 @@ function produceOverlay(meta, options) {
  * @returns {Promise}
  */
 function watermarkApplier(imgSource, options) {
+  console.log(imgSource, options);
   let format = options.format || 'png';
   let image = sharp(imgSource);
   return image
