@@ -61,7 +61,7 @@ function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   text = text || '';
   width = width || 0;
   height = height || 0;
-  font = font || 'Arial';
+  // font = font || 'Arial';
   fontSize = fontSize || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
