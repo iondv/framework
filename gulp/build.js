@@ -119,7 +119,7 @@ function copyVendorResources(src, dst, module) {
   });
 }
 
-function bower(p) {
+function frontend(p) {
   return function () {
     return new Promise(function (resolve, reject) {
       try {
@@ -260,8 +260,10 @@ function buildDir(start, dir) {
   for (let i = 0; i < modules.length; i++) {
     stat = fs.statSync(path.join(modulesDir, modules[i]));
     if (stat.isDirectory()) {
-      console.log('Установка пакетов бэкенда для пути ' + path.join(modulesDir, modules[i]));
-      f = f.then(npm(path.join(modulesDir, modules[i])));
+      f = f.then(npm(path.join(modulesDir, modules[i])))
+        .then(() => {
+          console.log('Установлен пакет бэкенда для пути ' + path.join(modulesDir, modules[i]));
+        });
     }
   }
   return f;
@@ -323,14 +325,14 @@ function themeDirs() {
   return themes;
 }
 
-gulp.task('build:bower', function (done) {
+gulp.task('build:frontend', function (done) {
   let themes = themeDirs();
   let start = null;
   for (let i = 0; i < themes.length; i++) {
     if (start) {
-      start = start.then(bower(themes[i]));
+      start = start.then(frontend(themes[i]));
     } else {
-      start = bower(themes[i])();
+      start = frontend(themes[i])();
     }
   }
   if (!start) {
