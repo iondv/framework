@@ -1,4 +1,5 @@
 const url = require('url');
+const path = require('path');
 
 function urlResolver(uri) {
   if (arguments.length > 1) {
@@ -27,3 +28,12 @@ function slashChecker(path) {
 }
 
 exports.slashChecker = slashChecker;
+
+function ensureDirSep(dir) {
+  if (typeof dir === 'string') {
+    return dir.split(path.sep).join('/');
+  }
+  return dir;
+}
+
+exports.ensureDirSep = ensureDirSep;
