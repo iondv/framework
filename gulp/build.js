@@ -27,7 +27,7 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', function (done) {
-  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function (err) {
+  runSequence('build:npm', 'build:frontend', 'compile:less', 'minify:css', 'minify:js', function (err) {
     if (!err) {
       console.log('Сборка платормы, модулей и приложений завершена.');
     }
@@ -67,6 +67,12 @@ function run(path, command, args, resolve, reject) {
 function npm(path) {
   return new Promise(function (resolve, reject) {
     run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
+  });
+}
+
+function yarn(path) {
+  return new Promise(function (resolve, reject) {
+    run(path, 'yarn', ['install', '--production'], resolve, reject);
   });
 }
 
@@ -135,9 +141,9 @@ function frontend(p) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Установка пакетов фронтенда для пути ' + p);
-        npm(p)
+        yarn(p)
           .then(function () {
-            let srcDir = path.join(p, bc.directory);
+            let srcDir = path.join(p, './node_modules');
             try {
               fs.accessSync(srcDir);
             } catch (err) {
