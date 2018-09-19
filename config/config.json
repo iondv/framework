@@ -36,9 +36,9 @@
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
-                  "socketTimeoutMS": "[[db.operTimeOut]]"
+                  "socketTimeoutMS": "[[db.operTimeOut]]",
+                  "poolSize": "[[db.poolSize]]"
                 },
-                "connectionLimit": 10,
                 "user": "[[db.user]]",
                 "password": "[[db.pwd]]"
               }
@@ -59,6 +59,7 @@
         "options": {
           "app": "ion://application",
           "dataSource": "ion://Db",
+          "log": "ion://sysLog",
           "session": {
             "secret": "ion:demo:secret",
             "resave": false,
@@ -86,6 +87,7 @@
         "initMethod": "init",
         "initLevel": 1,
         "options":{
+          "log": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       },
@@ -142,10 +144,8 @@
       },
       "calculator": {
         "module": "core/impl/Calculator",
-        "initMethod": "init",
-        "initLevel": 1,
         "options": {
-          "dataRepo": "dataRepo",
+          "dataRepo": "lazy://dataRepo",
           "sequenceProvider": "ion://sequenceProvider"
         }
       },
@@ -241,7 +241,7 @@
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
-          "serverLocations": ["[[cache.memcached.location1]]", "[[cache.memcached.location2]]"],
+          "serverLocations": "[[cache.memcached.locations]]" ,
           "connectOptions": {
             "maxKeySize": "[[cache.memcached.maxKeySize]]",
             "maxExpiration": "[[cache.memcached.maxExpiration]]",
@@ -308,7 +308,7 @@
           "dataSource": "ion://Db",
           "metaRepo": "ion://metaRepo",
           "dataRepo": "ion://dataRepo",
-          "calc": "ion://calculator"
+          "calc": "lazy://calculator"
         }
       },
       "queryParser": {
@@ -334,7 +334,8 @@
           "acl": "ion://aclProvider",
           "keyProvider": "ion://keyProv",
           "workflow": "ion://workflows",
-          "log": "ion://sysLog"
+          "log": "ion://sysLog",
+          "calc": "lazy://calculator"
         }
       }
     }

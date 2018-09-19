@@ -765,28 +765,58 @@ function DsMetaRepository(options) {
                 }
                 if (pm.type === PropertyTypes.REFERENCE && typeof pm.refClass !== 'undefined') {
                   try {
-                    pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.namespace);
+                    pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.getNamespace());
                   } catch (e) {
-                    throw new Error('Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
-                      cm.getCanonicalName() + '.' + pm.name + '.');
+                    throw new Error(
+                      'Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
+                      cm.getCanonicalName() + '.' + pm.name + '.'
+                    );
                   }
                 } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
                   try {
                     pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
                   } catch (e) {
-                    throw new Error('Не найден класс "' + pm.itemsClass + '" по ссылке атрибута ' +
-                      cm.getCanonicalName() + '.' + pm.name + '.');
+                    throw new Error(
+                      'Не найден класс "' + pm.itemsClass + '" по ссылке атрибута ' +
+                      cm.getCanonicalName() + '.' + pm.name + '.'
+                    );
                   }
                 }
                 if (pm.formula && options.calc instanceof Calculator) {
-                  pm._formula = options.calc.parseFormula(pm.formula);
+                  try {
+                    if (typeof pm.formula === 'string') {
+                      (options.log || console).warn(
+                        'Формула вычисляемого атрибута "' + cm.getCanonicalName() + '.' + pm.name +
+                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
+                      );
+                    }
+                    pm._formula = options.calc.parseFormula(pm.formula);
+                  } catch (e) {
+                    throw new Error(
+                      'Некорректно задана формула для вычисляемого атрибута "' +
+                      cm.getCanonicalName() + '.' + pm.name + '": ' + e.message
+                    );
+                  }
                 }
                 if (
                   pm.defaultValue &&
-                  (typeof pm.defaultValue === 'object' || pm.defaultValue.indexOf('(') > 0) &&
+                  (
+                    typeof pm.defaultValue === 'object' ||
+                    (pm.defaultValue.indexOf('(') > 0 && pm.defaultValue.indexOf(')') > 0)
+                  ) &&
                   options.calc instanceof Calculator
                 ) {
-                  pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
+                  try {
+                    pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
+                    if (typeof pm.defaultValue === 'string') {
+                      (options.log || console).warn(
+                        'Формула значения по умолчанию атрибута "' + cm.getCanonicalName() + '.' + pm.name +
+                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
+                      );
+                    }
+                  } catch (e) {
+                    pm._dvFormula = null;
+                  }
                 }
               }
             }
@@ -873,9 +903,16 @@ function DsMetaRepository(options) {
         case 'collection': assignVm(viewMeta.collectionModels, compileStyles(sortViewElements(views[i]))); break;
         case 'item': {
           let pathParts = views[i].path.split('.');
-          if (pathParts[0] === 'workflows') {
-            let wf = pathParts[1];
-            let state = pathParts[2];
+          let pathParts2 = pathParts[0].split(':');
+          let wf, state;
+          if (pathParts[0] === 'workflows' && pathParts.length === 3 && !navMeta.nodes[views[i].path]) {
+            wf = pathParts[1];
+            state = pathParts[2];
+          } else if (pathParts2[0] === 'workflows' && pathParts.length === 2 && pathParts2.length === 2) {
+            wf = pathParts2[1];
+            state = pathParts[1];
+          }
+          if (wf && state) {
             let cm = _this._getMeta(views[i].className, views[i].version);
             if (cm) {
               if (wf.indexOf('@') < 0) {
@@ -1070,8 +1107,8 @@ function DsMetaRepository(options) {
           try {
             acceptUserTypes(results[0]);
             acceptClassMeta(results[1]);
-            acceptViews(results[2]);
             acceptNavigation(results[3]);
+            acceptViews(results[2]);
             acceptWorkflows(results[4]);
             return Promise.resolve();
           } catch (err) {

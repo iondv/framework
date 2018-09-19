@@ -15,6 +15,7 @@ const merge = require('merge');
 const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
+const Share = require('core/interfaces/ResourceStorage/lib/Share');
 
 /* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
@@ -437,20 +438,32 @@ function FsStorage(options) {
       });
   };
 
+  /**
+   *
+   * @param {String} id
+   * @param {String} [access]
+   * @param {{}} [options]
+   * @returns {Promise<Share>}
+   */
   this._share = function (id) {
     if (!_options.shareBase) {
       return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
     }
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', id]}, {shared: true})
-      .then(() => _options.shareBase + '/' + id);
+      .then(() => new Share(_options.shareBase + '/' + id, {}));
   };
 
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise<Share>}
+   */
   this._currentShare  = function (id) {
     if (!_options.shareBase) {
-      throw new Error('Не настроен базовый URL файлов с общим доступом!');
+      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
     }
-    return _options.shareBase + '/' + id;
+    return Promise.resolve(new Share(_options.shareBase + '/' + id, {}));
   };
 
   this._deleteShare = function (share) {
@@ -464,6 +477,32 @@ function FsStorage(options) {
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', fileId]}, {shared: false})
       .then(() => true);
+  };
+
+  /**
+   * @param {String} id
+   * @param {String} access
+   * @returns {Promise}
+   */
+  this._setShareAccess = function () {
+    return Promise.resolve();
+  };
+
+  /**
+   * @param {String} id
+   * @param {{}} options
+   * @returns {Promise<Share>}
+   */
+  this._setShareOptions = function (id) {
+    return Promise.resolve(new Share(_options.shareBase + '/' + id, {}));
+  };
+
+  this._fileRoute = function () {
+    return _options.urlBase + '/:id';
+  };
+
+  this._shareRoute = function () {
+    return _options.shareBase + '/:id';
   };
 
   this.fileOptionsSupport = function () {

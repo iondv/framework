@@ -20,7 +20,7 @@ function findComma(src, start) {
  * @param {String} argsSrc
  * @returns {Array}
  */
-function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
+function parseArgs(argsSrc, funcLib, dataRepoGetter, byRefMask) {
   if (!argsSrc) {
     return [];
   }
@@ -63,22 +63,32 @@ function parseArgs(argsSrc, funcLib, warn, dataRepoGetter, byRefMask) {
         evaluate(
           argsSrc.substring(start, closeBracketPos + 1).trim(),
           funcLib,
-          warn,
           dataRepoGetter,
           cbr && byRefMask.indexOf(i) >= 0
         )
       );
       commaPos = findComma(argsSrc, closeBracketPos + 1);
     } else if (commaPos > -1) {
-      result.push(evaluate(argsSrc.substring(start, commaPos).trim(), funcLib, warn, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
+      result.push(evaluate(argsSrc.substring(start, commaPos).trim(), funcLib, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
     } else {
-      result.push(evaluate(argsSrc.substring(start).trim(), funcLib, warn, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
+      result.push(evaluate(argsSrc.substring(start).trim(), funcLib, dataRepoGetter, cbr && byRefMask.indexOf(i) >= 0));
     }
     start = commaPos + 1;
     i++;
   } while (commaPos > -1);
   return result;
 }
+
+function lazyLoader(obj, name, f) {
+  if (!obj.__lazy_loaders) {
+    obj.__lazy_loaders = {};
+  }
+  if (!obj.__lazy_loaders[name]) {
+    obj.__lazy_loaders[name] = f()/*.then((r) => {delete obj.__lazy_loaders[name];return r;})*/;
+  }
+  return obj.__lazy_loaders[name];
+}
+
 
 function objProp(obj, nm, dataRepoGetter, needed) {
   if (!nm) {
@@ -133,14 +143,21 @@ function objProp(obj, nm, dataRepoGetter, needed) {
                 if (!obj.getItemId()) {
                   return null;
                 }
-                return dr.getList(p.meta._refClass.getCanonicalName(),
-                  {
-                    filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
-                    needed: needed || {}
-                  })
-                  .then(items => items.length ? items[0] : null);
+                return lazyLoader(obj, p.getName(),
+                  () =>
+                    dr.getList(
+                      p.meta._refClass.getCanonicalName(),
+                      {
+                        filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
+                        needed: needed || {}
+                      })
+                      .then(items => items.length ? items[0] : null)
+                );
               } else {
-                return dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}});
+                return lazyLoader(obj, p.getName(),
+                  () =>
+                    dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}})
+                );
               }
             }
           }
@@ -151,13 +168,14 @@ function objProp(obj, nm, dataRepoGetter, needed) {
           if (v === null && typeof dataRepoGetter === 'function' && obj.getItemId()) {
             let dr = dataRepoGetter();
             if (dr instanceof DataRepository) {
-              return dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
+              return lazyLoader(obj, p.getName(), () => dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
                 .catch((err) => {
                   if (err.code === Errors.ITEM_NOT_FOUND) {
                     return null;
                   }
                   return Promise.reject(err);
-                });
+                })
+              );
             }
           }
           return v;
@@ -173,21 +191,12 @@ function objProp(obj, nm, dataRepoGetter, needed) {
     }
   } else {
     let pth = nm.split('.');
-    let ctx = obj;
-    for (let i = 0; i < pth.length; i++) {
-      if (ctx.hasOwnProperty(pth[i])) {
-        ctx = ctx[pth[i]];
-        if (ctx instanceof Item) {
-          if (i < pth.length - 1) {
-            return objProp(ctx, pth.slice(i + 1).join('.'), dataRepoGetter, needed);
-          } else {
-            return ctx;
-          }
-        }
-        if (typeof ctx !== 'object' || !ctx) {
-          break;
-        }
+    if (obj.hasOwnProperty(pth[0])) {
+      let ctx = obj[pth[0]];
+      if (!ctx || typeof ctx !== 'object') {
+        return ctx;
       }
+      return objProp(ctx, pth.slice(1).join('.'), dataRepoGetter, needed);
     }
   }
 
@@ -212,7 +221,7 @@ function propertyGetter(nm, dataRepoGetter) {
  * @param {String} formula
  * @returns {*}
  */
-function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
+function evaluate(formula, funcLib, dataRepoGetter, byRef) {
   if (!isNaN(formula)) {
     return Number(formula);
   }
@@ -247,14 +256,14 @@ function evaluate(formula, funcLib, warn, dataRepoGetter, byRef) {
       if (closeBracketPos < 0) {
         throw new Error('Ошибка синтаксиса формулы во фрагменте "' + formula + '"');
       }
-      let args = parseArgs(formula.substring(pos + 1, closeBracketPos).trim(), funcLib, warn, dataRepoGetter, f.byRefMask);
+      let args = parseArgs(formula.substring(pos + 1, closeBracketPos).trim(), funcLib, dataRepoGetter, f.byRefMask);
 
       if (byRef) {
         return function () {return f(args);};
       }
       return funcLib[func](args);
     } else {
-      warn('Не найдена функция ' + func);
+      throw new Error('Не найдена функция ' + func);
     }
   }
 
@@ -269,7 +278,7 @@ function byRefConstructor(f, args) {
   return function () {return f(args);};
 }
 
-function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
+function parseObject(formula, funcLib, dataRepoGetter, byRefMask, byRef) {
   /*
   If (!isNaN(formula)) {
     return Number(formula);
@@ -280,7 +289,7 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
     let result = [];
     let cbr = Array.isArray(byRefMask);
     formula.forEach((v, ind) => {
-      result.push(parseObject(v, funcLib, warn, dataRepoGetter, null, cbr && byRefMask.indexOf(ind) >= 0));
+      result.push(parseObject(v, funcLib, dataRepoGetter, null, cbr && byRefMask.indexOf(ind) >= 0));
     });
     return result;
   }
@@ -297,31 +306,32 @@ function parseObject(formula, funcLib, warn, dataRepoGetter, byRefMask, byRef) {
   let result = {};
   for (let func in formula) {
     if (formula.hasOwnProperty(func)) {
+      let args = formula[func];
       if (func[0] === '&') {
         func = func.substr(1);
         byRef = true;
       }
       if (funcLib.hasOwnProperty(func)) {
         let f = funcLib[func];
-        let args = parseObject(formula[func], funcLib, warn, dataRepoGetter, f.byRefMask);
+        args = parseObject(args, funcLib, dataRepoGetter, f.byRefMask);
         if (byRef) {
           return byRefConstructor(f, args);
         }
         return f(args);
       } else {
-        result[func] = parseObject(formula[func], funcLib, warn, dataRepoGetter);
+        result[func] = parseObject(args, funcLib, dataRepoGetter);
       }
     }
   }
   return result;
 }
 
-module.exports = function (formula, lib, warn, dataRepoGetter) {
+module.exports = function (formula, lib, dataRepoGetter) {
   let result = formula;
   if (typeof formula === 'string') {
-    result = evaluate(formula.trim(), lib, warn, dataRepoGetter);
+    result = evaluate(formula.trim(), lib, dataRepoGetter);
   } else if (formula && typeof formula === 'object' && !(formula instanceof Date)) {
-    result = parseObject(formula, lib, warn, dataRepoGetter);
+    result = parseObject(formula, lib, dataRepoGetter);
   }
   if (typeof result !== 'function') {
     return () => result;

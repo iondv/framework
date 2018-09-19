@@ -21,10 +21,6 @@ function work(col, attr, cond, unique, sep) {
           }
         }
 
-        if (unique && processed(col[i])) {
-          continue;
-        }
-
         let v = null;
         if (attr.indexOf('.') > 0) {
           let att = attr.substr(0, attr.indexOf('.'));
@@ -39,6 +35,9 @@ function work(col, attr, cond, unique, sep) {
         }
 
         if (v) {
+          if (unique && processed(v)) {
+            continue;
+          }
           result = result + (result ? sep : '') + v;
         }
       }

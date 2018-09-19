@@ -7,6 +7,7 @@ const moment = require('moment');
 module.exports = function (str, lang) {
   try {
     let dt;
+    let offset = 0;
     if (lang) {
       dt = moment(str, 'L LT', lang);
       if (!dt.isValid()) {
@@ -15,15 +16,17 @@ module.exports = function (str, lang) {
     }
     if (!dt.isValid()) {
       dt = moment(str, moment.ISO_8601);
+      if (dt.isValid()) {
+        offset = moment.parseZone(str, moment.ISO_8601).utcOffset();
+      }
     }
 
     if (dt.isValid()) {
       dt = dt.toDate();
-      dt.utcOffset = moment.parseZone(str).utcOffset();
+      dt.utcOffset = offset;
       return dt;
     }
   } catch (err) {
-    // Do nothing
+    return null;
   }
-  return null;
 };

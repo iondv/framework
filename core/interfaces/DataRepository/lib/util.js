@@ -6,6 +6,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const DateTypes = require('core/DateTypes');
 const cast = require('core/cast');
 const strToDate = require('core/strToDate');
+const dateOffset = require('core/util/dateOffset');
 const ConditionParser = require('core/ConditionParser');
 const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
@@ -64,27 +65,7 @@ function castValue(value, pm) {
 
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
-    switch (pm.mode) {
-      case DateTypes.REAL:
-        if (typeof v.utcOffset !== 'undefined') {
-          delete v.utcOffset;
-        }
-        break;
-      case DateTypes.LOCALIZED:
-        if (typeof v.utcOffset === 'undefined') {
-          v.utcOffset = v.getTimezoneOffset();
-        }
-        break;
-      case DateTypes.UTC:
-      {
-        let offset = v.utcOffset || v.getTimezoneOffset();
-        v.setUTCMinutes(v.getUTCMinutes() + offset);
-        v.utcOffset = 0;
-      }
-        break;
-      default:
-        throw new Error('Unsupported date mode specified!');
-    }
+    v = dateOffset(v, pm.mode);
   }
   return v;
 }
@@ -513,7 +494,7 @@ function spFilter(cm, pm, or, svre, prefix) {
  * @returns {RegExp | String}
  */
 function createSearchRegexp(search, mode, asString) {
-  var result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
+  let result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
   if (mode === 'contains') {
     result = result.replace(/\s+/g, '\\s+');
   } else if (mode === 'starts') {
@@ -555,7 +536,7 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
   } else {
     let aname = '$' + (prefix || '') + pm.name;
     let floatv, datev;
-    if (pm.indexed && !pm.formula) {
+    if (pm.indexed) {
       if (
         pm.type === PropertyTypes.STRING ||
         pm.type === PropertyTypes.URL ||

@@ -1,3 +1,5 @@
+/* eslint new-cap:off */
+
 /**
  * Created by kras on 27.02.16.
  */
@@ -8,7 +10,6 @@ const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
 const clone = require('clone');
 
-// jshint maxstatements: 50, maxcomplexity: 20
 function MongoAcl(config) {
 
   var _this = this;
@@ -19,17 +20,41 @@ function MongoAcl(config) {
     throw 'Не указан источник данных для подсистемы контроля доступа!';
   }
 
-  this.acl = {};
+  var _acl = null;
+
+  var _db = null;
+
+  var connecting = false;
 
   this.globalMarker = config.allAlias ? config.allAlias : '*';
+
+  function getAcl() {
+    var db = ds.connection();
+    if (_acl && db && db === _db) {
+      return Promise.resolve(_acl);
+    }
+    if (connecting) {
+      return Promise.reject(new Error('Не удалось инициализировать ACL'));
+    }
+    _acl = null;
+    connecting = true;
+    return ds.open().then((db) => {
+      _db = db;
+      connecting = false;
+      _acl = new Acl(new Acl.mongodbBackend(db, config.prefix ? config.prefix : 'ion_acl_'));
+      return _acl;
+    }).catch((err) => {
+      config.log ? config.log.error(err) : console.error(err);
+      connecting = false;
+    });
+  }
 
   /**
    * @returns {Promise}
    * @private
    */
   this._init = function () {
-    this.acl = new Acl(new Acl.mongodbBackend(ds.connection(), config.prefix ? config.prefix : 'ion_acl_'));
-    return Promise.resolve();
+    return getAcl();
   };
 
   /**
@@ -39,46 +64,48 @@ function MongoAcl(config) {
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
-    return new Promise(function (resolve, reject) {
-      var pr = function (err, res) {
-        if (err) {
-          reject(err);
-          return true;
-        }
+    return getAcl().then(acl =>
+      new Promise((resolve, reject) => {
+        var pr = function (err, res) {
+          if (err) {
+            reject(err);
+            return true;
+          }
 
-        if (res) {
-          resolve(res);
-          return true;
-        }
+          if (res) {
+            resolve(res);
+            return true;
+          }
 
-        return false;
-      };
-
-      _this.acl.isAllowed(subject, resource, permissions, function (err, res) {
-        if (!pr(err, res)) {
-          _this.acl.isAllowed(subject, resource, Permissions.FULL, function (err, res) {
+          return false;
+        };
+        acl.isAllowed(subject, resource, permissions, (err, res) => {
             if (!pr(err, res)) {
-              _this.acl.isAllowed(subject, _this.globalMarker, permissions, function (err, res) {
+              acl.isAllowed(subject, resource, Permissions.FULL, (err, res) => {
                 if (!pr(err, res)) {
-                  _this.acl.isAllowed(subject, _this.globalMarker, Permissions.FULL, function (err, res) {
+                  acl.isAllowed(subject, _this.globalMarker, permissions, (err, res) => {
                     if (!pr(err, res)) {
-                      _this.acl.isAllowed(_this.globalMarker, resource, permissions, function (err, res) {
+                      acl.isAllowed(subject, _this.globalMarker, Permissions.FULL, (err, res) => {
                         if (!pr(err, res)) {
-                          _this.acl.isAllowed(_this.globalMarker, resource, Permissions.FULL, function (err, res) {
+                          acl.isAllowed(_this.globalMarker, resource, permissions, (err, res) => {
                             if (!pr(err, res)) {
-                              _this.acl.isAllowed(_this.globalMarker, _this.globalMarker, permissions,
-                                function (err, res) {
-                                  if (!pr(err, res)) {
-                                    _this.acl.isAllowed(_this.globalMarker, _this.globalMarker, Permissions.FULL,
-                                      function (err, res) {
-                                        if (!pr(err, res)) {
-                                          resolve(false);
-                                        }
+                              acl.isAllowed(_this.globalMarker, resource, Permissions.FULL, (err, res) => {
+                                if (!pr(err, res)) {
+                                  acl.isAllowed(_this.globalMarker, _this.globalMarker, permissions,
+                                    (err, res) => {
+                                      if (!pr(err, res)) {
+                                        acl.isAllowed(_this.globalMarker, _this.globalMarker, Permissions.FULL,
+                                          (err, res) => {
+                                            if (!pr(err, res)) {
+                                              resolve(false);
+                                            }
+                                          }
+                                        );
                                       }
-                                    );
-                                  }
+                                    }
+                                  );
                                 }
-                              );
+                              });
                             }
                           });
                         }
@@ -89,9 +116,8 @@ function MongoAcl(config) {
               });
             }
           });
-        }
-      });
-    });
+      })
+    );
   };
 
   /**
@@ -100,16 +126,16 @@ function MongoAcl(config) {
    * @returns {Promise}
    */
   this._getPermissions = function (subject, resources, skipGlobals) {
-    return new Promise(function (resolve, reject) {
-      let r = Array.isArray(resources) ? resources : [resources];
-      let returnGlobal = r.indexOf(_this.globalMarker) >= 0;
-      if (!skipGlobals) {
-        if (r.indexOf(_this.globalMarker) < 0) {
-          r = r.concat([_this.globalMarker]);
-        }
+    let r = Array.isArray(resources) ? resources : [resources];
+    let returnGlobal = r.indexOf(_this.globalMarker) >= 0;
+    if (!skipGlobals) {
+      if (r.indexOf(_this.globalMarker) < 0) {
+        r = r.concat([_this.globalMarker]);
       }
-      let res = null;
-      _this.acl.allowedPermissions(subject, r, function (err, perm) {
+    }
+    let res = null;
+    return getAcl().then(acl => new Promise((resolve, reject) => {
+        acl.allowedPermissions(subject, r, (err, perm) => {
         if (err) {
           return reject(err);
         }
@@ -152,7 +178,7 @@ function MongoAcl(config) {
           return resolve(res);
         }
 
-        _this.acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
+          acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
           if (err) {
             return reject(err);
           }
@@ -167,7 +193,8 @@ function MongoAcl(config) {
           return resolve(res);
         });
       });
-    });
+      })
+    );
   };
 
   /**
@@ -176,20 +203,18 @@ function MongoAcl(config) {
    * @returns {Promise}
    */
   this._getResources = function (subject, permissions) {
-    return new Promise(function (resolve, reject) {
-      var p = Array.isArray(permissions) ? permissions : [permissions];
-      if (p.indexOf(_this.globalMarker) < 0) {
-        p.push(_this._globalMarker);
-      }
-      _this.acl.userRoles(subject, function (err, roles) {
+    let p = Array.isArray(permissions) ? permissions : [permissions];
+    if (p.indexOf(_this.globalMarker) < 0) {
+      p.push(_this._globalMarker);
+    }
+    return getAcl().then(acl => new Promise((resolve, reject) => {
+      acl.userRoles(subject, (err, roles) => {
         if (err) {
           return reject(err);
         }
-        _this.acl.whatResources(roles, p, function (err, resources) {
-          return err ? reject(err) : resolve(resources);
-        });
+        acl.whatResources(roles, p, (err, resources) => err ? reject(err) : resolve(resources));
       });
-    });
+    }));
   };
 
   /**
@@ -197,11 +222,9 @@ function MongoAcl(config) {
    * @returns {Promise}
    */
   this._getCoactors = function (subject) {
-    return new Promise(function (resolve, reject) {
-      _this.acl.userRoles(subject, function (err, roles) {
-        return err ? reject(err) : resolve(roles);
-        });
-    });
+    return getAcl().then(acl => new Promise((resolve, reject) => {
+      acl.userRoles(subject, (err, roles) => err ? reject(err) : resolve(roles));
+    }));
   };
 }
 
