@@ -90,6 +90,7 @@ function produceOverlay(meta, options) {
   options.width = meta.width < options.width ? meta.width : options.width;
   options.height = meta.height < options.height ? meta.height : options.height;
   options.text = options.text || '';
+  console.log(options);
   if (options.overlayPath) {
     return imgOverlay(options);
   }
