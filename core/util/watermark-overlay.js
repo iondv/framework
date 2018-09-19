@@ -105,7 +105,9 @@ function watermarkApplier(imgSource, options) {
   options = options || {};
   if (!process.env.FONTCONFIG_PATH && options.configPath) {
     process.env.FONTCONFIG_PATH = toAbsolute(options.configPath);
+    console.log(toAbsolute(options.configPath));
   }
+  console.log(options);
   let format = options.format || 'png';
   let image = sharp(imgSource);
   return image
