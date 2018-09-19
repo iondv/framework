@@ -10,8 +10,6 @@ const sharp = require('sharp');
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
-// const watermarkStream = require('core/util/watermark-overlay').watermarkStream;
-// const watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
 
 const thumbsDirectoryModes = {
   IGNORE: 'ignore',
@@ -188,7 +186,7 @@ function ImageStorage(options) { // jshint ignore:line
       let name = opts.name || data.originalname || data.name || '';
       let watermarkOptions = clone(options.watermark);
       watermarkOptions.format = path.extname(name).slice(1);
-      const watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
+      const {watermarkApplier} = require('core/util/watermark-overlay');
       p = p.then(() => getDataContents(data))
         .then(source => watermarkApplier(source, watermarkOptions))
         .then((buf) => {

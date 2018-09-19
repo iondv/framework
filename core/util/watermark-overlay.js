@@ -61,7 +61,7 @@ function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   text = text || '';
   width = width || 0;
   height = height || 0;
-  // font = font || 'Arial';
+  font = font || 'Arial';
   fontSize = fontSize || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
@@ -102,6 +102,10 @@ function produceOverlay(meta, options) {
  * @returns {Promise}
  */
 function watermarkApplier(imgSource, options) {
+  options = options || {};
+  if (!process.env.FONTCONFIG_PATH && options.configPath) {
+    process.env.FONTCONFIG_PATH = toAbsolute(options.configPath);
+  }
   let format = options.format || 'png';
   let image = sharp(imgSource);
   return image
@@ -120,6 +124,10 @@ function watermarkApplier(imgSource, options) {
  * @returns {Promise}
  */
 function watermarkStream(imgStream, options) {
+  options = options || {};
+  if (!process.env.FONTCONFIG_PATH && options.configPath) {
+    process.env.FONTCONFIG_PATH = toAbsolute(options.configPath);
+  }
   return new Promise((resolve, reject) => {
     try {
       let image = sharp();
