@@ -145,7 +145,8 @@ di('boot', config.bootstrap,
     try {
       // Тема оформления страниц аутентификации и регистрации
       theme(
-        app, '',
+        app, 
+        '',
         path.normalize(path.join(__dirname, '..')),
         scope.settings.get('theme') || config.theme || 'default', sysLog
       );
