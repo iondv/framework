@@ -1,5 +1,6 @@
 const sharp = require('sharp');
 const Canvas = require('canvas-prebuilt');
+const {Font} = Canvas;
 const {toAbsolute} = require('core/system');
 
 /**
@@ -59,20 +60,26 @@ function imgOverlay({overlayPath, width, height}) {
  */
 function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   text = text || '';
-  width = width || 0;
-  height = height || 0;
-  font = font || 'Arial';
+  width = width || 100;
+  height = height || 100;
   fontSize = fontSize || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
-
+  let fontName = 'monospace';
+  if (typeof font === 'string') {
+    fontName = font;
+  } else if (typeof font === 'object' && font && font.family && font.path) {
+    const fontFace = new Font(font.family, toAbsolute(font.path));
+    ctx.addFont(fontFace);
+    fontName = font.family;
+  }
   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
   ctx.fillRect(0, 0, width, height);
 
   ctx.textBaseline = 'bottom';
   ctx.textAlign = 'right';
-  ctx.font = adjustFontSize(ctx, text, font, fontSize, width);
+  ctx.font = adjustFontSize(ctx, text, fontName, fontSize, width);
   ctx.fillStyle = fontColor;
   ctx.fillText(text, width, height);
 
@@ -90,7 +97,6 @@ function produceOverlay(meta, options) {
   options.width = meta.width < options.width ? meta.width : options.width;
   options.height = meta.height < options.height ? meta.height : options.height;
   options.text = options.text || '';
-  console.log(options);
   if (options.overlayPath) {
     return imgOverlay(options);
   }
@@ -106,9 +112,7 @@ function watermarkApplier(imgSource, options) {
   options = options || {};
   if (!process.env.FONTCONFIG_PATH && options.configPath) {
     process.env.FONTCONFIG_PATH = toAbsolute(options.configPath);
-    console.log(toAbsolute(options.configPath));
   }
-  console.log(options);
   let format = options.format || 'png';
   let image = sharp(imgSource);
   return image
