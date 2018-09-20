@@ -60,9 +60,9 @@ function imgOverlay({overlayPath, width, height}) {
  */
 function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   text = text || '';
-  width = width || 100;
-  height = height || 100;
-  fontSize = fontSize || 48;
+  width = parseInt(width) || 100;
+  height = parseInt(height) || 100;
+  fontSize = parseInt(fontSize) || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
   const ctx = canvas.getContext('2d');
