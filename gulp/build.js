@@ -72,7 +72,11 @@ function npm(path) {
 
 function yarn(path) {
   return new Promise(function (resolve, reject) {
-    run(path, 'yarn', ['install', '--production'], resolve, reject);
+    run(path, 'yarn', ['install', '--production', '--check-files', '--ignore-engines', '--modules-folder', './vendor'], ()=>{
+      run(path, 'yarn', ['autoclean', '--init'], ()=>{
+        run(path, 'yarn', ['autoclean', '--force'], resolve, reject);
+      }, reject);
+    }, reject);
   });
 }
 
@@ -143,7 +147,7 @@ function frontend(p) {
         console.log('Установка пакетов фронтенда для пути ' + p);
         yarn(p)
           .then(function () {
-            let srcDir = path.join(p, './node_modules');
+            let srcDir = path.join(p, './vendor');
             try {
               fs.accessSync(srcDir);
             } catch (err) {
