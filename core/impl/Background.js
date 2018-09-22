@@ -30,10 +30,9 @@ function Background() {
       throw new Error('Task ' + name + '[' + sid + '] is already running!');
     }
 
-
-    let args = ['-task', name, '-uid', uid];
+    let args = ['-task', name, '-uid', uid, '-sid', sid];
     for (let nm in options) {
-      if (options.hasOwnProperty(nm)) {
+      if (options.hasOwnProperty(nm) && options[nm]) {
         args.push('-' + nm);
         args.push(options[nm]);
       }

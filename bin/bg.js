@@ -40,7 +40,7 @@ di('boot', config.bootstrap,
   {
     sysLog: sysLog
   }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background', 'application'])
-  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'background', 'application']))
+  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['background', 'application']))
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(() => di(moduleName, extendDi(moduleName, context), {}, 'app', ['background'], params.path))
   .then((scope) => {
