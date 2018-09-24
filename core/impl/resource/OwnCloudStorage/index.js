@@ -691,7 +691,7 @@ function OwnCloudStorage(config) {
             if (typeof user === 'undefined') {
               return;
             }
-            let currentShare = shares.filter(s => parseInt(s.share_type) === 0 && s.share_with === sw)[0];
+            let currentShare = shares.filter(s => parseInt(s.shareType) === 0 && s.share_with === sw)[0];
             if (typeof currentShare !== 'undefined') {
               promise = promise.then(() => updateShare(currentShare.id, null, getShareOptions(options, user)).then(addShare));
             } else {
@@ -701,7 +701,7 @@ function OwnCloudStorage(config) {
         } else {
           let publicShare;
           if (Array.isArray(shares) && shares.length > 0) {
-            publicShare = shares.filter(s => parseInt(s.share_type) === 3)[0];
+            publicShare = shares.filter(s => parseInt(s.shareType) === 3)[0];
           }
           if (typeof publicShare !== 'undefined') {
             promise = promise.then(() => updateShare(publicShare.id, access, getShareOptions(options)).then(addShare));
