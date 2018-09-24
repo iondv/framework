@@ -53,12 +53,14 @@ StoredImage.prototype.constructor = StoredImage;
  */
 function ImageStorage(options) { // jshint ignore:line
 
-  var fileStorage = options.fileStorage;
+  let fileStorage = options.fileStorage;
 
   let storeThumbnails = (options.storeThumbnails !== false);
   if (typeof options.fileStorage.fileOptionsSupport === 'function') {
     storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
+
+  let watermarkApplier;
 
   function thumbnail(source, opts) {
     let format = opts.format || 'png';
@@ -184,11 +186,12 @@ function ImageStorage(options) { // jshint ignore:line
 
     if (options.watermark && options.watermark.accept) {
       let name = opts.name || data.originalname || data.name || '';
-      let watermarkOptions = clone(options.watermark);
-      watermarkOptions.format = path.extname(name).slice(1);
-      const {watermarkApplier} = require('core/util/watermark-overlay');
+      options.watermark.format = options.watermark.format || path.extname(name).slice(1);
+      if (typeof watermarkApplier === 'undefined') {
+        watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
+      }
       p = p.then(() => getDataContents(data))
-        .then(source => watermarkApplier(source, watermarkOptions))
+        .then(source => watermarkApplier(source, options.watermark))
         .then((buf) => {
           if (typeof data === 'object') {
             delete data.stream;

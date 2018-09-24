@@ -16,7 +16,7 @@ function adjustFontSize(ctx, text, font, fontSize, imgWidth) {
   if (font && fontSize > 0) {
     ctx.font = fontParams;
     const textWidth = ctx.measureText(text).width;
-    if (textWidth > imgWidth / 2) {
+    if (textWidth > imgWidth) {
       return adjustFontSize(ctx, text, font, fontSize - 1, imgWidth);
     }
   }
@@ -60,8 +60,8 @@ function imgOverlay({overlayPath, width, height}) {
  */
 function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   text = text || '';
-  width = parseInt(width) || 100;
-  height = parseInt(height) || 100;
+  width = width || 100;
+  height = height || 100;
   fontSize = parseInt(fontSize) || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
   const canvas = new Canvas(width, height);
@@ -70,9 +70,9 @@ function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   if (typeof font === 'string') {
     fontName = font;
   } else if (typeof font === 'object' && font && font.family && font.path) {
-    const fontFace = new Font(font.family, toAbsolute(font.path));
-    ctx.addFont(fontFace);
-    fontName = font.family;
+    font.fontFace = font.fontFace || new Font(font.family, toAbsolute(font.path));
+    ctx.addFont(font.fontFace);
+    fontName = font.name || font.family;
   }
   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
   ctx.fillRect(0, 0, width, height);
@@ -92,8 +92,8 @@ function captionOverlay({text, width, height, font, fontSize, fontColor}) {
  * @returns {Promise|Buffer}
  */
 function produceOverlay(meta, options) {
-  options.width = options.width || meta.width;
-  options.height = options.height || meta.height;
+  options.width = parseInt(options.width) || meta.width;
+  options.height = parseInt(options.height) || meta.height;
   options.width = meta.width < options.width ? meta.width : options.width;
   options.height = meta.height < options.height ? meta.height : options.height;
   options.text = options.text || '';
