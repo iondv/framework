@@ -17,7 +17,11 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
 const SharesApi = require('./SharesApi');
-const {urlResolver, slashChecker} = require('./util');
+const {
+  urlResolver,
+  slashChecker,
+  ensureDirSep
+} = require('./util');
 
 // jshint maxstatements: 100, maxcomplexity: 20
 
@@ -197,6 +201,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
+      directory = ensureDirSep(directory);
 
       if (!data) {
         return Promise.reject(new Error('Нет данных для приема в хранилище.'));
@@ -461,7 +466,7 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
-    let id = slashChecker(parentDirId) + name;
+    let id = slashChecker(parentDirId) + ensureDirSep(name);
     let reqParams = {
       uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
       auth: {
