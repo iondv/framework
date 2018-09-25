@@ -537,7 +537,14 @@ function OwnCloudStorage(config) {
   function createShare(id, access, options) {
     options = options || {};
     const acs = access || options.permissions;
-    const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+    let permissions;
+    if (acs) {
+      if (typeof acs === 'number') {
+        permissions = acs.toString();
+      } else {
+        permissions = sharesApi.accessLevel(acs);
+      }
+    }
     const form = {
       path: id,
       publicUpload: 'false'
@@ -560,7 +567,7 @@ function OwnCloudStorage(config) {
     return sharesApi.create(form)
       .then((shares) => {
         let result = Array.isArray(shares) ? shares[0] : shares;
-        if (permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
+        if (!permissions || permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
           return result;
         }
         return sharesApi.update(result.id, {permissions})
