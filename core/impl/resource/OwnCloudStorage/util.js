@@ -31,7 +31,7 @@ exports.slashChecker = slashChecker;
 
 function ensureDirSep(dir) {
   if (typeof dir === 'string') {
-    return dir.split(path.sep).join('/');
+    return dir.replace('\\', '/');
   }
   return dir;
 }
