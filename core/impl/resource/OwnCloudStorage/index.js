@@ -537,7 +537,14 @@ function OwnCloudStorage(config) {
   function createShare(id, access, options) {
     options = options || {};
     const acs = access || options.permissions;
-    const permissions = typeof acs === 'number' ? acs.toString() : (acs ? sharesApi.accessLevel(acs) : '8');
+    let permissions;
+    if (acs) {
+      if (typeof acs === 'number') {
+        permissions = acs.toString();
+      } else {
+        permissions = sharesApi.accessLevel(acs);
+      }
+    }
     const form = {
       path: id,
       publicUpload: 'false'
@@ -560,7 +567,7 @@ function OwnCloudStorage(config) {
     return sharesApi.create(form)
       .then((shares) => {
         let result = Array.isArray(shares) ? shares[0] : shares;
-        if (permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
+        if (!permissions || permissions === sharesApi.accessLevel(ShareAccessLevel.READ)) {
           return result;
         }
         return sharesApi.update(result.id, {permissions})
@@ -691,7 +698,7 @@ function OwnCloudStorage(config) {
             if (typeof user === 'undefined') {
               return;
             }
-            let currentShare = shares.filter(s => parseInt(s.share_type) === 0 && s.share_with === sw)[0];
+            let currentShare = shares.filter(s => parseInt(s.shareType) === 0 && s.share_with === sw)[0];
             if (typeof currentShare !== 'undefined') {
               promise = promise.then(() => updateShare(currentShare.id, null, getShareOptions(options, user)).then(addShare));
             } else {
@@ -701,7 +708,7 @@ function OwnCloudStorage(config) {
         } else {
           let publicShare;
           if (Array.isArray(shares) && shares.length > 0) {
-            publicShare = shares.filter(s => parseInt(s.share_type) === 3)[0];
+            publicShare = shares.filter(s => parseInt(s.shareType) === 3)[0];
           }
           if (typeof publicShare !== 'undefined') {
             promise = promise.then(() => updateShare(publicShare.id, access, getShareOptions(options)).then(addShare));
