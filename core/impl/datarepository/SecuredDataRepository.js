@@ -692,7 +692,7 @@ function SecuredDataRepository(options) {
                         if (permissions[resid]) {
                           for (let p in permissions[resid]) {
                             if (permissions[resid].hasOwnProperty(p)) {
-                              if (!item.permissions[p]) {
+                              if (!item.permissions[p] || (p === Permissions.READ)) {
                                 item.permissions[p] = permissions[resid][p];
                               }
                             }
