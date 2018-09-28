@@ -145,7 +145,7 @@ function frontend(p) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Установка пакетов фронтенда для пути ' + p);
-        yarn(p)
+        npm(p)
           .then(function () {
             let srcDir = path.join(p, './vendor');
             try {
