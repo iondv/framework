@@ -147,7 +147,7 @@ function frontend(p) {
         console.log('Установка пакетов фронтенда для пути ' + p);
         npm(p)
           .then(function () {
-            let srcDir = path.join(p, './vendor');
+            let srcDir = path.join(p, './node_modules');
             try {
               fs.accessSync(srcDir);
             } catch (err) {
