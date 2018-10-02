@@ -351,10 +351,10 @@ gulp.task('build:frontend', function (done) {
   start.then(function () {
     done();
   })
-    .catch(function (err) {
-      console.error(err);
-      done(err);
-    });
+  .catch(function (err) {
+    console.error(err);
+    done(err);
+  });
 });
 
 gulp.task('compile:less', function (done) {

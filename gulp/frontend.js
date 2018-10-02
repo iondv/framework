@@ -171,12 +171,29 @@ function processBower() {
       let newDependencies = {};
       for (let key in existEqual) {
         if (dependencies[key]) {
-          newDependencies[key] = existEqual[key].version;
+          let version;
+          if (dependencies[key].indexOf('#') !== -1) {
+            version = dependencies[key].split('#')[1]
+          } else if(dependencies[key].indexOf('.git') !== -1) {
+            version = '*'
+          } else {
+            version = dependencies[key];
+          }
+          newDependencies[key] = version;
         }
       }
       for (let key in existNotEqual) {
         if (dependencies[key]) {
-          missingHere[key] = `${existNotEqual[key].repository}#${existNotEqual[key].version}`;
+          let version;
+          if (dependencies[key].indexOf('#') !== -1) {
+            version = dependencies[key].split('#')[1]
+          } else if(dependencies[key].indexOf('.git') !== -1) {
+            version = '*'
+          } else {
+            version = dependencies[key];
+          }
+          console.log(key, dependencies[key].indexOf('#') !== -1, version);
+          missingHere[key] = `${existNotEqual[key].repository}#${version}`;
         }
       }
       bowerjson.dependencies = newDependencies;
@@ -194,19 +211,27 @@ function processBower() {
         }
       }
       if (npmignore.length > 0) {
-        npmignore = `${oldignore}
-          ${npmignore}`;
+        oldignore = oldignore[oldignore.length-1] === '\n' ? oldignore.splice(oldignore.length-1, 1) : oldignore;
+        npmignore = oldignore + npmignore + '\n';
         fs.writeFileSync(path.join(folder, `.npmignore`), npmignore);
       }
       for (let key in missingVersion) {
         if (dependencies[key]) {
-          missingHere[key] = `${missingVersion[key].repository}#${missingVersion[key].version}`;
+          let version;
+          if (dependencies[key].indexOf('#') !== -1) {
+            version = dependencies[key].split('#')[1];
+          } else if(dependencies[key].indexOf('.git') !== -1) {
+            version = '*'
+          } else {
+            version = dependencies[key];
+          }
+          missingHere[key] = `${missingVersion[key].repository}#${version}`;
         }
       }
       if (typeof bowerjson.scripts === 'undefined') {
         bowerjson.scripts = {};
       }
-      bowerjson.scripts.install = `node ${path.join(__dirname, 'installPackagesFromGit.js')}`;
+      bowerjson.scripts.preinstall = `node ${path.join(__dirname, 'installPackagesFromGit.js')}`;
       fs.writeFileSync(path.join(folder, `missing.json`), JSON.stringify(missingHere, null, '\t'));
       fs.writeFileSync(path.join(folder, `package.json`), JSON.stringify(bowerjson, null, '\t'));
     }
