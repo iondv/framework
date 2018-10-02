@@ -651,6 +651,7 @@ function SecuredDataRepository(options) {
             item.permissions = merge(true, item.permissions, item.permissions.__class);
             delete item.permissions.__class;
             if (roleConf) {
+              item.permissions[Permissions.READ] = false;
               let result = Promise.resolve();
               Object.keys(roleConf).forEach((role) => {
                 let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
