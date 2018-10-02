@@ -628,6 +628,9 @@ function SecuredDataRepository(options) {
                   permissions[globalMarker] || {}
                 );
                 pmp.__class = permissions[classPrefix + item.getClassName()] || {};
+                if (roleConf) {
+                  pmp.__class[Permissions.READ] = false;
+                }
                 return pmp;
               }
             );
@@ -651,7 +654,6 @@ function SecuredDataRepository(options) {
             item.permissions = merge(true, item.permissions, item.permissions.__class);
             delete item.permissions.__class;
             if (roleConf) {
-              item.permissions[Permissions.READ] = false;
               let result = Promise.resolve();
               Object.keys(roleConf).forEach((role) => {
                 let resid = roleConf[role].resource && roleConf[role].resource.id || (classPrefix + item.getClassName());
@@ -693,7 +695,7 @@ function SecuredDataRepository(options) {
                         if (permissions[resid]) {
                           for (let p in permissions[resid]) {
                             if (permissions[resid].hasOwnProperty(p)) {
-                              if (!item.permissions[p] || (p === Permissions.READ)) {
+                              if (!item.permissions[p]) {
                                 item.permissions[p] = permissions[resid][p];
                               }
                             }
