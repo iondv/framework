@@ -130,60 +130,38 @@ function copyVendorResources(src, dst, module) {
 }
 
 function frontend(p) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      try {
-        fs.accessSync(path.join(p, '.bowerrc'));
-      } catch (error) {
-        resolve();
-        return;
-      }
+  return async function () {
       try {
         /**
          * Параметры конфигурации bower
          * @property {String} vendorDir - папка установки пакетов
          */
+        if (!fs.existsSync(path.join(p, '.bowerrc')))
+          return;
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Установка пакетов фронтенда для пути ' + p);
-        npm(p)
-          .then(function () {
-            let srcDir = path.join(p, './node_modules');
-            try {
-              fs.accessSync(srcDir);
-            } catch (err) {
-              resolve();
-              return;
+        await npm(p);
+        let srcDir = path.join(p, './node_modules');
+        fs.accessSync(srcDir);
+        let vendorModules = fs.readdirSync(srcDir);
+        let copyers, copyer;
+        copyers = [];
+        if (bc.vendorDir) {
+          for (let i = 0; i < vendorModules.length; i++) {
+            copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
+            if (copyer) {
+              copyers.push(copyer);
             }
-            try {
-              let vendorModules = fs.readdirSync(srcDir);
-              let copyers, copyer;
-              copyers = [];
-              if (bc.vendorDir) {
-                for (let i = 0; i < vendorModules.length; i++) {
-                  copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
-                  if (copyer) {
-                    copyers.push(copyer);
-                  }
-                }
-              } else {
-                console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
-              }
-              if (copyers.length) {
-                Promise.all(copyers).then(resolve).catch(reject);
-                return;
-              }
-            } catch (error) {
-              return reject(error);
-            }
-            resolve();
-          })
-          .catch((error) => {
-            reject(error);
-          });
+          }
+        } else {
+          console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
+        }
+        if (copyers.length) {
+          await Promise.all(copyers);
+        }
       } catch (error) {
-        reject(error);
+        throw error;
       }
-    });
   };
 }
 
@@ -352,7 +330,7 @@ gulp.task('build:frontend', function (done) {
     done();
   })
   .catch(function (err) {
-    console.error(err);
+    console.error('build:frontend error:', JSON.stringify(err, null, '\t'));
     done(err);
   });
 });

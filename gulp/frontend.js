@@ -17,30 +17,26 @@ function GetPackFromRemote() {
 }
 GetPackFromRemote.prototype = {
   createTemp: function (){
-    if (this.directory && this.directory.length > 0)
-      this.clear();
-    let tempName = new Date();
-    tempName = tempName.getTime() + '';
-    this.directory = path.join(os.tmpdir(), tempName);
+    this.directory = path.join(os.tmpdir(), 'bowerAway');
     fx.mkdirSync(this.directory);
     console.log(this.directory);
-    execSync('git init', {cwd: this.directory});
   },
-  getName: function (remote) {
+  getName: function (name, remote) {
     try {
-      //console.log(`git fetch ${remote}`);
-      try {
-        execSync(`git fetch ${remote}`, {cwd: this.directory, stdio: 'ignore'});
-        //console.log('git checkout');
-        execSync(`git checkout FETCH_HEAD -- package.json`, {cwd: this.directory, stdio: 'ignore'});
-        let file = fs.readFileSync(path.join(this.directory, 'package.json'));
+      if (fs.existsSync(path.join(this.directory, name))) {
+        rmDir(path.join(this.directory, name));
+      }
+      execSync(`git clone ${remote} ${name}`, {cwd: this.directory, stdio: 'ignore'});
+      if (fs.existsSync(path.join(this.directory, name, 'package.json'))) {
+        let file = fs.readFileSync(path.join(this.directory, name, 'package.json'));
         file = JSON.parse(file);
         return file;
-      } catch (err) {
+      } else {
         return void 0;
       }
     } catch (err) {
-      throw err;
+      console.warn(err.message);
+      return void 0;
     }
   },
   clear: function () {
@@ -68,67 +64,48 @@ function makeMigrationDict() {
         for (let key in bowerjson['dependencies']) {
           url = void 0;
           packageJson = void 0;
+          let gitVersion = void 0;
           if (existEqual[key] || existNotEqual[key] || missing[key])
             continue;
-          console.log('\t', key);
-          if (bowerjson['dependencies'][key].indexOf('git') !== -1) {
+          process.stdout.write('\t' + key + ' ');
+          if (bowerjson['dependencies'][key].indexOf('.git') !== -1) {
             url = bowerjson['dependencies'][key];
-            let gitVersion = void 0;
             if (url.indexOf('#') !== -1 ){
               gitVersion = url.split('#')[1];
               url = url.split('#')[0];
+            } else {
+              gitVersion = '*'
             }
-            packageJson = localTempGit.getName(url);
-            if (packageJson && packageJson.name === key)
-              existEqual[key] = {version: gitVersion || '*', repository: bowerjson['dependencies'][key], data: packageJson};
-            else if (packageJson && packageJson.name !== key)
-              existNotEqual[key] = {version: gitVersion || '*', repository: bowerjson['dependencies'][key], data: packageJson};
-            else
-              missing[key] = bowerjson['dependencies'][key].indexOf('git');
-            fs.writeFileSync(path.join(__dirname, 'packages', `${key}.json`), JSON.stringify(packageJson, null, '\t'));
+            packageJson = localTempGit.getName(key, url);
           } else if (bowerjson['dependencies'][key].indexOf('#') !== -1) {
             let info = execSync(`bower info ${bowerjson['dependencies'][key]} --config.registry "https://registry.bower.io"`, bowerInfoOptions);
             url = info.split('\n')[0].match(/https:\/\/[^\n\r#]+/)[0];
-            packageJson = localTempGit.getName(url);
-            if (packageJson && packageJson.name === key)
-              existEqual[key] = {repository: url, version: bowerjson['dependencies'][key].split('#')[1], data: packageJson};
-            else if (packageJson && packageJson.name !== key)
-              existNotEqual[key] = {repository: url, version: bowerjson['dependencies'][key].split('#')[1], data: packageJson};
-            else
-              missing[key] = `${url}#${bowerjson['dependencies'][key].split('#')[1]}`;
-            fs.writeFileSync(path.join(__dirname, 'packages', `${key}.json`), JSON.stringify(packageJson, null, '\t'));
+            gitVersion = bowerjson['dependencies'][key].split('#')[1];
+            packageJson = localTempGit.getName(key, url);
           } else {
             let info = execSync(`bower info ${key}#${bowerjson['dependencies'][key]} --config.registry "https://registry.bower.io"`, bowerInfoOptions);
             url = info.split('\n')[0].match(/https:\/\/[^\n#\r]+/)[0];
-            packageJson = localTempGit.getName(url);
-            if (packageJson && packageJson.name === key)
-              existEqual[key] = {repository: url, version: bowerjson['dependencies'][key], data: packageJson};
-            else if (packageJson && packageJson.name !== key)
-              existNotEqual[key] = {repository: url, version: bowerjson['dependencies'][key], data: packageJson};
-            else
-              missing[key] = `${url}#${bowerjson['dependencies'][key]}`;
-            fs.writeFileSync(path.join(__dirname, 'packages', `${key}.json`), JSON.stringify(packageJson, null, '\t'));
+            packageJson = localTempGit.getName(key, url);
+            gitVersion = bowerjson['dependencies'][key];
+          }
+          if (packageJson && packageJson.name === key) {
+            process.stdout.write('names equal\n');
+            existEqual[key] = {version: gitVersion || '*', repository: url, data: packageJson};
+          }
+          else if (packageJson && packageJson.name !== key) {
+            process.stdout.write('names NOT equal\n');
+            existNotEqual[key] = {version: gitVersion || '*', repository: url, data: packageJson};
+          }
+          else {
+            process.stdout.write('there is no package.json\n');
+            missing[key] = {version: gitVersion || '*', repository: url, data: packageJson};
           }
         }
       }
     });
-    fs.writeFileSync(path.join(__dirname, 'existEqual.json'), JSON.stringify(existEqual, null, '\t'));
-    fs.writeFileSync(path.join(__dirname, 'existNotEqual.json'), JSON.stringify(existNotEqual, null, '\t'));
-    fs.writeFileSync(path.join(__dirname, 'missing.json'), JSON.stringify(missing, null, '\t'));
-  } catch (err) {
-    console.warn(err);
-  } finally {
-    localTempGit.clear()
-  }
-}
-
-function checkVersions() {
-  try {
-    let existEqual = fs.readFileSync(path.join(__dirname, 'existEqual.json'));
-    existEqual = JSON.parse(existEqual);
     let missingVersion = {};
     for (let key in existEqual) {
-      let exexc = execSync(`npm view ${key}@${existEqual[key].version}`, {cwd: path.join(__dirname, 'packages'), encoding: 'utf-8'});
+      let exexc = execSync(`npm view ${key}@${existEqual[key].version}`, {cwd: path.join(localTempGit.directory, key), encoding: 'utf-8'});
       if (typeof exexc === 'undefined' || exexc.length === 0) {
         console.warn(`Can't view ${key}@${existEqual[key].version}`);
         missingVersion[key] = existEqual[key];
@@ -137,33 +114,53 @@ function checkVersions() {
         console.log(`${key}@${existEqual[key].version}`);
       }
     }
-    fs.writeFileSync(path.join(__dirname, 'existEqual.json'), JSON.stringify(existEqual, null, '\t'));
-    fs.writeFileSync(path.join(__dirname, 'missingVersion.json'), JSON.stringify(missingVersion, null, '\t'));
+    if (!fs.existsSync(path.join(__dirname, 'bowerPackagesInfo')))
+      fx.mkdirSync(path.join(__dirname, 'bowerPackagesInfo'));
+    fs.writeFileSync(path.join(__dirname, 'bowerPackagesInfo', 'existEqual.json'), JSON.stringify(existEqual, null, '\t'));
+    fs.writeFileSync(path.join(__dirname, 'bowerPackagesInfo', 'existNotEqual.json'), JSON.stringify(existNotEqual, null, '\t'));
+    fs.writeFileSync(path.join(__dirname, 'bowerPackagesInfo', 'missing.json'), JSON.stringify(missing, null, '\t'));
+    fs.writeFileSync(path.join(__dirname, 'bowerPackagesInfo', 'missingVersion.json'), JSON.stringify(missingVersion, null, '\t'));
   } catch (err) {
-    console.log(err.message);
+    console.warn(err);
   }
+}
+
+function parseVersion(value) {
+  let version = void 0;
+  if (value.indexOf('git') !== -1) {
+    if (value.indexOf('#') !== -1 ){
+      version = value.split('#')[1];
+    } else {
+      version = '*'
+    }
+  } else if (value.indexOf('#') !== -1) {
+    version = value.split('#')[1];
+  } else {
+    version = value;
+  }
+  return version;
 }
 
 function processBower() {
   let files = readFilesDir(process.cwd(), ['vendor', '.git', '.idea', 'node_modules']);
   files = files.filter(file => path.basename(file) === 'bower.json');
   console.log(`${files.length} bower files`);
-  let missing = fs.readFileSync(path.join(__dirname, 'missing.json'));
-  let existEqual = fs.readFileSync(path.join(__dirname, 'existEqual.json'));
-  let existNotEqual = fs.readFileSync(path.join(__dirname, 'existNotEqual.json'));
-  let missingVersion = fs.readFileSync(path.join(__dirname, 'missingVersion.json'));
+  let missing = fs.readFileSync(path.join(__dirname, 'bowerPackagesInfo', 'missing.json'));
+  let existEqual = fs.readFileSync(path.join(__dirname, 'bowerPackagesInfo', 'existEqual.json'));
+  let existNotEqual = fs.readFileSync(path.join(__dirname, 'bowerPackagesInfo', 'existNotEqual.json'));
+  let missingVersion = fs.readFileSync(path.join(__dirname, 'bowerPackagesInfo', 'missingVersion.json'));
   missing = JSON.parse(missing);
   existEqual = JSON.parse(existEqual);
   existNotEqual = JSON.parse(existNotEqual);
   missingVersion = JSON.parse(missingVersion);
   files.forEach((file, index, array) => {
-    let folder = path.dirname(file);
-    console.log(file.replace(`${process.cwd()}${path.delimiter}`, ''));
     if (fs.existsSync(file)){
+      let folder = path.dirname(file);
       let missingHere = {};
       let bowerjson = fs.readFileSync(file);
       bowerjson = JSON.parse(bowerjson);
       let {dependencies} = bowerjson;
+
       if (typeof dependencies === 'undefined') {
         console.warn(`${file} don't have dependencies`);
         return file;
@@ -171,61 +168,34 @@ function processBower() {
       let newDependencies = {};
       for (let key in existEqual) {
         if (dependencies[key]) {
-          let version;
-          if (dependencies[key].indexOf('#') !== -1) {
-            version = dependencies[key].split('#')[1]
-          } else if(dependencies[key].indexOf('.git') !== -1) {
-            version = '*'
-          } else {
-            version = dependencies[key];
-          }
-          newDependencies[key] = version;
+          newDependencies[key] = parseVersion(dependencies[key]);
         }
       }
       for (let key in existNotEqual) {
         if (dependencies[key]) {
-          let version;
-          if (dependencies[key].indexOf('#') !== -1) {
-            version = dependencies[key].split('#')[1]
-          } else if(dependencies[key].indexOf('.git') !== -1) {
-            version = '*'
-          } else {
-            version = dependencies[key];
-          }
-          console.log(key, dependencies[key].indexOf('#') !== -1, version);
-          missingHere[key] = `${existNotEqual[key].repository}#${version}`;
+          console.log(key, dependencies[key].indexOf('#') !== -1, parseVersion(dependencies[key]));
+          missingHere[key] = `${existNotEqual[key].repository}#${parseVersion(dependencies[key])}`;
         }
       }
       bowerjson.dependencies = newDependencies;
       let npmignore = '';
-      let oldignore = '';
       if (fs.existsSync(path.join(folder, `.npmignore`))) {
-        oldignore = fs.readFileSync(path.join(folder, `.npmignore`));
+        fs.unlinkSync(path.join(folder, `.npmignore`));
       }
       for (let key in missing) {
         if (dependencies[key]) {
-          missingHere[key] = missing[key];
-          if (oldignore.indexOf('node_modules/' + key + '\n') === -1) {
-            npmignore = npmignore + '\nnode_modules/' + key;
+          missingHere[key] = `${missing[key].repository}#${parseVersion(dependencies[key])}`;
+          if (npmignore.indexOf('node_modules/' + key + '\n') === -1) {
+            npmignore = npmignore + 'node_modules/' + key + '\n';
           }
         }
       }
       if (npmignore.length > 0) {
-        oldignore = oldignore[oldignore.length-1] === '\n' ? oldignore.splice(oldignore.length-1, 1) : oldignore;
-        npmignore = oldignore + npmignore + '\n';
         fs.writeFileSync(path.join(folder, `.npmignore`), npmignore);
       }
       for (let key in missingVersion) {
         if (dependencies[key]) {
-          let version;
-          if (dependencies[key].indexOf('#') !== -1) {
-            version = dependencies[key].split('#')[1];
-          } else if(dependencies[key].indexOf('.git') !== -1) {
-            version = '*'
-          } else {
-            version = dependencies[key];
-          }
-          missingHere[key] = `${missingVersion[key].repository}#${version}`;
+          missingHere[key] = `${missingVersion[key].repository}#${parseVersion(dependencies[key])}`;
         }
       }
       if (typeof bowerjson.scripts === 'undefined') {
@@ -238,12 +208,9 @@ function processBower() {
   });
 }
 
-
 module.exports.makeMigrationDict = makeMigrationDict;
-module.exports.checkVersions = checkVersions;
 module.exports.processBower = processBower;
 module.exports.bower = function () {
   makeMigrationDict();
-  checkVersions();
   processBower();
 };
