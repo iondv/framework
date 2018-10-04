@@ -18,6 +18,7 @@ const importer = require('lib/import');
 const deployer = require('lib/deploy');
 const alias = require('core/scope-alias');
 const aclImport = require('lib/aclImport');
+const fe = require('./frontend');
 
 const platformPath = path.normalize(path.join(__dirname, '..'));
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
@@ -333,6 +334,60 @@ gulp.task('build:frontend', function (done) {
     console.error('build:frontend error:', JSON.stringify(err, null, '\t'));
     done(err);
   });
+});
+
+gulp.task('bower:parse', function (done) {
+  try {
+    fe.makeMigrationDict();
+    done();
+  } catch (err) {
+    done(err);
+  }
+});
+
+gulp.task('bower:package', function (done) {
+  try {
+    fe.processBower();
+    done();
+  } catch (err) {
+    done(err);
+  }
+});
+
+gulp.task('bower:away', function (done) {
+  try {
+    fe.bower();
+    done();
+  } catch (err) {
+    done(err);
+  }
+});
+
+gulp.task('clear:build', function (done) {
+  try {
+    fe.clear();
+    done();
+  } catch (err) {
+    done(err);
+  }
+});
+
+gulp.task('clear:frontend', function (done) {
+  try {
+    fe.clear(item => item.indexOf('view') !== -1);
+    done();
+  } catch (err) {
+    done(err);
+  }
+});
+
+gulp.task('clear:npm', function (done) {
+  try {
+    fe.clear(item => item.indexOf('view') === -1);
+    done();
+  } catch (err) {
+    done(err);
+  }
 });
 
 gulp.task('compile:less', function (done) {

@@ -11,14 +11,24 @@ const util = require('util');
 function checkVersion(options) {
   return new Promise((reslove, reject) => {
     semverTags(options, function(err, tags) {
-      if (err)
+      if (err) {
+        console.log('err ', err);
         reject(err);
+      }
       reslove(tags);
     });
   })
 }
 
 (async function () {
+  let key;
+  let nodeModulesFolder = path.join(process.cwd(), 'node_modules');
+  process.on('exit', () => {
+    if(key) {
+      if (fs.existsSync(path.join(nodeModulesFolder, key, '.git')))
+        rmDir(path.join(nodeModulesFolder, key, '.git'));
+    }
+  });
   let missingPath =  path.join(process.cwd(), 'missing.json');
   if (!fs.existsSync(missingPath)) {
     console.warn(`Can't install, folder ${missingPath} didn't exist!`);
@@ -32,20 +42,22 @@ function checkVersion(options) {
     console.warn(err);
     return;
   }
-  let nodeModulesFolder = path.join(process.cwd(), 'node_modules');
   if (!fs.existsSync(nodeModulesFolder))
     fx.mkdirSync(nodeModulesFolder);
-  for (let key in missing) {
+  for (key in missing) {
     if (missing.hasOwnProperty(key)) {
       try {
         if (!fs.existsSync(path.join(nodeModulesFolder, key))) {
           let url = missing[key].split('#')[0];
           let version = missing[key].split('#')[1];
-          if (fs.existsSync(path.join(nodeModulesFolder, key)))
+          if (fs.existsSync(path.join(nodeModulesFolder, key))) {
             wrench.rmdirSyncRecursive(path.join(nodeModulesFolder, key));
-          wrench.copyDirSyncRecursive(path.join(os.tmpdir(), 'bowerAway', key), path.join(nodeModulesFolder, key));
-          if (!fs.existsSync(path.join(nodeModulesFolder, key, 'package.json')))
-            execSync(`node install ${path.join(nodeModulesFolder, key)}`, {cwd: process.cwd()});
+          }
+          if (fs.existsSync(path.join(os.tmpdir(), 'bowerAway', key)))
+            wrench.copyDirSyncRecursive(path.join(os.tmpdir(), 'bowerAway', key), path.join(nodeModulesFolder, key));
+          else
+            execSync(`git clone ${url} ${key}`, {cwd: nodeModulesFolder, stdio: 'ignore'});
+
           let tags = await checkVersion({
             repoType: 'git',
             repoPath:  path.join(nodeModulesFolder, key),
@@ -53,23 +65,40 @@ function checkVersion(options) {
           });
           if (Array.isArray(tags) && tags.length > 0) {
             let checkout = execSync(`git checkout tags/${tags[tags.length -1]} -b ${tags[tags.length -1]}`,
-              {cwd: path.join(nodeModulesFolder, key), encoding: 'utf-8'});
+              {cwd: path.join(nodeModulesFolder, key), stdio: 'ignore', encoding: 'utf-8'});
             if (checkout && checkout.indexOf('error') !== -1 )
               console.warn(checkout);
             console.log(key, tags[tags.length -1]);
           } else if (version === '*') {
             //TODO Проверка на ветку
-
             console.log(key, 'master');
           } else {
             console.warn(`Не найдена подходящая версия ${key}`);
           }
           rmDir(path.join(nodeModulesFolder, key, '.git'));
+          let dep;
+          if (fs.existsSync(path.join(nodeModulesFolder, key, 'package.json'))) {
+            dep = fs.readFileSync(path.join(nodeModulesFolder,key, 'package.json'));
+            dep = JSON.parse(dep);
+            dep = dep.dependencies;
+            for (let pack in dep) {
+              if (dep.hasOwnProperty(pack) && !fs.existsSync(path.join(nodeModulesFolder, pack))) {
+                console.log(`npm i ${pack}@${dep[pack]} in ${process.cwd()}`);
+                try {
+                  execSync(`npm i ${pack}@${dep[pack]}`, {cwd: process.cwd(), stdio: 'ignore'});
+                } catch (err) {
+                  if (err.error) {
+                    console.log(JSON.stringify(err, null, '\t'));
+                  }
+                }
+              }
+            }
+          }
         }
       } catch (err) {
         if (fs.existsSync(path.join(nodeModulesFolder, key, '.git')))
           rmDir(path.join(nodeModulesFolder, key, '.git'));
-        console.warn(key, err.message);
+        console.warn(key, JSON.stringify(err, null, '\t'));
       }
     }
   }

@@ -3,13 +3,13 @@
  */
 
 const path = require('path');
-const {readFilesDir} = require('../lib/fileSystem');
 const fs = require('fs');
 const fx = require('mkdir-recursive');
-let fixed = false;
 let execSync = require('child_process').execSync;
 const os = require('os');
 const rmDir = require('rmdir-recursive').sync;
+const ARRNOTFOUND = -1;
+const FIRST = 0;
 
 function GetPackFromRemote() {
   this.directory = '';
@@ -207,6 +207,58 @@ function processBower() {
     }
   });
 }
+
+/**
+ * Функция преобразует массив, содержащий массивы, в один массив
+ * @param {[[]]} arr исходный массив
+ * @returns {[]} массив результат
+ */
+function joinArray(arr) {
+  return Array.prototype.concat.apply([], arr);
+}
+
+/**
+ * Рекурсивно прочитать все файлы в директории и вернуть массив с их путями.
+ * @param {string} currentPath папка, начиная с которой будет вестись поиск файлов.
+ * @param {[string]} ignore имена папок, в которых не будет вестись поиск.
+ * @returns {[string]} пути ко всем файлам в директории.
+ */
+function readFilesDir(currentPath, ignore) {
+  const result = [];
+  if(!Array.isArray(ignore))
+    ignore = [];
+  if (ignore.indexOf(path.basename(currentPath)) !== ARRNOTFOUND) {
+    result.push(currentPath);
+    return result;
+  }
+  const stat = fs.statSync(currentPath);
+  if (stat.isDirectory()) {
+    let dir = fs.readdirSync(currentPath);
+    dir = dir.map(item => path.join(currentPath, item));
+    dir = dir.map(item => readFilesDir(item, ignore));
+    dir = dir.filter(item => item.length > FIRST);
+    return joinArray(dir);
+  }
+  result.push(currentPath);
+  return result;
+}
+
+function clear(filter) {
+  let files = readFilesDir(process.cwd(), ['.git', '.idea', 'node_modules', 'vendor']);
+  files = files.filter(file => path.basename(file) === 'node_modules' || path.basename(file) === 'vendor' || path.basename(file) === 'resources');
+  if (filter)
+    files = files.filter(filter);
+  files.forEach((file) => {
+    try {
+      rmDir(file);
+      console.log('Delete ', file);
+    } catch (err) {
+      console.warn(err.message);
+    }
+  });
+}
+
+module.exports.clear = clear;
 
 module.exports.makeMigrationDict = makeMigrationDict;
 module.exports.processBower = processBower;
