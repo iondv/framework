@@ -76,11 +76,12 @@ function checkVersion(options) {
             console.warn(`Не найдена подходящая версия ${key}`);
           }
           rmDir(path.join(nodeModulesFolder, key, '.git'));
-          let dep;
           if (fs.existsSync(path.join(nodeModulesFolder, key, 'package.json'))) {
-            dep = fs.readFileSync(path.join(nodeModulesFolder,key, 'package.json'));
+            let dep = fs.readFileSync(path.join(nodeModulesFolder,key, 'package.json'));
             dep = JSON.parse(dep);
             dep = dep.dependencies;
+            let peerDep  = dep.peerDependencies;
+            dep = Object.assign(dep, peerDep);
             for (let pack in dep) {
               if (dep.hasOwnProperty(pack) && !fs.existsSync(path.join(nodeModulesFolder, pack))) {
                 console.log(`npm i ${pack}@${dep[pack]} in ${process.cwd()}`);
@@ -88,7 +89,7 @@ function checkVersion(options) {
                   execSync(`npm i ${pack}@${dep[pack]}`, {cwd: process.cwd(), stdio: 'ignore'});
                 } catch (err) {
                   if (err.error) {
-                    console.log(JSON.stringify(err, null, '\t'));
+                    console.warn(err.message);
                   }
                 }
               }
