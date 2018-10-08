@@ -50,9 +50,6 @@ function checkVersion(options) {
         if (!fs.existsSync(path.join(nodeModulesFolder, key))) {
           let url = missing[key].split('#')[0];
           let version = missing[key].split('#')[1];
-          if (fs.existsSync(path.join(nodeModulesFolder, key))) {
-            wrench.rmdirSyncRecursive(path.join(nodeModulesFolder, key));
-          }
           if (fs.existsSync(path.join(os.tmpdir(), 'bowerAway', key)))
             wrench.copyDirSyncRecursive(path.join(os.tmpdir(), 'bowerAway', key), path.join(nodeModulesFolder, key));
           else
