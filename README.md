@@ -38,16 +38,18 @@ The IONDV.Framework documentation is available in two languages - [english](plat
 ## Approximate size
 256 MB
 
-### Some handy links to learn more about IONDV.Framework:
+## Links
+Some handy links to learn more about IONDV.Framework. We are here to provide you with more information,  
+answer any questions you may have and create an effective solution.
 * [user manual](user)
 * [developer manual](dev)
 * [homepage](homepage) 
 
 --------------------------------------------------------------------------  
-We are here to provide you with more information, answer any questions you may have and create an effective solution.
-
- ### [Licence]()&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG]()/[RUS]()   &ensp; [FAQs]()          
 
 
-Copyright (c) **IONdv**. All rights reserved.  
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence]()&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG]()/[RUS]()   &ensp; [FAQs]()          
+
+
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;Copyright (c) **IONdv**. All rights reserved.  
 
