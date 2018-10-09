@@ -50,7 +50,7 @@ answer any questions you may have and create an effective solution.
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/platform/README.md)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/README.md)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
