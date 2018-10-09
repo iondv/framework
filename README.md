@@ -1,5 +1,5 @@
 # IONDV. Framework 
-![logoIONdv](uploads/300244bdb7df4e03807ddb7b4132038c/logoIONdv.png)
+![logoIONdv](http://uploads/300244bdb7df4e03807ddb7b4132038c/logoIONdv.png)
 ## Description  
 IONDV.Framework —  is a a high-level low-code platform that allows you to create your own scalable app using the cutting-eadge technologies. It is mainly designed for building business, gouverments and customers Process Management Systems.
 
@@ -46,7 +46,7 @@ The IONDV.Framework documentation is available in two languages - [english](plat
 --------------------------------------------------------------------------  
 We are here to provide you with more information, answer any questions you may have and create an effective solution.
 
- ### [Licence]()  — [Contact us](https://iondv.ru/index.html) —  [ENG]()/[RUS]()    — [FAQs]()          
+ ### [Licence]()&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG]()/[RUS]()   &ensp; [FAQs]()          
 
 
 Copyright (c) **IONdv**. All rights reserved.  
