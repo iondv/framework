@@ -903,9 +903,16 @@ function DsMetaRepository(options) {
         case 'collection': assignVm(viewMeta.collectionModels, compileStyles(sortViewElements(views[i]))); break;
         case 'item': {
           let pathParts = views[i].path.split('.');
-          if (pathParts[0] === 'workflows') {
-            let wf = pathParts[1];
-            let state = pathParts[2];
+          let pathParts2 = pathParts[0].split(':');
+          let wf, state;
+          if (pathParts[0] === 'workflows' && pathParts.length === 3 && !navMeta.nodes[views[i].path]) {
+            wf = pathParts[1];
+            state = pathParts[2];
+          } else if (pathParts2[0] === 'workflows' && pathParts.length === 2 && pathParts2.length === 2) {
+            wf = pathParts2[1];
+            state = pathParts[1];
+          }
+          if (wf && state) {
             let cm = _this._getMeta(views[i].className, views[i].version);
             if (cm) {
               if (wf.indexOf('@') < 0) {
@@ -1100,8 +1107,8 @@ function DsMetaRepository(options) {
           try {
             acceptUserTypes(results[0]);
             acceptClassMeta(results[1]);
-            acceptViews(results[2]);
             acceptNavigation(results[3]);
+            acceptViews(results[2]);
             acceptWorkflows(results[4]);
             return Promise.resolve();
           } catch (err) {

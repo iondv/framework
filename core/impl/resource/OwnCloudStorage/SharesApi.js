@@ -1,5 +1,6 @@
 const url = require('url');
 const request = require('request');
+const OwnCloudError = require('./OwnCloudError');
 const {urlResolver, slashChecker} = require('./util');
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 
@@ -43,11 +44,11 @@ function parseShareResponse(body) {
   }
 
   if (body.ocs && body.ocs.meta && body.ocs.meta.status === 'failure') {
-    throw new Error(`Status code:${body.ocs.meta.statuscode}. ${body.ocs.meta.message}`);
+    throw new OwnCloudError(body.ocs.meta.message, body.ocs.meta.statuscode);
   }
 
   if (!body.ocs || !body.ocs.data) {
-    throw new Error('Unknown result of operation');
+    throw new OwnCloudError('Unknown result of operation');
   }
 
   return produceShare(body.ocs.data);
