@@ -43,18 +43,18 @@ Some handy links to learn more about IONDV.Framework. We are here to provide you
 answer any questions you may have and create an effective solution.
 * [user manual](user)
 * [developer manual](dev)
-* [homepage](homepage)  
+* [homepage](https://iondv.ru/index.html)  
 
 
 
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](platform/docs/en)/[RUS](platform/docs/ru)   &ensp; [FAQs](faqs.md)          
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONdv**. All rights reserved. 
+ Copyright (c) **IONDV**. All rights reserved. 
 

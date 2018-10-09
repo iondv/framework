@@ -1,59 +1,60 @@
 # IONDV. Framework 
 ![logoIONdv](https://git.iondv.ru/ION/org/blob/master/Символика/Логотип/logoIONdv.png)
 ## Description  
-IONDV.Framework —  is a a high-level low-code platform that allows you to create your own scalable app using the cutting-eadge technologies. It is mainly designed for building business, gouverments and customers Process Management Systems.
+IONDV.Framework —  это высокоуровневая low-code платформа, которая дает вам возможность создать масштабируемое приложение, используя современнные технологии. Основное предназначение платформы это создание Систем Управления для бизнеса, государства и социального сектора.   
 
-IONDV.Framework is based on framework model, that gives your an opportunity to finalize your open source app with different modules such as gantt chart, dashboards etc. 
-IONDV.Framework combines RAD, Agile / Scrum development technologies and DevOps methods to automate the process of building, testing, releasing and updating the versions. Furthermore, we practice continuous integration and store code in repositories.
+IONDV.Framework спроектирован по модели фреймворка, что позволяет вам изменять и улучшать ваше приложение при помощи различных модулей, таких как диаграмма Гантта, информационная панель и т.д.
+IONDV.Framework объединяет в себе следующие техногологии и методологии разработки: RAD, Agile / Scrum, DevOps чтобы автоматизировать процесс сборки, тестирования и выпуска версий. Кроме того, в разработке программного обеспечения мы практикуем процесс непрерывной интеграции (CI - continuous integration) и храним наш код в репозитории.
 
-With IONDV.Framework turn your vague idea into a perfectly structured app to manage your business as easy as possible. You can learn how to build and run your app with the help of our friendly IONDV.Team.
+Вместе с IONDV.Framework превратите идею в понятное и структурированное приложение чтобы управлять вашим бизнесом стало максимально просто. Наша команда IONDV.Team готова помочь вам собрать и запустить ваше первое приложение на базе IONDV.Framework.
 
 ## Key features  
 
-* declarative programming
-* open source software
+* декларативное программирование
+* открытый исходный код
 * Java Script 
-* ready-to-use modules
-* node.js run-time environment
-* open stracture of metadata in human-readable JSON files
-* elaborated technology cycle of development and building
+* готовые модули
+* среда выполнения node.js
+* открытая структура метаданных в человекочитаемом формате JSON файлов
+* разработанный технологический цикл разработки и сборки 
 
 ## Install dependencies
-You will need the following programs to run a platform: mongoDВ and node.js.
+Чтобы запустить платформу вам понадобится: СУБД mongoDВ и среда выполнения node.js.
 
 ### MongoDB
-[MongoDB](<https://www.mongodb.com/what-is-mongodb>) is an open-source document-based database management tool that stores data in JSON-like formats. Install [MongoDB](https://www.mongodb.org/) DBMS. Verified version [3.4].  
-For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
+[MongoDB](<https://www.mongodb.com/what-is-mongodb>) это инструмент управления базами данных с открытым исходным кодом, который хранит данные в JSON-подобных форматах. Установите СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия [3.4].  
+Для более детальной информации, смотрите [Установка окружения](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
 
 ### Node.js
-Node.js is a runtime environment designed to build scalable network applications. Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager. For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
+Node.js is это среда выполнения компонентов, предназначенная для сборки масштабируемых приложений. Установите [Node.js](<https://nodejs.org/en/>) и менеджер пакетов npm (устанавливается по умолчанию). Для более детальной информации, смотрите [Установка окружения](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
 
 ## System requirements
-| Minimun    | Recommended   |  
+| Минимальные    | Рекомендованные   |  
 | -------    | ------        |  
 |            |               | 
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](/docs/en/readme.md) and [russian](/docs/ru/readme.md).
+Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/readme.md) и [russian](/docs/ru/readme.md).
 ## Approximate size
 256 MB
 
 ## Links
-Some handy links to learn more about IONDV.Framework. We are here to provide you with more information,  
-answer any questions you may have and create an effective solution.
-* [user manual](user)
-* [developer manual](dev)
-* [homepage](homepage)  
+Some handy links to learn more about IONDV.Framework. Мы хотим обеспечить вас всей необходимой информацией по платформе IONDV.Framework, а также ответить на ваши вопросы и выслушать пожелания.  
+* [руководство пользователя](user)
+* [руководство разработчика](dev)
+* [домашняя страница]([homepage](https://iondv.ru/index.html))  
 
 
 
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](platform/docs/en)/[RUS](platform/docs/ru)   &ensp; [FAQs](faqs.md)          
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONdv**. All rights reserved. 
+ Copyright (c) **IONDV**. All rights reserved. 
+
+
