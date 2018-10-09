@@ -34,7 +34,8 @@ Node.js is это среда выполнения компонентов, пре
 |            |               | 
 
 ## Documentation 
-[Документация по платформе IONDV.Framework.](/docs/ru/index.md)
+[Документация по платформе IONDV.Framework.](/docs/ru/index.md)  
+
 Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
 ## Approximate size
 256 MB
