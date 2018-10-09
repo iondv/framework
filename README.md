@@ -1,5 +1,5 @@
 # IONDV. Framework 
-![logoIONdv](http://uploads/300244bdb7df4e03807ddb7b4132038c/logoIONdv.png)
+![logoIONdv](https://git.iondv.ru/ION/org/blob/master/Символика/Логотип/logoIONdv.png)
 ## Description  
 IONDV.Framework —  is a a high-level low-code platform that allows you to create your own scalable app using the cutting-eadge technologies. It is mainly designed for building business, gouverments and customers Process Management Systems.
 
@@ -34,7 +34,7 @@ Node.js is a runtime environment designed to build scalable network applications
 |            |               | 
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](platform/docs/en/readme.md) and [russian](platform/docs/ru/readme.md).
+The IONDV.Framework documentation is available in two languages - [english](/docs/en/readme.md) and [russian](/docs/ru/readme.md).
 ## Approximate size
 256 MB
 
@@ -50,10 +50,11 @@ answer any questions you may have and create an effective solution.
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence]()&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG]()/[RUS]()   &ensp; [FAQs]()          
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](platform/docs/en)/[RUS](platform/docs/ru)   &ensp; [FAQs](faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
  Copyright (c) **IONdv**. All rights reserved. 
+

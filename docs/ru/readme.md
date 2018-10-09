@@ -1,4 +1,5 @@
 # IONDV. Framework 
+![logoIONdv](https://git.iondv.ru/ION/org/blob/master/Символика/Логотип/logoIONdv.png)
 ## Description  
 IONDV.Framework —  is a a high-level low-code platform that allows you to create your own scalable app using the cutting-eadge technologies. It is mainly designed for building business, gouverments and customers Process Management Systems.
 
@@ -17,10 +18,15 @@ With IONDV.Framework turn your vague idea into a perfectly structured app to man
 * open stracture of metadata in human-readable JSON files
 * elaborated technology cycle of development and building
 
-## Dependencies
-* mongoDV
-* node.js
-  
+## Install dependencies
+You will need the following programs to run a platform: mongoDВ and node.js.
+
+### MongoDB
+[MongoDB](<https://www.mongodb.com/what-is-mongodb>) is an open-source document-based database management tool that stores data in JSON-like formats. Install [MongoDB](https://www.mongodb.org/) DBMS. Verified version [3.4].  
+For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
+
+### Node.js
+Node.js is a runtime environment designed to build scalable network applications. Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager. For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
 
 ## System requirements
 | Minimun    | Recommended   |  
@@ -28,18 +34,26 @@ With IONDV.Framework turn your vague idea into a perfectly structured app to man
 |            |               | 
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](platform/docs/en/readme.md) and [russian](platform/docs/ru/readme.md).
+The IONDV.Framework documentation is available in two languages - [english](/docs/en/readme.md) and [russian](/docs/ru/readme.md).
 ## Approximate size
 256 MB
 
-### Some handy links to learn more about IONDV.Framework:
+## Links
+Some handy links to learn more about IONDV.Framework. We are here to provide you with more information,  
+answer any questions you may have and create an effective solution.
 * [user manual](user)
 * [developer manual](dev)
-* [homepage](homepage) 
+* [homepage](homepage)  
 
-## Licence
-Copyright (c) IONdv. All rights reserved.  
-This project is licensed under the MIT license - see the [LICENSE](docs/en/LICENSE) file for details.
-## Contact us
-We are here to provide you with more information, answer any questions you may have and create an effective solution.  
-Send us a message - info@iondv.ru
+
+
+--------------------------------------------------------------------------  
+
+
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](platform/docs/en)/[RUS](platform/docs/ru)   &ensp; [FAQs](faqs.md)          
+
+
+
+--------------------------------------------------------------------------  
+
+ Copyright (c) **IONdv**. All rights reserved. 
