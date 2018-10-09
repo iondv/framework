@@ -1,5 +1,5 @@
 # IONDV. Framework 
-![logoIONdv](https://git.iondv.ru/ION/org/blob/master/Символика/Логотип/logoIONdv.png)
+![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)
 ## Description  
 IONDV.Framework —  это высокоуровневая low-code платформа, которая дает вам возможность создать масштабируемое приложение, используя современнные технологии. Основное предназначение платформы это создание Систем Управления для бизнеса, государства и социального сектора.   
 
@@ -34,6 +34,7 @@ Node.js is это среда выполнения компонентов, пре
 |            |               | 
 
 ## Documentation 
+[Документация по платформе IONDV.Framework.](/docs/ru/index.md)
 Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
 ## Approximate size
 256 MB
@@ -42,14 +43,14 @@ Node.js is это среда выполнения компонентов, пре
 Some handy links to learn more about IONDV.Framework. Мы хотим обеспечить вас всей необходимой информацией по платформе IONDV.Framework, а также ответить на ваши вопросы и выслушать пожелания.  
 * [руководство пользователя](user)
 * [руководство разработчика](dev)
-* [домашняя страница]([homepage](https://iondv.ru/index.html))  
+* [домашняя страница](https://iondv.ru/index.html) 
 
 
 
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/index.md)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
