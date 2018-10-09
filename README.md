@@ -34,7 +34,7 @@ Node.js is a runtime environment designed to build scalable network applications
 |            |               | 
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](/docs/en/readme.md) and [russian](/docs/ru/readme.md).
+The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru/readme.md).
 ## Approximate size
 256 MB
 

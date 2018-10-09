@@ -19,7 +19,7 @@ IONDV.Framework объединяет в себе следующие техног
 * разработанный технологический цикл разработки и сборки 
 
 ## Install dependencies
-Чтобы запустить платформу вам понадобится: СУБД mongoDВ и среда выполнения node.js.
+Чтобы запустить платформу вам понадобится установить окружение: СУБД mongoDВ и среда выполнения node.js.
 
 ### MongoDB
 [MongoDB](<https://www.mongodb.com/what-is-mongodb>) это инструмент управления базами данных с открытым исходным кодом, который хранит данные в JSON-подобных форматах. Установите СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия [3.4].  
@@ -34,7 +34,7 @@ Node.js is это среда выполнения компонентов, пре
 |            |               | 
 
 ## Documentation 
-Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/readme.md) и [russian](/docs/ru/readme.md).
+Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
 ## Approximate size
 256 MB
 
