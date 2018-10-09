@@ -43,7 +43,9 @@ Some handy links to learn more about IONDV.Framework. We are here to provide you
 answer any questions you may have and create an effective solution.
 * [user manual](user)
 * [developer manual](dev)
-* [homepage](homepage) 
+* [homepage](homepage)  
+
+
 
 --------------------------------------------------------------------------  
 
@@ -51,5 +53,7 @@ answer any questions you may have and create an effective solution.
  ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence]()&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG]()/[RUS]()   &ensp; [FAQs]()          
 
 
-&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;Copyright (c) **IONdv**. All rights reserved.  
 
+--------------------------------------------------------------------------  
+
+ Copyright (c) **IONdv**. All rights reserved. 
