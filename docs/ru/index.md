@@ -5,13 +5,7 @@
 * [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md)
 * [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/basic_settings/step2_project_with_modules.md)
 * [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/basic_settings/step3_building_and_running.md)
-### [Расширенная настройка](/docs/ru/1_system_deployment/advanced_settings)
-* [Окружение на Linux под windows 10](/docs/ru/1_system_deployment/advanced_settings/linux_environment_for_windows10.md) 
-* [Работа с репозиторием](/docs/ru/1_system_deployment/advanced_settings/git_repository.md)
-* [Работа с MongoDB](/docs/ru/1_system_deployment/advanced_settings/mongodv.md)
-* [Установка Visual Studio Code](/docs/ru/1_system_deployment/advanced_settings/visual_studio_code_setup.md)
-* [Настройка WebStorm](/docs/ru/1_system_deployment/advanced_settings/webstorm_setup.md)
-* [Окружение разработчика](/docs/ru/1_system_deployment/advanced_settings/developer_environment.md)
+
 ## 2. Описание системы
 ### [Структура метаданных](/docs/ru/2_system_description)
 *  [Схема структуры метаданных](/docs/ru/2_system_description/readme.md)
