@@ -1,5 +1,8 @@
 # IONDV. Framework 
-![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)
+
+![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)  
+## Быстрый старт
+Изучите документацию по платформе **IONDV.Framework** >> [RUS](/docs/ru/index.md) / [ENG](/docs/en/index.md)
 ## Описание 
 IONDV.Framework —  это высокоуровневая low-code платформа, которая дает вам возможность создать масштабируемое приложение, используя современнные технологии. Основное предназначение платформы это создание Систем Управления для бизнеса, государства и социального сектора.   
 
@@ -34,8 +37,6 @@ Node.js is это среда выполнения компонентов, пре
 |            |               | 
 
 ## Документация 
-[Документация по платформе IONDV.Framework.](/docs/ru/index.md)  
-
 Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
 ## Размер
 256 MB
