@@ -9,9 +9,7 @@ IONDV.Framework is based on framework model, that gives your an opportunity to f
 IONDV.Framework combines RAD, Agile / Scrum development technologies and DevOps methods to automate the process of building, testing, releasing and updating the versions. Furthermore, we practice continuous integration and store code in repositories.
 
 With IONDV.Framework turn your vague idea into a perfectly structured app to manage your business as easy as possible. You can learn how to build and run your app with the help of our friendly IONDV.Team.
-<p align="center">
-  <img alt="VS Code in action" src="https://cloud.githubusercontent.com/assets/11839736/16642200/6624dde0-43bd-11e6-8595-c81885ba0dc2.png">
-</p>
+
 ## Key features  
 
 * declarative programming
