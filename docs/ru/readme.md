@@ -41,7 +41,7 @@ Node.js is это среда выполнения компонентов, пре
 256 MB
 
 ## Links
-Some handy links to learn more about IONDV.Framework. Мы хотим обеспечить вас всей необходимой информацией по платформе IONDV.Framework, а также ответить на ваши вопросы и выслушать пожелания.  
+Ниже представлены полезные ссылки чтобы больше узнать о IONDV.Framework. Мы хотим обеспечить вас всей необходимой информацией по платформе IONDV.Framework, а также ответить на ваши вопросы и выслушать пожелания.  
 * [руководство пользователя](user)
 * [руководство разработчика](dev)
 * [домашняя страница](https://iondv.ru/index.html) 
@@ -51,7 +51,7 @@ Some handy links to learn more about IONDV.Framework. Мы хотим обесп
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/index.md)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/index.md) / [RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 

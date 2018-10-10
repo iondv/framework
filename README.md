@@ -34,7 +34,7 @@ Node.js is a runtime environment designed to build scalable network applications
 |            |               | 
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru/readme.md).
+The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru).
 ## Approximate size
 256 MB
 
@@ -50,7 +50,7 @@ answer any questions you may have and create an effective solution.
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/README.md)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/README.md) / [RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
