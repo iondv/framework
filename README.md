@@ -31,21 +31,19 @@ For more information, please read [Installing the Environment](<https://git.iond
 Node.js is a runtime environment designed to build scalable network applications. Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager. For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
 
 ## System requirements
-| Minimun    | Recommended   |  
-| -------    | ------        |  
-|            |               | 
+| Minimun    | Recommended   |  Approximate size | 
+| :-------:    | :------:        | :------------------:| 
+|            |               |     256 MB        |
 
 ## Documentation 
-The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru).
-## Approximate size
-256 MB
+The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru).  
 
 ## Links
 Some handy links to learn more about IONDV.Framework. We are here to provide you with more information,  
 answer any questions you may have and create an effective solution.
-* [user manual](user)
-* [developer manual](dev)
-* [homepage](https://iondv.ru/index.html)  
+* [User manual](/docs/en/manuals/user_manual.md)
+* [Developer manual](/docs/en/manuals/dev_manual.md)
+* [Homepage](https://iondv.ru/index.html)  
 
 
 

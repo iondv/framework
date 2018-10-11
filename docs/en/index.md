@@ -1,7 +1,6 @@
 # IONDV.Framework Documentation
 
 ## 1. System deployment
-### [Basic settings](/docs/en/1_system_deployment/basic_settings)
 * [Step 1 Installing the environment](/docs/en/1_system_deployment/basic_settings/step1_installing_environment.md)
 * [Step 2 Project with modules](/docs/en/1_system_deployment/basic_settings/step2_project_with_modules.md)
 * [Step 3 Building and running](/docs/en/1_system_deployment/basic_settings/step3_building_and_running.md)
@@ -58,7 +57,7 @@
 --------------------------------------------------------------------------  
 
 
- ### &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;[Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en)/[RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/index.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

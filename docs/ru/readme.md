@@ -32,27 +32,26 @@ IONDV.Framework объединяет в себе следующие техног
 Node.js is это среда выполнения компонентов, предназначенная для сборки масштабируемых приложений. Установите [Node.js](<https://nodejs.org/en/>) и менеджер пакетов npm (устанавливается по умолчанию). Для более детальной информации, смотрите [Установка окружения](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
 
 ## Системные требования
-| Минимальные    | Рекомендованные   |  
-| -------    | ------        |  
-|            |               | 
+| Минимальные    | Рекомендованные   |  Размер   | 
+| :-------:    | :------:        | :------------------:| 
+|            |               |       256 MB      |
 
 ## Документация 
 Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
-## Размер
-256 MB
+
 
 ## Ссылки
 Ниже представлены полезные ссылки чтобы больше узнать о IONDV.Framework. Мы хотим обеспечить вас всей необходимой информацией по платформе IONDV.Framework, а также ответить на ваши вопросы и выслушать пожелания.  
-* [руководство пользователя](user)
-* [руководство разработчика](dev)
-* [домашняя страница](https://iondv.ru/index.html) 
+* [Руководство пользователя](/docs/ru/manuals/user_manual.md)
+* [Руководство разработчика](/docs/ru/manuals/dev_manual.md)
+* [Домашняя страница](https://iondv.ru/index.html) 
 
 
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/index.md) / [RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/) / [RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
 
 
 
