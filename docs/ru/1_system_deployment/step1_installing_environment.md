@@ -71,7 +71,7 @@ Node.js - является средой, в которой осуществля�
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/basic_settings/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
 
 
 
