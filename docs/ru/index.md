@@ -1,21 +1,21 @@
 # Документация по платформе IONDV.Framework
 
-## 1. Развертывание системы
-* [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md)
-* [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/basic_settings/step2_project_with_modules.md)
-* [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/basic_settings/step3_building_and_running.md)
+## 1. [Развертывание системы](/docs/ru/1_system_deployment)
+* [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/step1_installing_environment.md)
+* [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)
+* [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
 
-## 2. Описание системы
-### [Структура метаданных](/docs/ru/2_system_description)
-*  [Схема структуры метаданных](/docs/ru/2_system_description/readme.md)
-*  [Мета классов](/docs/ru/2_system_description/meta_class.md) 
-*  [Мета представлений](/docs/ru/2_system_description/meta_view.md) 
-*  [Мета навигации](/docs/ru/2_system_description/meta_navigation.md) 
-*  [Мета бизнес-процессов](/docs/ru/2_system_description/meta_workflows.md) 
-*  [Геомета](/docs/ru/2_system_description/geometa.md)
-*  [Мета безопасности](/docs/ru/2_system_description/meta_security.md)
-*  [Мета отчетов](/docs/ru/2_system_description/meta_report.md)
-*  [Мета админа](/docs/ru/2_system_description/meta_admin.md)
+## 2. [Описание системы](/docs/ru/2_system_description)
+### [Структура метаданных](/docs/ru/2_system_description/metadata_structure)
+*  [Схема структуры метаданных](/docs/ru/2_system_description/metadata_structure/readme.md)
+*  [Мета классов](/docs/ru/2_system_description/metadata_structure/meta_class.md) 
+*  [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view.md) 
+*  [Мета навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation.md) 
+*  [Мета бизнес-процессов](/docs/ru/2_system_description/metadata_structure/meta_workflows.md) 
+*  [Геомета](/docs/ru/2_system_description/metadata_structure/geometa.md)
+*  [Мета безопасности](/docs/ru/2_system_description/metadata_structure/meta_security.md)
+*  [Мета отчетов](/docs/ru/2_system_description/metadata_structure/meta_report.md)
+*  [Мета админа](/docs/ru/2_system_description/metadata_structure/meta_admin.md)
 
 ### [Конфигурация платформы](/docs/ru/2_system_description/platform_configuration)
 *  [Deploy](/docs/ru/2_system_description/platform_configuration/deploy.md)
@@ -29,10 +29,10 @@
 *  [Печатные формы](/docs/ru/2_system_description/platform_configuration/functionality/printed_forms.md)
 *  [Настройка заданий по расписанию](/docs/ru/2_system_description/platform_configuration/functionality/schedule.md)
 *  [Утилиты](/docs/ru/2_system_description/platform_configuration/functionality/utilities.md)
-## 3. Создание проекта модели ИОН
+## 3. [Создание проекта модели ИОН](/docs/ru/3_ion_model)
 *  [Настройка среды разработки ION](/docs/ru/3_ion_model/ion_environment.md)
 *  [Настройка Studio Visual Code](/docs/ru/3_ion_model/visual_code_setup.md) 
-## 4. Описание модулей 
+## 4. [Описание модулей](/docs/ru/4_modules_description) 
 *  [Админ](/docs/ru/4_modules_description/admin.md)
 *  [Регистри](/docs/ru/4_modules_description/registry.md)
 *  [Отчёты](/docs/ru/4_modules_description/report.md)
@@ -47,10 +47,10 @@
 *  [Дашборд](/docs/ru/4_modules_description/dashboards.md)
 *  [1С](/docs/ru/4_modules_description/1c.md)
 
-## 5. Тестирование
+## 5. [Тестирование](/docs/ru/5_system_test)
 *  [Настройка и применение](/docs/ru/5_system_test/5_system_test)
 
-## 6. Оптимизация скорости
+## 6. [Оптимизация скорости](/docs/ru/5_system_test/6_optimization)
 * [Оптимизация скорости работы с метаданными](/docs/ru/5_system_test/6_optimization/speed_optimization.md)
 
 
