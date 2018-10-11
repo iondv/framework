@@ -1,10 +1,9 @@
 ## 1. Развертывание системы
-### [Базовая настройка](/docs/ru/1_system_deployment/basic_settings)
-* [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md)  
+* [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/step1_installing_environment.md)  
 Выполните установку окружения чтобы запустить платформу IONDV.Framework.
-* [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/basic_settings/step2_project_with_modules.md)  
+* [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)  
 Выполните развертку приложения. Необходимо клонировать приложение и его компоненты. Далее выполнить клонирование репозитория ядра, модулей и сформировать приложение. 
-* [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/basic_settings/step3_building_and_running.md)  
+* [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)  
 Выполните сборку приложения. Установите все библиотеки и импортируйте данные в БД. После окончания сборки, запустите приложение.
 --------------------------------------------------------------------------  
 
