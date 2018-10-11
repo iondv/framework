@@ -1,6 +1,6 @@
-[Basic settings](/docs/en/1_system_deployment/basic_settings)
+[1_System deployment](/docs/en/1_system_deployment/)
 # Installing the desktop environment
-### The previous page: [Contents](docs/en/index/md)  
+### The previous page: [Contents](docs/en/index.md)  
 
 The environment is a list of programs needed to run a platform:  
 * DBMS
@@ -63,7 +63,7 @@ When developing, we use the [Gulp](http://gulpjs.com/) app to organize testing a
 ### The installer of frontend dependencies
 To install the frontend libraries, you should install [bower](https://bower.io) globally, using the `npm install -g bower` command. 
 
-### The following page: [forming the project with modules](docs/en/1_system_deployment/basic_settings/step2_project_with_modules.md)
+### The following page: [forming the project with modules](docs/en/1_system_deployment/step2_project_with_modules.md)
 
 --------------------------------------------------------------------------  
 
