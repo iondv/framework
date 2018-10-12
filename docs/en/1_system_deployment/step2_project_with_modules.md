@@ -24,7 +24,7 @@ Open the package.json file to see all the dependencies.
 3. `ionMetaDependencies` - list of other metadata necessary for the project, the only exception is `viewlib` -  View Library.
 
 #### Cloning the core repository  
-The core is located in the [`platform`](https://git.iondv.ru/ION/platform) repository. On the main page you will see the path of the git repository in the box.  
+The core is located in the [`platform`](https://git.iondv.ru/ION/platform) repository. On the main page, in the box you will see the path of the git repository.  
 
 ![image](/uploads/f1f838515b040d2a51b933381b320bc1/image.png)
 
