@@ -7,14 +7,14 @@ Start with the [meta sheme and its description](/docs/en/2_system_description/me
 ### [Platform configuration](/docs/en/2_system_description/platform_configuration)
 Integration and configuration of resources in the project. 
 
-### [Functionality](/docs/en/2_system_description/platform_configuration/functionality)
+### [Functionality](/docs/en/2_system_description/functionality)
 The additional functionality is implemented separately from the metadata, but within the application.
 
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/2_system_description)  [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/2_system_description) &ensp; [FAQs](/faqs.md)          
 
 
 
