@@ -1,15 +1,20 @@
-## 1. Развертывание системы
-### [Базовая настройка](/docs/ru/1_system_deployment/basic_settings)
-* [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md)  
-Выполните установку окружения чтобы запустить платформу IONDV.Framework.
-* [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/basic_settings/step2_project_with_modules.md)  
-Выполните развертку приложения. Необходимо клонировать приложение и его компоненты. Далее выполнить клонирование репозитория ядра, модулей и сформировать приложение. 
-* [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/basic_settings/step3_building_and_running.md)  
-Выполните сборку приложения. Установите все библиотеки и импортируйте данные в БД. После окончания сборки, запустите приложение.
+# 2. Описание системы
+Мы советуем изучить данный раздел для наилучшего понимания функционирования платформы. Рекомендуем начинать в указаном порядке.   
+### [Структура метаданных](/docs/ru/2_system_description/metadata_structure)
+Необходимо начать со [схемы структуры меданных](/docs/ru/2_system_description/metadata_structure/readme.md) и далее ориентироваться по ней по мере изучения типов файлов меты. 
+
+
+### [Конфигурация платформы](/docs/ru/2_system_description/platform_configuration)
+Подключение и конфигурирование ресурсов в проекте.
+
+### [Функциональность](/docs/ru/2_system_description/platform_configuration/functionality)
+Дополнительная надстройка реализуется отдельно от метаданных, но в рамках приложения. 
+
+
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/index.md) / [RUS](/docs/ru)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/ru/2_system_description)  [FAQs](/faqs.md)          
 
 
 

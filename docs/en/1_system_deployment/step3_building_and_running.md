@@ -11,7 +11,7 @@ Building the application includes the installation of all libraries, import of a
 
 When first launching, write the `npm install` command - it will install all key dependencies, including the gulp builder (installation command `npm install gulp`). This command installs all lybraries from the `dependencies` characteristic in the `package.json` list.   
 
-After `npm install` command, the following message can pop up. It notifies you that dependencies consists of modules that can be potentionally dangerous for the project. Just ignore this notification.
+After `npm install` command, the following message can pop up. It notifies you that dependencies consist of modules that can be potentionally dangerous for the project. Just ignore this notification.
 
 NB! **The following message is NOT an error**
 
