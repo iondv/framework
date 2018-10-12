@@ -14,7 +14,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/ru/2_system_description) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description) &ensp; [FAQs](/faqs.md)          
 
 
 
