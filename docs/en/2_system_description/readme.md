@@ -1,7 +1,7 @@
 # 2. System description
 It is highly recommended to thoroughly study this section for a better understanding of the functioning of IONDV. Framework. Please follow the order below.   
 ### [Metadata structure](/docs/en/2_system_description/metadata_structure)
-Start with the [meta sheme and its description](/docs/en/2_system_description/metadata_structure/readme.md) and use it to navigate through the all types of meta files.
+Start with the [meta sheme and its description](/docs/en/2_system_description/metadata_structure/meta_scheme.md) and use it to navigate through the all types of meta files.
 
 
 ### [Platform configuration](/docs/en/2_system_description/platform_configuration)

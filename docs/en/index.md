@@ -7,7 +7,7 @@
 
 ## 2. [System description](/docs/ru/2_system_description)
 ### [Metadata structure](/docs/en/2_system_description/metadata_structure)
-*  [Metadata scheme](/docs/en/2_system_description/metadata_structure/readme.md)
+*  [Metadata scheme](/docs/en/2_system_description/metadata_structure/meta_scheme.md)
 *  [Meta class](/docs/en/2_system_description/metadata_structure/meta_class.md) 
 *  [Meta view](/docs/en/2_system_description/metadata_structure/meta_view.md) 
 *  [Meta navigation](/docs/en/2_system_description/metadata_structure/meta_navigation.md) 
