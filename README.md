@@ -1,39 +1,41 @@
 # IONDV. Framework 
 ![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)
-## Quick start
-Explore **IONDV.Framework** documentation for the  quick start>> [RUS](/docs/ru/index.md) / [ENG](/docs/en/index.md)
+
 ## Description  
-IONDV.Framework —  is a a high-level low-code platform that allows you to create your own scalable app using the cutting-eadge technologies. It is mainly designed for building business, gouverments and customers Process Management Systems.
+IONDV.Framework —  is a a high-level low-code framework that allows you to create your own app and to finalize it with different ready-to-use modules. It is mainly designed for building business, governments and customers Process Management Systems.  
+The main advantages of IONDV.Framework are open source software, Java Script, node.js run-time environment, open structure of metadata in human-readable JSON files.
 
-IONDV.Framework is based on framework model, that gives your an opportunity to finalize your open source app with different modules such as gantt chart, dashboards etc. 
-IONDV.Framework combines RAD, Agile / Scrum development technologies and DevOps methods to automate the process of building, testing, releasing and updating the versions. Furthermore, we practice continuous integration and store code in repositories.
+## Functionality  
 
-With IONDV.Framework turn your vague idea into a perfectly structured app to manage your business as easy as possible. You can learn how to build and run your app with the help of our friendly IONDV.Team.
+* creation of arbitrary multi-user system of data recording
+* allocation of access and data security
+* data management based on workflows
+* generation of reports and analytics
+* ability to visualize data on geolayer
+* possibility of arbitrary presentation of data in portal forms
+* easy data integration with REST and SOAP 
 
-## Key features  
+## Quick start
+How to quickly start using **IONDV.Framework** >> [RUS](/docs/ru/1_system_deployment/) / [ENG](/docs/en/1_system_deployment/) 
+### [Step 1 Installing the environment](/docs/en/1_system_deployment/step1_installing_environment.md)  
+You need to install the environment to run the IONDV.Framework.
+### [Step 2 Deploying project with modules](/docs/en/1_system_deployment/step2_project_with_modules.md)  
+To deploy the application, you need to clone the app and its components. Further, you clone the core repository, modules and now, you can deploy the app with modules.
+### [Step 3 Building and running](/docs/en/1_system_deployment/step3_building_and_running.md)  
+To build the app, install all the libraries and import the data to the DB. Once the building is finished, you can launch the app. 
 
-* declarative programming
-* open source software
-* Java Script 
-* ready-to-use modules
-* node.js run-time environment
-* open stracture of metadata in human-readable JSON files
-* elaborated technology cycle of development and building
-
-## Install dependencies
-You will need the following programs to run a platform: mongoDВ and node.js.
+## Dependencies
+You will need the following programs to run a platform.
 
 ### MongoDB
-[MongoDB](<https://www.mongodb.com/what-is-mongodb>) is an open-source document-based database management tool that stores data in JSON-like formats. Install [MongoDB](https://www.mongodb.org/) DBMS. Verified version [3.4].  
-For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
+MongoDB is an open-source document-based database management tool that stores data in JSON-like formats. Install [MongoDB](https://www.mongodb.org/) DBMS. Verified version [3.4].  
 
 ### Node.js
-Node.js is a runtime environment designed to build scalable network applications. Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager. For more information, please read [Installing the Environment](<https://git.iondv.ru/ION/platform/blob/IONCORE-480/docs/ru/1_system_deployment/basic_settings/step1_installing_environment.md>).
+Node.js is a runtime environment designed to build scalable network applications. Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager. 
 
-## System requirements
-| Minimun    | Recommended   |  Approximate size | 
-| :-------:    | :------:        | :------------------:| 
-|            |               |     256 MB        |
+### System requirements
+Recommended -  
+Approximate size - 256 MB     
 
 ## Documentation 
 The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru/index.md).  
