@@ -74,3 +74,14 @@
     "namespace" : ""
 }
 ```
+
+--------------------------------------------------------------------------  
+
+
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description/metadata_structure/meta_class) &ensp; [FAQs](/faqs.md)          
+
+
+
+--------------------------------------------------------------------------  
+
+ Copyright (c) **IONDV**. All rights reserved. 
