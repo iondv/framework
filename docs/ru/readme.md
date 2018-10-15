@@ -2,6 +2,8 @@
 
 ![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)  
 
+This page in [English](/platform/README.md/)
+
 ## Описание 
 IONDV.Framework —  это высокоуровневый low-code фреймворк, который дает вам возможность создать приложение,а также изменять и улучшать его при помощи различных готовых модулей. Основное предназначение платформы это создание Систем Управления для бизнеса, государства и социального сектора.    
 Преимущества IONDV.Framework это открытый исходный код, язык програмирования Java Script, среда выполнения node.js и открытая структура метаданных в человекочитаемом формате JSON файлов.
@@ -18,7 +20,7 @@ IONDV.Framework —  это высокоуровневый low-code фреймв
 * простая интеграция данных по REST и SOAP 
 
 ## Быстрый старт
-Как быстро начать использовать **IONDV.Framework** >> [RUS](/docs/ru/1_system_deployment/) / [ENG](/docs/en/1_system_deployment/)
+Как быстро начать использовать **IONDV.Framework** 
 ### [Шаг 1 Установка окружения](/docs/ru/1_system_deployment/step1_installing_environment.md)  
 Выполните установку окружения чтобы запустить платформу IONDV.Framework.
 ### [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)  

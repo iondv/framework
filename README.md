@@ -1,6 +1,7 @@
 # IONDV. Framework 
 ![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)
 
+This page in [Russian](/docs/ru/readme.md) 
 ## Description  
 IONDV.Framework —  is a a high-level low-code framework that allows you to create your own app and to finalize it with different ready-to-use modules. It is mainly designed for building business, governments and customers Process Management Systems.  
 The main advantages of IONDV.Framework are open source software, Java Script, node.js run-time environment, open structure of metadata in human-readable JSON files.
@@ -16,7 +17,7 @@ The main advantages of IONDV.Framework are open source software, Java Script, no
 * easy data integration with REST and SOAP 
 
 ## Quick start
-How to quickly start using **IONDV.Framework** >> [RUS](/docs/ru/1_system_deployment/) / [ENG](/docs/en/1_system_deployment/) 
+How to quickly start using **IONDV.Framework**  
 ### [Step 1 Installing the environment](/docs/en/1_system_deployment/step1_installing_environment.md)  
 You need to install the environment to run the IONDV.Framework.
 ### [Step 2 Deploying project with modules](/docs/en/1_system_deployment/step2_project_with_modules.md)  
