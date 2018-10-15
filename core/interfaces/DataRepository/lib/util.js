@@ -3,10 +3,10 @@
  */
 'use strict';
 const PropertyTypes = require('core/PropertyTypes');
-const DateTypes = require('core/DateTypes');
 const cast = require('core/cast');
 const strToDate = require('core/strToDate');
-const ConditionParser = require('core/ConditionParser');
+const dateOffset = require('core/util/dateOffset');
+const conditionParser = require('core/ConditionParser');
 const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
@@ -64,27 +64,7 @@ function castValue(value, pm) {
 
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
-    switch (pm.mode) {
-      case DateTypes.REAL:
-        if (typeof v.utcOffset !== 'undefined') {
-          delete v.utcOffset;
-        }
-        break;
-      case DateTypes.LOCALIZED:
-        if (typeof v.utcOffset === 'undefined') {
-          v.utcOffset = v.getTimezoneOffset();
-        }
-        break;
-      case DateTypes.UTC:
-      {
-        let offset = v.utcOffset || v.getTimezoneOffset();
-        v.setUTCMinutes(v.getUTCMinutes() + offset);
-        v.utcOffset = 0;
-      }
-        break;
-      default:
-        throw new Error('Unsupported date mode specified!');
-    }
+    v = dateOffset(v, pm.mode);
   }
   return v;
 }
@@ -497,7 +477,7 @@ function spFilter(cm, pm, or, svre, prefix) {
         }
         or.push({
           [Operations.AND]: [
-            ConditionParser(pm.selectionProvider.matrix[k].conditions, cm),
+            conditionParser(pm.selectionProvider.matrix[k].conditions, cm),
             spOr
           ]
         });
@@ -513,7 +493,7 @@ function spFilter(cm, pm, or, svre, prefix) {
  * @returns {RegExp | String}
  */
 function createSearchRegexp(search, mode, asString) {
-  let result = search.trim().replace(/[\[\]\.\*\(\)\\\/\?\+\$\^]/g, '\\$0');
+  let result = search.trim().replace(/[[\].*()\\/?+$^]/g, '\\$0');
   if (mode === 'contains') {
     result = result.replace(/\s+/g, '\\s+');
   } else if (mode === 'starts') {
@@ -698,11 +678,11 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           }
         }
         if (p) {
-          result = result ? result.then(() => {
-            return attrSearchFilter(scope, cm, p, tmp, sval, lang,
+          result = result ? result.then(
+            () => attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i]);
-          }) :
+              d, smodes[i])
+          ) :
             attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
               d, smodes[i]);

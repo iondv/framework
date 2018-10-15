@@ -1703,7 +1703,7 @@ function IonDataRepository(options) {
     if (Array.isArray(item)) {
       let p = Promise.resolve();
       item.forEach((item) => {
-        p = p.then(() => refreshCaches(item));
+        p = p.then(() => refreshCaches(item, conditions, options));
       });
       return p;
     }
