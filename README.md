@@ -17,7 +17,6 @@ The main advantages of IONDV.Framework are open source software, Java Script, no
 * easy data integration with REST and SOAP 
 
 ## Quick start
-How to quickly start using **IONDV.Framework**  
 ### [Step 1 Installing the environment](/docs/en/1_system_deployment/step1_installing_environment.md)  
 You need to install the environment to run the IONDV.Framework.
 ### [Step 2 Deploying project with modules](/docs/en/1_system_deployment/step2_project_with_modules.md)  
@@ -26,7 +25,7 @@ To deploy the application, you need to clone the app and its components. Further
 To build the app, install all the libraries and import the data to the DB. Once the building is finished, you can launch the app. 
 
 ## Dependencies
-You will need the following programs to run a platform.
+
 
 ### MongoDB
 MongoDB is an open-source document-based database management tool that stores data in JSON-like formats. Install [MongoDB](https://www.mongodb.org/) DBMS. Verified version [3.4].  
