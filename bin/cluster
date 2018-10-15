@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+/* eslint no-process-env: off */
+const cluster = require('cluster');
+const config = require('../config');
+const IonLogger = require('core/impl/log/IonLogger');
+const sysLog = new IonLogger(config.log || {});
+
+function killEmAll() {
+  for (const id in cluster.workers) {
+    cluster.workers[id].kill();
+  }
+}
+
+if (cluster.isMaster) {
+  const os = require('os');
+
+  const clusterConfig = config.cluster || {};
+
+  const cpus = os.cpus();
+  let numWorkers = process.env.WORKER_COUNT || clusterConfig.count || cpus;
+  if (numWorkers > cpus) {
+    numWorkers = cpus;
+  }
+  let stopping = false;
+
+  if (clusterConfig.master && typeof clusterConfig.master === 'object') {
+    cluster.setupMaster(clusterConfig.master);
+  }
+
+  cluster.on('exit', (worker) => {
+    sysLog.warn(`Приложение ION (pid:${worker.process.pid}) остановлено.`);
+    if (!stopping) {
+      cluster.fork();
+    }
+  });
+
+  cluster.on('listening', (worker, address) => {
+    sysLog.info(`Приложение ION (pid:${worker.process.pid}) запущено по адресу ${address.address || 'localhost'}:${address.port}`);
+  });
+
+  process.on('SIGHUP', () => {
+    sysLog.warn('Перезагрузка кластера приложений ION');
+    killEmAll();
+  });
+
+  process.on('SIGTERM', () => {
+    stopping = true;
+    killEmAll();
+  });
+
+  sysLog.info(`Запуск кластера приложений ION (pid:${process.pid})`);
+  for (let i = 0; i < numWorkers; i++) {
+    cluster.fork();
+  }
+} else {
+  const server = require('lib/server');
+  server({config, sysLog});
+}
