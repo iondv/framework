@@ -6,7 +6,7 @@
       "git add"
     ]
   },
-  "license": "ION DV Ltd.",
+  "license": "GNU GPLv3",
   "engines": {
     "node": ">=8.9.1"
   },
@@ -89,12 +89,5 @@
     "lint-staged": "^5.0.0",
     "run-sequence": "latest"
   },
-  "homepage": "https://git.iondv.ru/ION/platform",
-  "delDependence": {
-    "passport-vkontakte": "latest",
-    "stream-buffers": "latest",
-    "passport-facebook": "latest",
-    "binstring": "latest",
-    "utf8": "latest"
-  }
+  "homepage": "https://git.iondv.ru/ION/platform"
 }
