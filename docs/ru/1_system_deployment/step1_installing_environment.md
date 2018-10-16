@@ -71,12 +71,12 @@ Node.js - является средой, в которой осуществля�
 --------------------------------------------------------------------------  
 
 
- #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright © 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **IONDV.Framework**.  
 All rights reserved.  
  

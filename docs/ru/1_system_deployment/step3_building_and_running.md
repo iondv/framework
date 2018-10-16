@@ -42,13 +42,13 @@ node bin\acl.js --u admin@local --role admin --p full
 --------------------------------------------------------------------------  
 
 
- #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright © 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **IONDV.Framework**.  
 All rights reserved.  
 
 

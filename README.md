@@ -35,9 +35,9 @@ Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. 
 
 To build all components and libraries you need to install globally the following components:
 
-* package [node-gyp] (<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. For the Windows operating system, it is additionally necessary to install the windows-build-tools package `npm install -g --production windows-build-tools`
-* [Gulp] installation package (<http://gulpjs.com/>) `npm install -g gulp`
-* package manager of frontend libraries [Bower] (<https://bower.io>) `npm install -g bower`
+* package [node-gyp](<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. For the Windows operating system, it is additionally necessary to install the windows-build-tools package `npm install -g --production windows-build-tools`
+* [Gulp](<http://gulpjs.com/>) installation package `npm install -g gulp`
+* package manager of frontend libraries [Bower](<https://bower.io>) `npm install -g bower`
 
 ### Core, modules and application
 Dependencies are listed in the `package.json` file.
@@ -82,12 +82,12 @@ Some handy links to learn more information on developing applications using IOND
 --------------------------------------------------------------------------  
 
 
- #### [Licence](LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright © 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **IONDV.Framework**.  
 All rights reserved.  
 
