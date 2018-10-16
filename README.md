@@ -88,6 +88,6 @@ Some handy links to learn more information on developing applications using IOND
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **IONDV LLC**.  
 All rights reserved.  
 
