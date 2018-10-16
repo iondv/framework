@@ -14,10 +14,11 @@ The additional functionality is implemented separately from the metadata, but wi
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/2_system_description) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description) &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved.  

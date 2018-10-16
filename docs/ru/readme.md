@@ -8,7 +8,7 @@ This page in [English](/README.md/)
 IONDV.Framework —  фреймворк по созданию высокоуровневых веб-приложений на основе метаданных, в том числе без программирования. При этом фреймворк предусматривает изменение функциональности с помощью дополнительных компонентов или написания собственных. Типичные приложения:
 * система управления проектами предприятия;
 * реестры учета и обработки данных на основе бизнес-процессов;
-* CRM.
+* CRM - система управление отношениями с клиентами.
 Преимуществами IONDV.Framework являются открытый исходный код на Java Script и открытая структура метаданных в человекочитаемом формате в формате JSON.
 
 
@@ -23,52 +23,74 @@ IONDV.Framework —  фреймворк по созданию высокоуро
 * простая интеграция данных по REST и SOAP 
 
 ## Быстрый старт с использованием репозитория
-Также вы можете получить посмотреть собранные приложения, развернутые в облаке или получить продукты для изучения другим способом на [сайте фреймворка](https://iondv.com) , в том числе:
+Вы можете получить посмотреть собранные приложения, развернутые в облаке или получить продукты для изучения другим способом на [сайте фреймворка](https://iondv.com) , в том числе:
 * инсталятор для операционной системы windows
 * архив с собранным приложением
 * docker-контейнер с собранным приложением
 
 ### Cистемное окружение
-Запуск фреймворка осуществляется в среде [Node.js]() версии 8.x
+Запуск фреймворка осуществляется в среде [Node.js](<https://nodejs.org/en/>) версии 8.x.
 
-Для хранения данных необходимо установить и запустить [MongoDb]() версии.
+Для хранения данных необходимо установить и запустить [MongoDb](https://www.mongodb.org/) версии.
 
 ### Глобальные зависимости
-Для сбори компонентов и библиотек фреймворка необходимо чтобы было установлено глобально:
-* пакет [node-gyp]() `npm install -g node-gyp`. Для работы библиотеки под операционной системой семейства windows дополнительно необходимо установить пакет windows-build-tools `npm install -g --production windows-build-tools`
-* пакет сборщика проектов [Gulp]() `npm install -g gulp`
-* менджер пакет фронтенд библиотек [Bower]() `npm install -g bower`
+Для сборки компонентов и библиотек фреймворка необходимо чтобы было установлено глобально:
+* пакет [node-gyp](<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. Для работы библиотеки под операционной системой семейства windows дополнительно необходимо установить пакет windows-build-tools `npm install -g --production windows-build-tools`
+* пакет сборщика проектов [Gulp](<http://gulpjs.com/>) `npm install -g gulp`
+* менджер пакета фронтенд библиотек [Bower](<https://bower.io>) `npm install -g bower`
 
 ### Установка ядра, модулей и приложения
-TODO
+Зависимости указаны в файле `package.json`.   
+* `engines": "ion": 1.8.49` - ядро  
+* `ionModulesDependencies` - модули  
+* `ionMetaDependencies` - метаданные  
+
+Клонируйте компоненты для фреймворка: репозиторий ядра, модули и приложение. Также клонируем зависимости в `ionMetaDependencies`, в частности `viewlib` - библиотека представлений.
 
 ### Сборка, конфигрурирование и развертывание приложения
-TODO
+Создайте конфигурационный файл `setup.ini` для задания основных параметров окружения приложения. 
 
+```
+auth.denyTop=false
+auth.registration=false
+auth.sessionLifeTime=30m
+db.uri=mongodb://127.0.0.1:27017/ion-dnt
+db.user=
+db.pwd=
+server.ports[]=8888
+server.ports[]=8889
+server.ports[]=3000
+module.default=registry
+fs.storageRoot=./files
+fs.urlBase=/files
+jobs.enabled=true
+
+```
+Задайте переменную окружения NODE_PATH. Выполните команду `npm install` для установки ключевых зависимостей. Далее выполняем команду сборки приложения `gulp assemble`. 
 ### Запуск
-TODO
-
+В `Mongo Compass` добавьте базового пользователя. Запустите приложение командой `npm start`. 
 
 ## Документация 
-Документация по платформе IONDV.Framework доступна на двух языках  - [english](/docs/en/index.md) и [russian](/docs/ru/index.md).
+Документация по платформе IONDV.Framework доступна на двух языках  - [русский](/docs/ru/index.md) и [english](/docs/en/index.md).
 
 ## Ссылки
 Ниже представлены ссылки на дополнительную информацию по разработке приложений с использованием IONDV.Framework.
 * [Руководство пользователя](/docs/ru/manuals/user_manual.md)
 * [Руководство разработчика](/docs/ru/manuals/dev_manual.md)
 * [Домашняя страница фреймворка](https://iondv.com/)
-* Поддержка на [stack overflow](https://stackoverflow.com/search?q=iondv)
+* Обратная связь на [stack overflow](https://stackoverflow.com/search?q=iondv)
 
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](LICENSE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Englsih](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](LICENСE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved. 
 
 

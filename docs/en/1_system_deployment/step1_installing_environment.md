@@ -68,10 +68,11 @@ To install the frontend libraries, you should install [bower](https://bower.io) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/en/1_system_deployment/step1_installing_environment.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step1_installing_environment.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved.  

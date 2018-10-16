@@ -15,4 +15,5 @@
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved.  

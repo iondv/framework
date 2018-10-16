@@ -1,4 +1,5 @@
 # Мета класса - общая часть
+### Предыдущая страница: []()
 ## JSON
 ```
 {
@@ -74,14 +75,15 @@
     "namespace" : ""
 }
 ```
-
+### Следующая страница: []()
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description/metadata_structure/meta_class) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md) &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved.  

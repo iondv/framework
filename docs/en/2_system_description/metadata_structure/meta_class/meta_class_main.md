@@ -1,4 +1,5 @@
 # Meta class - General part
+### The previous page: []()
 ## JSON
 ```
 {
@@ -10,7 +11,7 @@
   "name": "class_integer",
   "abstract": true,
   "version": "",
-  "caption": "Класс \"Целое [6]\"",
+  "caption": "Class \"Integer [6]\"",
   "ancestor": null,
   "container": null,
   "creationTracker": "",
@@ -27,7 +28,7 @@
 
 | Field                | Name in studio          | Acceptable values                    |  Description                                                                                                                                                                                                 |
 |:--------------------:|:-------------------------------:|:--------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `"isStruct"`        | **It is structure**         | Logical.                            | Если выставлено "true" - это говорит о том, что данный класс является структурой, и может быть использован в прочих классах в атрибутах особого типа - "Структура [16]". [Подробнее](metadata/is-struct) |
+| `"isStruct"`        | **It is structure**         | Logical.                            | If the value is "true" - this class is a structure and can be used in other classes in atributes of a special kind - "Structure [16]". [Read more](docs/en/2_system_description/metadata_structure/meta_class/attribute_types.md) |
 | `"key"`              | **Key attributes**           | Array of rows, at least one value.   | Для функционирования приложения в каждом классе должно быть задано ключевое поле, однозначно идентифицирующее объект в коллекции. [Подробнее](metadata/keys)                                             |
 | `"semantic"`         | **Semantic attribute**       | Row.                                | Задает семантику - правило формирования строкового представления для данного класса. [Подробнее](metadata/semantic).                                                                                     |
 | `"name"`             | **System name**               | Row, only the Latin alphabet, with no spaces. | Задает в том числе первую часть имени файла меты класса, служебное имя.                                                                                                                                  |
@@ -36,7 +37,7 @@
 | `"caption"`          | **Logical name**              | Row.                                | Отображаемое в пользовательском интерфейсе имя класса                                                                                                                                                    |
 | `"ancestor"`         | **Parent class**          | Null or row.                      | Набор атрибутов, заведенных в данном классе, наследуется классами-наследниками. Является способом сократить количество сущностей, когда для них можно использовать одинаковый набор атрибутов. Все классы-наследники будут наследовать атрибутивный состав родителя + можно завести атрибуты, принадлежащие индивидуально данному классу-наследнику (при необходимости)                                                                                                                                                                                        |
 | `"container"`        | **Container attribute** | Null or row.                      | **NO DATA**                                                                                                                                                                                           |
-| `"creationTracker"`  | **Метка времени создания**      | Row.                                 | Позволяет сохранять в классе дату/время создания объекта, требует наличия соответствующего атрибута класса, `"name"` которого и вносится в данное поле. [Подробнее](metadata/timetrackers)               |
+| `"creationTracker"`  | **Time tag of created objects**      | Row.                                 | Позволяет сохранять в классе дату/время создания объекта, требует наличия соответствующего атрибута класса, `"name"` которого и вносится в данное поле. [Подробнее](metadata/timetrackers)               |
 | `"changeTracker"`    | **Time tag of commited changes**     | Row.                                 | Позволяет сохранять в классе дату/время изменения объекта, требует наличия соответствующего атрибута класса, `"name"` которого и вносится в данное поле. [Подробнее](metadata/timetrackers)              |
 | `"creatorTracker"`  | **Tag of the user who created the object**      | Row                                 | Позволяет сохранять в классе имя пользователя создавшего объект, требует наличия соответствующего атрибута класса, `"name"` которого и вносится в данное поле. [Подробнее](metadata/usertrackers)               |
 | `"editorTracker"`    | **Tag of the user who changed the object**     | Row                                 | Позволяет сохранять в классе имя пользователя, изменившего объект, требует наличия соответствующего атрибута класса, `"name"` которого и вносится в данное поле. [Подробнее](metadata/usertrackers)              |
@@ -61,7 +62,7 @@
     "semantic" : "",
     "name" : "class_integer",
     "version" : "",
-    "caption" : "Класс \"Целое [6]\"",
+    "caption" : "Class \"Integer [6]\"",
     "ancestor" : null,
     "container" : null,
     "creationTracker" : "",
@@ -73,3 +74,15 @@
     "namespace" : ""
 }
 ```
+### The next page: []()
+--------------------------------------------------------------------------  
+
+
+ #### [Licence](LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md) &ensp; [FAQs](/faqs.md)          
+
+
+
+--------------------------------------------------------------------------  
+
+Copyright © 2018 **IONDV.Framework**.  
+All rights reserved. 
