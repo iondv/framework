@@ -7,7 +7,7 @@
 * глобальные библиотеки node
 
 ## СУБД
-Нужно установить СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия [3.4]. 
+Нужно установить СУБД [MongoDB](https://www.mongodb.org/). Версия [3.6]. 
 
 ![image](/uploads/99b07b8afaace3465f4c60446e9704ca/image.png)
 

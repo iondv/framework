@@ -8,7 +8,7 @@ The environment is a list of programs needed to run a platform:
 * node Global Libraries  
 
 ## DBMS
-You need to install DBMS [MongoDB](https://www.mongodb.org/). Verified version [3.4]. 
+You need to install DBMS [MongoDB](https://www.mongodb.org/). Version [3.6]. 
 
 ![image](/uploads/99b07b8afaace3465f4c60446e9704ca/image.png)
 

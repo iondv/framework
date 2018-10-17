@@ -29,7 +29,7 @@ You can get an access to the already built applications deployed on cloud or exp
 
 Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager to run the IONDV.Framework. Version 8.x.   
 
-Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. Verified version [3.4].  
+Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. Version [3.6].  
 
 ### Global dependencies
 
