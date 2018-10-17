@@ -6,22 +6,22 @@
 * [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
 
 ## 2. [Описание системы](/docs/ru/2_system_description)
-### [Структура метаданных](/docs/ru/2_system_description/metadata_structure)
-*  [Metadata scheme](/docs/ru/2_system_description/metadata_structure/meta_scheme.md)
-*  [Meta class](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md) 
-*  [Meta view](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md) 
-*  [Meta navigation](/docs/ru/2_system_description/metadata_structure/meta_navigation/meta_navigation.md) 
-*  [Meta workflow](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md) 
-*  [Geometa](/docs/ru/2_system_description/metadata_structure/geometa/geometa.md)
-*  [Meta security](/docs/ru/2_system_description/metadata_structure/meta_security/meta_security.md)
-*  [Meta report](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)
-*  [Meta admin](/docs/ru/2_system_description/metadata_structure/meta_admin/meta_admin.md)
+### Структура метаданных
+*  [Схема метаданных](/docs/ru/2_system_description/metadata_structure/meta_scheme.md)
+*  [Мета класса](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md) 
+*  [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md) 
+*  [Мета навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/meta_navigation.md) 
+*  [Мета бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md) 
+*  [Геомета](/docs/ru/2_system_description/metadata_structure/geometa/geometa.md)
+*  [Мета безопасности](/docs/ru/2_system_description/metadata_structure/meta_security/meta_security.md)
+*  [Мета отчета](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)
+*  [Мета админ](/docs/ru/2_system_description/metadata_structure/meta_admin/meta_admin.md)
 
-### [Конфигурация платформы](/docs/ru/2_system_description/platform_configuration)
+### Конфигурация платформы
 *  [Deploy](/docs/ru/2_system_description/platform_configuration/deploy.md)
 *  [Packages](/docs/ru/2_system_description/platform_configuration/ini_files.md)
 *  [Ini-файлы](/docs/ru/2_system_description/platform_configuration/ini_files.md)
-### [Функциональность](/docs/ru/2_system_description/functionality)
+### Функциональность 
 
 *  [ЭЦП](/docs/ru/2_system_description/functionality/eds.md)
 *  [Шаблоны модулей](/docs/ru/2_system_description/functionality/module_patterns.md)

@@ -6,7 +6,7 @@
 * [Step 3 Building and running](/docs/en/1_system_deployment/basic_settings/step3_building_and_running.md)
 
 ## 2. [System description](/docs/ru/2_system_description)
-### [Metadata structure](/docs/en/2_system_description/metadata_structure)
+### Metadata structure
 *  [Metadata scheme](/docs/en/2_system_description/metadata_structure/meta_scheme.md)
 *  [Meta class](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md) 
 *  [Meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md) 
@@ -17,11 +17,11 @@
 *  [Meta report](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)
 *  [Meta admin](/docs/en/2_system_description/metadata_structure/meta_admin/meta_admin.md)
 
-### [Platform configuration](/docs/en/2_system_description/platform_configuration)
+### Platform configuration
 *  [Deploy](/docs/en/2_system_description/platform_configuration/deploy.md)
 *  [Packages](/docs/en/2_system_description/platform_configuration/ini_files.md)
 *  [Ini-файлы](/docs/en/2_system_description/platform_configuration/ini_files.md)
-### [Functionality](/docs/en/2_system_description/functionality)
+### Functionality
 
 *  [EDS](/docs/en/2_system_description/functionality/eds.md)
 *  [Module templates](/docs/en/2_system_description/functionality/module_patterns.md)
