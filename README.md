@@ -40,14 +40,40 @@ To build all components and libraries you need to install globally the following
 * package manager of frontend libraries [Bower](<https://bower.io>) `npm install -g bower`
 
 ### Core, modules and application
-Dependencies are listed in the `package.json` file.
-* `engines": "ion": 1.8.49` - core
-* `ionModulesDependencies` - modules
-* `ionMetaDependencies` - metadata
+Consider the example of the `develop-and-test` application. Find the application in the repository.
 
-You need to clone the app and its components. You clone the core repository and modules. Also clone the dependencies in `ionMetaDependencies`, in particular` viewlib` - a library of views. Now, you can deploy the app with modules.
+The dependencies are listed in the `package.json` file.
+
+```
+ "engines": {
+    "ion": "1.15.0"
+  },
+  "ionModulesDependencies": {
+    "registry": "1.20.6",
+    "geomap": "1.3.7",
+    "graph": "1.3.2",
+    "portal": "1.3.0",
+    "report": "1.6.0",
+    "ionadmin": "1.2.14",
+    "dashboard": "1.1.0",
+    "lk": "1.0.1",
+    "soap": "1.0.12",
+    "gantt-chart": "0.3.2"
+  },
+  "ionMetaDependencies": {
+    "viewlib": "0.7.1"
+```
+* Install the core, the version is specified in the `engines": "ion": 1.8.49` parameter. Copy the the URL of the core repository and execute the `git clone https://[адрес репозитория]/platform.git` in the command line.
+* `ionModulesDependencies` - the module parameter. Consider the example of the key module - registry. Navigate to the module folder executing the `cd modules` command. Clone modules from the ` ionModulesDependencies` list executing the `git clone https://[адрес репозитория]/registry.git` command. Repeat for each module.  
+* If you're still in the module folder, execute the `cd ..\applications` command to go to the application folder. 
+Clone the path to repository by `git clone https://[адрес репозитория]/develop-and-test.git`command.  
+
+Also clone the dependencies in `ionMetaDependencies`, in particularly ` viewlib` - a library of views. Execute the `git clone https://[адрес репозитория]/viewlib.git` to clone to the `applications` folder.   
+ 
 ### Building, configuring and deploying the application
-Create the configuration file `setup.ini` to set the main parameters of the application environment.  
+Building the application provides installation of all libraries, importing data into the database and preparing the application for launch.  
+
+Create the configuration file `setup.ini` in the  `dnt\config` folder to set the main parameters of the application environment.  
 
 ```
 auth.denyTop=false
@@ -65,9 +91,13 @@ fs.urlBase=/files
 jobs.enabled=true
 
 ```
-Set the `NODE_PATH` environment variable. The `npm install` command installs the key dependencies. Further, write the `gulp assemble` command to build the app.
+Open the file and paste the text above. The main parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It shows the base name that we use for the application. The DB will be created automatically. 
+
+Set the `NODE_PATH` environment variable which is equal to the application path. For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the app directory.   
+
+The `npm install` command installs the key dependencies. Further, write the `gulp assemble` command to build the app.
 ### Running
-Add a new user in `Mongo Compass` and run the app, using the `npm start` command.
+Add a new user in `Mongo Compass` and run the app, executing the `npm start` command.
 ## Documentation 
 The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru/index.md).  
 

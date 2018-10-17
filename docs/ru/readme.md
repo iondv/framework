@@ -66,7 +66,7 @@ IONDV.Framework —  фреймворк по созданию высокоуро
 * Параметр модулей `ionModulesDependencies`. Пример установки ключевого модули registry.  Переходим в папку модулей коммандой `cd modules`. Клонируем модули из списка ` ionModulesDependencies` коммандой `git clone https://[адрес репозитория]/registry.git`. Повторяем для каждого модуля.
 * Переходим в папку приложений, для этого, если вы находитесь в папке модулей выполняем `cd ..\applications`. Клонируйте путь к репозиторию коммандой `git clone https://[адрес репозитория]/develop-and-test.git`.  
 
-Если есть зависимости в `ionMetaDependencies` клонируйте их, в частности `viewlib` - библиотека представлений, командой git clone https://[адрес репозитория]/viewlib.git в папку `applications`.   
+Если есть зависимости в `ionMetaDependencies` клонируйте их, в частности `viewlib` - библиотека представлений, командой `git clone https://[адрес репозитория]/viewlib.git` в папку `applications`.   
 
 
 
@@ -94,7 +94,7 @@ jobs.enabled=true
 ```
 Открываем файл в редакторе и вставляем содержимое. Самый главный параметр `db.uri=mongodb://127.0.0.1:27017/ion-dnt` он указывает на название базы которую мы будем использовать для приложения. База данных будет создана автоматически.  
 
-Задайте переменную окружения NODE_PATH равной пути к нашему приложению следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` (TODO) для Linux.    
+Задайте переменную окружения NODE_PATH равной пути к нашему приложению следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` для Linux. `workspace` - папка размещения приложения.    
 
 Выполните команду `npm install` для установки ключевых зависимостей.   
 Далее выполните команду сборки приложения `gulp assemble`. 
