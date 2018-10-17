@@ -115,7 +115,7 @@ jobs.enabled=true
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENСE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
