@@ -6,7 +6,8 @@
 IONDV.Framework - is a low-code framework for creating high-level web applications based on metadata. Moreover, the framework allows to change functionality with the additional components, suck as modules or writing your own. Typical applications:
 * project management system;
 * accounting and data processing registers based on workflows;
-* CRM.
+* CRM.  
+
 The main advantages of IONDV.Framework are open source software in Java Script and open structure of metadata in human-readable JSON files.
 
 ## Functionality  
@@ -29,7 +30,7 @@ You can get an access to the already built applications deployed on cloud or exp
 
 Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager to run the IONDV.Framework. Version 8.x.   
 
-Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. Version [3.6].  
+Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. Version 3.6.  
 
 ### Global dependencies
 
@@ -63,17 +64,16 @@ The dependencies are listed in the `package.json` file.
   "ionMetaDependencies": {
     "viewlib": "0.7.1"
 ```
-* Install the core, the version is specified in the `engines": "ion": 1.8.49` parameter. Copy the the URL of the core repository and execute the `git clone https://[адрес репозитория]/platform.git` in the command line.
-* `ionModulesDependencies` - the module parameter. Consider the example of the key module - registry. Navigate to the module folder executing the `cd modules` command. Clone modules from the ` ionModulesDependencies` list executing the `git clone https://[адрес репозитория]/registry.git` command. Repeat for each module.  
-* If you're still in the module folder, execute the `cd ..\applications` command to go to the application folder. 
-Clone the path to repository by `git clone https://[адрес репозитория]/develop-and-test.git`command.  
-
-Also clone the dependencies in `ionMetaDependencies`, in particularly ` viewlib` - a library of views. Execute the `git clone https://[адрес репозитория]/viewlib.git` to clone to the `applications` folder.   
+* Install the core, the version is specified in the `engines": "ion": 1.15.0` parameter. Copy the the URL of the core repository and execute the `git clone https://[адрес репозитория]/platform.git` in the command line. Go to the core folder and switch to the tag of the version number `git checkout tags/v1.15.0`.
+* Further, install the modules listed in the `ionModulesDependencies` parameter. Navigate to the module folder executing the `cd modules` command. Clone modules from the ` ionModulesDependencies` list, for the registry module the command is `git clone https://[адрес репозитория]/registry.git` . Go to the folder of installed module and switch to the tag of the version number `git checkout tags/v1.20.6`. Repeat for each module.  
+* To install the application, go to the application folder executing the `cd ..\applications` command, if you're in the module folder. 
+Clone the path to repository by `git clone https://[адрес репозитория]/develop-and-test.git`command. Go to the folder of installed application and switch to the tag of the version number `git checkout tags/v1.17.0`. 
+* Finally, install all necessary applications listed in the `ionMetaDependencies` parameter in the `applications` folder. Make sure that you're inside this folder. Clone the dependencies in `ionMetaDependencies`, in particularly ` viewlib` - a library of views. Execute the `git clone https://[адрес репозитория]/viewlib.git` to clone to the `applications` folder. Go to the folder of installed application and switch to the tag of the version number `git checkout tags/v0.7.1`. Repeat for each application. 
  
 ### Building, configuring and deploying the application
-Building the application provides installation of all libraries, importing data into the database and preparing the application for launch.  
+Building the application provides installation of all depended libraries, importing data into the database and preparing the application for launch.  
 
-Create the configuration file `setup.ini` in the  `dnt\config` folder to set the main parameters of the application environment.  
+Create the configuration file `setup.ini` in the  core `config` folder to set the main parameters of the application environment.  
 
 ```
 auth.denyTop=false
@@ -93,11 +93,16 @@ jobs.enabled=true
 ```
 Open the file and paste the text above. The main parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It shows the base name that we use for the application. The DB will be created automatically. 
 
-Set the `NODE_PATH` environment variable which is equal to the application path. For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the app directory.   
+Set the `NODE_PATH` environment variable which is equal to the path of the application  core. For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the app directory.   
 
 The `npm install` command installs the key dependencies. Further, write the `gulp assemble` command to build the app.
+
+Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
 ### Running
-Add a new user in `Mongo Compass` and run the app, executing the `npm start` command.
+Run the app, executing the `npm start` command. 
+
+Open this link `http://localhost:8888` in browser and log in. `8888` - is a port in the server.ports parameter of the start configuration.
+
 ## Documentation 
 The IONDV.Framework documentation is available in two languages - [english](/docs/en/index.md) and [russian](/docs/ru/index.md).  
 
@@ -118,6 +123,6 @@ Some handy links to learn more information on developing applications using IOND
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV LLC**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
 
