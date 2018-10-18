@@ -1,5 +1,6 @@
-# Мета класса - общая часть
 ### Предыдущая страница: []()
+# Мета класса - общая часть
+**Общая часть меты класса** - параметры класса/представления. Содержит те поля, которые имеют отношения к самой структуре и способам оперирования данными в структуре.
 ## JSON
 ```
 {
@@ -79,11 +80,11 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
-All rights reserved.  
+Copyright (c) 2018 **LLC "ION DV"**.
+All rights reserved. 
