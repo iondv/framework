@@ -1,4 +1,3 @@
-### Предыдущая страница: []()
 # Тип "Структура [16]"
 
 **Структура** - способ отражения связанных объектов (ссылок), если у поля указано структура - данный тип атрибута нужен для уменьшения действий при заведении модели, если заранее известны типовые классы, атрибуты которых используются во многих других классах.   
@@ -284,16 +283,15 @@ _NB: Объекты класса-структуры не создаются!_
 
 http://raw.dnt.local/registry/develop-and-test@class_struct.class_struct
 
-### Следующая страница: []()
+### Следующая страница []()
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
-All rights reserved.  
-
+Copyright (c) 2018 **LLC "ION DV"**.
+All rights reserved. 
