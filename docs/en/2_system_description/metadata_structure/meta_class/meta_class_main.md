@@ -41,7 +41,7 @@
 | `"changeTracker"`    | [**Time tag of commited changes**](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)     | Row.                                 | Allows to save data/time of the object change, requires the presence of the corresponding class attribute, the `name` of which is entered into this field.               |
 | `"creatorTracker"`  | [**Tag of the user who created the object**](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)      | Row                                 | Allows to save the name of the user who created the object, requires the presence of the corresponding class attribute, the `name` of which is entered into this field.                 |
 | `"editorTracker"`    | [**Tag of the user who changed the object**](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)     | Row                                 | Allows to save the name of the user who changed the object, requires the presence of the corresponding class attribute, the `name` of which is entered into this field.              |
-| `"history"`          | **Data image**               | _0 - no_                              | Stores the images of data                                                                                                                                                                               |
+| `"history"`          | **Data image**               | _0 - none_                              | Stores the images of data                                                                                                                                                                               |
 |                      |                                 | _1 - arbitrarily_                      |                                                                                                                                                                                                          |
 |                      |                                 | _2 - up to an hour_              |                                                                                                                                                                                                          |
 |                      |                                 | _3 - up to a day_             |                                                                                                                                                                                                          |
@@ -61,6 +61,5 @@
 
 
 --------------------------------------------------------------------------  
-
-Copyright (c) 2018 **IONDV.Framework**.  
-All rights reserved. 
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved.
