@@ -1,7 +1,7 @@
-### Предыдущая страница: [Мета классов - атрибутивная часть](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_attribute.md)
-# Типы атрибутов
+### The previous page: [Meta class - attribute part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_attribute.md)
+# Attribute types
 
-**Тип атрибута** - указывает на тип поддерживаемых атрибутом данных, как например размер допустимых значений и другие.
+** Attribute type ** - indicates the type of data supported by the attribute, such as the size of valid values and others.
 
 
 
