@@ -1,7 +1,7 @@
 ### The previous page: [Meta class - attribute part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_attribute.md)
 # Attribute types
 
-** Attribute type ** - indicates the type of data supported by the attribute, such as the size of valid values and others.
+**Attribute type** - indicates the type of data supported by the attribute, such as the size of valid values and others.
 
 
 

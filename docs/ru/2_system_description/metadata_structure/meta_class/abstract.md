@@ -1,7 +1,7 @@
-### Предыдущая страница: []()
-## Настройка признака абстрактности класса
+### Предыдущая страница: [Семантика](/docs/ru/2_system_descriptionmetadata_structure/meta_class/semantic.md)
+## Признак абстрактности класса
 
-Требуется в случае, когда необходимо по ссылке атрибута на базовые класс отображать список выбора его наследников. т.е. при формировании списка выбора классов для создания обьекта, не включаем в список абстрактные классы.
+**Признак абстрактности класса** - требуется в случае, когда необходимо по ссылке атрибута на базовые класс отображать список выбора его наследников. т.е. при формировании списка выбора классов для создания обьекта, не включаем в список абстрактные классы.
 
 В мете класса указываем:
 ```
@@ -10,9 +10,9 @@
    "abstract": true
 }
 ```
-И класс становится недоступным для инициализации на уровне UI
+И класс становится недоступным для инициализации на уровне UI.
 
-#### пример:
+#### Пример:
 ```
 {
   "isStruct": false,
@@ -44,24 +44,12 @@
 ...
 ```
 
-Ранее использовался параметр в deploy.json => modules.registry.globals.forceMaster
-```
-"forceMaster": {
-          "basicObj@project-management": true,
-          "eventBasic@project-management": true,
-          "indicatorBasic@project-management": true,
-          "indicatorValueBasic@project-management": true
-        },
-```
-Он реализовывался в шаблоне создания объекта в проекте project-management.
 
-#### [таск с реализацией] (https://ion-dv.atlassian.net/browse/IONCORE-437)
-
-### Следующая страница []()
+### Следующая страница: [Версионирование](/docs/ru/2_system_description/metadata_structure/meta_class/metaverion.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

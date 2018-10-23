@@ -279,7 +279,7 @@ _NB: Объекты класса-структуры не создаются!_
 
 
 
-### Следующая страница: [**Ключевые атрибуты**](/docs/ru/2_system_description/metadata_structure/meta_class/key.md) в Мета класс - общая часть 
+### Следующая страница: [Ключевой атрибут](/docs/ru/2_system_description/metadata_structure/meta_class/key.md) в Мета класс - общая часть 
 ### Следующая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
 --------------------------------------------------------------------------  
 

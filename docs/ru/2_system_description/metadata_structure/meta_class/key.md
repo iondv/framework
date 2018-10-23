@@ -1,28 +1,28 @@
-### Предыдущая страница: []()
+### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 # Ключевые поля
-В каждом классе  обязательно должно быть задан ключевой атрибут  (поле `"key"` основной части меты класса). Без этого приложение не будет функционировать.
+В каждом классе  обязательно должен быть задан ключевой атрибут  (поле `"key"` основной части меты класса). Без этого приложение не будет функционировать.
 
 ## Типы ключевых полей
 
-1. Guid - "Глобальный идентификатор [12]". http://docker.local:3080/registry/develop-and-test@key_guid
-2. "Строка [0]". http://docker.local:3080/registry/develop-and-test@key_string
-3. "Целое [6]". http://docker.local:3080/registry/develop-and-test@key_integer
+1. Guid - "Глобальный идентификатор [12]". 
+2. "Строка [0]". 
+3. "Целое [6]". 
 
 ## Требования к ключевому атрибуту
 
-При формировании меты ключевого атрибута,  поля `"unique"` и  `"autoassigned"`  выставляются в `true` и обязательно запрещаем пустое значение, выставляя  `"nullable"` в false.
+При формировании меты ключевого атрибута,  поля `"unique"` и  `"autoassigned"`  выставляются в `true`. Необходимо запретить пустое значение, выставляя  `"nullable"` в `false`.
 
-Если, атрибут не генерируется автоматически, то `"autoassigned"` можно поставить в false - тогда поле должно быть задано оператором при создании - например если это какой-то код какого-то классификатора или регистрационный номер задаваемый внешним способом (на бумаге).  
+Если атрибут не генерируется автоматически, то `"autoassigned"` можно поставить в `false`, тогда поле должно быть задано оператором при создании. Например если это код  классификатора или регистрационный номер задаваемый внешним способом (на бумаге).  
 
-### Следующая страница: []()
+### Следующая страница: [Семантический атрибус](/docs/ru/2_system_descriptionmetadata_structure/meta_class/semantic.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/key.md) &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
