@@ -22,7 +22,7 @@
 ```  
 
 
-### Следующая страница: [Индексация](/docs/ru/2_system_description/metadata_structure/meta_class/compositeindexes.md)
+### Следующая страница: [Индексация](/docs/ru/2_system_description/metadata_structure/meta_class/composite_indexes.md)
 --------------------------------------------------------------------------  
 
 

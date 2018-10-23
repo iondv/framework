@@ -45,7 +45,7 @@
 ```
 
 
-### Следующая страница: [Версионирование](/docs/ru/2_system_description/metadata_structure/meta_class/metaverion.md)
+### Следующая страница: [Версионирование](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)
 --------------------------------------------------------------------------  
 
 
