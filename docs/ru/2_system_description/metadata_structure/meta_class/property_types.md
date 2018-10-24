@@ -57,7 +57,7 @@ module.exports = {
   SCHEDULE: 210
 };
 ```
-### Следующая страница [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md)
+### Следующая страница: [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md)
 --------------------------------------------------------------------------  
 
 
