@@ -16,7 +16,7 @@ if (cluster.isMaster) {
 
   const clusterConfig = config.cluster || {};
 
-  const cpus = os.cpus();
+  const cpus = os.cpus().length;
   let numWorkers = process.env.WORKER_COUNT || clusterConfig.count || cpus;
   if (numWorkers > cpus) {
     numWorkers = cpus;
