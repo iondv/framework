@@ -29,7 +29,7 @@ function Background(options) {
     return options.dataSource
       .get(
         tableName,
-        {filter: {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]},{[F.EQUAL]: ['$sid', sid]}]}}
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]}, {[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]}
       );
   }
 
@@ -142,7 +142,7 @@ function Background(options) {
     if (typeof workers[name] === 'undefined') {
       throw new Error('task is not registered in background!');
     }
-    return getTask(uid, name, sid).then(t => t.state);
+    return getTask(uid, name, sid).then(t => t ? t.state : Background.IDLE);
   };
 
   /**
@@ -155,7 +155,7 @@ function Background(options) {
     if (typeof workers[name] === 'undefined') {
       throw new Error('task is not registered in background!');
     }
-    return getTask(uid, name, sid).then(t => t.results);
+    return getTask(uid, name, sid).then(t => t ? t.results : null);
   };
 
   this.register = (name, options) => {
