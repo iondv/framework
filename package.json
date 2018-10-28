@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/platform.git",
     "type": "git"
   },
-  "version": "1.21.0",
+  "version": "1.21.1",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
