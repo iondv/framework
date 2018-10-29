@@ -3,6 +3,7 @@ const PropertyTypes = require('core/PropertyTypes');
 const nearley = require('nearley');
 const grammar = require('./grammar');
 const {Attr} = require('./classes');
+const moment = require('moment');
 
 function QueryParser() {
 
@@ -94,6 +95,12 @@ function QueryParser() {
           result[k] = parseAttrs(obj[k], cm);
         });
         return result;
+      }
+    }
+    if (typeof obj === 'string') {
+      let dv = moment(obj);
+      if (dv.isValid()) {
+        return dv.toDate();
       }
     }
     return obj;

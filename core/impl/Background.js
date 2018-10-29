@@ -4,21 +4,79 @@ const child = require('child_process');
 const toAbsolutePath = require('core/system').toAbsolute;
 const Logger = require('core/interfaces/Logger');
 const merge = require('merge');
+const F = require('core/FunctionCodes');
 
-function Background() {
+/**
+ * @param {{}} options
+ * @param {DataSource} options.dataSource
+ * @constructor
+ */
+function Background(options) {
 
-  let pool = {};
+  const pool = {};
 
-  let results = {};
+  const workers = {};
 
-  let workers = {};
+  const tableName = 'ion_bg_tasks';
 
-  this.start = function (uid, name, sid, options) {
+  /**
+   * @param {String} uid
+   * @param {String} name
+   * @param {String} sid
+   * @returns {Promise}
+   */
+  function getTask(uid, name, sid) {
+    return options.dataSource
+      .get(
+        tableName,
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]}, {[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]}
+      );
+  }
+
+  /**
+   * @param {String} uid
+   * @param {String} name
+   * @param {String} sid
+   * @param {*} msg
+   * @returns {Promise}
+   */
+  function saveResult(uid, name, sid, msg) {
+    return getTask(uid, name, sid)
+      .then((t) => {
+        t.results.push(msg);
+        return options.dataSource.update(
+          tableName,
+          {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]},{[F.EQUAL]: ['$sid', sid]}]},
+          t
+        );
+      })
+      .catch((err) => {
+        (options.log || console).error(err);
+      });
+  }
+
+  function fixTask(uid, name, sid) {
+    return options.dataSource.update(
+        tableName,
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]},{[F.EQUAL]: ['$sid', sid]}]},
+        {state: Background.IDLE}
+      )
+      .catch((err) => {(options.log || console).error(err);});
+  }
+
+  /**
+   * @param {String} uid
+   * @param {String} name
+   * @param {String} sid
+   * @param {{}} moptions
+   * @returns {Promise}
+   */
+  this.start = function (uid, name, sid, moptions) {
     if (typeof workers[name] === 'undefined') {
       throw new Error('Task is not registered in background!');
     }
 
-    options = merge(true, workers[name] || {}, options || {});
+    moptions = merge(true, workers[name] || {}, moptions || {});
 
     if (typeof pool[uid] === 'undefined') {
       pool[uid] = {};
@@ -30,71 +88,77 @@ function Background() {
       throw new Error('Task ' + name + '[' + sid + '] is already running!');
     }
 
-    let args = ['-task', name, '-uid', uid, '-sid', sid];
-    for (let nm in options) {
-      if (options.hasOwnProperty(nm) && options[nm]) {
-        args.push('-' + nm);
-        args.push(options[nm]);
-      }
-    }
+   return getTask(uid, name, sid)
+     .then(
+       (running) => {
+         if (running && running.state === Background.RUNNING) {
+           throw new Error('Task ' + name + '[' + sid + '] is already running!');
+         }
+       }
+     )
+     .then(options.dataSource.upsert(tableName, {uid, name, sid, results: [], state: Background.RUNNING}, {skipResult: true}))
+     .then(() => {
+        let args = ['-task', name, '-uid', uid, '-sid', sid];
+        for (let nm in moptions) {
+          if (options.hasOwnProperty(nm)) {
+            args.push('-' + nm);
+            args.push(options[nm]);
+          }
+        }
 
-    if (!results[uid]) {
-      results[uid] = {};
-    }
-    if (!results[uid][name]) {
-      results[uid][name] = {};
-    }
-    results[uid][name][sid] = [];
-
-    let ch = pool[uid][name][sid] = child.fork(toAbsolutePath('bin/bg'), args, {stdio: ['pipe', 'inherit', 'inherit', 'ipc']});
-    ch.on('message', (msg) => {
-      results[uid][name][sid].push(msg);
-    });
-    ch.on('exit', () => {
-      if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
-        delete pool[uid][name][sid];
-      }
-    });
-    ch.on('error', (err) => {
-      if (options.log instanceof Logger) {
-        options.log.error(err);
-      }
-      if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
-        delete pool[uid][name][sid];
-      }
-    });
-    return sid;
+        pool[uid][name][sid] = child.fork(toAbsolutePath('bin/bg'), args, {stdio: ['pipe', 'inherit', 'inherit', 'ipc']});
+        let ch = pool[uid][name][sid];
+        ch.on('message', (msg) => {
+          saveResult(uid, name, sid, msg);
+        });
+        ch.on('exit', () => {
+          fixTask(uid, name, sid);
+          if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
+            delete pool[uid][name][sid];
+          }
+        });
+        ch.on('error', (err) => {
+          if (options.log instanceof Logger) {
+            options.log.error(err);
+          } else {
+            console.error(err);
+          }
+          fixTask(uid, name, sid);
+          if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
+            delete pool[uid][name][sid];
+          }
+        });
+        return sid;
+      });
   };
 
-  this.status = function (uid, name, sid) {
+  /**
+   * @param {String} uid
+   * @param {String} name
+   * @param {String} sid
+   * @return {Promise}
+   */
+  this.status = (uid, name, sid) => {
     if (typeof workers[name] === 'undefined') {
       throw new Error('task is not registered in background!');
     }
-    if (
-      typeof pool[uid] === 'undefined' ||
-      typeof pool[uid][name] === 'undefined' ||
-      typeof pool[uid][name][sid] === 'undefined'
-    ) {
-      return Background.IDLE;
-    }
-    return Background.RUNNING;
+    return getTask(uid, name, sid).then(t => t ? t.state : Background.IDLE);
   };
 
-  this.results = function (uid, name, sid) {
+  /**
+   * @param {String} uid
+   * @param {String} name
+   * @param {String} sid
+   * @returns {Promise}
+   */
+  this.results = (uid, name, sid) => {
     if (typeof workers[name] === 'undefined') {
       throw new Error('task is not registered in background!');
     }
-    if (
-      typeof results[uid] !== 'undefined' &&
-      typeof results[uid][name] !== 'undefined' &&
-      typeof results[uid][name][sid] !== 'undefined'
-    ) {
-      return results[uid][name][sid];
-    }
-    return [];
+    return getTask(uid, name, sid).then(t => t ? t.results : null);
   };
 
-  this.register = function (name, options) {
+  this.register = (name, options) => {
     workers[name] = options || {};
   };
 }

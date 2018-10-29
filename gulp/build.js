@@ -27,12 +27,15 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', function (done) {
-  runSequence('build:npm', 'build:bower', 'compile:less', 'minify:css', 'minify:js', function (err) {
-    if (!err) {
-      console.log('Сборка платормы, модулей и приложений завершена.');
+  runSequence(
+    'build:npm', 'build:linux-dependencies', 'build:bower', 'compile:less', 'minify:css', 'minify:js',
+    (err) => {
+      if (!err) {
+        console.log('Сборка платормы, модулей и приложений завершена.');
+      }
+      done(err);
     }
-    done(err);
-  });
+  );
 });
 
 function run(path, command, args, resolve, reject) {
@@ -55,7 +58,7 @@ function run(path, command, args, resolve, reject) {
 
     child.on('close', function (code) {
       if (code !== 0) {
-        return reject('install failed with code ' + code);
+        return reject('child process failed with code ' + code);
       }
       return resolve();
     });
@@ -265,12 +268,24 @@ function buildDir(start, dir) {
   return f;
 }
 
-gulp.task('build:npm', function (done) {
+gulp.task('build:linux-dependencies', (done) => {
+  let w = /^linux/.test(process.platform) ?
+    new Promise((resolve, reject) => {
+      run(path.join(platformPath), './linux/fixdep.sh', [], resolve, reject);
+    }) :
+    Promise.resolve();
+  w.then(() => {
+    done();
+  }).catch((err) => {
+    console.error(err);
+    done();
+  });
+});
+
+gulp.task('build:npm', (done) => {
   let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
 
-  w.then(function () {
-    done();
-  }).catch(function (err) {
+  w.then(done).catch((err) => {
     console.error(err);
     done(err);
   });
