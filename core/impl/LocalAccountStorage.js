@@ -9,20 +9,27 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {{}} options
    * @param {DataSource} options.dataSource
+   * @param {Number} [options.passwordMinLength]
+   * @param {Boolean} [options.loginCaseInsesitive]
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.passwordMinLength = options.passwordMinLength;
+    this.loginCaseInsesitive = Boolean(options.loginCaseInsesitive);
   }
 
   init() {
     return this.ds.ensureIndex('ion_user', {type: 1, id: 1}, {unique: true});
   }
 
+  _prepareId(id) {
+    return id && this.loginCaseInsesitive ? String(id).toUpperCase() : id;
+  }
+
   /**
    * @param {{}} data
-   * @returns {Promise.<{User}>}
+   * @returns {Promise.<User>}
    */
   _register(data) {
     let user = clone(data);
@@ -35,6 +42,8 @@ class LocalAccountStorage extends IAccountStorage {
     if (!user.id) {
       user.id = user.name;
     }
+
+    user.id = this._prepareId(user.id);
 
     if (typeof user.pwd === 'string') {
       let hasher = pwdHasher(user.pwd);
@@ -92,7 +101,7 @@ class LocalAccountStorage extends IAccountStorage {
                 'ion_user',
                 {[F.AND]: [
                   {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-                  {[F.EQUAL]: ['$id', id]}
+                  {[F.EQUAL]: ['$id', this._prepareId(id)]}
                 ]},
                 {pwd, pwdDate}
               )
@@ -106,7 +115,7 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {String} id
    * @param {String} [pwd]
-   * @returns {Promise.<{User}>}
+   * @returns {Promise.<User>}
    */
   _get(id, pwd) {
     let checker = pwd ? pwdHasher(pwd) : null;
@@ -120,7 +129,7 @@ class LocalAccountStorage extends IAccountStorage {
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          {[F.EQUAL]: ['$id', id]},
+          {[F.EQUAL]: ['$id', this._prepareId(id)]},
           {
             [F.OR]: [
               {[F.EQUAL]: ['$disabled', false]},
@@ -157,7 +166,7 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {String} id
    * @param {{}} updates
-   * @returns {*|Promise.<{User}>}
+   * @returns {*|Promise.<User>}
    */
   _set(id, updates) {
     let type = UserTypes.LOCAL;
@@ -186,7 +195,7 @@ class LocalAccountStorage extends IAccountStorage {
       'ion_user',
       {
         [F.AND]: [
-          {[F.EQUAL]: ['$id', id]},
+          {[F.EQUAL]: ['$id', this._prepareId(id)]},
           {[F.EQUAL]: ['$type', type]}
         ]
       },
@@ -194,11 +203,10 @@ class LocalAccountStorage extends IAccountStorage {
     ).then(u => new User(u));
   }
 
-
   /**
    * @param {String[]} [filter]
    * @param {Boolean} [disabled]
-   * @returns {Promise.<{User[]}>}
+   * @returns {Promise.<User[]>}
    */
   _list(filter, disabled) {
     let f = [];
@@ -206,7 +214,12 @@ class LocalAccountStorage extends IAccountStorage {
       let conds = [];
       filter.forEach((id) => {
         let parts = id.split('@');
-        conds.push({[F.AND]: [{[F.EQUAL]: ['$id', parts[0]]}, {[F.EQUAL]: ['$type', parts[1]]}]});
+        conds.push({
+          [F.AND]: [
+            {[F.EQUAL]: ['$id', this._prepareId(parts[0])]},
+            {[F.EQUAL]: ['$type', parts[1]]}
+          ]
+        });
       });
       if (conds.length > 1) {
         f.push({[F.OR]: conds});
@@ -235,7 +248,7 @@ class LocalAccountStorage extends IAccountStorage {
 
   /**
    * @param {String} sv
-   * @returns {Promise.<{User[]}>}
+   * @returns {Promise.<User[]>}
    */
   _search(sv) {
     return this.ds
@@ -243,7 +256,7 @@ class LocalAccountStorage extends IAccountStorage {
         {
           filter: {
             [F.AND]: [
-              {[F.LIKE]: ['$id', '^' + sv + '\\w*']},
+              {[F.LIKE]: ['$id', '^' + this._prepareId(sv) + '\\w*']},
               {[F.EQUAL]: ['$type', UserTypes.LOCAL]}
             ]
           },
@@ -263,7 +276,9 @@ class LocalAccountStorage extends IAccountStorage {
    * @returns {Promise}
    */
   _disable(id) {
-    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: true}).then(() => true);
+    return this.ds
+      .update('ion_user', {[F.EQUAL]: ['$id', this._prepareId(id)]}, {disabled: true})
+      .then(() => true);
   }
 
   /**
@@ -271,7 +286,9 @@ class LocalAccountStorage extends IAccountStorage {
    * @returns {Promise}
    */
   _enable(id) {
-    return this.ds.update('ion_user', {[F.EQUAL]: ['$id', id]}, {disabled: false}).then(() => true);
+    return this.ds
+      .update('ion_user', {[F.EQUAL]: ['$id', this._prepareId(id)]}, {disabled: false})
+      .then(() => true);
   }
 }
 
