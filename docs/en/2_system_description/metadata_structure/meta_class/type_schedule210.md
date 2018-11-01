@@ -1,6 +1,69 @@
-# Календарь
+### Предыдущая страница: [Геоданные](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)  
+# Расписание
+**Расписание** - тип данных реализующий хранение периодов времени или периодичность выполнения регулярных событий. 
 
-Общий формат хранения расписаний:
+## Режим отображения атрибута на форме:
+В представлении для расписания предусмотрено два типа полей:
+`SCHEDULE = 210` – расписание отображается в табличном виде
+`CALENDAR = 220` – расписание отображается в виде календаря
+### Пример структуры атрибута в табличном виде:
+```
+  {
+          "caption": "Расписание [210]",
+          "type": 210,
+          "property": "schedule",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": null,
+          "fields": [],
+          "hierarchyAttributes": null,
+          "columns": [],
+          "actions": null,
+          "commands": null,
+          "orderNumber": 20,
+          "required": false,
+          "visibility": null,
+          "enablement": null,
+          "obligation": null,
+          "readonly": false,
+          "selectionPaginated": true,
+          "validators": null,
+          "hint": "",
+          "historyDisplayMode": 0,
+          "tags": null
+        },
+```
+### Пример структуры атрибута в виде календаря: 
+```
+{
+          "caption": "Календарь [220]",
+          "type": 220,
+          "property": "calendar",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": null,
+          "fields": [],
+          "hierarchyAttributes": null,
+          "columns": [],
+          "actions": null,
+          "commands": null,
+          "orderNumber": 30,
+          "required": false,
+          "visibility": null,
+          "enablement": null,
+          "obligation": null,
+          "readonly": false,
+          "selectionPaginated": true,
+          "validators": null,
+          "hint": "",
+          "historyDisplayMode": 0,
+          "tags": null
+        }
+```
+### Пример хранения расписания в БД:
+Периоды времени задаются как объекты периодичности в атрибуте `occurs` с указанием атрибута `duration`. Пропуски во временном периоде указываются в атрибуте `skipped`.  
 ```
 [
   {
@@ -28,7 +91,11 @@
 // ...
 ]
 ```
-Полный формат указания периодичности:
+## Периодичность
+В объекте периодичности атрибуты задаются в рамках своих обычных значений, кроме атрибута `year` - год. Атрибут `year`, задаётся в виде частоты, так как является не периодической характеристикой. 
+
+### **Пример**:
+
 ```
 {
   "second": 30, // 1 - 60
@@ -41,13 +108,15 @@
   "duration": 30 // 
 }
 ```
-В примере: Раз в два года, 5го марта выпадающего на понедельник в 9 часов 20 минут 30 секунд происходит событие длительностью 30 секунд
+ *Описание примера:* 
 
-### Следующая страница []()
+В примере определён временной интервал длительностью 30 секунд, который повторяется один раз в два года, пятого марта в 9 часов 20 минут 30 секунд и только если день выпадает на понедельник.
+
+### Следующая страница: [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_schedule210.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

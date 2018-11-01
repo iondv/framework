@@ -1,12 +1,16 @@
-# Значение по умолчанию `defaultValue`
+### The previous page: [Autocompletion](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
 
-Свойство позволяет определять значение атрибута, для которого задано, при открытии формы создания. Основное применение для списков выбора допустимых значений:
+# Default value
+
+**Default value** - is set to display the value in the attribute field automatically when opening the form for creating an object. The default value is set by assigning the value `default` to the ` "defaultValue" ` property. It is mainly used for selection list of valid values.
+
+### Example:
 
 ```
 {
       "orderNumber": 20,
       "name": "defaultValue",
-      "caption": "Значение поля",
+      "caption": "Field value",
       "type": 0,
       "size": null,
       "decimals": 0,
@@ -32,11 +36,11 @@
         "list": [
           {
             "key": "default",
-            "value": "Значение, которое отображается по умолчанию при создании объекта"
+            "value": "The value that is displayed by default when creating an object"
           },
           {
             "key": "other",
-            "value": "Другое значение"
+            "value": "Other value"
           }
         ],
         "matrix": [],
@@ -50,22 +54,27 @@
 
 ```
 
-Для реализации **автоматического расчета значения по умолчанию**, можно использовать различные функции. 
-
-К примеру, функция `max`:
+Use the `max` operation to implement **automatic calculation of the default value**:
 
 ```
 "defaultValue": {max: ["className@namespace", "attr", {"filterAttr": "filterValue"}]}
 ```
 
-[реализация в таске] (https://ion-dv.atlassian.net/browse/IONCORE-363)
 
-
-**Значение по умолчанию для атрибута типа "Ссылка"** задается  с помощью операции `get` следующими способами:
+Use the `get` operation to implement **The default value for the "Link" attribute type**  in the following ways:
 
 ```
-get(className) // возвращаем id первого попавшегося объекта класса
-get(className, id) // проверяем наличие объекта в БД, если объект есть, возвращаем его id
-get(className, attr1, val1, attr2, val2, ...) // возвращаем id первого объекта удовлетворяющего критериям поиска: attr1=val1 и attr2=val2 и т.д.
+get(className) // return the id of a randomly selected class object
+get(className, id) // check the presence of the object in the DB, if the object exists, return it id
+get(className, attr1, val1, attr2, val2, ...) // return the id of the first object that matches the search: attr1=val1 and attr2=val2 and etc.
 ```
-[пример] (https://git.iondv.ru/ION-METADATA/khv-svyaz-info/blob/32eda762ac84de4bb647aaf1991759cbb9ade7b4/meta/infomat.class.json#L100)
+
+### The next page: [Reference class](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+--------------------------------------------------------------------------  
+
+
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md) &ensp; [FAQs](/faqs.md)          
+
+
+
+-------------------------------------------------------------------------- 

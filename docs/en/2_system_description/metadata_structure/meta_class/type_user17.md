@@ -1,12 +1,14 @@
+### Предыдущая страница: [Коллекция](/docs/ru/2_system_description/metadata_structure/meta_class/type_collection14.md)
 # Пользовательские типы
 
-`"type": 17` - пользовательский тип
+**Пользовательский тип** - `"type": 17`, задает значение пользовательского типа на основе базового типа. Находится в директории `meta`, `types` + [название типа].type.json
 
-Пользовательские типы находятся /meta/types/[название типа].type.json
 
-## Допустимые основные типы
 
-При создании пользовательского типа доступны следующие простые типы:
+
+## Допустимые базовые типы
+
+При создании пользовательского типа доступны следующие базовые типы:
 
 * Строка [0]
 * Целое [6]
@@ -27,13 +29,12 @@
 }
 ```
 
-Файл в мете D&T: https://git.iondv.ru/ION-APP/develop-and-test/blob/raw/meta/types/user_passport.type.json
 
-## Использование
+## Применение
 
 Пользовательские типы подключаются путем указания типа атрибута "Пользовательский [17]" - `"type": 17` и указанием наименования пользовательского типа в поле "refClass".
 
-## JSON атрибута пользовательского типа
+## Пользовательский тип в JSON
 
 ```
  {
@@ -67,20 +68,13 @@
     }
 ```
 
-Класс с атрибутом пользовательского типа в мете D&T: https://git.iondv.ru/ION-APP/develop-and-test/blob/raw/meta/class_custom.class.json
 
-Объекты класса в мете D&T: http://raw.dnt.local/registry/develop-and-test@class_custom
 
-## Проблемы и задачи по типу:
-
-https://ion-dv.atlassian.net/browse/MODREGISTR-74  
-https://ion-dv.atlassian.net/browse/IONSTUDIO-104
-
-### Следующая страница []()
+### Следующая страница: [Геоданные](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

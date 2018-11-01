@@ -792,11 +792,11 @@ _**NB**: Если у атрибута со списком выбора разр�
 
 
 
-### Следующая страница: [Жадная загрузка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md)
+### Следующая страница: [Предварительная выборка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

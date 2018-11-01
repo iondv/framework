@@ -38,7 +38,7 @@ NB. Необходимо сделать проверку при сохранен
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)    &ensp; [FAQs](/faqs.md)          
 
 
 

@@ -21,8 +21,8 @@
   "properties": [
     {
       "orderNumber": 60,
-      "name": "createDatet",
-      "caption": "createDate",
+      "name": "createDate",
+      "caption": "Метка времени создания",
       "type": 9,
       "size": null,
       "decimals": 0,
@@ -46,7 +46,7 @@
     {
       "orderNumber": 70,
       "name": "modifeDate",
-      "caption": "modifeDate",
+      "caption": "Метка времени изменения",
       "type": 9,
       "size": null,
       "decimals": 0,
@@ -162,7 +162,7 @@
 
 ```
 
-### Следующая страница: [**Журналирование изменений**](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md) 
+### Следующая страница: [Журналирование изменений](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md) 
 --------------------------------------------------------------------------  
 
 
@@ -172,5 +172,5 @@
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

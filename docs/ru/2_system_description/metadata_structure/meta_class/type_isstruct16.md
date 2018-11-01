@@ -1,4 +1,4 @@
-### Предыдущая страница: [Мета класса - общая часть](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+### Предыдущая страница: [Мета класса - общая часть](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md)
 # Тип "Структура [16]"
 
 **Структура** - способ отображения связанных объектов (ссылок). Если у поля указано структура, то данный тип атрибута нужен для уменьшения действий при заведении модели, при заранее известных типовых классах, атрибуты которых используются во многих других классах.   
@@ -262,7 +262,7 @@ _NB: Объекты класса-структуры не создаются!_
 }
 ```
 
-Объект класса с атрибутом-стурктурой в базе:
+Объект класса с атрибутом-структурой в базе:
 
 ```
 {
@@ -285,7 +285,7 @@ _NB: Объекты класса-структуры не создаются!_
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

@@ -1,4 +1,4 @@
-### Предыдущая страница: [Атрибут обратной коллекции](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
 # Условия отбора допустимых значений
 
 ## Описание 

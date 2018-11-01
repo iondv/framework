@@ -28,7 +28,7 @@ Meta class is the basis for meta views, meta navigation, meta reports, meta busi
 >Meta class + Class attributes = Display attributes on the form (the user interface)
 
  
-**Meta navigation** adjusts the position of elements in the navigation block. The meta navigation is divided into the meta string navigation and the meta section navigation.
+**Meta navigation** adjusts the position of elements in the navigation block. The meta navigation is divided into the meta node navigation and the meta section navigation.
 
 ## Name of meta files: 
 
