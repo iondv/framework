@@ -52,7 +52,7 @@
 | `"mode"`     | **Порядок сортировки** | _0 - по возрастанию_                 | Порядок сортировки                                  |
 |              |                        | _1 - по убыванию_                    |                                                     |
 
-### Следующая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### Следующая страница: [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
 --------------------------------------------------------------------------  
 
 

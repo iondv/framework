@@ -1,22 +1,22 @@
-### Предыдущая страница: [Условия отбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
-# Сортировка выборки допустимых значений
+### The previous page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
+# Sorting a sample of valid values
 
-## Описание
+## Description
 
-**Сортировка выборки допустимых значений** - задается при создания сущности в поле `"selSorting"`  и представляет собой фильтр, который задает способ сортировки объектов. Применяется для атрибутов типа  `"Ссылка"`.
+**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the `"Reference"` type. Set it when creating the meta class in the `"selSorting"` field. 
 
-### Доступные типы сортировки:
+### Available types of sorting:
 
-•  Сортировка по возрастанию  
-•  Сортировка по убыванию
+•  Sorting in ascending order
+•  Sorting in descending order
 
 
-## JSON
+## Example in JSON
 ```
 {
       "orderNumber": 20,
       "name": "ref",
-      "caption": "Ссылка",
+      "caption": "Reference",
       "type": 13,
       "size": null,
       "decimals": 0,
@@ -44,23 +44,23 @@
       ],
 
 ```
-## Описание полей
+## Field description
 
-| Поле         | Наименование   | Допустимые значения                  | Описание                                            |
+| Field         | Name   | Available values                  | Description                                            |
 |:-------------|:-----------------------|:-------------------------------------|:----------------------------------------------------|
-| `"property"` | **Атрибут**            | Строка, только латиница без пробелов | Атрибут, по которому будет производится сортировка. |
-| `"mode"`     | **Порядок сортировки** | _0 - по возрастанию_                 | Порядок сортировки                                  |
-|              |                        | _1 - по убыванию_                    |                                                     |
+| `"property"` | **Attribute**            | String, only the Latin alphabet, with no spaces | Sorting by this attribute |
+| `"mode"`     | **Sorting order** | _0 - in ascending order_                 | Sorting order                                  |
+|              |                        | _1 - in descending order_                    |                                                     |
 
-### Следующая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The next page: [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.  
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 

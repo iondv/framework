@@ -1,47 +1,44 @@
-### Предыдущая страница: [Вычислимые поля](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)
+### The previous page: [Computable fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)
 
-# Кеширование значения вычисляемого атрибута
-## Описание функционала
+# Cached values of computable attribute
+## Description
 
-При применении функционала кеширования, значения атрибутов рассчитываются при создании и изменении объекта. При выборках берутся ранее рассчитанные значения.
+When you're applying the cached values, the attribute values are calculated during creating and editing an object. Previously calculated values are used for the samples.
 
-Если есть два вычисляемых атрибута A и B обращающиеся к коллекции C, и при этом на A настроено кеширование, а на B не настроено, то при редактировании коллекция C будет выдергиваться 2 раза - один раз для атрибута B на уровне `securedDataRepo` для проверки доступа, второй раз для атрибута A при его пересчете уже в `dataRepo`. При чтении объекта из БД в данном случае кеш атрибута A просто не имеет смысла, так как коллекция в любом случае будет выбираться для атрибута B.
+You have two computable attributes `A` and `B` refering to the collection `C`. The `A` has the cached value and `B` has not one, then when editing the object, the collection `C` will be pulled twice. First for the attribute `B` at the `securedDataRepo` level to verify the access. Second for the attribute `A` when calcullated into the `dataRepo`. In this case, when reading an object from the database, the cache of the attribute `A` simply does not make sense, since in any case the collection will be selected for the attribute `B`.
 
-## Кеширование семантик
+## Cached semantics
 
-Для кеширования семантик объектов в мете класса необходимо указать параметр:
+Set the following property to cache semantics of the objects in meta class:
 
 ```
 semanticCached: true
 ```
+We recommand you not to use the eager loading for the attributes used in the cached semantics. Also, we recommand you not to use the dates, because they cannot be converted to the user's time zone, since they are cached when editing an object at the `DBAL` level.
 
-Для атрибутов используемых в кешируемых семантиках не выполняется жадная загрузка при выборках. Также в таких семантиках не рекомендуется использовать даты, т.к. они не будут приведены к формату часового пояса пользователя, так как кешируются при редактировании объекта на уровне `DBAL`.
+## How to configure?
 
-## Кеширование значения вычисляемого атрибута
-
-Для кеширования значения вычисляемого атрибута в его мете указываем:
+Set the following property in the meta class to cache the value of the computable attribute:
 
 ```
 cached: true
 ```
+Besides, you can update caches of objects by reference when editing the main object.
 
-Кроме того, реализована возможность обновлять кеши у объектов по ссылкам при редактировании основного объекта.
-
-Для этого в мете класса указываем настройку:
+Set the following property in the meta class:
 
 ```
 cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 ``` 
+When configuring the meta class, specify the reference and collections, the caches of the objects in which you need to update when editing an object of this class. Updates are done recursively. If the `refAttr1` attribute is set to update caches in the class object, than the update will start. This setting is inherited in heir classes.
 
-В настройке необходимо указать ссылки и коллекции, кеши объектов в которых необходимо обновить при редактировании объекта данного класса. Обновления выполняестя рекурсивно, то есть если в классе объекта в `refAttr1` настроено обновление кешей, оно будет запущено. Настройка наследуется в классах наследниках.
-
-### Пример настройки:
+### Example of configuration:
 
 ```json
 {
       "orderNumber": 40,
       "name": "kolStatOps",
-      "caption": "Количество стационарных ОПС",
+      "caption": "Number of stationary security and fire alarms",
       "type": 6,
       "size": null,
       "decimals": 0,
@@ -70,8 +67,9 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
     },
 ```
 
-Кешируется значение данного атрибута, получаемое из формулы. Дополнительно для обновления значения при редактирования объекта необходимо обновлять кеши объектов по ссылке: для это в мете класса каждого объекта по ссылке указываем `cacheDependencies: `.
-### Пример:
+The value of this attribute, derived from the formula, is cached. Plus, to update the value when editing an object, firstly update caches of the object by reference: set the `cacheDependencies: `in the meta class of each reference object.
+
+### Example:
 
 ```json
 {
@@ -80,9 +78,9 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
     "okato"
   ],
   "semantic": "name",
-  "name": "naselenniyPunkt",
+  "name": "locality",
   "version": "",
-  "caption": "Населенный пункт",
+  "caption": "Locality",
   "ancestor": null,
   "container": "",
   "creationTracker": "",
@@ -96,15 +94,15 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 ```
 
 
-### Следующая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
+### The next page: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

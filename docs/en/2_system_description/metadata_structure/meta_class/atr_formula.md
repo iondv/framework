@@ -1,22 +1,113 @@
-### Предыдущая страница: [Жадная загрузка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md) 
-# Вычисляймые поля 
-## Описание
-**Вычисляемые атрибуты** - применяются для вычисления значений по формуле для отображения результата в виде значений поля атрибута.  
+### The previous page: [Eager loading](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) 
 
-Вычисляемые атрибуты настраивают механизм формирования формул, которые вычисляются при открытии формы. При закрытии они сохраняются и их можно использовать как для других формул, так и для ссылочных полей. Также может быть реализовано в семантике. 
+# Computable attribute (without caching)
 
-Чтобы в поле отобразилось вычисление, необходимо задать значение в свойстве `formula`. При значение `Null` вычесления не будут реализованы. 
+## Description
 
-# Модель записи формулы (TODO)
+**Computable attributes (formula)** - are used to instantly generate a string expression (as a result) according to a preset algorithm when accessing a class object through the API. For example, when you open the object.
 
-Общая модель формул:
+At the class meta level, the computable attributes store the algorithm for generating a string expression in the `formula` property.
 
-* операнды
-* слова начинающиеся с $ - сюда подставляются значения поля, если есть операнд разыменования (операция переход по ссылке) `.` - то значит из связанного объекта, пример $person.user
-* слова начинающиеся с $$ - поля начинающиеся с $ - т.к. формуле передается контекст - в общем случае объект соответствующий спецификации, как правило передается объект с атрибутами $uid, $context и свойствами `properties` из профиля ($employee, $organization). В $context пишется item. Если атрибут не находится в корне контекста, он рекурсивно ищется в $context. все это с учетом разыменования.
-* остальное определяется как обычные строки
+For example you can access all unique values from the `name` attribute, which values are stored in the `ownOrg` collection. All the unique values, devided by "," are united in one string expression. 
 
-### Пример применения формулы:
+```
+      "formula": {
+    "merge": [
+      "$ownOrg",
+      "name",
+      null,
+      1,
+      ", "
+    ]
+      }
+```
+
+For example, If you have a collection with non-unique values, for example, "ownOrg1", "ownOrg2" and again "ownOrg1". If you need to obtain only the unique values of the collection "ownOrg1 and ownOrg2", then the above described formula for the computable attribute using the `merge` operation will be useful.
+
+Depending on the function, you can refer to the necessary attribute to get the value through the attributes of the "Link", and "Collection" type. 
+
+When saving changes and closing the form of an object, the result is not saved in the attribute if caching is not configured.
+
+If the meta class has a few computable attributes, then the order of the calculation is set in the `orderNumber` property. You can use the results of calculations for a given order `orderNumber` in the following calculated attributes. 
+
+In the semantics of a class or an attribute, you can specify computable attributes.
+
+If you set `Null` in the `formula` property, then the attribute won't be computable and you cannot apply caching to it.
+
+# How to configure?
+
+Each formula begins with a description of the object and the function in the [JSON](https://en.wikipedia.org/wiki/JSON) file format.   
+```
+      "formula": {
+    "function1": [
+      {
+        "function2": [
+        "operand3"
+      ]
+      },
+      "operand1",
+      "operand2"
+    ]
+      }
+```
+You should specify [a suitable operation](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC%D1%8B%D0%B5-%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8) in the `function1` field with the desired number of operands for the result.
+
+The object contains the full description of the algorithm, that controls the calculations except the functions stored in the depended computable attributes.
+
+An array in a function stores the order of the operands that are passed to the function.
+
+The functions operands could be:
+
+* String values, storing the constant 
+```
+      "formula": {
+    "function1": [
+      "string"
+    ]
+      }
+```
+
+* String values, storing the [variables](/docs/ru/2_system_description/metadata_structure/ meta_variables.md)
+```
+      "formula": {
+    "function1": [
+      "$attr1"
+    ]
+      }
+```
+
+* Numerical values 
+```
+      "formula": {
+    "function1": [
+      3.14
+    ]
+      }
+```
+
+* Empty values
+```
+      "formula": {
+    "function1": [
+      null
+    ]
+      }
+```
+
+* Objects
+```
+      "formula": {
+    "function1": [
+      {
+        "function2": [
+        "operand1"
+      ]
+      }
+    ]
+      }
+```
+
+### Example of formulas:
 
 ```
 {
@@ -86,13 +177,13 @@
                   {
                     "ne": [
                       "$subjectFederation",
-                      "Санкт-Петербург г"
+                      "St. Petersburg"
                     ]
                   },
                   {
                     "ne": [
                       "$subjectFederation",
-                      "Москва г"
+                      "Moscow"
                     ]
                   }
                 ]
@@ -123,7 +214,7 @@
               "$houseNumber",
               {
                 "concat": [
-                  ", Дом ",
+                  ", house ",
                   "$houseNumber"
                 ]
               },
@@ -135,7 +226,7 @@
               "$flatNumber",
               {
                 "concat": [
-                  ", Квартира (офис) ",
+                  ", Apartment (office) ",
                   "$flatNumber"
                 ]
               },
@@ -147,88 +238,87 @@
     },
 
 ```
-**Результат:** _вывод адреса с пробелами и запятыми между значениями атрибутов_
+**Result:** _ the output of the address with spaces and commas between the values of the attributes_
 
 
-### Поддерживаемые функции:
+### Available operations:
 
-`eq` - равно
+`eq` - equal
 
-`ne` - не равно
+`ne` - not equal
 
-`lt` - меньше
+`lt` - less
 
-`gt` - больше
+`gt` - greater
 
-`lte` - меньше либо равно
+`lte` - less or equal
 
-`gte` - больше, либо равно
+`gte` - greater or equal
 
+`and` - and
 
-`and` - и
+`or` - o
 
-`or` - или
+`not` - not
 
-`not` - не
+`add` -   arithmetic addition
 
-`add` - арифметическое сложение
+`sub` -   arithmetical subtraction
 
-`sub` - арифметическое вычитание
+`mul` - arithmetical multiplication
 
-`mul` - арифметическое умножение
+`div` -   arithmetical division
 
-`div` - арифметическое деление
+`nempty` - not empty
 
-`nempty` - не пусто
+`empty` - empty
 
-`empty` - пусто
+`pad` - additional symbols to the desired string length
 
-`pad` - дополнение строки символами до нужной длины
+`next` - [derive a new value from a sequence](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%B0%D0%B2%D1%82%D0%BE%D0%BF%D1%80%D0%B8%D1%81%D0%B2%D0%BE%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8-%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B0%D1%82%D1%80%D0%B8%D0%B1%D1%83%D1%82%D0%B0-%D0%B2-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D1%8F%D0%B5%D0%BC%D0%BE%D0%BC-%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B8)
 
-`next` - 
+`merge` - concatenation of attributes in the collection
 
-`merge` - конкатенация атрибутов в коллекции
+`size` - available attribute values - string and collection. For strings - returns the length, for collections - the number of elements
 
-`size` - принимает в качестве аргумента атрибуты типа строка и коллекция. Для строк возвращает длину, для коллекций - количество элементов.
+`element` - derive an arbitrary element from an array, indexation is from 0 ([array of values], [element index: 0 is the first element, last is the last element])
 
-`element` - получение произвольного элемента из массива, индексирование с 0 ([массив значений], [индекс элемента: 0 - первый элемент, last - последний элемент])
+`dateAdd` - an addition to the data (in the notation momentjs - [Date], [add interval (number)], [unit (line [d, m, y, h, min, s, ms)]
 
-`dateAdd` - добавление к дате (в нотации momentjs - [Дата], [добавляемый интервал (число)], [ед.изм (строка [d, m, y, h, min, s, ms)])
+`dateDiff` - difference between dates (in the notation momentjs - [unitism], [Date1], [Date2])
 
-`dateDiff` - разница между датами (в нотации momentjs - [ед.изм], [Дата1], [Дата2])
+`now` - current date and time
 
-`now` - текущая дата-время
-
-`concat` - конкатенация строк
+`concat` - string concatenation
 ```
-substring - получение подстроки ([Строка], [ с какого символа], [сколько символов])
+substring - deriving the substring ([String], [with which character], [how many characters])
 ```
 
-`obj` - формирование объекта, нечетные аргументы - имена свойств, четные - значения
+`obj` - forming an object: odd arguments - property names, even arguments - values
 
-агрегация:
+aggregation:
 
 `max`, `min`, `avg`, `sum`, `count`
 
-Все функции агрегации принимают следующие аргументы:
+All aggregation operations take the following arguments
 
-либо
-
-```
-[$Имя атрибута коллекции], [Имя агрегируемого атрибута], [функция фильтрации элементов коллекции]
-```
-
-либо
+or
 
 ```
-[Имя класса], [Имя агрегируемого атрибута], [Объект фильтра сформированный функцией obj соответствующий нотации фильтров mongodb]
+[$Attribute name of collection], [Name of aggregated attribute], [Filtering Function of collection elements]
 ```
 
-`1` - указывает на уникальность объекта, то есть позволяет для функций агрегации производить подсчет только по уникальным объектам.
+or
 
-`\n` - перенос на другую строку
+```
+[Class name], [Aggregated attribute name], [The filter object formed by the "obj" operation is the corresponding notation of mongodb filters.]
+```
 
-### Пример:
+`1` - indicates the uniqueness of the object, so it allows to count only unique objects for aggregation operations
+
+`\n` -   line folding
+
+### Example:
 
 ```
 "formula": {
@@ -241,36 +331,25 @@ substring - получение подстроки ([Строка], [ с како
         ]
       },
 
-```
+``` 
 
+## Auto-assignment in computable attribute
 
+1. Set the `autoassigned: true`, so that calculated expression is not executed when opening the create form. The expressions will be calculated before saving. This is relevant when using the `next` operation in calculations, since it is not always necessary to derive the next value each time opening the creation form.
 
-## Описание принципа формирования формул (TODO)
+2. The default values are calculated before the object is written to the DB.
 
-Открывается объект в котором вызывается операция по получению результатов формул, асинхронно. Когда результаты получены они записываются в атрибуты.  
-Как результат получается класс.
+3. The `next($id)` operation (If the `$id` has a value) will always return 1, since for each object a separate sequence will be created, from which only the first value will be selected.
 
-1. Проверяем поля класса. Если у класса есть формула и поля не являются `eval()`, то асинхронно вызываем вычисление. Если формула и `eval()`, то записываем атрибут.
-
-2. Ожидаем выполнения вычисления формул, записываем результат атрибут formulaRes для исходного объекта. Начинаем выполнения `eval()` формул. 
-
-## Автоприсвоение и получение значения атрибута в вычисляемом выражении
-
-1. Чтобы вычисляемое выражение не выполнялось при открытии формы создания, у атрибута надо выставить `autoassigned: true`. Тогда выражения будут вычислены непосредственно перед сохранением объекта. Это актуально при использовании функции `next` в вычислениях, так как не всегда необходимо извлекать очередное значение последовательности при каждом открытии формы создания.
-
-2. Значения по умолчанию рассчитываются до записи объекта в БД, то есть на этапе их вычисления в простых автоприсваемых атрибутах еще ничего нет.
-
-3. Функция `next($id)` (если в `$id` задано значение) будет всегда возвращать 1, так как для каждого объекта будет создаваться отдельная последовательность, из которой выбирается только первое значение.
-
-### Следующая страница: [Кеширование значения вычислимого атрибута](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
+### The next page: [Cached values of computeble fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.    
 All rights reserved. 
