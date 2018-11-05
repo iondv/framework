@@ -11,7 +11,7 @@ The ability to replace an object by a back reference is determined by the `nulla
 ## Types of connections of the "reference" type
 Reference type in context of the used fields of the attribute part of the meta class:
 
-1. `one-to-many` - the classic connection of the heir object to the ancestor object. Define a reference and specify the class of the nested object, after connections are created and a reference stored as a separate entity in the DB.
+1. `one-to-many` - the classic connection of the heir object to the ancestor object. Define a reference and specify the class of the nested object, after connections are created and a reference stored as a separate entities in the DB.
 2. `one-to-one` - similar to the one-to-many connection, means the presence of a reference and a nested object with a bonded reference to the source object. In the link, you must specify a bonded reference, and in the bonded reference you must indicate the reference attribute of the nested object by which the connection is formed. Be sure to specify the `"unique ": true` property in the reference attribute. 
 
 ## Reference in JSON 

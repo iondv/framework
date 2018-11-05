@@ -1,18 +1,18 @@
-### Предыдущая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The previous page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
 
-# Список выбора допустимых значений
+# Selection list of valid values
 
-**Список выбора допустимых значений** - находится в атрибутивной части меты класса - ` "selectionProvider"` и задает список выбора допустимых значений для поля ввода атрибута. Список формируется в виде массива объектов типа «ключ-значения» и представляет собой список выбора значения для атрибута с типом «Строка», «Действительное», «Целое», «Десятичное», «Текст».   
+**Selection list of valid values** - sets the selection list of valid values for the propery in the attribute field. It is located in the attribute part of the meta class - ` "selectionProvider"`. The list is formed as an array of objects of the “key-value” type with a list of the value selection for an attribute of the “String”, “Real”, “Integer”, “Decimal”, and “Text” types.   
 
-Есть три типа списка выбора, тип задается в поле (`"type"`) одной из следующих ключевых фраз: 
+You have three types of selection list. Set the type in the `"type"` field using one of the following keys:  
 
-* `"SIMPLE"` - список выбора простого типа, 
-* `"MATRIX"` - список выбора матричного типа, 
-* `"HQL"` - список выбора типа запрос (**не реализовано**)
+* `"SIMPLE"` - is simple type of selection list, 
+* `"MATRIX"` - is matrix type of selection list, 
+* `"HQL"` - is request type of selection list (**to be realized**).
 
-## Описание полей структуры
+## Description of fields
 
-### Структура объекта списка выбора
+### Structure of the selection list object
 
 ```
       "selectionProvider": {
@@ -24,44 +24,44 @@
       },
 ```
 
-| Поле           | Наименование в студии | Допустимые значения                                                                                                 | Описание                                             |
+| Field           | Name  | Acceptable values                                                                                                  | Description                                             |
 |:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------|
-| `"type"`       | **Тип**               | ` "SIMPLE", "MATRIX", "HQL"`                                                                                        | Тип списка выбора                                    |
-| `"list"`       | **Простой тип**       | Массив объектов типа "ключ-значение".                                                                               | Список выбора просто типа ("SIMPLE") хранится здесь. |
-| `"matrix"`     | **Матрица**           | Массив векторов, каждый из которых состоит из именования, комплекта условий выбора и комплекта пар "ключ-значение". | Список выбора матричного типа ("MATRIX").            |
-| `"parameters"` | **Параметры запроса** | Массив объектов типа "ключ-значение".                                                                               | Параметры запроса, **не реализовано**                |
-| `"hq"`         | **Запрос**            | Строка запроса в соответствии с форматом обработчика                                                                | Строка запроса, **не реализовано**                   |
+| `"type"`       | **Type**               | ` "SIMPLE", "MATRIX", "HQL"`                                                                                        | Selection list type                                    |
+| `"list"`       | **Simple type**       | An array of objects of the "key-value" type.                                                                               | Selection list of the Simple type is stored here. |
+| `"matrix"`     | **Matrix**           | An array of vectors. Each of vectors consists of: name, selection conditions and key-values. | Selection list of the Matrix type          |
+| `"parameters"` | **Parameters of request** | An array of objects of the "key-value" type.                                                                               | Parameters of request, **to be realized**                |
+| `"hq"`         | **Request**            | String of request in accordance with the handler format                                                                 | String of request, **to be realized**                   |
 
-### Поле `"list"` - массив объектов следующей структуры
+### The `"list"` field - an array of objects of the following structure: 
 
 ```
         "list": [
           {
             "key": "2001-03-23 09:00:00.000Z",
-            "value": "Затопление орбитальной станции «Мир» (23 марта 2001 г. 09:00 мск)"
+            "value": "Flooding of the Mir orbital station (March 23, 2001, 09:00 Moscow time)"
           },
           {
             "key": "1957-10-04 19:28:00.000Z",
-            "value": "Запуск первого в мире искусственного спутника (4 октября 1957 г. в 19:28 гринвич)"
+            "value": "Launch of the world's first artificial satellite (October 4, 1957 at 19:28 greenwich)"
           },
           {
             "key": "1970-04-17 12:07:00.000Z",
-            "value": "Завершение полёта «Аполлон-13» (17 апреля 1970 г. 12:07 Хьюстон)"
+            "value": "Completion of the flight" Apollo 13 "(April 17, 1970 12:07 Houston)"
           }
         ],
 ```
 
-| Поле      | Наименование в студии | Допустимые значения                                                                     | Описание                                                         |
+| Field      | Name | Acceptable values                                                                     | Description                                                         |
 |:----------|:----------------------|:----------------------------------------------------------------------------------------|:-----------------------------------------------------------------|
-| `"key"`   | **Ключ**              | Любое значение, соответствующее типу атрибута для которого заведен данный список выбора | При сохранении объекта именно значение ключа записывается в базу |
-| `"value"` | **Значение**          | Любая строка, могут быть проблемы при наличии управляющих последовательностей           | Значение этого поля выводится в пользовательском интерфейсе      |
+| `"key"`   | **Key**              | Any value corresponding to the attribute type of the selection list  | When saving an object the key value is written in the DB. |
+| `"value"` | **Value**          | Any string, but there may be problems with control sequences           | The value of this field is displayed in the user interface      |
 
-### Поле `"matrix"` - массив объектов следующей структуры
+### The `"matrix"` field - an array of objects of the following structure:
 
 ```
         "matrix": [
           {
-            "comment": "Оба отрицательные",
+            "comment": "Both negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -78,13 +78,13 @@
             ],
             "result": [
               {
-                "key": "Оба отрицательные",
-                "value": "Оба отрицательные"
+                "key": "Both negative",
+                "value": "Both negative"
               }
             ]
           },
           {
-            "comment": "Оба неотрицательные",
+            "comment": "Both non-negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -101,13 +101,13 @@
             ],
             "result": [
               {
-                "key": "Оба неотрицательные",
-                "value": "Оба неотрицательные"
+                "key": "Both non-negative",
+                "value": "Both non-negative"
               }
             ]
           },
           {
-            "comment": "Первое неотрицательное второе отрицательное",
+            "comment": "First non-negative second negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -124,13 +124,13 @@
             ],
             "result": [
               {
-                "key": "Первое неотрицательное второе отрицательное",
-                "value": "Первое неотрицательное второе отрицательное"
+                "key": "First non-negative second negative",
+                "value": "First non-negative second negative"
               }
             ]
           },
           {
-            "comment": "Первое отрицательное, второе неотрицательное",
+            "comment": "First negative second non-negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -147,8 +147,8 @@
             ],
             "result": [
               {
-                "key": "Первое отрицательное, второе неотрицательное",
-                "value": "Первое отрицательное, второе неотрицательное"
+                "key": "First negative second non-negative",
+                "value": "First negative second non-negative"
               }
             ]
           }
@@ -158,53 +158,53 @@
       },
 ```
 
-Каждый объект массива `"MATRIX"` содержит следующие обязательные поля:
+Each object of the `"MATRIX"` array containns the  mandotary fields:
 
-| Поле           | Наименование в студии | Допустимые значения                                 | Описание                                                                                                       |
+| Field           | Name  | Acceptable values                                 | Description                                                                                                       |
 |:---------------|:----------------------|:----------------------------------------------------|:---------------------------------------------------------------------------------------------------------------|
-| `"comment"`    | **Комментарий**       | Любая строка                                        | Комментарий к вектору, наименование вектора в студии                                                           |
-| `"conditions"` | **Условия**           | Массив объектов                                     | Определяет условия при которых выводится список элементов описанный в  `"result"` данного вектора              |
-| `"result"`     | **Результаты**        | Массив объектов, аналогичен структуре поля `"list"` | Задает список выбора, который выводится при соблюдении условий, перечисленных в `"conditions"` данного вектора |
+| `"comment"`    | **Comment**       | Any string                                       | Comment to the vector                                                          |
+| `"conditions"` | **Conditions**           | Array of objects                                     | Defines the conditions under which the list of objects described in `" result "` of this vector is displayed             |
+| `"result"`     | **Results**        | Array of objects, similar to the structure of the `"list"` field | Sets the selection list that is displayed when the conditions are set correctly in the `"conditions"` field |
 
 
-#### Поле `"conditions"` массива `"MATRIX"`
+#### The `"conditions"` field of the `"MATRIX"` array
 
-| Поле                 | Наименование в студии        | Допустимые значения                                                   | Описание                                                                                           |
+| Field                 | Name        | Acceptable values                                                   | Description                                                                                           |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|
-| `"property"`         | **Атрибут**                  | Строка, только латиница без пробелов                                  | Атрибут класса, значение поля которого проверяется на соответствие данному условию данного вектора |
-| `"operation"`        | **Операция**                 | Код операции                                                          | Операция, согласно которой производится определение                                                |
-|                      |                              | _0 - равно (И)_                                                       |                                                                                                    |
-|                      |                              | _1 - не равно (ИЛИ)_                                                  |                                                                                                    |
-|                      |                              | _2 - пусто (НЕ)_                                                      |                                                                                                    |
-|                      |                              | _3 - не пусто (МИН ИЗ)_                                               |                                                                                                    |
-|                      |                              | _4 - (МАКС ИЗ)_                                                       |                                                                                                    |
+| `"property"`         | **Attribute**                  | String, only Latin alphabet, without spaces                                  | Class attribute is checked for the correspondence of  the field value to this condition of this vector  |
+| `"operation"`        | **Operation**                 | Operation code                                                          | The definition is made according to the operation                                                |
+|                      |                              | _0 - equal (AND)_                                                       |                                                                                                    |
+|                      |                              | _1 - not equal (OR)_                                                  |                                                                                                    |
+|                      |                              | _2 - empty (NOT)_                                                      |                                                                                                    |
+|                      |                              | _3 - not empty (MINIMUM OF)_                                               |                                                                                                    |
+|                      |                              | _4 - (MAXIMUM OF)_                                                       |                                                                                                    |
 |                      |                              | _5 - < ()_                                                            |                                                                                                    |
 |                      |                              | _6 - >_                                                               |                                                                                                    |
 |                      |                              | _7 - <=_                                                              |                                                                                                    |
 |                      |                              | _8 - >=_                                                              |                                                                                                    |
-|                      |                              | _9 - IN /Похож/_                                                                   |                                                                                                    |
-|                      |                              | _10 - содержит_                                                       |                                                                                                    |
-| `"value"`            | **Значение**                 | Зависит от типа операции                                              | Второе значение для бинарных операций                                                              |
-| `"nestedConditions"` | **Вложенные условия отбора** | Объект, структура аналогична структуре самого объекта условий отбора. |                                                                                                    |
+|                      |                              | _9 - IN /Similar/_                                                                   |                                                                                                    |
+|                      |                              | _10 - contains_                                                       |                                                                                                    |
+| `"value"`            | **Value**                 | Depends on the operation type                                              |The second value for binary operations                                                              |
+| `"nestedConditions"` | **Nested selection conditions** | The object, the structure is similar to the structure of the object of the selection conditions |                                                                                                    |
 
-_**NB**: Код операции соответствует разным значениям операций, в зависимостри от того, выбран атрибут или нет. Если поле  `"property"` равно `null`, то кодируется логическое условие, по которому объединяются вложенные условия отбора. (Указаны в скобках в таблице выше)_
+_**NB**: The operation code corresponds to different values of operations, depending on whether the attribute is selected or not. If the  `"property"` field is equal to `null`, then a logical condition (by which the nested selection conditions are combined) is coded. (Indicated in brackets in the table above)_
 
-## Описание
+## Description
 
-### Список выбора типа "SIMPLE"
+### Selection list of the "SIMPLE" type
 
-Данный список выбора позволяет создать жестко зашитый в приложении пресет значений поля, ограничив тем самом выбор пользователя.  
-Для поля в обязательном порядке следует задать тип представления - "Выпадающий список [5]".  
-Подразумевает возможность сохранять данные в базе в типе, отличном от типа данных, выводимых пользователю.  
-_Например_: Если задать в качестве полей `key` элементы списка выбора значения даты-времени в ISODate, а в качестве `value` - описание события, то предоставим пользвателю возможность выбрать событие, но внутри приложения работать с данными типа ISODate.
+This selection list allows to create the hard-coded preset value fields, limiting the choice of the user in the application.  
+Be sure to set the “Drop-down list [5]” view type, it's mandatory. It saves the data in the DB in a type other than the type of data displayed to the user.   
+ 
+_Example_: If in the `key` fiels you set the elements of the selection list of the data-time type in the ISODate, and in the `value` field - the event description, the result will be: the user can choose the event, but will work with ISODate data inside the app. 
 
-_**NB**: Если у атрибута со списком выбора разрешено пустое значение: `"nullable": true` - в списке выбора добавляется пустое значение по умолчанию!_
+_**NB**: If the attribute with a selection list has an empty value as `"nullable": true` - the empty value is added automatically in the selection list!_
 
 ```
     {
       "orderNumber": 50,
       "name": "sp_date",
-      "caption": "Сохраняем ключ дата-время",
+      "caption": "Save the data-time key",
       "type": 9,
       "size": null,
       "decimals": 0,
@@ -230,15 +230,15 @@ _**NB**: Если у атрибута со списком выбора разр�
         "list": [
           {
             "key": "2001-03-23T09:00:00.000Z",
-            "value": "Затопление орбитальной станции «Мир» (23 марта 2001 г. 09:00 мск)"
+            "value": "Flooding of the Mir orbital station (March 23, 2001, 09:00 Moscow time)"
           },
           {
             "key": "1957-10-04T19:28:00.000Z",
-            "value": "Запуск первого в мире искусственного спутника (4 октября 1957 г. в 19:28 гринвич)"
+            "value": "Launch of the world's first artificial satellite (October 4, 1957 at 19:28 greenwich)"
           },
           {
             "key": "1970-04-17T12:07:00.000Z",
-            "value": "Завершение полёта «Аполлон-13» (17 апреля 1970 г. 12:07 Хьюстон)"
+            "value": "Completion of the flight" Apollo 13 "(April 17, 1970 12:07 Houston)"
           }
         ],
         "matrix": [],
@@ -251,28 +251,27 @@ _**NB**: Если у атрибута со списком выбора разр�
     }
 ```
 
-#### Принцип создания:
-Необходимо:
-1. выбрать исходя из требований предметной области наиболее удобный тип атрибута,
-2. выбрать идентификаторы данного типа (`"key"`) с той целью, что бы при необходимости автоматизированной обработки оперировать значениями в базе максимально эффективно,
-3. задать к каждому идентификатору подпись, которая будет отображаться в интерфейсе `"value"`,
-4. задать в представлениях тип представления - "Выпадающий список [5]" в обязательном порядке.
+#### How to configure:
+You need to:
+1. choose the most appropriate attribute type,
+2. choose the identifiers of the type (`"key"`) to operate with values in the DB as efficiently as possible where necessary automated processing,
+3. set the phrase to each key, that will be displayed in the `"value"` field,
+4. imperatively set the “Drop-down list [5]” view type.
 
-### Список выбора типа "MATRIX"  
+### Selection list of the "MATRIX" type  
 
-В матрицах результирующий список выбора это все, что подпадает под условия. Если условий нет - то система считает, что список выбора применяется всегда.
-Для предсказуемости работы приложения, необходимо чтобы были соблюдены два условия:
+All that falls under the conditions is the resulting selection list in matrix. If there is no conditions - the system will always apply the selection list.  
 
-1. Вектора не должны перекрывать друг друга.
-2. Массив значений опорного атрибута, как основание матрицы (массив сочетаний значений опорных атрибутов) должен полностью закрываться описанными векторами.
+For the predictability of the application, respect two conditions:
 
- Система берет значение опорного поля (полей) и последовательно применяет к нему условия описанные в векторах. Каждый вектор - это набор условий и собственный список выбора. Как только система дойдет до вектора, условиям которого удовлетворяет значение опорного поля, она берет из него список выбора и определяет к выводу в пользовательском интерфейсе. Подразумевается, что на любое значение опорного поля система найдет соответствующий вектор.  
+1. Vectors should not overlap each other.
+2. Array of values of the initial attribute, as the matrix base (an array of combinations of the initial (reference) attributes values) must be completely closed by the described vectors.
 
+The system takes the value of the reference field (s) and consistently applies the conditions of the vectors to this field. Each vector is the set of conditions and its own selection list. As soon as the system reaches the vector with satisfied conditions, it takes its selection list and defines the output in the UI. It is assumed that the system will find the corresponding vector for any value of the reference field.
 
+#### Example 1: Matrix of two integer values
 
-#### Пример 1: Матрица от двух целочисленных значений
-
-**JSON класса**:
+**JSON of the class**:
 
 ```
 {
@@ -283,7 +282,7 @@ _**NB**: Если у атрибута со списком выбора разр�
   "semantic": "",
   "name": "selection_provider_matrix_dc",
   "version": "",
-  "caption": "\"MATRIX\" от двух оснований",
+  "caption": "\"MATRIX\" of two bases",
   "ancestor": null,
   "container": null,
   "creationTracker": "",
@@ -295,7 +294,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 10,
       "name": "id",
-      "caption": "Идентификатор",
+      "caption": "Identifier",
       "type": 12,
       "size": null,
       "decimals": 0,
@@ -324,7 +323,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 20,
       "name": "matrix_base_1",
-      "caption": "Первое целое основание матрицы",
+      "caption": "First integer matrix base",
       "type": 6,
       "size": null,
       "decimals": 0,
@@ -353,7 +352,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 30,
       "name": "matrix_base_2",
-      "caption": "Второе целое основание матрицы",
+      "caption": "Second integer matrix base",
       "type": 6,
       "size": null,
       "decimals": 0,
@@ -382,7 +381,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 40,
       "name": "selection_provider_matrix",
-      "caption": "Список выбора типа \"MATRIX\"",
+      "caption": "Selection list of the \"MATRIX\" type",
       "type": 0,
       "size": null,
       "decimals": 0,
@@ -408,7 +407,7 @@ _**NB**: Если у атрибута со списком выбора разр�
         "list": [],
         "matrix": [
           {
-            "comment": "Оба отрицательные",
+            "comment": "Both negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -425,13 +424,13 @@ _**NB**: Если у атрибута со списком выбора разр�
             ],
             "result": [
               {
-                "key": "Оба отрицательные",
-                "value": "Оба отрицательные"
+                "key": "Both negative",
+                "value": "Both negative"
               }
             ]
           },
           {
-            "comment": "Оба неотрицательные",
+            "comment": "Both non-negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -448,13 +447,13 @@ _**NB**: Если у атрибута со списком выбора разр�
             ],
             "result": [
               {
-                "key": "Оба неотрицательные",
-                "value": "Оба неотрицательные"
+                "key": "Both non-negative",
+                "value": "Both non-negative"
               }
             ]
           },
           {
-            "comment": "Первое неотрицательное второе отрицательное",
+            "comment": "First non-negative second negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -471,13 +470,13 @@ _**NB**: Если у атрибута со списком выбора разр�
             ],
             "result": [
               {
-                "key": "Первое неотрицательное второе отрицательное",
-                "value": "Первое неотрицательное второе отрицательное"
+                "key": "First non-negative second negative",
+                "value": "First non-negative second negative"
               }
             ]
           },
           {
-            "comment": "Первое отрицательное, второе неотрицательное",
+            "comment": "First negative second non-negative",
             "conditions": [
               {
                 "property": "matrix_base_1",
@@ -494,8 +493,8 @@ _**NB**: Если у атрибута со списком выбора разр�
             ],
             "result": [
               {
-                "key": "Первое отрицательное, второе неотрицательное",
-                "value": "Первое отрицательное, второе неотрицательное"
+                "key": "First negative second non-negative",
+                "value": "First negative second non-negative"
               }
             ]
           }
@@ -511,24 +510,24 @@ _**NB**: Если у атрибута со списком выбора разр�
 }
 ```
 
-### Порядок разработки  
+### The order of development  
 
-Необходимо разделить все возможные сочетания пар атрибутов `"matrix_base_1"` и `"matrix_base_2"` на 4 вектора. Делить необходимо относительно нуля, то есть каждое поле может быть либо отрицательным, либо неотрицательным. Ниже представлена схема:
+Devide all possible combinations of attribute pairs - `"matrix_base_1"` and `"matrix_base_2"` into 4 vectors. Each field can be either negative or non-negative. The diagram is below:
 
-![Разбиваем на вектора](images/matrix-dc.jpg)
+![Devide into vectors](images/matrix-dc.jpg)
 
-Выписываем векторы и их условия:
+Choose vectors and their conditions:
 
-1. Оба отрицательные: (matrix_base_1 < 0) && (matrix_base_2 < 0)
-2. Оба неотрицательные: (matrix_base_1 >= 0) && (matrix_base_2 >= 0)
-3. Первое неотрицательное второе отрицательное: (matrix_base_1 >= 0) && (matrix_base_2 < 0)
-4. Первое отрицательное, второе неотрицательное: (matrix_base_1 < 0) && (matrix_base_2 >= 0)
+1. Both negative: (matrix_base_1 < 0) && (matrix_base_2 < 0)
+2. Both non-negative: (matrix_base_1 >= 0) && (matrix_base_2 >= 0)
+3. First non-negative second negative: (matrix_base_1 >= 0) && (matrix_base_2 < 0)
+4. First negative second non-negative: (matrix_base_1 < 0) && (matrix_base_2 >= 0)
 
-Если в 3 и 4 условиях неверно указать равенство нулю, то как результат - выпадающие элементы и перекрытие векторов.  
+If in the 3 and 4 conditions the equality to zero is not correctly set, as a result - drop-down elements and overlapping of vectors.  
 
-В примере выше для каждого вектора список выбора ограничен одним пунктом, но их может быть больше.
+In the example above, for each vector the selection list is limited to one item, but there may be more.
 
-#### Пример 2: Матрица от свободного действительного значения со сложными условиями
+#### Example 2: matrix of free real value with compound conditions
 ```
 {
   "isStruct": false,
@@ -551,7 +550,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 10,
       "name": "id",
-      "caption": "Идентификатор",
+      "caption": "Identifier",
       "type": 12,
       "size": null,
       "decimals": 0,
@@ -580,7 +579,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 20,
       "name": "matrix_base",
-      "caption": "Действительное основание для списка выбора матричного типа",
+      "caption": "The real base for the matrix type selection list",
       "type": 7,
       "size": null,
       "decimals": 0,
@@ -609,7 +608,7 @@ _**NB**: Если у атрибута со списком выбора разр�
     {
       "orderNumber": 30,
       "name": "selection_provider_matrix",
-      "caption": "Список выбора со сложными условиями",
+      "caption": "Selection list with compound conditions",
       "type": 6,
       "size": null,
       "decimals": 0,
@@ -649,11 +648,11 @@ _**NB**: Если у атрибута со списком выбора разр�
             "result": [
               {
                 "key": "1",
-                "value": "Сохраним 1 при основании меньше 3"
+                "value": "Save 1 if the base is less then  3"
               },
               {
                 "key": "2",
-                "value": "Сохраним 2 при основании меньше 3"
+                "value": "Save 2 if the base is less then 3"
               }
             ]
           },
@@ -672,7 +671,7 @@ _**NB**: Если у атрибута со списком выбора разр�
             "result": [
               {
                 "key": "3",
-                "value": "Сохраним 3 при основании 3"
+                "value": "Save 3 if the base is 3"
               }
             ]
           },
@@ -699,15 +698,15 @@ _**NB**: Если у атрибута со списком выбора разр�
             "result": [
               {
                 "key": "5",
-                "value": "Сохраним 5 при основании \u003e 3 и \u003c\u003d 15"
+                "value": "Save 5 if the base is \u003e 3 и \u003c\u003d 15"
               },
               {
                 "key": "10",
-                "value": "Сохраним 10 при основании \u003e 3 и \u003c\u003d 15"
+                "value": "Save 10 if the base is \u003e 3 и \u003c\u003d 15"
               },
               {
                 "key": "15",
-                "value": "Сохраним 15 при основании \u003e 3 и \u003c\u003d 15"
+                "value": "Save 15 if the base is \u003e 3 и \u003c\u003d 15"
               }
             ]
           },
@@ -726,19 +725,19 @@ _**NB**: Если у атрибута со списком выбора разр�
             "result": [
               {
                 "key": "50",
-                "value": "Сохраним 50 при основании \u003e\u003d 16"
+                "value": "Save 50 if the base is \u003e\u003d 16"
               },
               {
                 "key": "100",
-                "value": "Сохраним 100 при основании \u003e\u003d16"
+                "value": "Save 100 if the base is \u003e\u003d16"
               },
               {
                 "key": "1000",
-                "value": "Сохраним 1000 при основании \u003e\u003d16"
+                "value": "Save 1000 if the base is \u003e\u003d16"
               },
               {
                 "key": "5000",
-                "value": "Сохраним 5000 при основании \u003e\u003d16"
+                "value": "Save 5000 if the base is \u003e\u003d16"
               }
             ]
           },
@@ -765,7 +764,7 @@ _**NB**: Если у атрибута со списком выбора разр�
             "result": [
               {
                 "key": "0",
-                "value": "Сохраним 0, если основание где-то между 15 и 16"
+                "value": "Save 0, if the base is between 15 and 16"
               }
             ]
           }
@@ -781,7 +780,7 @@ _**NB**: Если у атрибута со списком выбора разр�
 }
 ```
 
-**Векторы и их условия**:
+**Vectors and their conditions**:
 
 1. matrix_base < 3 
 2. matrix_base = 3
@@ -792,11 +791,11 @@ _**NB**: Если у атрибута со списком выбора разр�
 
 
 
-### Следующая страница: [Предварительная выборка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md)
+### The next page: [Eager loading](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

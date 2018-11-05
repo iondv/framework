@@ -1,10 +1,7 @@
-### Предыдущая страница: [Коллекция](/docs/ru/2_system_description/metadata_structure/meta_class/type_collection14.md)
-# Пользовательские типы
+### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
+# User types
 
 **Пользовательский тип** - `"type": 17`, задает значение пользовательского типа на основе базового типа. Находится в директории `meta`, `types` + [название типа].type.json
-
-
-
 
 ## Допустимые базовые типы
 
@@ -28,7 +25,6 @@
   "decimals": null
 }
 ```
-
 
 ## Применение
 
@@ -70,15 +66,15 @@
 
 
 
-### Следующая страница: [Геоданные](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)
+### The next page: [Geodata](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_user17.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 

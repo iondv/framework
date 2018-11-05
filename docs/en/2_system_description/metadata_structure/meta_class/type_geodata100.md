@@ -1,44 +1,45 @@
-### Предыдущая страница: [Пользовательский тип](/docs/ru/2_system_description/metadata_structure/meta_class/type_user17.md)
-# Геоданные
+### The previous page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
+# Geodata
 
-Тип атрибута **геокоординаты** - является атрибутом, который хранит координаты с уникальными представлениями для создания и редактирования. Значение свойства "type" для атрибута, имеющего тип геокоординаты равно 100.
+The **Geodata** attribute type - stores coordinates with unique views for creating and editing forms. The value of the "type" property for Geodata attribute type is 100.
 
-## Описание:
+## Description:
 
-Если атрибут имеет тип геокоординаты и на форме создания/редактирования объекта  атрибут заполнен (координаты заданы), то отображается поле карты с координатами и кнопка "Изменить". Если атрибут не заполнен – то отображается только кнопка "Задать координаты".
+If the attribute has a geodata type and the coordinates are specified on the object creation/editing form, then the Map field with coordinates and the "Change" button are displayed. If the coordinates aren't specified, then only the "Set coordinates" button is displayed.
 
-## Особенности работы
+## Specificity of work 
 
-Если задано свойство "autoassigned": true и не заданы данные при создании формы - то нужно определять координаты автоматически по данным адреса из атрибутов указанных в свойствах геометки.
- 
+If the `"autoassigned"` property is set: `true` and the data is not specified when creating a form, then coordinates must be determined automatically from the address data from the attributes specified in the geodata properties.
 
-## Способы отображения на форме
+## Attributes on the form
 
-Для отображения атрибута с типом геокоординаты используется тип представления геообъект. 
-Геообъект может быть отображён на форме в одном из трёх режимов:
+Use the geo-object view type to display the attribute of the geodata type on the form. 
+There are three display mode for geo-object in the meta view:
 
-* **Карта (0)** - геообъект отображается на карте;
-* **Поиск по адресу (1)** - геообъект отображается на карте, на которой по адресу можно найти место и переместить туда геообъект. Или же можно просто задать координаты геообъекта;
-* **Холст (2)** - геообъект отображается на карте, можно задать интерактивное отображение геообъекта на карте.
+* **Map (0)** - geo-object is displayed on the map;
+* **Search by address (1)** - geo-object is displayed on the map, where you can search by address and move the geo-object. Or you can simply specify the coordinates of the geo-object;
+* **Canvas (2)** - geo-object is displayed on the map, you can set an interactive display of the geo-object.
 
-Режим отображения задаётся указанием соответствующей цифры в поле `"mode"` в **мете представлений класса**: 
+The display mode is set by specifying the corresponding number in the field `"mode"` in **Meta view of the class**: 
 
-"mode": 0, – Режим отображения Карта
+"mode": 0, – Map display mode
 
-"mode": 1, – Режим отображения поиск по адресу
+"mode": 1, – Search by address display mode
 
-"mode": 2, – Режим отображения Холст
+"mode": 2, – Canvas display mode
 
-## Способы хранения в БД
-Данные атрибута с типом геокоординаты сохраняются в БД в виде строки со значениями через запятую, строки в формате JSON-массива или строки в формате JSON-объекта.  
+## Storage in the DB
+The attribute data of the geodata type is stored in the BD as a comma-separated string with values, a string as a JSON-array or a string as a JSON-object. 
 
-### Пример структуры атрибута в режиме Карта (0) в JSON: 
-В логическом имени атрибута (`caption`) можно указать режим отображения (`mode`) для разделения атрибутов с одинаковым типом.
+### Example of attribute structure in a Map (0) in JSON: 
+
+In the logic name (`caption`) of the attribute you can set the display mode (`mode`) to distinguish attributes of the same type.
+
 ```
 {
       "orderNumber": 20,
       "name": "class_geodata",
-      "caption": "Геоданные [100] mode [0] - Карта",
+      "caption": "Geodata [100] mode [0] - Map",
       "type": 100,
       "size": null,
       "decimals": 0,
@@ -66,12 +67,12 @@
     },
 
 ```
-### Пример структуры атрибута в режиме Поиск по адресу (1) в JSON:
+### Example of attribute structure in a Search by address (1) in JSON:
 ```
 {
       "orderNumber": 30,
       "name": "class_geodata1",
-      "caption": "Геоданные [100] mode [1] - Поиск по адресу",
+      "caption": "Геоданные [100] mode [1] - Search by address",
       "type": 100,
       "size": null,
       "decimals": 0,
@@ -98,12 +99,12 @@
       "formula": null
     },
 ```
-### Пример структуры атрибута в режиме Холст (2) в JSON:
+### Example of attribute structure in a Canvas (2) in JSON:
 ```
 {
       "orderNumber": 40,
       "name": "class_geodata2",
-      "caption": "Геоданные [100] mode [2] - Холст",
+      "caption": "Geodata [100] mode [2] - Canvas",
       "type": 100,
       "size": null,
       "decimals": 0,
@@ -131,15 +132,15 @@
     }
 ```
 
-### Следующая страница: [Расписание](/docs/ru/2_system_description/metadata_structure/meta_class/type_schedule210.md) 
+### The next page: [Schedule](/docs/en/2_system_description/metadata_structure/meta_class/type_schedule210.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 

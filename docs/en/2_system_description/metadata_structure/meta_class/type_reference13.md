@@ -1,22 +1,25 @@
-### Предыдущая страница:[Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
-# Ссылки
-## Общее описание
+### The previous page:[Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+# Reference
 
-**Ссылка** - тип данных, который хранит в себе ссылку на другой объект. Данный объект может быть объектом исходного класса, если ссылка указывает на класс, в котором она определена. 
+## Description
 
-Значение в поле атрибута типа "Ссылка" выводятся в соответствии с семантикой, указанной для класса по ссылке. Главное отличие от типа "Коллекция" в том, что в поле атрибута типа "Ссылка" может отображаться и храниться только один объект класса по ссылке. 
+**Reference** - is a data type that stores a simple value and that system interprets as a reference to the key attribute of an object of another class. This object can be an object of any class including the original one.
 
-См. полное описание типа `Ссылка` в атрибутивной части меты класса -[**Атрибут  ссылки и обратной ссылки**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md).
+Values in the attribute of the reference type are displayed in accordance with the semantics, specified in the reference class of this attribute.
 
-## Способы задания ссылок :
-Способы задания ссылок с точки зрения используемых полей атрибутивной части меты классов: 
-1. `один-к-одному` - означает наличие ссылки и вложенного объекта с ссылкой-связкой на исходный объект. В ссылке необходимо указать ссылку-связку, а у нее указать ссылочный атрибут вложенного объекта по которому формируется связь. Обязательно в атрибуте-ссылке указать свойство уникальности - `true`. __См. Обратные ссылки в контексте ссылок.__ 
-2. `один-ко-многим` - необходимо определить ссылку и указать класс вложенного элемента - связи создаются при помещении в ссылку и хранятся как отдельная сущность в БД. __См. Ссылки.__
+The ability to replace an object by a back reference is determined by the `nullable` property of the reference attribute. When replacing an object, you lose the reference and the object by reference will be deleted when you try to change the reference from the collection with a back reference.
+
+See the full description of the `Reference` type in the attribute part of the meta class -[**Reference and Back reference**](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md).
+
+## Types of connections of the "reference" type
+Reference type in context of the used fields of the attribute part of the meta class:
+
+1. `one-to-many` - the classic connection of the heir object to the ancestor object. Define a reference and specify the class of the nested object, after connections are created and a reference stored as a separate entities in the DB.
+2. `one-to-one` - similar to the one-to-many connection, means the presence of a reference and a nested object with a bonded reference to the source object. In the link, you must specify a bonded reference, and in the bonded reference you must indicate the reference attribute of the nested object by which the connection is formed. Be sure to specify the `"unique ": true` property in the reference attribute. 
 
 
 
-
-### Следующая страница: [Коллекция](/docs/ru/2_system_description/metadata_structure/meta_class/type_collection14.md)
+### The next page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
 --------------------------------------------------------------------------  
 
 
@@ -26,5 +29,5 @@
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

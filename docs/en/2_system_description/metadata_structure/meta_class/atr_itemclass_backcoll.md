@@ -1,15 +1,16 @@
 ### The previous page: [Attribute "Reference"](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
 # Collection
 
-**Collection** - тип данных, позволяющий выводить в объекте списки других объектов. Данные объекты могут быть объектами любого класса включая исходный.
+## Description 
 
-Разделяются ссылки через запятую. Все значения из последовательности ссылок и запятых хранятся строкой в базе данны.
+**Collection** - data type that allows to display the list of other objects in one. The data of the object can be the object of any class including the initial.
 
+All references in the collection are divided with commas. All values of the consequence of the references and commas are stored in the DB.
 
-### Способы задания коллекций с точки зрения используемых полей атрибутивной части меты классов:
-1. `один-ко-многим` - классическая связь дочернего объекта на родительский объект. Означает наличие контейнера и вложенного объекта с ссылкой на контейнер. В контейнере необходимо указать коллекцию, а у нее указать ссылочный атрибут вложенного объекта по которому формируется связь. __См. Обратные ссылки__ 
-2. `многие-ко-многим` - определяется через коллекцию без ссылок и  класс вложенных элементов - связи создаются при помещении в коллекцию и хранятся как отдельные сущности в БД. __См. Коллекции.__
-3. `обратная коллекция` - связь один-ко-многим, но в обратную сторону - со стороны объекта на который идут ссылки. Задается через *backColl*. __См. Обратные коллекции.__
+### Types of connections of the Collection type:
+1. `one-to-many` - is the classic connection of the heir object to the ancestor object. Define the container and nested object with the reference to the container. In the container, specify the collection and in the collection specify the reference attribute of the nested object. __See Back refernce__ 
+2. `many-to-many` - is determined through a collection without references and a class of nested elements — connections are created in the collection and stored as separate entities in the DB. __See Collection__
+3. `back collection` - is similar to the `one-to-many` connection but in the opposite direction - connection from the reference object. Set the connection using the *backColl* property.__See Back collection__
 
 
 ## Collection JSON 
@@ -20,7 +21,7 @@
 {
       "orderNumber": 50,
       "name": "table",
-      "caption": "Таблица",
+      "caption": "Table",
       "type": 14,
       "size": null,
       "decimals": 0,
@@ -47,17 +48,18 @@
       "formula": null
     }
 ```  
-**NB.** Если коллекция ссылается на класс содержащий множество потомков, то при заполнении коллекции будет возможность создавать объекты как родительского, так и дочерних классов.
+**NB.** If a collection refers to a class with many heirs, then when filling the collection you can create objects of both the parent and child classes.
 
-Коллекции вместе с объектом грузятся по семантике, заданной в мете класса-коллекции или атрибута-коллекции.
-
+Collections together with the object are loaded according to the semantics specified in the meta class of a collection or reference attribute.
 
 ## Back reference in the context of collection
 
-Обратная ссылка в контексте коллекций образуется следующим образом:
-- Создается обычная коллекция с указанием ссылочного класса
-- В ссылочном классе должен быть атрибут-ссылка, ссылающийся на исходный класс и имеющий свойство `unique` равным `false` . Значение в атрибут-ссылку присваивается сразу при создании связи с коллекцией, без необходимости сохранения формы
-- В исходном классе обычной коллекции заполняем свойство `"backRef"` - туда записывается код атрибута-ссылки из ссылочного класса
+The back reference in the context of collection if formed as follows:
+
+- create a regular collection specifying the reference attribute
+- in the reference class create the reference attribute, that refers to the initial class and has the `"unique": false` property. The values in the reference attribute is assigned immediately when creating a connection with the collection, without saving the form
+- specify the `"backRef"` property in the initial class of the collection. In this property, write down the code of the reference attribute from the reference class
+
 
 ## Back reference in JSON 
 
@@ -67,7 +69,7 @@
 {
       "orderNumber": 30,
       "name": "coll",
-      "caption": "Коллекция с обратной ссылкой",
+      "caption": "Collection with back reference",
       "type": 14,
       "size": null,
       "decimals": 0,
@@ -98,7 +100,7 @@
 
 # Back collection
 
-Пример коллекции выше преобразуется для обратной коллекции слудующим образом:
+The previous example is converted into the back collection as follows:
 
 ```
 {
@@ -132,23 +134,22 @@
     }
 ```
 
+Pay attention to the `" backColl "` property - an additional value — the name of an attribute from a class in the collection (from the example above - coll)
 
-Обратите внимание на указание в свойстве `"backColl"`-  дополнительного значения - имя атрибута из класса в коллекции (из примера это coll) 
-
-Таким образом, реализуется связь многие-ко-многим без промежуточного класса. Не только атрибут `"backcoll"` с типом "Коллекция" может содержать несколько ссылок, но и объекты по ссылкам также могут содержать в своей коллекции "coll" несколько ссылок на объекты исходного класса.
+Thus, a many-to-many connection is realized without an intermediate class. Not only the "backcoll"   attribute with the "Collection" type can contain several references, but objects by reference can also contain several references to objects of the original class in their "coll" collection.
 
 ### *Attention*
 
-- `"type": 14` - тип атрибута "Коллекция"
-- `"backColl"` - название ссылочного атрибута типа коллеции, ссылающегося на исходный класс с коллекцией.
-- `"itemsClass"` - название класса, объекты которого могут хранить свои идентификаторы в коллекции и, таким образом, формировать связь к объекту по идентификатору.
-- `"backRef"` - атрибута-ссылка из ссылочного класса, указанного в `"itemsClass"`
-- При указании класса-родителя есть возможность создавать объекты родительского и дочерних классов
-- Коллекции вместе с объектом грузятся по семантике, заданной в мете класса-коллекции или атрибута-коллекции
+- `"type": 14` - the attribute type "Collection"
+- `"backColl"` - the name of the reference attribute of the collection type, that refers to the initial collection class.
+- `"itemsClass"` - the name of the class whose objects can store their identifiers in the collection and, thus, form a reference to the object by identifier.
+- `"backRef"` - the attribute reference from the reference class specified in `" itemsClass "`
+- When specifying a parent class, it is possible to create objects of the parent and child classes
+- Collection with object are loaded according to the semantics specified in the meta collection class or collection attribute
 
+## Collection processing and its storage format
+To save the collection, transfer the array of actions (the example below) in the corresponding attribute of the object:
 
-## Схема обработки коллекций и формат хранения в БД
-Для сохранения коллекции, необходимо передать в соответствующем ей атрибуте объекта массив действий вида:
 ```
 "collection": [
   {"action": "put", "id": "1234"},
@@ -157,12 +158,12 @@
   {"action": "eject", "id": "1230"}
 ]
 ```
-Порядок объектов должен соответствовать порядку выполнения соответствующих действий. Коды операций: `put` - добавление в коллекцию, `eject` - извлечение из коллекции. Алгоритм для создания и редактирования одинаков. Действия с коллекциями выполняются после создания или сохранения контейнера.
+The order of the objects must correspond to the order of corresponding actions. Available operations: `put` - add to the collection,` eject` - extract from the collection. The algorithm for creating and editing is the same. Actions on collections are performed after the container is created or saved.
 
-Принцип работы коллекций на форме создания и редактирования принципиально разный: 
-* На форме создания взаимодействие с сервером требуется лишь для получения и отображения в таблице выбранного/созданного объекта коллекции
-* На форме редактирования реализована возможность получения ответа сервера при необходимости, и изменение параметров выборки при запросе, в зависимости от выполненных действий над коллекцией.
+The working principle of collections on the form of creation and editing is fundamentally different:
 
+* On the creation form, interconnection with the server is required only to receive and display in the table the selected/created object of the collection
+* On the editing form, it is possible to get a server response if necessary, and to change the select parameters upon request, depending on the actions performed in the collection.
 
 
 ### The next page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)  

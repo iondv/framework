@@ -1,25 +1,25 @@
-### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
-# Условия отбора допустимых значений
+### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+# Conditions of sorting the valid values
 
-## Описание 
-**Условия отбора допустимых значений** - позволяет ограничить выбор объектов по ссылке, допустимых для привязки в данном ссылочном атрибуте.
+## Description 
+**Conditions of sorting the valid values** - allows you to limit the selection of objects by reference that are valid for binding in this reference attribute.
 
-Фильтр списка допустимых значений используется в мете классов для атрибутов типа "Ссылка" и "Коллекция". Фильтром накладываются условия ограничения выборки объектов. Условия накладываются как список последовательных операций.
+Filter of sorting the valid values is used in the meta class for the attributes of the "Reference" and "Collections" types. The filter sets the conditions to limit the sample of objects. Conditions are imposed as a list of consecutive operations.
 
-### Доступные операции:
+### Available operations:
 
 ```
-•  EQUAL: 0, // равно = 
-•  NOT_EQUAL: 1, // не равно <> 
-•  EMPTY: 2, // пусто '' или null 
-•  NOT_EMPTY: 3, // не пусто !'' или !null 
-•  LIKE: 4, // похож 
-•  LESS: 5, // меньше < 
-•  MORE: 6, // больше >
-•  LESS_OR_EQUAL: 7, // меньше или равно <=
-•  MORE_OR_EQUAL: 8, // больше или равно >=
-•  IN: 9, // похож (IN) 
-•  CONTAINS: 10 // содержит
+•  EQUAL: 0, // equal = 
+•  NOT_EQUAL: 1, // not equal <> 
+•  EMPTY: 2, // empty '' or null 
+•  NOT_EMPTY: 3, // not empty !'' or !null 
+•  LIKE: 4, // similar 
+•  LESS: 5, // less < 
+•  MORE: 6, // more >
+•  LESS_OR_EQUAL: 7, // less or equal <=
+•  MORE_OR_EQUAL: 8, // more or equal >=
+•  IN: 9, // similar (IN) 
+•  CONTAINS: 10 // contains
 
 ```
 ```
@@ -34,26 +34,26 @@ module.exports = {
   COUNT: 7
 };
 ```
-## Описание операций:
-Операции могут быть разделены на группы по наличию свойств в условии:
+## Description of operations:
+All operations can be devided into groups according to the properties in the condition:
 
-**Атрибут не указан в условии и условие - объект**
-   * nestedConditions не содержит условий
-     * Операции агрегации `AgregOpers`
+**The attribute is not set in the condition and the condition is the object**
+   * nestedConditions does not contain conditions
+     * Aggregation operations `AgregOpers`
        1. MIN
        2. MAX
        3. AVG
        4. SUM
        5. COUNT
-   * nestedConditions содержит условия
-      * Логические операции сравнения вложенных условий `BoolOpers`  
+   * nestedConditions contains conditions
+      * Logical operations of comparison of nested conditions `BoolOpers`  
         2. OR  
         3. NOT
 
-**Атрибут указан и условие - объект**: операции сравнения значения артибута в условии со значением в value
+**The attribute is set in the condition and the condition is the object**: operations of comparison the attribute value in the condition with the value in the "value" field 
    1. EMPTY
    2. NOT_EMPTY
-   3. CONTAINS
+   3. CONTAINSточку
    4. EQUAL
    5. NOT_EQUAL
    6. LESS
@@ -63,17 +63,16 @@ module.exports = {
    10. LIKE
    11. IN
 
-**Условие в виде массива**
-   * Применяется логическая операция AND для сравнения результатов условий (объектов в массиве).
+**Condition in an array**
+   * Use the logic operation - "AND", to compare the results of conditions (objects in array).
+   
+The operation of the key-expression type - the key is the attribute name in the reference class or in the collection class. Adjacent conditions are combined by a logical “AND” operation (unless another operation is specified) - filters are added to the "selConditions" property.
 
-Каждая операция типа ключ-выражение, где ключом является имя атрибута в классе ссылки или в классе коллекции. Смежные условия объединяются логической операцией «И» (если не указана другая операция) - добавляются фильтры в свойство "selConditions".
+## Operations and other particular qualities
 
-## Применение операций и другие особенности
+Use the "nestedConditions" condition to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
 
-При выполнении запроса к атрибуту, необходимо использовать условие "nestedConditions". Для каждого атрибута выполняется отдельная операция. Не указывайте вложенные ссылочные атрибуты через точку в поле "property".   
-
-Для запроса значений атрибута, которые не равны нулю, необходимо выполнить операцию `nempty `, в поле "value" указываем `null`. 
-
+To inquiry attribute values that are not equal to zero, use the `nempty` operation and specify `null` in the "value" field.
 
 ## JSON
  ```
@@ -82,12 +81,12 @@ module.exports = {
     {
       "property": "region",
       "operation": 10,
-      "value": "Хабаровский край",
+      "value": "Khabarovsk region",
       "nestedConditions": [
         {
           "property": "town",
           "operation": 0,
-          "value": "г Хабаровск",
+          "value": "Khabarovsk",
           "nestedConditions": []
         }
       ]
@@ -108,27 +107,27 @@ module.exports = {
       ]
 }
  ```
-## Описание полей
+## Field description
 
-| Поле                 | Наименование в студии        | Допустимые значения                                                   | Описание                                                            |
+| Field                 | Name        | Acceptable values                                                   | Description                                                            |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:--------------------------------------------------------------------|
-| `"property"`         | **Атрибут**                  | Строка, только латиница без пробелов                                  | Атрибут класса ссылки, по которому производится фильтрация значений |
-| `"operation"`        | **Операция**                 | Код операции (см. выше)                                               | Операция, согласно которой производится фильтрация                  |
-| `"value"`            | **Значение**                 | Зависит от типа операции                                              | Второе значение для бинарных операций фильтрации                    |
-| `"nestedConditions"` | **Вложенные условия отбора** | Объект, структура аналогична структуре самого объекта условий отбора. |                                                                     |
+| `"property"`         | **Attribute**                  | String only Latin without spaces                                  | Attribute of the reference class, according to which the values are filtered |
+| `"operation"`        | **Operation**                 | Operation code (see above)                                               | Operation of object filtration                  |
+| `"value"`            | **Value**                 | Depends on the operation type                                              | The second value for binary filtering operations                    |
+| `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions. |                                                                     |
 
-### Пример
-**Внимание**
+### Example
+**Attention**
 
-Поле "selection_provider". См. подробнее [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
-* "type": "SIMPLE" - простой тип,   
-* "list": [] - массив допустимых значений
+The "selection_provider" field. For more detail see [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
+* "type": "SIMPLE" - simple type,   
+* "list": [] - an array of acceptable values
 
  ```
      {
        "orderNumber": 80,
        "name": "type",
-       "caption": "Тип организации",
+       "caption": "Organisation type",
        "type": 0,
        "size": null,
        "decimals": 0,
@@ -149,12 +148,12 @@ module.exports = {
          "type": "SIMPLE",
          "list": [
            {
-             "key": "zakazchik",
-             "value": "Заказчик"
+             "key": "customer",
+             "value": "Customer"
            },
            {
-             "key": "ispolnitel",
-             "value": "Исполнитель"
+             "key": "contractor",
+             "value": "Contractor"
            }
          ],
          "matrix": [],
@@ -165,20 +164,19 @@ module.exports = {
        "eagerLoading": false
      }
  ```
- ### Пример 
+ ### Example 
  
- В ссылочном атрибуте необходимо показать только те объекты, у которых в ссылочном классе задан атрибут "selConditions", в поле `property` этого атрибута, указаного поле связанного класса, значение в поле "value" соответствует условию "operation".
+ In the reference attribute, show those objects that have specified "selConditions" property in the reference class. In the `property` field of this attribute, specified in the associated class, the value in the "value" field corresponds to the "operation" condition. 
  
- В атрибуте организация, задача показать только организации ("refClass": "organization"), у которых в поле тип ( "property": "type") равно ( "operation": 0) значению zakazchik ("value": "zakazchik").  
- 
- Все условия в `"selConditions"` объединяются по условию "И".  
- 
+ The aim is to show in the attribute "Organization" only those organizations ("refClass": "organization") in which the type field ("property": "type") is equal ("operation": 0) to the customer value ("value": "customer" ).
+
+ All conditons in the `"selConditions"` are united by "and".
 
  ```
      {
        "orderNumber": 120,
-       "name": "zakazchik",
-       "caption": "Заказчик",
+       "name": "customer",
+       "caption": "Customer",
        "type": 13,
        "size": null,
        "decimals": 0,
@@ -197,7 +195,7 @@ module.exports = {
          {
            "property": "type",
            "operation": 0,
-           "value": "zakazchik",
+           "value": "customer",
            "nestedConditions": []
          }
        ],
@@ -208,8 +206,8 @@ module.exports = {
      },
      {
        "orderNumber": 130,
-       "name": "ispolnitel",
-       "caption": "Исполнитель",
+       "name": "contractor",
+       "caption": "Contractor",
        "type": 13,
        "size": null,
        "decimals": 0,
@@ -239,14 +237,14 @@ module.exports = {
      }
  ```
  
-### Условия отбора допустимых значений для атрибутов с типом "Дата"
+### Conditions of sorting the valid values for "Data" type attribute
 
-В ядре реализован атрибут контекста `$$now`, возвращающий текущую дату.
-`$$now` доступен везде при задании условий.
+The core has the context attribute - `$$ now`, which returns the current date.
+`$$ now` is available everywhere if you specify the conditions.
 
-### Пример:
+### Example:
 
-**Условие:** выводить объекты, у которых значение атрибута [dataStart] меньше текущей даты:
+**Condition:** display the objects with the attribute value [dataStart] less than the current data: 
 
 ```
 {
@@ -260,11 +258,11 @@ module.exports = {
 ```
 
 
-### Следующая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The next page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

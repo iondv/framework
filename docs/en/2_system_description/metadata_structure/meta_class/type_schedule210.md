@@ -1,15 +1,21 @@
-### Предыдущая страница: [Геоданные](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)  
-# Расписание
-**Расписание** - тип данных реализующий хранение периодов времени или периодичность выполнения регулярных событий. 
+### The previous page: [Geodata](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)  
 
-## Режим отображения атрибута на форме:
-В представлении для расписания предусмотрено два типа полей:
-`SCHEDULE = 210` – расписание отображается в табличном виде
-`CALENDAR = 220` – расписание отображается в виде календаря
-### Пример структуры атрибута в табличном виде:
+# Schedule
+
+**Schedule** - is a data type that stores the time periods or the frequency of regular events.
+
+## Attributes on the form:
+
+There are two types of fields for "Schedule" in the meta view:
+
+`SCHEDULE = 210` – schedule is displayed in a table
+`CALENDAR = 220` – schedule is displayed in a calendar
+
+### Example of attribute structure in a table:
+
 ```
   {
-          "caption": "Расписание [210]",
+          "caption": "Schedule [210]",
           "type": 210,
           "property": "schedule",
           "size": 2,
@@ -34,10 +40,12 @@
           "tags": null
         },
 ```
-### Пример структуры атрибута в виде календаря: 
+
+### Example of attribute structure in a calendar: 
+
 ```
 {
-          "caption": "Календарь [220]",
+          "caption": "Calendar [220]",
           "type": 220,
           "property": "calendar",
           "size": 2,
@@ -62,39 +70,45 @@
           "tags": null
         }
 ```
-### Пример хранения расписания в БД:
-Периоды времени задаются как объекты периодичности в атрибуте `occurs` с указанием атрибута `duration`. Пропуски во временном периоде указываются в атрибуте `skipped`.  
+
+### Storage in the DB:
+
+Time periods are specified as periodicity objects in the `occurs` field with the ` duration` property. Gaps in the time period are specified in the `skipped` field.
+
 ```
 [
   {
-    "description": "Рабочие часы",
-    "item": "develop-and-test@WorkTime@12345", // Ссылка на объект данных
-    "occurs": [ // происходит
+    "description": "Working hours",
+    "item": "develop-and-test@WorkTime@12345", // Reference to the data object
+    "occurs": [ // occurs
         {
-          "hour": 9, // на 9 час суток
-          "duration": 14400 // длится 4 часа (4 * 60 * 60)
+          "hour": 9, // at 9 o'clock
+          "duration": 14400 // lasts 4 hours (4 * 60 * 60)
         },
         {
-          "hour": 14, // на 14 час суток
-          "duration": 14400 // длится 4 часа (4 * 60 * 60)
+          "hour": 14, // at 14 o'clock
+          "duration": 14400 // lasts 4 hours (4 * 60 * 60)
         }
      ],
-     "skipped": [ // пропускается
+     "skipped": [ // skipped
         {
-          "weekday": 6 // по субботам
+          "weekday": 6 // on Saterdays
         },
         {
-          "weekday": 7 // по воскресеньям
+          "weekday": 7 // on Sundays
+
         }
      ]
   },
 // ...
 ]
 ```
-## Периодичность
-В объекте периодичности атрибуты задаются в рамках своих обычных значений, кроме атрибута `year` - год. Атрибут `year`, задаётся в виде частоты, так как является не периодической характеристикой. 
 
-### **Пример**:
+## Periodicity
+
+In the periodicity object, attributes are set within their normal values, except for the `year` attribute - year. The `year` attribute is set as a frequency, since it is not a periodic characteristic.
+
+### **Example**:
 
 ```
 {
@@ -108,19 +122,18 @@
   "duration": 30 // 
 }
 ```
- *Описание примера:* 
+ *Example description:* 
+The example shows the time period of 30 seconds, which is repeated once every two years, on March 5 at 9 hours 20 minutes 30 seconds and only if the day falls on Monday.
 
-В примере определён временной интервал длительностью 30 секунд, который повторяется один раз в два года, пятого марта в 9 часов 20 минут 30 секунд и только если день выпадает на понедельник.
-
-### Следующая страница: [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md)
+### The next page: [Meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_schedule210.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_schedule210.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 
