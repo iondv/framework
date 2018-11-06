@@ -38,15 +38,6 @@ Here you can use additional words and expressions using the `|` sign, for exampl
 "semantic": "digitalTV|kachestvoCTB|analogTV.name|kachestvoAnal|period"
 ```
    where `analogTV` is the reference attribute of the class for which the semantics is specified, and` name` is the class reference attribute.
-* The expression for the semantics can be set by the formula, as calculated default values, and there call the data formatting functions.  
-    
-```
-  concat(datetime(created),' ',name,'_file_') //  - as a result "12.03.16 00:55 Yuri_file_"
-  concat(date(created),' ',name,'_file_') //  - as a result "12.03.16 Yuri_file_"
-  concat(time(created),' ',name,'_file_') //  - as a result "00:55 Yuri_file_"
-```
-
-* Setting semantics with wrapping objects to a new line: available by adding the `<br>` tag at the end of semantics.
 
 ## Display semantics on form
 
