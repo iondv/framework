@@ -61,7 +61,7 @@ Use the `max` operation to implement **automatic calculation of the default valu
 ```
 
 
-Use the `get` operation to implement **The default value for the "Link" attribute type**  in the following ways:
+Use the `get` operation to implement **default value for the "Link" attribute type**  in the following ways:
 
 ```
 get(className) // return the id of a randomly selected class object
@@ -69,7 +69,7 @@ get(className, id) // check the presence of the object in the DB, if the object 
 get(className, attr1, val1, attr2, val2, ...) // return the id of the first object that matches the search: attr1=val1 and attr2=val2 and etc.
 ```
 
-### The next page: [Reference class](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### The next page: [Attribute "Reference"](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
 --------------------------------------------------------------------------  
 
 

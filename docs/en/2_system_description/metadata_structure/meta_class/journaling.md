@@ -1,7 +1,7 @@
 ### The previous page: [Time and user tag of created objects and committed changes](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)
 # Journaling the changes 
 
-**Journaling the changes** - indicates the need to log all actions performed on the object. Located in the `journaling` field of the main part of the meta class with two available values - `true` and `false`. A value of `true` indicates the need for log the changes. If the field is set to `false` or absent, then no object change logging is required.
+**Journaling the changes** - indicates the need to log all actions performed on the object. Located in the `journaling` field of the main part of the meta class with two available values - `true` and `false`. A value of `true` indicates that you should log the changes. If the field is set to `false` or absent, then no object change logging is required.
 
 
 ## Example:

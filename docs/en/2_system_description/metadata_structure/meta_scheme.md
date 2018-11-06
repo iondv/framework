@@ -47,5 +47,5 @@ Meta class is the basis for meta views, meta navigation, meta reports, meta busi
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

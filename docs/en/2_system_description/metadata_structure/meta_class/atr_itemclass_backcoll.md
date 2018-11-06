@@ -8,7 +8,7 @@
 All references in the collection are divided with commas. All values of the consequence of the references and commas are stored in the DB.
 
 ### Types of connections of the Collection type:
-1. `one-to-many` - is the classic connection of the heir object to the ancestor object. Define the container and nested object with the reference to the container. In the container, specify the collection and in the collection specify the reference attribute of the nested object. __See Back refernce__ 
+1. `one-to-many` - is the classic connection of the heir object to the ancestor object. Define the container and nested object with the reference to the container. In the container, specify the collection and in the collection specify the reference attribute of the nested object. __See Back reference__ 
 2. `many-to-many` - is determined through a collection without references and a class of nested elements — connections are created in the collection and stored as separate entities in the DB. __See Collection__
 3. `back collection` - is similar to the `one-to-many` connection but in the opposite direction - connection from the reference object. Set the connection using the *backColl* property.__See Back collection__
 
@@ -134,7 +134,7 @@ The previous example is converted into the back collection as follows:
     }
 ```
 
-Pay attention to the `" backColl "` property - an additional value — the name of an attribute from a class in the collection (from the example above - coll)
+Pay attention to the `" backColl "` property, which comtains an additional value — the name of an attribute from a class in the collection (from the example above - coll).
 
 Thus, a many-to-many connection is realized without an intermediate class. Not only the "backcoll"   attribute with the "Collection" type can contain several references, but objects by reference can also contain several references to objects of the original class in their "coll" collection.
 
@@ -147,7 +147,7 @@ Thus, a many-to-many connection is realized without an intermediate class. Not o
 - When specifying a parent class, it is possible to create objects of the parent and child classes
 - Collection with object are loaded according to the semantics specified in the meta collection class or collection attribute
 
-## Collection processing and its storage format
+## Collection processing and storage format
 To save the collection, transfer the array of actions (the example below) in the corresponding attribute of the object:
 
 ```
@@ -158,7 +158,7 @@ To save the collection, transfer the array of actions (the example below) in the
   {"action": "eject", "id": "1230"}
 ]
 ```
-The order of the objects must correspond to the order of corresponding actions. Available operations: `put` - add to the collection,` eject` - extract from the collection. The algorithm for creating and editing is the same. Actions on collections are performed after the container is created or saved.
+The order of the objects must correspond to the order of relevant actions. Available operations: `put` - add to the collection,` eject` - extract from the collection. The algorithm for creating and editing is the same. Actions on collections are performed after the container is created or saved.
 
 The working principle of collections on the form of creation and editing is fundamentally different:
 

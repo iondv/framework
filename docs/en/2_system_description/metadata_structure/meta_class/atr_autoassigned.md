@@ -1,6 +1,6 @@
 ### The previous page: [Indexation](/docs/en/2_system_description/metadata_structure/meta_class/atr_indexed.md)
 
-# Attributes with autocomplete
+# Autocomplete attributes
 
 ## Description
 Type **autocompletion** - `" autoassigned ": true` - indicates that the value of this attribute should be filled automatically when creating a class. It is used mainly for attributes of the “Unique values” type ("unique": true) for integers and string attributes, as well as for attributes of the "Date-time" type.

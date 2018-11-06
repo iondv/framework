@@ -27,10 +27,10 @@ You have three types of selection list. Set the type in the `"type"` field using
 | Field           | Name  | Acceptable values                                                                                                  | Description                                             |
 |:---------------|:----------------------|:--------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------|
 | `"type"`       | **Type**               | ` "SIMPLE", "MATRIX", "HQL"`                                                                                        | Selection list type                                    |
-| `"list"`       | **Simple type**       | An array of objects of the "key-value" type.                                                                               | Selection list of the Simple type is stored here. |
-| `"matrix"`     | **Matrix**           | An array of vectors. Each of vectors consists of: name, selection conditions and key-values. | Selection list of the Matrix type          |
-| `"parameters"` | **Parameters of request** | An array of objects of the "key-value" type.                                                                               | Parameters of request, **to be realized**                |
-| `"hq"`         | **Request**            | String of request in accordance with the handler format                                                                 | String of request, **to be realized**                   |
+| `"list"`       | **Simple type**       | An array of objects of the "key-value" type                                                                               | Selection list of the Simple type is stored here |
+| `"matrix"`     | **Matrix**           | An array of vectors. Each of vectors consists of: name, selection conditions and key-values | Selection list of the Matrix type          |
+| `"parameters"` | **Parameters of request** | An array of objects of the "key-value" type                                                                               | Parameters of request, **to be realized**                |
+| `"hq"`         | **Request**            | String of request in accordance with the handler format                                                                 | String of request - **to be realized**                   |
 
 ### The `"list"` field - an array of objects of the following structure: 
 
@@ -53,7 +53,7 @@ You have three types of selection list. Set the type in the `"type"` field using
 
 | Field      | Name | Acceptable values                                                                     | Description                                                         |
 |:----------|:----------------------|:----------------------------------------------------------------------------------------|:-----------------------------------------------------------------|
-| `"key"`   | **Key**              | Any value corresponding to the attribute type of the selection list  | When saving an object the key value is written in the DB. |
+| `"key"`   | **Key**              | Any value corresponding to the attribute type of the selection list  | When saving an object the key value is written in the DB |
 | `"value"` | **Value**          | Any string, but there may be problems with control sequences           | The value of this field is displayed in the user interface      |
 
 ### The `"matrix"` field - an array of objects of the following structure:
@@ -187,7 +187,7 @@ Each object of the `"MATRIX"` array containns the  mandotary fields:
 | `"value"`            | **Value**                 | Depends on the operation type                                              |The second value for binary operations                                                              |
 | `"nestedConditions"` | **Nested selection conditions** | The object, the structure is similar to the structure of the object of the selection conditions |                                                                                                    |
 
-_**NB**: The operation code corresponds to different values of operations, depending on whether the attribute is selected or not. If the  `"property"` field is equal to `null`, then a logical condition (by which the nested selection conditions are combined) is coded. (Indicated in brackets in the table above)_
+_**NB**: The operation code corresponds to the different values of operations, depending on whether the attribute is selected or not. If the  `"property"` field is equal to `null`, then a logical condition (by which the nested selection conditions are combined) is coded. (Indicated in brackets in the table above)_
 
 ## Description
 
@@ -251,7 +251,7 @@ _**NB**: If the attribute with a selection list has an empty value as `"nullable
     }
 ```
 
-#### How to configure:
+#### How to configure?
 You need to:
 1. choose the most appropriate attribute type,
 2. choose the identifiers of the type (`"key"`) to operate with values in the DB as efficiently as possible where necessary automated processing,

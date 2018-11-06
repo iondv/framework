@@ -341,7 +341,7 @@ or
 
 3. The `next($id)` operation (If the `$id` has a value) will always return 1, since for each object a separate sequence will be created, from which only the first value will be selected.
 
-### The next page: [Cached values of computeble fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
+### The next page: [Cached values of computable attribute](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
 --------------------------------------------------------------------------  
 
 

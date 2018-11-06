@@ -119,9 +119,9 @@ To inquiry attribute values that are not equal to zero, use the `nempty` operati
 ### Example
 **Attention**
 
-The "selection_provider" field. For more detail see [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
+The "selection_provider" field. For more detail see [**Selection list of valid values**](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
 * "type": "SIMPLE" - simple type,   
-* "list": [] - an array of acceptable values
+* "list": [ ] - an array of acceptable values.
 
  ```
      {
@@ -166,7 +166,7 @@ The "selection_provider" field. For more detail see [Selection list of valid val
  ```
  ### Example 
  
- In the reference attribute, show those objects that have specified "selConditions" property in the reference class. In the `property` field of this attribute, specified in the associated class, the value in the "value" field corresponds to the "operation" condition. 
+ In the reference attribute, show those objects that have specified "selConditions" property in the reference class. In the `property` field of this attribute, specified in the reference class, the value in the "value" field corresponds to the "operation" condition. 
  
  The aim is to show in the attribute "Organization" only those organizations ("refClass": "organization") in which the type field ("property": "type") is equal ("operation": 0) to the customer value ("value": "customer" ).
 

@@ -22,7 +22,7 @@ And the class becomes unavailable for initialization at the UI level.
   "semantic": "value|[|plannedValue|](|dateStart|-|dateEnd|)",
   "name": "indicatorValueBasic",
   "version": "",
-  "caption": "indicator values for the period",
+  "caption": "Indicator values for the period",
   "ancestor": null,
   "container": null,
   "creationTracker": "",

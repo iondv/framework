@@ -2,7 +2,7 @@
 
 # Attribute indexation
 
-**Attribute indexation** is required to accelerate the search. Indexing is set manually by assigning the value `true` for the` "indexed" `property, that is:
+**Attribute indexation** is required to accelerate the search. Indexing is set manually by assigning the value `true` for the `"indexed"` property, that is:
 
 ```
 "indexed": true
@@ -18,7 +18,7 @@ Except for the following attribute types:
 
 2. When importing a meta, all attribute objects of the "Reference" type are indexed.
 
-3. Objects of attributes of the "Collection" type are not indexed, because collections are bound to objects in an object, so indexing is not necessary. 
+3. Objects of attributes of the "Collection" type are not indexed, because collections with back reference are not stored in an object, so indexing is not necessary. 
 
 ```
 NB. The indexation of the attributes of the type "Text" [1] and "HTML" [2] is prohibited. Because the MongoDB has a limit on the size of the indexed value, and the size of the attribute values of these types may exceed the allowable size.
