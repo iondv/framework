@@ -25,7 +25,6 @@ function Scheduler(options) {
     return runningModes;
   }
 
-
   let runned = {};
   let manually = {};
 
@@ -67,7 +66,9 @@ function Scheduler(options) {
         result.push(stopper(nm, runned[nm]));
       }
     }
-    return Promise.all(result).then(()=> {runned = {};});
+    return Promise.all(result).then(() => {
+      runned = {};
+    });
   };
 
   /**
@@ -97,7 +98,6 @@ function Scheduler(options) {
    * @returns {Boolean}
    */
   this.RunningMode = function (job) {
-    let jobs = options.settings.get('jobs');
     if (runned.hasOwnProperty(job)) {
       return runningModes.RUNNED;
     } else if (manually.hasOwnProperty(job)) {
@@ -167,9 +167,7 @@ function Scheduler(options) {
    * @returns {Promise}
    */
   this.restart = function () {
-    return this.stopAll().then(()=> {
-      return this.start();
-    });
+    return this.stopAll().then(() => this.start());
   };
 
   /**
@@ -206,7 +204,7 @@ function Scheduler(options) {
   this.saveJob = function (jobName, jobSettings) {
     let jobs = options.settings.get('jobs');
     if (!jobSettings || !jobSettings.launch || !jobSettings.worker || !jobSettings.di) {
-      throw new Error(`Переданы некорректные параметры задания.`);
+      throw new Error('Переданы некорректные параметры задания.');
     }
     jobs[jobName] = jobSettings;
     options.settings.set('jobs', jobs, true);
@@ -226,7 +224,7 @@ function Scheduler(options) {
       if (this.RunningMode(job) === runningModes.RUNNED) {
         promise = this.stop(job);
       }
-      return promise.then(()=> {
+      return promise.then(() => {
         let jobs = options.settings.get('jobs');
         if (jobs.hasOwnProperty(job)) {
           delete jobs[job];
