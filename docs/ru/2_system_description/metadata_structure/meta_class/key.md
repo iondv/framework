@@ -1,4 +1,4 @@
-### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
+### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/isstruct.md)
 # Ключевые поля
 В каждом классе  обязательно должен быть задан ключевой атрибут  (поле `"key"` основной части меты класса). Без этого приложение не будет функционировать.
 

@@ -1,4 +1,4 @@
-### The previous page: [Semantics](/docs/en/2_system_descriptionmetadata_structure/meta_class/semantic.md)
+### The previous page: [Semantics](/docs/en/2_system_description/metadata_structure/meta_class/semantic.md)
 ## Criteria of abstraction 
 
 **Criteria of abstraction for a class** -  is used when it is necessary by the attribute reference to the base class to display the selection list of its heirs. That means, when forming the selection list of classes for creating an object, do not include abstract classes in the list.

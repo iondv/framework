@@ -1,4 +1,4 @@
-### The previous page: [Meta class - general part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+### The previous page: [Collection type](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
 # Structure
 
 **Structure** type - is a way of displaying related attributes of the structure-class. It simplifies the procedure of creating a meta class. The "true" value in the `"isStruct"` field means that this meta class is a structure-class. If the meta class has an attribute of the "structure [16]" type and in the "refClass" field the name of the structure-class, than it displays all the attributes of the structure-class.  
@@ -277,8 +277,8 @@ Class object with an attribute of structure type in DB:
 
 
 
-### The next page: [Key attributes](/docs/en/2_system_description/metadata_structure/meta_class/key.md) in Meta class - general part 
-### The next page: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+
+### The next page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
 --------------------------------------------------------------------------  
 
 

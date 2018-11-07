@@ -21,7 +21,9 @@ Except for the following attribute types:
 3. Objects of attributes of the "Collection" type are not indexed, because collections with back reference are not stored in an object, so indexing is not necessary. 
 
 ```
-NB. The indexation of the attributes of the type "Text" [1] and "HTML" [2] is prohibited. Because the MongoDB has a limit on the size of the indexed value, and the size of the attribute values of these types may exceed the allowable size.
+NB. The indexation of the attributes of the type "Text" [1] and "HTML" [2] 
+    is prohibited. Because the MongoDB has a limit on the size of the indexed value,
+    and the size of the attribute values of these types may exceed the allowable size.
 ```
 ### The next page: [Autocompletion](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
 --------------------------------------------------------------------------  

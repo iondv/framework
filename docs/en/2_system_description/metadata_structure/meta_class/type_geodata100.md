@@ -72,7 +72,7 @@ In the logic name (`caption`) of the attribute you can set the display mode (`mo
 {
       "orderNumber": 30,
       "name": "class_geodata1",
-      "caption": "Геоданные [100] mode [1] - Search by address",
+      "caption": "Geodata [100] mode [1] - Search by address",
       "type": 100,
       "size": null,
       "decimals": 0,

@@ -514,7 +514,7 @@ The system takes the value of the reference field (s) and consistently applies t
 
 Devide all possible combinations of attribute pairs - `"matrix_base_1"` and `"matrix_base_2"` into 4 vectors. Each field can be either negative or non-negative. The diagram is below:
 
-![Devide into vectors](images/matrix-dc.jpg)
+![Devide into vectors](https://i.imgur.com/Gr16t9A.jpg)
 
 Choose vectors and their conditions:
 

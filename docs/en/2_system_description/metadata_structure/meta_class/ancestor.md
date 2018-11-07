@@ -104,7 +104,7 @@ In the [Project] class, there is an attribute of the "Collection" type that refe
     "semantic": "",
     "name": "project",
     "version": "",
-    "caption": "Проект",
+    "caption": "Project",
     "ancestor": "",
     "container": null,
     "creationTracker": "",
@@ -118,7 +118,7 @@ In the [Project] class, there is an attribute of the "Collection" type that refe
       {
         "orderNumber": 80,
         "name": "event",
-        "caption": "Мероприятия",
+        "caption": "Event",
         "type": 0,
         "size": null,
         "decimals": 0,

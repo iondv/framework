@@ -1,4 +1,4 @@
-### Предыдущая страница: [Мета классов - общая часть](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+### Предыдущая страница: [Автозаполнение](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
 
 # Значение по умолчанию 
 
@@ -69,7 +69,7 @@ get(className, id) // проверяем наличие объекта в БД, 
 get(className, attr1, val1, attr2, val2, ...) // возвращаем id первого объекта удовлетворяющего критериям поиска: attr1=val1 и attr2=val2 и т.д.
 ```
 
-### Следующая страница: [Класс ссылки](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### Следующая страница: [Аттрибут "Ссылка"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
 --------------------------------------------------------------------------  
 
 

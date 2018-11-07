@@ -50,7 +50,7 @@ Each formula begins with a description of the object and the function in the [JS
     ]
       }
 ```
-You should specify [a suitable operation](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC%D1%8B%D0%B5-%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8) in the `function1` field with the desired number of operands for the result.
+You should specify [a suitable operation](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md#available-operations) in the `function1` field with the desired number of operands for the result.
 
 The object contains the full description of the algorithm, that controls the calculations except the functions stored in the depended computable attributes.
 
@@ -67,7 +67,7 @@ The functions operands could be:
       }
 ```
 
-* String values, storing the [variables](/docs/ru/2_system_description/metadata_structure/ meta_variables.md)
+* String values, storing the [variables](/docs/en/2_system_description/metadata_structure/meta_variables.md)
 ```
       "formula": {
     "function1": [
@@ -275,7 +275,7 @@ The functions operands could be:
 
 `pad` - additional symbols to the desired string length
 
-`next` - [derive a new value from a sequence](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%B0%D0%B2%D1%82%D0%BE%D0%BF%D1%80%D0%B8%D1%81%D0%B2%D0%BE%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8-%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B0%D1%82%D1%80%D0%B8%D0%B1%D1%83%D1%82%D0%B0-%D0%B2-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D1%8F%D0%B5%D0%BC%D0%BE%D0%BC-%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B8)
+`next` - [derive a new value from a sequence](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md#auto-assignment-in-computable-attribute)
 
 `merge` - concatenation of attributes in the collection
 

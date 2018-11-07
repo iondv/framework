@@ -12,11 +12,11 @@ All references in the collection are divided with commas. All values of the cons
 2. `many-to-many` - is determined through a collection without references and a class of nested elements — connections are created in the collection and stored as separate entities in the DB. __See Collection__
 3. `back collection` - is similar to the `one-to-many` connection but in the opposite direction - connection from the reference object. Set the connection using the *backColl* property.__See Back collection__
 
-See full description of `Collection` type in the attribute part of the meta class - [**Collection and Back collection**](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md).
+See full description of `Collection` type in the attribute part of the meta class - [**Collection and Back collection**](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md).
 
 
 
-### The next page: [User type](/docs/ru/2_system_description/metadata_structure/meta_class/type_user17.md)
+### The next page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 --------------------------------------------------------------------------  
 
 

@@ -1,4 +1,4 @@
-### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
+### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 # User types
 
 **Пользовательский тип** - `"type": 17`, задает значение пользовательского типа на основе базового типа. Находится в директории `meta`, `types` + [название типа].type.json
