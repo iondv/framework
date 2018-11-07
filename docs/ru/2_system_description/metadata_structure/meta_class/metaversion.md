@@ -1,4 +1,4 @@
-### Предыдущая страница: [Признак абстрактности для класса](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)_
+### Предыдущая страница: [Признак абстрактности для класса](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)
 # Версионирование
  
  

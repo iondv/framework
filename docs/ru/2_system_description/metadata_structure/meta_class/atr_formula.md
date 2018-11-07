@@ -65,7 +65,7 @@
       }
 ```
 
-* Строковые значения, хранящие [переменные](/docs/ru/2_system_description/metadata_structure/ meta_variables.md)
+* Строковые значения, хранящие [переменные](/docs/ru/2_system_description/metadata_structure/%20meta_variables.md)
 ```
       "formula": {
     "function1": [
