@@ -1,17 +1,15 @@
-### Предыдущая страница: [Мета класса - общая часть](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md)
-# Тип "Структура [16]"
+### The previous page: [Collection type](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
+# Structure
 
-**Структура** - способ отображения связанных объектов (ссылок). Если у поля указано структура, то данный тип атрибута нужен для уменьшения действий при заведении модели, при заранее известных типовых классах, атрибуты которых используются во многих других классах.   
-Для класса-структуры в основной части меты класса задается значение `true` в поле `"isStruct"`.    
+**Structure** type - is a way of displaying related attributes of the structure-class. It simplifies the procedure of creating a meta class. The "true" value in the `"isStruct"` field means that this meta class is a structure-class. If the meta class has an attribute of the "structure [16]" type and in the "refClass" field the name of the structure-class, than it displays all the attributes of the structure-class.  
 
+In the meta view of creation and change use the type "Group [0]" for the attributes of the "Structure [16]" type. If you do not specify the fields in the group, they are created automatically according to the meta. In list views, there is no need to create columns for structure attributes, the object will not have such a property, but the corresponding attributes of the structure-class will be. For them, you can add columns.
 
-Для атрибутов типа "Структура [16]" в мете представлений создания и изменения используется тип "Группа [0]".  Если не указывать поля у группы, они создаются автоматически по мете.  В представлениях списка нет необходимости делать колонки для атрибутов-структур, в объекте не будет такого свойства, а будут соответствующие атрибуты класса-структуры. Для них можно добавть колонки.
+_NB: Objects of structure-class are not created!_
 
-_NB: Объекты класса-структуры не создаются!_
+## Example
 
-## Пример
-
-**Класс-структура:**
+**Structure-class:**
 
 ```
 {
@@ -22,7 +20,7 @@ _NB: Объекты класса-структуры не создаются!_
   "semantic": "",
   "name": "is_struct",
   "version": "",
-  "caption": "\"isStruct\" класс-структура",
+  "caption": "\"isStruct\" structure-class",
   "ancestor": null,
   "container": null,
   "creationTracker": "",
@@ -34,7 +32,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 10,
       "name": "id",
-      "caption": "Идентификатор",
+      "caption": "Identifier",
       "type": 12,
       "size": null,
       "decimals": 0,
@@ -63,7 +61,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 20,
       "name": "last_name",
-      "caption": "Фамилия",
+      "caption": "Surname",
       "type": 0,
       "size": null,
       "decimals": 0,
@@ -92,7 +90,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 30,
       "name": "first_name",
-      "caption": "Имя",
+      "caption": "Name",
       "type": 0,
       "size": null,
       "decimals": 0,
@@ -121,7 +119,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 40,
       "name": "patronymic",
-      "caption": "Отчество",
+      "caption": "Patronymic",
       "type": 0,
       "size": null,
       "decimals": 0,
@@ -150,7 +148,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 50,
       "name": "date",
-      "caption": "Дата рождения",
+      "caption": "Date of birth ",
       "type": 9,
       "size": null,
       "decimals": 0,
@@ -180,7 +178,7 @@ _NB: Объекты класса-структуры не создаются!_
 }
 ```
 
-**Класс с атрибутом типа "Структура [16]"**
+**Meta class with an attribute of the "Structure [16]" type**
 
 ```
 {
@@ -191,7 +189,7 @@ _NB: Объекты класса-структуры не создаются!_
   "semantic": "",
   "name": "struct",
   "version": "",
-  "caption": "Класс \"Структура [16]\" (класс с типом атрибута 16 - структура)",
+  "caption": "Class \"Structure [16]\" (class with the attribute type 16 - structure)",
   "ancestor": null,
   "container": null,
   "creationTracker": "",
@@ -203,7 +201,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 10,
       "name": "id",
-      "caption": "Идентификатор",
+      "caption": "Identifier",
       "type": 12,
       "size": null,
       "decimals": 0,
@@ -232,7 +230,7 @@ _NB: Объекты класса-структуры не создаются!_
     {
       "orderNumber": 20,
       "name": "struct",
-      "caption": "Класс \"Структура [16]\"",
+      "caption": "Class \"Structure [16]\"",
       "type": 16,
       "size": null,
       "decimals": 0,
@@ -261,16 +259,15 @@ _NB: Объекты класса-структуры не создаются!_
   ]
 }
 ```
-
-Объект класса с атрибутом-структурой в базе:
+Class object with an attribute of structure type in DB:
 
 ```
 {
     "_id" : ObjectId("57c3e46fd53ecd50123cc4f5"),
     "struct$id" : "5f421610-6dba-11e6-874f-1b746e204b07",
-    "struct$last_name" : "Мирошниченко",
-    "struct$first_name" : "Ирина",
-    "struct$patronymic" : "Львовна",
+    "struct$last_name" : "Gagarin",
+    "struct$first_name" : "Yuri",
+    "struct$patronymic" : "Alekseyevich",
     "struct$date" : ISODate("1978-07-13T14:00:00.000Z"),
     "id" : "5f41ef00-6dba-11e6-874f-1b746e204b07",
     "_class" : "struct@develop-and-test",
@@ -280,7 +277,8 @@ _NB: Объекты класса-структуры не создаются!_
 
 
 
-### Следующая страница: [Ключевой атрибут](/docs/ru/2_system_description/metadata_structure/meta_class/key.md) 
+
+### The next page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
 --------------------------------------------------------------------------  
 
 
@@ -290,5 +288,5 @@ _NB: Объекты класса-структуры не создаются!_
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 
