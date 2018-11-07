@@ -1,23 +1,25 @@
 ### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
+
 # User types
 
-**Пользовательский тип** - `"type": 17`, задает значение пользовательского типа на основе базового типа. Находится в директории `meta`, `types` + [название типа].type.json
+**User type** - `"type": 17`, sets a user type value based on the `base type`. It is located in the `meta` directory, `types` directory + `[type name].type.json`.  
 
-## Допустимые базовые типы
+Use it when you need to apply a mask on the values of a particular attribute in different classes. 
 
-При создании пользовательского типа доступны следующие базовые типы:
+## Acceptable base types 
+There are five base types to create the user type:
 
-* Строка [0]
-* Целое [6]
-* Действительное [7]
-* Дата/Время [9]
-* Десятичное [8]
+* String [0]
+* Integer [6]
+* Real [7]
+* Date/Time [9]
+* Decimal [8]
 
-## JSON пользовательского типа user_passport.type.json
+## Example of the user type - userPassport.type.json
 ```
 {
-  "name": "user_passport",
-  "caption": "Номер паспорта",
+  "name": "userPassport",
+  "caption": "Passport ID",
   "type": 0,
   "mask": "99 99 999999",
   "mask_name": "passport",
@@ -26,17 +28,18 @@
 }
 ```
 
-## Применение
 
-Пользовательские типы подключаются путем указания типа атрибута "Пользовательский [17]" - `"type": 17` и указанием наименования пользовательского типа в поле "refClass".
+## How to use?
 
-## Пользовательский тип в JSON
+Custom types are connected by specifying the attribute type - "User type [17]" - __`" type ": 17`__ and specifying the name of the user type in the "refClass" field.
+
+## User type [17] in JSON
 
 ```
  {
       "orderNumber": 20,
       "name": "passport",
-      "caption": "Номер паспорта (Пользовательский тип [17])",
+      "caption": "Passport ID (User type [17])",
       "type": 17,
       "size": null,
       "decimals": 0,
@@ -49,7 +52,7 @@
       "autoassigned": false,
       "hint": null,
       "defaultValue": null,
-      "refClass": "user_passport",
+      "refClass": "userPassport",
       "itemsClass": "",
       "backRef": "",
       "backColl": "",
@@ -64,7 +67,7 @@
     }
 ```
 
-
+Therefore, when you enter a value for the `"Passport Number (User Type [17])"` attribute, the mask specified for the `"userPassport"`  type will be applied by the reference of the `"refClass"` property.
 
 ### The next page: [Geodata](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)
 --------------------------------------------------------------------------  

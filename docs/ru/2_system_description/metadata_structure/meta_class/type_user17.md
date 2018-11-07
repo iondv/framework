@@ -1,4 +1,4 @@
-### Предыдущая страница: [Коллекция](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
+### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 
 # Пользовательские типы
 
