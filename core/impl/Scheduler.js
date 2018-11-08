@@ -15,7 +15,7 @@ const toAbsolutePath = require('core/system').toAbsolute;
  * @constructor
  */
 function Scheduler(options) {
-  let runned = {};
+  let runned = false;
 
   let inSync = false;
 
@@ -48,17 +48,17 @@ function Scheduler(options) {
   }
 
   function setStatus(job, status) {
-    return options.repo.get('jobs')
+    return options.repo.get(Scheduler.statusRepoKey)
       .then((statuses) => {
         statuses[job] = status;
-        return options.repo.set('jobs', statuses);
+        return options.repo.set(Scheduler.statusRepoKey, statuses);
       });
   }
 
   function sync() {
     if (!inSync) {
       inSync = true;
-      options.repo.get('jobs')
+      options.repo.get(Scheduler.statusRepoKey)
         .then((statuses) => {
           let jobs = options.settings.get('jobs');
           let result = Promise.resolve();
@@ -138,6 +138,7 @@ function Scheduler(options) {
    */
   this.start = function () {
     try {
+      runned = {};
       let statuses = {};
       let jobs = options.settings.get('jobs');
       for (let nm in jobs) {
@@ -146,13 +147,17 @@ function Scheduler(options) {
           statuses[nm] = Scheduler.statusCodes.RUNNING;
         }
       }
-      return options.repo.set('jobs', statuses)
+      return options.repo.set(Scheduler.statusRepoKey, statuses)
         .then(() => {
           setInterval(sync, options.syncInterval || 10000);
         });
     } catch (err) {
       return Promise.reject(err);
     }
+  };
+
+  this.isActive = function () {
+    return runned !== false;
   };
 }
 
@@ -164,5 +169,7 @@ Scheduler.statusCodes = {
   STOPPING: 4,
   MANUALLY_STARTING: 5
 };
+
+Scheduler.statusRepoKey = 'schedule:jobs:statuses'
 
 module.exports = Scheduler;

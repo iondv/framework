@@ -21,9 +21,9 @@ function SchedulerAgent(options) {
    * @returns {Promise<Boolean>}
    */
   this.status = function (job) {
-    return options.repo.get('jobs').then((statuses) => {
+    return options.repo.get(Scheduler.statusRepoKey).then((statuses) => {
       if (!job) {
-        return statuses;
+        return statuses || {};
       }
       if (statuses && statuses.hasOwnProperty(job)) {
         return statuses[job];
@@ -37,7 +37,7 @@ function SchedulerAgent(options) {
    */
   this.getJobs = function () {
     let jobs = options.settings.get('jobs');
-    return options.repo.get('jobs').then((statuses) => {
+    return options.repo.get(Scheduler.statusRepoKey).then((statuses) => {
       for (let job in jobs) {
         if (jobs.hasOwnProperty(job)) {
           jobs[job].status = statuses && statuses[job] || Scheduler.statusCodes.STOPPED;
@@ -60,10 +60,10 @@ function SchedulerAgent(options) {
   };
 
   function setStatus(job, status) {
-    return options.repo.get('jobs')
+    return options.repo.get(Scheduler.statusRepoKey)
       .then((statuses) => {
         statuses[job] = status;
-        return options.repo.set('jobs', statuses);
+        return options.repo.set(Scheduler.statusRepoKey, statuses);
       })
       .then(() => status);
   }
@@ -106,13 +106,13 @@ function SchedulerAgent(options) {
    */
   this.stopAll = function () {
     let jobs = options.settings.get('jobs');
-    return options.repo.get('jobs').then((statuses) => {
+    return options.repo.get(Scheduler.statusRepoKey).then((statuses) => {
       for (let nm in jobs) {
         if (jobs.hasOwnProperty(nm) && statuses.hasOwnProperty(nm) && statuses[nm] !== Scheduler.statusCodes.STOPPED) {
           statuses[nm] = Scheduler.statusCodes.STOPPING;
         }
       }
-      return options.repo.set('jobs', statuses);
+      return options.repo.set(Scheduler.statusRepoKey, statuses);
     });
   };
 
@@ -146,7 +146,7 @@ function SchedulerAgent(options) {
    */
   this.start = function () {
     let jobs = options.settings.get('jobs');
-    return options.repo.get('jobs').then((statuses) => {
+    return options.repo.get(Scheduler.statusRepoKey).then((statuses) => {
       for (let nm in jobs) {
         if (jobs.hasOwnProperty(nm) && !jobs[nm].disabled && statuses[nm] !== Scheduler.statusCodes.RUNNING) {
           if (statuses[nm] !== Scheduler.statusCodes.MANUALLY_STARTING) {
@@ -154,7 +154,7 @@ function SchedulerAgent(options) {
           }
         }
       }
-      return options.repo.set('jobs', statuses);
+      return options.repo.set(Scheduler.statusRepoKey, statuses);
     });
   };
 
@@ -163,7 +163,7 @@ function SchedulerAgent(options) {
    */
   this.restart = function () {
     let jobs = options.settings.get('jobs');
-    return options.repo.get('jobs').then((statuses) => {
+    return options.repo.get(Scheduler.statusRepoKey).then((statuses) => {
       for (let nm in jobs) {
         if (jobs.hasOwnProperty(nm) && statuses.hasOwnProperty(nm)) {
           if (statuses[nm] !== Scheduler.statusCodes.MANUALLY_STARTING) {
@@ -171,7 +171,7 @@ function SchedulerAgent(options) {
           }
         }
       }
-      return options.repo.set('jobs', statuses);
+      return options.repo.set(Scheduler.statusRepoKey, statuses);
     });
   };
 
