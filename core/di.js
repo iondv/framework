@@ -300,3 +300,34 @@ module.exports.context = function (name) {
   }
   return {};
 };
+
+function reqCopy(nm, src, dest) {
+  let component = src[nm];
+  dest[nm] = component;
+  if (component.options) {
+    for (let nm in component.options) {
+      if (component.options.hasOwnProperty(nm)) {
+        let v = component.options[nm];
+        let ref = false;
+        if (v.substr(0, 6) === 'ion://') {
+          v = v.substr(6);
+          ref = true;
+        } else if (v.substr(0, 7) === 'lazy://') {
+          v = v.substr(7);
+          ref = true;
+        }
+        if (ref) {
+          reqCopy(v, src, dest);
+        }
+      }
+    }
+  }
+}
+
+function extract(nm, src) {
+  let result = {};
+  reqCopy(nm, src, result);
+  return result;
+}
+
+module.exports.extract = extract;
