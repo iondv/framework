@@ -351,7 +351,7 @@
       "kvRepo": {
         "module": "core/impl/cache/DsCacheRepository",
         "options": {
-          "dataSource": "ion://db",
+          "dataSource": "ion://Db",
           "name": "tmp_store"
         }
       },

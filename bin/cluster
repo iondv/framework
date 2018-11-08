@@ -59,12 +59,14 @@ if (cluster.isMaster) {
       target: 'ion://process',
       stopEvent: 'SIGTERM'
     };
-    di('boot', config.bootstrap, {sysLog: sysLog})
-      .then(
-        (scope) => {
-          let conf = di.extract('scheduler', extend(true, config.di, scope.settings.get('plugins') || {}));
-          return di('app', conf, {}, 'boot');
-        }
+    di('boot', config.bootstrap, {sysLog: sysLog, process: process})
+      .then(scope =>
+        di(
+          'app',
+          di.extract('scheduler', extend(true, config.di, scope.settings.get('plugins') || {})),
+          {},
+          'boot'
+        )
       )
       .then(
         (scope) => {

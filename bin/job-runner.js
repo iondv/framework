@@ -137,12 +137,7 @@ function calcCheckInterval(launch, dv) {
   return dv;
 }
 
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
-  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
-  .then(scope => alias(scope, scope.settings.get('di-alias')))
+di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then(
     /**
      * @param {{}} scope

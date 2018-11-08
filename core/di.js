@@ -2,7 +2,8 @@
  * Created by kras on 18.07.16.
  */
 'use strict';
-var contexts = {};
+const contexts = {};
+const merge = require('merge');
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
@@ -301,14 +302,13 @@ module.exports.context = function (name) {
   return {};
 };
 
-function reqCopy(nm, src, dest) {
-  let component = src[nm];
-  dest[nm] = component;
-  if (component.options) {
-    for (let nm in component.options) {
-      if (component.options.hasOwnProperty(nm)) {
-        let v = component.options[nm];
-        let ref = false;
+
+function recCopyOptions(options, src, dest) {
+  for (let nm in options) {
+    if (options.hasOwnProperty(nm)) {
+      let v = options[nm];
+      let ref = false;
+      if (typeof v === 'string') {
         if (v.substr(0, 6) === 'ion://') {
           v = v.substr(6);
           ref = true;
@@ -317,16 +317,36 @@ function reqCopy(nm, src, dest) {
           ref = true;
         }
         if (ref) {
-          reqCopy(v, src, dest);
+          recCopy(v, src, dest);
+        }
+      } else if (typeof v === 'object') {
+        if (v && v.module && v.name && v.options) {
+          recCopyOptions(v.options, src, dest);
         }
       }
     }
   }
 }
 
+function recCopy(nm, src, dest) {
+  let component = src[nm];
+  if (component && !dest.hasOwnProperty(nm)) {
+    dest[nm] = component;
+    if (component.options) {
+      recCopyOptions(component.options, src, dest);
+    }
+  }
+}
+
 function extract(nm, src) {
   let result = {};
-  reqCopy(nm, src, result);
+  if (Array.isArray(nm)) {
+    nm.forEach((nm1) => {
+      recCopy(nm1, src, result);
+    });
+  } else if (typeof nm === 'string') {
+    recCopy(nm, src, result);
+  }
   return result;
 }
 
