@@ -123,7 +123,9 @@ class LocalAccountStorage extends IAccountStorage {
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          {[F.LIKE]: ['$id',`^${id}`]},
+          this.loginCaseInsesitive
+            ? {[F.LIKE]: ['$id', `^${id}`]}
+            : {[F.EQUAL]: ['$id', id]},
           {
             [F.OR]: [
               {[F.EQUAL]: ['$disabled', false]},
@@ -211,7 +213,9 @@ class LocalAccountStorage extends IAccountStorage {
         let parts = id.split('@');
         conds.push({
           [F.AND]: [
-            {[F.LIKE]: ['$id',`^${parts[0]}`]},
+            this.loginCaseInsesitive
+              ? {[F.LIKE]: ['$id',`^${parts[0]}`]}
+              : {[F.EQUAL]: ['$id', parts[0]]},
             {[F.EQUAL]: ['$type', parts[1]]}
           ]
         });
