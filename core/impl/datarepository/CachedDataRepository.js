@@ -113,7 +113,7 @@ function CachedDataRepository(options) {
   function cacheItem(item, eagerLoaded, processed) {
     processed = processed || {};
     if (!eagerLoaded && !isCached(item.getClassName())) {
-      return Promise.resolve();
+      return Promise.resolve(item);
     }
 
     processed[item.getClassName() + '@' + item.getItemId()] = true;
@@ -161,7 +161,7 @@ function CachedDataRepository(options) {
             }
           )
         );
-      });
+      }).then(() => item);
   }
 
   function uncacheItem(className, id, processed, eagerLoaded) {
@@ -180,7 +180,7 @@ function CachedDataRepository(options) {
     return cache.get(className + '@' + id)
       .then((item) => {
         if (!item) {
-          return null;
+          return dataRepo.getItem(className, id, options).then(item => !item ? item : cacheItem(item));
         }
 
         let result = _this._wrap(className, item.base);
@@ -207,7 +207,9 @@ function CachedDataRepository(options) {
                 p = p
                   .then(() => uncacheItem(tmp.className, tmp.id, processed, true))
                   .then((item) => {
-                    result.collections[nm].push(item);
+                    if (item) {
+                      result.collections[nm].push(item);
+                    }
                   });
               });
           });
@@ -295,14 +297,7 @@ function CachedDataRepository(options) {
         return dataRepo.getItem(obj, id, options);
       }
     }
-    return uncacheItem(obj, id)
-      .then((item) => {
-        if (item) {
-          return item;
-        }
-        return dataRepo.getItem(obj, id, options)
-          .then((item) => !item ? item : cacheItem(item).then(() => item));
-      });
+    return uncacheItem(obj, id);
   };
 
   /**
