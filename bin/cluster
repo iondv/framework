@@ -51,15 +51,23 @@ if (cluster.isMaster) {
   });
 
   sysLog.info(`Запуск кластера приложений ION (pid:${process.pid})`);
-  for (let i = 0; i < numWorkers; i++) {
-    cluster.fork();
+
+  let p = Promise.resolve();
+  for (let i = 1; i < numWorkers; i++) {
+    p = p.then(() => {
+      let w = cluster.fork();
+      return new Promise((resolve, reject) => {
+        w.on('listening', resolve);
+        w.on('error', err => reject(err));
+      });
+    });
   }
   if (config.runJobs) {
     config.bootstrap.rtEvents.options = {
       target: 'ion://process',
       stopEvent: 'SIGTERM'
     };
-    di('boot', config.bootstrap, {sysLog: sysLog, process: process})
+    p.then(() => di('boot', config.bootstrap, {sysLog: sysLog, process: process}))
       .then(scope =>
         di(
           'app',
