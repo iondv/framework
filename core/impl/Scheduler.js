@@ -155,10 +155,6 @@ function Scheduler(options) {
       return Promise.reject(err);
     }
   };
-
-  this.isActive = function () {
-    return runned !== false;
-  };
 }
 
 Scheduler.statusCodes = {
@@ -170,6 +166,6 @@ Scheduler.statusCodes = {
   MANUALLY_STARTING: 5
 };
 
-Scheduler.statusRepoKey = 'schedule:jobs:statuses'
+Scheduler.statusRepoKey = 'schedule:jobs:statuses';
 
 module.exports = Scheduler;
