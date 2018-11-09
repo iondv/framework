@@ -96,15 +96,18 @@ function Background(options) {
          }
        }
      )
-     .then(options.dataSource.upsert(tableName, {uid, name, sid, results: [], state: Background.RUNNING}, {skipResult: true}))
+     .then(() => options.dataSource.upsert(
+        tableName,
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]},{[F.EQUAL]: ['$sid', sid]}]},
+        {uid, name, sid, results: [], state: Background.RUNNING},
+        {skipResult: true}
+     ))
      .then(() => {
         let args = ['-task', name, '-uid', uid];
-        for (let nm in moptions) {
-          if (options.hasOwnProperty(nm)) {
-            args.push('-' + nm);
-            args.push(options[nm]);
-          }
-        }
+        Object.keys(moptions).forEach((nm) => {
+          args.push('-' + nm);
+          args.push(moptions[nm]);
+        });
 
         pool[uid][name][sid] = child.fork(toAbsolutePath('bin/bg'), args, {stdio: ['pipe', 'inherit', 'inherit', 'ipc']});
         let ch = pool[uid][name][sid];
