@@ -95,6 +95,7 @@ function CachedDataRepository(options) {
         list.items.forEach((li) => {
           p = p
             .then(() => uncacheItem(li.className, li.id, processed))
+            .then(item => item ? item : loadItem(li.className, li.id, {forceEnrichment: options.forceEnrichment}))
             .then((item) => {
               if (item) {
                 result.push(item);
@@ -164,6 +165,11 @@ function CachedDataRepository(options) {
       }).then(() => item);
   }
 
+  function loadItem(className, id, options) {
+    return dataRepo.getItem(className, id, options)
+      .then(item => !item ? item : cacheItem(item));
+  }
+
   function uncacheItem(className, id, processed, eagerLoaded) {
     if (className instanceof Item) {
       if (!id) {
@@ -180,7 +186,7 @@ function CachedDataRepository(options) {
     return cache.get(className + '@' + id)
       .then((item) => {
         if (!item) {
-          return dataRepo.getItem(className, id, options).then(item => !item ? item : cacheItem(item));
+          return null;
         }
 
         let result = _this._wrap(className, item.base);
@@ -297,7 +303,7 @@ function CachedDataRepository(options) {
         return dataRepo.getItem(obj, id, options);
       }
     }
-    return uncacheItem(obj, id);
+    return uncacheItem(obj, id).then(item => item ? item : loadItem(obj, id, options));
   };
 
   /**
