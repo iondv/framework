@@ -3,7 +3,7 @@
  */
 'use strict';
 const contexts = {};
-const merge = require('merge');
+const clone = require('clone');
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
@@ -215,14 +215,15 @@ function diInit(levels) {
 
 /**
  * @param {String} context
- * @param {{}} components
+ * @param {{}} struct
  * @param {{}} [presets]
  * @param {String} [parentContext]
  * @param {Array} [skip]
  * @param {String} cwd
  * @returns {Promise}
  */
-function di(context, components, presets, parentContext, skip, cwd) {
+function di(context, struct, presets, parentContext, skip, cwd) {
+  let components = clone(struct, false);
   let scope = presets || {};
   if (parentContext && contexts.hasOwnProperty(parentContext)) {
     let pc = contexts[parentContext];
@@ -331,7 +332,7 @@ function recCopyOptions(options, src, dest) {
 function recCopy(nm, src, dest) {
   let component = src[nm];
   if (component && !dest.hasOwnProperty(nm)) {
-    dest[nm] = component;
+    dest[nm] = clone(component, false);
     if (component.options) {
       recCopyOptions(component.options, src, dest);
     }
