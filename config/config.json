@@ -62,29 +62,6 @@
           "dataSource": "ion://Db"
         }
       },
-      "sessionHandler": {
-        "module": "lib/session",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options": {
-          "app": "ion://application",
-          "log": "ion://sysLog",
-          "storage": {
-            "type": "mongodb",
-            "dataSource": "ion://Db"
-          },
-          "session": {
-            "secret": "ion:demo:secret",
-            "resave": false,
-            "saveUninitialized": true,
-            "cookie": {
-              "httpOnly": true,
-              "secure": false,
-              "maxAge": "[[auth.sessionLifeTime]]"
-            }
-          }
-        }
-      },
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
@@ -114,6 +91,29 @@
           "dataSource": "ion://Db",
           "accounts": "ion://accounts",
           "log": "ion://sysLog"
+        }
+      },
+      "sessionHandler": {
+        "module": "lib/session",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
+          "log": "ion://sysLog",
+          "storage": {
+            "type": "mongodb",
+            "dataSource": "ion://Db"
+          },
+          "session": {
+            "secret": "ion:demo:secret",
+            "resave": false,
+            "saveUninitialized": true,
+            "cookie": {
+              "httpOnly": true,
+              "secure": false,
+              "maxAge": "[[auth.sessionLifeTime]]"
+            }
+          }
         }
       },
       "auth": {
