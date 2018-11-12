@@ -3,7 +3,7 @@
  */
 'use strict';
 
-const CacheRepository = require('core/interfaces/CacheRepository');
+const Repository = require('core/interfaces/Repository');
 const redis = require('redis');
 var LoggerProxy = require('core/impl/log/LoggerProxy');
 
@@ -16,13 +16,13 @@ var LoggerProxy = require('core/impl/log/LoggerProxy');
  */
 function RedisRepository(config) {
 
-  var log = config.logger || new LoggerProxy();
+  const log = config.logger || new LoggerProxy();
 
-  var rHost = config.host || 'localhost';
-  var rPort = config.port || '6379';
-  var lifetime = config.lifetime || 60;
-  var client = null;
-  var available = false;
+  const rHost = config.host || 'localhost';
+  const rPort = config.port || '6379';
+  const lifetime = config.lifetime || 60;
+  let client = null;
+  let available = false;
 
   /**
    *
@@ -31,11 +31,11 @@ function RedisRepository(config) {
    * @private
    */
   this._get = function (key) {
-    return new Promise(function (resolve) {
-      if (!client || !available) {
-        return resolve(null);
-      }
-      client.get(key, function (err, reply) {
+    if (!client || !available) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      client.get(key, (err, reply) => {
         try {
           var value = reply ? JSON.parse(reply.toString()) : null;
           resolve(value);
@@ -54,50 +54,44 @@ function RedisRepository(config) {
    * @private
    */
   this._set = function (key, value) {
-    return new Promise(function (resolve) {
-      if (!client || !available) {
-        return resolve();
-      }
-      try {
-        client.set(key, JSON.stringify(value), 'EX', lifetime);
-      } finally {
-        resolve();
-      }
-    });
+    if (!client || !available) {
+      return Promise.resolve();
+    }
+    try {
+      client.set(key, JSON.stringify(value), 'EX', lifetime);
+    } finally {
+      return Promise.resolve();
+    }
   };
 
   this.init = function () {
-    return new Promise(function (resolve, reject) {
-      if (!config.enabled) {
-        return resolve();
-      }
-      try {
-        log.info('Инициализация Redis');
-        var redisOptions = {host: rHost, port: rPort};
-        if (config.connectOptions) {
-          for (var p in config.connectOptions) {
-            if (config.connectOptions.hasOwnProperty(p)) {
-              redisOptions[p] = config.connectOptions[p];
-            }
-          }
+    if (!config.enabled) {
+      return Promise.resolve();
+    }
+    log.info('Инициализация Redis');
+    const redisOptions = {host: rHost, port: rPort};
+    if (config.connectOptions) {
+      for (let p in config.connectOptions) {
+        if (config.connectOptions.hasOwnProperty(p)) {
+          redisOptions[p] = config.connectOptions[p];
         }
-        client = redis.createClient(redisOptions);
-        client.on('ready', function () {
-          log.info('Redis подключен');
-          available = true;
-          resolve();
-        });
-        client.on('error', function (err) {
-          available = false;
-          log.error('Redis error: ' + err);
-          resolve();
-        });
-      } catch (err) {
-        reject(err);
       }
+    }
+    client = redis.createClient(redisOptions);
+    return new Promise((resolve) => {
+      client.on('ready', () => {
+        log.info('Redis подключен');
+        available = true;
+        resolve();
+      });
+      client.on('error', (err) => {
+        available = false;
+        log.error(err);
+        resolve();
+      });
     });
   };
 }
 
-RedisRepository.prototype = new CacheRepository();
+RedisRepository.prototype = new Repository();
 module.exports = RedisRepository;

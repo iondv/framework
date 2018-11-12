@@ -2,7 +2,8 @@
  * Created by kras on 18.07.16.
  */
 'use strict';
-var contexts = {};
+const contexts = {};
+const clone = require('clone');
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
@@ -214,14 +215,15 @@ function diInit(levels) {
 
 /**
  * @param {String} context
- * @param {{}} components
+ * @param {{}} struct
  * @param {{}} [presets]
  * @param {String} [parentContext]
  * @param {Array} [skip]
  * @param {String} cwd
  * @returns {Promise}
  */
-function di(context, components, presets, parentContext, skip, cwd) {
+function di(context, struct, presets, parentContext, skip, cwd) {
+  let components = clone(struct, false);
   let scope = presets || {};
   if (parentContext && contexts.hasOwnProperty(parentContext)) {
     let pc = contexts[parentContext];
@@ -300,3 +302,53 @@ module.exports.context = function (name) {
   }
   return {};
 };
+
+
+function recCopyOptions(options, src, dest) {
+  for (let nm in options) {
+    if (options.hasOwnProperty(nm)) {
+      let v = options[nm];
+      let ref = false;
+      if (typeof v === 'string') {
+        if (v.substr(0, 6) === 'ion://') {
+          v = v.substr(6);
+          ref = true;
+        } else if (v.substr(0, 7) === 'lazy://') {
+          v = v.substr(7);
+          ref = true;
+        }
+        if (ref) {
+          recCopy(v, src, dest);
+        }
+      } else if (typeof v === 'object') {
+        if (v && v.module && v.name && v.options) {
+          recCopyOptions(v.options, src, dest);
+        }
+      }
+    }
+  }
+}
+
+function recCopy(nm, src, dest) {
+  let component = src[nm];
+  if (component && !dest.hasOwnProperty(nm)) {
+    dest[nm] = clone(component, false);
+    if (component.options) {
+      recCopyOptions(component.options, src, dest);
+    }
+  }
+}
+
+function extract(nm, src) {
+  let result = {};
+  if (Array.isArray(nm)) {
+    nm.forEach((nm1) => {
+      recCopy(nm1, src, result);
+    });
+  } else if (typeof nm === 'string') {
+    recCopy(nm, src, result);
+  }
+  return result;
+}
+
+module.exports.extract = extract;
