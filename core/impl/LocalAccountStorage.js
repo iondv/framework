@@ -124,7 +124,7 @@ class LocalAccountStorage extends IAccountStorage {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
           this.loginCaseInsesitive
-            ? {[F.LIKE]: ['$id', `^${id}`]}
+            ? {[F.LIKE]: ['$id', `^${id}$`]}
             : {[F.EQUAL]: ['$id', id]},
           {
             [F.OR]: [
@@ -214,7 +214,7 @@ class LocalAccountStorage extends IAccountStorage {
         conds.push({
           [F.AND]: [
             this.loginCaseInsesitive
-              ? {[F.LIKE]: ['$id',`^${parts[0]}`]}
+              ? {[F.LIKE]: ['$id', `^${parts[0]}$`]}
               : {[F.EQUAL]: ['$id', parts[0]]},
             {[F.EQUAL]: ['$type', parts[1]]}
           ]
