@@ -7,7 +7,7 @@
  *
  * @constructor
  */
-function CacheRepository() {
+function Repository() {
 
   /**
    *
@@ -30,4 +30,4 @@ function CacheRepository() {
 
 }
 
-module.exports = CacheRepository;
+module.exports = Repository;

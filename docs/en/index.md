@@ -57,10 +57,12 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [RUS](/docs/ru/index.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/index.md)   &ensp; [FAQs](/faqs.md)          
+
 
 
 
 --------------------------------------------------------------------------  
 
- Copyright (c) **IONDV**. All rights reserved. 
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved.  

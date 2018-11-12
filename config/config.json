@@ -46,12 +46,6 @@
           ]
         }
       },
-      "sequenceProvider": {
-        "module": "core/impl/datasource/MongoSequenceProvider",
-        "options": {
-          "dataSource": "ion://Db"
-        }
-      },
       "settings": {
         "module": "core/impl/SettingsRepository",
         "initMethod": "init",
@@ -62,6 +56,12 @@
       }
     },
     "di" : {
+      "sequenceProvider": {
+        "module": "core/impl/datasource/MongoSequenceProvider",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
@@ -345,6 +345,21 @@
         "module": "core/impl/Background",
         "options": {
           "dataSource": "ion://Db",
+          "log": "ion://sysLog"
+        }
+      },
+      "kvRepo": {
+        "module": "core/impl/cache/DsCacheRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "name": "tmp_store"
+        }
+      },
+      "scheduler": {
+        "module": "core/impl/Scheduler",
+        "options": {
+          "settings": "ion://settings",
+          "repo": "ion://kvRepo",
           "log": "ion://sysLog"
         }
       }

@@ -72,7 +72,8 @@ To install the frontend libraries, you should install [bower](https://bower.io) 
 
 
 
+
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
-All rights reserved.  
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved.    

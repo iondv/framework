@@ -37,16 +37,21 @@ if (process.argv.length > 2) {
     }
   }
 
-  di('boot', config.bootstrap,
-    {
-      sysLog: sysLog
-    }, null, ['rtEvents', 'sessionHandler', 'application'])
-    .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
+  di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+    .then(scope =>
+      di(
+        'app',
+        extend(true, config.di, scope.settings.get('plugins') || {}),
+        {},
+        'boot',
+        ['auth', 'background', 'sessionHandler', 'scheduler', 'application']
+      )
+    )
     .then(scope => alias(scope, scope.settings.get('di-alias')))
     .then(scope =>
       worker(
         path.join(__dirname, '..', 'applications', app),
-        {resetSettings, overrideArrays, preserveModifiedSettings}
+        {resetSettings, overrideArrays, preserveModifiedSettings, settings: scope.settings}
       ).then(() => scope)
     )
     .then(scope => scope.dataSources.disconnect())

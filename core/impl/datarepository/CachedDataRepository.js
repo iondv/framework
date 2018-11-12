@@ -17,7 +17,7 @@ const clone = require('clone');
 /**
  * @param {{}} options
  * @param {DataRepository} options.data
- * @param {CacheRepository} options.cache
+ * @param {Repository} options.cache
  * @param {MetaRepository} options.meta
  * @param {ResourceStorage} options.fileStorage
  * @param {String[]} [options.cachedClasses]
@@ -43,7 +43,7 @@ function CachedDataRepository(options) {
   var imageStorage = options.imageStorage || fileStorage;
 
   /**
-   * @type {CacheRepository}
+   * @type {Repository}
    */
   var cache = options.cache || new CacheProxy();
 
@@ -300,8 +300,7 @@ function CachedDataRepository(options) {
         if (item) {
           return item;
         }
-        return dataRepo.getItem(obj, id, options)
-          .then((item) => !item ? item : cacheItem(item).then(() => item));
+        return dataRepo.getItem(obj, id, options).then(item => !item ? item : cacheItem(item).then(() => item));
       });
   };
 
