@@ -48,13 +48,17 @@ process.argv.forEach(function (val) {
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'application'])
+  }, null, ['rtEvents'])
   .then(scope =>
     di(
       'app',
-      extend(true, config.di, scope.settings.get('plugins') || {}),
-      {}, 'boot',
-      ['auth', 'aclProvider', 'application']
+      di.extract(
+        ['metaRepo', 'dataRepo', 'workflows', 'sequenceProvider', 'accounts', 'roleAccessManager'],
+        extend(true, config.di, scope.settings.get('plugins') || {})
+      ),
+      {},
+      'boot',
+      ['auth', 'application']
     )
   )
   .then(scope => alias(scope, scope.settings.get('di-alias')))

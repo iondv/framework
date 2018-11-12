@@ -8,7 +8,7 @@
 ## 2. [Описание системы](/docs/ru/2_system_description)
 ### Структура метаданных
 *  [Схема метаданных](/docs/ru/2_system_description/metadata_structure/meta_scheme.md)
-*  [Мета класса](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md) 
+*  [Мета классов](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md) 
 *  [Мета представлений](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md) 
 *  [Мета навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/meta_navigation.md) 
 *  [Мета бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md) 

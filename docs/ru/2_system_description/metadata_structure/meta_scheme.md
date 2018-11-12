@@ -1,84 +1,53 @@
-# Meta scheme and its description
-# Метаданные
-* [Структура](metadata/structure)
-## Мета классов
-  * [Общая часть](metadata/class-main)
-      * [Признак класса-структуры `"isStruct"`](metadata/is-struct)
-      * [Ключевые поля `"key"`](metadata/keys)
-      * [Семантика `"semantic"`](metadata/semantic)
-      * [Версионирование меты `"metaVersion"`](metadata/version)
-      * [Метки времени создания и изменения `"creationTracker"` и `"changeTracker"`](metadata/timetrackers)
-      * [Метки пользователя создавшего и изменившего `"creatorTracker"` и `"editorTracker"`](metadata/usertrackers)
-      * [Базовый класс `"ancestor"`](metadata/ancestor)
-      * [Журналирование `"journaling"`](metadata/journaling)
-      * [Составные уникальные поля `"compositeIndexes"`](metadata/compositeindexes)
-      * [Признак абстрактности для класса `"abstract"`](metadata/abstract)
-           * [Ограничение списка классов для создания/добавления объектов в коллекцию/ссылку `"allowedSubclasses"`](metadata/allowedSubclasses)
-  * [Атрибутивная часть](metadata/class-properties)
-      * [Автозаполняемые атрибуты `"autoassigned"`](metadata/autoassigned)
-      * [Ссылки и обратные ссылки `"refClass"` и `"backRef"`](metadata/reference)
-      * [Коллекции и обратные коллекции `"itemsClass"` и `"backColl"`](metadata/collection)
-      * [Семантика для ссылочных атрибутов `"semantic"`](metadata/semantic)
-      * [Условия отбора допустимых значений для ссылочных полей `"selConditions"`](metadata/sel-conditions)
-      * [Сортировка выборки допустимых значений для ссылочных полей `"selSorting"`](metadata/sel-sorting)
-      * [Список выбора допустимых значений `"selectionProvider"`](metadata/selection-provider)
-      * [Индексация атрибута `"indexed"`](metadata/indexed)
-      * [Вычислимые поля `"formula"`](metadata/formula)
-      * [Функционал кеширования значений вычисляемых атрибутов `"cached: true"` и семантик `"semanticCached: true"`](metadata/cached)
-  * [Типы атрибутов](metadata/data-types) - константы в платформе [PropertyTypes](https://git.iondv.ru/ION/platform/blob/master/core/PropertyTypes.js)
-     * [Тип "Ссылка [13]" и реализация обратной ссылки](metadata/reference)
-     * [Тип "Коллекция [14]" и реализация обратной коллекции](metadata/collection)
-     * [Тип "Множество [15]"](metadata/multiplicity)
-     * [Тип "Структура [16]"](metadata/is-struct)
-     * [Тип "Пользовательский тип [17]"](metadata/usertypes)
-     * [Тип "Геоданные [100]"](metadata/geodata)
-     * [Тип "Расписание" [210]"](metadata/schedule)
-## Мета представлений
-  * [Атрибутивная часть всех типов меты представлений](metadata/view-properties)
-      * [Маски для отображения и ввода значений `"mask"`](metadata/mask)
-      * [Поля `"fields"`](metadata/fields)
-      * [Действия над объектами ссылочного поля `"commands"`](metadata/commands)
-      * [Условие отображения `"visibility"`](metadata/visibility).
-      * [Условие обязательности `"obligation"`](metadata/obligation).
-      * [Валидаторы `"validators"`](metadata/validators)
-      * [Теги `"tags"`](metadata/tags)
-      * [Опции `"options"`](metadata/options)
-         * [Ведение проектных документов `"fileshare-list"` и `"fileshare"`](metadata/fileshare)
-         * [Представление `Комментарий` для атрибутов типа "Коллекция"](metadata/comments)
-  * Общая часть всех видов меты представлений:
-      * [Действия над объектом `"commands"`](metadata/commands)
-      * [Версионирование меты `"version"`](metadata/version)
-      * [Режим наложения `"overrideMode"`](metadata/overridemode)
-  * [Представления списка - основная часть](metadata/view-list)
-      * [Поиск в списках объектов `"allowSearch"`](metadata/allowsearch)
-      * [Выделение цветом строк в списке `"styles"`](metadata/styles)
-  * [Представления создания и изменения - основная часть](metadata/view-createnitem)
-      * [Вкладки `"tabs"`](metadata/tabs)
-  * [Типы представлений](metadata/view-types) - константы в платформе [FieldTypes](https://git.iondv.ru/ION/platform/blob/master/core/FieldTypes.js)
-      * [Тип представления "Группа [0]"](metadata/fields)
-      * [Тип представления "Геоданные [100]"](metadata/geodata)
-      * [Типы представлений "Расписание" [210]" и "Календарь [220]"](metadata/schedule)
-      * [Типы представлений "Дата/время [120]"](metadata/datetime)
-      * Режимы отображения типа представления - константы в платформе [CollectionFieldModes](https://git.iondv.ru/ION/platform/blob/master/core/CollectionFieldModes.js) [FieldModes](https://git.iondv.ru/ION/platform/blob/master/core/FieldModes.js)
-           * [режимы отображения типа "Коллекция"](metadata/collMode)
-           * [режимы отображения типа "Ссылка"](metadata/refMode)
-## Мета навигации
-  * [Мета секций навигации](metadata/section-navigation)
-  * [Мета узлов навигации](metadata/unit-navigation)
-      * [Заголовок страницы `"title"`](metadata/title)
-      * [Фильтры при открытии списка объектов `"conditions"`](metadata/menu-filters)
-* [Виртуальные атрибуты](metadata/virtual-attrs)
-* [Таблица соответствия типов атрибутов типам представлений](metadata/type-mapping)
-## Мета бизнес-процессов
-     * [Описание формата](metadata/formatBP)
-     * [Статусы бизнес-процесса](metadata/statusBP)
-     * [Переходы бизнес-процесса](metadata/transitionBP)
-     * [Безопасность бизнес-процессов (роли, ограничения) TODO](metadata/securityBP)
-## [Геомета](https://git.iondv.ru/ION-MODULES/geomap/wikis)
-## [Мета безопасности](metadata/security)
-* [Вспомогательные переменные](metadata/nowPeriod)
-## [Мета шахты данных](https://git.iondv.ru/ION-MODULES/report/wikis/meta)
-* [Связь нескольких проектов с использованием пространства имен `"namespace"`](metadata/namespace)
-* [Настройка жадной загрузки в проекте `"eagerLoading"`](metadata/eagerLoading)
-## Мета админа
+### Предыдущая страница: [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
+# Схема основных типов меты
+
+**Метаданные (Мета)** - совокупность JSON-файлов в полной мере описывающих комплект структур, которыми оперирует приложение, способов отображения данных структур в пользовательском интерфейсе и навигации по ним, а так же файлов конфигурации приложения.   
+
+## Типы файлов меты
+
+1. Мета классов
+2. Мета представлений
+3. Мета навигации: мета секций навигации, мета узлов навигации
+4. Мета отчета
+5. Мета админ
+6. Мета бизнес-процессов 
+7. Геомета 
+8. Мета безопасности 
+
+## Структура основных типов меты
+![shema](https://i.imgur.com/t55Srxn.png)
+
+Структуру основных типов меты можно представить следующим образом:
+
+**Мета классов** является основным источником формирования данных в приложении. Мета классов состоит из атрибутов (атрибутивная часть) и параметров самого класса (общая часть). Атрибуты - это объекты массива "properties" общей части, которая содержит поля, имеющие отношение к самой структуре и способам оперирования данными в структуре.  
+
+На основе меты классов задается мета представлений, мета навигации, мета отчетов, мета бизнес-процессов и т.д.  
+
+**Мета представления (класса)** позволяет задавать желаемый состав атрибутов этого класса для отображения на форме, в соответствии с типом формы представления (представление формы списка `list.json`, создания `create.json`, изменения класса `item.json`) и указывать для каждого отдельного атрибута свойства, переопределяемые и (или) дополняемые свойства, задаваемые в мете класса для данного атрибута. 
+
+>Мета представления + Атрибуты класса = Отображение атрибутов на форме
+
+ 
+**Мета навигации** регулирует расположение элементов в навигационном блоке. Мета навигации разделяется на мету узлов навигации и мету секции навигации. 
+
+## Наименование файлов меты: 
+
+
+| **Мета класса**                    | **Мета представлений**          | **Мета навигации**                                                                                                                                                                |
+|:------------------------------|:-------------------------------|:--------------------------------------------- |
+| Находится в директории `meta` и состоит из наименования общей части меты класса + `.class.json.`. Например: `adress.class.json`.       |В наименовании директории определяется к какому классу относится представление. Мета представлений располгается в директории `views`, в которой содержатся директории, наименования которых совпадают с первой частью наименований файлов меты классов. Например: `adress@project_name`, где  `adress` относится к классу `adress`.        | Мета секций навигации: состоит из поля `"name" + .section.json` и находится в директории `navigation`. Например: `workflow.section.json`.     
+
+### Следующая страница: [Мета классов - общая часть](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+
+--------------------------------------------------------------------------  
+
+
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_scheme.md)   &ensp; [FAQs](/faqs.md)          
+
+
+
+--------------------------------------------------------------------------  
+
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved.  
 
