@@ -1,6 +1,6 @@
-#### [Content]()
+#### [Content](/docs/en/index.md)
 
-### The previous page: []()
+### The previous page: [Masks](/docs/en/2_system_description/metadata_structure/meta_view/mask.md)
 
 # Fields 
 
@@ -88,7 +88,7 @@
 ```
 
 
-### The next page: []()
+### The next page: [Commands](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)
 
 --------------------------------------------------------------------------  
 

@@ -1,6 +1,6 @@
-#### [Content]()
+#### [Content](/docs/en/index.md)
 
-### The previous page: []()
+### The previous page: [Field sizes](/docs/en/2_system_description/metadata_structure/meta_view/field_sizes.md)
 
 # Input masks
 
@@ -134,7 +134,7 @@ Masks are also used with "regex".
 
 Use the `"maskName"` field of the attribute part of the meta view to set the mask from the mask preset. **To be realized.**
 
-### The next page: []()
+### The next page: [Fields](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)
 
 --------------------------------------------------------------------------  
 

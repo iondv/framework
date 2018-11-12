@@ -1,6 +1,6 @@
-#### [Content]()
+#### [Content](/docs/en/index.md)
 
-### The previous page: []()
+### The previous page: [Fields](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)
 
 # Commands
 

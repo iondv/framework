@@ -1,6 +1,6 @@
-#### [Оглавление]()
+#### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: []()
+### Предыдущая страница: [Поля](/docs/ru/2_system_description/metadata_structure/meta_view/fields.md)
 
 # Действия
 
