@@ -28,12 +28,15 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
  * Сначала очищаем папки и устанавливаем все модули
  */
 gulp.task('build', function (done) {
-  runSequence('build:npm', 'build:frontend', 'compile:less', 'minify:css', 'minify:js', function (err) {
-    if (!err) {
-      console.log('Сборка платормы, модулей и приложений завершена.');
+  runSequence(
+    'build:npm', 'build:linux-dependencies', 'build:frontend', 'compile:less', 'minify:css', 'minify:js',
+    (err) => {
+      if (!err) {
+        console.log('Сборка платормы, модулей и приложений завершена.');
+      }
+      done(err);
     }
-    done(err);
-  });
+  );
 });
 
 function run(path, command, args, resolve, reject) {
@@ -56,7 +59,7 @@ function run(path, command, args, resolve, reject) {
 
     child.on('close', function (code) {
       if (code !== 0) {
-        return reject('install failed with code ' + code);
+        return reject('child process failed with code ' + code);
       }
       return resolve();
     });
@@ -258,13 +261,23 @@ function buildDir(start, dir) {
   return f;
 }
 
-gulp.task('build:npm', function (done) {
-  console.log('Установка пакетов бэкенда для пути ' + platformPath);
-  let w = buildDir(buildDir(npm(platformPath), 'modules'), 'applications');
-
-  w.then(function () {
+gulp.task('build:linux-dependencies', (done) => {
+  let w = /^linux/.test(process.platform) ?
+    new Promise((resolve, reject) => {
+      run(path.join(platformPath), './linux/fixdep.sh', [], resolve, reject);
+    }) :
+    Promise.resolve();
+  w.then(done).catch((err) => {
+    console.error(err);
     done();
-  }).catch(function (err) {
+  });
+});
+
+gulp.task('build:npm', (done) => {
+  console.log('Установка пакетов бэкенда для пути ' + platformPath);
+  let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
+
+  w.then(done).catch((err) => {
     console.error(err);
     done(err);
   });
@@ -512,15 +525,21 @@ gulp.task('deploy', function (done) {
   let apps = [];
   let deps = [];
 
-  di('app', merge(true, config.bootstrap, config.di),
-    {
-      sysLog: sysLog
-    },
-    null,
-    ['rtEvents', 'sessionHandler', 'application'])
+  di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+    .then(scope =>
+      di(
+        'app',
+        extend(true, config.di, scope.settings.get('plugins') || {}),
+        {},
+        'boot',
+        ['auth', 'background', 'sessionHandler', 'scheduler', 'application']
+      )
+    )
+    .then(scope => alias(scope, scope.settings.get('di-alias')))
   /**
    * @param {Object} scp
    * @param {Object} scp.dataSources
+   * @param {SettingsRepository} scp.settings
    */
     .then((scp) => {
       scope = scp;
@@ -536,7 +555,12 @@ gulp.task('deploy', function (done) {
           let stat = fs.statSync(pth);
           if (stat.isDirectory()) {
             stage1 = stage1.then(() =>
-              deployer(pth, first ? {resetSettings: true, preserveModifiedSettings: true} : {})
+              deployer(
+                pth,
+                first ?
+                {resetSettings: true, preserveModifiedSettings: true, settings: scp.settings} :
+                {settings: scp.settings}
+              )
                 .then((dep) => {
                   first = false;
                   console.log('Выполнена настройка приложения ' + app);
@@ -556,15 +580,19 @@ gulp.task('deploy', function (done) {
       }
     })
     .then(() =>
-      di('boot', config.bootstrap,
-        {
-          sysLog: sysLog
-        }, null, ['rtEvents', 'sessionHandler', 'application'])
-        .then(scope => di('app',
-          extend(true, config.di, scope.settings.get('plugins') || {}),
-          {},
-          'boot',
-          ['application', 'aclProvider']))
+      di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+        .then(scope =>
+          di(
+            'app',
+            di.extract(
+              ['dbSync', 'metaRepo', 'dataRepo', 'workflows', 'sequenceProvider', 'roleAccessManager', 'auth'],
+              extend(true, config.di, scope.settings.get('plugins') || {})
+            ),
+            {},
+            'boot',
+            ['application']
+          )
+        )
         .then(scope => alias(scope, scope.settings.get('di-alias')))
     )
     .then((scp) => {

@@ -9,12 +9,12 @@ module.exports = function (str, lang) {
     let dt;
     let offset = 0;
     if (lang) {
-      dt = moment(str, 'L LT', lang);
+      dt = moment(str, 'L LT', lang, true);
       if (!dt.isValid()) {
-        dt = moment(str, 'L', lang);
+        dt = moment(str, 'L', lang, true);
       }
     }
-    if (!dt.isValid()) {
+    if (!dt || !dt.isValid()) {
       dt = moment(str, moment.ISO_8601);
       if (dt.isValid()) {
         offset = moment.parseZone(str, moment.ISO_8601).utcOffset();

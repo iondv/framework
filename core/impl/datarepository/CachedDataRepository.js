@@ -17,7 +17,7 @@ const clone = require('clone');
 /**
  * @param {{}} options
  * @param {DataRepository} options.data
- * @param {CacheRepository} options.cache
+ * @param {Repository} options.cache
  * @param {MetaRepository} options.meta
  * @param {ResourceStorage} options.fileStorage
  * @param {String[]} [options.cachedClasses]
@@ -43,7 +43,7 @@ function CachedDataRepository(options) {
   var imageStorage = options.imageStorage || fileStorage;
 
   /**
-   * @type {CacheRepository}
+   * @type {Repository}
    */
   var cache = options.cache || new CacheProxy();
 
@@ -95,6 +95,7 @@ function CachedDataRepository(options) {
         list.items.forEach((li) => {
           p = p
             .then(() => uncacheItem(li.className, li.id, processed))
+            .then(item => item ? item : loadItem(li.className, li.id, {forceEnrichment: options.forceEnrichment}))
             .then((item) => {
               if (item) {
                 result.push(item);
@@ -113,7 +114,7 @@ function CachedDataRepository(options) {
   function cacheItem(item, eagerLoaded, processed) {
     processed = processed || {};
     if (!eagerLoaded && !isCached(item.getClassName())) {
-      return Promise.resolve();
+      return Promise.resolve(item);
     }
 
     processed[item.getClassName() + '@' + item.getItemId()] = true;
@@ -161,7 +162,12 @@ function CachedDataRepository(options) {
             }
           )
         );
-      });
+      }).then(() => item);
+  }
+
+  function loadItem(className, id, options) {
+    return dataRepo.getItem(className, id, options)
+      .then(item => !item ? item : cacheItem(item));
   }
 
   function uncacheItem(className, id, processed, eagerLoaded) {
@@ -207,7 +213,9 @@ function CachedDataRepository(options) {
                 p = p
                   .then(() => uncacheItem(tmp.className, tmp.id, processed, true))
                   .then((item) => {
-                    result.collections[nm].push(item);
+                    if (item) {
+                      result.collections[nm].push(item);
+                    }
                   });
               });
           });
@@ -295,14 +303,7 @@ function CachedDataRepository(options) {
         return dataRepo.getItem(obj, id, options);
       }
     }
-    return uncacheItem(obj, id)
-      .then((item) => {
-        if (item) {
-          return item;
-        }
-        return dataRepo.getItem(obj, id, options)
-          .then((item) => !item ? item : cacheItem(item).then(() => item));
-      });
+    return uncacheItem(obj, id).then(item => item ? item : loadItem(obj, id, options));
   };
 
   /**

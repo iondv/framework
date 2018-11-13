@@ -58,22 +58,31 @@ function SettingsRepository(options) {
     if (preserveImportant) {
       f = {[F.NOT_EQUAL]: ['$important', true]};
     }
-    return options.dataSource.delete('ion_global_settings', f);
+    return options.dataSource.delete('ion_global_settings', f)
+      .then(() => options.dataSource.fetch('ion_global_settings'))
+      .then((settings) => {
+        registry = {};
+        important = {};
+        settings.forEach((s) => {
+          registry[s.name] = s.value;
+          if (s.important) {
+            important[s.name] = true;
+          }
+        });
+      });
   };
 
   this.init = function () {
-    return options.dataSource.ensureIndex('ion_global_settings', [{name: 1}], {unique: true}).
-      then(
-        () => options.dataSource.fetch('ion_global_settings')
-      ).then(
+    return options.dataSource.ensureIndex('ion_global_settings', [{name: 1}], {unique: true})
+      .then(() => options.dataSource.fetch('ion_global_settings'))
+      .then(
         (settings) => {
-          for (let i = 0; i < settings.length; i++) {
-            registry[settings[i].name] = settings[i].value;
-            if (settings[i].important) {
-              important[settings[i].name] = true;
+          settings.forEach((s) => {
+            registry[s.name] = s.value;
+            if (s.important) {
+              important[s.name] = true;
             }
-          }
-          return Promise.resolve();
+          });
         }
       );
   };

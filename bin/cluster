@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+/* eslint no-process-env: off, no-process-exit:off */
+const cluster = require('cluster');
+const config = require('../config');
+const IonLogger = require('core/impl/log/IonLogger');
+const sysLog = new IonLogger(config.log || {});
+const di = require('core/di');
+const extend = require('extend');
+
+function killEmAll() {
+  for (const id in cluster.workers) {
+    cluster.workers[id].kill();
+  }
+}
+
+if (cluster.isMaster) {
+  const os = require('os');
+
+  const clusterConfig = config.cluster || {};
+
+  const cpus = os.cpus().length;
+  let numWorkers = process.env.WORKER_COUNT || clusterConfig.count || cpus;
+  if (numWorkers > cpus) {
+    numWorkers = cpus;
+  }
+  let stopping = false;
+
+  if (clusterConfig.master && typeof clusterConfig.master === 'object') {
+    cluster.setupMaster(clusterConfig.master);
+  }
+
+  cluster.on('exit', (worker) => {
+    sysLog.warn(`Приложение ION (pid:${worker.process.pid}) остановлено.`);
+    if (!stopping) {
+      cluster.fork();
+    }
+  });
+
+  cluster.on('listening', (worker, address) => {
+    sysLog.info(`Приложение ION (pid:${worker.process.pid}) запущено по адресу ${address.address || 'localhost'}:${address.port}`);
+  });
+
+  process.on('SIGHUP', () => {
+    sysLog.warn('Перезагрузка кластера приложений ION');
+    killEmAll();
+  });
+
+  process.on('SIGTERM', () => {
+    stopping = true;
+    killEmAll();
+  });
+
+  sysLog.info(`Запуск кластера приложений ION (pid:${process.pid})`);
+
+  let p = Promise.resolve();
+  for (let i = 1; i < numWorkers; i++) {
+    p = p.then(() => {
+      let w = cluster.fork();
+      return new Promise((resolve, reject) => {
+        w.on('listening', resolve);
+        w.on('error', err => reject(err));
+      });
+    });
+  }
+  if (config.runJobs) {
+    config.bootstrap.rtEvents.options = {
+      target: 'ion://process',
+      stopEvent: 'SIGTERM'
+    };
+    p.then(() => di('boot', config.bootstrap, {sysLog: sysLog, process: process}))
+      .then(scope =>
+        di(
+          'app',
+          di.extract('scheduler', extend(true, config.di, scope.settings.get('plugins') || {})),
+          {},
+          'boot'
+        )
+      )
+      .then(
+        (scope) => {
+          sysLog.info('Запуск заданий по расписанию');
+          return scope.scheduler.start().then(() => {
+            sysLog.info('Подсистема заданий по расписанию запущена');
+          });
+        }
+      )
+      .catch(
+        (e) => {
+          sysLog.error(e);
+          killEmAll();
+          process.exit(130);
+        }
+      );
+  }
+} else {
+  const server = require('lib/server');
+  server({config, sysLog});
+}
