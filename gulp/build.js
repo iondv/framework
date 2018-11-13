@@ -9,7 +9,6 @@ const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
 const extend = require('extend');
-const merge = require('merge');
 
 const fs = require('fs');
 const path = require('path');
@@ -71,16 +70,6 @@ function run(path, command, args, resolve, reject) {
 function npm(path) {
   return new Promise(function (resolve, reject) {
     run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
-  });
-}
-
-function yarn(path) {
-  return new Promise(function (resolve, reject) {
-    run(path, 'yarn', ['install', '--production', '--check-files', '--ignore-engines', '--modules-folder', './vendor'], ()=>{
-      run(path, 'yarn', ['autoclean', '--init'], ()=>{
-        run(path, 'yarn', ['autoclean', '--force'], resolve, reject);
-      }, reject);
-    }, reject);
   });
 }
 
@@ -275,7 +264,7 @@ gulp.task('build:linux-dependencies', (done) => {
 
 gulp.task('build:npm', (done) => {
   console.log('Установка пакетов бэкенда для пути ' + platformPath);
-  let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
+  let w = buildDir(buildDir(npm(platformPath), 'modules'), 'applications');
 
   w.then(done).catch((err) => {
     console.error(err);
