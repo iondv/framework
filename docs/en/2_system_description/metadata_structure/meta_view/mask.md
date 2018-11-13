@@ -6,7 +6,7 @@
 
 ## Description
 
-**Input masks** - provides the possibility to set a pattern or a template for an input data. It is used to facilitate the processing of values that have a fixed pattern - for example, telephone numbers. Input masks allows users to enter a predefined format in an attribute.
+**Input mask** - provides the possibility to set a pattern or a template for an input data. It is used to facilitate the processing of values that have a fixed pattern - for example, telephone numbers. Input masks allows users to enter a predefined format in an attribute.
 
 ##  The "mask" field in meta view
 

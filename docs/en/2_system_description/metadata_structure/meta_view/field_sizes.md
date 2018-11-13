@@ -13,7 +13,7 @@ module.exports = {
 };
 ```
 
-### The next page: [Masks](/docs/ru/2_system_description/metadata_structure/meta_view/mask.md)
+### The next page: [Masks](/docs/en/2_system_description/metadata_structure/meta_view/mask.md)
 
 --------------------------------------------------------------------------  
 

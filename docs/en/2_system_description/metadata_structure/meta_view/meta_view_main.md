@@ -1,134 +1,99 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Attribute types of the meta class](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+### The previous page: [Attribute types in the meta class](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
 
-# Meta view - attribute part
+# Meta view - general part
 
 ## Description
 
-**Meta view - attribute part** describes the attribute view fields of the class. The attribute views represent an array in the corresponding fields in the general part of the meta view. The view of each attribute is an object of the following structure:
+**Meta view** - allows to set the desired attribute composition of the class to display on the form according to the view form  (list view - list.json, create view - create.json, edit view - item.json) and to specify the overridden and (or) complemented properties for each individual attribute in the meta class of this attribute.
+
+## Forms of meta views
+
+Meta view can be divided into two forms: 
+
+* List view 
+* Create and edit view
+
+## List view
+
+**List view** - allows to display the class objects in the form of a list.
 
 ## JSON
-### Meta view - create and edit mode
 ```
-    {
-      "caption": "Integer editor[14]",
-      "type": 14,
-      "property": "integer_integer",
-      "size": 2,
-      "maskName": null,
-      "mask": null,
-      "mode": null,
-      "fields": [],
-      "hierarchyAttributes": null,
-      "columns": [],
-      "actions": null,
-      "commands": [],
-      "orderNumber": 20,
-      "required": false,
-      "visibility": null,
-      "enablement": null,
-      "obligation": null,
-      "readonly": false,
-      "selectionPaginated": true,
-      "validators": null,
-      "hint": "",
-      "historyDisplayMode": 0,
-      "tags": null
-    }
-```
-### Meta view - list mode
-```
-    {
-      `"sorted": true,`
-      "caption": "Integer editor [14]",
-      "type": 14,
-      "property": "integer_integer",
-      "size": 2,
-      "maskName": null,
-      "mask": null,
-      "mode": null,
-      "fields": [],
-      "hierarchyAttributes": null,
-      "columns": [],
-      "actions": null,
-      "commands": [],
-      "orderNumber": 20,
-      "required": false,
-      "visibility": null,
-      "enablement": null,
-      "obligation": null,
-      "readonly": false,
-      "selectionPaginated": true,
-      "validators": null,
-      "hint": "",
-      "historyDisplayMode": 0,
-      "tags": null
-    }
+{
+  "columns": [...],
+  "styles": {},
+  "actions": null,
+  "commands": [...],
+  "allowSearch": false,
+  "pageSize": null,
+  "useEditModels": true,
+  "version": null,
+  "overrideMode": null,
+  "filterDepth": 3
+}
 ```
 ## Field description
 
-| Field                    | Name           | Acceptable values                          | Description                                                                                                                                                                              |
-|:------------------------|:-------------------------------|:---------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `"sorted"`              | **Sorting allowed**       | Logical                                   | A field for list views. It is not used in create and modify views. Enables or disables sorting by this column.                                          |
-| `"caption"`             | **Title**                  | String                                       | The title of the input field / attribute column displayed in the views.                                                                                                                  |
-| `"type"`                | [**Type**](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)                        | Integer - type identifier (code)             | Attribute view type.                                                                                                                         |
-| `"property"`            | **Attribute**                    | String, only latin without spaces        | Indicate the attribute name for systeme to work with. There fore can not be blank. (Exept for the Groupe [0] view type).                                                      |
-| `"size"`                | **Size**                     | Integer - size code of the input field, depends on type | Allows to specify the code size for different types of attributes/views. Constants in the platform [FieldSizes](/docs/en/2_system_description/metadata_structure/meta_view/field_sizes.md)                                           |
-| `"maskName"`            | **Mask name**                  | String                                       | If there are any preset masks in the platform, you can set a mask by internal name, specifying it in this field.                                       |
-| `"mask"`                | [**Mask**](/docs/en/2_system_description/metadata_structure/meta_view/mask.md)                      | String                                       | Allows you to limit the valid attribute values.                                                                                                         |
-| `"mode"`                | **View mode**          | Integer - code of the view mode               | Sometimes it is necessasry to disply the attribute in different ways, select the disply mode in this field. [Example of using](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md).                     |
-| `"fields"`              | [**Fields**](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)                       | Array of objects                             | Allows to form the create/edit view in a particular way.                                                                                  |
-| `"hierarchyAttributes"` | **Hierarchy according to**                | object or Null                                             | _not used in current version_                                                                                                                                                                        |
-| `"columns"`             | **Colunms**                    | Array of objects                                            | Used for attributes of the "Collection [3]" type. Allows you to select attributes to be displayed on the form of presentation in the form of table columns (attributes are taken from a class by reference)                                                                                                                                                                    |
-| `"actions"`             | **Actions**                  | Integer or Null                                             | _not used in current version_                                                                                                                                                                        |
-| `"commands"`            | [**Commands**](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)                   | Array of objects or Null                    | Describes the acceptable ways for an object of a reference field. Null for the default set of actions.                                |
-| `"orderNumber"`        | **Order number**           | Integer non-negative                        | The order number of the attribute sets the position of the attribute relative to other attributes of the same class in the user interface.                                                  |
-| `"required"`            | **Mandatory**               | Logical                                   | Determines whether the filling of this attribute is mandatory when creating / editing an object.                                                                                                 |
-| `"visibility"`          | **View conditions**        | String                                       | Sets the condition of displying the field in the view. [In more details](metadata/visibility).                                                                                                    |
-| `"enablement"`          | **Edit condition**         | String                                       | Sets the edit condition(accessibility for editing) of the field in the view with the format similar to [View conditions](metadata/visibility) |
-| `"obligation"`          | **obligation condition**     | String                                       | Sets the condition which oblige you to fil in the fields in the view. The format is similar to [View conditions](metadata/visibility)                    |
-| `"readonly"`            | **Read only**              | Logical                                   | Allows or denies changing the attribute value in this view.                                                                                                          |
-| `"selectionPaginated"` | **Page-oriented selection** | Logical                                   | Allows or denies page selection list.                                                                                                                                  |
-| `"validators"`          | **Validators**                 | String                                       | The name of the validator that checks the values entered in the attribute field. [In more details](metadata/validators).                                                                           |
-| `"hint"`                | **Hint**                  | String                                       | Sets (or redefine the `"hint"` value of the attribute) message, which will be displayed in the user interface next to the attribute name.                                |
-| `"historyDisplayMode"`  | **History display**        | Integer                                        | Specifies the format for displaying the history of object changes                                                                                                                                                                      |
-| `"tags"`                | **Tags**                       | Array of strings                                 | Store display modifiers and other service information. [In more details] (metadata/tags).                                                                     |
+| Field              | Name                                | Acceptable values  | Description                                                                                                                               |
+|:------------------|:------------------------------------------------------|:---------------------|:---------------------------------------------------------------------------------------------------------------------------------------|
+| `"columns"`       | **Columns**                                           | Array of objects      | Columns of class attributes, described [the attribute part of the meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_attribute.md). |
+| `"styles"`       | [**Highlight color lines**](/docs/en/2_system_description/metadata_structure/meta_view/styles.md)                                           | Formula      | In accordance with the terms of the formula, the columns in the table are colored in the specified color. |
+| `"actions"`       | **Actions**                                         | Integer or Null                     | _not used in current version_                                                                                                                          |
+| `"commands"`      | [**Commands**](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)                                          | Array of objects      | The set of object operations.                                                                   |
+| `"allowSearch"`   | [**Search is available**](/docs/en/2_system_description/metadata_structure/meta_view/allowsearch.md)                                    | Boolean           | Allows or denies displaying the search form.                                                  |
+| `"pageSize"`      | **Number of object per page**                    | Integer positive  | Specifies the number of objects on a single page by default.                                                                           |
+| `"useEditModels"` | **Edit form for detalization** | Boolean           | Allows or denies the use of the edit form for data detalization of a class object.                                       |
+| `"version"`       | [**Version**](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)                                            | String               | Metaversion of data.                                                                                       |
+| `"overrideMode"`  | [**Override mode**](/docs/en/2_system_description/metadata_structure/meta_view/overridemode.md)                                   | _0 - Overlap_      | Sets the override mode of the views.                                                              |
+|                   |                                                       | _1 - Override_ |                                                                                                                                        |
+| `"filterDepth"`       | **Filter query depth in lists**                                        | Integer positive  | Filter query depth in lists of objects. It equals 2, by default.                                                                                     |
 
-  
-## Meta view - the list mode in mongoDB (registry) 
+## Create and edit view
 
+**Create and edit view** - allows to create and edit the class objects.
+
+## JSON
 ```
-       {
-            "sorted" : true,
-            "caption" : "Integer editor [14]",
-            "type" : 14,
-            "property" : "integer_integer",
-            "size" : 2,
-            "maskName" : null,
-            "mask" : null,
-            "mode" : null,
-            "fields" : [],
-            "hierarchyAttributes" : null,
-            "columns" : [],
-            "actions" : null,
-            "commands" : [],
-            "orderNumber" : 20,
-            "required" : false,
-            "visibility" : null,
-            "enablement" : null,
-            "obligation" : null,
-            "readonly" : false,
-            "selectionPaginated" : true,
-            "validators" : null,
-            "hint" : "",
-            "historyDisplayMode" : 0,
-            "tags" : null
-        }
+{
+  "tabs": [
+    {
+      "caption": "",
+      "fullFields": [...],
+      "shortFields": []
+    }
+  ],
+  "actions": null,
+  "commands": [...],
+  "siblingFixBy": null,
+  "siblingNavigateBy": null,
+  "historyDisplayMode": 0,
+  "collectionFilters": null,
+  "version": null,
+  "overrideMode": null
+}
 ```
-The attribute structure for create and edit views is different only by the `" sorted "` field, which is absent in the create and edit mode.
+## Field description
 
-### The next page: [List view](/docs/en/2_system_description/metadata_structure/meta_view/list_view.md)
+| Field                   | Name              | Acceptable values  | Description                                                                                                                                                                                         |
+|:-----------------------|:----------------------------------|:---------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `"tabs"`               | **Tabs**                       | Object               | Allows you to create many pages of objects on the same view form.                                                                                                                                                                                |
+| `"caption"`            | **Tabs name**                   | String               | The name of the `"tabs"` field will be displayed in the tab page.                                                                                                                                                             |
+| `"fullFields"`         | **Firld in the full form**            | Array of objects      | The `"tabs "` field, the array contains the attributes that should be displayed in the full form, described according to [the attribute part of the meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_attribute.md).  |
+| `"shortFields"`        | **Firld in the short form**           | Array of objects      |The `"tabs "` field, the array contains the attributes that should be displayed in the short form, described according to [the attribute part of the meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_attribute.md). |
+| `"actions"`            | **Actions**                     | Integer or Null                     | _not used in current version_                                                                                                                                                                                    |
+| `"commands"`           | [**Commands**](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)                      | Array of objects      | The set of object operations.                                                                                                                              |
+| `"siblingFixBy"`       | **Selection of sibling objects**     | Array of strings         | Enumeration of the attributes of the collection, that will be used to select sibling objects.                                                                                                                                                                                   |
+| `"siblingNavigateBy"`  | **Transition to sibling objects** | Array of strings         | Enumeration of the attributes of the collection, that will be used to transition the sibling objects.                                                                                                                                                                                   |
+| `"historyDisplayMode"` | **History display**           | Integer                | Specify the disply format of the history of object modifications.                                                                                                                                                                                   |
+| `"collectionFilters"`  | **Collection filters**          | Array of objects      | Select attributes from collections to filter.                                                                                                                                                                                   |
+| `"version"`            | [**Version**](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)                        | String               | Metaversion of data.                                                                                                                                                |
+| `"overrideMode"`       | [**Override mode**](/docs/en/2_system_description/metadata_structure/meta_view/overridemode.md)               | _0 - Overlap_      | Sets the override mode of the views.                                                                                                                        |
+|                        |                                   | _1 - Override_ |                                                                                                                                                                                                  |
+
+
+### The next page: [Meta view - attribute part](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_attribute.md)
 
 --------------------------------------------------------------------------  
 
@@ -139,5 +104,5 @@ The attribute structure for create and edit views is different only by the `" so
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.  
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 
