@@ -479,15 +479,21 @@ gulp.task('deploy', function (done) {
   let apps = [];
   let deps = [];
 
-  di('app', merge(true, config.bootstrap, config.di),
-    {
-      sysLog: sysLog
-    },
-    null,
-    ['rtEvents', 'sessionHandler', 'application'])
+  di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+    .then(scope =>
+      di(
+        'app',
+        extend(true, config.di, scope.settings.get('plugins') || {}),
+        {},
+        'boot',
+        ['auth', 'background', 'sessionHandler', 'scheduler', 'application']
+      )
+    )
+    .then(scope => alias(scope, scope.settings.get('di-alias')))
   /**
    * @param {Object} scp
    * @param {Object} scp.dataSources
+   * @param {SettingsRepository} scp.settings
    */
     .then((scp) => {
       scope = scp;
@@ -503,7 +509,12 @@ gulp.task('deploy', function (done) {
           let stat = fs.statSync(pth);
           if (stat.isDirectory()) {
             stage1 = stage1.then(() =>
-              deployer(pth, first ? {resetSettings: true, preserveModifiedSettings: true} : {})
+              deployer(
+                pth,
+                first ?
+                {resetSettings: true, preserveModifiedSettings: true, settings: scp.settings} :
+                {settings: scp.settings}
+              )
                 .then((dep) => {
                   first = false;
                   console.log('Выполнена настройка приложения ' + app);
@@ -523,15 +534,19 @@ gulp.task('deploy', function (done) {
       }
     })
     .then(() =>
-      di('boot', config.bootstrap,
-        {
-          sysLog: sysLog
-        }, null, ['rtEvents', 'sessionHandler', 'application'])
-        .then(scope => di('app',
-          extend(true, config.di, scope.settings.get('plugins') || {}),
-          {},
-          'boot',
-          ['application', 'aclProvider']))
+      di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+        .then(scope =>
+          di(
+            'app',
+            di.extract(
+              ['dbSync', 'metaRepo', 'dataRepo', 'workflows', 'sequenceProvider', 'roleAccessManager', 'auth'],
+              extend(true, config.di, scope.settings.get('plugins') || {})
+            ),
+            {},
+            'boot',
+            ['application']
+          )
+        )
         .then(scope => alias(scope, scope.settings.get('di-alias')))
     )
     .then((scp) => {

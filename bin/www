@@ -10,11 +10,6 @@ const server = require('lib/server');
 server({
   config,
   sysLog,
-  onScope: (scope) => {
-    if (config.runJobs) {
-      scope.scheduler = new Scheduler({settings: scope.settings});
-    }
-  },
   onStart: (scope) => {
     if (config.runJobs) {
       sysLog.info('Запуск заданий по расписанию');
