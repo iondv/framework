@@ -36,11 +36,16 @@ if (params.path) {
   moduleName = path.basename(params.path);
 }
 
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'background', 'application'])
-  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['background', 'application']))
+di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+  .then(scope =>
+    di(
+      'app',
+      extend(true, config.di, scope.settings.get('plugins') || {}),
+      {},
+      'boot',
+      ['auth', 'background', 'sessionHandler', 'scheduler', 'application']
+    )
+  )
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(() => di(moduleName, extendDi(moduleName, context), {}, 'app', ['background'], params.path))
   .then((scope) => {

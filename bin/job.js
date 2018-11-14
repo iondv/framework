@@ -29,8 +29,16 @@ let notifier = null;
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
-  }, null, ['rtEvents', 'sessionHandler', 'scheduler', 'application'])
-  .then(scope => di('app', extend(true, config.di, scope.settings.get('plugins') || {}), {}, 'boot', ['auth', 'application']))
+  }, null, ['rtEvents'])
+  .then(scope =>
+    di(
+      'app',
+      extend(true, config.di, scope.settings.get('plugins') || {}),
+      {},
+      'boot',
+      ['auth', 'sessionHandler', 'background', 'scheduler', 'application']
+    )
+  )
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(
     /**
@@ -104,10 +112,11 @@ di('boot', config.bootstrap,
         recievers: job.notify
       }));
     }
-    p.catch(() => {
-      sysLog.error(err);
-    })
+    p
+      .catch(() => {
+        sysLog.error(err);
+      })
       .then(() => {
-      process.exit(130);
-    });
+        process.exit(130);
+      });
   });

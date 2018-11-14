@@ -3,7 +3,7 @@
  */
 'use strict';
 
-const CacheRepository = require('core/interfaces/CacheRepository');
+const Repository = require('core/interfaces/Repository');
 
 /**
  * @constructor
@@ -32,5 +32,5 @@ function CacheProxy() {
   };
 }
 
-CacheProxy.prototype = new CacheRepository();
+CacheProxy.prototype = new Repository();
 module.exports = CacheProxy;
