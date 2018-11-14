@@ -6,87 +6,49 @@
 
 ## Description
 
-**Fields** - is a special structure of the create and edit view mode, which allows, within one class, to display data from other related classes in a horizontal and/or vertical form.
+**Fields** - contains class attributes that are combined, on any ground, into a group (for more details see [Type "Group [0]")](/docs/en/2_system_description/metadata_structure/meta_view/type_group.md).
 
-## Group types 
+**Attention:** this property applies only to the attribute type - "Group [0]".
 
-* GROUP_VERTICAL `"mode": 0` - group fields are placed under each other 
-* GROUP_HORIZONTAL `"mode": 1` - group fields are placed horizontally in a string (i.e. columns if there is enough space) 
+### Example:
 
-### How to configure in the meta view for the "Group" type:
+**NB:** On the form, the specified attributes are displayed on the lower level of the hierarchy, on the top is the name of the group.
 
-```json
-{
-   "type": 0, // group field
-   "mode": 1, // displayed horizontally 
-   "fields": [
-       // different fields
-    ]
-}
 ```
-
-### How to configure the columns size:
-
-```json
 {
-   "type": 0, // top level group
-   "mode": 1, // columns
-   "fields": [
-      {
-         "type": 0, // group-column 1
-         "mode": 0,
-         "size": 0, // small-scale column
-         "fields": [
+  "tabs": [
+    {
+      "caption": "",
+      "fullFields": [
+        {
+          "caption": "nameGroup",
+          "type": 0,
+          "property": "",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": null,
+          "fields": [
             {
-               "property": "attr1",
-               "type": 1,
-               "caption": "Text field 1"
+              "caption": "atr1",
+              "type": 1,
+              ...
             },
             {
-               "property": "attr2",
-               "type": 1,
-               "caption": "Text field 2"
+              "caption": "atr2",
+              "type": 1,
+              ...
             }
-         ]
-     },
-      {
-         "type": 0, // group-column 2
-         "mode": 0,
-         "size": 0,  // small-scale column
-         "fields": [
-            {
-               "property": "attr3",
-               "type": 1,
-               "caption": "Text field 3"
-            },
-            {
-               "property": "attr4",
-               "type": 1,
-               "caption": "Text field 4"
-            }
-         ]
-     },
-     {
-        "type": 0, // group-column 3
-        "mode": 0,
-        "size": 3,  // large-scale column
-        "fields": [
-            {
-               "property": "attr5",
-               "type": 1,
-               "caption": "Text field 5"
-            },
-            {
-               "property": "attr6",
-               "type": 1,
-               "caption": "Text field 6"
-            }
-         ]
-     }
-   ]
+      ]
+    }
+      ],
+      "shortFields": []
+    }
+  ]
 }
-```
 
+  
+```  
 
 ### The next page: [Commands](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)
 

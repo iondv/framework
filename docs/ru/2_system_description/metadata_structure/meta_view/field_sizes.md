@@ -1,5 +1,5 @@
 #### [Оглавление](/docs/ru/index.md)
-### Предыдущая страница: [Тип](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
+### Назад: [Мета представлений - атрибутивная часть](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_attribute.md)
 
 # Размеры полей
  ```
@@ -12,9 +12,6 @@ module.exports = {
   BIG: 4
 };
 ```
-
-### Следующая страница: [Маски](/docs/ru/2_system_description/metadata_structure/meta_view/mask.md)
-
 --------------------------------------------------------------------------  
 
 

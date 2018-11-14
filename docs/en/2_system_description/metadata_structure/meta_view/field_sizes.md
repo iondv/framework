@@ -1,5 +1,5 @@
 #### [Content](/docs/en/index.md)
-### The previous page: [Types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
+### Back: [Meta view - attribute part](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_attribute.md)
 
 # Field sizes
  ```
@@ -12,9 +12,6 @@ module.exports = {
   BIG: 4
 };
 ```
-
-### The next page: [Masks](/docs/en/2_system_description/metadata_structure/meta_view/mask.md)
-
 --------------------------------------------------------------------------  
 
 

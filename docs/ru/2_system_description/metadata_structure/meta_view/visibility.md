@@ -8,42 +8,13 @@
 
 **Условия отображения** - задаёт условия отображения поля в представлении класса.
 
-### Пример в JSON:
-```
-{
-          "caption": "Основание для условия отображения",
-          "type": 1,
-          "property": "visibility_condition_base",
-          "size": 2,
-          "maskName": null,
-          "mask": null,
-          "mode": null,
-          "fields": [],
-          "hierarchyAttributes": null,
-          "columns": [],
-          "actions": null,
-          "commands": [],
-          "orderNumber": 20,
-          "required": false,
-          "visibility": null,
-          "enablement": null,
-          "obligation": null,
-          "readonly": false,
-          "selectionPaginated": true,
-          "validators": null,
-          "hint": null,
-          "historyDisplayMode": 0,
-          "tags": null
-        },
-
-```
-
 В настройке используется класс `operators`. Настройка выполняется не только для логических полей, как в примере, но и для строковых, строковых перечислимых (сравнивается значение по коду перечислимого). 
 
  ## Синтаксис
  
- Символ `\u003d` обозначает операцию `=`
- Символ `\u0027` обозначает операцию `'`
+ * Символ `\u003d` обозначает операцию `=`
+ 
+ * Символ `\u0027` обозначает операцию `'`
 ```
  "visibility": ".visibility_condition_base !\u003d \u0027\u0027",
 ```
@@ -58,10 +29,6 @@
 где идет проверка по трём условиям с объединением И.  
 Сам синтаксис настройки похож на условия в js.  
 
-Проверка массива. В профиле в массиве $organisations ищем подходящее значение по значению атрибута rqstOrg.
-```
-"(.offlnVirtStatus == null) && ($organisations.indexOf(.rqstOrg) >= 0)"
-```
 
 * Логический:
 
@@ -91,8 +58,33 @@
 ```
 где идет проверка - есть ли значение в указанном атрибуте (!! - не пусто, без "!!" - пусто).
 
-### Пример условия отображения
+### Пример в JSON:
 ```
+{
+          "caption": "Основание для условия отображения",
+          "type": 1,
+          "property": "visibility_condition_base",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": null,
+          "fields": [],
+          "hierarchyAttributes": null,
+          "columns": [],
+          "actions": null,
+          "commands": [],
+          "orderNumber": 20,
+          "required": false,
+          "visibility": null,
+          "enablement": null,
+          "obligation": null,
+          "readonly": false,
+          "selectionPaginated": true,
+          "validators": null,
+          "hint": null,
+          "historyDisplayMode": 0,
+          "tags": null
+        },
    {
           "caption": "Поле отобразится, если основание заполнено",
           "type": 1,
@@ -144,14 +136,6 @@
           "tags": null
         }
 ```
-
-## Провека в зависимости от типа атрибута:
-
-* Выпадающий список (указан selectionProvider)
-
-* Проверка, что значение - пустое (null нельзя задавать в списке selectionProvider, иначе будет null как значение списка и null как пустое значение)   
-  
-`"visibility": ".target != 'null'"`
 
 ### Следующая страница: [Условие активности](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)
 

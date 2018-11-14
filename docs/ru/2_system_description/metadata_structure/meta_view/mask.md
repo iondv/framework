@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Размеры поля](/docs/ru/2_system_description/metadata_structure/meta_view/field_sizes.md)
+### Предыдущая страница: [**Тип атрибута представления**](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
 
 # Маски ввода
 
