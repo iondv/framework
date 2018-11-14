@@ -1,18 +1,18 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Условия отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md)
+### The previous page: [View conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md)
 
-# Условия активности
+# Activity conditions
 
-## Описание
+## Description
 
-**Условия активности** - задает условие активности, то есть доступности для редактирования поля в представлении.
-Синтаксис условий такой же, как в [Условия отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md).
+**Activity conditions** - set the activity conditions for the filed in the view. It defines if the field is available for editing or not.
+The syntax is the same as in the [view conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
 
-### Пример в JSON:
+### Example in JSON:
 ```
 {
-          "caption": "Основание для условия активности",
+          "caption": "Activity conditions base",
           "type": 1,
           "property": "enablement_condition_base",
           "size": 2,
@@ -36,12 +36,8 @@
           "historyDisplayMode": 0,
           "tags": null
         },
-```
-
-### Пример условия отображения
-```
 {
-          "caption": "Поле активно, если основание заполнено",
+          "caption": "Field is active if the base is filled",
           "type": 1,
           "property": "enablement_condition_use",
           "size": 2,
@@ -66,7 +62,7 @@
           "tags": null
         },
         {
-          "caption": "Поле активно, если в основании \u00271\u0027",
+          "caption": "Field is active if the base has \u00271\u0027",
           "type": 1,
           "property": "enablement_condition_1",
           "size": 2,
@@ -91,12 +87,12 @@
           "tags": null
         }
 ```
-### Следующая страница: [Условия обязательности](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)
+### The next page: [Obligation conditions](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
