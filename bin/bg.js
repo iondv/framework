@@ -40,14 +40,21 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then(scope =>
     di(
       'app',
-      extend(true, config.di, scope.settings.get('plugins') || {}),
+      di.extract(
+        params.task,
+        extend(true,
+          config.di,
+          scope.settings.get('plugins') || {},
+          extendDi(moduleName, context)
+        )
+      ),
       {},
       'boot',
-      ['auth', 'background', 'sessionHandler', 'scheduler', 'application']
+      ['auth', 'background', 'sessionHandler', 'scheduler', 'application', 'module'],
+      params.path
     )
   )
   .then(scope => alias(scope, scope.settings.get('di-alias')))
-  .then(() => di(moduleName, extendDi(moduleName, context), {}, 'app', ['background'], params.path))
   .then((scope) => {
     let worker = scope[params.task];
     if (!worker) {
