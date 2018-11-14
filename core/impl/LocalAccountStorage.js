@@ -9,14 +9,14 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {{}} options
    * @param {Number} [options.passwordMinLength]
-   * @param {Boolean} [options.loginCaseInsesitive]
+   * @param {Boolean} [options.caseInsensitiveLogin]
    * @param {DataSource} options.dataSource
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.passwordMinLength = options.passwordMinLength;
-    this.loginCaseInsesitive = Boolean(options.loginCaseInsesitive);
+    this.caseInsensitiveLogin = Boolean(options.caseInsensitiveLogin);
   }
 
   init() {
@@ -123,7 +123,7 @@ class LocalAccountStorage extends IAccountStorage {
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          this.loginCaseInsesitive
+          this.caseInsensitiveLogin
             ? {[F.LIKE]: ['$id', `^${id}$`]}
             : {[F.EQUAL]: ['$id', id]},
           {
@@ -213,7 +213,7 @@ class LocalAccountStorage extends IAccountStorage {
         let parts = id.split('@');
         conds.push({
           [F.AND]: [
-            this.loginCaseInsesitive
+            this.caseInsensitiveLogin
               ? {[F.LIKE]: ['$id', `^${parts[0]}$`]}
               : {[F.EQUAL]: ['$id', parts[0]]},
             {[F.EQUAL]: ['$type', parts[1]]}
