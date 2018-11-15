@@ -147,7 +147,34 @@ Thus, a many-to-many connection is realized without an intermediate class. Not o
 - When specifying a parent class, it is possible to create objects of the parent and child classes
 - Collection with object are loaded according to the semantics specified in the meta collection class or collection attribute
 
+## Colour highlighted objects in Collection 
+
+Use it when it is necessary to highlight the objects in the attribute table of the "Collection" type, according to some conditions. The configuration is the same as in the [conditions for highlighting objects in lists](/docs/ru/2_system_description/metadata_structure/meta_view/styles.md).
+
+You can set it in the meta view of the class for the attribute of the "Collection" type. The `"options"` property.  
+
+### Example
+
+```
+{
+  "caption": "Field with collection",
+  "type": 3,
+  "property": "testCol",
+  ...
+  "columns": [
+    ....
+  ],
+  ...
+  "options": {
+    "styles": {
+      "attention-1": "nempty($atrOfItemsClass)"
+    }
+  }
+},
+```
+
 ## Collection processing and storage format
+
 To save the collection, transfer the array of actions (the example below) in the corresponding attribute of the object:
 
 ```
