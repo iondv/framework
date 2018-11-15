@@ -149,7 +149,7 @@ Thus, a many-to-many connection is realized without an intermediate class. Not o
 
 ## Colour highlighted objects in Collection 
 
-Use it when it is necessary to highlight the objects in the attribute table of the "Collection" type, according to some conditions. The configuration is the same as in the [conditions for highlighting objects in lists](/docs/ru/2_system_description/metadata_structure/meta_view/styles.md).
+Use it when it is necessary to highlight the objects in the attribute table of the "Collection" type, according to some conditions. The configuration is the same as in the [conditions for highlighting objects in lists](/docs/en/2_system_description/metadata_structure/meta_view/styles.md).
 
 You can set it in the meta view of the class for the attribute of the "Collection" type. The `"options"` property.  
 
