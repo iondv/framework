@@ -7,7 +7,7 @@
 ## Description
 
 **Obligation conditions** - set the condition to make the field mandatory in the view.
-The syntax is the same as in the [view conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
+The syntax is the same as in the [visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
 
 Under this condition, the attribute becomes mandatory, otherwise the attribute remains the same as it was specified in the view before the obligation condition was applied.
 
@@ -90,7 +90,7 @@ Under this condition, the attribute becomes mandatory, otherwise the attribute r
         }
 
 ```
-### The next page: [Validators](/docs/en/2_system_description/metadata_structure/meta_view/validators.md)
+### The next page: [CSS поля](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
 
 --------------------------------------------------------------------------  
 

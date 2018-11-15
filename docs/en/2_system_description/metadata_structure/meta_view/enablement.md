@@ -1,13 +1,13 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [View conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md)
+### The previous page: [Visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md)
 
 # Activity conditions
 
 ## Description
 
 **Activity conditions** - set the activity conditions for the filed in the view. It defines if the field is available for editing or not.
-The syntax is the same as in the [view conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
+The syntax is the same as in the [visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
 
 ### Example in JSON:
 ```
