@@ -40,17 +40,15 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then(scope =>
     di(
       'app',
-      di.extract(
-        params.task,
-        extend(true,
-          config.di,
-          scope.settings.get('plugins') || {},
-          extendDi(moduleName, context)
-        )
+      extend(
+        true,
+        config.di,
+        scope.settings.get('plugins') || {},
+        extendDi(moduleName, context, scope)
       ),
       {},
       'boot',
-      ['auth', 'background', 'sessionHandler', 'scheduler', 'application', 'module'],
+      ['background', 'sessionHandler', 'scheduler', 'application', 'module'],
       params.path
     )
   )
