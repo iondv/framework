@@ -1,11 +1,14 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [CSS поля](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
+### The previous page: [Maintenance of project documents](/docs/en/2_system_description/metadata_structure/meta_view/fileshare.md)
 
-## Представление *Комментарий* для атрибутов типа "Коллекция"
+# Comments for attributes of the "Collection" type
 
-:warning: Для корректной работы функционала обязательно в зависимостях проекта должен быть указан репозиторий  `viewlib`. Подключение:
-1. В файле **package.json** проекта:
+:warning: The `viewlib` repository must be specified in the project dependencies for the functionality to work correctly. 
+
+Configuration:
+
+1. In the **package.json** file of the project
 
 ```json
 ...
@@ -14,29 +17,29 @@
   }
 ...
 ```
-2. В директорию **application** рядом с текущим проектом добавить репозиторий проекта `viewlib`
+2. In the **application** directory next to the current project add the repository of the `viewlib` project
 
-### Инструкция по подключению функционала
+## How to configure the functionality? 
 
-Реализуется представление шаблоном `templates/registry/item_footer.ejs` вида (обратить внимание на пояснение срок после знака **//** :
+The view is realized using the template of `templates / registry / item_footer.ejs` form. Please note the comments fot the lines after the **//** sign:
 
 ```
 ejs
 <%
-let status = item.get('status'); // атрибут со статусом БП
-let readOnly = state === 'conf' || status === 'approv'; //статус в котором отображаем коллекцию на форме
-if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в котором содержится атрибут Комментарий
-  && item.getItemId() && (status === 'onapprov' || readOnly)) { // статус, на котором атрибут отображается только для чтения
+let status = item.get('status'); // attribute with the WorkFlow status
+let readOnly = state === 'conf' || status === 'approv'; // status to display the collection on the form 
+if ((item.getMetaClass().checkAncestor('classColl@ns')) // class with the "Comment" attribute
+  && item.getItemId() && (status === 'onapprov' || readOnly)) { // status to display the readonly attribute
   let comments = resolveTpl('comments', null, true);
   if (comments) {
-    let prop = item.property('atrClassColl'); //системное имя атрибута с представлением Комментарий
+    let prop = item.property('atrClassColl'); // system name of the attribute with the "Comment" view
     let commId = `${form.ids.attr}_${prop.getName()}_сom`;
 %>
 
 <div class="line-tabs tabs">
 
   <div id="item-footer-order-toggle" class="order-toggle asc" data-direction="asc"
-       title="Изменить порядок в списке">
+       title="Change list order">
     <span class="glyphicon"></span>
   </div>
 
@@ -55,7 +58,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
           item,
           id: commId,
           property: prop,
-          comment: { // атрибуты для класса по ссылке из атрибута Коллекции
+          comment: { // attributes for the class by reference from the "Collection" attribute
             text: 'descript',
             user: 'owner',
             parent: 'answlink',
@@ -92,14 +95,16 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
 </script>
 <% }} %>
 ```
+### The `"options"` configuration
 
-Далее подключаем функционал `"options"` для представление Комментарий на форме представления изменения для атрибута типа "Коллекция":
+Next, configure the functionality of `"options"` for the "Comment" view on the edit form for the attribute of the "Collection" type:
 
-```json
+### JSON
+```
 {
-          "caption": "Коментарий",
+          "caption": "Comment",
           "type": 3,
-          "property": "coment",
+          "property": "comment",
           "size": 2,
           "maskName": null,
           "mask": null,
@@ -108,7 +113,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
           "columns": [
             {
               "sorted": true,
-              "caption": "Дата",
+              "caption": "Date",
               "type": 120,
               "property": "date",
               "size": 2,
@@ -135,7 +140,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
             },
             {
               "sorted": true,
-              "caption": "Подтверждение (Обоснование)",
+              "caption": "Confirmation (Rationale)",
               "type": 7,
               "property": "descript",
               "size": 2,
@@ -162,7 +167,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
               "selSorting": null
             },
             {
-              "caption": "Ведущий",
+              "caption": "Lead",
               "type": 2,
               "property": "owner",
               "size": 2,
@@ -191,7 +196,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
           "commands": [
             {
               "id": "CREATE",
-              "caption": "Создать",
+              "caption": "Create",
               "visibilityCondition": null,
               "enableCondition": null,
               "needSelectedItem": false,
@@ -201,7 +206,7 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
             },
             {
               "id": "EDIT",
-              "caption": "Править",
+              "caption": "Edit",
               "visibilityCondition": null,
               "enableCondition": null,
               "needSelectedItem": true,
@@ -224,37 +229,237 @@ if ((item.getMetaClass().checkAncestor('classColl@ns')) //класс, в кот�
           "options": {
             "template": "comments",
             "comments": {
-              "textProperty": "descript", // атрибут "Описание" из класса по ссылке
-              "userProperty": "owner", // атрибут "Ответственный" из класса по ссылке (отображается имя пользователя, оставившего комментарий)
-              "parentProperty": "answlink", // атрибут "Ответ" из класса по ссылке (для возможности "Отметить" на комментарий пользователя)
-              "photoProperty": "owner_ref.foto.link", // атрибут "Фото" из класса Персона (отображается фото персоны)
-              "dateProperty": "date" // атрибут "Дата" из класса по ссылке
+              "textProperty": "descript", // "Description" attribute from the class by reference 
+              "userProperty": "owner", // "Owner" attribute from the class by reference (the name of the user who left the comment is displayed)
+              "parentProperty": "answlink", // "Answear" attribute from the class by reference (to answear the user comment)
+              "photoProperty": "owner_ref.foto.link", // "Photo" attribute from the "Person" class (photo of the person is displayed)
+              "dateProperty": "date" // "Date" attribute from the class by reference 
             }
           }
         }
 ```
 
-### Особенности меты для корректной работы функционала
+## Features 
 
-##### мета класса, содержащего в себе атрибут типа "Коллекция" с представлением Комментарий
+### Meta class with the attribute of the "Collection" type with the "Comment" view
 
-1. В классе создается обычный атрибут с типом "Коллекция" [Пример] (http://git.local/ION-APP/develop-and-test/blob/develop/meta/classColl@develop-and-test.class.json)
-2. В представлении формы изменения создается аналогично стандартному атрибуту с типом "Коллекция", но с добавлением настройки `"options"` (описана выше) [Пример] (http://git.local/ION-APP/develop-and-test/blob/develop/views/verification@develop-and-test/item.json)
+1. Create an attribute of the "Collection" type.
+2. In the edit view form, create an attribute of the "Collection" type as usual bu with this setting: [`"options"`](/docs/en/2_system_description/metadata_structure/meta_view/options#the-`"options"-configuration).
 
-##### мета класса по ссылке из атрибута типа "Коллекция" с представлением Комментарий
+### Meta class by reference from the attribute of the "Collection" type with the "Comment" view 
 
-1. В классе атрибутивный состав и их системные наименования **обязательно** должны соответствовать наименованиям в шаблоне `item_footer.ejs` и в свойстве `"options"`. Дополнительно к обязательным - класс может содержать любые атрибуты. [Пример] (http://git.local/ION-APP/develop-and-test/blob/develop/meta/verification@develop-and-test.class.json)
+1. An attribute composition and their system names **must** match the names in the `item_footer.ejs` template and in the `"options"` property. In addition to the mandatory attributes - class can contain any other attributes.
 
-##### мета дополнительных необходимых классов
+### Meta of additional classes 
 
-1. класс Персона должен содержать атрибут, в которых будет задаваться информация об имени пользователя (в данном случае это атрибут "user") и фотография персоны (атрибут "Фото"), а так же ФИО персоны, которые являются семантикой данного класса. [Пример] (http://git.local/ION-APP/develop-and-test/blob/develop/meta/person@develop-and-test.class.json)
+1. The "Person" class must contain an attribute to specify the user name (in this case, this is the "user" attribute) and a photo of the person ("Photo" attribute), as well as the Surname, first name & patronymic of the person which are the semantics of this class.
+```
+{
+    "namespace": "develop-and-test",
+    "isStruct": false,
+    "key": [
+      "id"
+    ],
+    "semantic": "surname| |name| |patronymic",
+    "name": "person",
+    "version": "",
+    "caption": "Person",
+    "ancestor": null,
+    "container": null,
+    "creationTracker": "",
+    "changeTracker": "",
+    "creatorTracker": "",
+    "editorTracker": "",
+    "history": 0,
+    "journaling": true,
+    "compositeIndexes": [],
+    "properties": [
+      {
+        "orderNumber": 10,
+        "name": "id",
+        "caption": "Identifier",
+        "type": 12,
+        "size": 24,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": false,
+        "readonly": true,
+        "indexed": false,
+        "unique": true,
+        "autoassigned": true,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      },
+      {
+        "orderNumber": 20,
+        "name": "surname",
+        "caption": "Surname",
+        "type": 0,
+        "size": null,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": true,
+        "readonly": false,
+        "indexed": true,
+        "unique": false,
+        "autoassigned": false,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      },
+      {
+        "orderNumber": 30,
+        "name": "name",
+        "caption": "Name",
+        "type": 0,
+        "size": null,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": true,
+        "readonly": false,
+        "indexed": true,
+        "unique": false,
+        "autoassigned": false,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      },
+      {
+        "orderNumber": 40,
+        "name": "patronymic",
+        "caption": "Patronymic",
+        "type": 0,
+        "size": null,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": true,
+        "readonly": false,
+        "indexed": true,
+        "unique": false,
+        "autoassigned": false,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      },
+      {
+        "orderNumber": 40,
+        "name": "user",
+        "caption": "User",
+        "type": 18,
+        "size": null,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": true,
+        "readonly": false,
+        "indexed": true,
+        "unique": false,
+        "autoassigned": false,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      },
+      {
+        "orderNumber": 70,
+        "name": "foto",
+        "caption": "Photo",
+        "type": 5,
+        "size": null,
+        "decimals": 0,
+        "allowedFileTypes": null,
+        "maxFileCount": 0,
+        "nullable": true,
+        "readonly": false,
+        "indexed": false,
+        "unique": false,
+        "autoassigned": false,
+        "hint": null,
+        "defaultValue": null,
+        "refClass": "",
+        "itemsClass": "",
+        "backRef": "",
+        "backColl": "",
+        "binding": "",
+        "semantic": null,
+        "selConditions": [],
+        "selSorting": [],
+        "selectionProvider": null,
+        "indexSearch": false,
+        "eagerLoading": false,
+        "formula": null
+      }  
+    ],
+    "metaVersion": "2.0.61.21119"
+  }
 
-### Следующая страница: [Проектные документы](/docs/ru/2_system_description/metadata_structure/meta_view/fileshare.md)
+```
+
+### The next page: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/comments.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/comments.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
