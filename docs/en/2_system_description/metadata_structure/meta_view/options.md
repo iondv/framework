@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [CSS fields](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
+### The previous page: [Tags](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
 
 # Options
 
@@ -176,6 +176,47 @@ Available attribute options:
     }
 }
 ```
+## Configuration of CSS field using `tags` and `options`
+
+You can configure the CSS fields using `tags` or `options`. In register there are css-classes with the following behavior: nolabel, toplabel, full.
+
+For an attribute in the meta view, css-classes are assigned as follows:
+
+### In the `options` property:
+
+```
+"options": {
+  "cssClasses": ["toplabel", "fill"]
+}
+```
+
+### In the `tags` property (Backward compatibility)
+
+```
+"tags": ["css-class:nolabel", "css-class:fill"]
+```
+
+In addition to the classes, you can set the styles directly (they will be used only for container).
+
+Set the styles for attribute in a meta view.:
+
+### In the `options` property:
+
+```
+"options": {
+  "cssStyles": {
+    "max-width": "30%",
+    "padding": "25px"
+  }
+}
+```
+### In the `tags` property:
+
+```
+"tags": ["css:min-width:10%", "css:background-color:green"]
+```
+The description above is only for the standard field templates from the standard theme.
+
 ### The next page: [Fileshare](/docs/en/2_system_description/metadata_structure/meta_view/fileshare.md)
 
 --------------------------------------------------------------------------  

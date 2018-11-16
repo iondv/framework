@@ -90,7 +90,7 @@
         }
 
 ```
-### Следующая страница: [CSS поля](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
+### Следующая страница: [Теги](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
 
 --------------------------------------------------------------------------  
 
