@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [CSS поля](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
+### Предыдущая страница: [Теги](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
 
 # Опции 
 
@@ -175,6 +175,46 @@
     }
 }
 ```
+## Настройка CSS полей через `tags` и `options`
+
+Можно настраивать CSS поля либо через `tags`, либо через `options`. В регистри есть соответствующие стандартные css-классы с нужным поведением: nolabel, toplabel, fill. 
+
+Для атрибута в мете представлений css-классы назначаются так:
+
+### В свойстве `options`:
+
+```
+"options": {
+  "cssClasses": ["toplabel", "fill"]
+}
+```
+### В свойстве `tags` (обратная совместимость)
+```
+"tags": ["css-class:nolabel", "css-class:fill"]
+```
+
+Помимо классов можно напрямую задавать и стили (они будут применены только к контейнеру).
+
+Задаем стили для атрибута в мете представлений:
+
+### В свойстве `options`:
+
+```
+"options": {
+  "cssStyles": {
+    "max-width": "30%",
+    "padding": "25px"
+  }
+}
+```
+### В свойстве `tags`:
+
+```
+"tags": ["css:min-width:10%", "css:background-color:green"]
+```
+
+Описание выше относится только к стандартным шаблонам полей из стандартной темы оформления. 
+
 ### Следующая страница: [Проектные документы](/docs/ru/2_system_description/metadata_structure/meta_view/fileshare.md)
 
 --------------------------------------------------------------------------  

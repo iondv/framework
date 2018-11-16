@@ -4,7 +4,7 @@
 
 ## CSS fields
 
-**CSS fields** - set styles for attribute values using the `tags` attribute. The analog setting is set in `" options "` using templates. For more details see [`Options"](/docs/en/2_system_description/metadata_structure/meta_view/options.md).
+**CSS fields** - set styles for attribute values using the `tags` attribute. The analog setting is set in `"options"` using templates. For more details see ["Options"](/docs/en/2_system_description/metadata_structure/meta_view/options.md).
 
 ### Syntax:
 

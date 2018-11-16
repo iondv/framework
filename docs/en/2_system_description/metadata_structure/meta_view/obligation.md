@@ -90,7 +90,7 @@ Under this condition, the attribute becomes mandatory, otherwise the attribute r
         }
 
 ```
-### The next page: [CSS поля](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
+### The next page: [Tags](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
 
 --------------------------------------------------------------------------  
 
