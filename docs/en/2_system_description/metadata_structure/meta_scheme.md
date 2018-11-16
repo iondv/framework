@@ -33,7 +33,7 @@ Meta class is the basis for meta views, meta navigation, meta reports, meta busi
 ## Name of meta files: 
 
 
-| **Meta class**                | **Meta view**          | **Meta navigation**                           |                                                                                                                                                              
+| [**Meta class**](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)                | [**Meta view**](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)           | [**Meta navigation**](/docs/en/2_system_description/metadata_structure/meta_navigation/meta_navigation.md)                           |                                                                                                                                                              
 |:------------------------------|:-----------------------|:------------------------------------------|
 | Composed of the field `"name"` of the general part of the meta class + `.class.json` and located in the `meta` directory. Ex. `adress.class.json`.   |The name of the meta view directory shows its meta class. The meta view is located in the `views` directory. It contains directories whose names match the first part of the name of the meta class file. Ex. `adress@project_name`, where `adress` defines the meta class.     | The meta navigation is located in the `navigation` directory. It composed of the `"name"` + `.section.json` and located in the `navigation` directory. Ex. `workflow.section.json`. 
 ### The next page: [Meta class - general part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)

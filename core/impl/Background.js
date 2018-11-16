@@ -95,13 +95,12 @@ function Background(options) {
          }
        }
      )
-     .then(() => options.dataSource
-       .upsert(
-         tableName,
-         {[F.AND]: [{[F.EQUAL]: ['$uid', uid]}, {[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]},
-         {uid, name, sid, results: [], state: Background.RUNNING}, {skipResult: true}
-       )
-     )
+     .then(() => options.dataSource.upsert(
+        tableName,
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]},
+        {uid, name, sid, results: [], state: Background.RUNNING},
+        {skipResult: true}
+     ))
      .then(() => {
         let args = ['-task', name, '-uid', uid, '-sid', sid];
         for (let nm in moptions) {
