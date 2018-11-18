@@ -1,17 +1,67 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Действия](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)
+### The previous page: [Commands](/docs/en/2_system_description/metadata_structure/meta_view/commands.md)
 
-# Условия отображения
+# Visibility conditions
 
-## Описание
+## Description
 
-**Условия отображения** - задаёт условия отображения поля в представлении класса.
+**Visibility conditions** - sets the conditions for fields in a class view. It makes the field visible or not. 
 
-### Пример в JSON:
+You should set not only the logical fields, as in the example, but also the string, string enumeration (the value is compared by the code of the enumerable). 
+
+ ## Syntax
+ 
+ * The `\u003d` symbol means the `=` operation.
+ 
+ * The `\u0027` symbol means the  `'` operation.
+```
+ "visibility": ".visibility_condition_base !\u003d \u0027\u0027",
+```
+These symbols are used to correctly disply the conditions in the .json format.
+
+### Condition types
+
+* Complex conditions:
+```
+".state == 'work' || .state == 'result' || .state == 'fin'"
+```
+where there is a check on three conditions with "and".  
+The syntax is similar to the conditions in JS.  
+
+
+* Logical:
+
+```
+".archive == true"
+```
+where there is a check on the value of the logical attribute.
+
+* Simple condition:
+
+```
+".state == 'work'"
+```
+where there is a check on the attribute value with a selection list.
+
+* Numeric condition:
+
+```
+".magistral == 1"
+```
+where is the check for the numeric value of the attribute.
+
+* Empty/not empty:
+
+```
+"!! .meeting"
+```
+where there is a check on the value in the specified attribute (!! - not empty, without "!!" - empty).
+
+### Example in JSON:
 ```
 {
-          "caption": "Основание для условия отображения",
+          "caption": "Visibility condition base",
           "type": 1,
           "property": "visibility_condition_base",
           "size": 2,
@@ -35,66 +85,8 @@
           "historyDisplayMode": 0,
           "tags": null
         },
-
-```
-
-В настройке используется класс `operators`. Настройка выполняется не только для логических полей, как в примере, но и для строковых, строковых перечислимых (сравнивается значение по коду перечислимого). 
-
- ## Синтаксис
- 
- Символ `\u003d` обозначает операцию `=`
- Символ `\u0027` обозначает операцию `'`
-```
- "visibility": ".visibility_condition_base !\u003d \u0027\u0027",
-```
-Данные символы нужны для корректного отображения условий в формате .json
-
-### Типы условий
-
-* Сложные условия:  
-```
-".state == 'work' || .state == 'result' || .state == 'fin'"
-```
-где идет проверка по трём условиям с объединением И.  
-Сам синтаксис настройки похож на условия в js.  
-
-Проверка массива. В профиле в массиве $organisations ищем подходящее значение по значению атрибута rqstOrg.
-```
-"(.offlnVirtStatus == null) && ($organisations.indexOf(.rqstOrg) >= 0)"
-```
-
-* Логический:
-
-```
-".archive == true"
-```
-где идет проверка по значению логического атрибута.
-
-* Простое условие:
-
-```
-".state == 'work'"
-```
-где идет проверка по значению атрибута со списком выбора.
-
-* Числовое условие:
-
-```
-".magistral == 1"
-```
-где идет проверка по числовому значению атрибута.
-
-* Пусто/не пусто:
-
-```
-"!! .meeting"
-```
-где идет проверка - есть ли значение в указанном атрибуте (!! - не пусто, без "!!" - пусто).
-
-### Пример условия отображения
-```
    {
-          "caption": "Поле отобразится, если основание заполнено",
+          "caption": "Field is visible if the base is filled",
           "type": 1,
           "property": "visiility_condition_use",
           "size": 2,
@@ -119,7 +111,7 @@
           "tags": null
         },
         {
-          "caption": "Поле отобразится, если в основании \u00271\u0027",
+          "caption": "Field is visible if the base has \u00271\u0027",
           "type": 1,
           "property": "visiility_condition_1",
           "size": 2,
@@ -145,20 +137,12 @@
         }
 ```
 
-## Провека в зависимости от типа атрибута:
-
-* Выпадающий список (указан selectionProvider)
-
-* Проверка, что значение - пустое (null нельзя задавать в списке selectionProvider, иначе будет null как значение списка и null как пустое значение)   
-  
-`"visibility": ".target != 'null'"`
-
-### Следующая страница: [Условие активности](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)
+### The next page: [Activity conditions](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

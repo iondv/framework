@@ -1,20 +1,20 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Условия активности](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)
+### The previous page: [Activity conditions](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)
 
-# Условия обязательности
+# Obligation conditions
 
-## Описание
+## Description
 
-**Условия обязательности** - задает условие обязательности заполнения поля в представлении.
-Синтаксис условий такой же, как в [Условия отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md).
+**Obligation conditions** - set the condition to make the field mandatory in the view.
+The syntax is the same as in the [visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
 
-Условия обязательности отличаются выполнением действий. При данном условии атрибут становится обязательным для заполнения, иначе атрибут остается таким же, каким был задан в представлении до применения условия обязательности
+Under this condition, the attribute becomes mandatory, otherwise the attribute remains the same as it was specified in the view before the obligation condition was applied.
 
-### Пример в JSON:
+### Example in JSON:
  ```
  {
-          "caption": "Основание для условия обязательности",
+          "caption": "Obligation conditions base",
           "type": 1,
           "property": "obligation_condition_base",
           "size": 2,
@@ -38,12 +38,8 @@
           "historyDisplayMode": 0,
           "tags": null
         },
-```
-### Пример условия отображения
-
-```
 {
-          "caption": "Поле обязательно, если основание заполнено",
+          "caption": "Field is mandatory if the base is filled",
           "type": 1,
           "property": "obligation_condition_use",
           "size": 2,
@@ -68,7 +64,7 @@
           "tags": null
         },
         {
-          "caption": "Поле обязательно, если в основании \u00271\u0027",
+          "caption": "Field is mandatory if the base has \u00271\u0027",
           "type": 1,
           "property": "obligation_condition_1",
           "size": 2,
@@ -94,12 +90,12 @@
         }
 
 ```
-### Следующая страница: [Валидаторы](/docs/ru/2_system_description/metadata_structure/meta_view/validators.md)
+### The next page: [Tags](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
