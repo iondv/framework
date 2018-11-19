@@ -349,7 +349,7 @@ function WorkflowProvider(options) {
                 );
               }
 
-              let updates = {};
+              let updates;
               let calculations = Promise.resolve();
 
               if (Array.isArray(transition.assignments) && transition.assignments.length) {
