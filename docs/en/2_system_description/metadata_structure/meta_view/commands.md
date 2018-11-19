@@ -88,7 +88,7 @@ In the general part of the meta view of the class there can be listed the comman
         }
 ```
 
-### The next page: []()
+### The next page: [Visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md) 
 
 --------------------------------------------------------------------------  
 
