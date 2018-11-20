@@ -46,32 +46,6 @@
           ]
         }
       },
-      "sequenceProvider": {
-        "module": "core/impl/datasource/MongoSequenceProvider",
-        "options": {
-          "dataSource": "ion://Db"
-        }
-      },
-      "sessionHandler": {
-        "module": "lib/session",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options": {
-          "app": "ion://application",
-          "dataSource": "ion://Db",
-          "log": "ion://sysLog",
-          "session": {
-            "secret": "ion:demo:secret",
-            "resave": false,
-            "saveUninitialized": true,
-            "cookie": {
-              "httpOnly": true,
-              "secure": false,
-              "maxAge": "[[auth.sessionLifeTime]]"
-            }
-          }
-        }
-      },
       "settings": {
         "module": "core/impl/SettingsRepository",
         "initMethod": "init",
@@ -82,6 +56,12 @@
       }
     },
     "di" : {
+      "sequenceProvider": {
+        "module": "core/impl/datasource/MongoSequenceProvider",
+        "options": {
+          "dataSource": "ion://Db"
+        }
+      },
       "aclProvider":{
         "module": "core/impl/access/aclmongo",
         "initMethod": "init",
@@ -111,6 +91,29 @@
           "dataSource": "ion://Db",
           "accounts": "ion://accounts",
           "log": "ion://sysLog"
+        }
+      },
+      "sessionHandler": {
+        "module": "lib/session",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options": {
+          "app": "ion://application",
+          "log": "ion://sysLog",
+          "storage": {
+            "type": "mongodb",
+            "dataSource": "ion://Db"
+          },
+          "session": {
+            "secret": "ion:demo:secret",
+            "resave": false,
+            "saveUninitialized": true,
+            "cookie": {
+              "httpOnly": true,
+              "secure": false,
+              "maxAge": "[[auth.sessionLifeTime]]"
+            }
+          }
         }
       },
       "auth": {
@@ -241,7 +244,7 @@
         "initLevel": 1,
         "options": {
           "enabled": "[[cache.memcached.enabled]]",
-          "serverLocations": "[[cache.memcached.locations]]" ,
+          "serverLocations": "[[cache.memcached.locations]]",
           "connectOptions": {
             "maxKeySize": "[[cache.memcached.maxKeySize]]",
             "maxExpiration": "[[cache.memcached.maxExpiration]]",
@@ -336,6 +339,28 @@
           "workflow": "ion://workflows",
           "log": "ion://sysLog",
           "calc": "lazy://calculator"
+        }
+      },
+      "background": {
+        "module": "core/impl/Background",
+        "options": {
+          "dataSource": "ion://Db",
+          "log": "ion://sysLog"
+        }
+      },
+      "kvRepo": {
+        "module": "core/impl/cache/DsCacheRepository",
+        "options": {
+          "dataSource": "ion://Db",
+          "name": "tmp_store"
+        }
+      },
+      "scheduler": {
+        "module": "core/impl/Scheduler",
+        "options": {
+          "settings": "ion://settings",
+          "repo": "ion://kvRepo",
+          "log": "ion://sysLog"
         }
       }
     }

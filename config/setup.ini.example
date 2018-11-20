@@ -1,13 +1,21 @@
+// ВАЖНОЕ
+// Нужно удалить все комментаии начинающиеся с //
+
 auth.denyTop=false // - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
+auth.registration=false // если не требуется регистрация
+
+// Исключения из проверки доступа безопасности
+auth.exclude[]=/files/**
+auth.exclude[]=/images/**
 
 db.uri=mongodb://127.0.0.1:27017/db // URI подключения к БД
 db.user=username // пользователь БД
 db.pwd=password // пароль пользователя БД
 
 // Пытаться запустить систему на этих портах
-server.port1=8888
-server.port2=8889
-server.port3=3000
+server.ports[]=8888
+server.ports[]=8889
+server.ports[]=3000
 
 module.default=registry // модуль по умолчанию
 

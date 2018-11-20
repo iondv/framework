@@ -47,17 +47,20 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
+ * @param {{}} [options.watermark]
  * @param {Logger} [options.log]
  * @constructor
  */
 function ImageStorage(options) { // jshint ignore:line
 
-  var fileStorage = options.fileStorage;
+  let fileStorage = options.fileStorage;
 
   let storeThumbnails = (options.storeThumbnails !== false);
   if (typeof options.fileStorage.fileOptionsSupport === 'function') {
     storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
+
+  let watermarkApplier;
 
   function thumbnail(source, opts) {
     let format = opts.format || 'png';
@@ -147,6 +150,24 @@ function ImageStorage(options) { // jshint ignore:line
     });
   }
 
+  function getDataContents(data) {
+    if (typeof data === 'object') {
+      if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
+        return data.buffer;
+      } else if (typeof data.path !== 'undefined') {
+        return data.path;
+      } else if (typeof data.stream !== 'undefined') {
+        return streamToBuffer(data.stream)
+          .then((buffer) => {
+            delete data.stream;
+            data.buffer = buffer;
+            return data.buffer;
+          });
+      }
+    }
+    return data;
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} [directory]
@@ -163,24 +184,27 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (storeThumbnails && options.thumbnails) {
-      p = p.then(() => {
+    if (options.watermark && options.watermark.accept) {
+      let name = opts.name || data.originalname || data.name || '';
+      options.watermark.format = options.watermark.format || path.extname(name).slice(1);
+      if (typeof watermarkApplier === 'undefined') {
+        watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
+      }
+      p = p.then(() => getDataContents(data))
+        .then(source => watermarkApplier(source, options.watermark))
+        .then((buf) => {
           if (typeof data === 'object') {
-            if (!Buffer.isBuffer(data) && typeof data.buffer !== 'undefined') {
-              return data.buffer;
-            } else if (typeof data.path !== 'undefined') {
-              return data.path;
-            } else if (typeof data.stream !== 'undefined') {
-              return streamToBuffer(data.stream)
-                .then((buffer) => {
-                  delete data.stream;
-                  data.buffer = buffer;
-                  return data.buffer;
-                });
-            }
+            delete data.stream;
+            delete data.path;
+            data.buffer = buf;
+          } else {
+            data = buf;
           }
-          return data;
-        })
+        });
+    }
+
+    if (storeThumbnails && options.thumbnails) {
+      p = p.then(() => getDataContents(data))
         .then((source) => {
           let thumbDirectory;
           switch (options.thumbsDirectoryMode) {
@@ -311,20 +335,39 @@ function ImageStorage(options) { // jshint ignore:line
           let thumb = images[0].thumbnails && images[0].thumbnails[thumbType];
           if (thumb) {
             let o = thumb.options || {};
-            return thumb.getContents().then((c) => {
-              res.status(200);
-              res.set('Content-Disposition',
-                (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
-                '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
-              res.set('Content-Type', o.mimetype || 'application/octet-stream');
-              if (o.size) {
-                res.set('Content-Length', o.size);
-              }
-              if (o.encoding) {
-                res.set('Content-Encoding', o.encoding);
-              }
-              c.stream.pipe(res);
-            });
+            return thumb.getContents()
+              .then((c) => {
+                if (options.watermark && options.watermark.middle) {
+                  let watermarkOptions = clone(options.watermark);
+                  watermarkOptions.height = options.thumbnails[thumbType].height;
+                  watermarkOptions.width =  options.thumbnails[thumbType].width;
+                  thumb.name = thumb.name.replace(/\.\w+$/, '.png');
+                  o.mimeType = 'image/png';
+                  const watermarkStream = require('core/util/watermark-overlay').watermarkStream;
+                  return watermarkStream(c.stream, watermarkOptions);
+                }
+                return c.stream;
+              })
+              .then((stream) => {
+                res.status(200);
+                res.set('Content-Disposition',
+                  (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
+                  '";filename*=UTF-8\'\'' + encodeURIComponent(thumb.name));
+                res.set('Content-Type', o.mimetype || 'application/octet-stream');
+                if (o.size) {
+                  res.set('Content-Length', o.size);
+                }
+                if (o.encoding) {
+                  res.set('Content-Encoding', o.encoding);
+                }
+                stream.on('error', (err) => {
+                  if (options.log) {
+                    options.log.error(err);
+                  }
+                  res.status(404).send('Thumbnail not found!');
+                });
+                stream.pipe(res);
+              });
           } else {
             res.status(404).send('Thumbnail not found!');
           }

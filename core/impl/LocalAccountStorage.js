@@ -8,12 +8,15 @@ const clone = require('clone');
 class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {{}} options
+   * @param {Number} [options.passwordMinLength]
+   * @param {Boolean} [options.caseInsensitiveLogin]
    * @param {DataSource} options.dataSource
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.passwordMinLength = options.passwordMinLength;
+    this.caseInsensitiveLogin = Boolean(options.caseInsensitiveLogin);
   }
 
   init() {
@@ -120,7 +123,9 @@ class LocalAccountStorage extends IAccountStorage {
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          {[F.EQUAL]: ['$id', id]},
+          this.caseInsensitiveLogin
+            ? {[F.LIKE]: ['$id', `^${id}$`]}
+            : {[F.EQUAL]: ['$id', id]},
           {
             [F.OR]: [
               {[F.EQUAL]: ['$disabled', false]},
@@ -206,7 +211,14 @@ class LocalAccountStorage extends IAccountStorage {
       let conds = [];
       filter.forEach((id) => {
         let parts = id.split('@');
-        conds.push({[F.AND]: [{[F.EQUAL]: ['$id', parts[0]]}, {[F.EQUAL]: ['$type', parts[1]]}]});
+        conds.push({
+          [F.AND]: [
+            this.caseInsensitiveLogin
+              ? {[F.LIKE]: ['$id', `^${parts[0]}$`]}
+              : {[F.EQUAL]: ['$id', parts[0]]},
+            {[F.EQUAL]: ['$type', parts[1]]}
+          ]
+        });
       });
       if (conds.length > 1) {
         f.push({[F.OR]: conds});

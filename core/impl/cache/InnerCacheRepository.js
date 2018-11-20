@@ -3,16 +3,16 @@
  */
 'use strict';
 
-var CacheRepository = require('core/interfaces/CacheRepository');
+const Repository = require('core/interfaces/Repository');
 
 /**
  *
  * @param {Object} config
  * @constructor
  */
-function InnerCacheRepository(config) {
+function InnerCacheRepository() {
 
-  var cache = {};
+  const cache = {};
 
   /**
    *
@@ -21,9 +21,7 @@ function InnerCacheRepository(config) {
    * @private
      */
   this._get = function (key) {
-    return new Promise(function (resolve, reject) {
-      resolve(cache[key]);
-    });
+    return Promise.resolve(cache[key]);
   };
 
   /**
@@ -34,13 +32,11 @@ function InnerCacheRepository(config) {
      * @private
      */
   this._set = function (key, value) {
-    return new Promise(function (resolve, reject) {
-      cache[key] = value;
-      resolve();
-    });
+    cache[key] = value;
+    return Promise.resolve();
   };
 
 }
 
-InnerCacheRepository.prototype = new CacheRepository();
+InnerCacheRepository.prototype = new Repository();
 module.exports = InnerCacheRepository;

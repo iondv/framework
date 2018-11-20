@@ -1,3 +1,4 @@
+/* eslint no-sync:off */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -82,7 +83,7 @@ function readConfigFiles(filesList) {
     let files = {};
 
     if (Array.isArray(filesList)) {
-      filesList.forEach(fn => {
+      filesList.forEach((fn) => {
         let ext = path.extname(fn);
         if (['.json', '.yml'].indexOf(ext) > -1) {
           let fname = path.basename(fn, ext);
@@ -94,14 +95,14 @@ function readConfigFiles(filesList) {
       });
     }
 
-    Object.keys(files).forEach(fname => {
-      promises.push(new Promise(function (resolve, reject) {
+    Object.keys(files).forEach((fname) => {
+      promises.push(new Promise((resolve, reject) => {
         let readers = [
           files[fname]['.yml'] ? readYAML(files[fname]['.yml']) : Promise.resolve({}),
           files[fname]['.json'] ? readJSON(files[fname]['.json']) : Promise.resolve({})
         ];
         Promise.all(readers)
-          .then(data => {
+          .then((data) => {
             result[fname] = merge(data[0], data[1]);
           })
           .then(resolve)
