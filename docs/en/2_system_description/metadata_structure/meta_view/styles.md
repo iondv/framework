@@ -2,21 +2,22 @@
 
 ### Back: [Meta view - general part](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)
 
-# Выделение цветом строк в списке
+# Highlighting lines in the list
 
-Условия задаются с помощью формулы, список поддерживаемых функций можно посмотреть [здесь](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md). Настройка задается в общей части меты представления списка и выглядит следующим образом:
+Conditions of **highlighting** the lines in the list are specified with the formula.
+
+A list of supported formulas can be found [here](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md).
+You can configure it in the General part of the list meta view as follows:
 
 ```
 "styles": {
-    "css-class": "формула"
+    "css-class": "formula"
   }
 ```
 
-где, `"css-class"` - класс доступных тем оформления
+where the `"css-class"` - is a class of available design themes and the `"formula"` - is a formula with a condition for highlighting the strings in the list.
 
-`"формула"` - формула с условием для применения выделения цветом строк в списке
-
-#### Доступные темы оформления `"css-class"`
+### Available themes of the `"css-class"` design
 
 * `attention-1` - red
 * `attention-2` - yellow
@@ -25,11 +26,11 @@
 * `attention-5` - blue
 * `attention-6` - green
 
-#### Назначение
+## Purpose of use 
 
-При открытии формы представления списка объектов, в соответствии с условиями формулы и класса темы оформления - строки таблицы выделяются цветом.
+When you open the view list of objects, the strings of the table are highlighted according to the conditions of the formula and the theme class.
 
-#### Пример
+### Example
 
 ```json
 "styles": {
@@ -37,12 +38,12 @@
   },
 ```
 
-`$real` - любое целое число. Если $real - меньше 0, то столбец выделяется красным цветом
+`$real` - any integer. If $real - less than 0, then the column is highlighted in red.
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/styles.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/styles.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
