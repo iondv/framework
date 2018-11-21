@@ -48,7 +48,7 @@ module.exports = {
 * `"mode": 3` - Hierarchical reference 
 * `"mode": 4` - Refining Search 
 
-### "Hierarchical reference" - in more detail
+### "Hierarchical reference" - in more details
 
 The **hierarchical reference** mode, based on the specified nested fields, displays the filter parameters at the hierarchy levels. When the field is initialized, an *ajax-request* is sent to the controller to receive the first selection list (no filter is specified). When a response is received from the server, the first filter field is displayed with a selection list. Further, when selecting a value in each of the filter fields, the values of the following fields are reset and a new selection list is requested for the next field. Fields that do not have a selection list are hidden. If one variant is in the selection list, it is automatically assigned to the filter and the selection list is determined for the next level in the hierarchy. When the special value - "transit" is received, the value of the current filter is assigned to the next one and the procedure for obtaining the selection list for the next hierarchy level is performed, and the field corresponding to the filter is hidden. When the values of all filter fields are specified, the controller returns a selection list of object by reference, which is automatically displayed in a separate field located after the filtering fields.
 
