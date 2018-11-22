@@ -1,15 +1,16 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Мета секций навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_section.md)
+### The previous page: [Meta section navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_section.md)
 
-# Мета узлов навигации
+# Meta node navigation 
+
 ## JSON
 ```
 {
   "code": "class_datetime",
   "orderNumber": 0,
   "type": 1,
-  "caption": "Класс \"Дата/Время [9]\"",
+  "caption": "Class \"Date/Time [9]\"",
   "classname": "class_datetime",
   "container": null,
   "collection": null,
@@ -19,12 +20,12 @@
   "conditions": [],
   "sorting": [],
   "eagerLoading": {
-     "list": { // Здесь задается жадная загрузка для списков
+     "list": { // Here you can set the eager loading for the lists
         "internet": ["okato"],
         "someClass1": ["refAttr1", "refAttr2.refAttr3"],
         "someClass2": ["colAttr4"]
      },
-     "item": { // Здесь задается жадная загрузка для форм редактирования
+     "item": { // Here you can set the eager loading for the edit form
         "internet": ["okato", "standart"],
         "someClass1": ["refAttr1", "refAttr2.refAttr3", "refAttr5", "colAttr4"],
         "someClass2": ["colAttr4"]
@@ -35,39 +36,56 @@
   "metaVersion": "2.0.7"
 }
 ```
-## Описание полей
+## Field description
 
-| Поле            | Наименование в студии | Допустимые значения                  | Описание                                                                                                                                                                                                                                                                                 |
+| Field            | Name | Acceptable values                  | Description                                                                                                                                                                                                                                                                                 |
 |:----------------|:----------------------|:-------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `"code"`        | **Системное имя**     | Строка латиницей, без пробелов       | Задает в том числе первую часть имени файла меты секции навигации, служебное имя. Если Тип - Группа (0), то вложенные узлы навигации будут иметь составное системное имя = "code" Группы dot(.) часть идентифицирующая узел навигации, например: `"code": "referenses.reference_okato"`. |
-| `"orderNumber"` | **Порядковый номер**  | Целое число                          | Задает порядок сортировки пунктов меню в пределах секции навигации                                                                                                                                                                                                                       |
-| `"type"`        | **Тип**               | _Группа: 0_                          | Тип. Задает логику работы пункта меню, выводимые при переходе/активации значения. Накладывает ограничения на прочие поля меты узла навигации.                                                                                                                                            |
-|                 |                       | _Страница класса: 1_                 |                                                                                                                                                                                                                                                                                          |
-|                 |                       | _Страница контейнера: 2_             |                                                                                                                                                                                                                                                                                          |
-|                 |                       | _Гиперссылка: 3_                     |                                                                                                                                                                                                                                                                                          |
-| `"title"`       | [**Заголовок**](/docs/ru/2_system_description/metadata_structure/meta_navigation/title.md)         | Строка                               | Позволяет дополнительно указать заголовок страницы.                                                                                                                                                                                                         |
-| `"caption"`     | **Логическое имя**    | Строка                               | Наименование узла навигации отображаемое в интерфейсе                                                                                                                                                                                                                                    |
-| `"classname"`   | **Класс**             | Строка латиницей, без пробелов       | Предполагаю следующую логику работы: Когда "Тип" - "Страница класса (1)", поле обязательно к заполнению.                                                                                                                                                                                 |
-| `"container"`   | **ID контейнера**     | Строка или null                      | Идентификатор объекта содержащего коллекцию отображаемую на странице                                                                                                                                                                                                                                                                           |
-| `"collection"`  | **Атрибут коллекции** | Строка или null                      | Имя атрибута коллекции, содержимое которого надо вывести на странице                                                                                                                                                                                                                                                                           |
-| `"url"`         | **URL**               | Гиперссылка (принимает любые строки) | Предполагаю следующую логику работы: Когда "Тип" - "Гиперссылка (3)", поле обязательно к заполнению.                                                                                                                                                                                     |
-| `"external"`         | **Признак внешнего ресурса**               | Логический | Открывает страницу по ссылке в новом окне.                                                                                                                                                                                     |
-| `"hint"`        | **Подсказка**         | Строка                               | Текст, заданный в этой строке, отображается при наведении на узел навигации, которому она принадлежит.                                                                                                                                                                                                                                                                                         |
-| `"conditions"`  | [**Условия выборки**](/docs/ru/2_system_description/metadata_structure/meta_navigation/conditions.md)   | Массив объектов                      | Фильтр при открытии списка объектов.                                                                                                                                                                                                               |
-| `"sorting"`     | **Сортировка**        | Массив объектов                      | Используется для узлов типа «Страница класса» и «Страница контейнера». Здесь задаются параметры сортировки объектов в списке. Параметры задаются аналогично настройкам выборки допустимых значений в атрибутах.                                                                                                                                                                                                                                                                                         |
-| `"eagerLoading"`     |         | Объект                      | Настройка жадной загрузки в навигации. Если нужна ЖЗ для класса по всем навигациям, то правильнее ее задавать в деплое. Поэтому данный параметр используется редко.                                                                                                                                                                                                                                                                                          |
-| `"pathChains"`  | **Хлебные крошки**    | Массив объектов                      | Здесь задается логика формирования «иерархической» навигации от страницы объекта к вышестоящим объектам. Может быть использовано конкретной реализацией ION-приложения для оптимизации навигации.                                                                                                                                                                                                                                                                           |
-| `"searchOptions"`  | **Поиск в узле навигации**    | Массив объектов                      | На уровне класса определяет как искать объекты класса из представления списка: по вхождению слов или полные слова, по отдельным атрибутам или по указанным атрибутам в списке с параметрами поиска через пробел. [Пример] (searchOptions)                                                                                                                                                                                                                                                                         |
-| `"metaVersion"` | **Версия меты**    | Строка                                                                                                                                                                                           | Версия метаданных                                               |
+| `"code"`        | **System name**     | String in Latin characters with no spaces       | Specifies the first part of the file name of the navigation section meta, the system name. If the type is - Group (0), then the nested navigation nodes will have a composite system name = "code" of the Grrop - dot(.) - the part that identifies the navigation node, for example:: `"code": "referenses.reference_okato"`. |
+| `"orderNumber"` | **Order number**  | Integer                          | Sets the sorting order of menu items in the navigation section.                                                                                                                                                                                                                       |
+| `"type"`        | **Type**               | _Group: 0_                          | Sets the logic of the menu item, displayed during the activation of its value. It imposes restrictions on other fields of the meta node navigation.                                                                                                                                            |
+|                 |                       | _Class page: 1_                 |                                                                                                                                                                                                                                                                                          |
+|                 |                       | _Container page: 2_             |                                                                                                                                                                                                                                                                                          |
+|                 |                       | _Hyperlink: 3_                     |                                                                                                                                                                                                                                                                                          |
+| `"title"`       | [**Title**](/docs/ru/2_system_description/metadata_structure/meta_navigation/title.md)         | String                               | Allows to optionally specify the title of the page.                                                                                                                                                                                                         |
+| `"caption"`     | **Boolean**    | String                               | The name of the navigation node displayed in the interface.                                                                                                                                                                                                                                    |
+| `"classname"`   | **Class**             | String in Latin characters with no spaces       | If "Type" is - "class Page (1)", the field is obligatory to be filled in.                                                                                                                                                                                 |
+| `"container"`   | **Container ID**     | String or null                      | The ID of the object containing the collection  which is displayed on the page.                                                                                                                                                                                                                                                                           |
+| `"collection"`  | **Collection attribute** | String or null                      | The name of the collection attribute whose content you want to display on the page.                                                                                                                                                                                                                                                                           |
+| `"url"`         | **URL**               | Hyperlink (any string is acceptable) | If "Type" is - "Hyperlink (3)", the field is obligatory to be filled in.                                                                                                                                                                                     |
+| `"external"`         | **Sign of external resource**               | Boolean | Opens a page by reference in a new window.                                                                                                                                                                                     |
+| `"hint"`        | **Hint**         | String                               | The text specified in this line is displayed when you hover over the navigation node to which the string belongs.                                                                                                                                                                                                                                                                                         |
+| `"conditions"`  | [**Sample conditions**](/docs/ru/2_system_description/metadata_structure/meta_navigation/conditions.md)   | Array of objects                      | Filter when opening a list of objects.                                                                                                                                                                                                               |
+| `"sorting"`     | **Sorting**        | Array of objects                      | It is used for nodes of the "Class page" and "Container page" types. Here you can set the sorting options for the objects in the list. The parameters are set in the same way as the settings for the selection list of valid values in attributes.                                                                                                                                                                                                                                                                                         |
+| `"eagerLoading"`     |         | Object                      | The configuration of the eager loading in the meta navigation. If you need the eager loading for the class for all navigations, we recommand you to specify it in the `deploy.json`. Therefore, this option is rarely used.                                                                                                                                                                                                                                                                                          |
+| `"pathChains"`  | **Bread crumbs**    | Array of objects                      | Here you can define the logic for "hierarchical" navigation from the page object to the higher-nested object. It can be used in a specific implementation of ION application to optimize navigation.                                                                                                                                                                                                                                                                           |
+| `"searchOptions"`  | **Search in the navigation node**    | Array of objects                      | On the class level, it defines the way of searching the class objects from the view list: by the beginning of the word, by the entire word, by the attrbiutes or by the specifyed attributes in the list with the search option "with spaces".                                                                                                                                                                                                                                                                           |
+| `"metaVersion"` | **Metaversion**    | String                                                                                                                                                                                           | Version of metadata.                                               |
 
-## Структура в mongoDB (registry)
+## Search in the navigation node
+```
+   "searchOptions": {
+    "person": {
+      "searchBy": [ // attributes by which we search, by default, which are displayed in the columns
+        "surname",
+        "name",
+        "patronymic"
+      ],
+      "splitBy": "\\s+", // split the search phrase into the regular expressions and match the parts with the attributes
+      "mode": ["starts", "starts", "starts"], // matching modes - in this case "starts with" (like, contains, starts, ends - are available)
+      "joinBy": "and" // mode of combining conditions for attributes ("or" by default)
+    }
+  }
+
+```
+## Structure in mongoDB (registry)
+
 ```
 {
     "_id" : ObjectId("578f07aa0ce0024ce143e71e"),
     "code" : "class_datetime",
     "orderNumber" : 0,
     "type" : 1,
-    "caption" : "Класс \"Дата/Время [9]\"",
+    "caption" : "Class \"Date/time [9]\"",
     "classname" : "class_datetime",
     "container" : null,
     "collection" : null,
@@ -82,12 +100,12 @@
 }
 ```
 
-### Следующая страница: [Мета бизнес-процессов](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
+### The next page: [Meta work-flows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

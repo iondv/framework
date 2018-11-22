@@ -1,34 +1,45 @@
-# Заголовок страницы - `"title"`
- 
- _В процессе реализации - таск:_ https://ion-dv.atlassian.net/browse/IONCORE-81
- 
-Для формирования заголовка страницы в первую очередь используется значение данного поля меты узла навигации.  
-Если поле `"title"` не задано - пустая строка, для формирования заголовка страницы используется поле `"caption"` меты узла навигации.  
-Для формирования заголовка страницы на страницах списка выбора (при открытии списка класса справочника из форм) используется `"caption"` общей части меты класса.  
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Meta nodes navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
+
+# Page title - `"title"`
+
+The **"title"** field is used to set the page title, different from the `"caption"` field in the navigation menu. 
+
+## Description
+
+When the page title is formed, firstly the system will use the value of the `"title"` field of the corresponding navigation node. If the `"title"` field is empty (not specified), the `caption` field of the meta node navigation is used to form the page title. When the page title is formed on the selection list pages, the system will use the `"caption"` field for the general part of the meta class.
 
 ## JSON
 
 ```
 {
-  "code": "navigation_fields.title.titleInTitle",
+  "code": "administrations.municipals",
   "orderNumber": 0,
   "type": 1,
-  "title": "Заголовок в поле \"title\" - отличается от наименования узла навигации",
-  "caption": " в поле \"title\"",
-  "classname": "title",
+  "title": "Administrations of the municipal districts", \\ name should be different from the navigation node of the `"caption"` field 
+  "caption": "Municipal districts",
+  "classname": "Organisation",
   "container": null,
   "collection": null,
   "url": null,
-  "hint": null,
+  "hint": "Administrations list of the municipal districts",
   "conditions": [],
   "sorting": [],
-  "pathChains": []
 }
+
 ```
 
-## Реализация в мете D&T 
+### The next page: [Sample conditions](/docs/en/2_system_description/metadata_structure/meta_navigation/conditions.md)
 
-1. Заголовок в `"caption"` узла навигации: http://raw.dnt.local/registry/develop-and-test@navigation_fields.title.titleInCaption
-2. Заголовок в `"title"` узла навигации: http://raw.dnt.local/registry/develop-and-test@navigation_fields.title.titleInTitle
-3. Заголовок в `"caption"` общей части меты класса: http://raw.dnt.local/registry/develop-and-test@navigation_fields.title.titleInReference (что бы увидеть нужный заголовок, необходимо начать создание нового объекта класса по ссылке и активировать выбор объекта из справочника).
+--------------------------------------------------------------------------  
 
+
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_navigation/title.md)   &ensp; [FAQs](/faqs.md)          
+
+
+
+--------------------------------------------------------------------------  
+
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved. 
