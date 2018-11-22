@@ -46,7 +46,7 @@ class LocalAccountStorage extends IAccountStorage {
           user.pwd = hash;
           user.pwdDate = new Date();
           user.disabled = false;
-          this.ds.insert('ion_user', user)
+          this.ds.upsert('ion_user', {[F.EQUAL]: ['$id', user.id]}, user)
             .then((u) => {
               resolve(u);
             })
@@ -57,9 +57,9 @@ class LocalAccountStorage extends IAccountStorage {
       user.pwd = user.pwd.hash;
       user.pwdDate = new Date();
       user.disabled = false;
-      return this.ds.insert('ion_user', user);
+      return this.ds.upsert('ion_user', {[F.EQUAL]: ['$id', user.id]}, user);
     } else if (user.type !== UserTypes.LOCAL) {
-      return this.ds.insert('ion_user', user).then(u => new User(u));
+      return this.ds.upsert('ion_user', {[F.EQUAL]: ['$id', user.id]}, user).then(u => new User(u));
     } else {
       throw new Error('Не передан пароль');
     }
