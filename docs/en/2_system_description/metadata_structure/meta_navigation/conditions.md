@@ -149,8 +149,7 @@ The `DATEADD` arguments: _data, time frame, unit for measuring time [ms, s, min,
 
 The `DATEDIFF` arguments: _end date, start date, unit for measuring the result [ms, s, min, h, d, m, y] (by default - day (d)), the logical flag of casting to an integer_
 
-### The next page: [Meta work-flows](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md#the-next-page-meta-work-flows)
-
+### The next page: [Meta work-flows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 --------------------------------------------------------------------------  
 
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta navigation](/docs/en/2_system_description/metadata_structure/meta_view/meta_navigation.md)
+### The previous page: [Meta navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/meta_navigation.md)
 
 # Meta section navigation
 

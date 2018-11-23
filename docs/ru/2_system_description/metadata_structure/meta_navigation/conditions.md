@@ -152,7 +152,7 @@
 
 Аргументы `DATEDIFF`: _конечная дата, начальная дата, ед. изм. результата [ms, s, min, h, d, m, y] (по умолчанию - день(d)), логический флаг приведения к целому числу_
 
-### Следующая страница: [Мета бизнес-процессов](https://git.iondv.ru/ION/platform/blob/IONCORE-518/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md#следующая-страница-мета-бизнес-процессов)
+### Следующая страница: [Мета бизнес-процессов](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 
 --------------------------------------------------------------------------  
 
