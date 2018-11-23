@@ -8,11 +8,11 @@
 
 ## Meta section navigation
 
-[**Meta section navigation**](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_section.md) consists of `"name" + .section.json` in the `navigation` directory. For example: `workflow.section.json`. 
+[**Meta section navigation**](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_section.md) consists of `"name" + .section.json` in the `navigation` directory. For example: `workflow.section.json`. 
 
 ## Meta node navigation
 
-[**Meta node navigation**](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) consists of:
+[**Meta node navigation**](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) consists of:
 
 * For the first-order navigation nodes - those nodes that are directly in the navigation section: `"code"`+ `.json` in a directory whose name is the same as the file name of the navigation section to which the navigation node belongs. 
 
