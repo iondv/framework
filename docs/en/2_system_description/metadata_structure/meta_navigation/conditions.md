@@ -8,28 +8,28 @@
 
 ## Saved filters
 
-Перед открытием любой страницы в реестрах происходит считывание фильтров которые подходят для данного окна. Подходящие фильтры состоят из двух частей:
-1. Общие фильтры, которые применимы для всех классов
-2. Фильтры сохраненные конкретно для данного класса.
+Before opening any page, in the registries, the system will read filters to find suitable ones for this window. Suitable filters consist of two parts:
+1. General filters for all classes.
+2. Filters for a specific class.
 
 ### General filters for all classes
 
-**Общие фильтры для всех классов** - это фильтры, которые отображаются для всех открываемых классов. Их отличие в коде в том, что в атрибуте класса у общего фильтра стоит ключевое слово `ALL`, у персональных фильтров в этом атрибуте стоит название класса, для которого он применим.
+**General filters for all classes** - are filters that are displayed for all opened classes. The difference in the code is that in the class attribute the general filter has the keyword `ALL`, and the personal filters (filters for specific classes) in this attribute have the name of the class for which it is applicable.
 
-Чтобы сделать фильтр для всех классов, при сохранении поставьте "Для всех классов".
+When saving, click "For all classes" to make this filter available for all classes.
 
 ### Filters for specific classes
 
-Чтобы создать **фильтр для конкретного класса**, откройте объекты этого класса, сгенерируйте фильтр и сохраните его убедившись, что поле "Для всех классов" не отмечено.
+To create a **filter for a specific class**, open the objects of the specific class, generate a filter, save it and make sure that the "For all classes" field is empty.
 
 ### Code realization
 
-Реализована единая спецификация выражений, как для вычисляемых выражений, так и для условий отбора и расчетов в агрегации.
+For now, we have a unified specification of expressions for both computed expressions and for the sample conditions and calculations in aggregation.
 
-Большая часть работы берется файлом _list-filter-ui - именно он запускает поиск нужных фильтров, а также разбирает текущие данные для создания новых фильтров. 
-В файле _list-filter-ui описано какие атрибуты могут участвовать в создании фильтров и как именно они должны выглядеть и сохраняться (например дата и чекбокс выглядят по разному)
+We mainly work with the `_list-filter-ui` file - it starts the search for the necessary filters, and also parses the current data to create new filters.
+The `_list-filter-ui` file describes which attributes can participate in the creation of filters and how exactly they should look and be saved (for example, the date and checkbox look differently).
 
-В параметре `cond` находятся данные фильтра, которые в последствие подставляются в условие для поиска (в файле _metaCRUD.js) 
+The `cond` property contains the filter data that is subsequently substituted in the search condition (in the _metaCRUD.js file)
 
 ### Example
 
@@ -47,34 +47,33 @@
         }
 ```
 
-**NB:** новые фильтры - `min` и `max` расширяют возможности создания фильтров и условий в меню.
+**NB:** New available filters - `min` and `max` expand the possibilities of creating filters and conditions in the menu.
 
 ### Necessary meta
-
-Необходимая мета для работы это класс фильтров `ion_filter`. Он находится в папке `calc`, которая по умолчанию является папкой с классами и метой для системы. Кроме одного класса ничего более не нужно.
+The necessary meta is the meta class of filters - `ion_filter`. It is located in the `calc` directory, which by default is a folder with classes and a meta for the system. Except for one class, nothing more is needed. **To be revised**
 
 ## Search by the reference objects
 
-Если поиск идет по принципу равно или содержит - то ищется в семантике этого объекта. Если поиск идет по принципу - максимум/минимум - то ищем уже значение поля. Таким образом есть возможность поиска в ссылочных атрибутах, при этом без лишних запросов к базе, что конечно классно в смысле производительности.
+If the search proceeds according to the "equal" or "contains" operations, then it proceeds in the semantics of this object. If the search proceeds according to the "maximum" or "minimum" operations, then it searches the value of the field. Thus, it is possible to search in the reference attributes, without unnecessary queries to the DB, which improves performance.
 
 ```
-[{property:okatoNasPunkta_title,operation:20,value:Лес,title:Населенный пункт содержит Лес,type:2}]
+[{property:okatoNasPunkta_title,operation:20,value:Forest,title:Locality contains Forest,type:2}]
 ```
 
-# Фильтры в меню
+# Filters in the menu
 
-Есть возможность не только выдавать отсортированные данные в списке из условий меню, но и ограничивать выборки, т.е.применять фильтры. 
+It is possible not only to produce sorted data in the list of menu conditions, but also to limit the samples, that is, to apply filters.
 
-## Мета отвечающая за работу фильтров
+## Meta for the filter operations
 
-### Пример меню с фильтром
+### Example of menu with filter
 
 ```
 {
   "code": "passportObject.naselenie",
   "type": 1,
   "orderNumber": 10,
-  "caption": "Население",
+  "caption": "Population",
   "classname": "naselenie",
   "container": null,
   "collection": null,
@@ -87,14 +86,14 @@
 }
 ```
 
-Атрибут `conditions` содержит два объекта:
+The `conditions` attribute contains two objects:
 
-1. `property` - свойство, по которому происходит фильтрация
-2. `operation` - операция фильтрации
+1. `property` - filtering property
+2. `operation` - filtering operation
 
-В данном случае этот фильтр имеет такой смысл - *показать все объекты класса `naselenie` с минимальным годом*.
+In this case, this filter has the following meaning - *show all objects of the `naselenie` class with a minimum year*.
 
-Если нужно указать значение, то третьим атрибутом пойдет `value` и значение для поиска. например 
+If you need to specify a value, the third attribute will be `value` and the value to search, for example:
 
 ```
 {"property": "god"
@@ -102,9 +101,9 @@
 , "value": 2015}
 ```
 
-## Настройка фильтра для отображения объектов класса-наследника
+## Configuration of filter to display objects of the heir class
 
-В случаях, когда страницей класса для узла навигации является родительский класс, а отображать на форме представления списка, при переходе по данной навигации, необходимо объекты класса наследника данного класса применяется фильтр вида:
+The class page for the navigation node is the parent class. When navigating through this navigation, it is necessary to display objects of the class of an inheritor of this class, then use a filter of the following type:
 
 ```
 {
@@ -114,49 +113,48 @@
 }
 ```
 
-где, `atr1.__class` - атрибут родительского класса, по которому идет выборка объектов, `childClass` - наследник, объекты которого отображаются в навигации. То есть - *показать на форме списка только те объекты, у которых атрибут `atr1` является объектом класса-наследника `childClass`*.
+where, `atr1 .__ class` is an attribute of the parent class by which objects are selected, `childClass` - is a heir, whose objects are displayed in the navigation. This filter has the following meaning - *show on the list form only those objects that have the  `attr1` attribute that is an object of `childClass` class*.
 
+## Table of operations
 
-## Таблица операций
-
-| Поле                 | Наименование         | Допустимые значения                                                   | Описание                                                                                           |
+| Field                 | Name         | Acceptable values                                                   | Description                                                                                            |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|
-| `"property"`         | **Атрибут**                  | Строка, только латиница без пробелов                                  | Атрибут класса, значение поля которого проверяется на соответствие данному условию данного вектора |
-| `"operation"`        | **Операция**                 | Код операции                                                          | Операция, согласно которой производится определение                                                |
-|                      |                              | _0 - равно (И)_                                                       |                                                                                                    |
-|                      |                              | _1 - не равно (ИЛИ)_                                                  |                                                                                                    |
-|                      |                              | _2 - пусто (НЕ)_                                                      |                                                                                                    |
-|                      |                              | _3 - не пусто (МИН ИЗ)_                                               |                                                                                                    |
-|                      |                              | _4 - (МАКС ИЗ)_                                                       |                                                                                                    |
+| `"property"`         | **Attribute**                  | String in Latin characters with no spaces                                  |Class attribute whose field value is checked for compliance with this condition of this vector. |
+| `"operation"`        | **Operation**                 | Operation code                                                          | The operation under which the identification is made.                                                |
+|                      |                              | _0 - equal (AND)_                                                       |                                                                                                    |
+|                      |                              | _1 - not equal (OR)_                                                  |                                                                                                    |
+|                      |                              | _2 - empty (NOT)_                                                      |                                                                                                    |
+|                      |                              | _3 - not empty (MIN FROM)_                                               |                                                                                                    |
+|                      |                              | _4 - (MAX FROM)_                                                       |                                                                                                    |
 |                      |                              | _5 - < ()_                                                            |                                                                                                    |
 |                      |                              | _6 - >_                                                               |                                                                                                    |
 |                      |                              | _7 - <=_                                                              |                                                                                                    |
 |                      |                              | _8 - >=_                                                              |                                                                                                    |
-|                      |                              | _9 - IN /Похож/_                                                                   |                                                                                                    |
-|                      |                              | _10 - содержит_                                                       |                                                                                                    |
-| `"value"`            | **Значение**                 | Зависит от типа операции                                              | Второе значение для бинарных операций                                                              |
-| `"nestedConditions"` | **Вложенные условия отбора** | Объект, структура аналогична структуре самого объекта условий отбора. |                                                                                                    |
+|                      |                              | _9 - IN /Similar/_                                                                   |                                                                                                    |
+|                      |                              | _10 - contains_                                                       |                                                                                                    |
+| `"value"`            | **Value**                 | Depends on the operation type                                              | The second value for binary operations                                                           |
+| `"nestedConditions"` | **Nested conditions** | The object, its structure is similar to the structure of the object of the selection conditions. |                                                                                                    |
 
-**NB:** код операции соответствует разным значениям операций, в зависимостри от того, выбран атрибут или нет. Если поле  `"property"` равно `null`, то кодируется логическое условие, по которому объединяются вложенные условия отбора (указаны в скобках в таблице выше).
+**NB:** the operation code corresponds to different values of operations, depending on whether the attribute is selected or not. If the `" property"` field is `null`, then a logical condition is coded by which the nested selection conditions are combined (indicated in parentheses in the table above).
 
-### Операции для дат
+### Operations for dates
 
-| код | значение | системное имя |
+| code | value | system name |
 | -------- | -------- | -------- |
-|8| Создаем дату |  DATE | 
-|9| Добавляем к дате интервал | DATEADD |
-|10|  Находим интервал между датами | DATEDIFF |
+|8| Create date |  DATE | 
+|9| Add the time frame to the date | DATEADD |
+|10|  Find the time frame between dates | DATEDIFF |
 
-Аргументы `DATEADD`: _дата, интервал, ед.изм интервала [ms, s, min, h, d, m, y] (по умолчанию - день(d))_
+The `DATEADD` arguments: _data, time frame, unit for measuring time [ms, s, min, h, d, m, y] (by default - day (d))_
 
-Аргументы `DATEDIFF`: _конечная дата, начальная дата, ед. изм. результата [ms, s, min, h, d, m, y] (по умолчанию - день(d)), логический флаг приведения к целому числу_
+The `DATEDIFF` arguments: _end date, start date, unit for measuring the result [ms, s, min, h, d, m, y] (by default - day (d)), the logical flag of casting to an integer_
 
-### Следующая страница: [Мета бизнес-процессов](https://git.iondv.ru/ION/platform/blob/IONCORE-518/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md#следующая-страница-мета-бизнес-процессов)
+### The next page: [Meta work-flows](https://git.iondv.ru/ION/platform/blob/IONCORE-518/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md#the-next-page-meta-work-flows)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_navigation/conditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_navigation/conditions.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
