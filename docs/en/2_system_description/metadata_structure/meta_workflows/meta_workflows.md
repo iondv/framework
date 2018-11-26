@@ -36,7 +36,7 @@
 
 ## "Сontains" condition
 
-To use the "contains" field, you should configure the eager loading in the collection. Otherwise, the collection will be empty, and the result will always be false. Conditions apply to the object retrieved from the database, no additional requests.
+To use the "contains" field, you should configure the eager loading in the collection. Otherwise, the collection will be empty, and the result will always be false. Conditions apply to the object retrieved from the database, without additional requests.
 
 ### Example
 
@@ -60,7 +60,7 @@ To use the "contains" field, you should configure the eager loading in the colle
 
 ## Configuration of hints
 
-Configuration of hints when navigating by workflow status is the output of instructions in a separate modal window with buttons - “continue” or “cancel”. When you hover over the button, a pop-up hint appears, for more convenient use of workflows.
+The "hints" feature represents the instructions in a separate modal window with buttons - “continue” or “cancel”. When you hover over the button, a pop-up hint appears, for more convenient use of workflows.
 
 ### Example
 
@@ -73,7 +73,7 @@ Configuration of hints when navigating by workflow status is the output of instr
     }
 ```
 
-* `"confirm"` - confirmation of the action on the transition (+ standard text - "you really want to perform the `name` action").
+* `"confirm"` - confirmation of the action on the workflow transition (+ standard text - "you really want to perform the `name` action").
 
 * `"confirmMessage"` - unique text to display in confirmation instead of standard text.
 

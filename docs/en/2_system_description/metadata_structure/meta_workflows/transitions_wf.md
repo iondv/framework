@@ -52,7 +52,7 @@ Use the `"assignments"` property in the workflow transition to set the values.
 ```
 
 When performing this workflow transition, the command is - assign the value "end" for the attribute [stateRemPet] by the reference
-of the Link" [resolution] attribute.
+of the "Link" attribute [resolution].
 
 ### The next page: [Meta security](/docs/en/2_system_description/metadata_structure/meta_security/meta_security.md)
 
