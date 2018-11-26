@@ -50,6 +50,14 @@ Reference type in context of the attribute part of the meta class:
     }
 ```  
 
+## Display mode of the "Reference" attribute on the form:
+
+You can set the display mode in the meta view. Set the mode using the `"mode"` property or the `"options"` property to set it as a template.
+
+* **"mode": 0** - display only semantics of the object by reference
+* **"mode": 1** - display only the reference to the form of the object by reference
+* **"mode": 3** - hierarchical object search
+* **"mode": 4** - refining object search
 
 # Back reference 
 
