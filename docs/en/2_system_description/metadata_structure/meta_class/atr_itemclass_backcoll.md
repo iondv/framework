@@ -97,6 +97,105 @@ The back reference in the context of collection if formed as follows:
     }
 ```  
 
+## Display mode of the "Collection" attribute on the form:
+
+You can set the display mode in the meta view. Set the mode using the `"mode"` property or the `"options"` property to set it as a template.
+
+* **mode: 4** - "Tag Cloud" stores the values of one or several objects by reference in the form of tags, the name of which is determined by the semantics of the object by reference. 
+* **mode: 3** - "Table" stores the values of one or several objects by reference in a table, the columns of which are predefined for the view form.
+
+### Example:
+
+```
+{
+    "caption": "Table",
+    "type": 3,
+    "property": "table",
+    "size": 2,
+    "maskName": null,
+    "mask": null,
+    "mode": 3,
+    "fields": [],
+    "columns": [],
+    ...
+},
+...
+```
+
+* **"Comment"** - is set in the same way as the “Table” display mode, but with the template specified in the `"options"` property. It is a field that contains data that was predefined in the `"columns"` property for an object by reference. It is intended to discuss information on an object at a certain stage of a workflow. 
+
+### Example:
+
+```
+       {
+          "caption": "Comment",
+          "type": 3,
+          "property": "coment",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": 3,
+          "fields": [],
+          "columns": [
+            {
+              "sorted": true,
+              "caption": "Date",
+              "type": 120,
+              "property": "date",
+              ...
+            },
+            {
+              "sorted": true,
+              "caption": "Confirmation (Rationale)",
+              "type": 7,
+              "property": "descript",
+              ...
+            },
+            {
+              "caption": "Lead",
+              "type": 2,
+              "property": "owner",
+              ...
+            }
+          ],
+          "actions": null,
+          "commands": [
+            {
+              "id": "CREATE",
+              "caption": "Create",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": false,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            },
+            {
+              "id": "EDIT",
+              "caption": "Edit",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": true,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            }
+          ],
+          "orderNumber": 80,
+          ...
+          "tags": null,
+          "options": {
+            "template": "comments",
+            "comments": {
+              "textProperty": "descript",
+              "userProperty": "owner",
+              "parentProperty": "answlink",
+              "photoProperty": "owner_ref.foto.link",
+              "dateProperty": "date"
+            }
+          }
+        }
+```
 
 # Back collection
 
@@ -134,7 +233,7 @@ The previous example is converted into the back collection as follows:
     }
 ```
 
-Pay attention to the `" backColl "` property, which comtains an additional value — the name of an attribute from a class in the collection (from the example above - coll).
+Pay attention to the `"backColl"` property, which comtains an additional value — the name of an attribute from a class in the collection (from the example above - coll).
 
 Thus, a many-to-many connection is realized without an intermediate class. Not only the "backcoll"   attribute with the "Collection" type can contain several references, but objects by reference can also contain several references to objects of the original class in their "coll" collection.
 
