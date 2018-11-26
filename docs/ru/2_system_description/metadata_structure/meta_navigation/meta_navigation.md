@@ -15,12 +15,12 @@
 [**Мета узлов навигации**](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) состоит из:
 * Для узлов навигации первого порядка - тех узлов, которые находятся непосредственно в секции навигации: поле `"code"` + `.json` и находится в директории, имя которой совпадает с именем файла секции навигации к которому относится узел навигации. 
 
-_Например_: В директории `navigation` есть файл секции навигации `simple_types.section.json`. И есть узел навигации `class_string.json`, который размещается в секции `simple_types`. Файл узла навигации будет иметь путь: `navigation\simple_types\class_string.json`.
+_Например_: В директории `navigation` есть файл секции навигации `simpleTypes.section.json`. И есть узел навигации `classString.json`, который размещается в секции `simpleTypes`. Файл узла навигации будет иметь путь: `navigation\simpleTypes\classString.json`.
      
 * Для узлов навигации второго порядка - тех узлов, которые входят в группу (особый тип узлов навигации, поле `"type"` в которых содержит значение `0`). 
 Разница в том, что поле `"code"` у таких узлов составное и состоит из поля `"code"` группы и личного наименования. 
 
-_Например_: `navigation\relations\class_reference.ref_base.json`. Это файл узла навигации `ref_base`, который находится в группе `class_referense` секции навигации `relations`.
+_Например_: `navigation\relations\classReference.refBase.json`. Это файл узла навигации `refBase`, который находится в группе `classReferense` секции навигации `relations`.
 
 ### Следующая страница: [Мета секций навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_section.md)
 

@@ -4,7 +4,7 @@
 
 # Sample conditions - `"conditions"`
 
-**Sample conditions** `"conditions"` - are filters when opening the list of objects (registry-dependent!).
+**Sample conditions** `"conditions"` - are filters when opening the list of objects.
 
 ## Saved filters
 
