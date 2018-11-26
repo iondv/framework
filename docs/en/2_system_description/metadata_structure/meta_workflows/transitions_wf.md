@@ -54,12 +54,12 @@ Use the `"assignments"` property in the workflow transition to set the values.
 When performing this workflow transition, the command is - assign the value "end" for the attribute [stateRemPet] by the reference
 of the Link" [resolution] attribute.
 
-### The next page: [Geometa](/docs/en/2_system_description/metadata_structure/geometa/geometa.md)
+### The next page: [Meta security](/docs/en/2_system_description/metadata_structure/meta_security/meta_security.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_transitions.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Мета навигации](/docs/ru/2_system_description/metadata_structure/meta_view/meta_navigation.md)
+### Предыдущая страница: [Мета навигации - Условия выборки](/docs/ru/2_system_description/metadata_structure/meta_navigation/conditions.md) 
 
 # Мета бизнес-процесса
 

@@ -49,10 +49,11 @@
         }
       ]
 ...
+
 ```
 По ссылке атрибута типа "Ссылка" [resolution], для атрибута [stateRemPet] присвоить значение "end" - при выполнении данного перехода по БП.
 
-### Следующая страница: [Геомета](/docs/ru/2_system_description/metadata_structure/geometa/geometa.md)
+### Следующая страница: [Мета безопасности](/docs/ru/2_system_description/metadata_structure/meta_security/meta_security.md)
 
 --------------------------------------------------------------------------  
 
