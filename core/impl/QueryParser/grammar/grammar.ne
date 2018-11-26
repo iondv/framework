@@ -80,7 +80,7 @@ _attribute ->
   | "`" _string "`" {% d => { return d[1] } %}
   
 attribute -> 
-  _attribute
+  _attribute {% id %}
   | _attribute _subattribute:+ {% d => { return d[0] + '.' + d[1].join('.') } %}
 
 # Keywords
