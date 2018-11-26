@@ -1,8 +1,8 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Мета бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_view/meta_navigation.md)
+### The previous page: [Meta workflows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 
-# Статусы бизнес-процесса
+# Workflow statuses
 
 ### JSON
 
@@ -10,7 +10,7 @@
 "states": [
     {
       "name": "new",
-      "caption": "Новое",
+      "caption": "New",
       "maxPeriod": null,
       "conditions": [],
       "itemPermissions": [],
@@ -20,25 +20,25 @@
   ]
   
 ```
-## Описание полей 
+## Field description 
 
-| Поле |Описание  |
+| Field | Description  |
 |:-----|:-----------|
-|`"name"`|  Системное имя статуса|
-|`"caption"`| Логическое имя статуса|
-|`"maxPeriod"`|  _нет данных_ |
-|`"conditions"`|  Условия для статуса БП |
-|`"itemPermissions"`| Разрешения для объекта |
-|`"propertyPermissions"`|   Разрешения для свойств |
-|`"selectionProviders"`|   Выборка допустимых значений
+|`"name"`|  Status system name.|
+|`"caption"`| Status logical name.|
+|`"maxPeriod"`|  _no data_ |
+|`"conditions"`|  Conditions for workflow status.|
+|`"itemPermissions"`| Permissions for an object. |
+|`"propertyPermissions"`|   Permissions for properties. |
+|`"selectionProviders"`|   Selection list of valid values.
 
 
-### Следующая страница: [Переходы бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)
+### The next page: [Workflow transitions](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/status_wf.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

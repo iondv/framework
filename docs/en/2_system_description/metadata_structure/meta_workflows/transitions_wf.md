@@ -1,15 +1,15 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Переходы бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)
+### The previous page: [Workflow statuses](/docs/en/2_system_description/metadata_structure/meta_workflows/status_wf.md)
 
-# Переходы бизнес-процесса
+# Workflow transitions
 
 ### JSON
 ```
 "transitions": [
     {
       "name": "basic",
-      "caption": "На согласование",
+      "caption": "For approval",
       "startState": "create",
       "finishState": "inAgreed",
       "signBefore": false,
@@ -20,25 +20,25 @@
     }
   ]
 ```
-## Описание полей 
+## Field description 
 
-| Поле |Описание  |
+| Field | Description  |
 |:-----|:-----------|
-|`"name"`|  Системное имя статуса|
-|`"caption"`| Логическое имя статуса|
-|`"startState"`| Начальный статус для осуществления перехода по БП |
-|`"finishState"`|  Конечный статус по завершению перехода по БП |
-|`"signBefore"`| Логическое значение "Подписать до начала перехода" |
-|`"signAfter"`|  Логическое значение "Подписать по завершению перехода" |
-|`"roles"` |  Список ролей, с правами на осуществление перехода |
-| `"assignments"`| Присвоение значения атрибутам после осуществления перехода по БП |
-| `"conditions"` | Условия, выполняемые для осуществления перехода по БП |
+|`"name"`|  Status system name.|
+|`"caption"`| Status logical name.|
+|`"startState"`| The initial status of the workflow transition. |
+|`"finishState"`|  The final status of the workflow transition. |
+|`"signBefore"`| Logical value "Sign before the workflow transition begins". |
+|`"signAfter"`|  Logical value "Sign at the end of the workflow transition". |
+|`"roles"` |  List of roles, with rights to make the transition. |
+| `"assignments"`| Assigning values to attributes after the end of the workflow transition. |
+| `"conditions"` | Conditions performed for the workflow transition. |
 
-## Присвоение значения атрибутам по ссылке
+## Assigning values to attributes by reference
 
-Задается через свойство `"assignments"` в переходе БП. 
+Use the `"assignments"` property in the workflow transition to set the values. 
 
-### Пример
+### Example
 
 ```
 ...
@@ -50,14 +50,16 @@
       ]
 ...
 ```
-По ссылке атрибута типа "Ссылка" [resolution], для атрибута [stateRemPet] присвоить значение "end" - при выполнении данного перехода по БП.
 
-### Следующая страница: [Геомета](/docs/ru/2_system_description/metadata_structure/geometa/geometa.md)
+When performing this workflow transition, the command is - assign the value "end" for the attribute [stateRemPet] by the reference
+of the Link" [resolution] attribute.
+
+### The next page: [Geometa](/docs/en/2_system_description/metadata_structure/geometa/geometa.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_transitions.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
