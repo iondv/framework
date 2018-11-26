@@ -50,13 +50,13 @@ NB. Глубина хранения обьектов в кеше соответ�
 cache.module - модуль используемый репозиторием данных для кеширования. 
 (варианты: ion://memcached, ion://redis, ion://innerCache)
 
-cache.memcached.enabled=true // активируем мемкэш
+cache.memcached.enabled=true // активируем memcached
 cache.memcached.location1 // сервер1
 cache.memcached.location2 // сервер2
 cache.memcached.timeout // таймаут обращения к кэшу
 
-cache.redis.enabled=true // активируем редис
-cache.redis.host=127.0.0.1 // хост редиса
-cache.redis.port=6379 // порт редиса
+cache.redis.enabled=true // активируем redis
+cache.redis.host=127.0.0.1 // хост redis
+cache.redis.port=6379 // порт redis
 ```
 По умолчанию кеширование не используется.
