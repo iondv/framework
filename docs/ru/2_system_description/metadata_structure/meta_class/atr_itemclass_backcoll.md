@@ -95,6 +95,105 @@
     }
 ```  
 
+## Режимы отображения атрибута типа "Коллекция" на форме:
+
+Режимы отображения задаются в мете представления. Могут определяться при помощи свойства `"mode"` либо задаваться шаблоном в свойстве `"options"`.
+
+* **mode: 4** - "Облако тегов" хранит значения одного или нескольких объектов по ссылке в виде тегов, наименование которых определяется семантикой объекта по ссылке. 
+* **mode: 3** - "Таблица" хранит значения одного или нескольких объектов по ссылки в таблице, колонки которой преодопределены для формы представления.
+
+### Пример:
+
+```
+{
+    "caption": "Таблица",
+    "type": 3,
+    "property": "table",
+    "size": 2,
+    "maskName": null,
+    "mask": null,
+    "mode": 3,
+    "fields": [],
+    "columns": [],
+    ...
+},
+...
+```
+
+* **"Комментарий"** - задается аналогично режиму отображения "Таблица", но с наложением шаблона, указанном в свойстве `"options"`. Представляет собой поле, которое содержит данные, зараннее переопределенные в свойстве `"columns"` для объекта по ссылке. Предназначено, в основном, для обсуждения информации по объекту на определенном этапе бизнес-процесса. 
+
+### Пример:
+
+```
+       {
+          "caption": "Коментарий",
+          "type": 3,
+          "property": "coment",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": 3,
+          "fields": [],
+          "columns": [
+            {
+              "sorted": true,
+              "caption": "Дата",
+              "type": 120,
+              "property": "date",
+              ...
+            },
+            {
+              "sorted": true,
+              "caption": "Подтверждение (Обоснование)",
+              "type": 7,
+              "property": "descript",
+              ...
+            },
+            {
+              "caption": "Ведущий",
+              "type": 2,
+              "property": "owner",
+              ...
+            }
+          ],
+          "actions": null,
+          "commands": [
+            {
+              "id": "CREATE",
+              "caption": "Создать",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": false,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            },
+            {
+              "id": "EDIT",
+              "caption": "Править",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": true,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            }
+          ],
+          "orderNumber": 80,
+          ...
+          "tags": null,
+          "options": {
+            "template": "comments",
+            "comments": {
+              "textProperty": "descript",
+              "userProperty": "owner",
+              "parentProperty": "answlink",
+              "photoProperty": "owner_ref.foto.link",
+              "dateProperty": "date"
+            }
+          }
+        }
+```
 
 # Обратная коллекция
 
