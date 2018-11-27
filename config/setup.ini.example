@@ -19,6 +19,8 @@ server.ports[]=3000
 
 module.default=registry // модуль по умолчанию
 
+module.skip[]=offline-sync // отключенные модули
+
 // Настройки файлового хранилища
 fs.storageRoot=./files // корневая директория хранилища, куда будут сохраняться файлы
 fs.urlBase=/files // база для публикации файлов в http (база URL файлов)
