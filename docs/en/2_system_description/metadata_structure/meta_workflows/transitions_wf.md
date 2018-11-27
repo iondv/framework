@@ -32,7 +32,7 @@
 |`"signAfter"`|  Logical value "Sign at the end of the workflow transition". |
 |`"roles"` |  List of roles, with rights to make the transition. |
 | `"assignments"`| Assigning values to attributes after the end of the workflow transition. |
-| `"conditions"` | Conditions performed for the workflow transition. |
+| `"conditions"` | Conditions for the workflow transition. Set in the same way as the "Conditions for the selection of valid values". |
 
 ## Assigning values to attributes by reference
 

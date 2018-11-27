@@ -27,10 +27,10 @@
 |`"name"`|  Status system name.|
 |`"caption"`| Status logical name.|
 |`"maxPeriod"`|  _no data_ |
-|`"conditions"`|  Conditions for workflow status.|
+|`"conditions"`|  Conditions for workflow status. Set in the same way as the "Conditions for the selection of valid values".|
 |`"itemPermissions"`| Permissions for an object. |
 |`"propertyPermissions"`|   Permissions for properties. |
-|`"selectionProviders"`|   Selection list of valid values.
+|`"selectionProviders"`|   Selection list of valid values. |
 
 
 ### The next page: [Workflow transitions](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)
