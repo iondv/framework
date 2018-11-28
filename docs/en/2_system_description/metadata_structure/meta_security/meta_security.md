@@ -4,7 +4,15 @@
 
 # Meta security
 
-## Configuration of the security rights
+## Description
+
+**Meta security** - configures the security rights of the system objects. It can be classified into two types: static security and dynamic security.
+
+**Static security** - configures the access rights to the system objects for the particular role.
+
+**Dynamic security** - configures the access rights to the system objects for the particular user, under some conditions, while **group dynamic security** is the access rights for the security group. 
+
+Configure the dynamic security rights in the `deploy.json` file, and static security in the `acl/resources-and-roles.yml` file.
 
 ### How to form resource identifier?
 
@@ -20,9 +28,11 @@
   * portal module: `sys:::url:portal/*`
   * geomap module: `sys:::url:geomap/*`
 
+## Types of rights
+
 #### "Read"
 
-`read` - is the right to view information on class objects. It sets the permission to view the class objects as read-only and prohibits the creation/editing of objects.
+`read` - is the right to view information about class objects. It sets the permission to view the class objects as "read-only" and prohibits the creation/editing of objects.
 
 ```
 - id: Users
@@ -48,9 +58,9 @@
 
 #### "Use"
 
-`use` - is the right to create the class objects. It sets the permission to create class objects and to use them in the reference and collections. 
+`use` - is the right to create the class objects. It sets the permission to create class objects and to use them in the references and collections. 
 
-Without `use` - references are also displayed in the collection. If there is  `read`, but no `use`, then it is imposible to select an object and place it the collection. 
+Without `use` - references are also displayed in the collections. If there is  `read`, but no `use`, then it is imposible to select an object and place it the collection. 
 
 ```
 - id: Users
@@ -89,7 +99,7 @@ If the project in `stakeholders.id` has a value associated with the current user
 If you did not specify a resource, then the rights to the class object will be checked. Then this role can be used as static, which means, to issue static rights dynamically.
 
 
-## Multidynamic security
+## Group dynamic security
 
 ```
 "roleMap": {
@@ -123,10 +133,10 @@ When specifying `sids`, each level of nesting arrays of values changes the type 
 1. Register a user with full admin privilege - `admin`.
 2. As `admin` in` registry` in the Security, Divisions section set up a hierarchy of divisions (division code = security identifier).
 3. Register a user without full admin privilege - `user`.
-4. As `admin` in` registry` in the Security, Divisions section create an  Employee, specify the User with no rights in its User attribute. We bind the employee to the subordinate division.
-5. Connect as `user` - and you have no rights.
-6. Connect as `admin` and give the rights to arbitrary classes and navigation nodes to roles, corresponding to the highest division.
-7. Connect as  `user` - and you have an access to all objects of the division. 
+4. As `admin` in` registry` in the Security, Divisions section create an  Employee, specify the User with no rights in its User attribute. Bind the employee to the subordinate division.
+5. Connect as `user` - you have no rights.
+6. Connect as `admin` - give the rights to arbitrary classes and navigation nodes to roles, corresponding to the highest division.
+7. Connect as  `user` - you have an access to all objects of the division. 
 8. Similarly, we check the rights throughout the hierarchy of divisions.
 
 ### Example of the configuration in `deploy.json`
@@ -172,13 +182,13 @@ When specifying `sids`, each level of nesting arrays of values changes the type 
 ## How to display attributes and objects in accordance with specified rights?
 
 The class [Projects] contains the attribute of the "Collection" type - [Events].
-If the [Events] class does not have read access, then the attribute of this class is not displayed on the view form of the [Projects] class.
+If the [Events] class does not have "read" access, then the attribute of this class is not displayed on the view form of the [Projects] class.
 
 If there is dynamic security for a class, then whether or not you have read access to the class [Events] - the attribute on the form of the class[Projects] will be displayed, but the event objects will be displayed only if you have rights.
 
-**NB:** it is necessary to set both static and dynamic security for a class by the attribute reference to display an attribute and objects.
+**NB:** it is necessary to set both static and dynamic securities for a class by the attribute reference to display the attribute and objects.
 
-That is, if there is a static "read-only" right for the class, the user will see all objects of this class, regardless of the dynamic rights. In addition, a sample of objects will be made. Objects that are configured for dynamic security will be displayed to the user in accordance with their settings.
+If there is a static "read-only" right for a class, the user will see all objects of this class, regardless of the dynamic rights. In addition, a sample of objects will be made. Objects that are configured for dynamic security will be displayed to the user in accordance with their settings.
 
 ### The next page: [Meta report](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)
 
