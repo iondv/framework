@@ -1,14 +1,15 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Назад: [Мета отчёта](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)
+### Back: [Meta report](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)
 
-### Пример простого полного отчета
+### Example of a simple full report 
+
 ```
 name: support
-caption: Отчет по заявкам в техническую поддержку
+caption: Report on technical support requests
 sources:
   - name: task
-    caption: Заявка
+    caption: Request
     load:
       - className: task
         results:
@@ -22,17 +23,17 @@ sources:
                 - eq:
                   - $typeComunication
                   - call
-                - 'Звонок'
+                - 'Phone call'
                 - if:
                   - eq:
                     - $typeComunication
                     - metting
-                  - 'Встреча'
+                  - 'Metting'
                   - if:
                     - eq:
                       - $typeComunication
                       - letter
-                    - 'Письмо'
+                    - 'Letter'
                     - if:
                       - eq:
                         - $typeComunication
@@ -45,17 +46,17 @@ sources:
                 - eq:
                   - $typeTask
                   - question
-                - 'Консультация'
+                - 'Advice'
                 - if:
                   - eq:
                     - $typeTask
                     - problem
-                  - 'Инцидент'
+                  - 'Incident'
                   - if:
                     - eq:
                       - $typeTask
                       - offer
-                    - 'Предложение'
+                    - 'Offer'
                     - ' '
           - field: predmetSupport
             expr: $support.name
@@ -98,7 +99,7 @@ sources:
     index:
       - id
   - name: support
-    caption: Заявки в техническую поддержку
+    caption: Technical support requests
     load:
       - source: task
         joins:
@@ -141,10 +142,10 @@ sources:
             expr: $coment
 reports:
   - name: technicalSupport
-    caption: Заявки ТП
+    caption: TS requests
     sheets:
       - name: technicalSupport
-        caption: Заявки в техническую поддержку
+        caption: Technical support requests
         type: aggregation
         source: support
         fetch:
@@ -157,24 +158,24 @@ reports:
           coment: $coment
         rangeFilters:
           date:
-            caption: За период с|по
+            caption:  for the period from|to
             format: date
             inclusive: both
         columns:
           - field: date
-            caption: Дата создания
+            caption: Creation date
           - field: typeComunication
-            caption: Тип коммуникации
+            caption: Communication type
           - field: typeTask
-            caption: Тип заявки
+            caption: Request type
           - field: predmetSupport
-            caption: Предмет поддержки
+            caption: Support subject
           - field: temaTask
-            caption: Тема заявки
+            caption: Request theme
           - field: nameClassification
-            caption: Наименование классификации
+            caption: Classification name
           - field: coment
-            caption: Комментарий
+            caption: Comment
             
 ```
 
