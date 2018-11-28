@@ -12,7 +12,7 @@
 
 **Dynamic security** - configures the access rights to the system objects for the particular user, under some conditions, while **group dynamic security** is the access rights for the security group. 
 
-Configure the dynamic security rights in the `deploy.json` file, and static security in the `acl/resources-and-roles.yml` file.
+You can configure the dynamic security in the `deploy.json` and the `acl/resources-and-roles.yml` files. But for the static security use the `acl/resources-and-roles.yml` file exclusively.
 
 ### How to form resource identifier?
 
