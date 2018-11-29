@@ -6,15 +6,17 @@
 
 ## Description
 
-**Meta report** - предназначена для построения шахты данных, содержащей аналитическую информацию по данным из меты системы, организованную в виде таблиц. В мете модуля отчетов указываются источники данных, на основе которых формируется информация для построения отчета, и в дальнейшем формирование колонок таблицы отчета, с указанием ресурса на данные из метаклассов системы. Meta report is located in the `bi` folder of the project in the YML format.
- 
+**Meta report** - is used to build a _data mine_ that contains analytical information on data from the meta. The information is organized in the form of tables. In the meta of report module, the data sources are indicated, on the basis of which the information is generated to build a report/ Further the report table columns are formed, indicating the resource for the data from the meta classes of the system. 
+
+Meta report is located in the `bi` folder of the project in the YML format.
+
 **NB:** Definition of "data mine"
 
 ```
-Шахта данных - (смежный термин от англ. Data Mining - глубинный анализ данных) 
-это некое хранилище, которое содержит глубинную аналитическую информацию 
-обо всех источниках данных и информацию для построения отчетов,   
-организованную в виде таблиц. 
+Data mine - (related term to "Data Mining" - the process of discovering patterns in large data sets) 
+is a kind of a storage that contains in-depth analytical information
+on all data sources and information for building reports,
+organized in the form of tables.
 ```
  
 ### Example YML
@@ -76,44 +78,44 @@ reports:
 
 ### Example description 
 
-**Test report** содержит в себе данные из класса _"sourceClass"_. Источник данных _"dataSource"_ извлекает данные из меты соответствующего класса, которые указаны в свойстве `results:` . Далее подраздел _"test"_ на основе данных, полученных из источника, указанного в свойстве `source:` формирует и преобразовывает данные для корректного отображения в таблицах отчета. Свойство `joins:` задает атрибут, который является идентификатором для построения отчета (в данном случае id объекта). 
+**Test report** contains data from the _"sourceClass"_ class. The data source _"dataSource"_ retrieves data from the corresponding meta class specified in the `results:` property. Then the _"test"_ subsection forms and transforms data (based on the data obtained from the source specified in the `source:` property) for correct display in the report tables. The `joins:` property sets the attribute, which is the identifier for building the report (in this case, object id).
 
-Далее система формирует таблицы отчета, на основе преобразованных данных из источника, в разделе `reports:`. Свойство `rangeFilters:` содержит информацию о фильтрах, настраиваемых для отчета (в данном случае необходимо указать диапазон дат, в соответствии с данными из класса). В модуле фильтр по диапазону задается через параметры запроса: `?rangeFld[]=0&rangeFld[]=5`, где rangeFld - это поле по которому ищем. Если идет поиск по датам - дату передавать в формате локали, которая передается в http-заголовке `'accept-language'`, либо в формате `ISO8601`. Свойство `columns:` позволяет формировать колонки таблицы (порядковые номера фактические). 
+Next, the system generates a report table, based on the converted data from the source, in the `reports:`section. The `range Filters:` property contains information on filters that are configured for the report (in this case, you must specify a date range according to the data from the class). In the module, set the range filter by using the query parameters: `?rangeFld[]=0&rangeFld[]=5`,  where rangeFld is the field we use for searching. If you are searching by date - the date is sent in the locale format, which is transmitted in the http-header `"accept-language"`, or in the format `ISO8601`. The `columns:` property allows to form table columns (numbers are actual).
+ 
+The result: a two-column table (Date and Name) in which class objects from the _"dataSource"_ source are displayed, according to the date filter configured in `rangeFilters:`. The number of objects in the table will be equal to the number of identifier values configured in the `joins:` property.
 
-The result: таблица из двух колонок (Дата и Наименование), в которой будут выводится объекты класса из источника _"dataSource"_ , в соответствии с фильтром по датам, настроенном в `rangeFilters:`, а количество объектов в таблице будет равно количеству значений идентификатора, настроенном в свойстве `joins:`.
+You can see the example of a simple report [here](/docs/ru/2_system_description/metadata_structure/meta_report/example.md).
 
-You can see the example of a report [here](/docs/ru/2_system_description/metadata_structure/meta_report/example.md).
+## Configuration of comparison 
 
-## Настройка строгости сравнения
-
-Настройка строгости сравнения на границах интервала `rangeFilters` в отчете:
+The configuration of strict comparison within the boundaries of a `rangeFilters` in the report:
 
 ```
    "rangeFilters": {
             "regDate": {
-              "caption": "За период с|по",
+              "caption": "For the period from|to",
               "format": "date",
               "inclusive": "both" | "left" | "right"
             }
           }
 ```
 
-`both` - обе границы могут быть равны искомым значениям   
-`left` - левая граница (меньшая) может быть равна искомым значениям   
-`right` - правая граница (большая) может быть равна искомым значениям
+`both` - both bounds can be equal to the sought values   
+`left` - left border (smaller) can be equal to the sought values    
+`right` - right border (bigger) can be equal to the sought values 
 
-Если `inclusive` не указан - сравнение строгое на обоих границах.
+If `inclusive` is nor specifyed - the comparison is strict at both boundaries.
 
 ## Hierarchical build
 
-Настройка в шахте отчетов иерархической сборки необходима для обработки исходных данных при сборке шахты:
+The configuration of the hierarchical build is necessary to process the initial data when building the mine:
 
-* Чтобы сделать в одном источнике данных выгрузку данных по всей иерархии в базе
-* Чтобы вывести данные по первому столбцу с отступами в зависимости от глубины вложенности
+* To make in one data source data extraction across the entire hierarchy in the DB
+* To display data of the first column with indents depending on the nesting depth
 
-### Configuration of the hierarchical build in the шахте данных:
+### Configuration of the hierarchical build in the data mine:
 
-В конфигурации источника настройка `"hierarchyBy"` представляет собой объект с набором свойств: `id`, `parent`, `level`, `order`.
+The `"hierarchyBy"` config is the objects with the following set of properties: `id`, `parent`, `level`, `order`.
  
  ```
    hierarchyBy: 
@@ -123,29 +125,29 @@ You can see the example of a report [here](/docs/ru/2_system_description/metadat
           order: objOrder
  ```
 
-где `id` - атрибут в данных, идентифицирующий элемент иерархии
+where `id` - is the attribute in data, identifying element of the hierarchy 
 
-`parent` - атрибут в данных, содержащий идентификатор родительского элемента
+`parent` - is the attribute in data containing parent id
 
-`level` - атрибут в результирующем источнике, куда будет записан уровень вложенности элемента
+`level` - is the attribute in the resulting source where the nesting level of the element will be written
 
-`order` - атрибут в результирующем источнике, куда будет записано значение для упорядочивания иерархии при отображении.
+`order` - is the attribute in the resulting source where the value will be written to organize the hierarchy when displayed on the form 
 
-Поля `objLevel` и `objOrder` это поля для записи значения (их не надо считать, агрегировать и т.д.)
+The `objLevel` and `objOrder` field - are the fields to write values (no need to calculate, aggregate etc.).
 
 ### Example YML
 
 ```
 reports: 
   - name: roadmap
-    caption: Дорожная карта
+    caption: Road map
     sheets: 
       - name: roadmap
         caption: >-
-          Дорожная карта
+          Road map
         type: aggregation
         needFilterSet: true
-        needFilterMessage: Выберите проект
+        needFilterMessage: Choose project
         styles: 
           objLevel: 
             1: text-indent-1
@@ -164,24 +166,23 @@ reports:
 ...
 ```
 
-**NB:** Иерархическая сборка возможна только на основе источника и невозможна на основе класса.
-
+**NB:** Hierarchical build is possible only on the basis of the source and impossible on the basis of the class.
 
 ### Build algorithm:
 
-1. Создаем результирующий источник.
-2. Делаем выборку корневых элементов, у которых пустое поле `parent`. 
-3. Перебираем и записываем элементы в результирующий источник (при этом в спецатрибут `element_id` - идентификатор (id) обьекта, в `level` - значение 0, в `order` - приведенный к строке порядковый номер элемента в выборке, дополненный до длины 6 символов лидирующими нолями).
-4. Итеративно делаем выборки следующих уровней вложенности (начиная с 0), до тех пор пока на очередной итерации не будет извлечено 0 объектов. Выборки делаются путем объединения исходного источника с результирующим по связи `parent = element_id` и ограничению `level=текущий уровень` вложенности. 
-5. На каждой итерации перебираем и записываем элементы в результирующий сорс, при этом:
- * в спецатрибут `element_id` пишем идентфикатор (id) обьекта, 
- * в `level` пишем текущий уровень вложенности, 
- * в `order` пишем конкатенацию order родительского элемента и приведенного к строке порядкового номера элемента в выборке, дополненного до длины 6 символов лидирующими нолями.
+1. Create a result source.
+2. Make a sample of root elements that have an empty `parent` field.
+3. We sort and write elements in the result source (in the special attribute `element_id` - the object identifier (id), in` level` - the value 0, in `order` - the sequence number of the element in the sample, reduced to a string, supplemented up to 6 characters with leading zeros).
+4. Iteratively, we make samples of the levels of nesting (starting from 0), until 0 objects are extracted at the final iteration. Samples are made by combining the initial source with the resulting by the connection - `parent = element_id` and the constraint `level = current level` of nesting. 
+5. At each iteration, we sort and write elements in the result source, with:
+ * write the id of the object in the special attribute `element_id`, 
+ * write the current level of nesting in `level`,
+ * in `order`, write an order concatenation of the parent element and the sequence number of the element in the sample, reduced to a string, supplemented up to 6 characters with leading zeros.
 
 
 ## Configuration to hide objects
 
-Настройка скрытия всех объектов, если табличные фильтры не заданы. Чтобы при открытии отчета все объекты скрывались, пока не будет выбрано значение из списка в фильтре необходимо для него применить настройку `"needFilterSet: true"` 
+Configuration to hide all objects if tabular filters are not specified. Apply the `" needFilterSet: true "` setting to hide all objects when opening a report, until a value is selected from the list in the filter.
 
 ## How to display sample parameters in the report header by using patterns
 
@@ -195,10 +196,10 @@ reports:
                   - and:
                       - gte:
                           - $date
-                          - ':since' # берем из params->since
+                          - ':since' # take from params->since
                       - lte:
                           - $date
-                          - ':till' # берем из params->till
+                          - ':till' # take from params->till
                   - $amount
                   - 0
           byMonth:
@@ -211,14 +212,14 @@ reports:
                                   - $date
                                   - 10
                                   - h
-                          - ':month' # берем из params->month
+                          - ':month' # take from params->month
                       - eq:
                           - year: 
                               - dateAdd:
                                   - $date
                                   - 10
                                   - h
-                          - ':year' # берем из params->year
+                          - ':year' # take from params->year
                   - $amount
                   - 0
           byYear:
@@ -230,44 +231,44 @@ reports:
                               - $date
                               - 10
                               - h
-                      - ':year' # берем из params->year
+                      - ':year' # take from params->year
                   - $amount
                   - 0
 ...
         params:
           year:
-            caption: Год
+            caption: Year
             format: int
           month:
-            caption: Месяц
+            caption: Month
             format: int
-            select: # выпадающий список
-              '1': январь
-              '2': февраль
-              '3': март
-              '4': апрель
-              '5': май
-              '6': июнь
-              '7': июль
-              '8': август
-              '9': сентябрь
-              '10': октябрь
-              '11': ноябрь
-              '12': декабрь
+            select: # drop-down list
+              '1': january
+              '2': february
+              '3': march
+              '4': april
+              '5': may
+              '6': june
+              '7': july
+              '8': august
+              '9': september
+              '10': october
+              '11': november
+              '12': december
           since:
-            caption: с
+            caption: from
             format: date
           till:
-            caption: по
+            caption: to
             format: date
 ...
         columns:
           - field: title
-            caption: Показатель
+            caption: Indicator
           - field: dimension
-            align: center # наименование заголовка в шапке по центру ячейки
+            align: center # header title in the center of the cell
             caption: Единица измерения
-          - caption: '{$year}' # наименование заголовка в шапке из параметра year
+          - caption: '{$year}' # header title in the в шапке из параметра year
             align: center
             columns: # колонка в шапке - группа вложенных колонок
               - field: byPeriod
@@ -457,12 +458,12 @@ reports:
           ...
 ```
 
-### Следующая страница: [Конфигурация платформы - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### The next page: [Platform configuration - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
