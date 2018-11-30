@@ -6,7 +6,7 @@
 
 ## Description
 
-**Meta report** - is used to build a _data mine_ that contains analytical information on data from the meta. The information is organized in the form of tables. In the meta of report module, the data sources are indicated, on the basis of which the information is generated to build a report/ Further the report table columns are formed, indicating the resource for the data from the meta classes of the system. 
+**Meta report** - is used to build a _data mine_ that contains analytical information on data from the meta. The information is organized in the form of tables. In the meta of report module, the data sources are indicated, on the basis of which the information is generated to build a report. Further the report table columns are formed, indicating the resource for the data from the meta classes of the system. 
 
 Meta report is located in the `bi` folder of the project in the YML format.
 
@@ -23,7 +23,7 @@ organized in the form of tables.
 
 ```
 name: reportTest
-caption: Text data
+caption: Test data
 sources:
   - name: dataSource
     caption: Data source
@@ -267,22 +267,22 @@ Configuration to hide all objects if tabular filters are not specified. Apply th
             caption: Indicator
           - field: dimension
             align: center # header title in the center of the cell
-            caption: Единица измерения
-          - caption: '{$year}' # header title in the в шапке из параметра year
+            caption: Unit of measure
+          - caption: '{$year}' # header title of the year property
             align: center
-            columns: # колонка в шапке - группа вложенных колонок
+            columns: # column in the header - a group of nested columns
               - field: byPeriod
-                # наименование заголовка в шапке из параметров since и till
+                # header title of the since and till property 
                 caption: 'c {$since} по {$till}'
                 align: center
                 format: number
               - field: byMonth
-                # наименование заголовка в шапке из параметра month
-                caption: 'За {$month}'
+                # header title of the month property
+                caption: 'For {$month}'
                 align: center
                 format: number
               - field: byYear
-                caption: За год
+                caption: For year
                 align: center
                 format: number
 ```
@@ -300,30 +300,30 @@ Configuration to hide all objects if tabular filters are not specified. Apply th
               - eq:
                   - $category
                   - AA4
-              - 'Выдано заключений, всего в т.ч.:'
+              - 'Issued the reports, total, including:'
               - eq:
                   - $category
                   - AB5
-              - '1. Государственная экспертиза, всего в т.ч.:'
+              - '1. State Expert Appraisal, total, including:'
               - eq:
                   - $category
                   - AC6
-              - '- положительных'
+              - '- favourable'
               - eq:
                   - $category
                   - AD7
-              - '- отрицательных'
+              - '- unfavourable'
 ...
           dimension:
             case:
               - eq:
                   - $category
                   - AA4
-              - штук
+              - pieces
               - eq:
                   - $category
                   - AB5
-              - штук
+              - pieces
 ...
         styles:
           category:
@@ -333,7 +333,7 @@ Configuration to hide all objects if tabular filters are not specified. Apply th
             AD7: level2
 ```
 
-## Возможность использования комбобоксов в параметрах и фильтрах
+## Use of ComboBox in the parameters and filters
 
 ### Example YML
 
@@ -341,34 +341,34 @@ Configuration to hide all objects if tabular filters are not specified. Apply th
 ...
         params:
           year:
-            caption: Год
+            caption: year
             format: int
           month:
-            caption: Месяц
+            caption: Month
             format: int
-            select: # выпадающий список
-              '1': январь
-              '2': февраль
-              '3': март
-              '4': апрель
-              '5': май
-              '6': июнь
-              '7': июль
-              '8': август
-              '9': сентябрь
-              '10': октябрь
-              '11': ноябрь
-              '12': декабрь
+            select: # drop-down list
+              '1': january
+              '2': february
+              '3': march
+              '4': april
+              '5': may
+              '6': june
+              '7': july
+              '8': august
+              '9': september
+              '10': october
+              '11': november
+              '12': december
           since:
-            caption: с
+            caption: from
             format: date
           till:
-            caption: по
+            caption: to
             format: date
 ...
 ```
 
-## Настройка обработки параметров в фильтре на странице отчета
+## Configuration of processing filter parameters on the report page
 
 ### Example YML
 
@@ -383,33 +383,31 @@ reports:
   ...
 ```
 
-Значение года в атрибуте `$yearStart` равно значению года из даты в атрибуте `:dateSelect`.
+The year value in the `$yearStart` attribute is equal to the year value from the date in the `:dateSelect` attribute.
 
-## Настройка пагинатора `"pageSize"`
+## Paginator `"pageSize"`
 
 
-**NB:** Применяется для отчетов с типом `type: list`.
+**NB:** It is used in the reports of the `list` type.
 
-Для случаев, когда отчет содержит в себе больше много объектов и на станицах нужно выводить строки постранично, чтобы не нагружать браузер тяжелой обработкой данных.
+We recommend using the `"pageSize"`, when the report contains many objects and you need to output the lines page-by-page, not to load the browser with heavy data processing. 
 
 ### Example YML
 
 ```
 reports:
  - name: test
-    caption: Тестовый отчет
+    caption: Test report
     sheets:
       - name: main
-        caption: Тестовый отчет
+        caption: Test report
         type: list
         pageSize: 100
 ```
 
-## Настройка вывода построчно
+## Output line by line
 
-Настройка вывода вложенных данных в отчете построчно настраивается следующим образом: 
-
-### Example YML
+Setting up the output line by line of nested data in the report is configured as follows: 
 
 ```
 ...
@@ -417,37 +415,31 @@ reports:
   - name: testReport
   ...
       columns:
-        - caption: Группирующее поле
-          columns: // поля для группировки
+        - caption: Grouping field
+          columns: // field to group
             - field: columns1
-              caption: Поле1
+              caption: Field1
               format: string
             - field: columns2
-              caption: Поле2
+              caption: Field2
               format: string
     ...
 ```
 
-## Настройка инкрементальной загрузки
+## Configure incremental load
 
-Для настройки инкрементальной загрузки данных в источник при сборке шахты необходимо выставить параметр:
+Specify the `append: true` property to set the incremental load of data into the source when bulding the data mine. It is used to uploade the statistics for a day to the mine, so as not to recalculate the entire volume of source data and have a history by periods.
+ 
+## Specificity of object sorting
 
-```
-append: true
-```
+Taking into account the MongoDB aggregation functional — the sorting is possible only by the resulting fields. This means that for backward compatibility, you should name the result fields that are used for sorting the same as the fields in the data source.
 
-Он необходим для подгрузки статистики за день в шахту, чтоб не пересчитывать весь объем исходных данных и иметь историю по периодам. 
-
-## Особенности сортировки объектов
-
-Учитывая функционал агрегации MongoDB - сортировка возможна только по результирующим полям. Это значит, что для обратной совместимости поля результата, по которым сортируем, необходимо называть так же, как и поля в источнике данных.
-
-### Example сортировки (свойство `sort`):
+### Example of sorting (the `sort` property):
 
 ```
 reports:
   - name: sors
-    caption: Источник
+    caption: Source
     sheets:
       ...
         rangeFilters:
