@@ -9,11 +9,12 @@ const recache = require('lib/util/recache');
  * @param {Boolean} options.skipDependencies
  * @param {Logger} options.log
  */
-module.export = function(options) {
+module.exports = function(options) {
   let classes = [];
+
   options.classes.forEach((cn) => {
     let cm = options.metaRepo.getMeta(cn);
-    classes.concat(getCachedDescendants(cm));
+    classes = classes.concat(getCachedDescendants(cm));
   });
 
   recache(classes, {skipDependencies: options.skipDependencies}, options.metaRepo, options.dataRepo, (msg) => {options.log.log(msg);})
@@ -32,10 +33,11 @@ function getCachedDescendants (cm) {
       }
     }
   }
+
   if (!isCached) {
     let classes = [];
     cm.getDescendants().forEach((dcm) => {
-      classes.concat(getCachedDescendants(dcm));
+      classes = classes.concat(getCachedDescendants(dcm));
     });
     return classes;
   } else {
