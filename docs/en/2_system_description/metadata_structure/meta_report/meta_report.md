@@ -84,7 +84,7 @@ Next, the system generates a report table, based on the converted data from the 
  
 The result: a two-column table (Date and Name) in which class objects from the _"dataSource"_ source are displayed, according to the date filter configured in `rangeFilters:`. The number of objects in the table will be equal to the number of identifier values configured in the `joins:` property.
 
-You can see the example of a simple report [here](/docs/ru/2_system_description/metadata_structure/meta_report/example.md).
+You can see the example of a simple report [here](/docs/en/2_system_description/metadata_structure/meta_report/example.md).
 
 ## Configuration of comparison 
 

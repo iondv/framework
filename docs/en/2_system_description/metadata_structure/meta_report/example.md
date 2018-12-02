@@ -182,7 +182,7 @@ reports:
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_report/example.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_report/example.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
