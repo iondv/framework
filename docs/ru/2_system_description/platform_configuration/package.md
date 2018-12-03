@@ -4,7 +4,7 @@
 
 # Зависмости в package.json
 
-Зависимости метаданных "ion" находятся в одном объекте - в "ionMetaDependencies" и указываются в файле `package.json`.
+Зависимости метаданных "ion" находятся в одном объекте - в "ionMetaDependencies" и указываются в файле **package.json**.
 
 ```
 "ionMetaDependencies": { 
@@ -12,12 +12,13 @@
 }
 ```
 
-## Логика подключения зависимостей метаданных при помощи скрипта
+## Логика подключения при помощи скрипта
 
-* если в названии объекта отсутствует слеш - / => "project-management"- подставляем в путь по умолчанию группу ION-APP - т.е. путь https://git.iondv.ru/ION-APP/project-management
-* если в названии есть слеш - значит задан уже с группой и просто склеиваем путь к гиту с группой и метой, пример "ION-METADATA/viewlib" - путь https://git.iondv.ru/ION-METADATA/viewlib.
+* если в названии объекта отсутствует слеш - / => "project-management"- подставляем в путь по умолчанию группу ION-APP - т.е. путь - //git.iondv.ru/ION-APP/project-management.
+* если в названии есть слеш - значит задан уже с группой и просто склеиваем путь к гиту с группой и метой, пример "ION-METADATA/viewlib" - путь - //git.iondv.ru/ION-METADATA/viewlib.
 * если значение версии начинается с git+http:// или git+https:// - то это полный путь к внешнему репозиторию - отбрасываем git+ и тянем гитом.
-* если значение версии начинается с http:// или https:// - то это полный путь к архиву - тянем и распаковываем.  **Не реализовано**, так как dapp не поддерживает работу с архивами.
+* если значение версии начинается с http:// или https:// - то это полный путь к архиву - тянем и распаковываем.  
+**Не реализовано**, так как dapp не поддерживает работу с архивами.
 
 ### Пример `package.json`
 
@@ -81,7 +82,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
