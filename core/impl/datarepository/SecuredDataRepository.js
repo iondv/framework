@@ -921,7 +921,7 @@ function SecuredDataRepository(options) {
       });
   };
 
-  function checkWritePermission(classname, id, moptions) {
+  function checkWritePermission(classname, id, moptions, data = {}) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
@@ -941,6 +941,17 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
+
+            if (item.attrPermissions) {
+              for (let nm in data) {
+                if (data.hasOwnProperty(nm) && item.attrPermissions.hasOwnProperty(nm)) {
+                  if (!item.attrPermissions[Permissions.WRITE]) {
+                    return false;
+                  }
+                }
+              }
+            }
+
             return !item.permissions || item.permissions[Permissions.WRITE];
           });
       });
@@ -957,7 +968,7 @@ function SecuredDataRepository(options) {
    */
   this._editItem = function (classname, id, data, changeLogger, moptions) {
     let opts = clone(moptions);
-    return checkWritePermission(classname, id, opts)
+    return checkWritePermission(classname, id, opts, data)
       .then((writable) => {
         if (writable) {
           let cm = options.meta.getMeta(classname);
@@ -984,7 +995,7 @@ function SecuredDataRepository(options) {
    */
   this._saveItem = function (classname, id, data, version, changeLogger, moptions) {
     let opts = clone(moptions);
-    return checkWritePermission(classname, id, opts)
+    return checkWritePermission(classname, id, opts, data)
       .then(function (writable) {
         if (writable) {
           let cm = options.meta.getMeta(classname);

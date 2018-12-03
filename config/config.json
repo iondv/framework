@@ -81,6 +81,7 @@
       },
       "accounts": {
         "module": "core/impl/LocalAccountStorage",
+        "initMethod": "init",
         "options": {
           "dataSource": "ion://Db"
         }

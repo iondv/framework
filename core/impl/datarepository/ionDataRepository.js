@@ -373,6 +373,8 @@ function IonDataRepository(options) {
             sortingParser(property.meta.selSorting);
         }
 
+        let colItems = [];
+
         if (property.meta.backRef && !property.meta.backColl) {
           let v = null;
           if (property.meta.binding) {
@@ -380,14 +382,14 @@ function IonDataRepository(options) {
           } else {
             v = item.getItemId();
           }
-          if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
-            attrs[pn].colItems.push(v);
+          if (v !== null && colItems.indexOf(v) < 0) {
+            colItems.push(v);
           }
         } else {
           let v = item.get(property.getName());
           if (Array.isArray(v)) {
             v.forEach((v) => {
-              attrs[pn].colItems.push(() => {
+              colItems.push(() => {
                 if (!attrs[pn].sort) {
                   let ldd = checkLoaded(refc, v, loaded);
                   if (ldd) {
@@ -403,13 +405,43 @@ function IonDataRepository(options) {
         }
 
         if (property.meta.selConditions) {
-          attrs[pn].colFilter =
-            Array.isArray(property.meta.selConditions) ?
-              conditionParser(property.meta.selConditions, property.meta._refClass, item) :
-              property.meta.selConditions;
+          let parsed = Array.isArray(property.meta.selConditions) ?
+            conditionParser(property.meta.selConditions, property.meta._refClass, item) :
+            property.meta.selConditions;
+
+          if (Array.isArray(attrs[pn].colFilter)) {
+            attrs[pn].colFilter.push({filter: parsed, for: item.getItemId(), col: colItems});
+          } else {
+            if (attrs[pn].colFilter) {
+              if (JSON.stringify(attrs[pn].colFilter) !== JSON.stringify(parsed)) {
+                attrs[pn].colFilter = [
+                  {filter: attrs[pn].colFilter, for: attrs[pn].prev, col: attrs[pn].colItems},
+                  {filter: parsed, for: item.getItemId(), col: colItems}
+                ];
+                attrs[pn].colItems = [];
+              } else {
+                attrs[pn].colItems.push(...colItems);
+              }
+            } else {
+              attrs[pn].colFilter = parsed;
+              if (attrs[pn].prev) {
+                if (Array.isArray(attrs[pn].prev)) {
+                  attrs[pn].prev.push(item.getItemId());
+                } else {
+                  attrs[pn].prev = [attrs[pn].prev, item.getItemId()];
+                }
+              } else {
+                attrs[pn].prev = item.getItemId();
+              }
+              attrs[pn].colItems.push(...colItems);
+            }
+          }
+
           if (!attrs[pn].colFilter) {
             delete attrs[pn].colFilter;
           }
+        } else {
+          attrs[pn].colItems.push(...colItems);
         }
       } else {
         item.collections[property.getName()].forEach((citem) => {
@@ -634,8 +666,10 @@ function IonDataRepository(options) {
               cn = attrs[nm].refClass.getCanonicalName();
             } else if (
               attrs[nm].type === PropertyTypes.COLLECTION &&
-              Array.isArray(attrs[nm].colItems) &&
-              attrs[nm].colItems.length
+              (
+                (Array.isArray(attrs[nm].colItems) && attrs[nm].colItems.length) ||
+                Array.isArray(attrs[nm].colFilter)
+              )
             ) {
               let f = [];
               attrs[nm].colItems.forEach((v) => {
@@ -647,14 +681,37 @@ function IonDataRepository(options) {
                 }
               });
 
-              if (f.length) {
+              if (f.length || Array.isArray(attrs[nm].colFilter)) {
                 if (attrs[nm].backRef) {
                   filter = {[Operations.IN]: ['$' + attrs[nm].backRef, f]};
                 } else {
                   filter = filterByItemIds(_this.keyProvider, attrs[nm].colClass, f);
                 }
                 if (attrs[nm].colFilter) {
-                  filter = {[Operations.AND]: [filter, attrs[nm].colFilter]};
+                  if (Array.isArray(attrs[nm].colFilter)) {
+                    filter = [];
+                    attrs[nm].colFilter.forEach((cf) => {
+                      let f2;
+                      let f = [];
+                      cf.col.forEach((v) => {
+                        if (typeof v === 'function') {
+                          v = v();
+                        }
+                        if (v && f.indexOf(v) < 0) {
+                          f.push(v);
+                        }
+                      });
+
+                      if (attrs[nm].backRef) {
+                        f2 = {[Operations.IN]: ['$' + attrs[nm].backRef, f]};
+                      } else {
+                        f2 = filterByItemIds(_this.keyProvider, attrs[nm].colClass, f);
+                      }
+                      filter.push({filter: {[Operations.AND]: [f2, cf.filter]}, for: srcByKey[cf.for]});
+                    });
+                  } else {
+                    filter = {[Operations.AND]: [filter, attrs[nm].colFilter]};
+                  }
                 }
                 if (attrs[nm].sort) {
                   sort = attrs[nm].sort;
@@ -664,16 +721,38 @@ function IonDataRepository(options) {
             }
 
             if (filter) {
-              return getEnrichList({
-                src, srcByKey,
-                cn, sort, filter,
-                depth: nestingDepth,
-                forced: explicitForced[attrs[nm].attrName],
-                implForced: implicitForced[attrs[nm].attrName],
-                loaded: ___loaded,
-                attr: attrs[nm],
-                needed: needed2
-              });
+              if (Array.isArray(filter)) {
+                let result = Promise.resolve();
+                filter.forEach((f) => {
+                  result = result
+                    .then(() => {
+                        return getEnrichList({
+                          src: [f.for],
+                          srcByKey,
+                          cn, sort,
+                          filter: f.filter,
+                          depth: nestingDepth,
+                          forced: explicitForced[attrs[nm].attrName],
+                          implForced: implicitForced[attrs[nm].attrName],
+                          loaded: ___loaded,
+                          attr: attrs[nm],
+                          needed: needed2
+                        });
+                      }
+                    );
+                });
+              } else {
+                return getEnrichList({
+                  src, srcByKey,
+                  cn, sort, filter,
+                  depth: nestingDepth,
+                  forced: explicitForced[attrs[nm].attrName],
+                  implForced: implicitForced[attrs[nm].attrName],
+                  loaded: ___loaded,
+                  attr: attrs[nm],
+                  needed: needed2
+                });
+              }
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
               let fe = explicitForced[attrs[nm].attrName];
