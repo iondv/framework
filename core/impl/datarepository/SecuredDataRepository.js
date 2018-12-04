@@ -357,14 +357,12 @@ function SecuredDataRepository(options) {
               result = result.then(() => setItemPermissions(moptions, permMap)(item));
             }
           );
-          list.forEach(
-            (item) => {
-              result = result.then(() => {
-                clearedList.push(cenzor(item));
-              });
-            }
-          );
-          return result.then(() => clearedList);
+          return result.then(() => {
+            list.forEach((item) => {
+              clearedList.push(cenzor(item));
+            });
+            return clearedList;
+          });
         });
     };
   }

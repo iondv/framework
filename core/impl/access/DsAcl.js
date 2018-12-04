@@ -6,14 +6,14 @@
 
 const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
-const clone = require('clone');
+const merge = require('merge');
 const F = require('core/FunctionCodes');
 
 /**
  *
  * @param {{}} config
  * @param {String} [config.allAlias]
- * @param {DataSource} config.ds
+ * @param {DataSource} config.dataSource
  * @constructor
  */
 function DsAcl(config) {
@@ -29,9 +29,11 @@ function DsAcl(config) {
    * @private
    */
   this._init = function () {
-    return config.ds.ensureIndex(perms_table, {subject: 1, resource: 1, permission: 1}, {unique: true})
-      .then(() => config.ds.ensureIndex(perms_table, {subject: 1}, {}))
-      .then(() => config.ds.ensureIndex(roles_table, {user: 1}, {unique: true}));
+    return config.dataSource.ensureIndex(perms_table, {subject: 1, resource: 1, permission: 1}, {unique: true})
+      .then(() => config.dataSource.ensureIndex(perms_table, {subject: 1}, {}))
+      .then(() => config.dataSource.ensureIndex(perms_table, {resource: 1}, {}))
+      .then(() => config.dataSource.ensureIndex(perms_table, {permission: 1}, {}))
+      .then(() => config.dataSource.ensureIndex(roles_table, {user: 1}, {unique: true}));
   };
 
   /**
@@ -48,7 +50,7 @@ function DsAcl(config) {
     const res = [resource, globalMarker];
     const subj = [subject, globalMarker];
 
-    return config.ds.get(roles_table, {[F.EQUAL]: ['$user', subject]})
+    return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]})
       .then((roles) => {
         if (roles) {
           roles.roles.forEach((r) => {
@@ -56,7 +58,7 @@ function DsAcl(config) {
           });
         }
 
-        return config.ds.fetch(
+        return config.dataSource.fetch(
           perms_table,
           {
             filter: {
@@ -79,30 +81,26 @@ function DsAcl(config) {
   };
 
   /**
-   * @param {String} subject
+   * @param {String} subjects
    * @param {String | String[]} resources
    * @returns {Promise}
    */
-  this._getPermissions = function (subject, resources, skipGlobals) {
+  this._getPermissions = function (subjects, resources, skipGlobals) {
     const r = Array.isArray(resources) ? resources.slice() : [resources];
     const returnGlobal = r.indexOf(globalMarker) >= 0;
-    const subj = [subject];
+    const subj = Array.isArray(subjects) ? subjects.slice(0) : [subjects];
     if (!skipGlobals) {
       if (r.indexOf(globalMarker) < 0) {
         r.push(globalMarker);
       }
       subj.push(globalMarker);
     }
-    let res = null;
-    return config.ds.get(roles_table, {[F.EQUAL]: ['$user', subject]})
-      .then((roles) => {
-        if (roles) {
-          roles.roles.forEach((r) => {
-            subj.push(r);
-          });
-        }
-
-        return config.ds.fetch(
+    return config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$user', subjects]}})
+      .then((users) => {
+        users.forEach((u) => {
+          subj.push(...u.roles);
+        });
+        return config.dataSource.fetch(
           perms_table,
           {
             filter: {
@@ -111,7 +109,7 @@ function DsAcl(config) {
                   [F.IN]: ['$subject', subj]
                 },
                 {
-                  [F.IN]: ['$resource', res]
+                  [F.IN]: ['$resource', r]
                 }
               ]
             }
@@ -119,72 +117,35 @@ function DsAcl(config) {
         );
       })
       .then((result) => {
-
-      });
-    acl.allowedPermissions(subject, r, (err, perm) => {
-      if (err) {
-        return reject(err);
-      }
-      res = {};
-      let hasGlobals = false;
-      let globalPermissions = {};
-      if (!skipGlobals) {
-        if (perm.hasOwnProperty(_this.globalMarker)) {
-          for (let i = 0; i < perm[_this.globalMarker].length; i++) {
-            globalPermissions[perm[_this.globalMarker][i]] = true;
-            hasGlobals = true;
-          }
-        }
-      }
-
-      if (perm.hasOwnProperty(_this.globalMarker) && !returnGlobal) {
-        delete perm[_this.globalMarker];
-      }
-
-      for (let nm in perm) {
-        if (perm.hasOwnProperty(nm)) {
-          if (perm[nm].length || hasGlobals) {
-            res[nm] = clone(globalPermissions);
-            if (perm[nm].indexOf(Permissions.FULL) >= 0 || res[nm][Permissions.FULL]) {
-              res[nm][Permissions.READ] = true;
-              res[nm][Permissions.WRITE] = true;
-              res[nm][Permissions.DELETE] = true;
-              res[nm][Permissions.USE] = true;
-              res[nm][Permissions.FULL] = true;
+        const res = {};
+        r.forEach((resource) => {
+          res[resource] = {};
+        });
+        result.forEach((p) => {
+          if (!(p.subject === globalMarker && skipGlobals)) {
+            if (p.permission === Permissions.FULL) {
+              res[p.resource][Permissions.READ] = true;
+              res[p.resource][Permissions.WRITE] = true;
+              res[p.resource][Permissions.USE] = true;
+              res[p.resource][Permissions.DELETE] = true;
             } else {
-              for (let i = 0; i < perm[nm].length; i++) {
-                res[nm][perm[nm][i]] = true;
-              }
+              res[p.resource][p.permission] = true;
             }
           }
-        }
-      }
+        });
 
-      if (skipGlobals) {
-        return resolve(res);
-      }
-
-      acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
-        if (err) {
-          return reject(err);
+        if (!skipGlobals && res.hasOwnProperty(globalMarker)) {
+          r.forEach((resource) => {
+            merge(res[resource], res[globalMarker]);
+          });
         }
 
-        for (let nm in perm) {
-          if (perm.hasOwnProperty(nm) && res.hasOwnProperty(nm)) {
-            for (let i = 0; i < perm[nm].length; i++) {
-              res[nm][perm[nm][i]] = true;
-            }
-          }
+        if (!returnGlobal) {
+          delete res[globalMarker];
         }
-        return resolve(res);
+        return res;
       });
-    });
-  }
-)
-)
-;
-}
-;
+  };
 
 /**
  * @param {String} subject
@@ -192,18 +153,45 @@ function DsAcl(config) {
  * @returns {Promise}
  */
 this._getResources = function (subject, permissions) {
-  let p = Array.isArray(permissions) ? permissions : [permissions];
-  if (p.indexOf(_this.globalMarker) < 0) {
-    p.push(_this._globalMarker);
+  let p = Array.isArray(permissions) ? permissions.slice() : [permissions];
+  if (p.indexOf(globalMarker) < 0) {
+    p.push(globalMarker);
   }
-  return getAcl().then(acl => new Promise((resolve, reject) => {
-    acl.userRoles(subject, (err, roles) => {
-      if (err) {
-        return reject(err);
+
+  return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]})
+    .then((roles) => {
+      let subj = [subject];
+      if (roles) {
+        roles.roles.forEach((r) => {
+          subj.push(r);
+        });
       }
-      acl.whatResources(roles, p, (err, resources) => err ? reject(err) : resolve(resources));
+
+      return config.dataSource.fetch(
+        perms_table,
+        {
+          filter: {
+            [F.AND]: [
+              {
+                [F.IN]: ['$subject', subj]
+              },
+              {
+                [F.IN]: ['$permission', p]
+              }
+            ]
+          },
+          distinct: true,
+          select: ['resource']
+        }
+      );
+    })
+    .then((res) => {
+      const result = [];
+      res.forEach((r) => {
+        result.push(r.resource);
+      });
+      return result;
     });
-  }));
 };
 
 /**
@@ -211,10 +199,9 @@ this._getResources = function (subject, permissions) {
  * @returns {Promise}
  */
 this._getCoactors = function (subject) {
-  return getAcl().then(acl => new Promise((resolve, reject) => {
-    acl.userRoles(subject, (err, roles) => err ? reject(err) : resolve(roles));
-  }));
+  return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]}).then(u => u ? u.roles : []);
 };
+
 }
 
 DsAcl.prototype = new AclProvider();
