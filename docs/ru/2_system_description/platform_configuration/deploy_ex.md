@@ -1,7 +1,7 @@
 #### [Оглавление](/docs/ru/index.md)
 
 ### Назад: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
-
+```
 {
   "namespace": "project-management",
   "parametrised": true, //
@@ -825,7 +825,7 @@
     }
   }
 }
-
+```
 --------------------------------------------------------------------------  
 
 
