@@ -1,10 +1,11 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Назад: [Конфигурационный файл - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-# Глобальные настройки в `deploy.json`
+# Global settings in `deploy.json`
 
-### Структура глобальных настройек `"globals"` на примере приложения "Project management system": 
+### Structure of global settings `"globals"` on the example of "Project management system":
+
 ```
 "globals": {
   "moduleTitles": {
@@ -24,10 +25,9 @@
      "fact-creator": {
      "report-builder": {
 ```
-## Настройка скрытия модуля в системном меню
+## Setting to hide module in system menu
 
-Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
-
+Set the **null** value in the module that you would like to hide in the system menu of the project, for example `"ionadmin": null`.
 ```
 {
   "namespace": "project-management",
@@ -35,7 +35,7 @@
   "globals": {
     "moduleTitles": {
       "registry": {
-        "description": "Проектное управление",
+        "description": "Project management",
         "order": 10,
         "skipModules": true
       }
@@ -43,11 +43,11 @@
     },
 ```
 
-## Настройка отображения общего системного меню для всех модулей проекта
+## Setting to display the system menu for all modules of the project
 
-Для того, что бы в системном меню отображался одинаковый набор пунктов, не зависимо от того, на странице какого модуля находишься - необходимо в `deploy.json` файле проекта задать `"explicitTopMenu"` на глобальном уровне, с сохранением возможности переопределять `"explicitTopMenu"` в `registry`.
+Set the `"explicitTopMenu"` at the global level, preserving the ability to override `" explicitTopMenu "` in `registry`. The `"explicitTopMenu"` setting allows to display the same set of items in the system menu,regardless of modules.
 
-### Пример 
+### Example 
 
 ```
 "globals": {
@@ -55,12 +55,12 @@
       {
         "id":"mytasks",
         "url": "/registry/project-management@indicatorValue.all",
-        "caption":"Мои задачи"
+        "caption":"My tasks"
       },
       {
         "id":"projectmanagement",
         "url": "/registry/project-management@project",
-        "caption":"Проектное управление"
+        "caption":"Project management"
       },
       {
         "type": "system",
@@ -81,24 +81,24 @@
       {
         "id":"distionary",
         "url": "/registry/project-management@classification.okogu",
-        "caption":"Справочники"
+        "caption":"References"
       },
       {
         "id":"mark",
         "url": "/registry/project-management@person",
-        "caption":"Прогресс-индикатор"
+        "caption":"Progress-indicators"
       }
     ],
 
 ```
-### Описание полей
+### Field description
 
-* `"id"` - идентификатор секции навигации
-* `"url"` - url секции навигации
-* `"caption"` - наименование секции навигации
-* `"name"` - системное наименование модуля
-* 
-## Настройка HTML атрибутов для отражения и сохранения картинок в атрибуте
+* `"id"` - identifier of the navigation section
+* `"url"` - url of the navigation section
+* `"caption"` - name of the navigation section
+* `"name"` - system name of the module
+ 
+## Setting the HTML attributes to display and save images in attributes
 
 `"plugins":{`
 
@@ -161,18 +161,16 @@
 `"registry": {`
 `"globals": {`
 ```
-"refShortViewDelay": 1000, //количество миллисекунд до появления окна 
-//с инфо. Если не указан или 0, или нет shortView представления, то 
-//окно не выводится
+"refShortViewDelay": 1000, //milliseconds before the window opens 
+// If 0, not specified or not shortView, the window is not displayed.
         "defaultImageDir": "images",
         "contentImageStorage": "htmlImages"
 ```
-## Настройки отображения имени пользователя и аватара во всех модулях проекта
+## Setting to display username and user icon (avatar) in all modules of the project 
 
-Для задания аватара через деплой прописываем связь с изображением.
-Аватар будет браться из соответствующего атрибута класса, объект которого привязан к текущему системному пользователю.
+Set the connection with the icon in the "avatar" field to set the user icon. The system will choose the user icon from the corresponding class attribute whose object is bound to the current system user.
 
-### Пример
+### Example
 
 ```
 "globals": {
@@ -199,20 +197,20 @@
 }
 ```
 
-## Поле "sessionHandler" - TODO
-## Поле "wfEvents" - TODO
-## Поле "actualAclProvider" - TODO
-## Поле "dataRepo" - TODO
-## Поле "securedDataRepo" - TODO
-## Поле "indicatorWfHandler" - TODO
-## Поле "auth" - TODO
+## The "sessionHandler" field - TODO
+## The "wfEvents" field - TODO
+## The "actualAclProvider" field - TODO
+## The "dataRepo" field - TODO
+## The "securedDataRepo" field - TODO
+## The "indicatorWfHandler" field - TODO
+## The "auth" field - TODO
 
-### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the deploy.json file
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_desc.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

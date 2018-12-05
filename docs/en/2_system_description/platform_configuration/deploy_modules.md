@@ -1,14 +1,14 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Назад: [Конфигурационный файл - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-# Настройки модулей в `deploy.json`
+# Module settings in `deploy.json`
 
-# Модуль "registry"
+# The "registry" module
 
-## Настройка конфигурируемого сохранения файлов
+## Setting of configurable file save
 
-Для того, что бы задать путь сохранения файла в хранилище - указываем:
+To set the path to save the file in the storage - use the following setting:
 
 ```
 "modules": {
@@ -22,17 +22,17 @@
          },
 ...
 ```
-В объекте ключом является название класса, дальше "название атрибута" : "относительный путь".
+In the object, the key is the name of the class, then "attribute name": "relative path".
 
-Алиасы записываются в `${алиас}` . Доступные алиасы:
+Aliases are in `${alias}`. Available aliases:
 
-* `class` - имя класс
-* `attr` - имя атрибута
-* также доступны обозначения дат из `moment.js`
+* `class` - class name
+* `attr` - attribute name
+* `moment.js` - dates
 
-## Настройка для указания количества символов для поискового запроса
+## Setting to specify the number of characters for search query
 
-Для всего приложения - `"listSearchMinLength"`.
+For all application - `"listSearchMinLength"`.
 
 ```
 "modules": {
@@ -44,7 +44,7 @@
 }
 ```
 
-Для отдельного класса `"minLength"`.
+For one specific class - `"minLength"`.
 
 ```
 "modules": {
@@ -68,9 +68,9 @@
    }
 }
 ```
-##  Настройка присвоения контейнера при создании вложенного объекта
+##  Setting of container assignment when creating the nested object
 
-Для случаев, когда необходимо присваивать значение для атрибут по ссылке, не при сохранении объекта, а при создании, указываем в `deploy.json` приложения настройку для класса, который содержит присваемое значение:
+For cases when it is necessary to assign a value for an attribute by reference, not when saving an object, but when creating, specify the setting for the class that contains the assigned value in the `deploy.json` file of the application:
 
 ```
 "registry": {
@@ -81,14 +81,16 @@
    }
  }
 ```
-Пример использования генераторов последовательностей - сейчас для каждого объекта его код - это код его непосредственного контейнера плюс очередное значение счетчика последовательности привязанного к объекту-контейнеру.
-## Настройка жадной загрузки для печатных форм `"skipEnvOptions"`
 
-Подробнее о [печатных формах](/docs/ru/2_system_description/functionality/printed_forms.md).
+An example of the sequence generators - now for each object its code is the code of its direct container plus the next value of the sequence counter associated with the container object.
 
-С помощью флага `skipEnvOptions` можно настроить/отключить жадную загрузку.
+## Setting the eager loading for printed forms `"skipEnvOptions"`
 
-### Пример
+[Printed forms](/docs/ru/2_system_description/functionality/printed_forms.md) in more details.
+
+Use the `skipEnvOptions` flag to enable/disable the eager loading.
+
+### Example
 
 ```
 ...
@@ -106,7 +108,7 @@
                 "class@ns": {
                   "expertItemToDocx": {
                     "type": "item",
-                    "caption": "Наименование",
+                    "caption": "Name",
                     "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "extension": "docx",
                     "skipEnvOptions": true,
@@ -124,11 +126,11 @@
  }
 ...
 ```
-При жадной загрузке файл создается быстро, но это не всегда может быть приемлемо.
+Thanks to the eager loading the system creates a file very quickly, but it may not always be acceptable.
 
-## Настройка уведомления о редактировании объекта другим пользователем
+## Setting of notifications about editing the object by another user
 
-В настройке уведомления о редактировании объекта другим пользователем указывается время жизни для блокировки в милисекундах:
+In the setting of the notification about the editing of an object by another user, the time before blocking is specified in milliseconds:
 
 ```
 "modules": {
@@ -139,17 +141,18 @@
     }
  } 
 ```
-**Компонент ConcurencyChecker**:
+**ConcurencyChecker component**:
 
-Компонент `ConcurencyChecker` в датасорсе хранит состояние блокировки для объектов.
-Хранит следующие параметры:
-* полный id объекта (класс@id), 
-* датавремя блокировки (blockDate), 
-* заблокировавший юзер.
+The `ConcurencyChecker` component in the data source stires the lock status for objects.
 
-Компонент создает состояния блокировки, при этом запускается таймер, по которому запись о блокировке удаляется по истечении таймаута. Если на момент срабатывания таймера запись оказывается еще актуальной (обновляли blockDate), то запись не удаляется, а таймер обновляется.
+It stores the following parameters:
+* full id of an object (class@id), 
+* date/time of block (blockDate), 
+* user who blocked.
 
-**Логика в контроллере view**:
+The component creates blocking states, thus a timer is started, according to which the blocking record is deleted after the timeout expires. If at the time the timer is triggered, the entry is still relevant (updated blockDate), the entry is not deleted, and the timer is updated.
+
+**Logic of the view controller**:
 
 Читаем из сетингов настройку *registry.concurencyCheck* (таймаут блокировки в секундах).
 
@@ -159,7 +162,7 @@
 
 Дополнительный контроллер `concurencyState`, который принимает id объекта и проверяет его состояние блокировки. Если объект не заблокирован (нет блокировки, либо она просрочена), то блокирует объект от имени текущего пользователя. Если объект заблокирован текущим пользователем, обновляет *blockDate* на *new Date()*. Возвращает состояние блокировки.
 
-**Поведение формы объекта**:
+**Object form behavior**:
 
 Если в шаблон передана инфа о блокировке, то добавляется скрипт, который периодически (с периодом `registry.concurencyCheck/2`) обращается к контроллеру `concurencyState`.
 
@@ -178,7 +181,7 @@
 
 ## Настройка формы указания параметров экспорта (для печатных форм)
 
-Пример с параметрами в `params`:
+Example с параметрами в `params`:
 
 ```
 ...
@@ -282,7 +285,7 @@
 
 **Иерархическое представление коллекций**- отображает коллекции, в которых элементы связаны друг с другом в виде иерархического справочника. В библиотеке `viewlib` реализован кастомный контроллер, возвращающий в формате `TreeGrid` очередной уровень иерархии.
 
-### Пример
+### Example
 
 ```
 "treegridController": {
@@ -337,7 +340,7 @@
 
 `searchByRefs` - это массив настроек, для обозначения иерархии классов. Можно сопоставлять с несколькими классами.
 
-### Пример
+### Example
 
 ```
 "family@khv-childzem": {
@@ -383,7 +386,7 @@
 
 ## Настройка скрытия шапки и бокового меню
 
-### Пример:
+### Example:
 
 ```
 "geomap": {
@@ -409,7 +412,7 @@
 }
 ```
 
-### Пример
+### Example
 
 ```
 ...
@@ -540,7 +543,7 @@
    "dashboard": {
       "globals": {
         "namespaces": {
-          "project-management": "Проектное управление"
+          "project-management": "Project management"
         },
         "root": {
           "project-management": "applications/project-management/dashboard"
@@ -548,14 +551,14 @@
       }
     },
 ```
-# Модуль "diagram"
+# The "diagram" module
 
 ```
 "diagram": {
       "globals": {
         "config": {
           "org1": {
-            "caption": "Организационная структура",
+            "caption": "Organizational structure",
             "edit": true,
             "showSections": false,
             "relations": {
@@ -595,12 +598,12 @@
     }
  ```
 
-### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the deploy.json file
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
