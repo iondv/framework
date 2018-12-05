@@ -1,29 +1,29 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Мета отчёта](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)
+### The previous page: [Meta report](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)
 
-# Конфигурационный файл - deploy.json
+# Configuration file - deploy.json
 
-**Конфигурационный файл deploy.json** - это файл, в котором описывается структура парметров программной системы и её конкретная настройка.
+**Configuration file - deploy.json** - is a file that describes the structure of the parameters of the software system and its specific configuration.
 
-## Структура файла deploy.json: 
+## deploy.json file structure: 
 
-|   Поле        |   Имя    | Описание      |
+|   Field        |   Name    | Description      |
 |:-------------|:--------|:-------------|
-| `"namespace":`   |  **Название проекта**  | Пространство имен проекта.  |
-| `"parametrised": true,`| **Параметризация**   | Подключение параметризации. При установленном значении "true" есть возможность задавать параметры, в которые, при сборке приложения, передаются переменные, заданные в ini-файлах или переменных окружения проекта.   |
-| `"globals": {`     |  [**Глобальные настройки**](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)  | Глобальные настройки конфигурации.   |
-| `"deployer": "built-in"`    | **Сборки**   | Параметр конфигурирования сборки, на данный момент единственный.  |
-| `"modules"`     |  [**Настройки модулей**](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)  | Настройки конфигурации модулей.  |
+| `"namespace":`   |  **Project name**  | The project namespace.  |
+| `"parametrised": true,`| **Parameterization**   | The parameterization settings. Set the "true" value to set parameters to which, the system transfers the variables specified in ini-files or variables of the project environment when building the application.     |
+| `"globals": {`     |  [**Global settings**](/docs/en/2_system_description/platform_configuration/deploy_globals.md)  | Global configuration settings.   |
+| `"deployer": "built-in"`    | **Builds**   | The built configuration parameter currently is the only one.  |
+| `"modules"`     |  [**Modules settings**](/docs/en/2_system_description/platform_configuration/deploy_modules.md)  | Module configuration settings.  |
 
-### Пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### [Full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the "deploy.json" file
 
-### Следующая страница: [Зависимости в package.json](/docs/ru/2_system_description/platform_configuration/package.md)
+### The next page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

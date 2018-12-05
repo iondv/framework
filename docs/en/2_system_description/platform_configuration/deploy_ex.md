@@ -1,8 +1,8 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Назад: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy_ex.md)
 
-## Файл `deploy.json` на примере приложения "Project management system"
+## The `deploy.json` file on the example of the "Project management system" application
  
 ```
 {
@@ -11,7 +11,7 @@
   "globals": {
     "moduleTitles": {
       "registry": {
-        "description": "Проектное управление",
+        "description": "Project management",
         "order": 10,
         "skipModules": true
       }
@@ -20,7 +20,7 @@
       {
         "id": "mytasks",
         "url": "/registry/project-management@indicatorValue.all",
-        "caption": "Мои задачи"
+        "caption": "My tasks"
       },
       {
         "type": "system",
@@ -97,7 +97,7 @@
           "dataRepo": "ion://dataRepo",
           "fields": {
             "piAct": {
-              "caption": "Участник прогресс-индикатора",
+              "caption": "Part of progress indicator",
               "required": false,
               "readonly": true,
               "type": 4
@@ -121,14 +121,14 @@
           "roleMap": {
             "eventBasic@project-management": {
               "PROJECT_ADMIN": {
-                "caption": "Администратор проекта",
+                "caption": "Project administrator",
                 "resource": {
                   "id": "pm::project-events"
                 },
                 "attribute": "project.administrator"
               },
               "PROJECT_RESPONSIBLE": {
-                "caption": "Ответственный по проекту",
+                "caption": "Project responsible",
                 "resource": {
                   "id": "pm::project-events"
                 },
@@ -161,7 +161,7 @@
     },
     "jobs": {
       "fact-creator": {
-        "description": "Служба генератора фактический показателей",
+        "description": "Actual indicators generator",
         "launch": {
           "day": 1
         },
@@ -178,7 +178,7 @@
         }
       },
       "report-builder": {
-        "description": "Служба сборки шахт данных модуля отчетов",
+        "description": "Built of data mines of the report module",
         "launch": {
           "hour": 24
         },
@@ -280,7 +280,7 @@
         "inlineForm": true,
         "navigation": {
           "namespaces": {
-            "project-management": "Проектное управление"
+            "project-management": "Project management"
           },
           "menus": {
             "top": [
@@ -348,7 +348,7 @@
               "configs": {
                 "project@project-management": {
                   "passport": {
-                    "caption": "Паспорт проекта",
+                    "caption": "Project identification summary",
                     "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "extension": "docx",
                     "type": "item",
@@ -356,7 +356,7 @@
                     "isBackground": true
                   },
                   "markResult": {
-                    "caption": "Оценка проектов",
+                    "caption": "Projects results",
                     "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "extension": "docx",
                     "type": "list",
@@ -374,7 +374,7 @@
                     },
                     "params": {
                       "project": {
-                        "caption": "Проект",
+                        "caption": "Project",
                         "type": "reference",
                         "className": "project@project-management"
                       }
@@ -501,7 +501,7 @@
           },
           "filterFloat": {
             "type": "float",
-            "title": "Фильтры",
+            "title": "Filters",
             "cssClass": "map-filter-float collapsible",
             "cssStyle": "left:10px; bottom:10px; width: 310px; max-height:calc(100% - 163px);"
           }
@@ -526,7 +526,7 @@
           }
         },
         "namespaces": {
-          "project-management": "Геоданные проекта"
+          "project-management": "Project geodata"
         },
         "templates": [
           "applications/project-management/templates"
@@ -548,9 +548,9 @@
             "name": "filterFloat"
           },
           "button": {
-            "caption": "Районы",
-            "hint": "Фильтр по районам",
-            "resetHint": "Сбросить фильтр"
+            "caption": "Regions",
+            "hint": "Filter by regions",
+            "resetHint": "Reset filter"
           },
           "levels": {
             "4": {
@@ -615,7 +615,7 @@
           "columns": [
             {
               "name": "owner",
-              "caption": "Владелец",
+              "caption": "Owner",
               "align": "center",
               "filter": true,
               "editor": {
@@ -626,7 +626,7 @@
           ],
           "preConfigurations": {
             "config2": {
-              "caption": "Расширенная",
+              "caption": "Extended",
               "showPlan": false,
               "units": "year",
               "days_mode": "full",
@@ -699,7 +699,7 @@
     "report": {
       "globals": {
         "namespaces": {
-          "project-management": "Проектное управление"
+          "project-management": "Project management"
         },
         "defaultNav": {
           "namespace": "project-management",
@@ -761,7 +761,7 @@
         "securityParams": {
           "resourceTypes": {
             "*": {
-              "title": "Общие"
+              "title": "Total"
             }
           },
           "hiddenRoles": [
@@ -777,7 +777,7 @@
     "dashboard": {
       "globals": {
         "namespaces": {
-          "project-management": "Проектное управление"
+          "project-management": "Project management"
         },
         "root": {
           "project-management": "applications/project-management/dashboard"
@@ -788,7 +788,7 @@
       "globals": {
         "config": {
           "org1": {
-            "caption": "Организационная структура",
+            "caption": "Organizational structure",
             "edit": true,
             "showSections": false,
             "relations": {
@@ -832,7 +832,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Rissian](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
