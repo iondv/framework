@@ -1,6 +1,9 @@
 #### [Оглавление](/docs/ru/index.md)
 
 ### Назад: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+
+## Файл `deploy.json` на примере приложения "Project management system"
+ 
 ```
 {
   "namespace": "project-management",
