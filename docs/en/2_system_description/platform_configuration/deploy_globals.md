@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
 # Global settings in `deploy.json`
 
@@ -45,7 +45,7 @@ Set the **null** value in the module that you would like to hide in the system m
 
 ## Setting to display the system menu for all modules of the project
 
-Set the `"explicitTopMenu"` at the global level, preserving the ability to override `" explicitTopMenu "` in `registry`. The `"explicitTopMenu"` setting allows to display the same set of items in the system menu,regardless of modules.
+Set the `"explicitTopMenu"` at the global level, preserving the ability to override `" explicitTopMenu "` in `registry`. The `"explicitTopMenu"` setting allows to display the same set of items in the system menu, regardless of modules.
 
 ### Example 
 
@@ -204,6 +204,8 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
 ## The "securedDataRepo" field - TODO
 ## The "indicatorWfHandler" field - TODO
 ## The "auth" field - TODO
+
+### The next page: [Module settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_modules.md)
 
 ### The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the deploy.json file
 

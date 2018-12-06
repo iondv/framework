@@ -1,7 +1,8 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
+### The previous page: [Global settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_globals.md)
 # Module settings in `deploy.json`
 
 # The "registry" module
@@ -32,7 +33,7 @@ Aliases are in `${alias}`. Available aliases:
 
 ## Setting to specify the number of characters for search query
 
-For all application - `"listSearchMinLength"`.
+For the entire application - `"listSearchMinLength"`.
 
 ```
 "modules": {
@@ -44,7 +45,7 @@ For all application - `"listSearchMinLength"`.
 }
 ```
 
-For one specific class - `"minLength"`.
+For the one specific class - `"minLength"`.
 
 ```
 "modules": {
@@ -68,9 +69,9 @@ For one specific class - `"minLength"`.
    }
 }
 ```
-##  Setting of container assignment when creating the nested object
+##  Setting the container assignment when creating the nested object
 
-For cases when it is necessary to assign a value for an attribute by reference, not when saving an object, but when creating, specify the setting for the class that contains the assigned value in the `deploy.json` file of the application:
+For cases when it is necessary to assign a value for an attribute by reference, when creating an object, specify the setting for the class that contains the assigned value in the `deploy.json` file of the application:
 
 ```
 "registry": {
@@ -82,7 +83,7 @@ For cases when it is necessary to assign a value for an attribute by reference, 
  }
 ```
 
-An example of the sequence generators - now for each object its code is the code of its direct container plus the next value of the sequence counter associated with the container object.
+An example of the sequence generators: now for each object its code is the code of its direct container plus the next value of the sequence counter associated with the container object.
 
 ## Setting the eager loading for printed forms `"skipEnvOptions"`
 
@@ -126,11 +127,11 @@ Use the `skipEnvOptions` flag to enable/disable the eager loading.
  }
 ...
 ```
-Thanks to the eager loading the system creates a file very quickly, but it may not always be acceptable.
+Due to the eager loading the system creates a file very quickly, but it may not always be acceptable.
 
-## Setting of notifications about editing the object by another user
+## Setting the notifications of editing the object by another user
 
-In the setting of the notification about the editing of an object by another user, the time before blocking is specified in milliseconds:
+In the setting of the notification about the editing of an object by another user, specify the time before blocking in milliseconds:
 
 ```
 "modules": {
@@ -158,9 +159,9 @@ Read the *registry.concurencyCheck* setting (blocking timeout in seconds).
 
 If it is bigger than 0, read the `ConcurencyCheker` - check the block status. 
 
-If not found(expired - blockDate < now() - registry.concurencyCheck), then through the checker write a new block on behalf of the current user. If you found a running block, transfer the information about the block to the template. Display this information on the form in the "read only" mode (`globalReadOnly`).
+If not found (expired - blockDate < now() - registry.concurencyCheck), then through the checker write a new block on behalf of the current user. If you found a running block, transfer the information about the block to the template. Display this information on the form in the "read only" mode (`globalReadOnly`).
 
-An additional controller `concurencyState`, which takes the id of the object and checks its block status. If the object is not blocked (there is no block, or it is expired), then it blocks the object on behalf of the current user. If the object is locked by the current user, then it updates *blockDate* to *new Date()*. Returns the block state.
+An additional controller `concurencyState`, which takes the id of the object and checks its block status. If the object is not blocked (there is no block, or it is expired), then it blocks the object on behalf of the current user. If the object is locked by the current user, then it updates *blockDate* to *new Date()* and returns the block state.
 
 **Object form behavior**:
 
