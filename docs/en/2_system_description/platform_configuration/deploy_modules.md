@@ -154,34 +154,34 @@ The component creates blocking states, thus a timer is started, according to whi
 
 **Logic of the view controller**:
 
-Читаем из сетингов настройку *registry.concurencyCheck* (таймаут блокировки в секундах).
+Read the *registry.concurencyCheck* setting (blocking timeout in seconds).
 
-Если она больше 0, обращаемся к `ConcurencyCheker` - проверяем состояние блокировки. 
+If it is bigger than 0, read the `ConcurencyCheker` - check the block status. 
 
-Если не найдено (либо просрочена - blockDate < now() - registry.concurencyCheck), то через чекер записываем новую блокировку от имени текущего пользователя. Если найдена живая блокировка - передаем в шаблон информацию о блокировке, которую отображаем на форме и отображаем форму в режиме для чтения (`globalReadOnly`).
+If not found(expired - blockDate < now() - registry.concurencyCheck), then through the checker write a new block on behalf of the current user. If you found a running block, transfer the information about the block to the template. Display this information on the form in the "read only" mode (`globalReadOnly`).
 
-Дополнительный контроллер `concurencyState`, который принимает id объекта и проверяет его состояние блокировки. Если объект не заблокирован (нет блокировки, либо она просрочена), то блокирует объект от имени текущего пользователя. Если объект заблокирован текущим пользователем, обновляет *blockDate* на *new Date()*. Возвращает состояние блокировки.
+An additional controller `concurencyState`, which takes the id of the object and checks its block status. If the object is not blocked (there is no block, or it is expired), then it blocks the object on behalf of the current user. If the object is locked by the current user, then it updates *blockDate* to *new Date()*. Returns the block state.
 
 **Object form behavior**:
 
-Если в шаблон передана инфа о блокировке, то добавляется скрипт, который периодически (с периодом `registry.concurencyCheck/2`) обращается к контроллеру `concurencyState`.
+If the information about the block is transferred to the template, then a script is added that accesses the `concurencyState` controller periodically (with a period of `registry.concurencyCheck/2`).
 
-Если в ответ приходит информация о блокировке другим пользователем - она отображается (обновляем сообщение), если произошел перехват блокировки текущим пользователем - форма перезагружается (она при этом отображается в режиме для редактирования).
+If you receive the information about blocking by another user - it is displayed (update the message), if the blocking lock intercepted by the current user - the form reloads (it is displayed in the edit mode).
 
-## Подключение ресурсов в проекте для оформления
+## Resources for project design
 
-Это имеет отношение к, например, группам в специальном стиле - чтобы не подключать ресурсы через изменения шаблонов модуля - необходимо их подключить в приложении.
+This is related, for example, to groups in a special style — in order not to connect resources through changes to module templates — you need to connect them in the application.
 
 ```
         "statics": {
           "geoicons": "applications/khv-svyaz-info/icons"
         },
 ```
-Все, что внутри директории `icons` будет доступно по ссылке `registry/geoicons`.
+All that inside the `icons` directory if available by the `registry/geoicons` link.
 
-## Настройка формы указания параметров экспорта (для печатных форм)
+## Setting the form for specifying export parameters (for printed forms)
 
-Example с параметрами в `params`:
+Example of `params`:
 
 ```
 ...
@@ -201,7 +201,7 @@ Example с параметрами в `params`:
               "configs": {
                 "evaluationPerform@project-management": {
                   "rating": {
-                    "caption": "Оценка деятельности исполнителя и соисполнителей проекта",
+                    "caption": "Evaluation of the executor and co-executor of the project",
                     "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "extension": "docx",
                     "type": "list",
@@ -231,17 +231,17 @@ Example с параметрами в `params`:
                     },
                     "params": {
                       "project": {
-                        "caption": "Проект",
+                        "caption": "Project",
                         "type": "reference",
                         "className": "project@project-management"
                       },
                       "since": {
-                        "caption": "Период с",
+                        "caption": "Period from",
                         "type": "date",
                         "default": "$monthStart"
                       },
                       "till": {
-                        "caption": "Период по",
+                        "caption": "Period to",
                         "type": "date",
                         "default": "$monthEnd"
                       }
@@ -255,35 +255,35 @@ Example с параметрами в `params`:
                 }
 ...
 ```
-##  Настройка параметров поиска в списке объектов
+##  Setting search options in the list of objects
 
-Функционал позволяет на уровне класса определять, как ищем объекты класса из представления списка: по вхождению слов или полные слова, по отдельным атрибутам или по указанным атрибутам в списке с параметрами поиска через пробел.
+The functionality allows you to determine at the class level whether we are looking for class objects from the list view by the first instance of a word or by full words, by individual attributes or by the specified attributes in the list with search parameters separated by spaces.
 
-### Формат и доступные операции:
+### Format and available operations:
 
 ```
 "listSearchOptions": {
-    "person@khv-childzem": {...} // для класса
-       "khv-childzem@person": {...} // только в узле навигации person
-      "*": {...} // везде по умолчанию
+    "person@khv-childzem": {...} // for a class
+       "khv-childzem@person": {...} // only in the "person" navigation node
+      "*": {...} // everywhere by default
 }
 ```
 
-вместо `...` подставляем атрибуты и задаем операции для поиска, например:
+Substitute attributes instead of the `...` and set operations for search, for example:
 
 ```
-        "searchBy": [ // атрибуты по которым ищем, по умолчанию то, что выводится в колонках
+        "searchBy": [ // attributes by which we search, by default displayed in the columns
          "surname",
          "name",
          "patronymic"
        ],
-       "splitBy": "\\s+", // разбивать поисковую фразу регуляркой, части сопоставить с атрибутами
-       "mode": ["starts", "starts", "starts"], // режимы сопоставления - в данном случае "начинается с" (доступны like, contains, starts, ends)
-       "joinBy": "and" // режим объединения условий на атрибуты (по умолчанию or)
+       "splitBy": "\\s+", // split the search phrase into regular expressions, match parts with attributes
+       "mode": ["starts", "starts", "starts"], // combining conditions mode - in this case "starts with" (also available like, contains, starts, ends)
+       "joinBy": "and" // attribute combining conditions mode (or by default)
 ```
-## Настройка иерархического представления для коллекций
+## Setting a hierarchical view of collections
 
-**Иерархическое представление коллекций**- отображает коллекции, в которых элементы связаны друг с другом в виде иерархического справочника. В библиотеке `viewlib` реализован кастомный контроллер, возвращающий в формате `TreeGrid` очередной уровень иерархии.
+**Hierarchical view of collections** - diplays collections, in which elements are connected in the form of a hierarchical reference book. The viewlib library has a custom controller that returns the next level of hierarchy in the TreeGrid format.
 
 ### Example
 
@@ -331,15 +331,14 @@ Example с параметрами в `params`:
 ...
 ```
 
-Поле `config` - в нем все настройки:
-* первый ключ это навигационная нода (в данном примере "*" значит распространяется на все ноды), 
-* потом идут классы, у классов `roots` - это какие объекты этого класса вытаскивать в качестве корневых (используются конидшены),
-* `childs` - это атрибуты класса из которых доставать иерархию.
+The `config` field contains all settings:
+* first key is the navigation node (the "*" sign means - applies to all nodes), 
+* classes have `roots` - that indicate the objects of this class to pull out as root (conditions are used),
+* `childs` - are class attributes to pull the hierarchy.
 
-## Настройка текстового поиска в глубину по ссылочным атрибутам
+## Setting text search depth by reference attributes
 
-`searchByRefs` - это массив настроек, для обозначения иерархии классов. Можно сопоставлять с несколькими классами.
-
+`searchByRefs` - is an array of settings to indicate the class hierarchy. You can compare it with several classes.
 ### Example
 
 ```
@@ -367,11 +366,11 @@ Example с параметрами в `params`:
           }
 ```
 
-# Модуль "geomap"
+# The "geomap" module
 
-## Настройка иконки приложения
+## Setting the application icons
 
-Логотип для модуля описывается через стандартный механизм статичных маршрутов:
+The logo for the module is described through the standard mechanism of static routes:
 
 ```json
 {
@@ -384,26 +383,26 @@ Example с параметрами в `params`:
 }
 ```
 
-## Настройка скрытия шапки и бокового меню
+## Setting to hide header and sidebar
 
 ### Example:
 
 ```
 "geomap": {
    "globals": {
-      "hidePageHead": true, //отобразить шапку
-      "hidePageSidebar": false, //скрыть боковое меню 
+      "hidePageHead": true, //display header
+      "hidePageSidebar": false, //hide the sidebar
       ...
     }
  }
 ```
 
-# Модуль "gantt-chart"
+# The "gantt-chart" module
 
 ## Настройка шкалы времени 
 
-Шкала времени настраивается посредством настройки "Шаг" в модуле Гаанта.
-В преконфигурации "Шаг" задается через параметр `step`:
+The time scale is configured by setting the "Step" in the Gaant module.
+In the preconfiguration "Step" is set through the `step` parameter:
 
 ```
 {
@@ -423,7 +422,7 @@ Example с параметрами в `params`:
           "preConfigurations": {
 ...
             "config3": {
-              "caption": "Третья конфигурация",
+              "caption": "Third configuration",
               "showPlan": true,
               "units": "year",
               "step": 5,
@@ -435,7 +434,7 @@ Example с параметрами в `params`:
                 "priority": true
               },
               "filters": {
-                "priority": "Обычный"
+                "priority": "Usual"
               }
             }
           }
@@ -445,12 +444,12 @@ Example с параметрами в `params`:
     }
 ```
 
-# Модуль "report"
+# The "report" module
 ```
 "report": {
       "globals": {
         "namespaces": {
-          "project-management": "Проектное управление"
+          "project-management": "Project management"
         },
         "defaultNav": {
           "namespace": "project-management",
@@ -480,7 +479,7 @@ Example с параметрами в `params`:
     },
 ```
 
-# Модуль "rest"
+# The "rest" module
 ```
  "rest": {
       "globals": {
@@ -489,7 +488,7 @@ Example с параметрами в `params`:
     },
  ```
 
-# Модуль "portal"
+# The "portal" module
 ```
 "portal": {
       "import": {
@@ -516,11 +515,11 @@ Example с параметрами в `params`:
     },
  ```
 
-# Модуль "ionadmin"
+# The "ionadmin" module
 
-#### Скрытие ролей в админе от назначения поьзователю
+## Hiding roles in admin from assignment to user
 
-Для ролей, которые должны быть скрыты в админе от назначения пользователю, в деплое приложения прописываем фильтры на основе регулярных выражений, по которым такие роли и будут определятся.
+For roles that you want to hide in the admin from being assigned to the user, in the deploy of the application prescribe the filters based on the regular expressions, by which such roles will be determined.
 
 ```
 "ionadmin": {
@@ -534,10 +533,9 @@ Example с параметрами в `params`:
     }
 ```
 
-# Модуль "dashboard"
+# The "dashboard" module
 
-Для того что бы данные из меты загружались в модуль "dashboard", необходимо в файле конфигурации приложения
-`deploy.json` добавить следующую секцию, в раздел `"modules"`:
+Set the following function in the `"modules"` section in the deploy.json file of the application, to load the data from the meta into the "dashboard" module.
 
 ```
    "dashboard": {
