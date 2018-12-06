@@ -113,23 +113,23 @@ function checkRun(launch) {
 function calcCheckInterval(launch, dv) {
   if (typeof launch === 'object') {
     if (launch.sec || launch.second) {
-      return 500;
+      return 1000;
     }
 
     if (launch.min || launch.minute) {
-      return 30000;
+      return 60000;
     }
 
     if (launch.hour) {
-      return 1800000;
+      return 3600000;
     }
 
     if (launch.day || launch.dayOfYear || launch.weekday) {
-      return 43200000;
+      return 86400000;
     }
 
     if (launch.week) {
-      return 302400000;
+      return 604800000;
     }
 
     return 1296000000;
