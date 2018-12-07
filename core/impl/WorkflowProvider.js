@@ -377,9 +377,9 @@ function WorkflowProvider(options) {
                   return _this.trigger({
                       user: tOptions.user || null,
                       type: workflow + '.' + nextState.name,
-                      state: nextState,
-                      prev: wf.statesByName[status.stages[workflow].stage],
-                      transition: transition,
+                      state: nextState.name,
+                      from: status.stages[workflow] && status.stages[workflow].stage,
+                      transition: transition.name,
                       item: item
                     })
                     .then((e) => {
@@ -496,8 +496,8 @@ function WorkflowProvider(options) {
             _this.trigger({
               user: tOptions.user || null,
               type: workflow + '.' + target.name,
-              state: target,
-              prev: wf.statesByName[status.stages[workflow].stage],
+              state: target.name,
+              from: status.stages[workflow] && status.stages[workflow].stage,
               item: item
             })
           )
