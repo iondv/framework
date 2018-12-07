@@ -3,6 +3,7 @@
 ### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
 ### The previous page: [Global settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_globals.md)
+
 # Module settings in `deploy.json`
 
 # The "registry" module
@@ -171,14 +172,14 @@ If you receive the information about blocking by another user - it is displayed 
 
 ## Resources for project design
 
-This is related, for example, to groups in a special style — in order not to connect resources through changes to module templates — you need to connect them in the application.
+This is related, for example, to groups in a particular style — in order not to connect resources through changes to module templates — you need to connect them in the application.
 
 ```
         "statics": {
           "geoicons": "applications/khv-svyaz-info/icons"
         },
 ```
-All that inside the `icons` directory if available by the `registry/geoicons` link.
+All that inside the `icons` directory is available by the `registry/geoicons` link.
 
 ## Setting the form for specifying export parameters (for printed forms)
 
@@ -256,7 +257,7 @@ Example of `params`:
                 }
 ...
 ```
-##  Setting search options in the list of objects
+##  Setting the search options in the list of objects
 
 The functionality allows you to determine at the class level whether we are looking for class objects from the list view by the first instance of a word or by full words, by individual attributes or by the specified attributes in the list with search parameters separated by spaces.
 
@@ -270,7 +271,7 @@ The functionality allows you to determine at the class level whether we are look
 }
 ```
 
-Substitute attributes instead of the `...` and set operations for search, for example:
+Substitute attributes with `...` and set operations for search, for example:
 
 ```
         "searchBy": [ // attributes by which we search, by default displayed in the columns
@@ -284,7 +285,7 @@ Substitute attributes instead of the `...` and set operations for search, for ex
 ```
 ## Setting a hierarchical view of collections
 
-**Hierarchical view of collections** - diplays collections, in which elements are connected in the form of a hierarchical reference book. The viewlib library has a custom controller that returns the next level of hierarchy in the TreeGrid format.
+**Hierarchical view of collections** - displays collections, in which elements are connected in the form of a hierarchical reference book. The viewlib library has a custom controller that returns the next level of hierarchy in the TreeGrid format.
 
 ### Example
 
