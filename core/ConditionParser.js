@@ -339,8 +339,24 @@ function conditionParser(condition, rcm, context, lang) {
         }
         switch (oper) {
           case OperationTypes.DATE: return {[Operations.DATE]: tmp};
-          case OperationTypes.DATEADD: return {[Operations.DATEADD]: tmp};
-          case OperationTypes.DATEDIFF: return {[Operations.DATEDIFF]: tmp};
+          case OperationTypes.DATEADD:
+            return {[Operations.DATE_ADD]: tmp};
+          case OperationTypes.DATEDIFF:
+            return {[Operations.DATE_DIFF]: tmp};
+          case OperationTypes.DATE_DAY:
+            return {[Operations.DATE_DAY]: tmp};
+          case OperationTypes.DATE_HOUR:
+            return {[Operations.DATE_HOUR]: tmp};
+          case OperationTypes.DATE_MINUTE:
+            return {[Operations.DATE_MINUTE]: tmp};
+          case OperationTypes.DATE_SECOND:
+            return {[Operations.DATE_SECOND]: tmp};
+          case OperationTypes.DATE_MONTH:
+            return {[Operations.DATE_MONTH]: tmp};
+          case OperationTypes.DATE_YEAR:
+            return {[Operations.DATE_YEAR]: tmp};
+          case OperationTypes.DATE_STR:
+            return {[Operations.DATE_STR]: tmp};
           case OperationTypes.ADD: return {[Operations.ADD]: tmp};
           case OperationTypes.SUB: return {[Operations.SUB]: tmp};
           case OperationTypes.MUL: return {[Operations.MUL]: tmp};
