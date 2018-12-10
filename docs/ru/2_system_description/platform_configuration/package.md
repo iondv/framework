@@ -78,7 +78,7 @@
 | `"dependencies"`   | **Зависимости**      |  Прочие зависимости проекта.
 
 
-### Следующая страница: [Конфигурация парметров - ini-файл](/docs/ru/2_system_description/platform_configuration/ini_files.md)
+### Следующая страница: [Конфигурация парaметров - ini-файл](/docs/ru/2_system_description/platform_configuration/ini_files.md)
 
 --------------------------------------------------------------------------  
 

@@ -2,7 +2,7 @@
 
 ### The previous page: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-# Зависмости в package.json
+# Dependencies in package.json
 
 The **package.json** file - defines the structure of dependencies and the detailed composition of the system modules.
 
@@ -65,20 +65,20 @@ The **package.json** file - defines the structure of dependencies and the detail
 
 | Field            | Name | Description                                                                                                                                                                                                                                                                                  |
 |:----------------|:----------------------|:--------------------------------|
-| `"name"`       | **Name**      | Имя проекта.  |
-| `"description"`| **Description** | Описание проекта. |
-| `"version"`    | **Version**   | Номер текущей версии. |
-| `"homepage"`   | **Home page** | Ссылка на собранный проект на докере. |
-|    `"bugs"`     |   **Bugs**           | Указывается ссылка на проект приложения в GitLab, где принимаются заявки об ошибках.|
-| `"repository"` | **Repository**  | Состоит из полей "type" и "url". Указыается тип репозитория и ссылка на него.                                                                                                                                                                                                                   |
-| `"engines"`    | **Core**     | Номер версии ядра.  |
-| `"scripts"`    | **Скрипты**  | Скрипт для сборки меты из разных групп и разных url.
-| `"ionModulesDependencies"`        | **Зависимости модулей ion**               | Задает модули и их версии, используемые  в приложении. Проект включает в себя следующий состав модулей: •  "**ionadmin**" – модуль администрирования •  "**registry**" – модуль регистра •  "**report**" – модуль отчетов •  "**rest**": "- модуль rest-сервисов •  "**dashboard**" – модуль дашбоардов •  "**geomap**" - геомодуль •  "**gantt-chart**" – модуль диаграмм ганта •  "**portal**" – модуль портала                                                                                                                                    |
-| `"ionMetaDependencies"`       | **Зависимости метаданных ion**        | Дополнительные приложения для функционирования системы.                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                                                                              
-| `"dependencies"`   | **Зависимости**      |  Прочие зависимости проекта.
+| `"name"`       | **Name**      | Project name.  |
+| `"description"`| **Description** | Project description. |
+| `"version"`    | **Version**   | Number of a current version. |
+| `"homepage"`   | **Home page** | Link to the already built project on the docker. |
+|    `"bugs"`     |   **Bugs**           | Specifies the link to the application project in GitLab, where issues about bugs are collected.|
+| `"repository"` | **Repository**  | Сonsists of "type" and "url" fields. Indicates the type of repository and a link to it.                                                                                                                                                                                                                  |
+| `"engines"`    | **Core**     | Number of a core version. |
+| `"scripts"`    | **Scripts**  | Script to build meta from different groups and different url.
+| `"ionModulesDependencies"`        | **Dependencies of ion modules**               | Specifies the modules and their versions used in the application. The project includes the following modules: •  "**ionadmin**" – administration module •  "**registry**" – registry module •  "**report**" – report module •  "**rest**": "- REST module •  "**dashboard**" – dashboard module •  "**geomap**" - geo module •  "**gantt-chart**" – gantt chart module •  "**portal**" – portal module                                                                                                                                    |
+| `"ionMetaDependencies"`       | **Dependencies of ion metadata**        | Additional applications to operate the system.                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                                                                              
+| `"dependencies"`   | **Dependencies**      |  Other project dependencies.
 
 
-### Следующая страница: [Конфигурация парметров - ini-файл](/docs/en/2_system_description/platform_configuration/ini_files.md)
+### The next page: [Configuration parameters - ini-file](/docs/en/2_system_description/platform_configuration/ini_files.md)
 
 --------------------------------------------------------------------------  
 
