@@ -1,10 +1,10 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### The previous page: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
 # Зависмости в package.json
 
-Зависимости метаданных "ion" находятся в одном объекте - в "ionMetaDependencies" и указываются в файле **package.json**.
+The **package.json** file - defines the structure of dependencies and the detailed composition of the system modules.
 
 ```
 "ionMetaDependencies": { 
@@ -12,77 +12,78 @@
 }
 ```
 
-## Логика подключения при помощи скрипта
+## Specificity of connection using script
 
-* если в названии объекта отсутствует слеш - / => "project-management"- подставляем в путь по умолчанию группу ION-APP - т.е. путь - //git.iondv.ru/ION-APP/project-management.
-* если в названии есть слеш - значит задан уже с группой и просто склеиваем путь к гиту с группой и метой, пример "ION-METADATA/viewlib" - путь - //git.iondv.ru/ION-METADATA/viewlib.
-* если значение версии начинается с git+http:// или git+https:// - то это полный путь к внешнему репозиторию - отбрасываем git+ и тянем гитом.
-* если значение версии начинается с http:// или https:// - то это полный путь к архиву - тянем и распаковываем.  
-**Не реализовано**, так как dapp не поддерживает работу с архивами.
+* if there is no slash in the object name - / => "project-management"- substitute in the default path the ION-APP group - i.e the path is - //git.iondv.ru/ION-APP/project-management.
+* if there is a slash in the object name - it means it’s already set up with the group and just pick up the path to the git with the group and meta, for example "ION-METADATA/viewlib" - the path - //git.iondv.ru/ION-METADATA/viewlib.
+* if the version value begins with git+http:// или git+https:// - then this is the full path to the external repository - drop git+ and pull the git.
+* if the version value begins with http:// or https:// - then this is the full path to the archive - pull and unzip.  
+**Not realized**, as dapp does not support working with archives.
 
-### Пример `package.json`
+### Example of the `package.json` file
 
 ```
 {
-  "name": "project-management",
-  "description": "Проектное управление",
-  "version": "2.10.0",
-  "homepage": "",
+  "name": "develop-and-test",
+  "description": "Metaproject for develop and test",
+  "version": "1.9.2",
+  "homepage": "http://docker.local:8080",
   "bugs": {
-    "url": "https://git.iondv.ru/ION-APP/project-management/issues"
+    "url": "https://ion-dv.atlassian.net/projects/IONCORE/issues"
   },
-  "engines": {
-    "ion": "1.24.0"
-  },
-  "license": "",
   "repository": {
     "type": "git",
-    "url": "https://git.iondv.ru/ION-APP/project-management.git"
+    "url": "https://git.iondv.ru/ION-METADATA/develop-and-test.git"
+  },
+  "engines": {
+    "ion": "1.24.1"
+  },
+  "scripts": {
+    "test": "mocha ./test/e2e/**/*.js"
   },
   "ionModulesDependencies": {
-    "ionadmin": "1.4.0",
-    "registry": "1.27.0",
-    "report": "1.9.1",
-    "rest": "1.0.1",
-    "dashboard": "1.1.0",
+    "registry": "1.27.1",
     "geomap": "1.5.0",
-    "gantt-chart": "0.8.0",
-    "portal": "1.3.0"
+    "portal": "1.3.0",
+    "report": "1.9.2",
+    "ionadmin": "1.4.0",
+    "dashboard": "1.1.0",
+    "rest": "1.1.2",
+    "gantt-chart": "0.8.0"
   },
   "ionMetaDependencies": {
-    "viewlib": "0.9.0",
-    "viewlib-extra": "0.1.0"
+    "viewlib": "0.9.1"
   },
-  "devDependencies": {},
   "dependencies": {
-    "csv-parser": "^1.11.0",
-    "proj4": "^2.4.4",
-    "sanitize-filename": "latest",
-    "excel-data": "^2.0.1",
-    "xlsx": "^0.8.0",
-    "moment-range": "^3.1.1"
-  }
+    "esia": "git+https://git.iondv.ru/node-modules/esia.git"
+  },
 }
 
-```
-## Описание полей
-| Поле            | Наименование | Описание                                                                                                                                                                                                                                                                                 |
-|:----------------|:----------------------|:--------------------------------|
-| `"engines"`        | **Ядро**     | Версия ядра.  |
-| `"repository"` | **Репозиторий**  | Состоит из полей "type" и "url". Указыается тип репозитория и ссылка на него.                                                                                                                                                                                                                     |
-| `"ionModulesDependencies"`        | **Зависимости модулей ion**               | Задает модули и их версии, используемые  в приложении.                                                                                                                                            |
-| `"ionMetaDependencies"`       | **Зависимости метаданных ion**        | ?                                                                                                                                                                                                       |
-| `"devDependencies"`     | **?**    |       ?                                                                                                                                                                                                                             |
-| `"license"`   | **Лицензия**             | Лицензия продукта.                                                                                                                                                                                 |
-| `"dependencies"`   | **Зависимости**      |  ?
-|    `"bugs"`     |   **Ошибки**           | Указывается ссылка на проект приложения в GitLab, где принимаются заявки об ошибках.
 
-### Следующая страница: [Конфигурация парметров - ini-файл](/docs/ru/2_system_description/platform_configuration/ini_files.md)
+```
+## Field description
+
+| Field            | Name | Description                                                                                                                                                                                                                                                                                  |
+|:----------------|:----------------------|:--------------------------------|
+| `"name"`       | **Name**      | Имя проекта.  |
+| `"description"`| **Description** | Описание проекта. |
+| `"version"`    | **Version**   | Номер текущей версии. |
+| `"homepage"`   | **Home page** | Ссылка на собранный проект на докере. |
+|    `"bugs"`     |   **Bugs**           | Указывается ссылка на проект приложения в GitLab, где принимаются заявки об ошибках.|
+| `"repository"` | **Repository**  | Состоит из полей "type" и "url". Указыается тип репозитория и ссылка на него.                                                                                                                                                                                                                   |
+| `"engines"`    | **Core**     | Номер версии ядра.  |
+| `"scripts"`    | **Скрипты**  | Скрипт для сборки меты из разных групп и разных url.
+| `"ionModulesDependencies"`        | **Зависимости модулей ion**               | Задает модули и их версии, используемые  в приложении. Проект включает в себя следующий состав модулей: •  "**ionadmin**" – модуль администрирования •  "**registry**" – модуль регистра •  "**report**" – модуль отчетов •  "**rest**": "- модуль rest-сервисов •  "**dashboard**" – модуль дашбоардов •  "**geomap**" - геомодуль •  "**gantt-chart**" – модуль диаграмм ганта •  "**portal**" – модуль портала                                                                                                                                    |
+| `"ionMetaDependencies"`       | **Зависимости метаданных ion**        | Дополнительные приложения для функционирования системы.                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                                                                              
+| `"dependencies"`   | **Зависимости**      |  Прочие зависимости проекта.
+
+
+### Следующая страница: [Конфигурация парметров - ini-файл](/docs/en/2_system_description/platform_configuration/ini_files.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
