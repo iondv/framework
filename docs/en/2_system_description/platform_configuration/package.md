@@ -12,7 +12,7 @@ The **package.json** file - defines the structure of dependencies and the detail
 }
 ```
 
-## Specificity of connection using script
+## Specificity of connection using a script
 
 * if there is no slash in the object name - / => "project-management"- substitute in the default path the ION-APP group - i.e the path is - //git.iondv.ru/ION-APP/project-management.
 * if there is a slash in the object name - it means it’s already set up with the group and just pick up the path to the git with the group and meta, for example "ION-METADATA/viewlib" - the path - //git.iondv.ru/ION-METADATA/viewlib.
@@ -78,7 +78,7 @@ The **package.json** file - defines the structure of dependencies and the detail
 | `"dependencies"`   | **Dependencies**      |  Other project dependencies.
 
 
-### The next page: [Configuration parameters - ini-file](/docs/en/2_system_description/platform_configuration/ini_files.md)
+### The next page: [Configuration parameters - ini-files](/docs/en/2_system_description/platform_configuration/ini_files.md)
 
 --------------------------------------------------------------------------  
 
