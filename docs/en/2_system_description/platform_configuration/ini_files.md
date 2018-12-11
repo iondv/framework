@@ -1,18 +1,17 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Зависмости в package.json](docs/ru/2_system_description/platform_configuration/package.md)
+### The previous page: [Dependencies in package.json](docs/en/2_system_description/platform_configuration/package.md)
 
-# Способы конфигурации параметров:
+# How to configure the parameters?
 
-* через ini-файлы
-* через переменную окружения
+* using ini-files
+* using environment variable
 
-**NB:** Приоритетной является настройка, заданная через переменные окружения, а не через ini-файлы.
+**NB:** We recommend you to configure the parameters by use of the environment variables, not the ini-files.
 
+## How to configure the parameters of OwnCloud with a user account
 
-## Пример конфигурации параметров ownCloud, вместе с учеткой
-
-Для начала необходимо задать в deploy.json параметрические настройки хранилища:
+First of all, set the parametric settings of the storage in the `deploy.json` file:
 
 ```json
 "ownCloud": 
@@ -26,19 +25,9 @@
           }
 ```
 
-`Конфигурация параметров deploy через ini-файлы:`
+### Configure the parameters in `deploy` by use of the ini-files:
 
-В ini-файле `deploy.ini` рядом c deploy.json задать параметры следующего вида:
-
-```
-ownCloud.url=https://owncloud.iondv.ru/
-ownCloud.login=api
-ownCloud.pwd=apiapi
-```
-
-`Конфигурация параметров deploy через переменную окружения:`
-
-В переменных окружения для ноды при конфигурации приложения задать параметры следующего вида:
+In the `deploy.ini` ini-file near the deploy.json file set the following parameters: 
 
 ```
 ownCloud.url=https://owncloud.iondv.ru/
@@ -46,9 +35,19 @@ ownCloud.login=api
 ownCloud.pwd=apiapi
 ```
 
-## Настройка длины сессии в системе
+### Configure the parameters in `deploy` by use of the environment variable:
 
-Длина сессии задается в config/config.json в `sessionHandler`, с применением плейсхолдеров для параметра `cookie.maxAge`:
+In the environment variables for the NODE set the following parameters: 
+
+```
+ownCloud.url=https://owncloud.iondv.ru/
+ownCloud.login=api
+ownCloud.pwd=apiapi
+```
+
+## Setting the session length in the system
+
+Set the session length in the в config/config.json in `sessionHandler`, using placeholders for the `cookie.maxAge` parameter:
 
 ```json
       "sessionHandler": {
@@ -72,7 +71,7 @@ ownCloud.pwd=apiapi
       }
 ```
 
-Добавляем настройку в **ini-файл** проекта. Формат задания аналогичен настройкам периодов в `auth`:
+Add this setting in the **ini-file** of the project. The format is the same as for the perioud setting in the `auth`: 
 
 ```
 auth.tempBlockPeriod=2s
@@ -81,39 +80,39 @@ auth.blockPeriod=1d
 auth.sessionLifeTime=2h
 ```
 
-Также можно задавать просто числом, тогда это будет задание в миллисекундах.
+You can also set it in numbers, and then it will be in milliseconds. 
 
-## Настройка ограничения
+## Setting the limit 
 
-Настройка ограничения переключения по пунктам системного меню для анонимного пользователя. Системное меню формируется с учетом контроля доступа к страницам модулей, т.е. нет прав на страницу модуля - не отображается пункт меню, для перехода на данный модуль, в системном меню. В ini-файле приложения необходимо выставить `auth.checkUrlAccess=true` чтобы задать настройку ограничения. 
+Setting the limit for switching items in the system menu for an anonymous user. The system menu is formed taking into account the access control to the module pages, i.e. if there are no access rights to the module - the menu item is not displayed to go to the module page. Set the `auth.checkUrlAccess=true` in the ini-file of the project to set the limit setting.
 
-## Переработка всех ссылок на относительные
+## Changing all references to relative ones
 
-Чтобы изменить все ссылоки на относительные, в ini-файле проекта укажите:
+To change all references to relative ones, in the ini-file set the following parameter:
 
 ```
-app.baseUrl= '/нужный_путь/'
+app.baseUrl= '/desired_path/'
 ```
 
-если путь не указан то считается по умолчанию '/'.
+If the path is not specified, then it is '/' by default.
 
-## Настройка в админке блока управления запуском заданий по расписанию
+## Setting the control unit to run jobs on a schedule in admin module
 
-Для отображения пункта меню необходимо добавить в ini-файл проекта настройку:
+To display the control unit, in the ini-file of the project add the following setting:
 
 ```
 jobs.enabled=true
 ```
 
-Она включит шедулер (англ. scheduler) в процессе веб-сервера, что даст возможность управлять джобами из админки.
+This setting enable the scheduler in the process of the web server, which will give the opportunity to manage Jobs from the admin module.
 
-**Шедулер** — управляет таймерами запуска задач
+**Scheduler** — manages task start timers.
 
-**Джоб** — конкретная задача, запускаемая по таймеру
+**Job** — specific task run by a timer.
 
-## Настройка отключения формы авторизации для перехода на страницу модуля
+## Setting to disable the authorization form to go to the module page
 
-В конфиге ядра у поля *"auth"* есть настройка `exclude`:
+In the core setting the *"auth"* field has the `exclude` setting:
 
 ```json
       "auth": {
@@ -131,43 +130,43 @@ jobs.enabled=true
         }
       }
 ```
-т.е. прописываем в ini-файле проекта:
+So in the ini-file of the project, write the following:
 
 ```
-auth.exclude[] = /registry/ # исключаем только запросы к корню модуля
-auth.exclude[] = /registry/** # исключаем запросы ко всем страницам модуля
-auth.exclude[] = \/registry\/khv-svyaz-info@naselenniePunkty\/\w+ # исключаем запросы ко всем страницам модуля внутри ноды khv-svyaz-info@naselenniePunkty
-auth.exclude[] = /registry/api/naselenniyPunkt@khv-svyaz-info/** #исключаем запросы к api класса
+auth.exclude[] = /registry/ # exclude only queries to the root of the module
+auth.exclude[] = /registry/** # exclude queries to all pages of the module
+auth.exclude[] = \/registry\/khv-svyaz-info@naselenniePunkty\/\w+ # exclude queries to all pages of the module inside the node - khv-svyaz-info@naselenniePunkty
+auth.exclude[] = /registry/api/naselenniyPunkt@khv-svyaz-info/** # exclude queries to the class api
 ```
 
-при переходе на страницу указанного в настройке модуля - данные отображаются без необходимости авторизации.
+When you go to the page specified in the module settings - the data is displayed without the authorization.
 
-## Настройка кеширования данных на уровне ядра
+## Setting to cache the data at the core level
 
-Настройка кеширования данных на уровне ядра - позволяет корректно восстановливать из кеша жаднозагружаемые ссылочные атрибуты и коллекции, а также файлы и вычисляемые атрибуты. Корректно кешируются списки. Внедрено кеширование в геомодуле. Настройка раз и навсегда решает проблему циклических ссылок при сериализации объектов.
+Setting of cached data at the core level - allows to correctly recover from the cache eager loaded reference attributes and collections, as well as files and calculated attributes. Lists are cached correctly. Caching is implemented in the geomodule. This setting once and for all solves the problem of circular references when serializing objects.
 
-В ini-файле прописываем:
+In the ini-file of the project, write the following::
 
 ```
 cache.module=memcached
 ```
 
-## Настройка временных ограничений
+## Setting the time limit
 
-`connectTimeOut` - масимальное время установления соединения.
-`operTimeOut` - максимальное время выполнения операции.
+`connectTimeOut` - the maximum time connection time.
+`operTimeOut` - the maximum time to complete an operation.
 
 ```
 db.connectTimeOut=
 db.operTimeOut=
 ```
 
-### Следующая страница: [Функциональность приложения](/docs/ru/2_system_description/functionality/functionality.md)
+### The next page: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 
