@@ -71,7 +71,7 @@ Set the session length in the в config/config.json in `sessionHandler`, using p
       }
 ```
 
-Add this setting in the **ini-file** of the project. The format is the same as for the perioud setting in the `auth`: 
+Add this setting in the ini-file of the project. The format is the same as for the period setting in the `auth`: 
 
 ```
 auth.tempBlockPeriod=2s
@@ -135,7 +135,8 @@ So in the ini-file of the project, write the following:
 ```
 auth.exclude[] = /registry/ # exclude only queries to the root of the module
 auth.exclude[] = /registry/** # exclude queries to all pages of the module
-auth.exclude[] = \/registry\/khv-svyaz-info@naselenniePunkty\/\w+ # exclude queries to all pages of the module inside the node - khv-svyaz-info@naselenniePunkty
+auth.exclude[] = \/registry\/khv-svyaz-info@naselenniePunkty\/\w+ # exclude queries to all pages of the module 
+inside the node - khv-svyaz-info@naselenniePunkty
 auth.exclude[] = /registry/api/naselenniyPunkt@khv-svyaz-info/** # exclude queries to the class api
 ```
 
@@ -154,6 +155,7 @@ cache.module=memcached
 ## Setting the time limit
 
 `connectTimeOut` - the maximum time connection time.
+
 `operTimeOut` - the maximum time to complete an operation.
 
 ```
