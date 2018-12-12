@@ -329,14 +329,6 @@ function SecuredDataRepository(options) {
     }
     let resources = [globalMarker];
 
-    let starter = {};
-    let chain = new Promise((resolve, reject) => {
-      starter.start = resolve;
-      starter.error = reject;
-    });
-    let p = chain;
-    let permMap = {};
-
     list.forEach((item) => {
       if (item.getItemId()) {
         if (resources.indexOf(classPrefix + item.getClassName()) < 0) {
@@ -346,26 +338,17 @@ function SecuredDataRepository(options) {
           resources.push(itemPrefix + item.getClassName() + '@' + item.getItemId());
         }
         resources.push(...attrResources(item, options));
-
-        p = p.then((permissions) => {
-          itemToPermMap(item, permissions, permMap, options);
-          return permissions;
-        });
-
       }
     });
 
-    let start = new Date();
-    aclProvider.getPermissions(options.user.id(), resources, true)
+    return aclProvider.getPermissions(options.user.id(), resources, true)
       .then((permissions) => {
-        console.log('acl returned permissions in', (new Date()).getTime() - start.getTime());
-        starter.start(permissions);
-      })
-      .catch((err) => {
-        starter.error(err);
+        let permMap = {};
+        list.forEach((item) => {
+          itemToPermMap(item, permissions, permMap, options);
+        });
+        return permMap;
       });
-
-    return p.then(() => permMap);
   }
 
   /**
@@ -374,40 +357,23 @@ function SecuredDataRepository(options) {
    */
   function listCenzor(moptions) {
     return (list) => {
-      let start = new Date();
       return getPermMap(list, moptions)
         .then((permMap) => {
-          console.log('permmap got in', (new Date()).getTime() - start.getTime());
-          start = new Date();
           let result = Promise.resolve();
-          let starter = {};
-          let chain = new Promise((resolve, reject) => {
-            starter.start = resolve;
-            starter.error = reject;
-          });
-          let p = chain;
           list.forEach(
             (item) => {
               result = result.then(() => setItemPermissions(moptions, permMap)(item));
-              p = p.then(() => {
-                cenzor(item);
-              });
             }
           );
-          result = result
-            .then(() => {
-              console.log('permissions set in', (new Date()).getTime() - start.getTime());
-              start = new Date();
-              starter.start();
-            })
-            .catch((err) => {
-              starter.error(err);
-            });
-          return p.then(() => {
-            console.log('list cenzored in', (new Date()).getTime() - start.getTime());
-            return list;
+          return result;
+        })
+        .then(() => {
+          list.forEach((item) => {
+            cenzor(item);
           });
+          return list;
         });
+
     };
   }
 
@@ -424,16 +390,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, moptions) {
-    let start = new Date();
-    let opts = clone(moptions);
+    let opts = moptions || {};
     let cm = options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
-    return dataRepo.getList(obj, opts)
-      .then((list) => {
-        console.log('list fetched in', (new Date()).getTime() - start.getTime());
-        return list;
-      })
-      .then(listCenzor(moptions));
+    return dataRepo.getList(obj, opts).then(listCenzor(opts));
   };
 
   /**
@@ -966,7 +926,7 @@ function SecuredDataRepository(options) {
   }
 
   function getItem(obj, id, moptions) {
-    let opts = clone(moptions);
+    let opts = moptions || {};
     let cm = obj instanceof Item ? obj.getMetaClass() : options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
     return dataRepo.getItem(obj, id || '', opts)
@@ -992,16 +952,17 @@ function SecuredDataRepository(options) {
    * @param {Object} data
    * @param {String} [version]
    * @param {ChangeLogger | Function} [changeLogger]
-   * @param {{user: User}} options
+   * @param {{user: User}} moptions
    * @returns {Promise}
    */
   this._createItem = function (classname, data, version, changeLogger, moptions) {
+    moptions = moptions || {};
     return (moptions.user ?
       aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE]) :
       Promise.resolve(true))
       .then((accessible) => {
         if (accessible) {
-          let opts = clone(moptions);
+          let opts = moptions || {};
           let cm = options.meta.getMeta(classname);
           roleEnrichment(cm, opts);
           return dataRepo.createItem(classname, data, version, changeLogger, opts)
@@ -1058,7 +1019,7 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, moptions) {
-    let opts = clone(moptions);
+    let opts = moptions || {};
     return checkWritePermission(classname, id, opts, data)
       .then((writable) => {
         if (writable) {
@@ -1085,7 +1046,7 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._saveItem = function (classname, id, data, version, changeLogger, moptions) {
-    let opts = clone(moptions);
+    let opts = moptions || {};
     return checkWritePermission(classname, id, opts, data)
       .then(function (writable) {
         if (writable) {
@@ -1132,7 +1093,7 @@ function SecuredDataRepository(options) {
    * @param {{uid: String}} options
    */
   this._deleteItem = function (classname, id, changeLogger, options) {
-    return checkDeletePermission(classname, id, options)
+    return checkDeletePermission(classname, id, options || {})
       .then((deletable) => {
         if (deletable) {
           return dataRepo.deleteItem(classname, id, changeLogger);
@@ -1176,7 +1137,7 @@ function SecuredDataRepository(options) {
     if (!details.length) {
       return Promise.resolve();
     }
-    return checkCollectionWriteAccess(master, details, options)
+    return checkCollectionWriteAccess(master, details, options || {})
       .then((writable) => {
         if (writable) {
           return dataRepo.put(master, collection, details, changeLogger);
@@ -1198,7 +1159,7 @@ function SecuredDataRepository(options) {
     if (!details.length) {
       return Promise.resolve();
     }
-    return checkCollectionWriteAccess(master, details, options)
+    return checkCollectionWriteAccess(master, details, options || {})
       .then((writable) => {
         if (writable) {
           return dataRepo.eject(master, collection, details, changeLogger);
@@ -1220,10 +1181,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._getAssociationsList = function (master, collection, options) {
-    return setItemPermissions(options, null, true)(master)
+    return setItemPermissions(options || {}, null, true)(master)
       .then((m) => {
         if (!m.permissions || m.permissions[Permissions.READ]) {
-          let opts = clone(options);
+          let opts = options || {};
           let p = m.property(collection);
           if (!p) {
             throw new Error('Ivalid collection name specified!');
@@ -1245,10 +1206,10 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._getAssociationsCount = function (master, collection, options) {
-    return setItemPermissions(options, null, true)(master)
+    return setItemPermissions(options || {}, null, true)(master)
       .then(function (m) {
         if (!m.permissions || m.permissions[Permissions.READ]) {
-          return dataRepo.getAssociationsCount(master, collection, options);
+          return dataRepo.getAssociationsCount(master, collection, options || {});
         }
         throw new IonError(Errors.PERMISSION_LACK);
       });
@@ -1266,6 +1227,7 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkEdit = function (classname, data, options) {
+    options = options || {};
     return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
@@ -1287,6 +1249,7 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._bulkDelete = function (classname, options) {
+    options = options || {};
     return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
