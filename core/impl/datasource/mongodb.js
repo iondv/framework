@@ -8,7 +8,7 @@ const mongo = require('mongodb');
 const client = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
-const clone = require('clone');
+const clone = require('fast-clone');
 const cuid = require('cuid');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-source');
@@ -411,7 +411,7 @@ function MongoDs(config) {
         .then(data => cleanNulls(c, type, prepareData(data)))
         .then(data =>
           new Promise((resolve, reject) => {
-            c.insertOne(clone(data.data), (err, result) => {
+            c.insertOne(data.data, (err, result) => {
               if (err) {
                 reject(wrapError(err, 'insert', type));
               } else if (result.insertedId) {
@@ -2201,7 +2201,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
-    options = clone(options || {});
+    options = options || {};
     let tmpApp = null;
     let tmpCollections = {};
     let c;
@@ -2304,7 +2304,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._iterator = function (type, options) {
-    options = clone(options) || {};
+    options = options || {};
     let c;
     let tmpCollections = {};
     return getCollection(type)
@@ -2342,7 +2342,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
-    options = clone(options || {});
+    options = options || {};
     options.filter = parseCondition(options.filter);
     let c;
     let tmpCollections = {};
@@ -2394,7 +2394,7 @@ function MongoDs(config) {
 
   this._count = function (type, options) {
     let c;
-    options = clone(options || {});
+    options = options || {};
     let tmpCollections = {};
     return getCollection(type)
       .then((col) => {

@@ -27,7 +27,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const MetaErrors = require('core/errors/meta-repo');
 const DsErrors = require('core/errors/data-source');
-const clone = require('clone');
+const clone = require('fast-clone');
 const Operations = require('core/FunctionCodes');
 const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
@@ -840,7 +840,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    let $options = clone(options || {});
+    options = options || {};
+    let $options = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct
+    };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
     $options.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -918,7 +925,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getIterator = function (obj, options) {
-    let opts = clone(options || {});
+    options = options || {};
+    let opts = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct
+    };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
     options.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -1098,7 +1112,12 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
-    let opts = clone(options) || {};
+    options = options || {};
+    let opts = {
+      expressions: options.expressions,
+      fields: options.fields,
+      aggregates: options.aggregates
+    };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
@@ -1127,7 +1146,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._rawData = function (className, options) {
-    let opts = clone(options) || {};
+    options = options || {};
+    let opts = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct
+    };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -1162,7 +1188,8 @@ function IonDataRepository(options) {
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
     let rcm = getRootType(cm);
-    let opts = clone(options || {});
+    options = options || {};
+    let opts = {};
     opts.fields = {_class: '$_class', _classVer: '$_classVer'};
     let props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
@@ -2005,7 +2032,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, supressEvent) {
-    options = clone(options) || {};
+    options = options || {};
     if (!id) {
       return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
     }

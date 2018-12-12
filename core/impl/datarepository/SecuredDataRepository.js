@@ -10,7 +10,7 @@ const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Item = DataRepositoryModule.Item;
 const Permissions = require('core/Permissions');
 const merge = require('merge');
-const clone = require('clone');
+const clone = require('fast-clone');
 const PropertyTypes = require('core/PropertyTypes');
 const Logger = require('core/interfaces/Logger');
 // const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
@@ -328,6 +328,15 @@ function SecuredDataRepository(options) {
       return Promise.resolve({});
     }
     let resources = [globalMarker];
+
+    let starter = {};
+    let chain = new Promise((resolve, reject) => {
+      starter.start = resolve;
+      starter.error = reject;
+    });
+    let p = chain;
+    let permMap = {};
+
     list.forEach((item) => {
       if (item.getItemId()) {
         if (resources.indexOf(classPrefix + item.getClassName()) < 0) {
@@ -337,16 +346,26 @@ function SecuredDataRepository(options) {
           resources.push(itemPrefix + item.getClassName() + '@' + item.getItemId());
         }
         resources.push(...attrResources(item, options));
+
+        p = p.then((permissions) => {
+          itemToPermMap(item, permissions, permMap, options);
+          return permissions;
+        });
+
       }
     });
 
-    return aclProvider.getPermissions(options.user.id(), resources, true).then((permissions) => {
-      let permMap = {};
-      list.forEach((item) => {
-        itemToPermMap(item, permissions, permMap, options);
+    let start = new Date();
+    aclProvider.getPermissions(options.user.id(), resources, true)
+      .then((permissions) => {
+        console.log('acl returned permissions in', (new Date()).getTime() - start.getTime());
+        starter.start(permissions);
+      })
+      .catch((err) => {
+        starter.error(err);
       });
-      return permMap;
-    });
+
+    return p.then(() => permMap);
   }
 
   /**
@@ -355,24 +374,39 @@ function SecuredDataRepository(options) {
    */
   function listCenzor(moptions) {
     return (list) => {
-      let clearedList = [];
-      clearedList.total = list.total;
+      let start = new Date();
       return getPermMap(list, moptions)
         .then((permMap) => {
+          console.log('permmap got in', (new Date()).getTime() - start.getTime());
+          start = new Date();
           let result = Promise.resolve();
+          let starter = {};
+          let chain = new Promise((resolve, reject) => {
+            starter.start = resolve;
+            starter.error = reject;
+          });
+          let p = chain;
           list.forEach(
             (item) => {
               result = result.then(() => setItemPermissions(moptions, permMap)(item));
-            }
-          );
-          list.forEach(
-            (item) => {
-              result = result.then(() => {
-                clearedList.push(cenzor(item));
+              p = p.then(() => {
+                cenzor(item);
               });
             }
           );
-          return result.then(() => clearedList);
+          result = result
+            .then(() => {
+              console.log('permissions set in', (new Date()).getTime() - start.getTime());
+              start = new Date();
+              starter.start();
+            })
+            .catch((err) => {
+              starter.error(err);
+            });
+          return p.then(() => {
+            console.log('list cenzored in', (new Date()).getTime() - start.getTime());
+            return list;
+          });
         });
     };
   }
@@ -390,10 +424,16 @@ function SecuredDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, moptions) {
+    let start = new Date();
     let opts = clone(moptions);
     let cm = options.meta.getMeta(obj);
     roleEnrichment(cm, opts);
-    return dataRepo.getList(obj, opts).then(listCenzor(moptions));
+    return dataRepo.getList(obj, opts)
+      .then((list) => {
+        console.log('list fetched in', (new Date()).getTime() - start.getTime());
+        return list;
+      })
+      .then(listCenzor(moptions));
   };
 
   /**
@@ -777,7 +817,7 @@ function SecuredDataRepository(options) {
 
             if (Array.isArray(items) && items.length) {
               return (
-                permMap ? Promise.resolve(clone(permMap)) : getPermMap(items, {user: moptions.user})
+                permMap ? Promise.resolve(permMap) : getPermMap(items, {user: moptions.user})
               ).then((permMap) => {
                 let w1 = Promise.resolve();
                 items.forEach((ri) => {
