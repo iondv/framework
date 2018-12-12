@@ -6,15 +6,15 @@
 
 ## Principle of work
 
-Between basic data repository `dataRepo` and the data repository with security checks `securedDataRepo` a data repository with support for caching `cachedDataRepo` has been implemented. 
+Between the basic data repository `dataRepo` and the data repository with security checks `securedDataRepo`, a data repository with support for caching `cachedDataRepo` has been implemented. 
 
 The data is loaded by chain: *BD -> dataRepo -> cachedDataRepo -> securedDataRepo*. 
 
-However,  in requesting the `cachedDataRepo` first checks for the availability of data in the cache (if the cache is enabled), and if there is no data in the cache, it requests it from `dataRepo`, then it places it in the cache and returns it to `securedDataRepo`.
+However,  when running a query, the `cachedDataRepo` first checks for the availability of data in the cache (if the cache is enabled), and if there is no data in the cache, it requests it from `dataRepo`, then it places it in the cache and returns it to `securedDataRepo`.
 
 ## Setting caching objects of individual classes
 
-In the configuration file of the application configuration (deploy.json), in the options `cachedDataRepo` you can individually specify the list of classes whose data should be stored in the cache.
+In the configuration file (deploy.json), in the options `cachedDataRepo` you can individually specify the list of classes whose data should be stored in the cache.
 
 ### Example:
 ```
@@ -24,7 +24,7 @@ In the configuration file of the application configuration (deploy.json), in the
 }
 ...
 ```
-If **cachedClasses** is not specified,then all data are cached. 
+If **cachedClasses** is not specified, then all data are cached. 
 
 ## Caching a list of objects
 
@@ -37,9 +37,10 @@ Similarly, all objects are cached by reference and eager loaded collections.
 
 ## Setting the adaptive cache
 
-For advanced configuration of caching settings (such as, query storage time, depth of storage of objects in the cache, etc.) the setting *adaptive object caching* is applied.
+For advanced configuration of cache (such as, query storage time, depth of storage of objects in the cache, etc.) the setting *adaptive object caching* is applied.
 
 Adaptive cache settings are specified in the deploy.json file in the `"di"` property, in the `memcached` and` redis` components in the `connectOptions` option.
+
 All the necessary placeholders are listed in the config.json file of the platform repository.
 
 **NB:** The storage depth of objects in the cache corresponds to the depth of the query for objects from the database, that is, the object stores information about its references, and then in the cache the object graph is obtained, and not the tree.
