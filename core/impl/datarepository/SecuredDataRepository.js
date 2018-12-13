@@ -356,8 +356,8 @@ function SecuredDataRepository(options) {
    * @returns {function()}
    */
   function listCenzor(moptions) {
-    return (list) => {
-      return getPermMap(list, moptions)
+    return list =>
+      getPermMap(list, moptions)
         .then((permMap) => {
           let result = Promise.resolve();
           list.forEach(
@@ -373,8 +373,6 @@ function SecuredDataRepository(options) {
           });
           return list;
         });
-
-    };
   }
 
   /**
@@ -747,7 +745,7 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr), moptions) :
-              aclProvider.getPermissions(moptions.user.id(), attrResources(item)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions), moptions))))
+              aclProvider.getPermissions(moptions.user.id(), attrResources(item, moptions)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions), moptions))))
           .then((ap) => {
             item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           });
@@ -997,7 +995,7 @@ function SecuredDataRepository(options) {
             if (item.attrPermissions) {
               for (let nm in data) {
                 if (data.hasOwnProperty(nm) && item.attrPermissions.hasOwnProperty(nm)) {
-                  if (!item.attrPermissions[Permissions.WRITE]) {
+                  if (!item.attrPermissions[nm][Permissions.WRITE]) {
                     return false;
                   }
                 }
