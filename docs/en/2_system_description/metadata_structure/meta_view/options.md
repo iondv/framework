@@ -127,6 +127,40 @@ Configure the functionality of creating the objects without accessing the inplac
 }
 
 ```
+
+### Example of `"options"` of the "Table" attribute
+
+```
+ {
+          "caption": "Table",
+          "type": 3,
+          "property": "table",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": 3,
+          "fields": [],
+          "columns": [],
+          "actions": null,
+          "commands": null,
+          "orderNumber": 50,
+          "required": false,
+          "visibility": null,
+          "enablement": null,
+          "obligation": null,
+          "readonly": false,
+          "selectionPaginated": true,
+          "validators": null,
+          "hint": "",
+          "historyDisplayMode": 0,
+          "tags": null,
+          "options": {
+            "inplaceInsertion": true
+          },
+          "selConditions": [],
+          "selSorting": []
+        },
+```
 Indicate the`"inplaceInsertionClass"` if it is necessary to choose a class (if there are heirs) when creating the object.
 
 ## The configuration of the attribute header over the value
