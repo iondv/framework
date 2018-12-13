@@ -1086,7 +1086,7 @@ function MongoDs(config) {
   this._delete = function (type, conditions) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) => {
           conditions = parseCondition(conditions);
           prepareConditions(conditions);
           c.deleteMany(typeof conditions === 'object' ? conditions : {},
@@ -2201,7 +2201,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._fetch = function (type, options) {
-    options = options || {};
+    options = clone(options || {});
     let tmpApp = null;
     let tmpCollections = {};
     let c;
@@ -2304,7 +2304,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._iterator = function (type, options) {
-    options = options || {};
+    options = clone(options || {});
     let c;
     let tmpCollections = {};
     return getCollection(type)
@@ -2342,7 +2342,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._aggregate = function (type, options) {
-    options = options || {};
+    options = clone(options || {});
     options.filter = parseCondition(options.filter);
     let c;
     let tmpCollections = {};
@@ -2394,7 +2394,7 @@ function MongoDs(config) {
 
   this._count = function (type, options) {
     let c;
-    options = options || {};
+    options = clone(options || {});
     let tmpCollections = {};
     return getCollection(type)
       .then((col) => {
