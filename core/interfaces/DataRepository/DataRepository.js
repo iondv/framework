@@ -94,7 +94,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.rawData = function (className, options) {
-    return this._rawData(className, options);
+    return this._rawData(className, options || {});
   };
 
   /**
@@ -263,7 +263,7 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.recache = function (item, options) {
-    return this._recache(item, options);
+    return this._recache(item, options || {});
   };
 }
 
