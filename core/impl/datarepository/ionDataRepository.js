@@ -1262,8 +1262,8 @@ function IonDataRepository(options) {
     }
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
-      .then(item => options.skipEnrich ? item : enrich(item, options, item.getMetaClass()))
-      .then(item => options.skipCalculations ? item : calcProperties(item, false, options.needed));
+      .then(item => (options.skipEnrich || !item) ? item : enrich(item, options, item.getMetaClass()))
+      .then(item => (options.skipCalculations || !item) ? item : calcProperties(item, false, options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
