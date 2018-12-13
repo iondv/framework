@@ -64,6 +64,7 @@
     "password-hash-and-salt": "^0.1.4",
     "redis": "^2.8.0",
     "request": "^2.83.0",
+    "rimraf": "^2.6.2",
     "sendmail": "^1.2.0",
     "serve-favicon": "^2.4.5",
     "sharp": "^0.20.3",
