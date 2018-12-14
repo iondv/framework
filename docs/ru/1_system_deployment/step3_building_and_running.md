@@ -36,7 +36,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

@@ -1,59 +1,56 @@
-### Предыдущая страница: [Оглавление](docs/ru/index.md)
+### The previous page: [Contents](docs/en/index.md)
 
-# Шаг 1 Установка окружения
+# Step 1 Installing the desktop environment
 
-Окружение - это список программ необходимых для запуска платформы с приложением:
+The environment - is a list of programs needed to run a platform:
 
-* СУБД [MongoDb](https://www.mongodb.org/) версии 3.6.
-* Среда разработки [Node.js](<https://nodejs.org/en/>) версии 10.x.x.
+* DBMS [MongoDb](https://www.mongodb.org/), 3.6 version.
+* The runtime environment [Node.js](<https://nodejs.org/en/>), 10.x.x version.
 
-## СУБД
+## DBMS
 
-1. Необходимо установить СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия `3.6.9`. 
+1. Install the DBMS [MongoDB](https://www.mongodb.org/). Verified version -`3.6.9`. 
 
-2. Далее создаем папку `data` на диске C: и в ней подпапку `db`.
+2. Next create the `data` folder on the C: drive and create a subfolder `db` there.
 
-3. Для запуска базы данных переходим в папку расположения `MongoDb`, далее в папку `server\bin` и запускаем файл `mongod.exe`.
-Если есть необходимость использовать каталог с БД отличный от `c:\data\db`, тогда файл `mongod.exe` необходимо запустить
-с параметром `--dbpath` после которого указать путь к каталогу.
+3. Go to the `MongoDB` folder, then to the `server\bin` folder and run the `mongod.exe` file to run the app. If you need to use the other database folder than `c:\data\db`, then you must run the `mongod.exe` file
+with the `--dbpath` parameter, after which you should specify the database path.
 
-4. Для более подробной информации см. [настойка MongoDB](docs/ru/manuals/mongoDB.md). 
+## Node.js - the runtime environment
 
-## Среда выполнения Node.js
+Node.js - is the runtime environment for implementing the components. 
 
-Node.js - является средой, в которой осуществляется выполнение компонентов. 
+1. Install the runtime environment [Node.js](https://nodejs.org/). Node.JS verified version - `10.14.2`.
 
-1. Необходимо установить среду разработки [Node.js](https://nodejs.org/). Проверенная версия node.JS `10.14.2`.
+2. By default, the installer registers the paths to Node.JS in PATH, and sets the `npm` Package Manager.
 
-2. По умолчанию установщик сам прописывает пути к Node.js в PATH, а также устанавливает менеджер пакетов `npm`.
+## Installing the global dependencies
 
-## Установка глобальных зависимостей
+Install the global dependencies in the command prompt `cmd.exe` run as administrator, after installing the `node.js`.
 
-Установливайте глобальные зависимости в командной строке `cmd.exe`, запущенной от имени администратора, после установки `node.js`.
+**NB:** the `node -v` command - indicates the node.js version.
 
-**NB:** команда `node -v` - показывает версию node.js.
+### Installing the build environment on Windows
 
-### Установка среды сборки под Windows
+1. Install globally [node-gyp](<https://github.com/nodejs/node-gyp>) by the `npm install -g node-gyp` command. It is necessary for building the various libraries.
 
-1. Установите глобально пакет [node-gyp](<https://github.com/nodejs/node-gyp>) командой `npm install -g node-gyp` необходимый для сборки различных библиотек. 
+2. For the Windows operating system, it is additionally necessary to install the windows-build-tools package `npm install -g --production windows-build-tools`.
 
-2. Для работы библиотеки под операционной системой семейства Windows дополнительно необходимо установить пакет windows-build-tools - `npm install -g --production windows-build-tools`.
+### The project build-tool
 
-### Пакет сборщика проектов
+Use the [Gulp](http://gulpjs.com/) app to organize testing and building of distributions. Install globally by the `npm install -g gulp@3.9.1` command. `3.9.1` -  supported version of `Gulp`. 
 
-Для организации тестирования и сборки дистрибутивов при разработке используется [Gulp](http://gulpjs.com/). Установите глобально командой `npm install -g gulp@3.9.1`. `3.9.1` - поддерживаемая версия `Gulp`. 
+### The installer of frontend dependencies
 
-### Установщик фронтенд библиотек
-
-Для установки библиотек фронтенд используется [bower](https://bower.io). Установите глобально командой `npm install -g bower`.  
+To install the frontend libraries, you should globally install [bower](https://bower.io), by the `npm install -g bower` command. 
 
 
-### Следующая страница: [Установка ядра, модулей и приложения](docs/ru/1_system_deployment/step2_project_with_modules.md)  
+### The next page: [Core, modules and application](docs/en/1_system_deployment/step2_project_with_modules.md)  
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
 
 
 
