@@ -6,7 +6,8 @@
 
 Для всех дальнейших команд, необходимо запустить командную строку от имени администратора.
 
-Перейдите в папку приложения `cd c:\workspace\framework` и задайте переменную окружения  `NODE_PATH` равной пути к приложению. Для Windows команда - `set NODE_PATH=c:\workspace\framework`, для Linux - `export NODE_PATH=/workspace/framework`.
+Перейдите в папку приложения `cd c:\workspace\framework` и задайте переменную окружения  `NODE_PATH` равной пути к приложению. 
+Для Windows команда - `set NODE_PATH=c:\workspace\framework`, для Linux - `export NODE_PATH=/workspace/framework`.
 
 ## Сборка приложения
 
