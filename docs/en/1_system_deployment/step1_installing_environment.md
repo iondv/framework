@@ -1,79 +1,64 @@
-[1_System deployment](/docs/en/1_system_deployment/)
-# Installing the desktop environment
-### The previous page: [Contents](docs/en/index.md)  
+### Предыдущая страница: [Оглавление](docs/ru/index.md)
 
-The environment is a list of programs needed to run a platform:  
-* DBMS
-* node.JS with libraries
-* node Global Libraries  
+# Шаг 1 Установка окружения
 
-## DBMS
-You need to install DBMS [MongoDB](https://www.mongodb.org/). Version [3.6]. 
+Окружение - это список программ необходимых для запуска платформы с приложением:
 
-![image](/uploads/99b07b8afaace3465f4c60446e9704ca/image.png)
+* СУБД [MongoDb](https://www.mongodb.org/) версии 3.6.
+* Среда разработки [Node.js](<https://nodejs.org/en/>) версии 10.x.x.
 
-Next, create a folder `data` on the C: drive and create a subfolder `db` there.
+## СУБД
 
-![image](/uploads/51236d63714a6da80eb8cb87646fb633/image.png)
+1. Необходимо установить СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия `3.6.9`. 
 
-Go to the mongoDB folder, then to the `server\bin` folder and run the `mongod.exe` file to run the app
+2. Далее создаем папку `data` на диске C: и в ней подпапку `db`.
 
-![image](/uploads/a406c381a4d3eaceb91ee489b01b21e4/image.png)
+3. Для запуска базы данных переходим в папку расположения `MongoDb`, далее в папку `server\bin` и запускаем файл `mongod.exe`.
+Если есть необходимость использовать каталог с БД отличный от `c:\data\db`, тогда файл `mongod.exe` необходимо запустить
+с параметром `--dbpath` после которого указать путь к каталогу.
 
-If you need to use the other database folder than `c:\data\db`, then you must run the `mongod.exe` file
-with the `--dbpath` parameter, after which you should specify the database path
+4. Для более подробной информации см. [настойка MongoDB](docs/ru/manuals/mongoDB.md). 
 
-Usually, there is nothing more you need to do, but if necessary, see the setup of MongoDB. 
+## Среда выполнения Node.js
 
-## The runtime of node.js
-Node.js - is the runtime environment for implementing the components. The link to download 
-[node.js](https://nodejs.org/). The current version node.JS is `8.xx.xx LTS`.
+Node.js - является средой, в которой осуществляется выполнение компонентов. 
 
-By default, the installer registers the paths to Node.JS in PATH, and sets the `npm` Package Manager.
+1. Необходимо установить среду разработки [Node.js](https://nodejs.org/). Проверенная версия node.JS `10.14.2`.
 
-![image](/uploads/e7b999db3036b531316c11dbea1fc81f/image.png)
+2. По умолчанию установщик сам прописывает пути к Node.js в PATH, а также устанавливает менеджер пакетов `npm`.
 
-## Installing the Global Libraries
-All installations should be done on an admin-level from a command prompt, AFTER installation of node.js. Press the `windows + s` combination to open the search bar. In the popup window, type cmd.exe and in a list box, choose the "command prompt" with a right mouse-click. Select "Run as administrator".
+## Установка глобальных зависимостей
 
-![image](/uploads/7454ebc549bf684fe0eb3cbaa2299194/image.png)
+Установливайте глобальные зависимости в командной строке `cmd.exe`, запущенной от имени администратора, после установки `node.js`.
 
-Check if the node is available, by running the `node -v` command and as a result you will see the node.js version.
+**NB:** команда `node -v` - показывает версию node.js.
 
-![image](/uploads/0700d79fc60fbd9c15f4b8c696c56585/image.png)
+### Установка среды сборки под Windows
 
-Further, the command like `node -v` will indicate the execution of the `node` command with the `-v` parameter in the command prompt. It is recommended  to learn more  about the `command prompt in Windows` (Yandex and Google), for example https://studfiles.net/preview/1926314/
+1. Установите глобально пакет [node-gyp](<https://github.com/nodejs/node-gyp>) командой `npm install -g node-gyp` необходимый для сборки различных библиотек. 
 
-To accelerate the work, you can copy the commands to the clipboard (Ctrl + C) and paste into the command prompt (right mouse-click or Ctrl+V).
+2. Для работы библиотеки под операционной системой семейства Windows дополнительно необходимо установить пакет windows-build-tools - `npm install -g --production windows-build-tools`.
 
-The installation is successful, if no errors appear, i.e. the red message `Error`. If the error appears, please ask your colleagues for help - not closing the window with errors.
+### Пакет сборщика проектов
 
-### The installation of the build environment on Windows
-You can find the full instruction on the [node-gyp page](https://github.com/tootallnate/node-gyp), which is used for building and compiling of code. Generally, it is enough to install the 
-`npm install -g --production windows-build-tools`
+Для организации тестирования и сборки дистрибутивов при разработке используется [Gulp](http://gulpjs.com/). Установите глобально командой `npm install -g gulp@3.9.1`. `3.9.1` - поддерживаемая версия `Gulp`. 
 
-### The node-gyp module build-tool for node.js
-The [node-gyp](https://github.com/tootallnate/node-gyp) module and all its environment are necessary for building the various libraries. 
+### Установщик фронтенд библиотек
 
-Use the `npm install -g node-gyp` command to install.
+Для установки библиотек фронтенд используется [bower](https://bower.io). Установите глобально командой `npm install -g bower`.  
 
-### The project build-tool
-When developing, we use the [Gulp](http://gulpjs.com/) app to organize testing and building of distributions. Therefore, you need to install the app, by using the `npm install -g gulp` command.
 
-### The installer of frontend dependencies
-To install the frontend libraries, you should install [bower](https://bower.io) globally, using the `npm install -g bower` command. 
-
-### The following page: [forming the project with modules](docs/en/1_system_deployment/step2_project_with_modules.md)
+### Следующая страница: [Установка ядра, модулей и приложения](docs/ru/1_system_deployment/step2_project_with_modules.md)  
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step1_installing_environment.md)   &ensp; [FAQs](/faqs.md)          
-
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.  
-All rights reserved.    
+Copyright (c) 2018 **IONDV.Framework**.  
+All rights reserved.  
+ 

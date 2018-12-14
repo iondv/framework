@@ -1,52 +1,48 @@
-[System deployment ](/docs/ru/1_system_deployment/)  
-# Step 3 Building and running
-### Previous page: [Step 2 Deploying project with modules](/docs/en/1_system_deployment/step2_project_with_modules.md)
+#### [Оглавление](/docs/ru/index.md)
 
-For all further commands, run the command line, selecting "Run as administrator". Go to the `cd c:\workspace\dnt` application folder (dnt - example from the previous step) and set the `NODE_PATH` environment variable that is equal to the following command  `set NODE_PATH=c:\workspace\dnt`.
+### Предыдущая страница: [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)
 
-![image](/uploads/5c227620ef05f77df9e9531c29b30b7b/image.png)
+# Шаг 3 Cборка и запуск приложения
 
-## Building the app
-Building the application includes the installation of all libraries, import of all data to the DB and preparation to launch the app.  
+Для всех дальнейших команд, необходимо запустить командную строку от имени администратора.
 
-When first launching, write the `npm install` command - it will install all key dependencies, including the gulp builder (installation command `npm install gulp`). This command installs all lybraries from the `dependencies` characteristic in the `package.json` list.   
+Перейдите в папку приложения `cd c:\workspace\framework` и задайте переменную окружения  `NODE_PATH` равной пути к приложению. 
+Для Windows команда - `set NODE_PATH=c:\workspace\framework`, для Linux - `export NODE_PATH=/workspace/framework`.
 
-After `npm install` command, the following message can pop up. It notifies you that dependencies consist of modules that can be potentionally dangerous for the project. Just ignore this notification.
+## Сборка приложения
 
-NB! **The following message is NOT an error**
+Сборка приложения обеспечивает установку всех библиотек, импорт данных в базу данных и подготовку приложения для запуска.
 
-> audited 2716 packages in 6.508s
-   found 5 vulnerabilities (1 low, 4 high)
-   run npm audit fix to fix them, or npm audit for details
+1. При первом запуске необходимо выполнить `npm install gulp@3.9.1` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`. Эта команда ставит все библиотеки из свойства `dependencies` файла `package.json` ядра.
 
-Always make sure that the `NODE_PATH` environment variable is set, the MongoDB is ready for use and the `Path` is leading to the Git (example `C:\Program Files\Git\bin`).
+2. Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 
-![image](/uploads/fa3614243213775760dcd6dc2ae30b4a/image.png)
+3. После этого, а также все последующие разы выполняйте команду сборки приложения `gulp assemble`. 
 
-Before launching the app add a new user. Open `Mongo Compass` and find the `ino-user` table in the DB. Delete all entries you'll see. Further, `returne to the console` and run the following command.
+**NB:** Убедитесь, что стоит переменная окружения `NODE_PATH`, запущена база `MongoDB`, `Gulp` установлен глобально и локально и его версия не выше `3.9.1`.
 
-```
-node bin\adduser.js --name admin --pwd 123
-node bin\acl.js --u admin@local --role admin --p full
-```
+4. Перед непосредственным запуском приложения необходимо добавить базового пользователя для входа. Откройте программу `Mongo Compass` и в базе данных найдите таблицу `ion-user`. Удалите все записи, которые увидите там. Далее вернитесь в консоль и выполните указанные ниже команды. Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
+Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
 
-## Running the app 
-When building is over you can run the app. Please make sure that the `NODE_PATH` environment variable is set. Without it, the system will display an error that some components are missing.  
+## Запуск приложения
 
-The `npm start` command launches the system. The alternative is `node bin\www` command.  
+После окончания сборки можно запускать приложение. Убедитесь, что стоит переменная окружения `NODE_PATH`. Без этого система выдаст ошибку, об отсутствии компонентов.
 
-When you'll see the message that you're running the system on port `8888`, you can open the browser and type the system adress - `http://localhost:8888`.  
+Запуск системы осуществляется командой `npm start`, альтерантивой является запуск `node bin\www`.
 
-### Next page: [System description](/docs/en/2_system_description) 
+После запуска системы, откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении, где `8888` - порт указанный в параметре `server.ports` конфигурации запуска. 
+
+### Следующая страница: [Описание системы - схема метаданных](/docs/ru/2_system_description/metadata_structure/meta_scheme.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
-
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.  
-All rights reserved.   
+Copyright (c) 2018 **IONDV.Framework**.  
+All rights reserved.  
+
+
