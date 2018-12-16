@@ -8,7 +8,6 @@ const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Logger = require('core/interfaces/Logger');
-const merge = require('merge');
 const F = require('core/FunctionCodes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
