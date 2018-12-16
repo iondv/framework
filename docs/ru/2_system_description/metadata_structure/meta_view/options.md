@@ -124,9 +124,41 @@
 }
 
 ```
-`"inplaceInsertionClass"` указываем в том случае, если при создании объекта нужно выбирать класс (если есть наследники)
 
-[настройка в ДНТ](https://git.iondv.ru/ION-APP/develop-and-test/blob/v1.7/views/classColl@develop-and-test/item.json)
+### Пример `"options"` атрибута "Таблица"
+
+```
+ {
+          "caption": "Таблица",
+          "type": 3,
+          "property": "table",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": 3,
+          "fields": [],
+          "columns": [],
+          "actions": null,
+          "commands": null,
+          "orderNumber": 50,
+          "required": false,
+          "visibility": null,
+          "enablement": null,
+          "obligation": null,
+          "readonly": false,
+          "selectionPaginated": true,
+          "validators": null,
+          "hint": "",
+          "historyDisplayMode": 0,
+          "tags": null,
+          "options": {
+            "inplaceInsertion": true
+          },
+          "selConditions": [],
+          "selSorting": []
+        },
+```
+`"inplaceInsertionClass"` указываем в том случае, если при создании объекта нужно выбирать класс (если есть наследники).
 
 ## Настройка расположения заголовка атрибута над значением.
 
