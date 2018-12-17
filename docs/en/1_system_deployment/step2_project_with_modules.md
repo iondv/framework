@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Step 1 Installing the desktop environment](docs/en/1_system_deployment/step1_installing_environment.md)
+### The previous page: [Step 1 Installing the environment](docs/en/1_system_deployment/step1_installing_environment.md)
 
 # Step 2 Core, modules and application
 

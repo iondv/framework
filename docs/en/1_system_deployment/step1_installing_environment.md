@@ -1,6 +1,6 @@
-### The previous page: [Contents](docs/en/index.md)
+### The previous page: [Content](docs/en/index.md)
 
-# Step 1 Installing the desktop environment
+# Step 1 Installing the environment
 
 The environment - is a list of programs needed to run a platform:
 
