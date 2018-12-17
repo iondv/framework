@@ -15,7 +15,7 @@
 
 ## Structure of the meta main types
 
-![shema_eng](https://i.imgur.com/TaIF23F.png)  
+![shema_eng](/docs/en/images/schema_en.png) 
 
 The structure of the main types of meta can be described as follows:
 

@@ -1,6 +1,6 @@
 # IONDV. Framework 
 
-![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)  
+![logoIONdv](/docs/ru/images/iondv_logo.png)  
 
 This page in [English](/README.md/)
 
@@ -115,7 +115,7 @@ jobs.enabled=true
 * [Руководство пользователя](/docs/ru/manuals/user_manual.md)
 * [Руководство разработчика](/docs/ru/manuals/dev_manual.md)
 * [Домашняя страница фреймворка](https://iondv.com/)
-* Обратная связь на [stack overflow](https://stackoverflow.com/search?q=iondv)
+* Обратная связь на [stack overflow](https://stackoverflow.com/questions/tagged/iondv)
 
 
 --------------------------------------------------------------------------  

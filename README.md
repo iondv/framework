@@ -1,5 +1,5 @@
 # IONDV. Framework 
-![logoIONdv](https://jobfilter.ru/uploaded_files/images/2017/01/24/159101/sm_U5eOsz95kjNWf_I7.png)
+![logoIONdv](/docs/en/images/iondv_logo.png)
 
 Эта страница на [Русском](/docs/ru/readme.md) 
 ## Description  
@@ -111,7 +111,7 @@ Some handy links to learn more information on developing applications using IOND
 * [User manual](/docs/en/manuals/user_manual.md)
 * [Developer manual](/docs/en/manuals/dev_manual.md)
 * [Homepage](<https://iondv.com/>)  
-* Questions on [stack overflow](https://stackoverflow.com/search?q=iondv)
+* Questions on [stack overflow](https://stackoverflow.com/questions/tagged/iondv)
 
 
 --------------------------------------------------------------------------  
