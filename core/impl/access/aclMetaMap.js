@@ -8,7 +8,6 @@ const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Logger = require('core/interfaces/Logger');
-const merge = require('merge');
 const F = require('core/FunctionCodes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
@@ -103,6 +102,9 @@ function AclMetaMap(options) {
 
         let sid = item.get(config.sidAttribute);
         let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
+        if (!(p instanceof Promise)) {
+          p = Promise.resolve(p || result);
+        }
         return p.then((result) => {
           if (result && breakOnResult) {
             return result;
@@ -203,16 +205,11 @@ function AclMetaMap(options) {
    * @returns {Promise}
    */
   this._getPermissions = function (subject, resources, skipGlobals) {
-    return options.acl.getPermissions(subject, resources, skipGlobals)
-      .then(permissions =>
-        walkRelatedSubjects(subject,
-          sid =>
-            options.acl.getPermissions(sid, resources, skipGlobals)
-              .then((p2) => {
-                permissions = merge(permissions, p2);
-              })
-        ).then(() => permissions)
-      );
+    const sids = Array.isArray(subject) ? subject.slice(0) : [subject];
+    return walkRelatedSubjects(subject, (sid) => {
+      sids.push(sid);
+    })
+      .then(() => options.acl.getPermissions(sids, resources, skipGlobals));
   };
 
   /**

@@ -29,13 +29,13 @@ function AclProvider() {
   };
 
   /**
-   * @param {String} subject
+   * @param {String | String[]} subjects
    * @param {String | String[]} resources
    * @param {Boolean} [skipGlobals]
    * @returns {Promise}
    */
-  this.getPermissions = function (subject, resources, skipGlobals) {
-    return this._getPermissions(subject, resources, skipGlobals);
+  this.getPermissions = function (subjects, resources, skipGlobals) {
+    return this._getPermissions(subjects, resources, skipGlobals);
   };
 
   /**

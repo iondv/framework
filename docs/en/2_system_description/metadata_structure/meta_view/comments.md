@@ -244,7 +244,7 @@ Next, configure the functionality of `"options"` for the "Comment" view on the e
 ### Meta class with the attribute of the "Collection" type with the "Comment" view
 
 1. Create an attribute of the "Collection" type.
-2. In the edit view form, create an attribute of the "Collection" type as usual bu with this setting: [`"options"`](/docs/en/2_system_description/metadata_structure/meta_view/options#the-`"options"-configuration).
+2. In the edit view form, create an attribute of the "Collection" type as usual but with the `"options"` setting, see the ["options" configuration](/docs/en/2_system_description/metadata_structure/meta_view/comments.md#the-options-configuration) for more details.
 
 ### Meta class by reference from the attribute of the "Collection" type with the "Comment" view 
 
