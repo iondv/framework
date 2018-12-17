@@ -1,3 +1,5 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 
 # User types

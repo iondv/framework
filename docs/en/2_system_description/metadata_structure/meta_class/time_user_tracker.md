@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Ancestor](/docs/en/2_system_description/metadata_structure/meta_class/ancestor.md)
+
 # Time tag of created objects and committed changes
 
 These are the following fields of the main part of the meta class:

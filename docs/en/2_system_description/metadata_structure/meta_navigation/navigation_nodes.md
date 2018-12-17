@@ -60,7 +60,7 @@
 | `"eagerLoading"`     |   **Eager Loading**      | Object                      | The configuration of the eager loading in the meta navigation. If you need the eager loading for the class for all navigations, we recommand you to specify it in the `deploy.json` file. Therefore, this option is rarely used.                                                                                                                                                                                                                                                                                          |
 | `"pathChains"`  | **Bread crumbs**    | Array of objects                      | Here you can define the logic for "hierarchical" navigation from the page object to the higher-nested object. It can be used in a specific implementation of ION application to optimize navigation.                                                                                                                                                                                                                                                                           |
 | `"searchOptions"`  | **Search in the navigation node**    | Array of objects                      | On the class level, it defines the way of searching the class objects from the view list: by the beginning of the word, by the entire word, by the attrbiutes or by the specifyed attributes in the list with the search option "with spaces".                                                                                                                                                                                                                                                                           |
-| `"metaVersion"` | **Metaversion**    | String                                                                                                                                                                                           | Version of metadata.                                               |
+| `"metaVersion"` | **Metaversion**    | String                                                                                                                                                                                           | Metadata versions.                                               |
 
 ## Search in the navigation node
 ```
@@ -101,7 +101,7 @@
 }
 ```
 
-### The next page: [Meta work-flows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
+### The next page: [Meta workflows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 
 --------------------------------------------------------------------------  
 

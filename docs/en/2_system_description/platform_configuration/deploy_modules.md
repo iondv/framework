@@ -401,7 +401,7 @@ The logo for the module is described through the standard mechanism of static ro
 
 # The "gantt-chart" module
 
-## Настройка шкалы времени 
+## Setting the time scale 
 
 The time scale is configured by setting the "Step" in the Gaant module.
 In the preconfiguration "Step" is set through the `step` parameter:

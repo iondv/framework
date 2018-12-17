@@ -1,6 +1,9 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Computable fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)
 
 # Cached values of computable attribute
+
 ## Description
 
 When you're applying the cached values, the attribute values are calculated during creating and editing an object. Previously calculated values are used for the samples.

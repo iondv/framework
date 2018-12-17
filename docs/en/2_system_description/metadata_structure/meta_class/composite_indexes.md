@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Journaling](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)
+
 # Composite indexation  
 
 **Composite indexation** - is compound unique fields. Used to search and manage the data integrity.

@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Metadata versions](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)
+
 # Inheritance
 
 **Inheritance** - allows you to create a new meta class based on a parent one with all its attributes. A parent class may have several heirs with different attribute structures. Each heir can have its own (individual) composition of attributes, plus attributes of the parent class.

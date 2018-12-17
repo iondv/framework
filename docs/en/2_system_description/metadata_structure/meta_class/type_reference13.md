@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page:[Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+
 # Reference
 
 ## Description

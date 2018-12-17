@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+
 # Conditions of sorting the valid values
 
 ## Description 
@@ -241,6 +244,8 @@ The "selection_provider" field. For more detail see [**Selection list of valid v
 
 The core has the context attribute - `$$ now`, which returns the current date.
 `$$ now` is available everywhere if you specify the conditions.
+
+For more details see the [variables](/docs/en/2_system_description/metadata_structure/meta_variables.md).
 
 ### Example:
 

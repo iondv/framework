@@ -1,5 +1,9 @@
-# Meta class - general part
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Schema of the main types of metadata](/docs/en/2_system_description/metadata_structure/meta_scheme.md)
+
+# Meta class - general part
+
 ## JSON
 ```
 {

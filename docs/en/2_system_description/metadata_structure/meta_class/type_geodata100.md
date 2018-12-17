@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
+
 # Geodata
 
 The **Geodata** attribute type - stores coordinates with unique views for creating and editing forms. The value of the "type" property for Geodata attribute type is 100.

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta nodes navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
+### Back: [Meta node navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
 
 # Page title - `"title"`
 
@@ -29,9 +29,6 @@ When the page title is formed, firstly the system will use the value of the `"ti
 }
 
 ```
-
-### The next page: [Sample conditions](/docs/en/2_system_description/metadata_structure/meta_navigation/conditions.md)
-
 --------------------------------------------------------------------------  
 
 

@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Мета узлов навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
+### Назад: [Мета узлов навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
 
 # Заголовок страницы - `"title"`
 
@@ -30,9 +30,6 @@
 }
 
 ```
-
-### Следующая страница: [Условия выборки](/docs/ru/2_system_description/metadata_structure/meta_navigation/conditions.md)
-
 --------------------------------------------------------------------------  
 
 

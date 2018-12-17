@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Attribute "Reference"](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+
 # Collection
 
 ## Description 
@@ -244,7 +247,7 @@ Thus, a many-to-many connection is realized without an intermediate class. Not o
 - `"itemsClass"` - the name of the class whose objects can store their identifiers in the collection and, thus, form a reference to the object by identifier.
 - `"backRef"` - the attribute reference from the reference class specified in `" itemsClass "`
 - When specifying a parent class, it is possible to create objects of the parent and child classes
-- Collection with object are loaded according to the semantics specified in the meta collection class or collection attribute
+- Collection with object are loaded according to the semantics specified in the collection class or collection attribute
 
 ## Collection processing and storage format
 To save the collection, transfer the array of actions (the example below) in the corresponding attribute of the object:

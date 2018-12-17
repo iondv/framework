@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Criteria of abstraction for class](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)
+
 # Versioning
  
  **Versioning** - greatly reduces the work required to manage the changes that occurs with an object. Versioning allows you to store multiple versions of metadata. When you change and save the object, it acquires its version, that contains proceeded changes. So, versioning provides the ability to work with different versions of the same objects.

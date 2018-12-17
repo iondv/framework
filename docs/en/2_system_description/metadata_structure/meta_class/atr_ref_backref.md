@@ -1,5 +1,9 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Default value](/docs/en/2_system_description/metadata_structure/meta_class/atr_default_value.md)  
+
 # Reference
+
 ## Description
 
 **Reference** - is a data type that stores a simple value and that system interprets as a reference to the key attribute of an object of another class. This object can be an object of any class including the original one.
@@ -105,6 +109,8 @@ Configure the back reference in the context of reference as follows:
 - `"type": 13` - attribute type "Reference"
 - `"refClass"` - the name of the class whose objects can store their identifiers in the reference and, thus, form a reference to the object by its identifier.
 - `"backRef"` - is the name of the attribute that belongs to the class specified in the "refClass" property. The attribute must be of the "Link" type and the attribute should have the reference to the original class.
+- When specifying a parent class, it is possible to create objects of the parent and child classes
+- References with object are loaded according to the semantics specified in the reference class or reference attribute
 
 ### Example:
 ```

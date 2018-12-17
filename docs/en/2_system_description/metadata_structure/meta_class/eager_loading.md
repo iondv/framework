@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+
 # Eager loading
 
 **Eager loading** - means that the related data, in sufficient quantities to correctly display the semantics of the related object, is loaded from the database as part of the initial query.

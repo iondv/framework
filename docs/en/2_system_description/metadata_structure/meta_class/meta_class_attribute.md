@@ -1,5 +1,8 @@
-# Meta class - attribute part
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Meta class - general part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+
+# Meta class - attribute part
 
 **Attribute part of the meta class** describes the `properties` field of the meta class. There are usually at least two attributes in a class — a key field and a data field. The attributes are contained in the `" properties "` field of the main part of the meta class.   
 

@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/isstruct.md)
+
 # The key attributes
 
 Each class should have a key attribute (the `" key "` field in the general part of the meta class). Without specified key attribute the application will not function correctly.

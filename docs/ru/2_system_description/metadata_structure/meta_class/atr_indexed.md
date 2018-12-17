@@ -1,3 +1,5 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)  
 
 # Индексация атрибутов

@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
+
 # Sorting a sample of valid values
 
 ## Description

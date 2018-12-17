@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Key attribute](/docs/en/2_system_description/metadata_structure/meta_class/key.md)
+
 # Semantics
  
 **Semantics** - used to output a class object as one string of the class title.
