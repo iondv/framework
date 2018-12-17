@@ -67,9 +67,17 @@ function AclMetaMap(options) {
               if (Array.isArray(d)) {
                 Array.prototype.push.apply(items, d);
               } else {
-                p = p.then(() => options.dataRepo.getAssociationsList(item, j)).then((coll) => {
-                  items.push(...coll);
-                });
+                p = p
+                  .then(() => options.dataRepo.getAssociationsList(item, j))
+                  .catch((err) => {
+                    if (options.log instanceof Logger) {
+                      options.log.warn(err.message || err);
+                    }
+                    return [];
+                  })
+                  .then((coll) => {
+                    items.push(...coll);
+                  });
               }
             }
           }
@@ -117,6 +125,12 @@ function AclMetaMap(options) {
               return walkItems(items, i + 1, cb, breakOnResult, false, result);
             });
         });
+      })
+      .catch((err) => {
+        if (options.log instanceof Logger) {
+          options.log.warn(err.message || err);
+        }
+        return result;
       });
   }
 
@@ -138,6 +152,12 @@ function AclMetaMap(options) {
       });
     }
     return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+      .catch((err) => {
+        if (options.log instanceof Logger) {
+          options.log.warn(err.message || err);
+        }
+        return [];
+      })
       .then((items) => {
         if (!items.length) {
           return Promise.resolve(result);
@@ -149,12 +169,6 @@ function AclMetaMap(options) {
             }
             return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
           });
-      })
-      .catch((err) => {
-        if (options.log instanceof Logger) {
-          options.log.warn(err.message || err);
-        }
-        return Promise.resolve(false);
       });
   }
 

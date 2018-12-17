@@ -34,7 +34,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getCount  = function (obj, options) {
-    return this._getCount(obj, options || {});
+    try {
+      return this._getCount(obj, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -51,7 +55,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getList = function (obj, options) {
-    return this._getList(obj, options || {});
+    try {
+      return this._getList(obj, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -68,7 +76,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getIterator = function (obj, options) {
-    return this._getIterator(obj, options || {});
+    try {
+      return this._getIterator(obj, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -81,7 +93,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.aggregate = function (className, options) {
-    return this._aggregate(className, options || {});
+    try {
+      return this._aggregate(className, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -94,7 +110,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.rawData = function (className, options) {
-    return this._rawData(className, options || {});
+    try {
+      return this._rawData(className, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -107,7 +127,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getItem = function (obj, id, options) {
-    return this._getItem(obj, id, options || {});
+    try {
+      return this._getItem(obj, id, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -123,7 +147,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.createItem = function (className, data, version, changeLogger, options) {
-    return this._createItem(className, data, version, changeLogger, options || {});
+    try {
+      return this._createItem(className, data, version, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -139,7 +167,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.editItem = function (className, id, data, changeLogger, options) {
-    return this._editItem(className, id, data, changeLogger, options || {});
+    try {
+      return this._editItem(className, id, data, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -157,7 +189,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.saveItem = function (className, id, data, version, changeLogger, options) {
-    return this._saveItem(className, id, data, version, changeLogger, options || {});
+    try {
+      return this._saveItem(className, id, data, version, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -169,7 +205,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.deleteItem = function (className, id, changeLogger, options) {
-    return this._deleteItem(className, id, changeLogger, options || {});
+    try {
+      return this._deleteItem(className, id, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -182,7 +222,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.put = function (master, collection, details, changeLogger, options) {
-    return this._put(master, collection, details, changeLogger, options || {});
+    try {
+      return this._put(master, collection, details, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -195,7 +239,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.eject = function (master, collection, details, changeLogger, options) {
-    return this._eject(master, collection, details, changeLogger, options || {});
+    try {
+      return this._eject(master, collection, details, changeLogger, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -212,7 +260,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsList = function (master, collection, options) {
-    return this._getAssociationsList(master, collection, options || {});
+    try {
+      return this._getAssociationsList(master, collection, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -229,7 +281,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.getAssociationsCount = function (master, collection, options) {
-    return this._getAssociationsCount(master, collection, options || {});
+    try {
+      return this._getAssociationsCount(master, collection, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -243,7 +299,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.bulkEdit = function (classname, data, options) {
-    return this._bulkEdit(classname, data, options || {});
+    try {
+      return this._bulkEdit(classname, data, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -254,7 +314,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.bulkDelete = function (classname, options) {
-    return this._bulkDelete(classname, options || {});
+    try {
+      return this._bulkDelete(classname, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 
   /**
@@ -263,7 +327,11 @@ function DataRepository() {
    * @returns {Promise}
    */
   this.recache = function (item, options) {
-    return this._recache(item, options || {});
+    try {
+      return this._recache(item, options || {});
+    } catch (err) {
+      return Promise.reject(err);
+    }
   };
 }
 
