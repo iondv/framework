@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)
+### Предыдущая страница: [Шаг 2 Установка ядра, модулей и приложения](/docs/ru/1_system_deployment/step2_project_with_modules.md)
 
 # Шаг 3 Cборка и запуск приложения
 

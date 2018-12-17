@@ -1,42 +1,46 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Шаг 2 Формирование проекта с модулями](/docs/ru/1_system_deployment/step2_project_with_modules.md)
+### The previous pege: [Step 2 Core, modules and application](/docs/en/1_system_deployment/step2_project_with_modules.md)
 
-# Шаг 3 Cборка и запуск приложения
+# Шаг 3 Building and deploying the application
 
-Для всех дальнейших команд, необходимо запустить командную строку от имени администратора.
+For all further commands, run the command prompt as an administrator.
 
-Перейдите в папку приложения `cd c:\workspace\framework` и задайте переменную окружения  `NODE_PATH` равной пути к приложению. 
-Для Windows команда - `set NODE_PATH=c:\workspace\framework`, для Linux - `export NODE_PATH=/workspace/framework`.
+Go to the folder of the application - `cd c:\workspace\framework` and set the `NODE_PATH` environment variable equals to the path to the application. 
 
-## Сборка приложения
+ For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the app directory.
 
-Сборка приложения обеспечивает установку всех библиотек, импорт данных в базу данных и подготовку приложения для запуска.
+## Building of the application
 
-1. При первом запуске необходимо выполнить `npm install gulp@3.9.1` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`. Эта команда ставит все библиотеки из свойства `dependencies` файла `package.json` ядра.
+Building the application includes the installation of all libraries, import of all data to the DB and preparation to launch the app.  
 
-2. Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
+1. The command - `npm install gulp@3.9.1` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the `Gulp` version - is `3.9.1`. The command above also installs all libraries from the `dependencies` property in the `package.json` file.
 
-3. После этого, а также все последующие разы выполняйте команду сборки приложения `gulp assemble`. 
+2. Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 
-**NB:** Убедитесь, что стоит переменная окружения `NODE_PATH`, запущена база `MongoDB`, `Gulp` установлен глобально и локально и его версия не выше `3.9.1`.
+3. Further, write the `gulp assemble` command to build the app.
 
-4. Перед непосредственным запуском приложения необходимо добавить базового пользователя для входа. Откройте программу `Mongo Compass` и в базе данных найдите таблицу `ion-user`. Удалите все записи, которые увидите там. Далее вернитесь в консоль и выполните указанные ниже команды. Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
-Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
+**NB:** Please make sure that the `NODE_PATH` environment variable is set, the `MongoDB` is open, the `Gulp` is installed globally and locally and its version is not higher `3.9.1`.
 
-## Запуск приложения
+4. Before launching the app add a new user. Open `Mongo Compass` and find the `ino-user` table to delete all entries. Further, returne to the console and run the following command. 
 
-После окончания сборки можно запускать приложение. Убедитесь, что стоит переменная окружения `NODE_PATH`. Без этого система выдаст ошибку, об отсутствии компонентов.
+`node bin\adduser.js --name admin --pwd 123` - adds a new admin user with the password 123.
 
-Запуск системы осуществляется командой `npm start`, альтерантивой является запуск `node bin\www`.
+`node bin\acl.js --u admin@local --role admin --p full` - adds right to the user.
 
-После запуска системы, откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении, где `8888` - порт указанный в параметре `server.ports` конфигурации запуска. 
+## Start of the application
 
-### Следующая страница: [Описание системы - схема метаданных](/docs/ru/2_system_description/metadata_structure/meta_scheme.md) 
+When building is over you can run the app. Please make sure that the `NODE_PATH` environment variable is set. Without it, the system will display an error that some components are missing. 
+
+The `npm start` command starts the system. The alternative is `node bin\www` command.  
+
+When you'll see the message that you're running the system on port `8888`, you can open the browser and type the system adress - `http://localhost:8888`.   
+
+### The next page: [System description - schema of the main types of metadata](/docs/en/2_system_description/metadata_structure/meta_scheme.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

@@ -1,19 +1,20 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: [Установка окружения](docs/ru/1_system_deployment/step1_installing_environment.md)
+### The previous page: [Step 1 Installing the desktop environment](docs/en/1_system_deployment/step1_installing_environment.md)
 
-# Шаг 2 Установка ядра, модулей и приложения
+# Step 2 Core, modules and application
 
-## Клонирование приложения и его компонентов
+## Cloning the application and its components
 
-**NB:** пути не должны содержать русских букв и пробелов. Мы советуем размещать приложение в `c:\workspace`.
+**NB:** no spaces should be in the path. We recommend you to host the app in the  `c:\workspace`.
 
-Рассматриваем формирование проекта с модулями на примере приложения `develop-and-test`.
-1. Находим приложение в репозитории github. Набираем искомое приложение `develop-and-test` в поле поиска и переходим на него.
+We are going to use the `develop-and-test` application as an example.
 
-2. Переходим в репозиторий файлов на ветку версии.
+1. Find the application in the github repository. Type the name of the app - `develop-and-test` in the search box and click the link. 
 
-3. Открываем файл `package.json` в котором смотрим зависимости.
+2. Go to the file repository on the version branch.
+
+3. Open the `package.json` file to check all the dependencies.
 
 ```
   "engines": {
@@ -36,58 +37,58 @@
     "viewlib-extra": "0.1.0"
 ```
 
-1. `engines": "ion": 1.24.1` - версия ядра `1.24.1`.  
+1. `engines": "ion": 1.24.1` - core version `1.24.1`.  
 
-2. `ionModulesDependencies` - список модулей и их версий.  
+2. `ionModulesDependencies` - list of modules and its versions.  
 
-3. `ionMetaDependencies` - список других метаданных, необходимых для проекта, в данном случае исключение `viewlib` - библиотека представлений.
+3. `ionMetaDependencies` - list of other metadata necessary for the project, the only exception is `viewlib` -  View Library.
 
-**NB:** для переключения на tag номера версии - смотрите версии в файле `package.json`.
+**NB:** check the version in the  `package.json` file to switch the tag of the version number.
 
-### Получение репозитория ядра
+### Cloning the core 
 
-Ядро находится в репозитории [`framework`](https://github.com/iondv/framework). На главной странице есть поле с путем к репозиторию.
+The core is located in the [`framework`](https://github.com/iondv/framework) repository. On the main page, in the box you will see the path of the git repository.  
 
-1. Запустите командную строку от имени администратора. 
+1. Run the command prompt as an administrator. 
 
-2. Скопируйте адрес репозитория, перейдите в папку workspace командой  `cd c:\workspace` и выполните команду `git clone https://github.com/iondv/framework`. Это команда создает папку `framework` и в неё клонирует репозиторий. 
+2. Copy the adress of the repository, go to the workspace folder by the `cd c:\workspace` command and then clone the repository - `git clone https://github.com/iondv/framework`. This command creates the `framework` folder and clones the repository in it. 
 
-### Получение модулей
+### Cloning the modules
 
-1. Переходим в папку модулей командой `cd framework\modules`. 
+1. Go to the module folder by the `cd framework\modules` command. 
 
-2. Для каждого модуля из списка `package.json` в свойстве `ionModulesDependencies` - находим репозиторий модуля среди группы модулей ` https://github.com/iondv/ION-MODULES`.
+2. For each modules from the `package.json` file in the `ionModulesDependencies` property - find the module repository ` https://github.com/iondv/ION-MODULES`.
 
-3. Клонируйте все модули из списка `ionModulesDependencies` командой `git clone https://github.com/iondv/registry`.
+3. Clone all modules from the `ionModulesDependencies` list - `git clone https://github.com/iondv/registry`.
 
-4. Перейдите в папку установленного модуля, переключитесь на tag номера версии `git checkout tags/v1.27.1`. Например `1.27.1` - это номер версии модуля `registry`. 
+4. Go to the folder of the cloned module, and switch the tag of the version number `git checkout tags/v1.27.1`. For example `1.27.1` - is the version number of the `registry` module. 
 
-5. Повторите для всех модулей. 
+5. Repeat for all modules. 
 
-### Получение приложения
+### Cloning the application
 
-1. Переходим в папку приложения. Если вы находитесь в папке модулей выполните команду `cd ..\applications`.
+1. Go to the application folder. If you're in the module folder just write the `cd ..\applications` command.
 
-2. Далее вернитесь на страницу репозитория `develop-and-test`, скопируйте путь и клонируйте его командой
+2. Return to the `develop-and-test` repository, copy the path and clone the repository -
 `git clone https://github.com/iondv/develop-and-test`. 
 
-3. Перейдите в папку установленного приложения, переключитесь на tag номера версии `git checkout tags/v1.17.0`.
+3. Go to the folder of the cloned application, and switch the tag of the version number `git checkout tags/v1.17.0`.
 
-4. Установка зависимостей в `ionMetaDependencies` осуществляется в папку `applications`, для установки необходимо убедиться, что находитесь в папке приложений. Клонируем приложения из списка в параметре  `ionMetaDependencies`. Для приложения `viewlib` клонируйте командой `git clone https://github.com/iondv/viewlib`.  
+4. Istall the dependencies from the `ionMetaDependencies` list in the `applications` folder,  please make sure that you are inside the application folder. Clone the applications from the `ionModulesDependencies` property. For the `viewlib` application - `git clone https://github.com/iondv/viewlib`.  
 
-5. Перейдите в папку установленного приложения, переключитесь на tag номера версии `git checkout tags/v0.9.1`. Повторите для каждого приложения.
+5. Go to the folder of the cloned application, and switch the tag of the version number `git checkout tags/v0.9.1`. Repeat for all modules.
 
-6. Приложение скомпоновано. 
+6. The application is assembled. 
 
-**NB:** мы советуем создать для него проект в IDE, например Visual Studio Code и в нём создать конфигурациионный файл.  
+**NB:** we recommend you to create a project in IDE, e.g. Visual Studio Code and there create a configuration file.    
 
-## Конфигурациионный файл
+## Configuration file
 
-Конфигурационный файл служит для задания основных параметров окружения приложения и настройки дополнительных параметров запуска.
+The configuration file is used to set the main parameters of the application environment.
 
-1. Создайте конфигурационный файл `setup` с расширением `ini` в папке `config`. Т.е. путь будет 
+1. Crate the configuration file `setup` with the `ini` file extension in the `config` folder. 
 
-2. Открываем файл в редакторе и вставляем содержимое. 
+2. Open the file and paste the following:
 
 ```
 auth.denyTop=false 
@@ -103,43 +104,44 @@ server.ports[]=3000
 module.default=registry
 module.skip[]=offline-sync
 ```
-Самый главный параметр - `db.uri=mongodb://127.0.0.1:27017/db`. Он указывает на название базы которую мы будем использовать для приложения. База данных будет создана автоматически.
 
-### Пример файла `config.ini` с комментариями
+The most important parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It indicates the the DB name used for the application. The DB will be created automatically.  
+
+### Example of the `config.ini` file with comments
 
 ```
-auth.denyTop=false // - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
-auth.registration=false // если не требуется регистрация
+auth.denyTop=false // - true if platform-level authentication is not needed, and each module will authenticate itself
+auth.registration=false // if registration is not required
 
-// Исключения из проверки доступа безопасности
+// Exceptions to security access checks
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
 
-db.uri=mongodb://127.0.0.1:27017/db // URI подключения к БД
-db.user=username // пользователь БД
-db.pwd=password // пароль пользователя БД
+db.uri=mongodb://127.0.0.1:27017/db // DB URI connection
+db.user=username // DB user
+db.pwd=password // DB user password
 
-// Запуск системы на этих портах
+// running the system on these ports
 server.ports[]=8888
 server.ports[]=8889
 server.ports[]=3000
 
-module.default=registry // модуль по умолчанию
+module.default=registry // modules by default
 
-module.skip[]=offline-sync // отключенные модули
+module.skip[]=offline-sync // disabled modules
 
-// Настройки файлового хранилища
-fs.storageRoot=./files // корневая директория хранилища, куда будут сохраняться файлы
-fs.urlBase=/files // база для публикации файлов в http (база URL файлов)
+// file storage settings
+fs.storageRoot=./files // root directory of the file storage
+fs.urlBase=/files // base for publishing files in http (base of URL files)
 ```
-Пример файла `setup.ini` перед использованием требует чтобы из него были удалены все комментарии начинающиеся со знаков `//`.
+The example of the `setup.ini` file requires to delete all comments, starting with `//` symbols.
 
-### Следующая страница: [Шаг 3 Сборка, развертывание и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
+### The next page: [Step 3 Build, deploy and start of the application](/docs/en/1_system_deployment/step3_building_and_running.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [ENG](/docs/en/1_system_deployment/step2_project_with_modules.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step2_project_with_modules.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
