@@ -2,7 +2,7 @@
 
 ### The previous pege: [Step 2 Core, modules and application](/docs/en/1_system_deployment/step2_project_with_modules.md)
 
-# Шаг 3 Building and deploying the application
+# Step 3 Building and deploying the application
 
 For all further commands, run the command prompt as an administrator.
 
