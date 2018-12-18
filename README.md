@@ -97,8 +97,12 @@ Set the `NODE_PATH` environment variable which is equal to the path of the appli
 
 The `npm install` command installs the key dependencies. Further, write the `gulp assemble` command to build the app.
 
-Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
+Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. 
+
+Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
+
 ### Running
+
 Run the app, executing the `npm start` command. 
 
 Open this link `http://localhost:8888` in browser and log in. `8888` - is a port in the server.ports parameter of the start configuration.

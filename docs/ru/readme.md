@@ -95,19 +95,20 @@ jobs.enabled=true
 
 Задайте переменную окружения NODE_PATH равной пути к ядру приложения следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` для Linux, где `workspace\dnt` - папка файлов ядра приложения.    
 
-Выполните команду `npm install` для установки ключевых зависимостей.   
-Далее выполните команду сборки приложения `gulp assemble`. 
+Выполните команду `npm install` для установки ключевых зависимостей и далее команду сборки приложения `gulp assemble`. 
 
-Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`
-Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`
+Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
 
+Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
 
 ### Запуск
+
 Запустите приложение командой в папке ядра `npm start`. 
 
 Откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении , где 8888 - порт указанный в параметре server.ports конфигурации запуска.
 
 ## Документация 
+
 Документация по платформе IONDV.Framework доступна на двух языках  - [русский](/docs/ru/index.md) и [english](/docs/en/index.md).
 
 ## Ссылки
