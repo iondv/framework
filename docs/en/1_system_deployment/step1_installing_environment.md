@@ -56,6 +56,7 @@ To install the frontend libraries, you should globally install [bower](https://b
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
+
  

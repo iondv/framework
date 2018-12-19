@@ -46,7 +46,8 @@ When you'll see the message that you're running the system on port `8888`, you c
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
+
 
 

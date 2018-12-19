@@ -103,11 +103,14 @@ server.ports[]=8889
 server.ports[]=3000
 module.default=registry
 module.skip[]=offline-sync
+fs.storageRoot=./files
+fs.urlBase=/files
+
 ```
 
 The most important parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It indicates the the DB name used for the application. The DB will be created automatically.  
 
-### Example of the `config.ini` file with comments
+### Example of the `setup.ini` file with comments
 
 ```
 auth.denyTop=false // - true if platform-level authentication is not needed, and each module will authenticate itself
@@ -147,7 +150,7 @@ The example of the `setup.ini` file requires to delete all comments, starting wi
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
 
 
