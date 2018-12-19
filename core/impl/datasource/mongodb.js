@@ -983,6 +983,7 @@ function MongoDs(config) {
   function doUpdate(type, conditions, data, options) {
     let hasData = false;
     if (data) {
+      delete data._id;
       for (let nm in data) {
         if (data.hasOwnProperty(nm) &&
           typeof data[nm] !== 'undefined' &&

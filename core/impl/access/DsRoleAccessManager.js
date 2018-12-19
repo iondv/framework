@@ -24,9 +24,30 @@ function DsRoleAccessManager(config) {
     return config.dataSource.fetch('ion_security_role', {});
   }
 
-  function fetchAllResources() {
-    return config.dataSource.fetch('ion_security_resource', {});
+  function fetchAllResources(prefix) {
+    const opts = {};
+    if (prefix) {
+      opts.filter = {[F.LIKE]: ['$id', prefix]};
+    }
+    return config.dataSource.fetch('ion_security_resource', opts);
   }
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this._getRole = function (id) {
+    return config.dataSource.get('ion_security_role', {[F.EQUAL]: ['$id', id]});
+  };
+
+  /**
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this._getResource = function (id) {
+    return config.dataSource.get('ion_security_resource', {[F.EQUAL]: ['$id', id]});
+  };
 
   /**
    * @param {String} subject
@@ -41,60 +62,50 @@ function DsRoleAccessManager(config) {
 
   /**
    * @param {String | String[]} roles
-   * @param {String | String[]} [permissions]
    * @returns {Promise}
    */
-  this._getResources = function (roles, permissions) {
+  this._getSubjects = function (roles) {
+    return config.dataSource
+      .fetch(roles_table, {filter: {[F.IN]: ['$roles', Array.isArray(roles) ? roles : [roles]]}})
+      .then(subjs => subjs.map(s => s.user));
+  };
+
+  /**
+   * @param {String | String[]} roles
+   * @param {String | String[]} [permissions]
+   * @param {String} [prefix]
+   * @returns {Promise}
+   */
+  this._getResources = function (roles, permissions, prefix) {
     if (!roles) {
-      return fetchAllResources();
+      return fetchAllResources(prefix);
     }
-    var p = null;
-    var result;
+
+    let filter = [{[F.IN]: ['$subject', Array.isArray(roles) ? roles.slice(0) : [roles]]}];
+    if (prefix) {
+      filter.push({[F.LIKE]: ['$resource', prefix]});
+    }
+
     if (permissions) {
-      p = Array.isArray(permissions) ? permissions.slice(0) : [permissions];
-      if (p.indexOf(Permissions.FULL) < 0) {
-        p.push(Permissions.FULL);
+      permissions = Array.isArray(permissions) ? permissions.slice(0) : [permissions];
+      if (permissions.indexOf(Permissions.FULL) < 0) {
+        permissions.push(Permissions.FULL);
       }
-      result = config.dataSource.fetch(
-        perms_table,
-        {
-          filter: {
-            [F.AND]: [
-              {
-                [F.IN]: ['$subject', Array.isArray(roles) ? roles.slice(0) : [roles]]
-              },
-              {
-                [F.IN]: ['$permission', p]
-              }
-            ]
-          },
-          distinct: true,
-          select: ['resource']
-        }
-      );
-    } else {
-      result = config.dataSource.fetch(
-        perms_table,
-        {
-          filter: {
-            [F.AND]: [
-              {
-                [F.IN]: ['$subject', Array.isArray(roles) ? roles.slice(0) : [roles]]
-              }
-            ]
-          },
-          distinct: true,
-          select: ['resource']
-        }
-      );
+      filter.push({[F.IN]: ['$permission', permissions]});
     }
-    return result
+
+    return config.dataSource
+      .fetch(
+        perms_table,
+        {
+          filter: {[F.AND]: filter},
+          distinct: true,
+          select: ['resource']
+        }
+      )
       .then((res) => {
-        const result = [];
-        res.forEach((r) => {
-          result.push(r.resource);
-        });
-        return result;
+        let ids = res.map(r => r.resource);
+        return config.dataSource.fetch('ion_security_resource', {filter: {[F.IN]: ['$id', ids]}});
       });
   };
 
@@ -136,13 +147,17 @@ function DsRoleAccessManager(config) {
   /**
    * @param {String[]} roles
    * @param {String[]} resources
-   * @param {String[]} permissions
+   * @param {String[]} [permissions]
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
     roles = Array.isArray(roles) ? roles : [roles];
     resources = Array.isArray(resources) ? resources : [resources];
-    permissions = Array.isArray(permissions) ? permissions : [permissions];
+    if (permissions) {
+      permissions = Array.isArray(permissions) ? permissions : [permissions];
+    } else {
+      permissions = [Permissions.FULL];
+    }
 
     let p = Promise.resolve();
 
@@ -174,34 +189,24 @@ function DsRoleAccessManager(config) {
   /**
    * @param {String[]} roles
    * @param {String[]} resources
-   * @param {String[]} permissions
+   * @param {String[]} [permissions]
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
     roles = Array.isArray(roles) ? roles : [roles];
     resources = Array.isArray(resources) ? resources : [resources];
-    permissions = Array.isArray(permissions) ? permissions : [permissions];
 
-    let p = Promise.resolve();
+    let f = [
+      {[F.IN]: ['$subject', roles]},
+      {[F.IN]: ['$resource', resources]}
+    ];
 
-    roles.forEach((role) => {
-      resources.forEach((resource) => {
-        permissions.forEach((permission) => {
-          p = p.then(() => config.dataSource.delete(
-            perms_table,
-            {
-              [F.AND]: [
-                {[F.EQUAL]: ['$subject', role]},
-                {[F.EQUAL]: ['$resource', resource]},
-                {[F.EQUAL]: ['$permission', permission]}
-              ]
-            }
-          ));
-        });
-      });
-    });
+    if (permissions) {
+      permissions = Array.isArray(permissions) ? permissions : [permissions];
+      f.push({[F.IN]: ['$permission', permissions]});
+    }
 
-    return p;
+    return config.dataSource.delete(perms_table, {[F.AND]: f});
   };
 
   /**
@@ -241,18 +246,16 @@ function DsRoleAccessManager(config) {
     roles = Array.isArray(roles) ? roles : [roles];
 
     return config.dataSource.delete('ion_security_role', {[F.IN]: ['$id', roles]})
-      .then(() => config.dataSource.fetch(roles_table))
+      .then(() => config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$roles', roles]}}))
       .then((ur) => {
         let p = Promise.resolve();
         ur.forEach((u) => {
-          if (u) {
-            roles.forEach((r) => {
-              let ind = u.roles.indexOf(r);
-              if (ind < 0) {
-                u.roles.splice(ind, 1);
-              }
-            });
-          }
+          roles.forEach((r) => {
+            let ind = u.roles.indexOf(r);
+            if (ind >= 0) {
+              u.roles.splice(ind, 1);
+            }
+          });
           p = p.then(() => config.dataSource.update(
             roles_table,
             {[F.EQUAL]: ['$user', u.user]},

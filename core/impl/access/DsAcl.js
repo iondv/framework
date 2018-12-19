@@ -124,6 +124,7 @@ function DsAcl(config) {
         result.forEach((p) => {
           if (!(p.subject === globalMarker && skipGlobals)) {
             if (p.permission === Permissions.FULL) {
+              res[p.resource][Permissions.FULL] = true;
               res[p.resource][Permissions.READ] = true;
               res[p.resource][Permissions.WRITE] = true;
               res[p.resource][Permissions.USE] = true;
