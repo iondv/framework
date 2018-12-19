@@ -148,7 +148,7 @@ fs.urlBase=/files // база для публикации файлов в http (
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **IONDV.Framework**.  
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
 
 
