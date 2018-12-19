@@ -42,7 +42,7 @@ Use the [Gulp](http://gulpjs.com/) app to organize testing and building of distr
 
 ### The installer of frontend dependencies
 
-To install the frontend libraries, you should globally install [bower](https://bower.io), by the `npm install -g bower` command. 
+To install the frontend libraries, you should install [bower](https://bower.io) globally, by the `npm install -g bower` command. 
 
 
 ### The next page: [Step 2 Core, modules and application](docs/en/1_system_deployment/step2_project_with_modules.md)  
