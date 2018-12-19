@@ -4,10 +4,9 @@
 
 # Inheritance
 
-**Inheritance** - allows you to create a new meta class based on a parent one with all its attributes. A parent class may have several heirs with different attribute structures. Each heir can have its own (individual) composition of attributes, plus attributes of the parent class.
+**Inheritance** - allows you to create a new meta class based on a parent one with all its attributes. A parent class may have several heirs with different attribute structures. Each heir can have its own individual set of attributes, plus attributes of the parent class.
 
 ## Set of attributes
-
 
 In the meta of the parent class the set of attributes is formed in such a way that each attribute can be used in any heir classes. Whereas the set of attributes in a heir class is individual for each heir class and has no influence on other classes.
 
