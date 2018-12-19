@@ -848,10 +848,11 @@ function IonDataRepository(options) {
       countTotal: options.countTotal,
       distinct: options.distinct
     };
-    let cm = getMeta(obj);
-    let rcm = getRootType(cm);
+
+    const cm = getMeta(obj);
+    const rcm = getRootType(cm);
     $options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    let props = cm.getPropertyMetas();
+    const props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
