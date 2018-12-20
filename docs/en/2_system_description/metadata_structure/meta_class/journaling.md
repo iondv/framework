@@ -14,7 +14,7 @@
   "isStruct": false,
   "key": "okato",
   "semantic": "name",
-  "name": "naselenniyPunkt",
+  "name": "populatedArea",
   "caption": "Populated area",
   "journaling": true,
   "ancestor": null,

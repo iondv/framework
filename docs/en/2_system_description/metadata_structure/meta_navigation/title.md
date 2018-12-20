@@ -8,7 +8,7 @@ The **"title"** field is used to set the page title, different from the `"captio
 
 ## Description
 
-When the page title is formed, firstly the system will use the value of the `"title"` field of the corresponding navigation node. If the `"title"` field is empty (not specified), the `caption` field of the meta node navigation is used to form the page title. When the page title is formed on the selection list pages, the system will use the `"caption"` field for the general part of the meta class.
+When the page title is formed, firstly the system will use the value of the `"title"` field of the corresponding node navigation. If the `"title"` field is empty (not specified), the `caption` field of the meta navigation node is used to form the page title. When the page title is formed on the selection list pages, the system will use the `"caption"` field for the general part of the meta class.
 
 ## JSON
 

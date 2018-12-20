@@ -108,5 +108,5 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

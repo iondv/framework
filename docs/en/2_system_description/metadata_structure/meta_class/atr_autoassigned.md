@@ -5,22 +5,24 @@
 # Autocomplete attributes
 
 ## Description
+
 Type **autocompletion** - `" autoassigned ": true` - indicates that the value of this attribute should be filled automatically when creating a class. It is used mainly for attributes of the “Unique values” type ("unique": true) for integers and string attributes, as well as for attributes of the "Date-time" type.
 
 ## How to configure?  
 
 1. For the attributes of the "Date-time" type, an attribute should have the value of the current time. It is used in the time tag of created objects and committed changes. 
-2. For integer attributes, if the "Unique value" is specified ("unique": true) when creating a form, then it is filled with a random set of characters.
+2. For the integer attributes, if the "Unique value" is specified ("unique": true) when creating, then the field is filled with a random set of characters.
 3. For strings, if the "Unique value" is specified ("unique": true), then a random `hex` value should be generated - the size of the string length - in the example below 20 characters.
+
 ```
 var crypto = require('crypto');
 ID = crypto.randomBytes(20).toString('hex');
 ```
-4. For the `guid` "global identifier", the configuration is similarly to the strings. 
+4. For the `guid` "global identifier", the configuration is the same as for the string.
 
-NB. Make sure that you made a check when saving. The field should be generated automatically for empty values or a date. For all others (integer, string), previously created values should be generated.
+**NB:** Make sure that you made a check when saving. The field should be generated automatically for empty values or date. For all others (integer, string), previously created values should be generated.
 
-### Example:
+### Example
 ```
     {
       "orderNumber": 50,
@@ -47,5 +49,5 @@ NB. Make sure that you made a check when saving. The field should be generated a
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.  
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 

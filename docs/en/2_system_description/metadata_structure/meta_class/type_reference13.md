@@ -15,6 +15,7 @@ The ability to replace an object by a back reference is determined by the `nulla
 See the full description of the `Reference` type in the attribute part of the meta class -[**Reference and Back reference**](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md).
 
 ## Types of connections of the "reference" type
+
 Reference type in context of the attribute part of the meta class:
 
 1. `one-to-many` - the classic connection of the heir object to the ancestor object. Define a reference and specify the class of the nested object, after connections are created and a reference stored as a separate entities in the DB.

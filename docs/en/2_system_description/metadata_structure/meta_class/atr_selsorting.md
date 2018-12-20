@@ -6,15 +6,15 @@
 
 ## Description
 
-**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the `"Reference"` type. Set it when creating the meta class in the `"selSorting"` field. 
+**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the reference type. Set it in the `"selSorting"` field when creating the meta class. 
 
 ### Available types of sorting:
 
 •  Sorting in ascending order
+
 •  Sorting in descending order
 
-
-## Example in JSON
+### Example 
 ```
 {
       "orderNumber": 20,

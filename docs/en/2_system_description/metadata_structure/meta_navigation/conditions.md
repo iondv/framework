@@ -70,11 +70,11 @@ It is possible not only to produce sorted data in the list of menu conditions, b
 
 ```
 {
-  "code": "passportObject.naselenie",
+  "code": "passportObject.population",
   "type": 1,
   "orderNumber": 10,
   "caption": "Population",
-  "classname": "naselenie",
+  "classname": "population",
   "container": null,
   "collection": null,
   "conditions": [
@@ -91,7 +91,7 @@ The `conditions` attribute contains two objects:
 1. `property` - filtering property
 2. `operation` - filtering operation
 
-In this case, this filter has the following meaning - *show all objects of the `naselenie` class with a minimum year*.
+In this case, this filter has the following meaning - *show all objects of the `population` class with a minimum year*.
 
 If you need to specify a value, the third attribute will be `value` and the value to search, for example:
 

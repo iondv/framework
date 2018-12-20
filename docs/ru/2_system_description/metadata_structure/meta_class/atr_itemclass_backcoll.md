@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Атрибут "Ссылка"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### Предыдущая страница: [Атрибут cсылка](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
 
 # Коллекция
 
@@ -271,11 +271,11 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

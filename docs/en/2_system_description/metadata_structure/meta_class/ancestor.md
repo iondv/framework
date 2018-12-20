@@ -58,18 +58,18 @@ In the meta of the parent class the set of attributes is formed in such a way th
 `"id"` - is a unique identifier for all heirs. It is stored in the parent class.
 `"name"` - the class has the "Name" attribute, which can be displayed in all the heirs, or in one of them. If the `" name "` attribute is set in the parent class, then it can be displayed in any of the heirs. But if `" name "` is set in the class of the heir, it is displayed only in the class in which it was set.
 
-*Сlass view* :
+## Сlass view:
 
 If the [criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md) is set in the parent class, then there is no need to set the view for this class.
 
 The class view is set for each heir separately with the desired set of attributes (attributes of the new class plus of the parent class, if needed).
 
 
-## Setting the list of the heir classes to create objects by reference 
+## Setting the list of the heirs 
 
-It is set in the meta class for the attribute of the "Reference"/"Collection" types after specifying the reference/collection class.
+Set the list of the heir classes to create objects by reference in the meta class for the attribute of the reference/collection types after specifying the reference/collection class.
 
-Example:
+### Example:
 
 ```
 "itemsClass": "event",
@@ -80,16 +80,16 @@ Example:
 
 ```
 
-`itemsClass` - collection for the parent class - `[event]`;
+`itemsClass` - collection for the parent class - `[event]`
 
-`Subclasses1` - is a heir class of the parent class - `[event]`, which will be displayed in the list when creating an object by reference (hereinafter you can list all the heir classes that need to be displayed in the list).
+`Subclasses1` - is a heir class of the parent class - `[event]`, which will be displayed in the list when creating an object by reference (hereinafter you can list all the heir classes that need to be displayed in the list)
 
-> NB. If this setting is not specified - when created, all heir classes will be listed.
+**NB:** Configure this setting, otherwise all heir classes will be listed when created.
 
-### Conditions for applying this setting: 
+### Conditions of this setting: 
 
-* Attribute types - "Reference" or "Collection".
-* For the "Reference", "Collection" types of attributes the reference/collection class for the parent class should be specified (when creating an object of a reference class, a window for selecting several classes is displayed). 
+* Attribute types - Reference or Collection.
+* For the reference, collection types of attributes the reference/collection class for the parent class should be specified. 
 * In addition to [hiding the parent class](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md), when creating an object, you do not need to display all the heir classes in the class selection list to create an object by reference.
 
 ### Example
@@ -154,17 +154,18 @@ In the [Project] class, there is an attribute of the "Collection" type that refe
 
 
 ```
-If the [criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md) is set in the class, then when creating an object of the [Event] class in the collection, only the heirs specified in the `"allowedSubclasses"` propery will be desplayed. 
+If the [criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md) is set in the class, then when creating an object of the [Event] class in the collection, only the heirs specified in the `"allowedSubclasses"` property will be desplayed. 
 
 Based on the example, only the objects of the "Event 1" and "Event 2" classes can be created in the "Events" collection.
 
 
 ## Multi-tiered hierarchy
 
-The heir classes can inherit the set of attributes not only from their direct parent classes, but also from
+The heir classes can inherit the set of the attributes not only from their direct parent classes but also from
 those that are higher in the inheritance hierarchy.
 
-### Example:
+### Example
+
 `[basicObj]` - parent class ->> `[eventBasic]` - heir class of the [basicObj] class ->> `[eventBlock]` - heir class of the `[eventBasic]` class.
 
 ```
@@ -233,7 +234,7 @@ those that are higher in the inheritance hierarchy.
   "properties": [
 
 ```
-The `[eventBlock]` heir will inherit the set of attribute of the `[basicObj]` parent class, as well as th `[eventBasic]`heir class.
+The `[eventBlock]` heir will inherit the set of the attributes of the `[basicObj]` parent class, as well as the `[eventBasic]` heir class.
  
 ### The next page: [Time tag of created objects](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)
 --------------------------------------------------------------------------  

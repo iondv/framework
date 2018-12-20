@@ -8,11 +8,11 @@
 
 In the meta view of creation and change use the type "Group [0]" for the attributes of the "Structure [16]" type. If you do not specify the fields in the group, they are created automatically according to the meta. In list views, there is no need to create columns for structure attributes, the object will not have such a property, but the corresponding attributes of the structure-class will be. For them, you can add columns.
 
-_NB: Objects of structure-class are not created!_
+**NB:** Objects of structure-class are not created!
 
-## Example
+### Example
 
-**Structure-class:**
+_Structure-class:_
 
 ```
 {
@@ -181,7 +181,7 @@ _NB: Objects of structure-class are not created!_
 }
 ```
 
-**Meta class with an attribute of the "Structure [16]" type**
+_Meta class with an attribute of the "Structure [16]" type_
 
 ```
 {

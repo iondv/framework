@@ -14,9 +14,9 @@ Each class should have a key attribute (the `" key "` field in the general part 
 
 ## Key attribute requirements
 
-When creating the key attribute meta, set the `" unique "` and `" autoassigned "` fields to `true`. Disable the empty value by setting `" nullable "` to `false`.
+When creating the key attribute meta, set the `" unique "` and `"autoassigned"` fields to `true`. Disable the empty value by setting `" nullable "` to `false`.
 
-If the attribute is not automatically generated, then set the `" autoassigned "` field to `false`, so the field must be set by the operator when creating. 
+If the attribute is not automatically generated, then set the `"autoassigned"` field to `false`, so the field must be set by the operator when creating. 
 
 ### The next page: [Semantic attributes](/docs/en/2_system_description/metadata_structure/meta_class/semantic.md)
 --------------------------------------------------------------------------  

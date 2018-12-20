@@ -5,9 +5,10 @@
 # Conditions of sorting the valid values
 
 ## Description 
+
 **Conditions of sorting the valid values** - allows you to limit the selection of objects by reference that are valid for binding in this reference attribute.
 
-Filter of sorting the valid values is used in the meta class for the attributes of the "Reference" and "Collections" types. The filter sets the conditions to limit the sample of objects. Conditions are imposed as a list of consecutive operations.
+Filter of sorting the valid values is used in the meta class for the attributes of the reference and collection types. The filter sets the conditions to limit the sample of objects. Conditions are imposed as a list of consecutive operations.
 
 ### Available operations:
 
@@ -73,7 +74,7 @@ The operation of the key-expression type - the key is the attribute name in the 
 
 ## Operations and other particular qualities
 
-Use the "nestedConditions" condition to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
+Use the "nestedConditions" to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
 
 To inquiry attribute values that are not equal to zero, use the `nempty` operation and specify `null` in the "value" field.
 
@@ -114,17 +115,18 @@ To inquiry attribute values that are not equal to zero, use the `nempty` operati
 
 | Field                 | Name        | Acceptable values                                                   | Description                                                            |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:--------------------------------------------------------------------|
-| `"property"`         | **Attribute**                  | String only Latin without spaces                                  | Attribute of the reference class, according to which the values are filtered |
+| `"property"`         | **Attribute**                  | String in latin characters with no spaces                                  | Attribute of the reference class, according to which the values are filtered |
 | `"operation"`        | **Operation**                 | Operation code (see above)                                               | Operation of object filtration                  |
 | `"value"`            | **Value**                 | Depends on the operation type                                              | The second value for binary filtering operations                    |
-| `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions. |                                                                     |
+| `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions |                                                                     |
+
+**Attention:** the "selection_provider" field. For more detail see [**Selection list of valid values**](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
 
 ### Example
-**Attention**
 
-The "selection_provider" field. For more detail see [**Selection list of valid values**](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
 * "type": "SIMPLE" - simple type,   
 * "list": [ ] - an array of acceptable values.
+
 
  ```
      {
@@ -240,7 +242,7 @@ The "selection_provider" field. For more detail see [**Selection list of valid v
      }
  ```
  
-### Conditions of sorting the valid values for "Data" type attribute
+### Conditions of sorting the valid values for "Data" attribute type
 
 The core has the context attribute - `$$ now`, which returns the current date.
 `$$ now` is available everywhere if you specify the conditions.

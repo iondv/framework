@@ -8,9 +8,9 @@
 
 ## Description
 
-Composite indexation is located in the `"compositeIndexes"` field, which allows you to set the requirements of the unique field combinations. Composite index is specified by listing its attributes and indicating the `"unique": true` property. When a composite index is present in a class, when the object is saved, the DB checks the identical combinations of the listed fields. That is, the values of the `" protocol "` and `" family "` fields from the example below can be repeated, but a pair of values is always unique.
+Composite indexation is located in the `"compositeIndexes"` field, which allows you to set the requirements of the unique field combinations. Specify the composite index by listing its attributes and indicating the `"unique": true` property. When a composite index is present in a class, when the object is saved, the DB checks the identical combinations of the listed fields. That is, the values of the `"protocol"` and `"family"` fields from the example below can be repeated, but a pair of values is always unique.
 
-### Example:
+### Example
 ```
 {
   "isStruct": false,

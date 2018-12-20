@@ -4,13 +4,14 @@
 
 # Versioning
  
- **Versioning** - greatly reduces the work required to manage the changes that occurs with an object. Versioning allows you to store multiple versions of metadata. When you change and save the object, it acquires its version, that contains proceeded changes. So, versioning provides the ability to work with different versions of the same objects.
+**Versioning** - greatly reduces the work required to manage the changes that occurs with an object. Versioning allows you to store multiple versions of metadata. When you change and save the object, it acquires its version, that contains proceeded changes. So, versioning provides the ability to work with different versions of the same objects.
  
  
 Versioning is set in the `" version "` field of the general part of the meta class. Add the `version` property (" version ": 2) to the attribute to change the meta version.
  
 ## How it works
-When downloading metadata, if the attribute has a `"version"` property, e.x. ("version": 2), then meta will be downloaded with the version 2, otherwise version 1.
+
+When downloading metadata, if the attribute has a `"version"` property, e.x. ("version": 2), then meta will be downloaded with the version 2,otherwise version 1.
 
  ```
  {
@@ -31,7 +32,7 @@ When downloading metadata, if the attribute has a `"version"` property, e.x. ("v
  
  When creating objects, the latest version of the metadata from the current ones in the DB will be added to these objects. You can edit objects based on the saved version.
  
- ### Example of saved objects with different versions in DB:
+ ### Example of saved objects with different versions in DB
  
  ```
  {
