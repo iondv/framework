@@ -857,7 +857,7 @@ function IonDataRepository(options) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
     $options.filter = addFilterByItem(options.filter, obj);
-    $options.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    $options.filter = addDiscriminatorFilter($options.filter, cm, options.skipSubClasses);
     $options.joins = options.joins || [];
 
     return bubble(
@@ -936,12 +936,12 @@ function IonDataRepository(options) {
     };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
-    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    opts.fields = {_class: '$_class', _classVer: '$_classVer'};
     let props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
-    opts.filter = addFilterByItem(opts.filter, obj);
+    opts.filter = addFilterByItem(options.filter, obj);
     opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     opts.joins = opts.joins || [];
     return bubble(
@@ -1117,19 +1117,21 @@ function IonDataRepository(options) {
     let opts = {
       expressions: options.expressions,
       fields: options.fields,
-      aggregates: options.aggregates
+      aggregates: options.aggregates,
+      groupBy: options.groupBy,
+      to: options.to
     };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
     prepareResults(cm, opts, opts.joins);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
-    return prepareFilterValues(cm, opts.filter, opts.joins).
-    then(function (filter) {
+    opts.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    return prepareFilterValues(cm, opts.filter, opts.joins)
+      .then((filter) => {
         opts.filter = filter;
         return _this.ds.aggregate(tn(rcm), opts);
-      }
-    ).catch(wrapDsError('aggregate', className));
+      })
+      .catch(wrapDsError('aggregate', className));
   };
 
   /**
