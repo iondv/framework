@@ -1109,6 +1109,9 @@ function IonDataRepository(options) {
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
    * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
@@ -1119,6 +1122,10 @@ function IonDataRepository(options) {
       fields: options.fields,
       aggregates: options.aggregates,
       groupBy: options.groupBy,
+      offset: options.offset,
+      count: options.count,
+      sort: options.sort,
+      distinct: options.distinct,
       to: options.to
     };
     let cm = getMeta(className);
