@@ -1,3 +1,5 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Geodata](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)  
 
 # Schedule
@@ -11,7 +13,7 @@ There are two types of fields for "Schedule" in the meta view:
 `SCHEDULE = 210` – schedule is displayed in a table
 `CALENDAR = 220` – schedule is displayed in a calendar
 
-### Example of attribute structure in a table:
+### Example of attribute structure in a table
 
 ```
   {
@@ -41,7 +43,7 @@ There are two types of fields for "Schedule" in the meta view:
         },
 ```
 
-### Example of attribute structure in a calendar: 
+### Example of attribute structure in a calendar
 
 ```
 {
@@ -106,9 +108,9 @@ Time periods are specified as periodicity objects in the `occurs` field with the
 
 ## Periodicity
 
-In the periodicity object, attributes are set within their normal values, except for the `year` attribute - year. The `year` attribute is set as a frequency, since it is not a periodic characteristic.
+In the periodicity object, attributes are set within their normal values, except for the `year` attribute. The `year` attribute is set as a frequency, since it is not a periodic characteristic.
 
-### **Example**:
+### Example
 
 ```
 {
@@ -123,6 +125,7 @@ In the periodicity object, attributes are set within their normal values, except
 }
 ```
  *Example description:* 
+ 
 The example shows the time period of 30 seconds, which is repeated once every two years, on March 5 at 9 hours 20 minutes 30 seconds and only if the day falls on Monday.
 
 ### The next page: [Meta view](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)

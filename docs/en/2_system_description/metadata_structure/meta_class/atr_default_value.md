@@ -1,10 +1,12 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Autocompletion](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
 
 # Default value
 
 **Default value** - is set to display the value in the attribute field automatically when opening the form for creating an object. The default value is set by assigning the value `default` to the ` "defaultValue" ` property. It is mainly used for selection list of valid values.
 
-### Example:
+### Example
 
 ```
 {

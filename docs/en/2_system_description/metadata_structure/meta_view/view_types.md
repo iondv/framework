@@ -35,6 +35,8 @@ module.exports = {
 };
 
 ```
+**NB:** for more details see the [correspondance table](\docs\en\2_system_description\metadata_structure\correspondance_table.md).
+
 | Code | Name  | Description                                                                                                                                          | 
 |----:|:------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------|
 |   0 | [Group](/docs/ru/2_system_description/metadata_structure/meta_view/type_group.md)                                          | Special structure of create and edit views.                                                                                        |                                                                            |

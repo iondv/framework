@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Заголовок](/docs/ru/2_system_description/metadata_structure/meta_navigation/title.md)
+### Назад: [Мета узлов навигации](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
 
 # Условия выборки - `"conditions"`
 
@@ -151,8 +151,6 @@
 Аргументы `DATEADD`: _дата, интервал, ед.изм интервала [ms, s, min, h, d, m, y] (по умолчанию - день(d))_
 
 Аргументы `DATEDIFF`: _конечная дата, начальная дата, ед. изм. результата [ms, s, min, h, d, m, y] (по умолчанию - день(d)), логический флаг приведения к целому числу_
-
-### Следующая страница: [Мета бизнес-процессов](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
 
 --------------------------------------------------------------------------  
 
