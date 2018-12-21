@@ -106,7 +106,7 @@ Open the file and paste the text above. The main parameter is `db.uri=mongodb://
 
 Set the `NODE_PATH` environment variable which is equal to the path of the application core. For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the directory of the appliction.   
 
-The `npm install gulp@3.9.1` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp version - is `3.9.1`. 
+The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp version - is `3.9.1`. 
 
 Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 

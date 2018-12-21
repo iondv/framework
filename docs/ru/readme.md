@@ -103,7 +103,7 @@ fs.urlBase=/files
 
 Задайте переменную окружения NODE_PATH равной пути к ядру приложения следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` для Linux, где `workspace\dnt` - папка файлов ядра приложения.    
 
-При первом запуске необходимо выполнить `npm install gulp@3.9.1` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`.
+При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`.
 
 Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 
@@ -141,7 +141,7 @@ fs.urlBase=/files
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 
 
 
