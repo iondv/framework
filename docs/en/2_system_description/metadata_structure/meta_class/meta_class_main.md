@@ -1,5 +1,9 @@
-# Meta class - general part
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Schema of the main types of metadata](/docs/en/2_system_description/metadata_structure/meta_scheme.md)
+
+# Meta class - general part
+
 ## JSON
 ```
 {
@@ -31,7 +35,7 @@
 | `"isStruct"`        | [**Structure**](/docs/en/2_system_description/metadata_structure/meta_class/isstruct.md)         | Logical.                            | If the value is "true" - this class is a structure and can be used in other classes in atributes of a special kind - "Structure [16]".  |
 | `"key"`              | [**Key attributes**](docs/en/2_system_description/metadata_structure/meta_class/key.md)           | Array of strings, at least one value.   | Specify a key field that uniquely identifies the object in the collection.                                             |
 | `"semantic"`         | [**Semantic attributes**](/docs/en/2_system_descriptionmetadata_structure/meta_class/semantic.md)       | String.                                | Sets the semantics - the rule of forming the row view for this class.                                                                                      |
-| `"name"`             | **System name**               | String, only the Latin alphabet, with no spaces. | Sets the first part of the name of the meta class fule, the system name.                                                                                                                        |
+| `"name"`             | **System name**               | String only the latin characters with no spaces. | Sets the first part of the name of the meta class fule, the system name.                                                                                                                        |
 | `"abstract"`             | [**Criteria of abstraction for class**](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)               | Logical | Used only for parent (base) classes.                                                                                                                                 |
 | `"version"`          | [**Version**](/docs/en/2_system_description/metadata_structure/meta_class/metaverion.md)                      | String.                       | Allows to set the versioning of the meta to operate the data created in different meta versions in the same collection.                                   |
 | `"caption"`          | **Logical name**              | String                                | The class name displayed in the UI.                                                                                                                                                    |

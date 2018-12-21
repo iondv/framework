@@ -1,8 +1,10 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
 
 # Selection list of valid values
 
-**Selection list of valid values** - sets the selection list of valid values for the propery in the attribute field. It is located in the attribute part of the meta class - ` "selectionProvider"`. The list is formed as an array of objects of the “key-value” type with a list of the value selection for an attribute of the “String”, “Real”, “Integer”, “Decimal”, and “Text” types.   
+**Selection list of valid values** - sets the selection list of valid values for the propery in the attribute field. It is located in the attribute part of the meta class - ` "selectionProvider"`. The list is formed as an array of objects of the “key-value” type. It represents a list of the value selection for an attribute of the “String”, “Real”, “Integer”, “Decimal”, and “Text” types.   
 
 You have three types of selection list. Set the type in the `"type"` field using one of the following keys:  
 
@@ -56,7 +58,7 @@ You have three types of selection list. Set the type in the `"type"` field using
 | `"key"`   | **Key**              | Any value corresponding to the attribute type of the selection list  | When saving an object the key value is written in the DB |
 | `"value"` | **Value**          | Any string, but there may be problems with control sequences           | The value of this field is displayed in the user interface      |
 
-### The `"matrix"` field - an array of objects of the following structure:
+The `"matrix"` field - is an array of objects of the following structure:
 
 ```
         "matrix": [
@@ -171,7 +173,7 @@ Each object of the `"MATRIX"` array containns the  mandotary fields:
 
 | Field                 | Name        | Acceptable values                                                   | Description                                                                                           |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|
-| `"property"`         | **Attribute**                  | String, only Latin alphabet, without spaces                                  | Class attribute is checked for the correspondence of  the field value to this condition of this vector  |
+| `"property"`         | **Attribute**                  | String, only latin characters with no spaces                                  | Class attribute is checked for the correspondence of  the field value to this condition of this vector  |
 | `"operation"`        | **Operation**                 | Operation code                                                          | The definition is made according to the operation                                                |
 |                      |                              | _0 - equal (AND)_                                                       |                                                                                                    |
 |                      |                              | _1 - not equal (OR)_                                                  |                                                                                                    |
@@ -187,18 +189,18 @@ Each object of the `"MATRIX"` array containns the  mandotary fields:
 | `"value"`            | **Value**                 | Depends on the operation type                                              |The second value for binary operations                                                              |
 | `"nestedConditions"` | **Nested selection conditions** | The object, the structure is similar to the structure of the object of the selection conditions |                                                                                                    |
 
-_**NB**: The operation code corresponds to the different values of operations, depending on whether the attribute is selected or not. If the  `"property"` field is equal to `null`, then a logical condition (by which the nested selection conditions are combined) is coded. (Indicated in brackets in the table above)_
+**NB**: the operation code corresponds to the different values of operations, depending on whether the attribute is selected or not. If the  `"property"` field is equal to `null`, then a logical condition (by which the nested selection conditions are combined) is coded. (Indicated in brackets in the table above).
 
-## Description
+## Selection list of the "SIMPLE" type
 
-### Selection list of the "SIMPLE" type
+### Description
 
 This selection list allows to create the hard-coded preset value fields, limiting the choice of the user in the application.  
 Be sure to set the “Drop-down list [5]” view type, it's mandatory. It saves the data in the DB in a type other than the type of data displayed to the user.   
  
-_Example_: If in the `key` fiels you set the elements of the selection list of the data-time type in the ISODate, and in the `value` field - the event description, the result will be: the user can choose the event, but will work with ISODate data inside the app. 
+_Example_: if in the `key` field you set the elements of the selection list of the data-time type in the ISODate, and in the `value` field - the event description, the result will be: the user can choose the event, but will work with ISODate data inside the app. 
 
-_**NB**: If the attribute with a selection list has an empty value as `"nullable": true` - the empty value is added automatically in the selection list!_
+**NB**: if the attribute with a selection list has an empty value as `"nullable": true` - the empty value is added automatically in the selection list!
 
 ```
     {
@@ -252,6 +254,7 @@ _**NB**: If the attribute with a selection list has an empty value as `"nullable
 ```
 
 #### How to configure?
+
 You need to:
 1. choose the most appropriate attribute type,
 2. choose the identifiers of the type (`"key"`) to operate with values in the DB as efficiently as possible where necessary automated processing,
@@ -269,9 +272,7 @@ For the predictability of the application, respect two conditions:
 
 The system takes the value of the reference field (s) and consistently applies the conditions of the vectors to this field. Each vector is the set of conditions and its own selection list. As soon as the system reaches the vector with satisfied conditions, it takes its selection list and defines the output in the UI. It is assumed that the system will find the corresponding vector for any value of the reference field.
 
-#### Example 1: Matrix of two integer values
-
-**JSON of the class**:
+### Example 1: Matrix of two integer values
 
 ```
 {
@@ -512,9 +513,7 @@ The system takes the value of the reference field (s) and consistently applies t
 
 ### The order of development  
 
-Devide all possible combinations of attribute pairs - `"matrix_base_1"` and `"matrix_base_2"` into 4 vectors. Each field can be either negative or non-negative. The diagram is below:
-
-![Devide into vectors](https://i.imgur.com/Gr16t9A.jpg)
+Devide all possible combinations of attribute pairs - `"matrix_base_1"` and `"matrix_base_2"` into 4 vectors. Each field can be either negative or non-negative. 
 
 Choose vectors and their conditions:
 
@@ -527,7 +526,7 @@ If in the 3 and 4 conditions the equality to zero is not correctly set, as a res
 
 In the example above, for each vector the selection list is limited to one item, but there may be more.
 
-#### Example 2: matrix of free real value with compound conditions
+### Example 2: matrix of free real value with compound conditions
 ```
 {
   "isStruct": false,

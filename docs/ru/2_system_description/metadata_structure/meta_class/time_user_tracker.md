@@ -1,4 +1,7 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Наследование](/docs/ru/2_system_description/metadata_structure/meta_class/ancestor.md)
+
 # Метки времени создания и изменения
 
 Речь идет о следующих полях общей части меты классов:

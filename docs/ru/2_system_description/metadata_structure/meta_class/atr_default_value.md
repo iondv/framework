@@ -1,3 +1,5 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Автозаполнение](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
 
 # Значение по умолчанию 
@@ -78,3 +80,5 @@ get(className, attr1, val1, attr2, val2, ...) // возвращаем id пер�
 
 
 -------------------------------------------------------------------------- 
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved. 

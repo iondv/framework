@@ -1,7 +1,10 @@
-### Предыдущая страница: [Атрибут "Ссылка"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Атрибут cсылка](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+
 # Коллекция
 
-**Коллекция** - тип данных, позволяющий выводить в объекте списки других объектов. Данные объекты могут быть объектами любого класса включая исходный.
+**Коллекция** - тип данных, позволяющий выводить в объекте списки других объектов. Данные объекты могут быть объектами любого класса включая исходный.  
 
 Разделяются ссылки через запятую. Все значения из последовательности ссылок и запятых хранятся строкой в базе данных.
 
@@ -268,11 +271,11 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 
