@@ -828,6 +828,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -846,7 +847,8 @@ function IonDataRepository(options) {
       offset: options.offset,
       count: options.count,
       countTotal: options.countTotal,
-      distinct: options.distinct
+      distinct: options.distinct,
+      joins: options.joins
     };
 
     const cm = getMeta(obj);
@@ -914,6 +916,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -932,7 +935,8 @@ function IonDataRepository(options) {
       offset: options.offset,
       count: options.count,
       countTotal: options.countTotal,
-      distinct: options.distinct
+      distinct: options.distinct,
+      joins: options.joins
     };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
@@ -1106,6 +1110,7 @@ function IonDataRepository(options) {
   /**
    * @param {String} className
    * @param {{}} [options]
+   * @param {{}} [options.joins]
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
@@ -1121,6 +1126,7 @@ function IonDataRepository(options) {
       expressions: options.expressions,
       fields: options.fields,
       aggregates: options.aggregates,
+      joins: options.joins,
       groupBy: options.groupBy,
       offset: options.offset,
       count: options.count,
