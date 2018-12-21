@@ -2,7 +2,7 @@
 
 ### The previous page: [Meta navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/meta_navigation.md)
 
-# Meta section navigation
+# Meta navigation section
 
 ### JSON
 

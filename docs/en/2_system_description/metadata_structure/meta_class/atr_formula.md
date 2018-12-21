@@ -1,12 +1,14 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Eager loading](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) 
 
 # Computable attribute (without caching)
 
 ## Description
 
-**Computable attributes (formula)** - are used to instantly generate a string expression (as a result) according to a preset algorithm when accessing a class object through the API. For example, when you open the object.
+**Computable attributes (formula)** - are used to instantly generate a string expression as a result according to a preset algorithm when accessing a class object through the API. For example, when you open the object.
 
-At the class meta level, the computable attributes store the algorithm for generating a string expression in the `formula` property.
+At the meta class level, the computable attributes store the algorithm for generating a string expression in the `formula` property.
 
 For example you can access all unique values from the `name` attribute, which values are stored in the `ownOrg` collection. All the unique values, devided by "," are united in one string expression. 
 
@@ -24,19 +26,20 @@ For example you can access all unique values from the `name` attribute, which va
 
 For example, If you have a collection with non-unique values, for example, "ownOrg1", "ownOrg2" and again "ownOrg1". If you need to obtain only the unique values of the collection "ownOrg1 and ownOrg2", then the above described formula for the computable attribute using the `merge` operation will be useful.
 
-Depending on the function, you can refer to the necessary attribute to get the value through the attributes of the "Link", and "Collection" type. 
+Depending on the function, you can refer to the necessary attribute to get the value through the attributes of the reference and collection types. 
 
 When saving changes and closing the form of an object, the result is not saved in the attribute if caching is not configured.
 
-If the meta class has a few computable attributes, then the order of the calculation is set in the `orderNumber` property. You can use the results of calculations for a given order `orderNumber` in the following calculated attributes. 
+If the meta class has a few computable attributes, then the order of the calculation is set in the `orderNumber` property. You can use the results of calculations for a given order - `orderNumber` in the subsequent calculated attributes. 
 
-In the semantics of a class or an attribute, you can specify computable attributes.
+You can specify computable attributes in the semantics of a class or an attribute.
 
 If you set `Null` in the `formula` property, then the attribute won't be computable and you cannot apply caching to it.
 
-# How to configure?
+## How to configure?
 
-Each formula begins with a description of the object and the function in the [JSON](https://en.wikipedia.org/wiki/JSON) file format.   
+Each formula begins with a description of the object and the function in the JSON file.   
+
 ```
       "formula": {
     "function1": [
@@ -107,7 +110,7 @@ The functions operands could be:
       }
 ```
 
-### Example of formulas:
+### Example of formulas
 
 ```
 {
@@ -238,7 +241,7 @@ The functions operands could be:
     },
 
 ```
-**Result:** _ the output of the address with spaces and commas between the values of the attributes_
+**Result:** _the output of the address with spaces and commas between the values of the attributes_.
 
 
 ### Available operations:
@@ -302,7 +305,7 @@ aggregation:
 
 All aggregation operations take the following arguments
 
-or
+either
 
 ```
 [$Attribute name of collection], [Name of aggregated attribute], [Filtering Function of collection elements]
@@ -318,7 +321,7 @@ or
 
 `\n` -   line folding
 
-### Example:
+### Example
 
 ```
 "formula": {

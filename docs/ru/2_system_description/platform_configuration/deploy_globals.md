@@ -5,6 +5,7 @@
 # Глобальные настройки в `deploy.json`
 
 ### Структура глобальных настройек `"globals"` на примере приложения "Project management system": 
+
 ```
 "globals": {
   "moduleTitles": {
@@ -23,24 +24,6 @@
   "jobs": {
      "fact-creator": {
      "report-builder": {
-```
-## Настройка скрытия модуля в системном меню
-
-Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
-
-```
-{
-  "namespace": "project-management",
-  "parametrised": true, //
-  "globals": {
-    "moduleTitles": {
-      "registry": {
-        "description": "Проектное управление",
-        "order": 10,
-        "skipModules": true
-      }
-      "ionadmin": null
-    },
 ```
 
 ## Настройка отображения общего системного меню для всех модулей проекта
