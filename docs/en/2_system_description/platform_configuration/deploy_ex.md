@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy_ex.md)
+### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
 ## The `deploy.json` file on the example of the "Project management system" application
  

@@ -14,7 +14,7 @@ Go to the folder of the application - `cd c:\workspace\framework` and set the `N
 
 Building the application includes the installation of all libraries, import of all data to the DB and preparation to launch the app.  
 
-1. The command - `npm install gulp@3.9.1` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the `Gulp` version - is `3.9.1`. The command above also installs all libraries from the `dependencies` property in the `package.json` file.
+1. The command - `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the `Gulp` version - is `3.9.1`. The command above also installs all libraries from the `dependencies` property in the `package.json` file.
 
 2. Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 
