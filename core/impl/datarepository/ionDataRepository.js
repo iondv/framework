@@ -1132,7 +1132,8 @@ function IonDataRepository(options) {
       count: options.count,
       sort: options.sort,
       distinct: options.distinct,
-      to: options.to
+      to: options.to,
+      append: options.append
     };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
