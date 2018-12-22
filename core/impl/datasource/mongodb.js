@@ -1903,7 +1903,7 @@ function MongoDs(config) {
 
     let p = null;
     if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then((c) =>
+      p = getCollection(GEOFLD_COLLECTION).then(c =>
         new Promise((resolve, reject) => {
           c.find({__type: type}).limit(1).next(function (err, geoflds) {
             if (err) {

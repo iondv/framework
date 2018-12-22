@@ -377,7 +377,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
         left: (context ? context.alias + '.' : '') +
                 (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-        filter: addDiscriminatorFilter(null, rMeta),
+        // filter: addDiscriminatorFilter(null, rMeta), TODO: Вернуть когда уйдем от монги, или вынести в настройку
         alias: alias
       };
       joins.push(j);
