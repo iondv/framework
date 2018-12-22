@@ -134,33 +134,33 @@ _stringchar ->
 
 date -> "`" isodate "`" {% function(d) {return moment(d[1]).toDate();} %}
 isodate ->
-  year "-" month "-" day {% function (d) {return d[0] + '-' + d[2] + '-' + d[4];} %}
-  | year month day {% function (d) {return d[0] + '-' + d[1] + '-' + d[2];} %}
-  | year "-" month "-" day "T" hour ":" minute ":" minute "Z" {% function (d) {return d[0] + '-' + d[2] + '-' + d[4] + 'T' + d[6] + ':' + d[8] + ':' + d[10] + 'Z';} %}
-  | year month day "T" hour minute minute "Z" {% function (d) {return d[0] + '-' + d[1] + '-' + d[2] + 'T' + d[4] + ':' + d[5] + ':' + d[6] + 'Z';} %}
-  | year "-" month "-" day "T" hour ":" minute ":" minute sign hour ":" minute {% function (d) {return d[0] + '-' + d[2] + '-' + d[4] + 'T' + d[6] + ':' + d[8] + ':' + d[10] + d[11] + d[12] + d[14];} %}
-  | year month day "T" hour minute minute sign hour minute {% function (d) {return d[0] + '-' + d[1] + '-' + d[2] + 'T' + d[4] + ':' + d[5] + ':' + d[6] + d[7] + d[8] + d[9];} %}
+  year "-" month "-" day
+  | year month day
+  | year "-" month "-" day "T" hour ":" minute ":" minute "Z"
+  | year month day "T" hour minute minute "Z"
+  | year "-" month "-" day "T" hour ":" minute ":" minute sign hour ":" minute
+  | year month day "T" hour minute minute sign hour minute
 
 year ->
-  [0-9] [0-9] [0-9] [0-9] {% function (d) {return d[0] + d[1] + d[2] + d[3];} %}
+  [0-9] [0-9] [0-9] [0-9]
 
 month ->
-  [1] [0-2] {% function (d) {return d[0] + d[1];} %}
-  | [0] [1-9] {% function (d) {return d[0] + d[1];} %}
+  "1" [0-2]
+  | "0" [1-9]
 
 day ->
-  [3] [01] {% function (d) {return d[0] + d[1];} %}
-  | [0] [1-9] {% function (d) {return d[0] + d[1];} %}
-  | [12] [0-9] {% function (d) {return d[0] + d[1];} %}
+  "3" [01]
+  | [0] [1-9]
+  | [12] [0-9]
 
 hour ->
-  [2] [0-3] {% function (d) {return d[0] + d[1];} %}
-  | [01] [0-9] {% function (d) {return d[0] + d[1];} %}
+  "2" [0-3]
+  | [01] [0-9]
 
 minute ->
-  [0-5] [0-9] {% function (d) {return d[0] + d[1];} %}
+  [0-5] [0-9]
 
-sign -> [+-] {% id %}
+sign -> [+-]
 
 # Whitespace
 _ -> null | _ [\s] {% function() {} %}
