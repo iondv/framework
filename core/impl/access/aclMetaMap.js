@@ -194,36 +194,22 @@ function AclMetaMap(options) {
   }
 
   /**
-   * @param {String} subject
+   * @param {String | User} subject
    * @param {String} resource
    * @param {String | String[]} permissions
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
-    return options.acl.checkAccess(subject, resource, permissions)
-      .then((can) => {
-        if (can) {
-          return can;
-        }
-        return walkRelatedSubjects(
-          subject,
-          sid => options.acl.checkAccess(sid, resource, permissions).then((r) => {can = r;}),
-          true
-        ).then(() => can);
-      });
+    return options.acl.checkAccess(subject, resource, permissions);
   };
 
   /**
-   * @param {String} subject
+   * @param {String | String[] | User} subject
    * @param {String | String[]} resources
    * @returns {Promise}
    */
   this._getPermissions = function (subject, resources, skipGlobals) {
-    const sids = Array.isArray(subject) ? subject.slice(0) : [subject];
-    return walkRelatedSubjects(subject, (sid) => {
-      sids.push(sid);
-    })
-      .then(() => options.acl.getPermissions(sids, resources, skipGlobals));
+    return options.acl.getPermissions(subject, resources, skipGlobals);
   };
 
   /**
@@ -232,22 +218,7 @@ function AclMetaMap(options) {
    * @returns {Promise}
    */
   this._getResources = function (subject, permissions) {
-    return options.acl.getResources(subject, permissions)
-      .then(resources =>
-        walkRelatedSubjects(subject,
-          sid =>
-            options.acl.getResources(sid, permissions)
-              .then((r2) => {
-                if (Array.isArray(r2)) {
-                  r2.forEach((r) => {
-                    if (resources.indexOf(r) < 0) {
-                      resources.push(r);
-                    }
-                  });
-                }
-              })
-        ).then(() => resources)
-      );
+    return options.acl.getResources(subject, permissions);
   };
 
   /**

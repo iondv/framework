@@ -322,6 +322,35 @@ function prepareEmpty(cm, filter, empty, joins, numGen, context) {
   }
 }
 
+function formCnFilter(cm, filter) {
+  let descendants = cm.getDescendants();
+  for (let i = 0; i < descendants.length; i++) {
+    filter.push(descendants[i].getCanonicalName());
+    formCnFilter(descendants[i], filter);
+  }
+}
+
+/**
+ * @param {Object} filter
+ * @param {ClassMeta} cm
+ * @param {Boolean} [skipSc]
+ * @private
+ */
+function addDiscriminatorFilter(filter, cm, skipSc = false) {
+  let df;
+  if (skipSc) {
+    df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
+  } else {
+    let cnFilter = [cm.getCanonicalName()];
+    formCnFilter(cm, cnFilter);
+    df = {[Operations.IN]: ['$_class', cnFilter]};
+  }
+
+  return !filter ? df : {[Operations.AND]: [df, filter]};
+}
+
+module.exports.addDiscriminatorFilter = addDiscriminatorFilter;
+
 /**
  * @param {ClassMeta} cm
  * @param {String[]} path
@@ -348,7 +377,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
         left: (context ? context.alias + '.' : '') +
                 (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-        filter: null,
+        filter: addDiscriminatorFilter(null, rMeta),
         alias: alias
       };
       joins.push(j);

@@ -18,6 +18,7 @@ const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util')
 const dataToFilter = require('core/interfaces/DataRepository/lib/util').dataToFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const addDiscriminatorFilter = require('core/interfaces/DataRepository/lib/util').addDiscriminatorFilter;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
 const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
 const conditionParser = require('core/ConditionParser');
@@ -177,28 +178,6 @@ function IonDataRepository(options) {
       return getRootType(cm.ancestor);
     }
     return cm;
-  }
-
-  /**
-   * @param {Object} filter
-   * @param {ClassMeta} cm
-   * @param {Boolean} [skipSc]
-   * @private
-   */
-  function addDiscriminatorFilter(filter, cm, skipSc = false) {
-    let df;
-    if (skipSc) {
-      df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
-    } else {
-      let cnFilter = [cm.getCanonicalName()];
-      let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
-      for (let i = 0; i < descendants.length; i++) {
-        cnFilter.push(descendants[i].getCanonicalName());
-      }
-      df = {[Operations.IN]: ['$_class', cnFilter]};
-    }
-
-    return !filter ? df : {[Operations.AND]: [df, filter]};
   }
 
   /**
@@ -996,12 +975,14 @@ function IonDataRepository(options) {
                 join = joinsHash[jpth];
               } else {
                 joinsHash.zi$$$$counter++;
+                let alias = '___join' + joinsHash.zi$$$$counter;
                 join = {
                   table: tn(rc),
-                  alias: '___join' + joinsHash.zi$$$$counter,
+                  alias: alias,
                   left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
                   right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
-                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef
+                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef,
+                  filter: addDiscriminatorFilter(null, rc)
                 };
                 joinsHash[jpth] = join;
 

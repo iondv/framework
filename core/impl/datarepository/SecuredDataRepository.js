@@ -341,7 +341,7 @@ function SecuredDataRepository(options) {
       }
     });
 
-    return aclProvider.getPermissions(options.user.id(), resources, true)
+    return aclProvider.getPermissions(options.user, resources, true)
       .then((permissions) => {
         let permMap = {};
         list.forEach((item) => {
@@ -636,7 +636,7 @@ function SecuredDataRepository(options) {
 
         if (!statics) {
           p = aclProvider.getPermissions(
-            moptions.user.id(), [
+            moptions.user, [
               globalMarker,
               classPrefix + item.getClassName(),
               itemPrefix + item.getClassName() + '@' + item.getItemId()
@@ -745,7 +745,7 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr), moptions) :
-              aclProvider.getPermissions(moptions.user.id(), attrResources(item, moptions)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions), moptions))))
+              aclProvider.getPermissions(moptions.user, attrResources(item, moptions)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions), moptions))))
           .then((ap) => {
             item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
           });
@@ -956,7 +956,7 @@ function SecuredDataRepository(options) {
   this._createItem = function (classname, data, version, changeLogger, moptions) {
     moptions = moptions || {};
     return (moptions.user ?
-      aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE]) :
+      aclProvider.checkAccess(moptions.user, classPrefix + classname, [Permissions.USE]) :
       Promise.resolve(true))
       .then((accessible) => {
         if (accessible) {
@@ -975,7 +975,7 @@ function SecuredDataRepository(options) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
-    return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(moptions.user, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE] ||
@@ -1062,7 +1062,7 @@ function SecuredDataRepository(options) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
-    return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(moptions.user, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE] ||
@@ -1226,7 +1226,7 @@ function SecuredDataRepository(options) {
    */
   this._bulkEdit = function (classname, data, options) {
     options = options || {};
-    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+    return (options.user ? aclProvider.getPermissions(options.user, [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
           !permissions ||
@@ -1248,7 +1248,7 @@ function SecuredDataRepository(options) {
    */
   this._bulkDelete = function (classname, options) {
     options = options || {};
-    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+    return (options.user ? aclProvider.getPermissions(options.user, [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
           !permissions ||

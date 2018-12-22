@@ -19,7 +19,7 @@ function AclProvider() {
   };
 
   /**
-   * @param {String} subject
+   * @param {String | User} subject
    * @param {String} resource
    * @param {String | String[]} permissions
    * @returns {Promise}
@@ -29,13 +29,13 @@ function AclProvider() {
   };
 
   /**
-   * @param {String | String[]} subjects
+   * @param {String | String[] | User} subject
    * @param {String | String[]} resources
    * @param {Boolean} [skipGlobals]
    * @returns {Promise}
    */
-  this.getPermissions = function (subjects, resources, skipGlobals) {
-    return this._getPermissions(subjects, resources, skipGlobals);
+  this.getPermissions = function (subject, resources, skipGlobals) {
+    return this._getPermissions(subject, resources, skipGlobals);
   };
 
   /**
