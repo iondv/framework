@@ -657,6 +657,9 @@ function SecuredDataRepository(options) {
             );
         } else {
           let perms = clone(statics);
+          if (roleConf && perms.__class) {
+            perms.__class[Permissions.READ] = false;
+          }
           delete perms.__attr;
           p = Promise.resolve(perms);
         }
