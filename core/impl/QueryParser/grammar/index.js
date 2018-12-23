@@ -6,6 +6,7 @@ function id(x) { return x[0]; }
 
 const F=require('./../../../FunctionCodes');
 const {Attr}=require('./../classes');
+  const moment = require('moment');
 
 var grammar = {
     Lexer: undefined,
@@ -21,6 +22,7 @@ var grammar = {
     {"name": "expressionNode", "symbols": ["attribute"], "postprocess": d => { return new Attr(d[0]) }},
     {"name": "expressionNode", "symbols": ["string"], "postprocess": id},
     {"name": "expressionNode", "symbols": ["number"], "postprocess": id},
+      {"name": "expressionNode", "symbols": ["date"], "postprocess": id},
     {"name": "expressionNode", "symbols": ["sizeNode"], "postprocess": id},
     {"name": "expressionNode", "symbols": ["notNode"], "postprocess": id},
     {"name": "sizeNode", "symbols": ["sizex", "__", "expressionNode"], "postprocess": d => { return {[F[d[0]]]: [d[2]]} }},
@@ -54,7 +56,11 @@ var grammar = {
     {"name": "_attribute$ebnf$1", "symbols": []},
     {"name": "_attribute$ebnf$1", "symbols": ["_attribute$ebnf$1", /[$_a-zA-Z0-9-]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "_attribute", "symbols": [/[$_a-zA-Z]/, "_attribute$ebnf$1"], "postprocess": d => { return d[0] + d[1].join('')}},
-    {"name": "_attribute", "symbols": [{"literal":"`"}, "_string", {"literal":"`"}], "postprocess": d => { return d[1] }},
+      {
+        "name": "_attribute", "symbols": [{"literal": "["}, "_string", {"literal": "]"}], "postprocess": d => {
+        return d[1]
+      }
+      },
     {"name": "attribute", "symbols": ["_attribute"], "postprocess": id},
     {"name": "attribute$ebnf$1", "symbols": ["_subattribute"]},
     {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", "_subattribute"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
@@ -78,6 +84,39 @@ var grammar = {
     {"name": "_string", "symbols": ["_string", "_stringchar"], "postprocess": function(d) {return d[0] + d[1];}},
     {"name": "_stringchar", "symbols": [/[^\\"`]/], "postprocess": id},
     {"name": "_stringchar", "symbols": [{"literal":"\\"}, /[^]/], "postprocess": function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); }},
+      {
+        "name": "date", "symbols": [{"literal": "`"}, "isodate", {"literal": "`"}], "postprocess": function (d) {
+        return moment(d[1]).toDate();
+      }
+      },
+      {"name": "isodate", "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day"]},
+      {"name": "isodate", "symbols": ["year", "month", "day"]},
+      {
+        "name": "isodate",
+        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", {"literal": "Z"}]
+      },
+      {
+        "name": "isodate",
+        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", {"literal": "Z"}]
+      },
+      {
+        "name": "isodate",
+        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", "sign", "hour", {"literal": ":"}, "minute"]
+      },
+      {
+        "name": "isodate",
+        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", "sign", "hour", "minute"]
+      },
+      {"name": "year", "symbols": [/[0-9]/, /[0-9]/, /[0-9]/, /[0-9]/]},
+      {"name": "month", "symbols": [{"literal": "1"}, /[0-2]/]},
+      {"name": "month", "symbols": [{"literal": "0"}, /[1-9]/]},
+      {"name": "day", "symbols": [{"literal": "3"}, /[01]/]},
+      {"name": "day", "symbols": [/[0]/, /[1-9]/]},
+      {"name": "day", "symbols": [/[12]/, /[0-9]/]},
+      {"name": "hour", "symbols": [{"literal": "2"}, /[0-3]/]},
+      {"name": "hour", "symbols": [/[01]/, /[0-9]/]},
+      {"name": "minute", "symbols": [/[0-5]/, /[0-9]/]},
+      {"name": "sign", "symbols": [/[+-]/]},
     {"name": "_", "symbols": []},
     {"name": "_", "symbols": ["_", /[\s]/], "postprocess": function() {}},
     {"name": "__", "symbols": [/[\s]/]},
