@@ -1,5 +1,7 @@
 #### [Оглавление](/docs/ru/index.md)
 
+### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
+
 # Связь двух неймспейсов
 
 ## Связь нескольких проектов с использованием пространства имен "namespace"

@@ -1,5 +1,7 @@
 #### [Содержание](/docs/ru/index.md)
 
+### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
+
 # Виртуальные атрибуты 
 
 ## Описание

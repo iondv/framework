@@ -1,5 +1,7 @@
 #### [Content](/docs/en/index.md)
 
+### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+
 # Connection of two namespaces
 
 ## Connection of two projects using "namespace"
@@ -15,7 +17,7 @@ It is used if you need to link two projects together and deploy them on the same
   "orderNumber": 0,
   "type": 1,
   "title": "",
-  "caption": "Адрес ФИАС",
+  "caption": "FIAS adress",
   "classname": "address@fias",
   "container": null,
   "collection": null,

@@ -8,16 +8,16 @@
 
 | Наименование | Описание |
 |:---------:|:---------|
-|[**Шаблоны модулей**](\docs\ru\2_system_description\functionality\module_templates.md) | Разделяются на системные и проектные шаблоны. |
-|[**Печатные формы**](\docs\ru\2_system_description\functionality\printed_forms.md) |Передача форматирования в прописном виде.   |
-|[**Задания по рассписанию**](\docs\ru\2_system_description\functionality\schedule.md) | Подсистемы запуска заданий по расписанию.   |
-|[**Уведомления**](\docs\ru\2_system_description\functionality\notifications.md) |Лента новых уведомлений.  |
-|[**Кеширование данных**](\docs\ru\2_system_description\functionality\cached.md) |Кеширование данных обеспечивает быстрый доступ к запрашиваемой информации. |
-|[**Фильтры на форме**](\docs\ru\2_system_description\functionality\filter.md) |Запрос для фильтра на форме представления списка. |
-|[**Связь двух неймспейсов**](\docs\ru\2_system_description\functionality\namespace.md)| Для связывания двух проектов.  |
-|[**Виртуальные атрибуты**](\docs\ru\2_system_description\functionality\virtual_attr.md) |Специальный тип атрибутов, который позволяет выводить полный код и наименование класса.|
+|[**Шаблоны модулей**](/docs/ru/2_system_description/functionality/module_templates.md) | Разделяются на системные и проектные шаблоны. |
+|[**Печатные формы**](/docs/ru/2_system_description/functionality/printed_forms.md) |Передача форматирования в прописном виде.   |
+|[**Задания по рассписанию**](/docs/ru/2_system_description/functionality/schedule.md) | Подсистемы запуска заданий по расписанию.   |
+|[**Уведомления**](/docs/ru/2_system_description/functionality/notifications.md) |Лента новых уведомлений.  |
+|[**Кеширование данных**](/docs/ru/2_system_description/functionality/cached.md) |Кеширование данных обеспечивает быстрый доступ к запрашиваемой информации. |
+|[**Фильтры на форме**](/docs/ru/2_system_description/functionality/filter.md) |Запрос для фильтра на форме представления списка. |
+|[**Связь двух неймспейсов**](/docs/ru/2_system_description/functionality/namespace.md)| Для связывания двух проектов.  |
+|[**Виртуальные атрибуты**](/docs/ru/2_system_description/functionality/virtual_attr.md) |Специальный тип атрибутов, который позволяет выводить полный код и наименование класса.|
 
-### Следующая страница: [Описание модулей](\docs\ru\3_modules_description\modules.md)
+### Следующая страница: [Описание модулей](/docs/ru/3_modules_description/modules.md)
 
 --------------------------------------------------------------------------  
 
