@@ -89,34 +89,92 @@ var grammar = {
         return moment(d[1]).toDate();
       }
       },
-      {"name": "isodate", "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day"]},
-      {"name": "isodate", "symbols": ["year", "month", "day"]},
       {
         "name": "isodate",
-        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", {"literal": "Z"}]
+        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day"],
+        "postprocess": function (d) {
+          return d[0] + '-' + d[2] + '-' + d[4];
+        }
+      },
+      {
+        "name": "isodate", "symbols": ["year", "month", "day"], "postprocess": function (d) {
+        return d[0] + '-' + d[1] + '-' + d[2];
+      }
       },
       {
         "name": "isodate",
-        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", {"literal": "Z"}]
+        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", {"literal": "Z"}],
+        "postprocess": function (d) {
+          return d[0] + '-' + d[2] + '-' + d[4] + 'T' + d[6] + ':' + d[8] + ':' + d[10] + 'Z';
+        }
       },
       {
         "name": "isodate",
-        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", "sign", "hour", {"literal": ":"}, "minute"]
+        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", {"literal": "Z"}],
+        "postprocess": function (d) {
+          return d[0] + '-' + d[1] + '-' + d[2] + 'T' + d[4] + ':' + d[5] + ':' + d[6] + 'Z';
+        }
       },
       {
         "name": "isodate",
-        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", "sign", "hour", "minute"]
+        "symbols": ["year", {"literal": "-"}, "month", {"literal": "-"}, "day", {"literal": "T"}, "hour", {"literal": ":"}, "minute", {"literal": ":"}, "minute", "sign", "hour", {"literal": ":"}, "minute"],
+        "postprocess": function (d) {
+          return d[0] + '-' + d[2] + '-' + d[4] + 'T' + d[6] + ':' + d[8] + ':' + d[10] + d[11] + d[12] + d[14];
+        }
       },
-      {"name": "year", "symbols": [/[0-9]/, /[0-9]/, /[0-9]/, /[0-9]/]},
-      {"name": "month", "symbols": [{"literal": "1"}, /[0-2]/]},
-      {"name": "month", "symbols": [{"literal": "0"}, /[1-9]/]},
-      {"name": "day", "symbols": [{"literal": "3"}, /[01]/]},
-      {"name": "day", "symbols": [/[0]/, /[1-9]/]},
-      {"name": "day", "symbols": [/[12]/, /[0-9]/]},
-      {"name": "hour", "symbols": [{"literal": "2"}, /[0-3]/]},
-      {"name": "hour", "symbols": [/[01]/, /[0-9]/]},
-      {"name": "minute", "symbols": [/[0-5]/, /[0-9]/]},
-      {"name": "sign", "symbols": [/[+-]/]},
+      {
+        "name": "isodate",
+        "symbols": ["year", "month", "day", {"literal": "T"}, "hour", "minute", "minute", "sign", "hour", "minute"],
+        "postprocess": function (d) {
+          return d[0] + '-' + d[1] + '-' + d[2] + 'T' + d[4] + ':' + d[5] + ':' + d[6] + d[7] + d[8] + d[9];
+        }
+      },
+      {
+        "name": "year", "symbols": [/[0-9]/, /[0-9]/, /[0-9]/, /[0-9]/], "postprocess": function (d) {
+        return d[0] + d[1] + d[2] + d[3];
+      }
+      },
+      {
+        "name": "month", "symbols": [/[1]/, /[0-2]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "month", "symbols": [/[0]/, /[1-9]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "day", "symbols": [/[3]/, /[01]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "day", "symbols": [/[0]/, /[1-9]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "day", "symbols": [/[12]/, /[0-9]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "hour", "symbols": [/[2]/, /[0-3]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "hour", "symbols": [/[01]/, /[0-9]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {
+        "name": "minute", "symbols": [/[0-5]/, /[0-9]/], "postprocess": function (d) {
+        return d[0] + d[1];
+      }
+      },
+      {"name": "sign", "symbols": [/[+-]/], "postprocess": id},
     {"name": "_", "symbols": []},
     {"name": "_", "symbols": ["_", /[\s]/], "postprocess": function() {}},
     {"name": "__", "symbols": [/[\s]/]},
