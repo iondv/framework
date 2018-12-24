@@ -33,7 +33,7 @@
 *  [Schedule](/docs/en/2_system_description/functionality/schedule.md)
 *  [Utilities](/docs/en/2_system_description/functionality/utilities.md)
 
-## 3. [Modules description](/docs/en/4_modules_description)
+## 3. [Modules description](/docs/en/3_modules_description)
 
 *  [Admin](/docs/en/4_modules_description/admin.md)
 *  [Registry](/docs/en/4_modules_description/registry.md)
@@ -49,7 +49,7 @@
 *  [Dashboard](/docs/en/4_modules_description/dashboards.md)
 *  [1С](/docs/en/4_modules_description/1c.md)
 
-## 4. [ION model project](/docs/en/3_ion_model)
+## 4. [ION model project](/docs/en/4_ion_model)
 
 *  [ION environment setup](/docs/en/3_ion_model/ion_environment.md)
 
