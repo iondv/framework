@@ -89,6 +89,8 @@ function QueryParser() {
           throw new Error('invalid attr value');
         }
         return '$' + value;
+      } else if (obj instanceof Date) {
+        return obj;
       } else if (typeof obj === 'object') {
         let result = {};
         Object.keys(obj).forEach((k) => {
