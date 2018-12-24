@@ -1,94 +1,91 @@
-#### [Оглавление](/docs/ru/index.md)
+#### [Content](/docs/en/index.md)
 
-### Предыдущая страница: []
+### Back: [Meta view - general part](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)
 
-# Тип Группа [0] 
+# Group type [0] 
 
-## Описание
+## Description
 
-**Группа [0]** - структура представлений создания и изменения, которая позволяет в рамках одного класса группировать аттрибуты из других классов в представлении создания/изменения в горизонтальном и/или вертикальном виде. 
+**Group [0]** - the structure of the create and edit view allows to group attributes from other classes in the create/edit view in a horizontal and/or vertical form within one class. 
 
-## Виды отображения типа Группа [0] 
+## Display modes of the Group [0] type
 
-* GROUP_VERTICAL `"mode": 0` - поля группы располагаются друг под другом 
-* GROUP_HORIZONTAL `"mode": 1` - поля группы располагаются горизонтально в строку (т. е. колонками, если хватает места) 
+* GROUP_VERTICAL `"mode": 0` - group fields are located under each other 
+* GROUP_HORIZONTAL `"mode": 1` - group fields are arranged horizontally in a row (i.e., in columns, if there is enough space) 
 
-### Формат настройки в мете представления для типа "Группа"
+### How to configure the Group [0] type in the meta view:
 
 ```json
 {
-   "type": 0, // группа полей
-   "mode": 1, // отображается горизонтально
+   "type": 0, // groupe of fields
+   "mode": 1, // displayed horizontally
    "fields": [
-       // поля
+       // fields
     ]
 }
 ```
 
-### Настройка параметров размера колонок:
+### How to configure the columns size:
 
 ```json
 {
-   "type": 0, // группа верхнего уровня
-   "mode": 1, // колонки
+   "type": 0, // top hierarchy group
+   "mode": 1, // columns
    "fields": [
       {
-         "type": 0, // группа-колонка 1
+         "type": 0, // group-column1
          "mode": 0,
-         "size": 0, // очень узкая
+         "size": 0, // narrow
          "fields": [
             {
                "property": "attr1",
                "type": 1,
-               "caption": "Текстовое поле 1"
+               "caption": "Text field 1"
             },
             {
                "property": "attr2",
                "type": 1,
-               "caption": "Текстовое поле 2"
+               "caption": "Text field 2"
             }
          ]
      },
       {
-         "type": 0, // группа-колонка 2
+         "type": 0, // group-column2
          "mode": 0,
-         "size": 0,  // очень узкая
+         "size": 0,  // narrow
          "fields": [
             {
                "property": "attr3",
                "type": 1,
-               "caption": "Текстовое поле 3"
+               "caption": "Text field 3"
             },
             {
                "property": "attr4",
                "type": 1,
-               "caption": "Текстовое поле 4"
+               "caption": "Text field 4"
             }
          ]
      },
      {
-        "type": 0, // группа-колонка 3
+        "type": 0, // group-column3
         "mode": 0,
-        "size": 3,  // широкая
+        "size": 3,  // wide
         "fields": [
             {
                "property": "attr5",
                "type": 1,
-               "caption": "Текстовое поле 5"
+               "caption": "Text field 5"
             },
             {
                "property": "attr6",
                "type": 1,
-               "caption": "Текстовое поле 6"
+               "caption": "Text field 6"
             }
          ]
      }
    ]
 }
 ```
-
-
-### Следующая страница: []
 
 --------------------------------------------------------------------------  
 

@@ -2,7 +2,6 @@
 
 const child = require('child_process');
 const toAbsolutePath = require('core/system').toAbsolute;
-const Logger = require('core/interfaces/Logger');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
 
@@ -96,13 +95,18 @@ function Background(options) {
          }
        }
      )
-     .then(options.dataSource.upsert(tableName, {uid, name, sid, results: [], state: Background.RUNNING}, {skipResult: true}))
+     .then(() => options.dataSource.upsert(
+        tableName,
+        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]},
+        {uid, name, sid, results: [], state: Background.RUNNING},
+        {skipResult: true}
+     ))
      .then(() => {
-        let args = ['-task', name, '-uid', uid];
+        let args = ['-task', name, '-uid', uid, '-sid', sid];
         for (let nm in moptions) {
-          if (options.hasOwnProperty(nm)) {
+          if (moptions.hasOwnProperty(nm) && typeof moptions[nm] !== 'undefined' && moptions[nm] !== null) {
             args.push('-' + nm);
-            args.push(options[nm]);
+            args.push(moptions[nm]);
           }
         }
 
@@ -118,11 +122,7 @@ function Background(options) {
           }
         });
         ch.on('error', (err) => {
-          if (options.log instanceof Logger) {
-            options.log.error(err);
-          } else {
-            console.error(err);
-          }
+          (options.log || console).error(err);
           fixTask(uid, name, sid);
           if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
             delete pool[uid][name][sid];

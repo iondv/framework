@@ -55,7 +55,7 @@ var grammar = {
     {"name": "_attribute$ebnf$1", "symbols": ["_attribute$ebnf$1", /[$_a-zA-Z0-9-]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "_attribute", "symbols": [/[$_a-zA-Z]/, "_attribute$ebnf$1"], "postprocess": d => { return d[0] + d[1].join('')}},
     {"name": "_attribute", "symbols": [{"literal":"`"}, "_string", {"literal":"`"}], "postprocess": d => { return d[1] }},
-    {"name": "attribute", "symbols": ["_attribute"]},
+    {"name": "attribute", "symbols": ["_attribute"], "postprocess": id},
     {"name": "attribute$ebnf$1", "symbols": ["_subattribute"]},
     {"name": "attribute$ebnf$1", "symbols": ["attribute$ebnf$1", "_subattribute"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "attribute", "symbols": ["_attribute", "attribute$ebnf$1"], "postprocess": d => { return d[0] + '.' + d[1].join('.') }},

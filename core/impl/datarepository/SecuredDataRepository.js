@@ -289,9 +289,11 @@ function SecuredDataRepository(options) {
     if (item && item.getItemId()) {
       permMap[item.getClassName() + '@' + item.getItemId()] = merge(true,
         permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
-        permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
+
+      permMap[item.getClassName() + '@' + item.getItemId()].__class =
+        permissions[classPrefix + item.getClassName()] || {};
 
       permMap[item.getClassName() + '@' + item.getItemId()].__attr =
         attrPermMap(item, permissions) || {};
@@ -497,7 +499,7 @@ function SecuredDataRepository(options) {
   function attrPermissions(item, ipermissions, permissions) {
     let props = item.getProperties();
     let result = {};
-    let iperm = merge(true, ipermissions || {}, global);
+    let iperm = merge(true, ipermissions || {});
     for (let nm in props) {
       if (props.hasOwnProperty(nm)) {
         let p = props[nm];
@@ -619,12 +621,18 @@ function SecuredDataRepository(options) {
               itemPrefix + item.getClassName() + '@' + item.getItemId()
             ],
             true)
-            .then(permissions =>
-              merge(true,
-                permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
-                permissions[classPrefix + item.getClassName()] || {},
-                permissions[globalMarker] || {}
-              )
+            .then(
+              (permissions) => {
+                let pmp = merge(true,
+                  permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+                  permissions[globalMarker] || {}
+                );
+                pmp.__class = permissions[classPrefix + item.getClassName()] || {};
+                if (roleConf) {
+                  pmp.__class[Permissions.READ] = false;
+                }
+                return pmp;
+              }
             );
         } else {
           let perms = clone(statics);
@@ -643,6 +651,8 @@ function SecuredDataRepository(options) {
             ) {
               return;
             }
+            item.permissions = merge(true, item.permissions, item.permissions.__class);
+            delete item.permissions.__class;
             if (roleConf) {
               let result = Promise.resolve();
               Object.keys(roleConf).forEach((role) => {
@@ -911,7 +921,7 @@ function SecuredDataRepository(options) {
       });
   };
 
-  function checkWritePermission(classname, id, moptions) {
+  function checkWritePermission(classname, id, moptions, data = {}) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
@@ -931,6 +941,17 @@ function SecuredDataRepository(options) {
             if (!item) {
               return false;
             }
+
+            if (item.attrPermissions) {
+              for (let nm in data) {
+                if (data.hasOwnProperty(nm) && item.attrPermissions.hasOwnProperty(nm)) {
+                  if (!item.attrPermissions[Permissions.WRITE]) {
+                    return false;
+                  }
+                }
+              }
+            }
+
             return !item.permissions || item.permissions[Permissions.WRITE];
           });
       });
@@ -947,7 +968,7 @@ function SecuredDataRepository(options) {
    */
   this._editItem = function (classname, id, data, changeLogger, moptions) {
     let opts = clone(moptions);
-    return checkWritePermission(classname, id, opts)
+    return checkWritePermission(classname, id, opts, data)
       .then((writable) => {
         if (writable) {
           let cm = options.meta.getMeta(classname);
@@ -974,7 +995,7 @@ function SecuredDataRepository(options) {
    */
   this._saveItem = function (classname, id, data, version, changeLogger, moptions) {
     let opts = clone(moptions);
-    return checkWritePermission(classname, id, opts)
+    return checkWritePermission(classname, id, opts, data)
       .then(function (writable) {
         if (writable) {
           let cm = options.meta.getMeta(classname);
