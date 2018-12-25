@@ -13,12 +13,15 @@ const F = require('core/FunctionCodes');
 /**
  * @param {{}} config
  * @param {DataSource} config.dataSource
+ * @param {String} [config.allAlias]
  * @constructor
  */
 function DsRoleAccessManager(config) {
   const roles_table = 'ion_acl_user_roles';
 
   const perms_table = 'ion_acl_permissions';
+
+  const globalMarker = config.allAlias ? config.allAlias : '*';
 
   function fetchAllRoles() {
     return config.dataSource.fetch('ion_security_role', {});
@@ -30,6 +33,10 @@ function DsRoleAccessManager(config) {
       opts.filter = {[F.LIKE]: ['$id', prefix]};
     }
     return config.dataSource.fetch('ion_security_resource', opts);
+  }
+
+  this.globalMarker = function () {
+    return globalMarker;
   }
 
   /**
@@ -152,7 +159,12 @@ function DsRoleAccessManager(config) {
    */
   this._grant = function (roles, resources, permissions) {
     roles = Array.isArray(roles) ? roles : [roles];
-    resources = Array.isArray(resources) ? resources : [resources];
+    if (resources) {
+      resources = Array.isArray(resources) ? resources : [resources];
+    } else {
+      resources = [globalMarker];
+    }
+
     if (permissions) {
       permissions = Array.isArray(permissions) ? permissions : [permissions];
     } else {
@@ -169,7 +181,7 @@ function DsRoleAccessManager(config) {
             {
               [F.AND]: [
                 {[F.EQUAL]: ['$subject', role]},
-                {[F.EQUAL]: ['$resource', resource]},
+                {[F.EQUAL]: ['$resource', resource || globalMarker]},
                 {[F.EQUAL]: ['$permission', permission]}
               ]
             },
@@ -194,12 +206,15 @@ function DsRoleAccessManager(config) {
    */
   this._deny = function (roles, resources, permissions) {
     roles = Array.isArray(roles) ? roles : [roles];
-    resources = Array.isArray(resources) ? resources : [resources];
 
     let f = [
-      {[F.IN]: ['$subject', roles]},
-      {[F.IN]: ['$resource', resources]}
+      {[F.IN]: ['$subject', roles]}
     ];
+
+    if (resources) {
+      resources = Array.isArray(resources) ? resources : [resources];
+      f.push({[F.IN]: ['$resource', resources]});
+    }
 
     if (permissions) {
       permissions = Array.isArray(permissions) ? permissions : [permissions];
