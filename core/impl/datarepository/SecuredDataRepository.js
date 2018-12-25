@@ -730,7 +730,6 @@ function SecuredDataRepository(options) {
       }
       return p.then(
         () => {
-          console.log(item.getClassName(), item.getItemId(), item.permissions);
           if (!noDrill && item.permissions[Permissions.READ]) {
             let props = item.getProperties();
             let items = [];
