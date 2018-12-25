@@ -13,7 +13,7 @@
 |[**Jobs in schedule**](/docs/en/2_system_description/functionality/schedule.md) | Subsystems of launching jobs in schedules.   |
 |[**Notifications**](/docs/en/2_system_description/functionality/notifications.md) |Function of new notifications.  |
 |[**Data caching**](/docs/en/2_system_description/functionality/cached.md) |Data caching provides quick access to the requested information. |
-|[**Filters**](/docs/en/2_system_description/functionality/filter.md) |Request for filter on the list view form. |
+|[**Filters**](/docs/en/2_system_description/functionality/filter.md) |Query for filter on the list view form. |
 |[**Connection of two namespaces**](/docs/en/2_system_description/functionality/namespace.md)| Connect two projects using "namespace".  |
 |[**Virtual attributes**](/docs/en/2_system_description/functionality/virtual_attr.md) |Special type of attributes that allows you to display the full code and name of the class.|
 
