@@ -27,7 +27,7 @@ Setting the current theme:
   * Setting `globals.theme` in the `deploy.json` of the application
  2. For a module
   * Setting `theme` in the `config.json` of the module
-  * Setting **Имя модуля**.`globals.theme` in the `deploy.json` of the application
+  * Setting **Module name**.`globals.theme` in the `deploy.json` of the application
 
 The default system theme is `default` (in the platform and modules "registry", "geomap", "report").
 
