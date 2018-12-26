@@ -20,7 +20,7 @@ Notifications are stored in the following collections - ion_notification, ion_no
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](\docs\ru\2_system_description\functionality\printed_forms.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/notifications.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

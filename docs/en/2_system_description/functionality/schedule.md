@@ -74,7 +74,7 @@ A component can be specified as a starting job, in which case it should have the
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](\docs\ru\2_system_description\functionality\schedule.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/schedule.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

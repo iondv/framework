@@ -78,7 +78,7 @@ ${table_col:list.collection.attrFromCollection:разделитель}
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](\docs\ru\2_system_description\functionality\printed_forms.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/printed_forms.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
