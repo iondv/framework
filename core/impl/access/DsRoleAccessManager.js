@@ -37,7 +37,7 @@ function DsRoleAccessManager(config) {
 
   this.globalMarker = function () {
     return globalMarker;
-  }
+  };
 
   /**
    *
@@ -45,7 +45,7 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._getRole = function (id) {
-    return config.dataSource.get('ion_security_role', {[F.EQUAL]: ['$id', id]});
+    return id ? config.dataSource.get('ion_security_role', {[F.EQUAL]: ['$id', id]}) : Promise.resolve(null);
   };
 
   /**
@@ -53,7 +53,7 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._getResource = function (id) {
-    return config.dataSource.get('ion_security_resource', {[F.EQUAL]: ['$id', id]});
+    return id ? config.dataSource.get('ion_security_resource', {[F.EQUAL]: ['$id', id]}) : Promise.resolve(null);
   };
 
   /**
@@ -72,6 +72,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._getSubjects = function (roles) {
+    if (!roles) {
+      return Promise.resolve([]);
+    }
     return config.dataSource
       .fetch(roles_table, {filter: {[F.IN]: ['$roles', Array.isArray(roles) ? roles : [roles]]}})
       .then(subjs => subjs.map(s => s.user));
@@ -122,6 +125,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._assignRoles = function (subjects, roles) {
+    if (!subjects || !roles) {
+      return Promise.resolve();
+    }
     subjects = Array.isArray(subjects) ? subjects : [subjects];
     roles = Array.isArray(roles) ? roles : [roles];
 
@@ -158,6 +164,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
     if (resources) {
       resources = Array.isArray(resources) ? resources : [resources];
@@ -176,7 +185,9 @@ function DsRoleAccessManager(config) {
     roles.forEach((role) => {
       resources.forEach((resource) => {
         permissions.forEach((permission) => {
-          p = p.then(() => config.dataSource.upsert(
+          p = p
+            .then(() => this._defineResource(resource))
+            .then(() => config.dataSource.upsert(
             perms_table,
             {
               [F.AND]: [
@@ -205,6 +216,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
 
     let f = [
@@ -230,6 +244,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._unassignRoles = function (subjects, roles) {
+    if (!subjects || !roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
     return config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$user', subjects]}})
       .then((ur) => {
@@ -258,6 +275,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineRoles = function (roles) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
 
     return config.dataSource.delete('ion_security_role', {[F.IN]: ['$id', roles]})
@@ -284,6 +304,9 @@ function DsRoleAccessManager(config) {
   };
 
   this._defineRole = function (role, caption = null, description = null) {
+    if (!role) {
+      return Promise.resolve();
+    }
     let data = {id: role};
     if (caption) {
       data.name = caption;
@@ -295,6 +318,9 @@ function DsRoleAccessManager(config) {
   };
 
   this._defineResource = function (resource, caption = null) {
+    if (!resource) {
+      return Promise.resolve();
+    }
     let data = {id: resource};
     if (caption) {
       data.name = caption;
@@ -307,6 +333,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineResources = function (resources) {
+    if (!resources) {
+      return Promise.resolve();
+    }
     return config.dataSource
       .delete('ion_security_resource', {[F.IN]: ['$id', resources]})
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}));

@@ -55,6 +55,9 @@ function DsAcl(config) {
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
+    if (!subject || !resource || !permissions) {
+      return Promise.resolve(false);
+    }
     const perms = Array.isArray(permissions) ? permissions.slice() : [permissions];
     if (perms.indexOf(Permissions.FULL) < 0) {
       perms.push(Permissions.FULL);
@@ -102,6 +105,9 @@ function DsAcl(config) {
    * @returns {Promise}
    */
   this._getPermissions = function (subjects, resources, skipGlobals) {
+    if (!subjects || !resources) {
+      return Promise.resolve({});
+    }
     const r = Array.isArray(resources) ? resources.slice() : [resources];
     const returnGlobal = r.indexOf(globalMarker) >= 0;
     const subj = [];
@@ -171,6 +177,9 @@ function DsAcl(config) {
  * @returns {Promise}
  */
 this._getResources = function (subject, permissions) {
+  if (!subject) {
+    return Promise.resolve([]);
+  }
   let p = Array.isArray(permissions) ? permissions.slice() : [permissions];
   if (p.indexOf(globalMarker) < 0) {
     p.push(globalMarker);
@@ -217,7 +226,7 @@ this._getResources = function (subject, permissions) {
  * @returns {Promise}
  */
 this._getCoactors = function (subject) {
-  return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]}).then(u => u ? u.roles : []);
+  return subject ? config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]}).then(u => u ? u.roles : []) : [];
 };
 
 }
