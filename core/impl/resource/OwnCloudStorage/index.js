@@ -354,7 +354,8 @@ function OwnCloudStorage(config) {
     }
     let promise = Promise.resolve();
     const result = [];
-    ids.forEach((id) => {
+    ids.forEach((oid) => {
+      const id = decodeURIComponent(parseDirId(oid));
       const parts = String(id).split('/');
       const info = {name: parts[parts.length - 1]};
       if (options.fetchInfo) {
