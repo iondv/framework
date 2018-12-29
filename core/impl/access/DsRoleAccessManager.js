@@ -13,12 +13,15 @@ const F = require('core/FunctionCodes');
 /**
  * @param {{}} config
  * @param {DataSource} config.dataSource
+ * @param {String} [config.allAlias]
  * @constructor
  */
 function DsRoleAccessManager(config) {
   const roles_table = 'ion_acl_user_roles';
 
   const perms_table = 'ion_acl_permissions';
+
+  const globalMarker = config.allAlias ? config.allAlias : '*';
 
   function fetchAllRoles() {
     return config.dataSource.fetch('ion_security_role', {});
@@ -32,13 +35,17 @@ function DsRoleAccessManager(config) {
     return config.dataSource.fetch('ion_security_resource', opts);
   }
 
+  this.globalMarker = function () {
+    return globalMarker;
+  };
+
   /**
    *
    * @param {String} id
    * @returns {Promise}
    */
   this._getRole = function (id) {
-    return config.dataSource.get('ion_security_role', {[F.EQUAL]: ['$id', id]});
+    return id ? config.dataSource.get('ion_security_role', {[F.EQUAL]: ['$id', id]}) : Promise.resolve(null);
   };
 
   /**
@@ -46,7 +53,7 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._getResource = function (id) {
-    return config.dataSource.get('ion_security_resource', {[F.EQUAL]: ['$id', id]});
+    return id ? config.dataSource.get('ion_security_resource', {[F.EQUAL]: ['$id', id]}) : Promise.resolve(null);
   };
 
   /**
@@ -65,6 +72,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._getSubjects = function (roles) {
+    if (!roles) {
+      return Promise.resolve([]);
+    }
     return config.dataSource
       .fetch(roles_table, {filter: {[F.IN]: ['$roles', Array.isArray(roles) ? roles : [roles]]}})
       .then(subjs => subjs.map(s => s.user));
@@ -115,6 +125,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._assignRoles = function (subjects, roles) {
+    if (!subjects || !roles) {
+      return Promise.resolve();
+    }
     subjects = Array.isArray(subjects) ? subjects : [subjects];
     roles = Array.isArray(roles) ? roles : [roles];
 
@@ -151,8 +164,16 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._grant = function (roles, resources, permissions) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
-    resources = Array.isArray(resources) ? resources : [resources];
+    if (resources) {
+      resources = Array.isArray(resources) ? resources : [resources];
+    } else {
+      resources = [globalMarker];
+    }
+
     if (permissions) {
       permissions = Array.isArray(permissions) ? permissions : [permissions];
     } else {
@@ -164,12 +185,14 @@ function DsRoleAccessManager(config) {
     roles.forEach((role) => {
       resources.forEach((resource) => {
         permissions.forEach((permission) => {
-          p = p.then(() => config.dataSource.upsert(
+          p = p
+            .then(() => this._defineResource(resource))
+            .then(() => config.dataSource.upsert(
             perms_table,
             {
               [F.AND]: [
                 {[F.EQUAL]: ['$subject', role]},
-                {[F.EQUAL]: ['$resource', resource]},
+                {[F.EQUAL]: ['$resource', resource || globalMarker]},
                 {[F.EQUAL]: ['$permission', permission]}
               ]
             },
@@ -193,13 +216,19 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._deny = function (roles, resources, permissions) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
-    resources = Array.isArray(resources) ? resources : [resources];
 
     let f = [
-      {[F.IN]: ['$subject', roles]},
-      {[F.IN]: ['$resource', resources]}
+      {[F.IN]: ['$subject', roles]}
     ];
+
+    if (resources) {
+      resources = Array.isArray(resources) ? resources : [resources];
+      f.push({[F.IN]: ['$resource', resources]});
+    }
 
     if (permissions) {
       permissions = Array.isArray(permissions) ? permissions : [permissions];
@@ -215,6 +244,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._unassignRoles = function (subjects, roles) {
+    if (!subjects || !roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
     return config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$user', subjects]}})
       .then((ur) => {
@@ -243,6 +275,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineRoles = function (roles) {
+    if (!roles) {
+      return Promise.resolve();
+    }
     roles = Array.isArray(roles) ? roles : [roles];
 
     return config.dataSource.delete('ion_security_role', {[F.IN]: ['$id', roles]})
@@ -269,6 +304,9 @@ function DsRoleAccessManager(config) {
   };
 
   this._defineRole = function (role, caption = null, description = null) {
+    if (!role) {
+      return Promise.resolve();
+    }
     let data = {id: role};
     if (caption) {
       data.name = caption;
@@ -280,6 +318,9 @@ function DsRoleAccessManager(config) {
   };
 
   this._defineResource = function (resource, caption = null) {
+    if (!resource) {
+      return Promise.resolve();
+    }
     let data = {id: resource};
     if (caption) {
       data.name = caption;
@@ -292,6 +333,9 @@ function DsRoleAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineResources = function (resources) {
+    if (!resources) {
+      return Promise.resolve();
+    }
     return config.dataSource
       .delete('ion_security_resource', {[F.IN]: ['$id', resources]})
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}));
