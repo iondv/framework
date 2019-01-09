@@ -981,8 +981,8 @@ function IonDataRepository(options) {
                   alias: alias,
                   left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
                   right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
-                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef,
-                  filter: addDiscriminatorFilter(null, rc)
+                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef//,
+                  //filter: addDiscriminatorFilter(null, rc) @TODO Вернуть когда уйдем с монги
                 };
                 joinsHash[jpth] = join;
 
