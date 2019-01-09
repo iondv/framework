@@ -33,7 +33,7 @@
 *  [Настройка заданий по расписанию](/docs/ru/2_system_description/functionality/schedule.md)
 *  [Утилиты](/docs/ru/2_system_description/functionality/utilities.md)
 
-## 3. [Описание модулей](/docs/ru/4_modules_description) 
+## 3. [Описание модулей](/docs/ru/3_modules_description) 
 
 *  [Админ](/docs/ru/4_modules_description/admin.md)
 *  [Регистри](/docs/ru/4_modules_description/registry.md)
@@ -49,7 +49,7 @@
 *  [Дашборд](/docs/ru/4_modules_description/dashboards.md)
 *  [1С](/docs/ru/4_modules_description/1c.md)
 
-## 4. [Создание проекта модели ИОН](/docs/ru/3_ion_model)
+## 4. [Создание проекта модели ИОН](/docs/ru/4_ion_model)
 
 *  [Настройка среды разработки ION](/docs/ru/3_ion_model/ion_environment.md)
 

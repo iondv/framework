@@ -1,5 +1,7 @@
 #### [Content](/docs/en/index.md)
 
+### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+
 # Connection of two namespaces
 
 ## Connection of two projects using "namespace"
@@ -15,7 +17,7 @@ It is used if you need to link two projects together and deploy them on the same
   "orderNumber": 0,
   "type": 1,
   "title": "",
-  "caption": "Адрес ФИАС",
+  "caption": "FIAS adress",
   "classname": "address@fias",
   "container": null,
   "collection": null,
@@ -53,11 +55,11 @@ Also the classes from all Project References should be in the class selection li
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](\docs\en\2_system_description\functionality\namespace.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/namespace.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.    
 All rights reserved. 

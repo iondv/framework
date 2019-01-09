@@ -1,5 +1,7 @@
 #### [Оглавление](/docs/ru/index.md)
 
+### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
+
 # Связь двух неймспейсов
 
 ## Связь нескольких проектов с использованием пространства имен "namespace"
@@ -53,11 +55,11 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](\docs\ru\2_system_description\functionality\namespace.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/namespace.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.   
 All rights reserved. 
