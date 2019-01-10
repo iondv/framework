@@ -3,6 +3,7 @@
  */
 'use strict';
 const c = require('./oper');
+const skipper = require('./skipper');
 const Item = require('core/interfaces/DataRepository').Item;
 
 /**
@@ -10,24 +11,25 @@ const Item = require('core/interfaces/DataRepository').Item;
  * @returns {Function}
  */
 module.exports = c(
-  function (col, attr, cond) {
+  (col, attr, cond) => {
     if (!col.length) {
       return null;
     }
     let result = 0;
-    for (let i = 0; i < col.length; i++) {
-      if (col[i] !== null) {
-        if (cond) {
-          if (!cond.apply(col[i])) {
-            continue;
-          }
-        }
-        let v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
+
+    let cb = (item) => {
+      if (item) {
+        let v = item instanceof Item ? item.get(attr) : item[attr];
         if (v > result) {
           result = v;
         }
       }
+    };
+
+    if (cond) {
+      return skipper(col, cond, cb);
     }
+    col.forEach(cb);
     return result;
   },
   'max'
