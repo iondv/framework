@@ -7,8 +7,6 @@ const child = require('child_process');
 const moment = require('moment');
 const config = require('../config');
 const di = require('core/di');
-const alias = require('core/scope-alias');
-const extend = require('extend');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
@@ -146,6 +144,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
      */
     (scope) => {
       let jobs = scope.settings.get('jobs') || {};
+      let busy = false;
       if (
         jobs.hasOwnProperty(jobName) &&
         jobs[jobName] &&
@@ -181,16 +180,19 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           if (!runImmediate) {
             run = checkRun(job.launch);
           }
-          if (run) {
+          if (run && !busy) {
+            busy = true;
             let ch = child.fork(toAbsolutePath('bin/job'), [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
                 ch.kill(9);
+                busy = false;
               }
             }, runTimeout);
             ch.on('exit', () => {
               clearTimeout(rto);
+              busy = false;
             });
           }
           if (interval) {
