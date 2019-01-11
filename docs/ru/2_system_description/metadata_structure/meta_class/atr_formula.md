@@ -1,4 +1,7 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Предварительная выборка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md) 
+
 # Вычисляемые атрибуты (без кеширования)
 
 ## Описание

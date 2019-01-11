@@ -8,6 +8,7 @@ const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
+const User = require('core/User');
 
 /**
  *
@@ -36,29 +37,47 @@ function DsAcl(config) {
       .then(() => config.dataSource.ensureIndex(roles_table, {user: 1}, {unique: true}));
   };
 
+  function addSubject(subj, subject) {
+    if (subject instanceof User) {
+      subj.push(subject.id());
+      subj.push(...subject.coactors());
+    } else if (typeof subject === 'string') {
+      subj.push(subject);
+    } else if (Array.isArray(subject)) {
+      subject.forEach(s => addSubject(subj, s));
+    }
+  }
+
   /**
-   * @param {String} subject
+   * @param {String | User} subject
    * @param {String} resource
    * @param {String | String[]} permissions
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
+    if (!subject || !resource || !permissions) {
+      return Promise.resolve(false);
+    }
     const perms = Array.isArray(permissions) ? permissions.slice() : [permissions];
     if (perms.indexOf(Permissions.FULL) < 0) {
       perms.push(Permissions.FULL);
     }
     const res = [resource, globalMarker];
-    const subj = [subject, globalMarker];
+    const subj = [globalMarker];
+    addSubject(subj, subject);
 
-    return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]})
-      .then((roles) => {
-        if (roles) {
-          roles.roles.forEach((r) => {
-            subj.push(r);
-          });
-        }
-
-        return config.dataSource.fetch(
+    return (
+      (typeof subject === 'string') ?
+        config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]})
+          .then((roles) => {
+            if (roles) {
+              roles.roles.forEach((r) => {
+                subj.push(r);
+              });
+            }
+          }) : Promise.resolve())
+      .then(
+        () => config.dataSource.fetch(
           perms_table,
           {
             filter: {
@@ -75,8 +94,8 @@ function DsAcl(config) {
               ]
             }
           }
-        );
-      })
+        )
+      )
       .then(result => result.length ? true : false);
   };
 
@@ -86,16 +105,20 @@ function DsAcl(config) {
    * @returns {Promise}
    */
   this._getPermissions = function (subjects, resources, skipGlobals) {
+    if (!subjects || !resources) {
+      return Promise.resolve({});
+    }
     const r = Array.isArray(resources) ? resources.slice() : [resources];
     const returnGlobal = r.indexOf(globalMarker) >= 0;
-    const subj = Array.isArray(subjects) ? subjects.slice(0) : [subjects];
+    const subj = [];
+    addSubject(subj, subjects);
     if (!skipGlobals) {
       if (r.indexOf(globalMarker) < 0) {
         r.push(globalMarker);
       }
       subj.push(globalMarker);
     }
-    return config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$user', subjects]}})
+    return config.dataSource.fetch(roles_table, {filter: {[F.IN]: ['$user', subj]}})
       .then((users) => {
         users.forEach((u) => {
           subj.push(...u.roles);
@@ -124,6 +147,7 @@ function DsAcl(config) {
         result.forEach((p) => {
           if (!(p.subject === globalMarker && skipGlobals)) {
             if (p.permission === Permissions.FULL) {
+              res[p.resource][Permissions.FULL] = true;
               res[p.resource][Permissions.READ] = true;
               res[p.resource][Permissions.WRITE] = true;
               res[p.resource][Permissions.USE] = true;
@@ -153,6 +177,9 @@ function DsAcl(config) {
  * @returns {Promise}
  */
 this._getResources = function (subject, permissions) {
+  if (!subject) {
+    return Promise.resolve([]);
+  }
   let p = Array.isArray(permissions) ? permissions.slice() : [permissions];
   if (p.indexOf(globalMarker) < 0) {
     p.push(globalMarker);
@@ -199,7 +226,7 @@ this._getResources = function (subject, permissions) {
  * @returns {Promise}
  */
 this._getCoactors = function (subject) {
-  return config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]}).then(u => u ? u.roles : []);
+  return subject ? config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', subject]}).then(u => u ? u.roles : []) : [];
 };
 
 }

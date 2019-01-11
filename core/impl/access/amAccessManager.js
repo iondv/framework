@@ -26,7 +26,11 @@ function MongoAclAccessManager(config) {
 
   this.acl = null;
 
-  this.globalMarker = config.allAlias ? config.allAlias : '*';
+  var globalMarker = config.allAlias ? config.allAlias : '*';
+
+  this._globalMarker = function () {
+    return globalMarker;
+  };
 
   /**
    * @returns {Promise}
@@ -97,13 +101,12 @@ function MongoAclAccessManager(config) {
     subjects  = Array.isArray(subjects) ? subjects : [subjects];
     roles = Array.isArray(roles) ? roles : [roles];
     let roleChunks = _.chunk(roles, 10);
-    return chain(roles, (role) => _this._defineRole(role))
+    return chain(roles, role => _this._defineRole(role))
       .then(() =>
-        chain(subjects, (subject) => {
-          return chain(roleChunks, (rc) => new Promise((resolve, reject) => {
-            _this.acl.addUserRoles(subject, rc, (err) => err ? reject(err) : resolve());
-          }));
-        })
+        chain(subjects, subject =>
+          chain(roleChunks, rc => new Promise((resolve, reject) => {
+            _this.acl.addUserRoles(subject, rc, err => err ? reject(err) : resolve());
+          })))
       );
   };
 
@@ -118,15 +121,15 @@ function MongoAclAccessManager(config) {
     resources = Array.isArray(resources) ? resources : [resources];
     let roleChunks = _.chunk(roles, 10);
     let resChunks = _.chunk(resources, 10);
-    return chain(roles, (role) => _this._defineRole(role))
-      .then(() => chain(resources, (resource) => _this._defineResource(resource)))
-      .then(() => {
-        return chain(roleChunks, (rolesc) => {
-          return chain(resChunks, (resc) => new Promise((resolve, reject) => {
-            _this.acl.allow(rolesc, resc, permissions, (err) => err ? reject(err) : resolve());
-          }));
-        });
-      });
+    return chain(roles, role => _this._defineRole(role))
+      .then(() => chain(resources, resource => _this._defineResource(resource)))
+      .then(() =>
+        chain(roleChunks, rolesc =>
+          chain(resChunks, resc => new Promise((resolve, reject) => {
+            _this.acl.allow(rolesc, resc, permissions, err => err ? reject(err) : resolve());
+          }))
+        )
+      );
   };
 
   /**
@@ -139,8 +142,8 @@ function MongoAclAccessManager(config) {
     resources = Array.isArray(resources) ? resources : [resources];
     let resChunks = _.chunk(resources, 10);
     return chain(roles, function (role) {
-      return chain(resChunks, (resc) => new Promise((resolve, reject) => {
-        _this.acl.removeAllow(role, resc, permissions, (err) => err ? reject(err) : resolve());
+      return chain(resChunks, resc => new Promise((resolve, reject) => {
+        _this.acl.removeAllow(role, resc, permissions, err => err ? reject(err) : resolve());
       }));
     });
   };
@@ -153,25 +156,25 @@ function MongoAclAccessManager(config) {
   this._unassignRoles = function (subjects, roles) {
     roles = Array.isArray(roles) ? roles : [roles];
     let roleChunks = _.chunk(roles, 10);
-    return chain(subjects, function (subject) {
-      return chain(roleChunks, (rolesc) => new Promise((resolve, reject) => {
-        _this.acl.removeUserRoles(subject, rolesc, (err) => err ? reject(err) : resolve());
-      }));
-    });
+    return chain(subjects, subject =>
+      chain(roleChunks, rolesc => new Promise((resolve, reject) => {
+        _this.acl.removeUserRoles(subject, rolesc, err => err ? reject(err) : resolve());
+      }))
+    );
   };
   /**
    * @param {String[]} roles
    * @returns {Promise}
    */
   this._undefineRoles = function (roles) {
-    return chain(roles, (role) => {
-      return ds.delete('ion_security_role', {[F.EQUAL]: ['$id', role]})
+    return chain(roles, role =>
+      ds.delete('ion_security_role', {[F.EQUAL]: ['$id', role]})
         .then(
           () => new Promise((resolve, reject) => {
-            _this.acl.removeRole(role, (err) => err ? reject(err) : resolve());
+            _this.acl.removeRole(role, err => err ? reject(err) : resolve());
           })
-        );
-    });
+        )
+    );
   };
 
   this._defineRole = function (role, caption = null, description = null) {
@@ -198,14 +201,14 @@ function MongoAclAccessManager(config) {
    * @returns {Promise}
    */
   this._undefineResources = function (resources) {
-    return chain(resources, (resource) => {
-      return ds.delete('ion_security_resource', {[F.EQUAL]: ['$id', resource]})
+    return chain(resources, resource =>
+      ds.delete('ion_security_resource', {[F.EQUAL]: ['$id', resource]})
         .then(
           () => new Promise((resolve, reject) => {
-            _this.acl.removeResource(resource, (err) => err ? reject(err) : resolve());
+            _this.acl.removeResource(resource, err => err ? reject(err) : resolve());
           })
-        );
-    });
+        )
+    );
   };
 }
 

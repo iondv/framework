@@ -18,6 +18,7 @@ const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util')
 const dataToFilter = require('core/interfaces/DataRepository/lib/util').dataToFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const addDiscriminatorFilter = require('core/interfaces/DataRepository/lib/util').addDiscriminatorFilter;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
 const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
 const conditionParser = require('core/ConditionParser');
@@ -177,28 +178,6 @@ function IonDataRepository(options) {
       return getRootType(cm.ancestor);
     }
     return cm;
-  }
-
-  /**
-   * @param {Object} filter
-   * @param {ClassMeta} cm
-   * @param {Boolean} [skipSc]
-   * @private
-   */
-  function addDiscriminatorFilter(filter, cm, skipSc = false) {
-    let df;
-    if (skipSc) {
-      df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
-    } else {
-      let cnFilter = [cm.getCanonicalName()];
-      let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
-      for (let i = 0; i < descendants.length; i++) {
-        cnFilter.push(descendants[i].getCanonicalName());
-      }
-      df = {[Operations.IN]: ['$_class', cnFilter]};
-    }
-
-    return !filter ? df : {[Operations.AND]: [df, filter]};
   }
 
   /**
@@ -828,6 +807,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -846,17 +826,19 @@ function IonDataRepository(options) {
       offset: options.offset,
       count: options.count,
       countTotal: options.countTotal,
-      distinct: options.distinct
+      distinct: options.distinct,
+      joins: options.joins
     };
-    let cm = getMeta(obj);
-    let rcm = getRootType(cm);
+
+    const cm = getMeta(obj);
+    const rcm = getRootType(cm);
     $options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    let props = cm.getPropertyMetas();
+    const props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
     $options.filter = addFilterByItem(options.filter, obj);
-    $options.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    $options.filter = addDiscriminatorFilter($options.filter, cm, options.skipSubClasses);
     $options.joins = options.joins || [];
 
     return bubble(
@@ -913,6 +895,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -931,16 +914,17 @@ function IonDataRepository(options) {
       offset: options.offset,
       count: options.count,
       countTotal: options.countTotal,
-      distinct: options.distinct
+      distinct: options.distinct,
+      joins: options.joins
     };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
-    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    opts.fields = {_class: '$_class', _classVer: '$_classVer'};
     let props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
-    opts.filter = addFilterByItem(opts.filter, obj);
+    opts.filter = addFilterByItem(options.filter, obj);
     opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     opts.joins = opts.joins || [];
     return bubble(
@@ -991,12 +975,14 @@ function IonDataRepository(options) {
                 join = joinsHash[jpth];
               } else {
                 joinsHash.zi$$$$counter++;
+                let alias = '___join' + joinsHash.zi$$$$counter;
                 join = {
                   table: tn(rc),
-                  alias: '___join' + joinsHash.zi$$$$counter,
+                  alias: alias,
                   left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
                   right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
-                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef
+                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef//,
+                  //filter: addDiscriminatorFilter(null, rc) @TODO Вернуть когда уйдем с монги
                 };
                 joinsHash[jpth] = join;
 
@@ -1105,9 +1091,13 @@ function IonDataRepository(options) {
   /**
    * @param {String} className
    * @param {{}} [options]
+   * @param {{}} [options.joins]
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
    * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
@@ -1116,19 +1106,27 @@ function IonDataRepository(options) {
     let opts = {
       expressions: options.expressions,
       fields: options.fields,
-      aggregates: options.aggregates
+      aggregates: options.aggregates,
+      joins: options.joins,
+      groupBy: options.groupBy,
+      offset: options.offset,
+      count: options.count,
+      sort: options.sort,
+      distinct: options.distinct,
+      to: options.to,
+      append: options.append
     };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
     prepareResults(cm, opts, opts.joins);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
-    return prepareFilterValues(cm, opts.filter, opts.joins).
-    then(function (filter) {
+    opts.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    return prepareFilterValues(cm, opts.filter, opts.joins)
+      .then((filter) => {
         opts.filter = filter;
         return _this.ds.aggregate(tn(rcm), opts);
-      }
-    ).catch(wrapDsError('aggregate', className));
+      })
+      .catch(wrapDsError('aggregate', className));
   };
 
   /**

@@ -1,4 +1,7 @@
-### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)
+
 # Условия отбора допустимых значений
 
 ## Описание 
@@ -243,6 +246,8 @@ module.exports = {
 
 В ядре реализован атрибут контекста `$$now`, возвращающий текущую дату.
 `$$now` доступен везде при задании условий.
+
+Подробнее см. [переменные](/docs/ru/2_system_description/metadata_structure/meta_variables.md).
 
 ### Пример:
 

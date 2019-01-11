@@ -99,7 +99,7 @@
 ```
 Структура атрибута для представлений создания и изменения отличается лишь отсутствием поля `"sorted"`.
 
-### Следующая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
+### Следующая страница: [Типы представлений](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
 
 --------------------------------------------------------------------------  
 

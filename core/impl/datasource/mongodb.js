@@ -983,6 +983,7 @@ function MongoDs(config) {
   function doUpdate(type, conditions, data, options) {
     let hasData = false;
     if (data) {
+      delete data._id;
       for (let nm in data) {
         if (data.hasOwnProperty(nm) &&
           typeof data[nm] !== 'undefined' &&
@@ -1902,8 +1903,8 @@ function MongoDs(config) {
 
     let p = null;
     if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then(function (c) {
-        return new Promise(function (resolve, reject) {
+      p = getCollection(GEOFLD_COLLECTION).then(c =>
+        new Promise((resolve, reject) => {
           c.find({__type: type}).limit(1).next(function (err, geoflds) {
             if (err) {
               return reject(err);
@@ -1915,8 +1916,8 @@ function MongoDs(config) {
             }
             resolve();
           });
-        });
-      });
+        })
+      );
     } else {
       p = Promise.resolve();
     }

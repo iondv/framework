@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/platform.git",
     "type": "git"
   },
-  "version": "2.0.0",
+  "version": "2.1.6",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -83,15 +83,15 @@
   },
   "devDependencies": {
     "eslint": "^4.12.1",
-    "gulp": "latest",
-    "gulp-clean-css": "latest",
-    "gulp-jsmin": "latest",
-    "gulp-json-schema": "latest",
-    "gulp-less": "latest",
-    "gulp-rename": "latest",
+    "gulp": "~3.9.1",
+    "gulp-clean-css": "~3.10.0",
+    "gulp-jsmin": "~0.1.5",
+    "gulp-json-schema": "~1.0.0",
+    "gulp-less": "~4.0.1",
+    "gulp-rename": "~1.4.0",
     "husky": "^0.14.3",
     "lint-staged": "^5.0.0",
-    "run-sequence": "latest"
+    "run-sequence": "~2.2.1"
   },
   "homepage": "https://git.iondv.ru/ION/platform"
 }

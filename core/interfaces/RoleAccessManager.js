@@ -15,10 +15,14 @@ function RoleAccessManager() {
     return Promise.resolve();
   };
 
+  this.globalMarker = function () {
+    return this._globalMarker();
+  }
+
   /**
    *
    * @param {String} subject
-   * @returns {*}
+   * @returns {Promise}
    */
   this.getRoles = function (subject) {
     return this._getRoles(subject);
@@ -26,10 +30,37 @@ function RoleAccessManager() {
 
   /**
    * @param {String | Array} roles
+   * @param {String[]} [permissions]
+   * @param {String} [prefix]
    * @returns {Promise}
    */
-  this.getResources = function (roles) {
-    return this._getResources(roles);
+  this.getResources = function (roles, permissions, prefix) {
+    return this._getResources(roles, permissions, prefix);
+  };
+
+  /**
+   * @param {String | String[]} roles
+   * @returns {Promise}
+   */
+  this.getSubjects = function (roles) {
+    return this._getSubjects(roles);
+  };
+
+  /**
+   *
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.getRole = function (id) {
+    return this._getRole(id);
+  };
+
+  /**
+   * @param {String} id
+   * @returns {Promise}
+   */
+  this.getResource = function (id) {
+    return this._getResource(id);
   };
 
   /**
@@ -77,7 +108,7 @@ function RoleAccessManager() {
   /**
    * @param {String[]} roles
    * @param {String[]} resources
-   * @param {String[]} permissions
+   * @param {String[]} [permissions]
    * @returns {Promise}
    */
   this.grant = function (roles, resources, permissions) {
@@ -87,7 +118,7 @@ function RoleAccessManager() {
   /**
    * @param {String[]} roles
    * @param {String[]} resources
-   * @param {String[]} permissions
+   * @param {String[]} [permissions]
    * @returns {Promise}
    */
   this.deny = function (roles, resources, permissions) {
