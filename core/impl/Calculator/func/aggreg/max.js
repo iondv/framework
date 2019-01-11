@@ -27,7 +27,7 @@ module.exports = c(
     };
 
     if (cond) {
-      return skipper(col, cond, cb);
+      return skipper(col, cond, cb).then(() => result);
     }
     col.forEach(cb);
     return result;
