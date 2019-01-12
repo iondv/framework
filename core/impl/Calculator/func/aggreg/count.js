@@ -3,6 +3,7 @@
  */
 'use strict';
 const c = require('./oper');
+const skipper = require('./skipper');
 const p = require('./processed');
 
 /**
@@ -14,19 +15,19 @@ module.exports = c(
     let result = 0;
     let processed = p();
 
-    for (let i = 0; i < col.length; i++) {
-      if (col[i] !== null) {
-        if (cond) {
-          if (!cond.apply(col[i])) {
-            continue;
-          }
-        }
-        if (unique && processed(col[i])) {
-          continue;
+    let cb = (item) => {
+      if (item) {
+        if (unique && processed(item)) {
+          return;
         }
         result++;
       }
+    };
+
+    if (cond) {
+      return skipper(col, cond, cb).then(() => result);
     }
+    col.forEach(cb);
     return result;
   },
   'count'
