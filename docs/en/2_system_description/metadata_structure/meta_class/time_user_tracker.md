@@ -1,10 +1,14 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Ancestor](/docs/en/2_system_description/metadata_structure/meta_class/ancestor.md)
+
 # Time tag of created objects and committed changes
 
 These are the following fields of the main part of the meta class:
 
-1. `"creationTracker"` - **Time tag of created objects**:  allows you to save the date/time of creation of the object in the class. It requires the corresponding class attribute, `"name"`of which is entered into this field.
-2. `"changeTracker"` - **Time tag of committed changes**: allows you to save the date/time of committed changes of the object in the class. It requires the corresponding class attribute, `"name"`of which is entered into this field.
+1. `"creationTracker"` - **Time tag of created objects**:  allows you to save the date/time of creation of the object in the class. It requires the corresponding class attribute, `"name"`of which should be entered into this field.
+2. `"changeTracker"` - **Time tag of committed changes**: allows you to save the date/time of committed changes of the object in the class. It requires the corresponding class attribute, `"name"`of which be entered into this field.
+
 ### Example:
 ```
 {
@@ -71,9 +75,9 @@ These are the following fields of the main part of the meta class:
 
 # Tag of the user who created and changed the object
 
-1. `"creatorTracker"` - **Tag of the user who created the object**: allows you to save the name of the user who created the object in the class. It requires the corresponding class attribute, `"name"`of which is entered into this field.  
+1. `"creatorTracker"` - **Tag of the user who created the object**: allows you to save the name of the user who created the object in the class. It requires the corresponding class attribute, `"name"`of which be entered into this field.  
 
-2. `"editorTracker"` - **Tag of the user who changed the object**: allows you to save the name of the user who changed the object in the class. It requires the corresponding class attribute, `"name"`of which is entered into this field.  
+2. `"editorTracker"` - **Tag of the user who changed the object**: allows you to save the name of the user who changed the object in the class. It requires the corresponding class attribute, `"name"`of which be entered into this field.  
 
 ### Example:
 ```

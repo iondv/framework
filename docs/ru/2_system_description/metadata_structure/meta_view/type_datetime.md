@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Мета представлений - общая часть](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_main.md)
+### Назад: [Типы представлений](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
 
 # Режимы даты и времени
 

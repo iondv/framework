@@ -8,7 +8,6 @@ const PropertyTypes = require('core/PropertyTypes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Logger = require('core/interfaces/Logger');
-const merge = require('merge');
 const F = require('core/FunctionCodes');
 
 // jshint maxstatements: 50, maxcomplexity: 20
@@ -68,9 +67,17 @@ function AclMetaMap(options) {
               if (Array.isArray(d)) {
                 Array.prototype.push.apply(items, d);
               } else {
-                p = p.then(() => options.dataRepo.getAssociationsList(item, j)).then((coll) => {
-                  items.push(...coll);
-                });
+                p = p
+                  .then(() => options.dataRepo.getAssociationsList(item, j))
+                  .catch((err) => {
+                    if (options.log instanceof Logger) {
+                      options.log.warn(err.message || err);
+                    }
+                    return [];
+                  })
+                  .then((coll) => {
+                    items.push(...coll);
+                  });
               }
             }
           }
@@ -103,6 +110,9 @@ function AclMetaMap(options) {
 
         let sid = item.get(config.sidAttribute);
         let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
+        if (!(p instanceof Promise)) {
+          p = Promise.resolve(p || result);
+        }
         return p.then((result) => {
           if (result && breakOnResult) {
             return result;
@@ -115,6 +125,12 @@ function AclMetaMap(options) {
               return walkItems(items, i + 1, cb, breakOnResult, false, result);
             });
         });
+      })
+      .catch((err) => {
+        if (options.log instanceof Logger) {
+          options.log.warn(err.message || err);
+        }
+        return result;
       });
   }
 
@@ -136,6 +152,12 @@ function AclMetaMap(options) {
       });
     }
     return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+      .catch((err) => {
+        if (options.log instanceof Logger) {
+          options.log.warn(err.message || err);
+        }
+        return [];
+      })
       .then((items) => {
         if (!items.length) {
           return Promise.resolve(result);
@@ -147,12 +169,6 @@ function AclMetaMap(options) {
             }
             return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
           });
-      })
-      .catch((err) => {
-        if (options.log instanceof Logger) {
-          options.log.warn(err.message || err);
-        }
-        return Promise.resolve(false);
       });
   }
 
@@ -178,41 +194,22 @@ function AclMetaMap(options) {
   }
 
   /**
-   * @param {String} subject
+   * @param {String | User} subject
    * @param {String} resource
    * @param {String | String[]} permissions
    * @returns {Promise}
    */
   this._checkAccess = function (subject, resource, permissions) {
-    return options.acl.checkAccess(subject, resource, permissions)
-      .then((can) => {
-        if (can) {
-          return can;
-        }
-        return walkRelatedSubjects(
-          subject,
-          sid => options.acl.checkAccess(sid, resource, permissions).then((r) => {can = r;}),
-          true
-        ).then(() => can);
-      });
+    return options.acl.checkAccess(subject, resource, permissions);
   };
 
   /**
-   * @param {String} subject
+   * @param {String | String[] | User} subject
    * @param {String | String[]} resources
    * @returns {Promise}
    */
   this._getPermissions = function (subject, resources, skipGlobals) {
-    return options.acl.getPermissions(subject, resources, skipGlobals)
-      .then(permissions =>
-        walkRelatedSubjects(subject,
-          sid =>
-            options.acl.getPermissions(sid, resources, skipGlobals)
-              .then((p2) => {
-                permissions = merge(permissions, p2);
-              })
-        ).then(() => permissions)
-      );
+    return options.acl.getPermissions(subject, resources, skipGlobals);
   };
 
   /**
@@ -221,22 +218,7 @@ function AclMetaMap(options) {
    * @returns {Promise}
    */
   this._getResources = function (subject, permissions) {
-    return options.acl.getResources(subject, permissions)
-      .then(resources =>
-        walkRelatedSubjects(subject,
-          sid =>
-            options.acl.getResources(sid, permissions)
-              .then((r2) => {
-                if (Array.isArray(r2)) {
-                  r2.forEach((r) => {
-                    if (resources.indexOf(r) < 0) {
-                      resources.push(r);
-                    }
-                  });
-                }
-              })
-        ).then(() => resources)
-      );
+    return options.acl.getResources(subject, permissions);
   };
 
   /**

@@ -46,7 +46,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.insert = function (type, data, options) {
-    return this._insert(type, data, options);
+    return this._insert(type, data, options || {});
   };
 
   /**
@@ -90,7 +90,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.fetch = function (type, options) {
-    return this._fetch(type, options);
+    return this._fetch(type, options || {});
   };
 
   /**
@@ -100,7 +100,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.count = function (type, options) {
-    return this._count(type, options);
+    return this._count(type, options || {});
   };
 
   /**
@@ -115,7 +115,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.iterator = function (type, options) {
-    return this._iterator(type, options);
+    return this._iterator(type, options || {});
   };
 
   /**
@@ -129,7 +129,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.aggregate = function (type, options) {
-    return this._aggregate(type, options);
+    return this._aggregate(type, options || {});
   };
 
   /**
@@ -149,7 +149,7 @@ function DataSource() {
    * @returns {Promise}
    */
   this.ensureIndex = function (type, properties, options) {
-    return this._ensureIndex(type, properties, options);
+    return this._ensureIndex(type, properties, options || {});
   };
 
   /**

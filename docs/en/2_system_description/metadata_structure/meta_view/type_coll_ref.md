@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Meta view - genral part](/docs/en/2_system_description/metadata_structure/meta_view/meta_view_main.md)
+### Back: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
 
 # "Collection" and "Reference" display mode
 

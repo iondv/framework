@@ -1,3 +1,5 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 
 # Пользовательские типы

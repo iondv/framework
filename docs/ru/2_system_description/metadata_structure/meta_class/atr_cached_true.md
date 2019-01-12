@@ -1,3 +1,5 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Вычислимые поля](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)
 
 # Кеширование значения вычисляемого атрибута
@@ -106,5 +108,5 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

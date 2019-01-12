@@ -8,7 +8,7 @@ const mongo = require('mongodb');
 const client = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
-const clone = require('clone');
+const clone = require('fast-clone');
 const cuid = require('cuid');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-source');
@@ -411,7 +411,7 @@ function MongoDs(config) {
         .then(data => cleanNulls(c, type, prepareData(data)))
         .then(data =>
           new Promise((resolve, reject) => {
-            c.insertOne(clone(data.data), (err, result) => {
+            c.insertOne(data.data, (err, result) => {
               if (err) {
                 reject(wrapError(err, 'insert', type));
               } else if (result.insertedId) {
@@ -983,6 +983,7 @@ function MongoDs(config) {
   function doUpdate(type, conditions, data, options) {
     let hasData = false;
     if (data) {
+      delete data._id;
       for (let nm in data) {
         if (data.hasOwnProperty(nm) &&
           typeof data[nm] !== 'undefined' &&
@@ -1086,7 +1087,7 @@ function MongoDs(config) {
   this._delete = function (type, conditions) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) => {
           conditions = parseCondition(conditions);
           prepareConditions(conditions);
           c.deleteMany(typeof conditions === 'object' ? conditions : {},
@@ -1902,8 +1903,8 @@ function MongoDs(config) {
 
     let p = null;
     if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then(function (c) {
-        return new Promise(function (resolve, reject) {
+      p = getCollection(GEOFLD_COLLECTION).then(c =>
+        new Promise((resolve, reject) => {
           c.find({__type: type}).limit(1).next(function (err, geoflds) {
             if (err) {
               return reject(err);
@@ -1915,8 +1916,8 @@ function MongoDs(config) {
             }
             resolve();
           });
-        });
-      });
+        })
+      );
     } else {
       p = Promise.resolve();
     }
@@ -2304,7 +2305,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._iterator = function (type, options) {
-    options = clone(options) || {};
+    options = clone(options || {});
     let c;
     let tmpCollections = {};
     return getCollection(type)

@@ -1,4 +1,7 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Reference](/docs/en/2_system_description/metadata_structure/meta_class/type_reference13.md)
+
 # Collection
 
 ## Description 

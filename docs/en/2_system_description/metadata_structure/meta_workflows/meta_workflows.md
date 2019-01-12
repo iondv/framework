@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta navigation - Sample conditions](/docs/en/2_system_description/metadata_structure/meta_navigation/conditions.md) 
+### The previous page: [Meta node navigation](docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) 
 
 # Meta workflow
 
