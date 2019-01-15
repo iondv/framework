@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Типы представлений](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
+### Назад: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
 
 # Режимы даты и времени
 
@@ -187,7 +187,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/type_datetime.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_datetime9.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
