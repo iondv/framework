@@ -77,7 +77,9 @@ function Background(options) {
     }
 
     const workerOpts = clone(workers[name] || {});
-    const nodeOpts = (workerOpts.node || []).concat(process.execArgv).filter((v, i, a) => a.indexOf(v) === i);
+    const nodeOpts = (Array.isArray(workerOpts.node) && workerOpts.node || [])
+      .concat(process.execArgv)
+      .filter((v, i, a) => a.indexOf(v) === i);
     delete workerOpts.node;
     moptions = merge(true, workerOpts, moptions || {});
 

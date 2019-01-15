@@ -182,7 +182,11 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
             run = checkRun(job.launch);
           }
           if (run) {
-            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
+            let chopts = {stdio: ['pipe', 'inherit', 'inherit', 'ipc']};
+            if (Array.isArray(job.node)) {
+              chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => a.indexOf(v) === i);
+            }
+            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
