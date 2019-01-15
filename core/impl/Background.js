@@ -1,4 +1,5 @@
 'use strict';
+/* eslint no-div-regex:off */
 
 const child = require('child_process');
 const toAbsolutePath = require('core/system').toAbsolute;
@@ -79,7 +80,13 @@ function Background(options) {
     const workerOpts = clone(workers[name] || {});
     const nodeOpts = (Array.isArray(workerOpts.node) && workerOpts.node || [])
       .concat(process.execArgv)
-      .filter((v, i, a) => a.indexOf(v) === i);
+      .filter((v, i, a) => {
+        if (v.indexOf('=') > 0) {
+          const eqc = new RegExp('^' + v.replace(/=.*$/, '=.*') + '$');
+          return a.findIndex(v1 => (v === v1) || eqc.test(v1)) === i;
+        }
+        return a.indexOf(v) === i;
+      });
     delete workerOpts.node;
     moptions = merge(true, workerOpts, moptions || {});
 

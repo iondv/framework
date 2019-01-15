@@ -1,5 +1,5 @@
 'use strict';
-/* eslint no-process-exit:off */
+/* eslint no-process-exit:off, no-div-regex:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -7,8 +7,6 @@ const child = require('child_process');
 const moment = require('moment');
 const config = require('../config');
 const di = require('core/di');
-const alias = require('core/scope-alias');
-const extend = require('extend');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
@@ -184,7 +182,13 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           if (run) {
             let chopts = {stdio: ['pipe', 'inherit', 'inherit', 'ipc']};
             if (Array.isArray(job.node)) {
-              chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => a.indexOf(v) === i);
+              chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => {
+                if (v.indexOf('=') > 0) {
+                  const eqc = new RegExp('^' + v.replace(/=.*$/, '=.*') + '$');
+                  return a.findIndex(v1 => (v === v1) || eqc.test(v1)) === i;
+                }
+                return a.indexOf(v) === i;
+              });
             }
             let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
