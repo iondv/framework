@@ -1,8 +1,14 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
+### Back: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
 
-# "Date" and "Time" modes
+# Attribute type date/time
+
+## Description
+
+**Attribute type date/time** - is the date in ISODate format. It can be displayed as a date, or as a date-time.
+
+## "Date" and "Time" modes
 
 The modes of date and time types are set in the `mode` of attribute in the meta view:
 
@@ -189,7 +195,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/type_datetime.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_datetime9.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
