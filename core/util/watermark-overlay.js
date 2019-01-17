@@ -97,10 +97,50 @@ function produceOverlay(meta, options) {
   options.width = meta.width < options.width ? meta.width : options.width;
   options.height = meta.height < options.height ? meta.height : options.height;
   options.text = options.text || '';
+  options.meta = meta;
   if (options.overlayPath) {
     return imgOverlay(options);
+  } else if (options.pattern) {
+    return patternOverlay(options);
   }
   return captionOverlay(options);
+}
+
+function patternOverlay({text, width, height, font, fontSize, fontColor, meta}) {
+  text = text || '';
+  width = width || 100;
+  height = height || 100;
+  fontSize = parseInt(fontSize) || 48;
+  fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
+  const canvas = new Canvas(width, height);
+  const ctx = canvas.getContext('2d');
+  let fontName = 'monospace';
+  if (typeof font === 'string') {
+    fontName = font;
+  } else if (typeof font === 'object' && font && font.family && font.path) {
+    font.fontFace = font.fontFace || new Font(font.family, toAbsolute(font.path));
+    ctx.addFont(font.fontFace);
+    fontName = font.name || font.family;
+  }
+
+  ctx.save();
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(0, 0, width, height);
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.font = adjustFontSize(ctx, text, fontName, fontSize, width);
+  ctx.fillStyle = fontColor;
+  ctx.fillText(text, -10, height);
+  ctx.restore();
+
+  const pCanvas = new Canvas(meta.width, meta.height);
+  const pCtx = pCanvas.getContext('2d');
+  const ptrn = pCtx.createPattern(canvas, 'repeat');
+  pCtx.fillStyle = ptrn;
+  pCtx.fillRect(0, 0, pCanvas.width, pCanvas.height);
+
+  return pCanvas.toBuffer();
 }
 
 /**
@@ -121,8 +161,7 @@ function watermarkApplier(imgSource, options) {
     .then(overlay => image.png()
       .overlayWith(overlay, {gravity: sharp.gravity.southeast})
       .toFormat(format.toLowerCase())
-      .toBuffer()
-    );
+      .toBuffer());
 }
 
 /**
