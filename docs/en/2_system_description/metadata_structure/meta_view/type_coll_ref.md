@@ -38,7 +38,7 @@ module.exports = {
 * `"mode": 1` - Reference
 * `"mode": 2` - List of references
 * `"mode": 3` - Table
-* `"mode": 4` - Tags
+* `"mode": 4` - Tag cloud
 
 ## Modes for attributes of "Reference" type::
 
