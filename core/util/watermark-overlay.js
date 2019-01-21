@@ -106,13 +106,14 @@ function produceOverlay(meta, options) {
   return captionOverlay(options);
 }
 
-function patternOverlay({text, width, height, font, fontSize, fontColor, meta}) {
+function patternOverlay({text, ratio, font, fontSize, fontColor, meta}) {
   text = text || '';
-  width = width || 100;
-  height = height || 100;
+  ratio = ratio || 25;
+  const diagonal = parseInt(Math.sqrt(meta.width * meta.height * ratio / 100));
+  const side = Math.sqrt(Math.pow(diagonal, 2) / 2);
   fontSize = parseInt(fontSize) || 48;
   fontColor = fontColor || 'rgba(255, 255, 255, 0.7)';
-  const canvas = new Canvas(width, height);
+  const canvas = new Canvas(diagonal, diagonal);
   const ctx = canvas.getContext('2d');
   let fontName = 'monospace';
   if (typeof font === 'string') {
@@ -123,15 +124,15 @@ function patternOverlay({text, width, height, font, fontSize, fontColor, meta}) 
     fontName = font.name || font.family;
   }
 
-  ctx.save();
+  ctx.translate(0, diagonal / 2);
   ctx.rotate(-Math.PI / 4);
   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-  ctx.fillRect(0, 0, width, height);
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'left';
-  ctx.font = adjustFontSize(ctx, text, fontName, fontSize, width);
+  ctx.fillRect(0, 0, side, side);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.font = adjustFontSize(ctx, text, fontName, fontSize, side);
   ctx.fillStyle = fontColor;
-  ctx.fillText(text, -10, height);
+  ctx.fillText(text, side / 2, side / 2);
   ctx.restore();
 
   const pCanvas = new Canvas(meta.width, meta.height);
