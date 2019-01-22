@@ -86,27 +86,41 @@ function captionOverlay({text, width, height, font, fontSize, fontColor}) {
   return canvas.toBuffer();
 }
 
-/**
- * @param {{}} meta
- * @param {{}} options
- * @returns {Promise|Buffer}
- */
-function produceOverlay(meta, options) {
-  options.width = parseInt(options.width) || meta.width;
-  options.height = parseInt(options.height) || meta.height;
-  options.width = meta.width < options.width ? meta.width : options.width;
-  options.height = meta.height < options.height ? meta.height : options.height;
-  options.text = options.text || '';
-  options.meta = meta;
-  if (options.overlayPath) {
-    return imgOverlay(options);
-  } else if (options.pattern) {
-    return patternOverlay(options);
+function patternImgOverlay({overlayPath, ratio, meta}) {
+  if (!overlayPath) {
+    return Promise.reject(new Error('не переданы необходимые параметры для watermark'));
   }
-  return captionOverlay(options);
+  ratio = ratio || 25;
+  const diagonal = parseInt(Math.sqrt(meta.width * meta.height * ratio / 100));
+  const side = Math.sqrt(Math.pow(diagonal, 2) / 2);
+  const overlay = sharp(toAbsolute(overlayPath));
+  return overlay
+    .then(() => overlay
+      .resize(parseInt(side))
+      .background({r: 0, g: 0, b: 0, alpha: 0})
+      .embed()
+      .toBuffer()
+    )
+    .then((imgData) => {
+      const img = new Canvas.Image();
+      img.src = imgData;
+      const canvas = new Canvas(diagonal, diagonal);
+      const ctx = canvas.getContext('2d');
+      ctx.translate(0, diagonal / 2);
+      ctx.rotate(-Math.PI / 4);
+      ctx.drawImage(img, 0, 0);
+
+      const pCanvas = new Canvas(meta.width, meta.height);
+      const pCtx = pCanvas.getContext('2d');
+      const ptrn = pCtx.createPattern(canvas, 'repeat');
+      pCtx.fillStyle = ptrn;
+      pCtx.fillRect(0, 0, pCanvas.width, pCanvas.height);
+
+      return pCanvas.toBuffer();
+    });
 }
 
-function patternOverlay({text, ratio, font, fontSize, fontColor, meta}) {
+function patternCaptionOverlay({text, ratio, font, fontSize, fontColor, meta}) {
   text = text || '';
   ratio = ratio || 25;
   const diagonal = parseInt(Math.sqrt(meta.width * meta.height * ratio / 100));
@@ -133,7 +147,6 @@ function patternOverlay({text, ratio, font, fontSize, fontColor, meta}) {
   ctx.font = adjustFontSize(ctx, text, fontName, fontSize, side);
   ctx.fillStyle = fontColor;
   ctx.fillText(text, side / 2, side / 2);
-  ctx.restore();
 
   const pCanvas = new Canvas(meta.width, meta.height);
   const pCtx = pCanvas.getContext('2d');
@@ -142,6 +155,26 @@ function patternOverlay({text, ratio, font, fontSize, fontColor, meta}) {
   pCtx.fillRect(0, 0, pCanvas.width, pCanvas.height);
 
   return pCanvas.toBuffer();
+}
+
+/**
+ * @param {{}} meta
+ * @param {{}} options
+ * @returns {Promise|Buffer}
+ */
+function produceOverlay(meta, options) {
+  options.width = parseInt(options.width) || meta.width;
+  options.height = parseInt(options.height) || meta.height;
+  options.width = meta.width < options.width ? meta.width : options.width;
+  options.height = meta.height < options.height ? meta.height : options.height;
+  options.text = options.text || '';
+  options.meta = meta;
+  if (options.overlayPath) {
+    return options.pattern ? patternImgOverlay(options) : imgOverlay(options);
+  } else if (options.pattern) {
+    return patternCaptionOverlay(options);
+  }
+  return captionOverlay(options);
 }
 
 /**
