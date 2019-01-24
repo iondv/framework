@@ -18,6 +18,7 @@ const F = require('core/FunctionCodes');
  * @param {AclProvider} options.acl
  * @param {{}} options.accessManager
  * @param {Logger} options.log
+ * @param {Calculator} options.calculator
  * @constructor
  */
 function AclMetaMap(options) {
@@ -39,6 +40,30 @@ function AclMetaMap(options) {
     return null;
   }
 
+  function jumpsForEach (jumps, cb) {
+    if (jumps && typeof jumps === 'object') {
+      for (let j in jumps) {
+        cb(j, jumps[j]);
+      }
+    } else if (Array.isArray(jumps)) {
+      jumps.forEach(cb);
+    }
+    return;
+  }
+
+  function forceEnrichmentFromJumps (jumps) {
+    let forceEnrichment = [];
+    jumpsForEach(jumps, (jump/*, filter*/) => {
+      let fe  = jump.split('.');
+      /*if (filter) {
+        fe.pop();
+      }*/
+      if (fe.length) {
+        jumps.push(fe);
+      }
+    });
+    return forceEnrichment;
+  }
 
   /**
    * @param {Item} item
@@ -46,14 +71,12 @@ function AclMetaMap(options) {
    * @param {Boolean} breakOnResult
    * @param {*} result
    */
-  function jump(item, cb, breakOnResult, result) {
+  function jump(item, cb, cache, breakOnResult, result) {
     let config = locateMap(item.getMetaClass());
     if (config) {
-      let jumps = Array.isArray(config.jumps) ? config.jumps : [config.jumps];
       let items = [];
       let p = Promise.resolve();
-      jumps.forEach((j) => {
-        //TODO j может быть строкой, либо объектом
+      jumpsForEach(config.jumps, (j, f) => {
         let prop = item.property(j);
         if (prop) {
           if (prop.meta.type === PropertyTypes.REFERENCE) {
@@ -61,16 +84,48 @@ function AclMetaMap(options) {
             if (d) {
               items.push(d);
             } else if (item.get(j)) {
-              items.push({cn: prop.meta._refClass.getCanonicalName(), id: item.get(j)});
+              let rc = prop.meta._refClass;
+
+              if (Array.isArray(cache[rc.getCanonicalName()]) && cache[rc.getCanonicalName()].indexOf(item.get(jump)) >= 0) {
+                return;
+              }
+
+              let c = locateMap(rc);
+              let opts = {
+                filter: f, 
+                forceEnrichment: forceEnrichmentFromJumps(c.jumps)
+              };
+              p = p.then(() => options.dataRepo.getItem(rc.getCanonicalName(), item.get(jump), opts))
+                .then((item) => {
+                  items.push(item);
+                })
+                .catch((err) => {
+                  if (options.log instanceof Logger) {
+                    options.log.warn(err.message || err);
+                  }
+                });
             }
           } else if (prop.meta.type === PropertyTypes.COLLECTION) {
-            //TODO Вот тут должна быть фильтрация джампа, но неясно пока как именно
             let d = item.getAggregates(j);
             if (Array.isArray(d)) {
-              Array.prototype.push.apply(items, d);
+              let ff = options.calculator.parseFormula(f);
+              d.forEach((e) => {
+                p = p
+                .then(() => ff.apply(e))
+                .then((allowed) => {
+                  if (allowed) {
+                    items.push(e);
+                  }
+                });
+              });
             } else {
+              let c = locateMap(prop.meta._refClass);
+              let opts = {
+                filter: f, 
+                forceEnrichment: forceEnrichmentFromJumps(c.jumps)
+              };
               p = p
-                .then(() => options.dataRepo.getAssociationsList(item, j))
+                .then(() => options.dataRepo.getAssociationsList(item, j, opts))
                 .catch((err) => {
                   if (options.log instanceof Logger) {
                     options.log.warn(err.message || err);
@@ -84,24 +139,22 @@ function AclMetaMap(options) {
           }
         }
       });
-      return p.then(() => walkItems(items, 0, cb, breakOnResult, false, result));
+      return p.then(() => walkItems(items, 0, cb, cache, breakOnResult, false, result));
     }
     return Promise.resolve(result);
   }
 
-  function walkItems(items, i, cb, breakOnResult, skipCb, result) {
+  function walkItems(items, i, cb, cache, breakOnResult, skipCb, result) {
     if (i >= items.length) {
       return Promise.resolve(result);
     }
+
     let item = items[i];
+    if (Array.isArray(cache[item.getClassName()]) && cache[item.getClassName()].indexOf(item.getItemId()) >= 0) {
+      return walkItems(items, i + 1, cb, cache, breakOnResult, false, result);
+    }
 
-    //TODO Тут нужно вызывать проверочный каллбек
-
-    let p = (item instanceof Item) ?
-      Promise.resolve(item) :
-      options.dataRepo.getItem(item.cn, item.id);
-
-    return p
+    return Promise.resolve(item)
       .then((item) => {
         if (!item) {
           return Promise.resolve(result);
@@ -110,7 +163,7 @@ function AclMetaMap(options) {
         if (!config) {
           return Promise.resolve(result);
         }
-
+        
         let sid = item.get(config.sidAttribute);
         let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
         if (!(p instanceof Promise)) {
@@ -120,12 +173,18 @@ function AclMetaMap(options) {
           if (result && breakOnResult) {
             return result;
           }
-          return jump(item, cb, breakOnResult, result)
+
+          if (!Array.isArray(cache[item.getClassName()])) {
+            cache[item.getClassName()] = [];
+          }
+          cache[item.getClassName()] = item.getItemId();
+
+          return jump(item, cb, cache, breakOnResult, result)
             .then((result) => {
               if (result && breakOnResult) {
                 return result;
               }
-              return walkItems(items, i + 1, cb, breakOnResult, false, result);
+              return walkItems(items, i + 1, cb, cache, breakOnResult, false, result);
             });
         });
       })
@@ -143,25 +202,15 @@ function AclMetaMap(options) {
    * @param {Array} entries
    * @returns {Function}
      */
-  function walkEntry(sid, i, entries, cb, breakOnResult, result) {
+  function walkEntry(sid, i, entries, cb, cache, breakOnResult, result) {
     if (i >= entries.length || !entries[i].sidAttribute) {
       return Promise.resolve(result);
     }
-    let f = {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]};
-    let jumps = [];
-    (Array.isArray(entries[i].jumps) ? entries[i].jumps : [entries[i].jumps]).forEach((j) => {
-      if (j && typeof j === 'object') {
-        for (let j2 in j) {
-          jumps.push(j2.split('.'));
-          if (typeof j[j2] === 'object') {
-            //TODO Тут нужно взять использовать условия на джамп, только пока не ясно, можно ли его передать в ЖЗ, или юзать где то иначе
-          }
-        }
-      } else if (j && typeof j === 'string') {
-        jumps.push(j.split('.'));
-      }
-    });
-    return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+    let opts = {
+      filter: {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]}, 
+      forceEnrichment: forceEnrichmentFromJumps(entries[i].jumps)
+    };
+    return options.dataRepo.getList(entries[i]._cn, opts)
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
@@ -172,17 +221,17 @@ function AclMetaMap(options) {
         if (!items.length) {
           return Promise.resolve(result);
         }
-        return walkItems(items, 0, cb, breakOnResult, true, result)
+        return walkItems(items, 0, cb, cache, breakOnResult, true, result)
           .then((result) => {
             if (result && breakOnResult) {
               return result;
             }
-            return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
+            return walkEntry(sid, i + 1, entries, cb, cache, breakOnResult, result);
           });
       });
   }
 
-  function walkEntries(sid, cb, breakOnResult) {
+  function walkEntries(sid, cb, cache, breakOnResult) {
     let entries = [];
     for (let cn in options.map) {
       if (options.map.hasOwnProperty(cn)) {
@@ -195,12 +244,12 @@ function AclMetaMap(options) {
     if (!entries.length) {
       return Promise.resolve();
     }
-    return walkEntry(sid, 0, entries, cb, breakOnResult);
+    return walkEntry(sid, 0, entries, cb, cache, breakOnResult);
   }
 
 
   function walkRelatedSubjects(sid, cb, breakOnResult) {
-    return walkEntries(sid, cb, breakOnResult);
+    return walkEntries(sid, cb, {}, breakOnResult);
   }
 
   /**
@@ -239,13 +288,10 @@ function AclMetaMap(options) {
     return options.acl.getCoactors(subject)
       .then(coactors =>
         walkRelatedSubjects(subject,
-          //TODO Тут нужно написать и проверочный каллбек, который не позволит запетлеваться сбору коакторов, 
-          // ну и во всех метода попередавать до walkItems, где проверка будетвызвана
           (sid) => {
             if (coactors.indexOf(sid) < 0) {
               coactors.push(sid);
             }
-            //TODO Тут Даня предупреждал, что нужно предусмотреть устойчивости к некоакторным сущностям, но оно вроде устойчиво
             return options.acl.getCoactors(sid)
               .then((r2) => {
                 if (Array.isArray(r2)) {
