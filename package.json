@@ -6,7 +6,7 @@
       "git add"
     ]
   },
-  "license": "GNU GPLv3",
+  "license": "ION DV Ltd.",
   "engines": {
     "node": ">=8.9.1"
   },
