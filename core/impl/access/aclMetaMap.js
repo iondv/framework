@@ -41,25 +41,22 @@ function AclMetaMap(options) {
   }
 
   function jumpsForEach (jumps, cb) {
-    if (jumps && typeof jumps === 'object') {
+    if (Array.isArray(jumps)) {
+      jumps.forEach(cb);
+    } else if (jumps && typeof jumps === 'object') {
       for (let j in jumps) {
         cb(j, jumps[j]);
       }
-    } else if (Array.isArray(jumps)) {
-      jumps.forEach(cb);
     }
     return;
   }
 
   function forceEnrichmentFromJumps (jumps) {
     let forceEnrichment = [];
-    jumpsForEach(jumps, (jump/*, filter*/) => {
+    jumpsForEach(jumps, (jump) => {
       let fe  = jump.split('.');
-      /*if (filter) {
-        fe.pop();
-      }*/
       if (fe.length) {
-        jumps.push(fe);
+        forceEnrichment.push(fe);
       }
     });
     return forceEnrichment;
@@ -86,7 +83,7 @@ function AclMetaMap(options) {
             } else if (item.get(j)) {
               let rc = prop.meta._refClass;
 
-              if (Array.isArray(cache[rc.getCanonicalName()]) && cache[rc.getCanonicalName()].indexOf(item.get(jump)) >= 0) {
+              if (Array.isArray(cache[rc.getCanonicalName()]) && cache[rc.getCanonicalName()].indexOf(item.get(j)) >= 0) {
                 return;
               }
 
@@ -95,7 +92,7 @@ function AclMetaMap(options) {
                 filter: f, 
                 forceEnrichment: forceEnrichmentFromJumps(c.jumps)
               };
-              p = p.then(() => options.dataRepo.getItem(rc.getCanonicalName(), item.get(jump), opts))
+              p = p.then(() => options.dataRepo.getItem(rc.getCanonicalName(), item.get(j), opts))
                 .then((item) => {
                   items.push(item);
                 })
@@ -164,7 +161,7 @@ function AclMetaMap(options) {
           return Promise.resolve(result);
         }
         
-        let sid = item.get(config.sidAttribute);
+        let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
         let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
         if (!(p instanceof Promise)) {
           p = Promise.resolve(p || result);
@@ -177,7 +174,7 @@ function AclMetaMap(options) {
           if (!Array.isArray(cache[item.getClassName()])) {
             cache[item.getClassName()] = [];
           }
-          cache[item.getClassName()] = item.getItemId();
+          cache[item.getClassName()].push(item.getItemId());
 
           return jump(item, cb, cache, breakOnResult, result)
             .then((result) => {
