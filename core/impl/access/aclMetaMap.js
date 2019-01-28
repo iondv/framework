@@ -65,10 +65,9 @@ function AclMetaMap(options) {
   /**
    * @param {Item} item
    * @param {Function} cb
-   * @param {Boolean} breakOnResult
-   * @param {*} result
+   * @param {*} cache
    */
-  function jump(item, cb, cache, breakOnResult, result) {
+  function jump(item, cb, cache) {
     let config = locateMap(item.getMetaClass());
     if (config) {
       let items = [];
@@ -136,60 +135,51 @@ function AclMetaMap(options) {
           }
         }
       });
-      return p.then(() => walkItems(items, 0, cb, cache, breakOnResult, false, result));
+      return p.then(() => walkItems(items, 0, cb, cache, false));
     }
-    return Promise.resolve(result);
+    return Promise.resolve();
   }
 
-  function walkItems(items, i, cb, cache, breakOnResult, skipCb, result) {
+  function walkItems(items, i, cb, cache, skipCb) {
     if (i >= items.length) {
-      return Promise.resolve(result);
+      return Promise.resolve();
     }
 
     let item = items[i];
     if (Array.isArray(cache[item.getClassName()]) && cache[item.getClassName()].indexOf(item.getItemId()) >= 0) {
-      return walkItems(items, i + 1, cb, cache, breakOnResult, false, result);
+      return walkItems(items, i + 1, cb, cache, false);
     }
 
     return Promise.resolve(item)
       .then((item) => {
         if (!item) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
         let config = locateMap(item.getMetaClass());
         if (!config) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
         
         let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
-        let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
+        let p = (skipCb || !sid) ? Promise.resolve() : cb(sid);
         if (!(p instanceof Promise)) {
-          p = Promise.resolve(p || result);
+          p = Promise.resolve(p);
         }
-        return p.then((result) => {
-          if (result && breakOnResult) {
-            return result;
-          }
-
+        return p.then(() => {
           if (!Array.isArray(cache[item.getClassName()])) {
             cache[item.getClassName()] = [];
           }
           cache[item.getClassName()].push(item.getItemId());
 
-          return jump(item, cb, cache, breakOnResult, result)
-            .then((result) => {
-              if (result && breakOnResult) {
-                return result;
-              }
-              return walkItems(items, i + 1, cb, cache, breakOnResult, false, result);
-            });
+          return jump(item, cb, cache)
+            .then(() => walkItems(items, i + 1, cb, cache, false));
         });
       })
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
         }
-        return result;
+        return;
       });
   }
 
@@ -197,11 +187,13 @@ function AclMetaMap(options) {
    * @param {String} sid
    * @param {String} cn
    * @param {Array} entries
+   * @param {Function} cb
+   * @param {*} cache
    * @returns {Function}
      */
-  function walkEntry(sid, i, entries, cb, cache, breakOnResult, result) {
+  function walkEntry(sid, i, entries, cb, cache) {
     if (i >= entries.length || !entries[i].sidAttribute) {
-      return Promise.resolve(result);
+      return Promise.resolve();
     }
     let opts = {
       filter: {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]}, 
@@ -216,19 +208,14 @@ function AclMetaMap(options) {
       })
       .then((items) => {
         if (!items.length) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
-        return walkItems(items, 0, cb, cache, breakOnResult, true, result)
-          .then((result) => {
-            if (result && breakOnResult) {
-              return result;
-            }
-            return walkEntry(sid, i + 1, entries, cb, cache, breakOnResult, result);
-          });
+        return walkItems(items, 0, cb, cache, true)
+          .then(() => walkEntry(sid, i + 1, entries, cb, cache));
       });
   }
 
-  function walkEntries(sid, cb, cache, breakOnResult) {
+  function walkEntries(sid, cb, cache) {
     let entries = [];
     for (let cn in options.map) {
       if (options.map.hasOwnProperty(cn)) {
@@ -241,12 +228,12 @@ function AclMetaMap(options) {
     if (!entries.length) {
       return Promise.resolve();
     }
-    return walkEntry(sid, 0, entries, cb, cache, breakOnResult);
+    return walkEntry(sid, 0, entries, cb, cache);
   }
 
 
-  function walkRelatedSubjects(sid, cb, breakOnResult) {
-    return walkEntries(sid, cb, {}, breakOnResult);
+  function walkRelatedSubjects(sid, cb) {
+    return walkEntries(sid, cb, {});
   }
 
   /**
