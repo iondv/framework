@@ -1,18 +1,25 @@
-#### [Content](/docs/en/index.md)
+#### [Оглавление](/docs/ru/index.md)
 
-### Back: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
+### Назад: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
 
-# "Date" and "Time" modes
+# Тип атрибута дата/время
 
-The modes of date and time types are set in the `mode` of attribute in the meta view:
+## Описание
 
-* 0 - **Actual** (by default). Date is stored without time zone. When displayed, it is converted to the user's time zone. That means 01/01/2017 the preset in Moscow in Paris will be displayed as 12/31/2016.
+**Тип атрибута дата/время** - представляет собой дату в формате ISODate. Может быть отображена как дата, либо как дата-время.
 
-* 1 - **Date with time zone**. The date is stored with the time zone in which it was set. When displayed, it is brought to the preset time zone. That means the preset date 01/01/2017 in Paris, in Moscow will also be displayed - 01/01/2017. But it is more correct to display it with the indication of the time zone, i.e. 01/01/2017 (+11). When editing, the time zone is overlapped by the time zone of the new date. In this case, the ACTUAL time is stored in the DB, which must be taken into account in the sample conditions specified by the hardcode in the meta.
+## Режимы даты и времени
 
-* 2 - **Universal**. The date is saved as if it was set in UTC. So it isn't converted to the UTC, but saves in the UTC just as it was entered. Those. if we entered Moscow time in Moscow on 01/01/2017, then it will remain as "01/01/2017 00:00 UTC". It is displayed in any time zone just as it was entered. Use for dates in the details (date of birth, date of issue of the document, etc.), i.e. when the formal moment of time is important or when it is not necessary to consider time in general.
+Режимы хранения даты задаются в параметре `mode` атрибутивной части меты класса. 
+Доступно 3 режима хранения даты - реальный, локализованный, универсальный:
 
-### Example
+* 0 - **Реальный** (по умолчанию). Дата хранится без информации о часовом поясе. При отображении приводится к часовому поясу пользователя. Т.е. 01.01.2017 заданное на Камчатке в Хабаровске отобразится как 31.12.2016.
+
+* 1 - **Локализованный**. Дата хранится вместе с часовым поясом, в котором была задана. При отображении приводится к этому часовому поясу. Т.е. 01.01.2017 заданное на Камчатке, в Хабаровске отобразиться так же - 01.01.2017. Но правильно его отображать с указанием часового пояса, т.е. 01.01.2017 (+11). При редактировании часовой пояс обновляется часовым поясом новой даты. При этом в БД хранится РЕАЛЬНЫЙ момент времени, что нужно учитывать в условиях выборки задаваемых хардкодом в мете. 
+
+* 2 - **Универсальный**. Дата сохраняется как если бы она задавалась в UTC. Т.е. не приводится к UTC, а сохраняется в UTC так же, как была введена. Т.е. если мы в Хабаровске ввели 01.01.2017 по Хабаровску, то сохранится она как "01.01.2017 00:00 UTC", а не как "31.12.2016 14:00 UTC". Отображается в любом часовом поясе так же, как была введена. Использовать для дат в реквизитах (дата рождения, дата выдачи документа и т.д.), т.е. когда важен не реальный, а формальный момент времени. Либо, когда не нужно учитывать время вообще.
+
+### Пример
 
 ```
 {
@@ -24,7 +31,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
   "semantic": "",
   "name": "class_datetime",
   "version": "",
-  "caption": "Class \"Date/Time [9]\"",
+  "caption": "Класс \"Дата/Время [9]\"",
   "ancestor": null,
   "container": null,
   "creationTracker": "",
@@ -36,7 +43,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
     {
       "orderNumber": 10,
       "name": "id",
-      "caption": "Identifier",
+      "caption": "Идентификатор",
       "type": 12,
       "size": 24,
       "decimals": 0,
@@ -65,7 +72,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
     {
       "orderNumber": 20,
       "name": "data_data",
-      "caption": "Select date [120]",
+      "caption": "Выбор даты [120]",
       "type": 9,
       "size": null,
       "decimals": 0,
@@ -94,7 +101,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
     {
       "orderNumber": 30,
       "name": "data_datatime",
-      "caption": "Actual date",
+      "caption": "Реальная дата",
       "type": 9,
       "mode": 0,
       "size": null,
@@ -124,7 +131,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
     {
       "orderNumber": 30,
       "name": "data_datatime1",
-      "caption": "Date with time zone",
+      "caption": "Дата с часовым поясом",
       "type": 9,
       "mode": 1,
       "size": null,
@@ -154,7 +161,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
     {
       "orderNumber": 30,
       "name": "data_datatime2",
-      "caption": "Universal date",
+      "caption": "Универсальная дата",
       "type": 9,
       "mode": 2,
       "size": null,
@@ -189,7 +196,7 @@ The modes of date and time types are set in the `mode` of attribute in the meta 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/type_datetime.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_datetime9.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

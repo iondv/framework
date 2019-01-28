@@ -111,23 +111,23 @@ function checkRun(launch) {
 function calcCheckInterval(launch, dv) {
   if (typeof launch === 'object') {
     if (launch.sec || launch.second) {
-      return 500;
+      return 1000;
     }
 
     if (launch.min || launch.minute) {
-      return 30000;
+      return 60000;
     }
 
     if (launch.hour) {
-      return 1800000;
+      return 3600000;
     }
 
     if (launch.day || launch.dayOfYear || launch.weekday) {
-      return 43200000;
+      return 86400000;
     }
 
     if (launch.week) {
-      return 302400000;
+      return 604800000;
     }
 
     return 1296000000;
@@ -144,6 +144,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
      */
     (scope) => {
       let jobs = scope.settings.get('jobs') || {};
+      let busy = false;
       if (
         jobs.hasOwnProperty(jobName) &&
         jobs[jobName] &&
@@ -179,7 +180,8 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           if (!runImmediate) {
             run = checkRun(job.launch);
           }
-          if (run) {
+          if (run && !busy) {
+            busy = true;
             let chopts = {stdio: ['pipe', 'inherit', 'inherit', 'ipc']};
             if (Array.isArray(job.node)) {
               chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => {
@@ -195,10 +197,12 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
                 ch.kill(9);
+                busy = false;
               }
             }, runTimeout);
             ch.on('exit', () => {
               clearTimeout(rto);
+              busy = false;
             });
           }
           if (interval) {
