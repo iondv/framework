@@ -6,7 +6,7 @@
       "git add"
     ]
   },
-  "license": "GNU GPLv3",
+  "license": "LLC ION DV",
   "engines": {
     "node": ">=8.9.1"
   },
@@ -21,7 +21,7 @@
     "url": "https://git.iondv.ru/ION/platform.git",
     "type": "git"
   },
-  "version": "2.1.8",
+  "version": "2.1.9",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -65,6 +65,7 @@
     "password-hash-and-salt": "^0.1.4",
     "redis": "^2.8.0",
     "request": "^2.83.0",
+    "rimraf": "^2.6.2",
     "sendmail": "^1.2.0",
     "serve-favicon": "^2.4.5",
     "sharp": "^0.20.3",
