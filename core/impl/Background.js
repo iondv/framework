@@ -97,7 +97,7 @@ function Background(options) {
       pool[uid][name] = {};
     }
     if (typeof pool[uid][name][sid] !== 'undefined') {
-      throw new Error('Task ' + name + '[' + sid + '] is already running!');
+      return Promise.reject(new Error('Task ' + name + '[' + sid + '] is already running!'));
     }
 
     return getTask(uid, name, sid)
