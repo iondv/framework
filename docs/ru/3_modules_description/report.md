@@ -37,8 +37,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[English](/docs/en/3_modules_description/report.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/report.md) &ensp; [FAQs](/faqs.md)          
 
 
 

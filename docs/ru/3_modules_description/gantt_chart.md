@@ -133,8 +133,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[English](/docs/en/3_modules_description/gantt_chart.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/gantt_chart.md) &ensp; [FAQs](/faqs.md)          
 
 
 

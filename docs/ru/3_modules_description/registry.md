@@ -8,12 +8,13 @@
 
 ## Настройка
 
-* [DI (treegridController)](./di)
+* [DI (treegridController)](/docs/ru/3_modules_description/registry_treegrid.md)
 
 ### Deploy
 
-### Настройка частоты опроса сервера, что объект не заблокирован в deploy.json:
-Источник https://ion-dv.atlassian.net/browse/MODREGISTR-481
+### Настройка частоты опроса в deploy.json
+
+Настройка частоты опроса сервера, что объект не заблокирован в deploy.json:
 
 ```
 "registry": {
@@ -23,8 +24,9 @@
 }
 ```
 
-### Настройка отображения кнопки "Создать еще" в deploy.json:
-Источник https://ion-dv.atlassian.net/browse/MODREGISTR-475
+### Настройка createByCopy
+
+Настройка отображения кнопки "Создать еще" в deploy.json:
 
 ```
 "createByCopy": [
@@ -33,31 +35,21 @@
 ```
 
 ## Фильтры
+
+Подробнее о фильтрах [здесь](/docs/ru/2_system_description/functionality/filter.md).
+
 ### Настройка помощь по фильтрам
-Реализация в [MODREGISTR-493](https://ion-dv.atlassian.net/browse/MODREGISTR-493)
-Помощь размещается в файле шаблона
-`modules/registry/view/default/templates/view/list-filter-helper.ejs`
 
-## Версии (последующее включение в карту проверки и документации)
-
-* [Версии](./Version)
-
-* [Карта проверки](./CheckCard)
-
-## Frontend
-[Логика формирования id элементов в верстке страниц](frontend/element-ids)
+Справка размещается в файле шаблона `modules/registry/view/default/templates/view/list-filter-helper.ejs`
 
 ## Требования к коду
 
-[Cтиль написания компонентов фронт-енда](requirements/frontend-style)
-
-## Требования к коду
+Cтиль написания компонентов фронт-енда [здесь](/docs/ru/3_modules_description/registry_code.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[English](/docs/en/3_modules_description/registry.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/registry.md) &ensp; [FAQs](/faqs.md)          
 
 
 

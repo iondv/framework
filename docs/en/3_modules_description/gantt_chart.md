@@ -133,8 +133,7 @@ It is used if the filter is configured for a column and allows you not to displa
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[Russian](/docs/ru/3_modules_description/gantt_chart.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/gantt_chart.md) &ensp; [FAQs](/faqs.md)          
 
 
 

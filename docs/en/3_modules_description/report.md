@@ -37,8 +37,7 @@ To run a task at the start of the application and then every 6 hours, you need t
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[Russian](/docs/ru/3_modules_description/report.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/report.md) &ensp; [FAQs](/faqs.md)          
 
 
 
