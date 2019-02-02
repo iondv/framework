@@ -46,7 +46,7 @@ function AclMetaMap(options) {
    * @param {Boolean} breakOnResult
    * @param {*} result
    */
-  function jump(item, cb, breakOnResult, result) {
+  function jump(item, cb) {
     let config = locateMap(item.getMetaClass());
     if (config) {
       if (Array.isArray(config.jumps)) {
@@ -82,15 +82,15 @@ function AclMetaMap(options) {
             }
           }
         });
-        return p.then(() => walkItems(items, 0, cb, breakOnResult, false, result));
+        return p.then(() => walkItems(items, 0, cb, false));
       }
     }
-    return Promise.resolve(result);
+    return Promise.resolve();
   }
 
-  function walkItems(items, i, cb, breakOnResult, skipCb, result) {
+  function walkItems(items, i, cb, skipCb) {
     if (i >= items.length) {
-      return Promise.resolve(result);
+      return Promise.resolve();
     }
     let item = items[i];
 
@@ -101,36 +101,26 @@ function AclMetaMap(options) {
     return p
       .then((item) => {
         if (!item) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
         let config = locateMap(item.getMetaClass());
         if (!config) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
 
         let sid = item.get(config.sidAttribute);
-        let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
+        let p = (skipCb || !sid) ? Promise.resolve() : cb(sid);
         if (!(p instanceof Promise)) {
-          p = Promise.resolve(p || result);
+          p = Promise.resolve(p);
         }
-        return p.then((result) => {
-          if (result && breakOnResult) {
-            return result;
-          }
-          return jump(item, cb, breakOnResult, result)
-            .then((result) => {
-              if (result && breakOnResult) {
-                return result;
-              }
-              return walkItems(items, i + 1, cb, breakOnResult, false, result);
-            });
-        });
+        return p
+          .then(() => jump(item, cb))
+          .then(() => walkItems(items, i + 1, cb, false));
       })
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
         }
-        return result;
       });
   }
 
@@ -140,9 +130,9 @@ function AclMetaMap(options) {
    * @param {Array} entries
    * @returns {Function}
      */
-  function walkEntry(sid, i, entries, cb, breakOnResult, result) {
+  function walkEntry(sid, i, entries, cb) {
     if (i >= entries.length || !entries[i].sidAttribute) {
-      return Promise.resolve(result);
+      return Promise.resolve();
     }
     let f = {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]};
     let jumps = [];
@@ -160,19 +150,14 @@ function AclMetaMap(options) {
       })
       .then((items) => {
         if (!items.length) {
-          return Promise.resolve(result);
+          return Promise.resolve();
         }
-        return walkItems(items, 0, cb, breakOnResult, true, result)
-          .then((result) => {
-            if (result && breakOnResult) {
-              return result;
-            }
-            return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
-          });
+        return walkItems(items, 0, cb, true)
+          .then(() => walkEntry(sid, i + 1, entries, cb));
       });
   }
 
-  function walkEntries(sid, cb, breakOnResult) {
+  function walkEntries(sid, cb) {
     let entries = [];
     for (let cn in options.map) {
       if (options.map.hasOwnProperty(cn)) {
@@ -185,12 +170,12 @@ function AclMetaMap(options) {
     if (!entries.length) {
       return Promise.resolve();
     }
-    return walkEntry(sid, 0, entries, cb, breakOnResult);
+    return walkEntry(sid, 0, entries, cb);
   }
 
 
-  function walkRelatedSubjects(sid, cb, breakOnResult) {
-    return walkEntries(sid, cb, breakOnResult);
+  function walkRelatedSubjects(sid, cb) {
+    return walkEntries(sid, cb);
   }
 
   /**
