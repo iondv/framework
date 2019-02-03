@@ -922,13 +922,13 @@ function MongoDs(config) {
             tmp2[part] = {$exists: false};
             parent[tmp].push(tmp2);
           } else if (nm === '$date') {
-            parent[part] = fDate(conditions[nm]);
+            parent[part] = fDate(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$dateAdd') {
-            parent[part] = fDateAdd(conditions[nm]);
+            parent[part] = fDateAdd(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$dateDiff') {
-            parent[part] = fDateDiff(conditions[nm]);
+            parent[part] = fDateDiff(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$joinExists' || nm === '$joinNotExists' || nm === '$joinSize') {
             if (conditions[nm].filter) {
