@@ -55,5 +55,5 @@ Frontend component writing style is [here](/docs/ru/3_modules_description/regist
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".
+Copyright (c) 2018 LLC "ION DV".  
 All rights reserved.

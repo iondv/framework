@@ -112,5 +112,5 @@ https://docs.dhtmlx.com/grid__skins.html
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".
+Copyright (c) 2018 LLC "ION DV".   
 All rights reserved.

@@ -106,5 +106,5 @@ Add the following section in the `"modules"` of the `deploy.json` configuration 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".
+Copyright (c) 2018 LLC "ION DV".  
 All rights reserved.

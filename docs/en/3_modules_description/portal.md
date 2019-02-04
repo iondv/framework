@@ -212,5 +212,5 @@ An example of creating a navigation node:
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".
+Copyright (c) 2018 LLC "ION DV".  
 All rights reserved.

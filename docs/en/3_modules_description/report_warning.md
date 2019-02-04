@@ -61,5 +61,5 @@ For sources based on classes, filters are specified by conditions.
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".
-All rights reserved.
+Copyright (c) 2018 LLC "ION DV".   
+All rights reserved. 
