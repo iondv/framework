@@ -9,8 +9,8 @@ module.exports = function (date, mode) {
         }
         break;
       case DateTypes.UTC: {
-        const offset = date.utcOffset || date.getTimezoneOffset();
-        date.setUTCMinutes(date.getUTCMinutes() - offset);
+        const offset = date.utcOffset || -date.getTimezoneOffset();
+        date.setUTCMinutes(date.getUTCMinutes() + offset);
         date.utcOffset = 0;
       } break;
       case DateTypes.REAL:
