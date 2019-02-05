@@ -86,5 +86,5 @@ let gosEkspRemPetNew = normalize(e.item, null, {skipSystemAttrs: true});
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".   
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

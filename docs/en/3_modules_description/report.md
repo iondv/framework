@@ -43,5 +43,5 @@ To run a task at the start of the application and then every 6 hours, you need t
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

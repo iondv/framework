@@ -44,7 +44,7 @@ For more information on the filters see [here](/docs/en/2_system_description/fun
 
 ## Code requirements
 
-Frontend component writing style is [here](/docs/ru/3_modules_description/registry_code.md)
+Frontend component writing style is [here](/docs/en/3_modules_description/registry_code.md)
 
 --------------------------------------------------------------------------  
 
@@ -55,5 +55,5 @@ Frontend component writing style is [here](/docs/ru/3_modules_description/regist
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

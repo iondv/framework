@@ -139,5 +139,5 @@ It is used if the filter is configured for a column and allows you not to displa
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

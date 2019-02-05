@@ -86,5 +86,5 @@ By default, all services are authenticated by passwords. The admin panel has a s
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

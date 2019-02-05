@@ -25,5 +25,5 @@ There is also the possibility of structuring the menu by nesting directories.
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
+Copyright (c) 2018 **LLC "ION DV".**  
 All rights reserved.

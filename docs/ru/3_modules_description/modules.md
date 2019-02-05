@@ -12,7 +12,7 @@
 |[**Report**](/docs/ru/3_modules_description/report.md) | Модуль предназначенный для формирования аналитических отчетов.   |
 |[**Gantt-chart**](/docs/ru/3_modules_description/gantt_chart.md) | Модуль для вывода данных с датами.   |
 |[**Portal**](/docs/ru/3_modules_description/portal.md) | Модуль для вывода произвольных шаблонов данных.  |
-|[**Dashboard**](/docs/ru/3_modules_description/dashboard.md) | Модуль предназначенный для выведения краткой информации в виде блоков. |
+|[**Dashboard**](/docs/ru/3_modules_description/dashboards.md) | Модуль предназначенный для выведения краткой информации в виде блоков. |
 |[**Ionadmin**](/docs/ru/3_modules_description/admin.md) | Модуль администрирования для назначения прав. |
 |[**Account**](/docs/ru/3_modules_description/account.md)| Модуль личного кабинета который формирует логику отображения.  |
 |[**Soap**](/docs/ru/3_modules_description/soap.md) | Модуль запросов к сервисам.|
@@ -25,5 +25,5 @@
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved.  

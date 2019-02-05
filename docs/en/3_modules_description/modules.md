@@ -12,7 +12,7 @@
 |[**Report**](/docs/en/3_modules_description/report.md) | A module designed for the formation of analytical reports.   |
 |[**Gantt-chart**](/docs/en/3_modules_description/gantt_chart.md) |  A module designed to display hierarchical data with dates.   |
 |[**Portal**](/docs/en/3_modules_description/portal.md) | A module for displaying arbitrary data templates.  |
-|[**Dashboard**](/docs/en/3_modules_description/dashboard.md) | A module designed to display brief information in the form of blocks. |
+|[**Dashboard**](/docs/en/3_modules_description/dashboards.md) | A module designed to display brief information in the form of blocks. |
 |[**Ionadmin**](/docs/en/3_modules_description/admin.md) | A module for assigning rights. |
 |[**Account**](/docs/en/3_modules_description/account.md)| A personal account module that forms the display logic.  |
 |[**Soap**](/docs/en/3_modules_description/soap.md) | A module  of requests to services.|
@@ -25,5 +25,5 @@
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".  
-All rights reserved.
+Copyright (c) 2018 **LLC "ION DV".**   
+All rights reserved. 

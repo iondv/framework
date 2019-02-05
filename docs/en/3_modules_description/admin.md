@@ -78,7 +78,7 @@ Setting in the *ionmodule/config*:
 
 ## User's guide for ionadmin security
 
-User's guide for ionadmin security is [nere](/docs/en/3_modules_description/admin_security.md).
+User's guide for ionadmin security is [here](/docs/en/3_modules_description/admin_security.md).
 
 --------------------------------------------------------------------------  
 
@@ -89,6 +89,6 @@ User's guide for ionadmin security is [nere](/docs/en/3_modules_description/admi
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 LLC "ION DV".   
+Copyright (c) 2018 **LLC "ION DV".**   
 All rights reserved. 
 
