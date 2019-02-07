@@ -4,7 +4,10 @@
 
 # Filter on the list view form
 
-The query for the filter is specified by an expression (search query) as in jira, i.e. we borrow the syntax from there except for the possibility of dereferencing reference attributes (addressing through a point to an arbitrary depth of nesting).
+```
+If for a date, the value in the filter field and the value in the attribute field have a different format, then the filter on this field WILL NOT work
+```
+The query for the filter is specified by an expression (search query).
 
 The available operations:
 
@@ -15,28 +18,48 @@ The available operations:
 * string: like
 * over collections: size
 
-### Query
+### Create a query
 
-Specify the name as in the "name" field in latin characters, for example `field_name = 1`.
-Or use the "caption" field, but in backticks:
-
-```
-`Field name` != 2
-```
-
-You can use both of them together:
+**Choose attribute** from the drop-down list using the `> _` button located at the bottom of the filter request field. The name of the attribute is shortened in *"backticks"* i.e.:
 
 ```
-field_name = 1 AND `Field name` != 2
+`Attribute name` != 2
 ```
 
-For string values, use double quotes:
+**Combination options** of attribute values for a query:
+
+* and - necessarily both (or more) values,
+* or - any of the values of both (or more) values.
+
+Example of a combination:
 
 ```
-`Field name` != "Hello"
+`Attribute1` = 1 AND `Attribute2` != 2
 ```
 
-The [nearley lybrary](https://nearley.js.org/) is used to parse the search expressions.
+**String values** of attributes when forming the query, are wrapped in * double quotes *:
+
+```
+`Field name` != "hello"
+```
+
+**Accessing attributes by reference**:
+
+```
+`Attribute1`.`Attribute by reference from the Attribute 1` = "values"
+```
+
+**Hints**:
+
+At the end of the query field for the filter, there is a `?` sign, when clicked, a model window opens describing how the filter works and the query syntax for it.
+
+This library (https://nearley.js.org/) is used to parse search expressions.
+
+###  Options for using
+
+In addition to the button next to the search bar at the top of the page, you can call the filter by clicking on the similar icon located in each column of the table.
+
+To create a query for the filter, select a value from the drop-down list, or start typing a value in a row. As soon as the value is selected, you must press the `Enter` key - the result of the query is displayed in the value column.
 
 
 --------------------------------------------------------------------------  
