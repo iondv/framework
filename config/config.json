@@ -33,14 +33,28 @@
               "options": {
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
+                "url": {
+                  "hosts": "[[db.hosts]]",
+                  "user": "[[db.user]]",
+                  "pwd": "[[db.pwd]]",
+                  "db": "[[db.dbname]]",
+                  "params": {
+                    "authMechanism": "[[db.authMechanism]]"
+                  }
+                },
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
                   "socketTimeoutMS": "[[db.operTimeOut]]",
-                  "poolSize": "[[db.poolSize]]"
-                },
-                "user": "[[db.user]]",
-                "password": "[[db.pwd]]"
+                  "poolSize": "[[db.poolSize]]",
+                  "sslCA": "[[db.sslCA]]",
+                  "sslCert": "[[db.sslCert]]",
+                  "sslKey": "[[db.sslKey]]",
+                  "sslPass": "[[db.sslPass]]",
+                  "replicaSet": "[[db.replicaSet]]",
+                  "authSource": "[[db.authSource]]",
+                  "ssl": "[[db.ssl]]"
+                }
               }
             }
           ]
