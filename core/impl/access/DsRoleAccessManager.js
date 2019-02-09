@@ -255,17 +255,21 @@ function DsRoleAccessManager(config) {
           if (u) {
             roles.forEach((r) => {
               let ind = u.roles.indexOf(r);
-              if (ind < 0) {
+              if (ind >= 0) {
                 u.roles.splice(ind, 1);
               }
             });
           }
-          p = p.then(() => config.dataSource.update(
-            roles_table,
-            {[F.EQUAL]: ['$user', u.user]},
-            {roles: u.roles},
-            {skipResult: true}
-          ));
+          if (u.roles.length) {
+            p = p.then(() => config.dataSource.update(
+              roles_table,
+              {[F.EQUAL]: ['$user', u.user]},
+              {roles: u.roles},
+              {skipResult: true}
+            ));
+          } else {
+            p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
+          }
         });
         return p;
       });

@@ -1,5 +1,5 @@
 'use strict';
-/* eslint no-process-exit:off */
+/* eslint no-process-exit:off, no-div-regex:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -182,7 +182,17 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           }
           if (run && !busy) {
             busy = true;
-            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
+            let chopts = {stdio: ['pipe', 'inherit', 'inherit', 'ipc']};
+            if (Array.isArray(job.node)) {
+              chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => {
+                if (v.indexOf('=') > 0) {
+                  const eqc = new RegExp('^' + v.replace(/=.*$/, '=.*') + '$');
+                  return a.findIndex(v1 => (v === v1) || eqc.test(v1)) === i;
+                }
+                return a.indexOf(v) === i;
+              });
+            }
+            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
