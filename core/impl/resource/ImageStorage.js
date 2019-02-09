@@ -47,7 +47,7 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
- * @param {{}} [options.watermark]
+ * @param {{}} [options.handler]
  * @param {Logger} [options.log]
  * @constructor
  */
@@ -59,8 +59,6 @@ function ImageStorage(options) { // jshint ignore:line
   if (typeof options.fileStorage.fileOptionsSupport === 'function') {
     storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
-
-  let watermarkApplier;
 
   function thumbnail(source, opts) {
     let format = opts.format || 'png';
@@ -184,14 +182,11 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (options.watermark && options.watermark.accept) {
+    if (options.handler && options.handler.apply) {
       let name = opts.name || data.originalname || data.name || '';
-      options.watermark.format = options.watermark.format || path.extname(name).slice(1);
-      if (typeof watermarkApplier === 'undefined') {
-        watermarkApplier = require('core/util/watermark-overlay').watermarkApplier;
-      }
+      // Options.watermark.format = options.watermark.format || path.extname(name).slice(1);
       p = p.then(() => getDataContents(data))
-        .then(source => watermarkApplier(source, options.watermark))
+        .then(source => options.handler.apply(source, {name}))
         .then((buf) => {
           if (typeof data === 'object') {
             delete data.stream;
@@ -337,14 +332,14 @@ function ImageStorage(options) { // jshint ignore:line
             let o = thumb.options || {};
             return thumb.getContents()
               .then((c) => {
-                if (options.watermark && options.watermark.middle) {
-                  let watermarkOptions = clone(options.watermark);
-                  watermarkOptions.height = options.thumbnails[thumbType].height;
-                  watermarkOptions.width =  options.thumbnails[thumbType].width;
+                if (options.handler && options.handler.applyStream) {
+                  let handlerOptions = {
+                    height: options.thumbnails[thumbType].height,
+                    width:  options.thumbnails[thumbType].width
+                  };
                   thumb.name = thumb.name.replace(/\.\w+$/, '.png');
                   o.mimeType = 'image/png';
-                  const watermarkStream = require('core/util/watermark-overlay').watermarkStream;
-                  return watermarkStream(c.stream, watermarkOptions);
+                  return options.handler.applyStream(c.stream, handlerOptions);
                 }
                 return c.stream;
               })
