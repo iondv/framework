@@ -47,6 +47,8 @@
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
                   "socketTimeoutMS": "[[db.operTimeOut]]",
                   "poolSize": "[[db.poolSize]]",
+                  "sslValidate": "[[db.sslValidate]]",
+                  "checkServerIntegrity": "[[db.checkServerIntegrity]]",
                   "sslCA": "[[db.sslCA]]",
                   "sslCert": "[[db.sslCert]]",
                   "sslKey": "[[db.sslKey]]",
