@@ -184,7 +184,6 @@ function ImageStorage(options) { // jshint ignore:line
 
     if (options.handler && options.handler.apply) {
       let name = opts.name || data.originalname || data.name || '';
-      // Options.watermark.format = options.watermark.format || path.extname(name).slice(1);
       p = p.then(() => getDataContents(data))
         .then(source => options.handler.apply(source, {name}))
         .then((buf) => {
@@ -484,7 +483,9 @@ function ImageStorage(options) { // jshint ignore:line
    */
   this._init = function () {
     if (options.app && options.auth && options.urlBase) {
-      options.app.get(options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)', options.auth.verifier(), fileMiddle.apply(this));
+      options.app.get(
+        options.urlBase + '/:thumb/:id(([^/]+/?[^/]+)*)', options.auth.verifier(), fileMiddle.apply(this)
+      );
     }
     return Promise.resolve();
   };
