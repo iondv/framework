@@ -172,7 +172,7 @@ function MongoDs(config) {
         if (config.url.pwd) {
           uri = ':' + encodeURIComponent(config.url.pwd) + uri;
         }
-        uri = encodeURIComponent(config.url.user) + ':' + uri;
+        uri = encodeURIComponent(config.url.user) + uri;
       }
 
       if (config.url.db) {
@@ -192,8 +192,6 @@ function MongoDs(config) {
         }
         uri = uri + '?' + prms.join('&');
       }
-
-
       return 'mongodb://' + uri;
     }
     throw new Error('Не указаны настройки соединения с сервером БД.');
@@ -272,31 +270,35 @@ function MongoDs(config) {
 
       return result.then(
         () => new Promise((resolve, reject) => {
-          _this.client = new MongoClient(buildUri(config), copts);
-          _this.client.connect((err) => {
-            if (err) {
-              return reject(err);
-            }
-            try {
-              _this.db = _this.client.db();
-              _this.busy = false;
-              _this.isOpen = true;
-              log.info('Получено соединение с базой: ' + _this.db.s.databaseName);
-              _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
-                .then(() => _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true}))
-                .then(
-                  () => {
-                    resolve(_this.db);
-                    _this.db.emit('isOpen', _this.db);
-                  }
-                )
-                .catch(reject);
-            } catch (e) {
-              _this.busy = false;
-              _this.isOpen = false;
-              reject(e);
-            }
-          });
+          try {
+            _this.client = new MongoClient(buildUri(config), copts);
+            _this.client.connect((err) => {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                _this.db = _this.client.db();
+                _this.busy = false;
+                _this.isOpen = true;
+                log.info('Получено соединение с базой: ' + _this.db.s.databaseName);
+                _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
+                  .then(() => _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true}))
+                  .then(
+                    () => {
+                      resolve(_this.db);
+                      _this.db.emit('isOpen', _this.db);
+                    }
+                  )
+                  .catch(reject);
+              } catch (e) {
+                _this.busy = false;
+                _this.isOpen = false;
+                reject(e);
+              }
+            });
+          } catch (err) {
+            reject(err);
+          }
         })
       );
     }
