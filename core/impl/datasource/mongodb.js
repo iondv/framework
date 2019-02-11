@@ -319,7 +319,7 @@ function MongoDs(config) {
     return new Promise((resolve, reject) => {
       if (_this.db && _this.isOpen) {
         _this.busy = true;
-        _this.db.close(true, function (err) {
+        _this.client.close(true, (err) => {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
