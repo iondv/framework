@@ -47,7 +47,8 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
- * @param {{}} [options.handler]
+ * @param {Function} [options.preProcessor]
+ * @param {Function} [options.postProcessor]
  * @param {Logger} [options.log]
  * @constructor
  */
@@ -182,10 +183,10 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (options.handler && options.handler.apply) {
+    if (options.preProcessor) {
       let name = opts.name || data.originalname || data.name || '';
       p = p.then(() => getDataContents(data))
-        .then(source => options.handler.apply(source, {name}))
+        .then(source => options.preProcessor.apply(source, {name}))
         .then((buf) => {
           if (typeof data === 'object') {
             delete data.stream;
@@ -331,14 +332,14 @@ function ImageStorage(options) { // jshint ignore:line
             let o = thumb.options || {};
             return thumb.getContents()
               .then((c) => {
-                if (options.handler && options.handler.applyStream) {
+                if (options.postProcessor) {
                   let handlerOptions = {
                     height: options.thumbnails[thumbType].height,
                     width:  options.thumbnails[thumbType].width
                   };
                   thumb.name = thumb.name.replace(/\.\w+$/, '.png');
                   o.mimeType = 'image/png';
-                  return options.handler.applyStream(c.stream, handlerOptions);
+                  return options.postProcessor.apply(c.stream, handlerOptions);
                 }
                 return c.stream;
               })
