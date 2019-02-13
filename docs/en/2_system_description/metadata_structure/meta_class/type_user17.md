@@ -1,8 +1,10 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
 
 # User types
 
-**User type** - `"type": 17`, sets a user type value based on the `base type`. It is located in the `meta` directory, `types` directory + `[type name].type.json`.  
+**User type** - `"type": 17`, sets a user type value based on the base type. It is located in the `meta` directory, `types` directory + `[type name].type.json`.  
 
 Use it when you need to apply a mask on the values of a particular attribute in different classes. 
 
@@ -27,7 +29,6 @@ There are five base types to create the user type:
   "decimals": null
 }
 ```
-
 
 ## How to use?
 

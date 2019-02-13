@@ -1,4 +1,7 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Индексация](/docs/ru/2_system_description/metadata_structure/meta_class/atr_indexed.md)
+
 # Автозаполняемые атрибуты
 
 ## Описание
@@ -44,5 +47,5 @@ NB. Необходимо сделать проверку при сохранен
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

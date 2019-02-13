@@ -9,7 +9,6 @@ const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
 const extend = require('extend');
-const merge = require('merge');
 
 const fs = require('fs');
 const path = require('path');

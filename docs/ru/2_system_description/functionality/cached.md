@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [](/docs/ru/2_system_description/functionality/.md)
+### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
 
 # Кеширование данных
 
@@ -64,8 +64,6 @@ cache.redis.host=127.0.0.1 // хост redis
 cache.redis.port=6379 // порт redis
 ```
 По умолчанию кеширование не используется.
-
-### Следующая страница: [](/docs/ru/2_system_description/functionality/.md)
 
 --------------------------------------------------------------------------  
 

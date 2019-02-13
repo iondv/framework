@@ -36,21 +36,21 @@ function MongoSequenceProvider(options) {
   }
 
   this._next = function (name) {
-    return collection().then((c) => {
-      return new Promise((resolve, reject) => {
+    return collection().then((c) =>
+      new Promise((resolve, reject) => {
         c.findOneAndUpdate(
           {name: name},
           {$inc: {value: 1}},
           {returnOriginal: false, upsert: true},
           (err, result) => err ? reject(err) : resolve(result.value.value)
         );
-      });
-    });
+      })
+    );
   };
 
   this._reset = function (name, value) {
-    return collection().then((c) => {
-      return new Promise((resolve, reject) => {
+    return collection().then((c) =>
+      new Promise((resolve, reject) => {
         c.update(
           {name: name},
           {$set: {value: value || 0}},
@@ -61,13 +61,13 @@ function MongoSequenceProvider(options) {
             }
             resolve();
           });
-      });
-    });
+      })
+    );
   };
 
   this._snapshot = function (name) {
-    return collection().then((c) => {
-      return new Promise((resolve, reject) => {
+    return collection().then((c) =>
+      new Promise((resolve, reject) => {
         c.find(
           name ? {name: name} : {},
           (err, result) => {
@@ -86,8 +86,8 @@ function MongoSequenceProvider(options) {
               resolve(res);
             });
           });
-      });
-    });
+      })
+    );
   };
 }
 

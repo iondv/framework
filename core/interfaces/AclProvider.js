@@ -19,7 +19,7 @@ function AclProvider() {
   };
 
   /**
-   * @param {String} subject
+   * @param {String | User} subject
    * @param {String} resource
    * @param {String | String[]} permissions
    * @returns {Promise}
@@ -29,7 +29,7 @@ function AclProvider() {
   };
 
   /**
-   * @param {String} subject
+   * @param {String | String[] | User} subject
    * @param {String | String[]} resources
    * @param {Boolean} [skipGlobals]
    * @returns {Promise}

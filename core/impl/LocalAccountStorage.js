@@ -48,7 +48,7 @@ class LocalAccountStorage extends IAccountStorage {
           user.disabled = false;
           this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user)
             .then((u) => {
-              resolve(u);
+              resolve(new User(u));
             })
             .catch(reject);
         });
@@ -63,6 +63,16 @@ class LocalAccountStorage extends IAccountStorage {
     } else {
       throw new Error('Не передан пароль');
     }
+  }
+
+  _unregister(id) {
+    let type = UserTypes.LOCAL;
+    if (id.indexOf('@') > 0) {
+      let un = id.split('@');
+      id = un[0];
+      type = un[1];
+    }
+    return this.ds.delete('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', id]}, {[F.EQUAL]: ['$type', type]}]});
   }
 
   /**
@@ -187,6 +197,9 @@ class LocalAccountStorage extends IAccountStorage {
         }
       }
     }
+
+    let skipResult = (data.id && (id !== data.id)) || (data.type && data.type !== type);
+
     return this.ds.update(
       'ion_user',
       {
@@ -195,8 +208,11 @@ class LocalAccountStorage extends IAccountStorage {
           {[F.EQUAL]: ['$type', type]}
         ]
       },
-      data
-    ).then(u => new User(u));
+      data,
+      {skipResult}
+      )
+      .then(u => u ? u : this.ds.get('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', data.id]}, {[F.EQUAL]: ['$type', data.type]}]}))
+      .then(u => new User(u));
   }
 
 

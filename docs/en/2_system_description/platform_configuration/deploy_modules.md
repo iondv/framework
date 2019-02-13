@@ -8,6 +8,8 @@
 
 # The "registry" module
 
+**Registry module** – is a central module designed specifically for working with data based on metadata structures - including project management, programs, events, etc. [Read more about the registry module](/docs/en/3_modules_description/registry.md).
+
 ## Setting of configurable file save
 
 To set the path to save the file in the storage - use the following setting:
@@ -370,6 +372,8 @@ The `config` field contains all settings:
 
 # The "geomap" module
 
+**Geomap module** – designed to visualise information and data that has geo-referenced. The data is divided into layers, and for each data type, you can provide brief and detailed information.
+
 ## Setting the application icons
 
 The logo for the module is described through the standard mechanism of static routes:
@@ -401,7 +405,9 @@ The logo for the module is described through the standard mechanism of static ro
 
 # The "gantt-chart" module
 
-## Настройка шкалы времени 
+**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the dashboard module](/docs/en/3_modules_description/gantt_chart.md).
+
+## Setting the time scale 
 
 The time scale is configured by setting the "Step" in the Gaant module.
 In the preconfiguration "Step" is set through the `step` parameter:
@@ -447,6 +453,9 @@ In the preconfiguration "Step" is set through the `step` parameter:
 ```
 
 # The "report" module
+
+**Report module** – is the module intended to form the analytical reports and reference information using the specific metadata. [Read more about the report module](/docs/en/3_modules_description/report.md).
+
 ```
 "report": {
       "globals": {
@@ -482,6 +491,9 @@ In the preconfiguration "Step" is set through the `step` parameter:
 ```
 
 # The "rest" module
+
+**REST module** – is the module designed to implement the integration of the REST format. Used to provide data for the portal module.
+
 ```
  "rest": {
       "globals": {
@@ -491,6 +503,9 @@ In the preconfiguration "Step" is set through the `step` parameter:
  ```
 
 # The "portal" module
+
+**Portal module** – is a module for displaying arbitrary data templates. [Read more about the portal module](/docs/en/3_modules_description/portal.md).
+
 ```
 "portal": {
       "import": {
@@ -519,6 +534,8 @@ In the preconfiguration "Step" is set through the `step` parameter:
 
 # The "ionadmin" module
 
+**Admin module** – is used for assigning rights, managing tasks on a schedule and other administrative tasks. [Read more about the ionadmin module](/docs/en/3_modules_description/admin.md).
+
 ## Hiding roles in admin from assignment to user
 
 For roles that you want to hide in the admin from being assigned to the user, in the deploy of the application prescribe the filters based on the regular expressions, by which such roles will be determined.
@@ -536,6 +553,8 @@ For roles that you want to hide in the admin from being assigned to the user, in
 ```
 
 # The "dashboard" module
+
+**Dashboard module** – is a module designed to display brief information in the form of blocks. [Read more about the dashboard module](/docs/en/3_modules_description/dashboards.md). 
 
 Set the following function in the `"modules"` section in the deploy.json file of the application, to load the data from the meta into the "dashboard" module.
 

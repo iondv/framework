@@ -290,7 +290,7 @@ function DsMetaRepository(options) {
     }
 
     if (section && navMeta.sections.hasOwnProperty(ns) && navMeta.sections[ns].hasOwnProperty(section)) {
-      src = this.navMeta.sections[ns][section].nodes;
+      src = navMeta.sections[ns][section].nodes;
     }
 
     if (parent) {
