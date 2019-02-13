@@ -42,7 +42,7 @@ This page in [English](/README.md/)
 
 Для сборки компонентов и библиотек фреймворка необходимо установить глобально:
 * пакет [node-gyp](<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. Для работы библиотеки под операционной системой семейства windows дополнительно необходимо установить пакет windows-build-tools `npm install -g --production windows-build-tools`.
-* пакет сборщика проектов [Gulp](<http://gulpjs.com/>) `npm install -g gulp@3.9.1`. `3.9.1` - поддерживаемая версия `Gulp`.
+* пакет сборщика проектов [Gulp](<http://gulpjs.com/>) `npm install -g gulp@4.0`. `4.0` - поддерживаемая версия `Gulp`.
 * менджер пакетов фронтенд библиотек [Bower](<https://bower.io>) `npm install -g bower`.
 
 ### Установка ядра, модулей и приложения
@@ -103,7 +103,7 @@ fs.urlBase=/files
 
 Задайте переменную окружения NODE_PATH равной пути к ядру приложения следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` для Linux, где `workspace\dnt` - папка файлов ядра приложения.    
 
-При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`.
+При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `4.0`.
 
 Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\dnt_ru --ns develop-and-test`.
 
