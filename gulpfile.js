@@ -650,3 +650,5 @@ exports.build = build;
 exports.deploy = deploy;
 exports.assemble = assemble;
 exports.default = assemble;
+exports.buildNpm = buildNpm;
+exports.buildBower = buildBower;
