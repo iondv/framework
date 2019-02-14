@@ -4,8 +4,6 @@ const {series, parallel} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
 const assert = require('assert');
-const nodePath = process.env.NODE_PATH.toLowerCase();
-
 
 const less = require('gulp-less');
 const cssMin = require('gulp-clean-css');
@@ -32,9 +30,12 @@ const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 assert.ok(process.env.NODE_PATH,
   '\x1b[93;41mThe NODE_PATH must be specified with the path to the application launch directory:\x1b[0m ' + __dirname.toLowerCase());
 
+const nodePath = process.env.NODE_PATH.toLowerCase();
+
 assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
   '\x1b[93;41mNODE_PATH must contain the path to the application launch directory.\x1b[0m\nСейчас:           ' +
              nodePath + '\nMust contain: ' + __dirname.toLowerCase());
+
 
 /*****************
 * TODO check metada - gulp 3.9.1
@@ -364,7 +365,7 @@ function bower(p) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
         console.log('Installing frontend packages for the path ' + p);
-        run(p, 'bower', ['install', '--config.interactive=false'], function () {
+        run(p, 'bower', ['install', '--config.interactive=false', '--allow-root'], function () {
           let srcDir = path.join(p, bc.directory);
           try {
             fs.accessSync(srcDir);
@@ -650,3 +651,5 @@ exports.build = build;
 exports.deploy = deploy;
 exports.assemble = assemble;
 exports.default = assemble;
+exports.buildNpm = buildNpm;
+exports.buildBower = buildBower;

@@ -75,7 +75,6 @@
     "xss": "^0.3.4"
   },
   "scripts": {
-    "TESTprecommit": "lint-staged",
     "setup": "gulp deploy",
     "lint": "eslint --fix",
     "start": "node bin/www",
@@ -85,13 +84,10 @@
   "devDependencies": {
     "eslint": "^4.12.1",
     "gulp": "^4.0.0",
-    "gulp-clean-css": "~3.10.0",
+    "gulp-clean-css": "~4.0.0",
     "gulp-jsmin": "~0.1.5",
-    "gulp-json-schema": "~1.0.0",
     "gulp-less": "~4.0.1",
-    "gulp-rename": "~1.4.0",
-    "husky": "^0.14.3",
-    "lint-staged": "^5.0.0"
+    "gulp-rename": "~1.4.0"
   },
   "homepage": "https://git.iondv.ru/ION/platform"
 }
