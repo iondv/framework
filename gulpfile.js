@@ -37,73 +37,6 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
              nodePath + '\nMust contain: ' + __dirname.toLowerCase());
 
 
-/*****************
-* TODO check metada - gulp 3.9.1
-********************/
-
-// const jsonSchema = require('gulp-json-schema');
-// const runSequence = require('run-sequence');
-// const path = require('path');
-// const join = path.join;
-//
-// const pathSchema = './test/meta-schema';
-// const pathApplications = './applications/';
-//
-// const schemaOptions = {
-//   emitError: false,
-//   verbose: true,
-//   banUnknownProperties: true,
-//   checkRecursive: true,
-//   schemas: [join(pathSchema, 'command.schema.json'), join(pathSchema, 'view-properties.schema.json')],
-//   missing: 'error'};
-//  // validation parameters: https://www.npmjs.com/package/gulp-json-schema#options,
-//  // regarding schemas, perhaps it makes sense to drag a nested schemas in a separate folder, and then pull it entirely,
-//  // haven't searched for the options "how to do it" yet *
-
-// gulp.task('validate:meta', function (done) { // Without runSequence, the output goes to the stack, consistently more convenient
-//   runSequence(
-//     ['validate:meta:class'],
-//     ['validate:meta:view-create&item'],
-//     ['validate:meta:view-list'],
-//     ['validate:meta:navigation-section'],
-//     ['validate:meta:navigation-unit'],
-//     function () {
-//       done();
-//     });
-// });
-//
-// gulp.task('validate:meta:class', function () {
-//   console.log('Check the meta class.');
-//   return gulp.src([join(pathApplications, '*/meta/*.json')])
-//     .pipe(jsonSchema(join(pathSchema, 'class.main.schema.json'), schemaOptions));
-// });
-//
-// gulp.task('validate:meta:view-create&item', function () {
-//   console.log('Check the create and edit views of the meta view.');
-//   return gulp.src([join(pathApplications, '*/views/*/create.json'),
-//     join(pathApplications, '*/views/*/item.json')])
-//     .pipe(jsonSchema(join(pathSchema, 'view-createnitem.main.schema.json'), schemaOptions));
-// });
-//
-// gulp.task('validate:meta:view-list', function () {
-//   console.log('Check the list view of the meta view.');
-//   return gulp.src([join(pathApplications, '*/views/*/list.json')])
-//     .pipe(jsonSchema(join(pathSchema, 'view-list.main.schema.json'), schemaOptions));
-// });
-//
-// gulp.task('validate:meta:navigation-section', function () {
-//   console.log('Check the meta navigation section.');
-//   return gulp.src([join(pathApplications, '*/navigation/*.section.json')])
-//     .pipe(jsonSchema(join(pathSchema, 'navigation-section.main.schema.json'), schemaOptions));
-// });
-//
-// gulp.task('validate:meta:navigation-unit', function () {
-//   console.log('Check the meta navigation node.');
-//   return gulp.src([join(pathApplications, '*/navigation/*/*.json')])
-//     .pipe(jsonSchema(join(pathSchema, 'navigation-unit.main.schema.json'), schemaOptions));
-// });
-
-
 /*******************************
 * Build and deploy tasks
 ********************************/
@@ -112,7 +45,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(parallel(buildNpm, buildLinuxDependencies, buildBower, compileLessAll),
+const build = series(parallel(buildNpm, buildLinuxDependencies, buildFrontend, buildBower, compileLessAll),
   parallel(minifyCssAll, minifyJsAll));
 
 
@@ -293,10 +226,12 @@ function minifyJsAll(done) {
 function buildNpm(done) {
   let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
 
-  w.then(done).catch((err) => {
-    console.error(err);
-    done(err);
-  });
+  w
+    .then(done)
+    .catch((err) => {
+      console.error(err);
+      done(err);
+    });
 }
 
 function buildLinuxDependencies(done) {
@@ -313,47 +248,77 @@ function buildLinuxDependencies(done) {
   });
 }
 
-function buildBower(done) {
+function buildFrontend(done) {
   let themes = themeDirs();
   let start = null;
   for (let i = 0; i < themes.length; i++) {
     if (start) {
-      start = start.then(bower(themes[i]));
+      start = start.then(frontendInstall(themes[i]));
     } else {
-      start = bower(themes[i])();
+      start = frontendInstall(themes[i])();
     }
   }
   if (!start) {
     start = Promise.resolve();
   }
-  start.then(function () {
-    done();
-  })
+  start
+    .then(function () {
+      done();
+    })
     .catch(function (err) {
       console.error(err);
       done(err);
     });
 }
 
+function buildBower(done) {
+  let themes = themeDirs();
+  let start = null;
+  for (let i = 0; i < themes.length; i++) {
+    if (start) {
+      start = start.then(bowerInstall(themes[i]));
+    } else {
+      start = bowerInstall(themes[i])();
+    }
+  }
+  if (!start) {
+    start = Promise.resolve();
+  }
+  start
+    .then(function () {
+      done();
+    })
+    .catch(function (err) {
+      console.error(err);
+      done(err);
+    });
+}
 
 /*******************************
  * Service function
  ********************************/
 
-function npm(path) {
+function npm(pathDir) {
   return function () {
     return new Promise(function (resolve, reject) {
-      console.log('Installing the backend packages for the path' + path);
-      run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
+      let npmArgs = ['install', '--no-save', '--prefer-offline']; // TODO '--only=prod' if use - delete gulp in devDependce
+      try {
+        fs.accessSync(path.join(pathDir, 'package-lock.json'));
+        console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
+        npmArgs = ['ci', '--prefer-offline'];
+      } catch (error) {
+        console.log('Installing the backend packages for the path ' + pathDir);
+      }
+      run(pathDir, 'npm', npmArgs, resolve, reject);
     });
   };
 }
 
-function bower(p) {
+function frontendInstall(pathDir) {
   return function () {
     return new Promise(function (resolve, reject) {
       try {
-        fs.accessSync(path.join(p, '.bowerrc'));
+        fs.accessSync(path.join(pathDir, 'package.json'));
       } catch (error) {
         resolve();
         return;
@@ -363,10 +328,72 @@ function bower(p) {
          * Configuration parameters bower
          * @property {String} vendorDir - package installation folder
          */
-        let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
-        console.log('Installing frontend packages for the path ' + p);
-        run(p, 'bower', ['install', '--config.interactive=false', '--allow-root'], function () {
-          let srcDir = path.join(p, bc.directory);
+        let packageJson = JSON.parse(fs.readFileSync(path.join(pathDir, 'package.json'), {encoding: 'utf-8'}));
+        if (!packageJson.vendorDir) {
+          console.warn('In the package.json the destination directory for vendor files is not specified in [vendorDir]!\nSet default ./static/vendor');
+          packageJson.vendorDir = './static/vendor';
+        }
+        let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
+        try {
+          fs.accessSync(path.join(pathDir, 'package-lock.json'));
+          console.log('Installing CI the frontend packages for the path ' + pathDir);
+          npmArgs = ['ci', '--only=prod', '--prefer-offline'];
+        } catch (error) {
+          console.log('Installing the frontend packages for the path ' + pathDir);
+        }
+        run(pathDir, 'npm', npmArgs, function () {
+          const srcDir = path.join(pathDir, 'node_modules');
+          try {
+            fs.accessSync(srcDir);
+          } catch (err) {
+            resolve();
+            return;
+          }
+          try {
+            const vendorModules = fs.readdirSync(srcDir);
+            let copyers = [];
+            let copyer;
+            for (let i = 0; i < vendorModules.length; i++) {
+              copyer = copyVendorResources(srcDir, path.join(pathDir, packageJson.vendorDir), vendorModules[i]);
+              if (copyer) {
+                copyers.push(copyer);
+              }
+            }
+            if (copyers.length) {
+              Promise.all(copyers).then(resolve).catch(reject);
+              return;
+            }
+          } catch (error) {
+            return reject(error);
+          }
+          resolve();
+        }, reject);
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+}
+
+function bowerInstall(pathDir) {
+  return function () {
+    return new Promise(function (resolve, reject) {
+      try {
+        fs.accessSync(path.join(pathDir, '.bowerrc'));
+      } catch (error) {
+        resolve();
+        return;
+      }
+      try {
+        /**
+         * Параметры конфигурации bower
+         * @property {String} vendorDir - папка установки пакетов
+         */
+        let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
+        console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
+        run(pathDir, 'bower', ['install', '--config.interactive=false'], function () {
+          let srcDir = path.join(pathDir, bc.directory);
           try {
             fs.accessSync(srcDir);
           } catch (err) {
@@ -379,13 +406,13 @@ function bower(p) {
             copyers = [];
             if (bc.vendorDir) {
               for (let i = 0; i < vendorModules.length; i++) {
-                copyer = copyVendorResources(srcDir, path.join(p, bc.vendorDir), vendorModules[i]);
+                copyer = copyVendorResources(srcDir, path.join(pathDir, bc.vendorDir), vendorModules[i]);
                 if (copyer) {
                   copyers.push(copyer);
                 }
               }
             } else {
-              console.warn('In the .bowerrc the destination directory for vendor files is not specified [vendorDir]!');
+              console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
             }
             if (copyers.length) {
               Promise.all(copyers).then(resolve).catch(reject);
@@ -652,4 +679,72 @@ exports.deploy = deploy;
 exports.assemble = assemble;
 exports.default = assemble;
 exports.buildNpm = buildNpm;
+exports.buildFrontend = buildFrontend;
 exports.buildBower = buildBower;
+
+
+/*****************
+ * TODO check metada - gulp 3.9.1
+ ********************/
+
+// const jsonSchema = require('gulp-json-schema');
+// const runSequence = require('run-sequence');
+// const path = require('path');
+// const join = path.join;
+//
+// const pathSchema = './test/meta-schema';
+// const pathApplications = './applications/';
+//
+// const schemaOptions = {
+//   emitError: false,
+//   verbose: true,
+//   banUnknownProperties: true,
+//   checkRecursive: true,
+//   schemas: [join(pathSchema, 'command.schema.json'), join(pathSchema, 'view-properties.schema.json')],
+//   missing: 'error'};
+//  // validation parameters: https://www.npmjs.com/package/gulp-json-schema#options,
+//  // regarding schemas, perhaps it makes sense to drag a nested schemas in a separate folder, and then pull it entirely,
+//  // haven't searched for the options "how to do it" yet *
+
+// gulp.task('validate:meta', function (done) { // Without runSequence, the output goes to the stack, consistently more convenient
+//   runSequence(
+//     ['validate:meta:class'],
+//     ['validate:meta:view-create&item'],
+//     ['validate:meta:view-list'],
+//     ['validate:meta:navigation-section'],
+//     ['validate:meta:navigation-unit'],
+//     function () {
+//       done();
+//     });
+// });
+//
+// gulp.task('validate:meta:class', function () {
+//   console.log('Check the meta class.');
+//   return gulp.src([join(pathApplications, '*/meta/*.json')])
+//     .pipe(jsonSchema(join(pathSchema, 'class.main.schema.json'), schemaOptions));
+// });
+//
+// gulp.task('validate:meta:view-create&item', function () {
+//   console.log('Check the create and edit views of the meta view.');
+//   return gulp.src([join(pathApplications, '*/views/*/create.json'),
+//     join(pathApplications, '*/views/*/item.json')])
+//     .pipe(jsonSchema(join(pathSchema, 'view-createnitem.main.schema.json'), schemaOptions));
+// });
+//
+// gulp.task('validate:meta:view-list', function () {
+//   console.log('Check the list view of the meta view.');
+//   return gulp.src([join(pathApplications, '*/views/*/list.json')])
+//     .pipe(jsonSchema(join(pathSchema, 'view-list.main.schema.json'), schemaOptions));
+// });
+//
+// gulp.task('validate:meta:navigation-section', function () {
+//   console.log('Check the meta navigation section.');
+//   return gulp.src([join(pathApplications, '*/navigation/*.section.json')])
+//     .pipe(jsonSchema(join(pathSchema, 'navigation-section.main.schema.json'), schemaOptions));
+// });
+//
+// gulp.task('validate:meta:navigation-unit', function () {
+//   console.log('Check the meta navigation node.');
+//   return gulp.src([join(pathApplications, '*/navigation/*/*.json')])
+//     .pipe(jsonSchema(join(pathSchema, 'navigation-unit.main.schema.json'), schemaOptions));
+// });
