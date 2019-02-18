@@ -112,7 +112,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(parallel(buildNpm, buildLinuxDependencies, buildBower, compileLessAll),
+const build = series(parallel(buildNpm, buildBower, compileLessAll),
   parallel(minifyCssAll, minifyJsAll));
 
 
@@ -296,20 +296,6 @@ function buildNpm(done) {
   w.then(done).catch((err) => {
     console.error(err);
     done(err);
-  });
-}
-
-function buildLinuxDependencies(done) {
-  let w = /^linux/.test(process.platform) ?
-    new Promise((resolve, reject) => {
-      run(path.join(platformPath), './linux/fixdep.sh', [], resolve, reject);
-    }) :
-    Promise.resolve();
-  w.then(() => {
-    done();
-  }).catch((err) => {
-    console.error(err);
-    done();
   });
 }
 
