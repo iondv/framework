@@ -218,7 +218,7 @@ function MongoDs(config) {
         });
         return result.then(() => {
           opts[nm] = vs;
-        })
+        });
       } else {
         return new Promise((resolve, reject) => {
           fs.readFile(v, (err, data) => {
@@ -2495,7 +2495,7 @@ function MongoDs(config) {
             })
           )
       )
-      .then(result => dropTmpCollections(tmpCollections).then(() => result))
+      .then(result => dropTmpCollections(tmpCollections).then(() => result && result.toArray()))
       .catch(err => dropTmpCollections(tmpCollections).then(() => {
         throw err;
       }));
