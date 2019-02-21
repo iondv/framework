@@ -43,7 +43,7 @@ Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. 
 To build all components and libraries, you need to install the following components globally:
 
 * package [node-gyp](<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. For the Windows operating system, it is additionally necessary to install the windows-build-tools package `npm install -g --production windows-build-tools`
-* [Gulp](<http://gulpjs.com/>) installation package `npm install -g gulp@3.9.1`. `3.9.1` - supported version of `Gulp`
+* [Gulp](<http://gulpjs.com/>) installation package `npm install -g gulp@4.0`. `4.0` - supported version of `Gulp`
 * package manager of frontend libraries [Bower](<https://bower.io>) `npm install -g bower`
 
 ### Core, modules and application
@@ -106,7 +106,7 @@ Open the file and paste the text above. The main parameter is `db.uri=mongodb://
 
 Set the `NODE_PATH` environment variable which is equal to the path of the application core. For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the directory of the appliction.   
 
-The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp version - is `3.9.1`. 
+The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp version - is `4.0`. 
 
 Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\dnt_en --ns develop-and-test`.
 

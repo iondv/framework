@@ -40,7 +40,11 @@ function produceShare(obj) {
 
 function parseShareResponse(body) {
   if (typeof body === 'string') {
-    body = JSON.parse(body);
+    try {
+      body = JSON.parse(body);
+    } catch (err) {
+      throw new Error('Некорректный ответ сервера owncloud');
+    }
   }
 
   if (body.ocs && body.ocs.meta && body.ocs.meta.status === 'failure') {
