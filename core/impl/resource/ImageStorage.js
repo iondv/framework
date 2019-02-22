@@ -47,8 +47,8 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {Boolean} options.storeThumbnails
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
- * @param {Function} [options.preProcessor]
- * @param {Function} [options.postProcessor]
+ * @param {{apply: Function} | Array | Function} [options.preProcessors]
+ * @param {{apply: Function} | Array | Function} [options.postProcessors]
  * @param {Logger} [options.log]
  * @constructor
  */
@@ -167,6 +167,27 @@ function ImageStorage(options) { // jshint ignore:line
     return data;
   }
 
+  function applyProcessor(processor, source, opts) {
+    if (typeof processor === 'function') {
+      return processor(source, opts);
+    } else if (processor && typeof processor === 'object' && typeof processor.apply === 'function') {
+      return processor.apply(source, opts);
+    }
+    return Promise.resolve(source);
+  }
+
+  function applyProcessors(processors, source, opts) {
+    if (Array.isArray(processors)) {
+      let p = Promise.resolve(source);
+      processors.forEach((processor) => {
+        p = p.then(source => applyProcessor(processor, source, opts));
+      });
+      return p;
+    } else {
+      return applyProcessor(processors, source, opts);
+    }
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} [directory]
@@ -183,10 +204,10 @@ function ImageStorage(options) { // jshint ignore:line
 
     let p = Promise.resolve();
 
-    if (options.preProcessor) {
+    if (options.preProcessors) {
       let name = opts.name || data.originalname || data.name || '';
       p = p.then(() => getDataContents(data))
-        .then(source => options.preProcessor.apply(source, {name}))
+        .then(source => applyProcessors(options.preProcessors, source, {name}))
         .then((buf) => {
           if (typeof data === 'object') {
             delete data.stream;
@@ -291,6 +312,25 @@ function ImageStorage(options) { // jshint ignore:line
     return p.then(() => fileStorage.remove(id));
   };
 
+  function fileWrapper(file) {
+    if (options.postProcessors) {
+      return new StoredFile(
+        file.id,
+        file.link,
+        file.options,
+        (callback) => {
+          file.getContents()
+            .then(c => applyProcessors(options.postProcessors, c.stream, file.options))
+            .then(stream => callback(null, stream))
+            .catch(e => callback(e));
+        }
+      );
+    }
+    return file;
+  }
+
+
+
   /**
    * @param {String[]} ids
    * @returns {Promise}
@@ -300,6 +340,7 @@ function ImageStorage(options) { // jshint ignore:line
       .then((files) => {
         let images = [];
         files.forEach((file) => {
+          file = fileWrapper(file);
           let thumbnails = {};
           if (storeThumbnails && file.options && file.options.thumbnails) {
             loadThumbnails(file, thumbnails);
@@ -332,18 +373,6 @@ function ImageStorage(options) { // jshint ignore:line
             let o = thumb.options || {};
             return thumb.getContents()
               .then((c) => {
-                if (options.postProcessor) {
-                  let handlerOptions = {
-                    height: options.thumbnails[thumbType].height,
-                    width:  options.thumbnails[thumbType].width
-                  };
-                  thumb.name = thumb.name.replace(/\.\w+$/, '.png');
-                  o.mimeType = 'image/png';
-                  return options.postProcessor.apply(c.stream, handlerOptions);
-                }
-                return c.stream;
-              })
-              .then((stream) => {
                 res.status(200);
                 res.set('Content-Disposition',
                   (req.query.dwnld ? 'attachment' : 'inline') + '; filename="' + encodeURIComponent(thumb.name) +
@@ -355,13 +384,13 @@ function ImageStorage(options) { // jshint ignore:line
                 if (o.encoding) {
                   res.set('Content-Encoding', o.encoding);
                 }
-                stream.on('error', (err) => {
+                c.stream.on('error', (err) => {
                   if (options.log) {
                     options.log.error(err);
                   }
                   res.status(404).send('Thumbnail not found!');
                 });
-                stream.pipe(res);
+                c.stream.pipe(res);
               });
           } else {
             res.status(404).send('Thumbnail not found!');
