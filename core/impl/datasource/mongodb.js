@@ -2481,7 +2481,7 @@ function MongoDs(config) {
                   if (err) {
                     return reject(wrapError(err, 'aggregate', type));
                   }
-                  resolve(result && result.toArray());
+                  resolve(result.toArray());
                 });
               } catch (err) {
                 reject(err);
@@ -2489,12 +2489,7 @@ function MongoDs(config) {
             })
           )
       )
-      .then((result) => {
-        if (tmpApp) {
-          return copyColl(tmpApp, options.append).then(() => result);
-        }
-        return result;
-      })
+      .then(result => tmpApp ? copyColl(tmpApp, options.append).then(() => result) : result)
       .then(result => dropTmpCollections(tmpCollections).then(() => result))
       .catch(err => dropTmpCollections(tmpCollections).then(() => {
         throw err;
