@@ -763,8 +763,9 @@ function OwnCloudStorage(config) {
         let result = [];
         let promise = Promise.resolve();
         let addShare = shareInfo => result.push(new Share(shareInfo.shareUrl, shareInfo));
-        if (options && Array.isArray(options.shareWith) && Array.isArray(config.users)) {
-          options.shareWith.forEach((sw) => {
+        if (options && options.shareWith && Array.isArray(config.users)) {
+          const shareWith = Array.isArray(options.shareWith) ? options.shareWith : [options.shareWith];
+          shareWith.forEach((sw) => {
             const user = config.users.filter(u => u.name === sw)[0];
             if (typeof user === 'undefined') {
               return;

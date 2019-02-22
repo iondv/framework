@@ -49,9 +49,9 @@ function MongoSequenceProvider(options) {
   };
 
   this._reset = function (name, value) {
-    return collection().then((c) =>
+    return collection().then(c =>
       new Promise((resolve, reject) => {
-        c.update(
+        c.updateOne(
           {name: name},
           {$set: {value: value || 0}},
           {upsert: true},
