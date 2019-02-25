@@ -8,7 +8,7 @@
 /.project
 /distr/*
 /docker/*
-/node_modules/*
+**/node_modules/*
 
 /modules/*
 !/modules/readme.md

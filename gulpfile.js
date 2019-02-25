@@ -45,7 +45,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(parallel(buildNpm, buildLinuxDependencies, buildFrontend, buildBower, compileLessAll),
+const build = series(parallel(buildBackendNpm, buildLinuxDependencies, buildFrontend, buildBower, compileLessAll),
   parallel(minifyCssAll, minifyJsAll));
 
 
@@ -223,7 +223,7 @@ function minifyJsAll(done) {
     });
 }
 
-function buildNpm(done) {
+function buildBackendNpm(done) {
   let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
 
   w
@@ -678,7 +678,7 @@ exports.build = build;
 exports.deploy = deploy;
 exports.assemble = assemble;
 exports.default = assemble;
-exports.buildNpm = buildNpm;
+exports.buildBackendNpm = buildBackendNpm;
 exports.buildFrontend = buildFrontend;
 exports.buildBower = buildBower;
 
