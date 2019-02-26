@@ -4,8 +4,6 @@ const {series, parallel} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
 const assert = require('assert');
-const nodePath = process.env.NODE_PATH.toLowerCase();
-
 
 const less = require('gulp-less');
 const cssMin = require('gulp-clean-css');
@@ -30,11 +28,14 @@ const platformPath = path.normalize(__dirname);
 const commandExtension = /^win/.test(process.platform) ? '.cmd' : '';
 
 assert.ok(process.env.NODE_PATH,
-  '\x1b[93;41mДолжна быть задана NODE_PATH c путем к дирректории запуска приложения:\x1b[0m ' + __dirname.toLowerCase());
+  '\x1b[93;41mThe NODE_PATH must be specified with the path to the application launch directory:\x1b[0m ' + __dirname.toLowerCase());
+
+const nodePath = process.env.NODE_PATH.toLowerCase();
 
 assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
-  '\x1b[93;41mNODE_PATH должна содержать путь к дирректории запуска приложения.\x1b[0m\nСейчас:           ' +
-             nodePath + '\nДолжна содержать: ' + __dirname.toLowerCase());
+  '\x1b[93;41mNODE_PATH must contain the path to the application launch directory.\x1b[0m\nСейчас:           ' +
+             nodePath + '\nMust contain: ' + __dirname.toLowerCase());
+
 
 /*****************
 * TODO check metada - gulp 3.9.1
@@ -55,11 +56,11 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
 //   checkRecursive: true,
 //   schemas: [join(pathSchema, 'command.schema.json'), join(pathSchema, 'view-properties.schema.json')],
 //   missing: 'error'};
-//  // параметры валидации: https://www.npmjs.com/package/gulp-json-schema#options,
-//  // относительно schemas, возможно имеет смысл вложеные схемы перетащить в отдельную папку и дергать ее целиком,
-//  // пока не стала раскапывать варианты "как это сделать" *
+//  // validation parameters: https://www.npmjs.com/package/gulp-json-schema#options,
+//  // regarding schemas, perhaps it makes sense to drag a nested schemas in a separate folder, and then pull it entirely,
+//  // haven't searched for the options "how to do it" yet *
 
-// gulp.task('validate:meta', function (done) { // Без runSequence вывод сваливается в кучу, последовательно удобнее
+// gulp.task('validate:meta', function (done) { // Without runSequence, the output goes to the stack, consistently more convenient
 //   runSequence(
 //     ['validate:meta:class'],
 //     ['validate:meta:view-create&item'],
@@ -72,32 +73,32 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
 // });
 //
 // gulp.task('validate:meta:class', function () {
-//   console.log('Проверяем мету классов.');
+//   console.log('Check the meta class.');
 //   return gulp.src([join(pathApplications, '*/meta/*.json')])
 //     .pipe(jsonSchema(join(pathSchema, 'class.main.schema.json'), schemaOptions));
 // });
 //
 // gulp.task('validate:meta:view-create&item', function () {
-//   console.log('Проверяем мету представлений создания и изменения.');
+//   console.log('Check the create and edit views of the meta view.');
 //   return gulp.src([join(pathApplications, '*/views/*/create.json'),
 //     join(pathApplications, '*/views/*/item.json')])
 //     .pipe(jsonSchema(join(pathSchema, 'view-createnitem.main.schema.json'), schemaOptions));
 // });
 //
 // gulp.task('validate:meta:view-list', function () {
-//   console.log('Проверяем мету представлений списка.');
+//   console.log('Check the list view of the meta view.');
 //   return gulp.src([join(pathApplications, '*/views/*/list.json')])
 //     .pipe(jsonSchema(join(pathSchema, 'view-list.main.schema.json'), schemaOptions));
 // });
 //
 // gulp.task('validate:meta:navigation-section', function () {
-//   console.log('Проверяем мету секций навигации.');
+//   console.log('Check the meta navigation section.');
 //   return gulp.src([join(pathApplications, '*/navigation/*.section.json')])
 //     .pipe(jsonSchema(join(pathSchema, 'navigation-section.main.schema.json'), schemaOptions));
 // });
 //
 // gulp.task('validate:meta:navigation-unit', function () {
-//   console.log('Проверяем мету узлов навигации.');
+//   console.log('Check the meta navigation node.');
 //   return gulp.src([join(pathApplications, '*/navigation/*/*.json')])
 //     .pipe(jsonSchema(join(pathSchema, 'navigation-unit.main.schema.json'), schemaOptions));
 // });
@@ -108,20 +109,20 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
 ********************************/
 
 /**
- * Инициализируем первичное приложение.
- * Сначала очищаем папки и устанавливаем все модули
+ * Initializing the primary application.
+ * First cleaned up folders and installed all modules.
  */
 const build = series(parallel(buildNpm, buildLinuxDependencies, buildBower, compileLessAll),
   parallel(minifyCssAll, minifyJsAll));
 
 
 function deploy(done) {
-  console.log('Развертывание и импорт данных приложений.');
+  console.log('Deploying and importing the application data.');
   /**
-   * Параметры конфигруации сборки
-   * @property {object} log - параметры логгирования
-   * @property {object} bootstrap - параметры загрузки
-   * @property {object} di - параметры интерфейсов данных
+   * Build configuration setting
+   * @property {object} log - logging options
+   * @property {object} bootstrap - boot option
+   * @property {object} di - data interface settings
    */
 
   let sysLog = new IonLogger(config.log || {});
@@ -154,7 +155,7 @@ function deploy(done) {
       let stage1 = Promise.resolve();
       try {
         if (!applications.length) {
-          console.log('Нет приложений для установки.');
+          console.log('No applications to install.');
           return scp.dataSources.disconnect();
         }
         let first = true;
@@ -171,7 +172,7 @@ function deploy(done) {
               )
                 .then((dep) => {
                   first = false;
-                  console.log('Выполнена настройка приложения ' + app);
+                  console.log('The application is configured' + app);
                   apps.push(app);
                   deps.push(dep);
                 })
@@ -180,7 +181,7 @@ function deploy(done) {
         });
 
         return stage1.then(() => {
-          console.log('Развертывание приложений завершено.');
+          console.log('The application is deployed.');
           return scp.dataSources.disconnect();
         });
       } catch (err) {
@@ -213,7 +214,7 @@ function deploy(done) {
         }
       }
       return stage2.then(() => {
-        console.log('Импорт меты приложений завершен.');
+        console.log('The meta application import is completed.');
       });
     })
     .then(() => scope.dataSources.disconnect().catch(err => console.error(err)))
@@ -342,7 +343,7 @@ function buildBower(done) {
 function npm(path) {
   return function () {
     return new Promise(function (resolve, reject) {
-      console.log('Установка пакетов бэкенда для пути ' + path);
+      console.log('Installing the backend packages for the path' + path);
       run(path, 'npm', ['install', '--production', '--no-save'], resolve, reject);
     });
   };
@@ -359,12 +360,12 @@ function bower(p) {
       }
       try {
         /**
-         * Параметры конфигурации bower
-         * @property {String} vendorDir - папка установки пакетов
+         * Configuration parameters bower
+         * @property {String} vendorDir - package installation folder
          */
         let bc = JSON.parse(fs.readFileSync(path.join(p, '.bowerrc'), {encoding: 'utf-8'}));
-        console.log('Установка пакетов фронтенда для пути ' + p);
-        run(p, 'bower', ['install', '--config.interactive=false'], function () {
+        console.log('Installing frontend packages for the path ' + p);
+        run(p, 'bower', ['install', '--config.interactive=false', '--allow-root'], function () {
           let srcDir = path.join(p, bc.directory);
           try {
             fs.accessSync(srcDir);
@@ -384,7 +385,7 @@ function bower(p) {
                 }
               }
             } else {
-              console.warn('В .bowerrc не указана директория назначения для вендорских файлов [vendorDir]!');
+              console.warn('In the .bowerrc the destination directory for vendor files is not specified [vendorDir]!');
             }
             if (copyers.length) {
               Promise.all(copyers).then(resolve).catch(reject);
@@ -411,16 +412,16 @@ function copyVendorResources(src, dst, module) {
     copyResources(
       dist,
       dest,
-      'Скопированы дистрибутивные файлы вендорского пакета ' + module
+      'Copied distribution files of vendor package ' + module
     )(false).then(copyResources(
       min,
       dest,
-      'Скопированы минифицированные файлы вендорского пакета ' + module
+      'Copied minified files vendor package ' + module
       )
     ).then(copyResources(
       path.join(src, module),
       dest,
-      'Скопированы файлы вендорского пакета ' + module
+      'Copied vendor package files ' + module
       )
     ).then(resolve).catch(reject);
   });
@@ -456,7 +457,7 @@ function compileLess(p) {
       if (!fs.existsSync(path.join(p, 'less'))) {
         return resolve();
       }
-      console.log('Компиляция less-файлов для пути ' + p);
+      console.log('Compiling less files for the path ' + p);
       try {
         gulpSrc([path.join(p, 'less', '*.less')])
           .pipe(less({
@@ -481,7 +482,7 @@ function minifyCSS(p) {
       if (!fs.existsSync(path.join(p, 'static', 'css'))) {
         return resolve();
       }
-      console.log('Минификация файлов стилей фронтенда для пути ' + p);
+      console.log('Minification of front-end style files for the path ' + p);
       try {
         gulpSrc([
           path.join(p, 'static', 'css', '*.css'),
@@ -506,7 +507,7 @@ function minifyJS(p) {
         return resolve();
       }
 
-      console.log('Минификация файлов скриптов фронтенда для пути ' + p);
+      console.log('Minification frontend script files for the path ' + p);
       try {
         gulpSrc(
           [
@@ -613,22 +614,22 @@ function _themeDirs(basePath) {
 }
 
 /**
- * Импорт данных приложения
- * @param {string} appDir каталог приложения
+ * Import of the application data
+ * @param {string} appDir application catalog
  * @param scope
  * @param scope.roleAccessManager
  * @param scope.auth
  * @param scope.dataRepo
  * @param scope.dbSync
- * @param {Function} log - логгер
+ * @param {Function} log - logger
  * @param dep
  * @returns {Function}
  */
 function appImporter(appDir, scope, log, dep) {
   return function () {
     let ns = dep ? dep.namespace || '' : '';
-    console.log('Импорт меты приложения ' + appDir + ' выполняется в ' +
-      (ns ? 'пространство имен ' + ns : 'глобальное пространство имен'));
+    console.log('Import application meta ' + appDir + ' is implemented in' +
+      (ns ? 'namespace ' + ns : 'global namespace'));
     return aclImport(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
       .catch(err => log.error(err))
       .then(() => importer(appDir, {
@@ -639,10 +640,10 @@ function appImporter(appDir, scope, log, dep) {
         sequences: scope.sequenceProvider,
         log: log,
         namespace: ns,
-        // Игнорирование контроля целостности, иначе удаляются ссылочные атрибуты, т.к. объекты на которые ссылка,
-        // ещё не импортированы
+        // Ignoring integrity monitoring, otherwise reference attributes are deleted, because objects are referenced,
+        // not yet imported
         ignoreIntegrityCheck: true
-      })).then(() => {console.log('Мета и данные приложения ' + appDir + ' импортированы в БД');});
+      })).then(() => {console.log('Meta and application data ' + appDir + ' imported to DB');});
   };
 }
 
@@ -650,3 +651,5 @@ exports.build = build;
 exports.deploy = deploy;
 exports.assemble = assemble;
 exports.default = assemble;
+exports.buildNpm = buildNpm;
+exports.buildBower = buildBower;
