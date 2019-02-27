@@ -68,7 +68,6 @@
     "sendmail": "^1.2.0",
     "serve-favicon": "^2.4.5",
     "sharp": "^0.20.3",
-    "string-width": "^3.0.0",
     "uuid": "^3.1.0",
     "xmldom": "^0.1.27",
     "xpath": "0.0.27",
