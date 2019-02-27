@@ -2043,7 +2043,7 @@ function MongoDs(config) {
         }
       }
 
-      if (result.length && resultAttrs.length && options.distinct) {
+      if ((result.length || options.distinct) && resultAttrs.length) {
         Array.prototype.push.apply(result, wind(resultAttrs));
       }
 
