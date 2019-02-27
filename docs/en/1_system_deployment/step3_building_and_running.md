@@ -1,43 +1,42 @@
-[System deployment ](/docs/ru/1_system_deployment/)  
-# Step 3 Building and running
-### Previous page: [Step 2 Deploying project with modules](/docs/en/1_system_deployment/step2_project_with_modules.md)
+#### [Content](/docs/en/index.md)
 
-For all further commands, run the command line, selecting "Run as administrator". Go to the `cd c:\workspace\dnt` application folder (dnt - example from the previous step) and set the `NODE_PATH` environment variable that is equal to the following command  `set NODE_PATH=c:\workspace\dnt`.
+### The previous pege: [Step 2 Core, modules and application](/docs/en/1_system_deployment/step2_project_with_modules.md)
 
-![image](/uploads/5c227620ef05f77df9e9531c29b30b7b/image.png)
+# Step 3 Building and deploying the application
 
-## Building the app
+For all further commands, run the command prompt as an administrator.
+
+Go to the folder of the application - `cd c:\workspace\framework` and set the `NODE_PATH` environment variable equals to the path to the application. 
+
+ For Windows the command is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `workspace` is the app directory.
+
+## Building of the application
+
 Building the application includes the installation of all libraries, import of all data to the DB and preparation to launch the app.  
 
-When first launching, write the `npm install` command - it will install all key dependencies, including the gulp builder (installation command `npm install gulp`). This command installs all lybraries from the `dependencies` characteristic in the `package.json` list.   
+1. The command - `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the `Gulp` version - is `4.0`. The command above also installs all libraries from the `dependencies` property in the `package.json` file.
 
-After `npm install` command, the following message can pop up. It notifies you that dependencies consist of modules that can be potentionally dangerous for the project. Just ignore this notification.
+2. Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\develop-and-test --ns develop-and-test`.
 
-NB! **The following message is NOT an error**
+3. Further, write the `gulp assemble` command to build the app.
 
-> audited 2716 packages in 6.508s
-   found 5 vulnerabilities (1 low, 4 high)
-   run npm audit fix to fix them, or npm audit for details
+**NB:** Please make sure that the `NODE_PATH` environment variable is set, the `MongoDB` is open, the `Gulp` is installed globally and locally and its version is `4.0`.
 
-Always make sure that the `NODE_PATH` environment variable is set, the MongoDB is ready for use and the `Path` is leading to the Git (example `C:\Program Files\Git\bin`).
+4. Before launching the app add a new user. Open `Mongo Compass` and find the `ino-user` table to delete all entries. Further, returne to the console and run the following command. 
 
-![image](/uploads/fa3614243213775760dcd6dc2ae30b4a/image.png)
+`node bin\adduser.js --name admin --pwd 123` - adds a new admin user with the password 123.
 
-Before launching the app add a new user. Open `Mongo Compass` and find the `ino-user` table in the DB. Delete all entries you'll see. Further, `returne to the console` and run the following command.
+`node bin\acl.js --u admin@local --role admin --p full` - adds right to the user.
 
-```
-node bin\adduser.js --name admin --pwd 123
-node bin\acl.js --u admin@local --role admin --p full
-```
+## Start of the application
 
-## Running the app 
-When building is over you can run the app. Please make sure that the `NODE_PATH` environment variable is set. Without it, the system will display an error that some components are missing.  
+When building is over you can run the app. Please make sure that the `NODE_PATH` environment variable is set. Without it, the system will display an error that some components are missing. 
 
-The `npm start` command launches the system. The alternative is `node bin\www` command.  
+The `npm start` command starts the system. The alternative is `node bin\www` command.  
 
-When you'll see the message that you're running the system on port `8888`, you can open the browser and type the system adress - `http://localhost:8888`.  
+When you'll see the message that you're running the system on port `8888`, you can open the browser and type the system adress - `http://localhost:8888`.   
 
-### Next page: [System description](/docs/en/2_system_description) 
+### The next page: [System description - schema of the main types of metadata](/docs/en/2_system_description/metadata_structure/meta_scheme.md) 
 --------------------------------------------------------------------------  
 
 
@@ -45,8 +44,10 @@ When you'll see the message that you're running the system on port `8888`, you c
 
 
 
-
 --------------------------------------------------------------------------  
 
 Copyright (c) 2018 **LLC "ION DV"**.  
-All rights reserved.   
+All rights reserved.  
+
+
+

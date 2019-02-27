@@ -1,17 +1,20 @@
+#### [Content](/docs/en/index.md)
+
 ### The previous page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
+
 # Sorting a sample of valid values
 
 ## Description
 
-**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the `"Reference"` type. Set it when creating the meta class in the `"selSorting"` field. 
+**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the reference type. Set it in the `"selSorting"` field when creating the meta class. 
 
 ### Available types of sorting:
 
 •  Sorting in ascending order
+
 •  Sorting in descending order
 
-
-## Example in JSON
+### Example 
 ```
 {
       "orderNumber": 20,

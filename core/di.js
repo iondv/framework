@@ -303,28 +303,37 @@ module.exports.context = function (name) {
   return {};
 };
 
+function recCopyOption (v, src, dest) {
+  let ref = false;
+  if (!v) {
+    return;
+  } else if (typeof v === 'string') {
+    if (v.substr(0, 6) === 'ion://') {
+      v = v.substr(6);
+      ref = true;
+    } else if (v.substr(0, 7) === 'lazy://') {
+      v = v.substr(7);
+      ref = true;
+    }
+    if (ref) {
+      recCopy(v, src, dest);
+    }
+  } else if (Array.isArray(v)) {
+    v.forEach(v1 => recCopyOption(v1, src, dest));
+  } else if (typeof v === 'object') {
+    if (v && v.module && v.name && v.options) {
+      recCopyOptions(v.options, src, dest);
+    } else {
+      recCopyOptions(v, src, dest);
+    }
+  }
+  return;
+}
 
 function recCopyOptions(options, src, dest) {
   for (let nm in options) {
     if (options.hasOwnProperty(nm)) {
-      let v = options[nm];
-      let ref = false;
-      if (typeof v === 'string') {
-        if (v.substr(0, 6) === 'ion://') {
-          v = v.substr(6);
-          ref = true;
-        } else if (v.substr(0, 7) === 'lazy://') {
-          v = v.substr(7);
-          ref = true;
-        }
-        if (ref) {
-          recCopy(v, src, dest);
-        }
-      } else if (typeof v === 'object') {
-        if (v && v.module && v.name && v.options) {
-          recCopyOptions(v.options, src, dest);
-        }
-      }
+      recCopyOption(options[nm], src, dest);
     }
   }
 }

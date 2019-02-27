@@ -23,11 +23,11 @@ function sysPm(name) {
     autoassigned: false,
     hint: null,
     defaultValue: null,
-    refClass: "",
-    itemsClass: "",
-    backRef: "",
-    backColl: "",
-    binding: "",
+    refClass: '',
+    itemsClass: '',
+    backRef: '',
+    backColl: '',
+    binding: '',
     semantic: null,
     selConditions: [],
     selSorting: [],
@@ -53,7 +53,11 @@ function loadPropertyMetas(cm) {
 
   for (let i = 0; i < properties.length; i++) {
     let pm = clone(properties[i]);
+    pm.definitionClass = cm.getCanonicalName();
     cm.propertyMetas[properties[i].name] = pm;
+    if (pm.eagerLoading) {
+      cm._forcedEnrichment.push(pm.name);
+    }
   }
 }
 
@@ -72,8 +76,6 @@ function ClassMeta(metaObject) {
   this._semanticAttrs = [];
 
   this._semanticFunc = null;
-
-  loadPropertyMetas(this);
 
   this.getVersion = function () {
     return this.plain.version;
@@ -207,9 +209,7 @@ function ClassMeta(metaObject) {
         result[nm] = this.propertyMetas[nm];
       }
     }
-    return Object.values(result).sort((a, b) => {
-      return (a.orderNumber || 0) - (b.orderNumber || 0);
-    });
+    return Object.values(result).sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
   };
 
   this.isJournaling = function () {
@@ -233,6 +233,8 @@ function ClassMeta(metaObject) {
   this.isAbstract = function () {
     return this.plain.abstract;
   };
+
+  loadPropertyMetas(this);
 }
 
 module.exports = ClassMeta;

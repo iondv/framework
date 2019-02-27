@@ -1,5 +1,5 @@
 'use strict';
-/* eslint no-process-exit:off */
+/* eslint no-process-exit:off, no-div-regex:off */
 /**
  * Created by krasilneg on 19.07.17.
  */
@@ -7,8 +7,6 @@ const child = require('child_process');
 const moment = require('moment');
 const config = require('../config');
 const di = require('core/di');
-const alias = require('core/scope-alias');
-const extend = require('extend');
 
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
@@ -113,23 +111,23 @@ function checkRun(launch) {
 function calcCheckInterval(launch, dv) {
   if (typeof launch === 'object') {
     if (launch.sec || launch.second) {
-      return 500;
+      return 1000;
     }
 
     if (launch.min || launch.minute) {
-      return 30000;
+      return 60000;
     }
 
     if (launch.hour) {
-      return 1800000;
+      return 3600000;
     }
 
     if (launch.day || launch.dayOfYear || launch.weekday) {
-      return 43200000;
+      return 86400000;
     }
 
     if (launch.week) {
-      return 302400000;
+      return 604800000;
     }
 
     return 1296000000;
@@ -146,6 +144,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
      */
     (scope) => {
       let jobs = scope.settings.get('jobs') || {};
+      let busy = false;
       if (
         jobs.hasOwnProperty(jobName) &&
         jobs[jobName] &&
@@ -181,16 +180,29 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           if (!runImmediate) {
             run = checkRun(job.launch);
           }
-          if (run) {
-            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], {stdio: ['pipe','inherit','inherit','ipc']});
+          if (run && !busy) {
+            busy = true;
+            let chopts = {stdio: ['pipe', 'inherit', 'inherit', 'ipc']};
+            if (Array.isArray(job.node)) {
+              chopts.execArgv = job.node.concat(process.execArgv).filter((v, i, a) => {
+                if (v.indexOf('=') > 0) {
+                  const eqc = new RegExp('^' + v.replace(/=.*$/, '=.*') + '$');
+                  return a.findIndex(v1 => (v === v1) || eqc.test(v1)) === i;
+                }
+                return a.indexOf(v) === i;
+              });
+            }
+            let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
               if (ch.connected) {
                 sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
                 ch.kill(9);
+                busy = false;
               }
             }, runTimeout);
             ch.on('exit', () => {
               clearTimeout(rto);
+              busy = false;
             });
           }
           if (interval) {

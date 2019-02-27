@@ -1,24 +1,68 @@
-// ВАЖНОЕ
-// Нужно удалить все комментаии начинающиеся с //
+; ВАЖНОЕ
 
-auth.denyTop=false // - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
-auth.registration=false // если не требуется регистрация
+auth.denyTop=false ; - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
+auth.registration=false ; если не требуется регистрация
 
-// Исключения из проверки доступа безопасности
+; Исключения из проверки доступа безопасности
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
 
-db.uri=mongodb://127.0.0.1:27017/db // URI подключения к БД
-db.user=username // пользователь БД
-db.pwd=password // пароль пользователя БД
+; Исключение статичных путей ядра из проверки доступа безопасности
+auth.exclude[]=/
+auth.exclude[]=/vendor/**
+auth.exclude[]=/css/**
+auth.exclude[]=/fonts/**
+auth.exclude[]=/favicon.ico
 
-// Пытаться запустить систему на этих портах
+; Исключение статичных путей модулей из проверки доступа безопасности
+auth.exclude[]=/registry/vendor/**
+auth.exclude[]=/registry/css/**
+auth.exclude[]=/registry/js/**
+auth.exclude[]=/registry/app-vendor/**
+auth.exclude[]=/registry/app-static/**
+auth.exclude[]=/registry/common-static/**
+auth.exclude[]=/registry/img/**
+auth.exclude[]=/registry/fonts/**
+auth.exclude[]=/dashboard/vendor/**
+auth.exclude[]=/dashboard/develop-and-test/** ; для проекта develop-and-test
+auth.exclude[]=/dashboard/js/**
+auth.exclude[]=/registry/viewlib-ext-static/** ; для проекта viewlib-extra
+auth.exclude[]=/registry/viewlib-static/js/** ; для проекта viewlib
+auth.exclude[]=/gantt-chart/vendor/**
+auth.exclude[]=/gantt-chart/gantt/**
+auth.exclude[]=/gantt-chart/css/**
+auth.exclude[]=/gantt-chart/js/**
+auth.exclude[]=/gantt-chart/common-static/**
+auth.exclude[]=/gantt-chart/fonts/**
+auth.exclude[]=/geomap/vendor/**
+auth.exclude[]=/geomap/css/**
+auth.exclude[]=/geomap/js/**
+auth.exclude[]=/geomap/common-static/**
+auth.exclude[]=/geomap/img/**
+auth.exclude[]=/geomap/fonts/**
+auth.exclude[]=/report/vendor/**
+auth.exclude[]=/report/css/**
+auth.exclude[]=/report/js/**
+auth.exclude[]=/report/common-static/**
+auth.exclude[]=/report/img/**
+auth.exclude[]=/report/fonts/**
+
+; Исключение всего модуля из проверки доступа безопасности
+auth.exclude[]=/portal/**
+
+db.uri=mongodb://127.0.0.1:27017/db ; URI подключения к БД
+db.user=username ; пользователь БД
+db.pwd=password ; пароль пользователя БД
+
+; Пытаться запустить систему на этих портах
 server.ports[]=8888
 server.ports[]=8889
 server.ports[]=3000
 
-module.default=registry // модуль по умолчанию
+module.default=registry ; модуль по умолчанию
 
-// Настройки файлового хранилища
-fs.storageRoot=./files // корневая директория хранилища, куда будут сохраняться файлы
-fs.urlBase=/files // база для публикации файлов в http (база URL файлов)
+module.skip[]=offline-sync ; отключенные модули
+
+; Настройки файлового хранилища
+fs.storageRoot=./files ; корневая директория хранилища, куда будут сохраняться файлы
+fs.urlBase=/files ; база для публикации файлов в http (база URL файлов)

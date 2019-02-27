@@ -1,7 +1,10 @@
-### Предыдущая страница: [Атрибут "Ссылка"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Атрибут cсылка](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+
 # Коллекция
 
-**Коллекция** - тип данных, позволяющий выводить в объекте списки других объектов. Данные объекты могут быть объектами любого класса включая исходный.
+**Коллекция** - тип данных, позволяющий выводить в объекте списки других объектов. Данные объекты могут быть объектами любого класса включая исходный.  
 
 Разделяются ссылки через запятую. Все значения из последовательности ссылок и запятых хранятся строкой в базе данных.
 
@@ -95,6 +98,105 @@
     }
 ```  
 
+## Режимы отображения атрибута типа "Коллекция" на форме:
+
+Режимы отображения задаются в мете представления. Могут определяться при помощи свойства `"mode"` либо задаваться шаблоном в свойстве `"options"`.
+
+* **mode: 4** - "Облако тегов" хранит значения одного или нескольких объектов по ссылке в виде тегов, наименование которых определяется семантикой объекта по ссылке. 
+* **mode: 3** - "Таблица" хранит значения одного или нескольких объектов по ссылки в таблице, колонки которой предопределены для формы представления.
+
+### Пример:
+
+```
+{
+    "caption": "Таблица",
+    "type": 3,
+    "property": "table",
+    "size": 2,
+    "maskName": null,
+    "mask": null,
+    "mode": 3,
+    "fields": [],
+    "columns": [],
+    ...
+},
+...
+```
+
+* **"Комментарий"** - задается аналогично режиму отображения "Таблица", но с наложением шаблона, указанном в свойстве `"options"`. Представляет собой поле, которое содержит данные, зараннее предопределенные в свойстве `"columns"` для объекта по ссылке. Предназначено, в основном, для обсуждения информации по объекту на определенном этапе бизнес-процесса. 
+
+### Пример:
+
+```
+       {
+          "caption": "Коментарий",
+          "type": 3,
+          "property": "coment",
+          "size": 2,
+          "maskName": null,
+          "mask": null,
+          "mode": 3,
+          "fields": [],
+          "columns": [
+            {
+              "sorted": true,
+              "caption": "Дата",
+              "type": 120,
+              "property": "date",
+              ...
+            },
+            {
+              "sorted": true,
+              "caption": "Подтверждение (Обоснование)",
+              "type": 7,
+              "property": "descript",
+              ...
+            },
+            {
+              "caption": "Ведущий",
+              "type": 2,
+              "property": "owner",
+              ...
+            }
+          ],
+          "actions": null,
+          "commands": [
+            {
+              "id": "CREATE",
+              "caption": "Создать",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": false,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            },
+            {
+              "id": "EDIT",
+              "caption": "Править",
+              "visibilityCondition": null,
+              "enableCondition": null,
+              "needSelectedItem": true,
+              "signBefore": false,
+              "signAfter": false,
+              "isBulk": false
+            }
+          ],
+          "orderNumber": 80,
+          ...
+          "tags": null,
+          "options": {
+            "template": "comments",
+            "comments": {
+              "textProperty": "descript",
+              "userProperty": "owner",
+              "parentProperty": "answlink",
+              "photoProperty": "owner_ref.foto.link",
+              "dateProperty": "date"
+            }
+          }
+        }
+```
 
 # Обратная коллекция
 
@@ -169,11 +271,11 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp; [FAQs](/faqs.md)          
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

@@ -33,14 +33,30 @@
               "options": {
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
+                "url": {
+                  "hosts": "[[db.hosts]]",
+                  "user": "[[db.user]]",
+                  "pwd": "[[db.pwd]]",
+                  "db": "[[db.dbname]]",
+                  "params": {
+                    "authMechanism": "[[db.authMechanism]]"
+                  }
+                },
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
                   "socketTimeoutMS": "[[db.operTimeOut]]",
-                  "poolSize": "[[db.poolSize]]"
-                },
-                "user": "[[db.user]]",
-                "password": "[[db.pwd]]"
+                  "poolSize": "[[db.poolSize]]",
+                  "sslValidate": "[[db.sslValidate]]",
+                  "checkServerIntegrity": "[[db.checkServerIntegrity]]",
+                  "sslCA": "[[db.sslCA]]",
+                  "sslCert": "[[db.sslCert]]",
+                  "sslKey": "[[db.sslKey]]",
+                  "sslPass": "[[db.sslPass]]",
+                  "replicaSet": "[[db.replicaSet]]",
+                  "authSource": "[[db.authSource]]",
+                  "ssl": "[[db.ssl]]"
+                }
               }
             }
           ]
@@ -63,7 +79,7 @@
         }
       },
       "aclProvider":{
-        "module": "core/impl/access/aclmongo",
+        "module": "core/impl/access/DsAcl",
         "initMethod": "init",
         "initLevel": 1,
         "options":{
@@ -72,15 +88,14 @@
         }
       },
       "roleAccessManager": {
-        "module": "core/impl/access/amAccessManager",
-        "initMethod": "init",
-        "initLevel": 1,
+        "module": "core/impl/access/DsRoleAccessManager",
         "options": {
           "dataSource": "ion://Db"
         }
       },
       "accounts": {
         "module": "core/impl/LocalAccountStorage",
+        "initMethod": "init",
         "options": {
           "dataSource": "ion://Db"
         }
@@ -337,6 +352,7 @@
           "acl": "ion://aclProvider",
           "keyProvider": "ion://keyProv",
           "workflow": "ion://workflows",
+          "meta": "ion://metaRepo",
           "log": "ion://sysLog",
           "calc": "lazy://calculator"
         }

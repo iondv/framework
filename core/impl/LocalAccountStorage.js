@@ -8,12 +8,15 @@ const clone = require('clone');
 class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {{}} options
+   * @param {Number} [options.passwordMinLength]
+   * @param {Boolean} [options.caseInsensitiveLogin]
    * @param {DataSource} options.dataSource
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.passwordMinLength = options.passwordMinLength;
+    this.caseInsensitiveLogin = Boolean(options.caseInsensitiveLogin);
   }
 
   init() {
@@ -43,9 +46,9 @@ class LocalAccountStorage extends IAccountStorage {
           user.pwd = hash;
           user.pwdDate = new Date();
           user.disabled = false;
-          this.ds.insert('ion_user', user)
+          this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user)
             .then((u) => {
-              resolve(u);
+              resolve(new User(u));
             })
             .catch(reject);
         });
@@ -54,12 +57,22 @@ class LocalAccountStorage extends IAccountStorage {
       user.pwd = user.pwd.hash;
       user.pwdDate = new Date();
       user.disabled = false;
-      return this.ds.insert('ion_user', user);
+      return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user);
     } else if (user.type !== UserTypes.LOCAL) {
-      return this.ds.insert('ion_user', user).then(u => new User(u));
+      return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else {
       throw new Error('Не передан пароль');
     }
+  }
+
+  _unregister(id) {
+    let type = UserTypes.LOCAL;
+    if (id.indexOf('@') > 0) {
+      let un = id.split('@');
+      id = un[0];
+      type = un[1];
+    }
+    return this.ds.delete('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', id]}, {[F.EQUAL]: ['$type', type]}]});
   }
 
   /**
@@ -120,7 +133,9 @@ class LocalAccountStorage extends IAccountStorage {
       {
         [F.AND]: [
           {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          {[F.EQUAL]: ['$id', id]},
+          this.caseInsensitiveLogin
+            ? {[F.LIKE]: ['$id', `^${id}$`]}
+            : {[F.EQUAL]: ['$id', id]},
           {
             [F.OR]: [
               {[F.EQUAL]: ['$disabled', false]},
@@ -182,6 +197,9 @@ class LocalAccountStorage extends IAccountStorage {
         }
       }
     }
+
+    let skipResult = (data.id && (id !== data.id)) || (data.type && data.type !== type);
+
     return this.ds.update(
       'ion_user',
       {
@@ -190,8 +208,11 @@ class LocalAccountStorage extends IAccountStorage {
           {[F.EQUAL]: ['$type', type]}
         ]
       },
-      data
-    ).then(u => new User(u));
+      data,
+      {skipResult}
+      )
+      .then(u => u ? u : this.ds.get('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', data.id]}, {[F.EQUAL]: ['$type', data.type]}]}))
+      .then(u => new User(u));
   }
 
 
@@ -206,7 +227,14 @@ class LocalAccountStorage extends IAccountStorage {
       let conds = [];
       filter.forEach((id) => {
         let parts = id.split('@');
-        conds.push({[F.AND]: [{[F.EQUAL]: ['$id', parts[0]]}, {[F.EQUAL]: ['$type', parts[1]]}]});
+        conds.push({
+          [F.AND]: [
+            this.caseInsensitiveLogin
+              ? {[F.LIKE]: ['$id', `^${parts[0]}$`]}
+              : {[F.EQUAL]: ['$id', parts[0]]},
+            {[F.EQUAL]: ['$type', parts[1]]}
+          ]
+        });
       });
       if (conds.length > 1) {
         f.push({[F.OR]: conds});

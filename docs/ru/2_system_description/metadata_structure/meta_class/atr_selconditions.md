@@ -1,4 +1,7 @@
-### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)
+
 # Условия отбора допустимых значений
 
 ## Описание 
@@ -167,7 +170,7 @@ module.exports = {
  ```
  ### Пример 
  
- В ссылочном атрибуте необходимо показать только те объекты, у которых в ссылочном классе задан атрибут "selConditions", в поле `property` этого атрибута, указаного поле связанного класса, значение в поле "value" соответствует условию "operation".
+ В ссылочном атрибуте необходимо показать только те объекты, у которых в ссылочном классе задан атрибут "selConditions" и в поле `property` этого атрибута указано поле связанного класса,чьё значение в поле "value" соответствует условию "operation".
  
  В атрибуте организация, задача показать только организации ("refClass": "organization"), у которых в поле тип ( "property": "type") равно ( "operation": 0) значению zakazchik ("value": "zakazchik").  
  
@@ -243,6 +246,8 @@ module.exports = {
 
 В ядре реализован атрибут контекста `$$now`, возвращающий текущую дату.
 `$$now` доступен везде при задании условий.
+
+Подробнее см. [переменные](/docs/ru/2_system_description/metadata_structure/meta_variables.md).
 
 ### Пример:
 

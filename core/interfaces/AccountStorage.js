@@ -7,6 +7,10 @@ class AccountStorage {
     return this._register(data);
   }
 
+  unregister(id) {
+    return this._unregister(id);
+  }
+
   /**
    * @param {String} id
    * @param {String} oldPwd

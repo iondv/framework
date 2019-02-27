@@ -3,6 +3,7 @@
  */
 'use strict';
 const c = require('./oper');
+const skipper = require('./skipper');
 const Item = require('core/interfaces/DataRepository').Item;
 const p = require('./processed');
 
@@ -13,35 +14,36 @@ function work(col, attr, cond, unique, sep) {
   sep = sep || ' ';
   if (Array.isArray(col)) {
     let processed = p();
-    for (let i = 0; i < col.length; i++) {
-      if (col[i] !== null) {
-        if (cond) {
-          if (!cond.apply(col[i])) {
-            continue;
-          }
-        }
 
+    let cb = (item) => {
+      if (item !== null) {
         let v = null;
         if (attr.indexOf('.') > 0) {
           let att = attr.substr(0, attr.indexOf('.'));
           let satt = attr.substr(attr.indexOf('.') + 1);
-          v = col[i] instanceof Item ? col[i].property(att).evaluate() : col[i][att];
+          v = item instanceof Item ? item.property(att).evaluate() : item[att];
           if (!Array.isArray(v)) {
             v = [v];
           }
           v = work(v, satt, null, unique, sep);
         } else {
-          v = col[i] instanceof Item ? col[i].get(attr) : col[i][attr];
+          v = item instanceof Item ? item.get(attr) : item[attr];
         }
 
         if (v) {
           if (unique && processed(v)) {
-            continue;
+            return;
           }
           result = result + (result ? sep : '') + v;
         }
       }
+    };
+
+    if (cond) {
+      return skipper(col, cond, cb).then(() => result);
     }
+
+    col.forEach(cb);
   }
   return result;
 }

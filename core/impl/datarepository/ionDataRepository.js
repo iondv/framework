@@ -18,6 +18,7 @@ const prepareDsFilterValues = require('core/interfaces/DataRepository/lib/util')
 const dataToFilter = require('core/interfaces/DataRepository/lib/util').dataToFilter;
 const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formDsUpdatedData;
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
+const addDiscriminatorFilter = require('core/interfaces/DataRepository/lib/util').addDiscriminatorFilter;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
 const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
 const conditionParser = require('core/ConditionParser');
@@ -27,7 +28,7 @@ const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 const MetaErrors = require('core/errors/meta-repo');
 const DsErrors = require('core/errors/data-source');
-const clone = require('clone');
+const clone = require('fast-clone');
 const Operations = require('core/FunctionCodes');
 const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
@@ -181,28 +182,6 @@ function IonDataRepository(options) {
 
   /**
    * @param {Object} filter
-   * @param {ClassMeta} cm
-   * @param {Boolean} [skipSc]
-   * @private
-   */
-  function addDiscriminatorFilter(filter, cm, skipSc = false) {
-    let df;
-    if (skipSc) {
-      df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
-    } else {
-      let cnFilter = [cm.getCanonicalName()];
-      let descendants = _this.meta.listMeta(cm.getCanonicalName(), cm.getVersion(), false, cm.getNamespace());
-      for (let i = 0; i < descendants.length; i++) {
-        cnFilter.push(descendants[i].getCanonicalName());
-      }
-      df = {[Operations.IN]: ['$_class', cnFilter]};
-    }
-
-    return !filter ? df : {[Operations.AND]: [df, filter]};
-  }
-
-  /**
-   * @param {Object} filter
    * @param {Item} item
    * @returns {Object}
    * @private
@@ -303,7 +282,7 @@ function IonDataRepository(options) {
     let refc = property.meta._refClass;
     item.references = item.references || {};
     if (refc) {
-      let pn = item.classMeta.getName() + '.' + property.getName();
+      let pn = property.meta.definitionClass + '.' + property.getName();
       if (!attrs.hasOwnProperty(pn)) {
         attrs[pn] = {
           type: PropertyTypes.REFERENCE,
@@ -314,14 +293,16 @@ function IonDataRepository(options) {
           filter: [],
           reenrich: {}
         };
+        if (property.meta.backRef) {
+          attrs[pn].key = property.meta.backRef;
+          attrs[pn].backRef = true;
+        }
       }
 
       if (!(item.references[property.getName()] instanceof Item)) {
         let v;
         if (property.meta.backRef) {
           v = item.getItemId();
-          attrs[pn].key = property.meta.backRef;
-          attrs[pn].backRef = true;
         } else {
           v = item.get(property.getName());
         }
@@ -354,7 +335,7 @@ function IonDataRepository(options) {
     let refc = property.meta._refClass;
     item.collections = item.collections || {};
     if (refc) {
-      let pn = item.classMeta.getName() + '.' + property.getName();
+      let pn = property.meta.definitionClass + '.' + property.getName();
       if (!attrs.hasOwnProperty(pn)) {
         attrs[pn] = {
           type: PropertyTypes.COLLECTION,
@@ -365,13 +346,16 @@ function IonDataRepository(options) {
           colItems: [],
           reenrich: {}
         };
-      }
-      if (!Array.isArray(item.collections[property.getName()])) {
-        item.collections[property.getName()] = [];
+
         if (Array.isArray(property.meta.selSorting) && property.meta.selSorting.length) {
           attrs[pn].sort =
             sortingParser(property.meta.selSorting);
         }
+      }
+      if (!Array.isArray(item.collections[property.getName()])) {
+        item.collections[property.getName()] = [];
+
+        let colItems = [];
 
         if (property.meta.backRef && !property.meta.backColl) {
           let v = null;
@@ -380,14 +364,14 @@ function IonDataRepository(options) {
           } else {
             v = item.getItemId();
           }
-          if (v !== null && attrs[pn].colItems.indexOf(v) < 0) {
-            attrs[pn].colItems.push(v);
+          if (v !== null && colItems.indexOf(v) < 0) {
+            colItems.push(v);
           }
         } else {
           let v = item.get(property.getName());
           if (Array.isArray(v)) {
             v.forEach((v) => {
-              attrs[pn].colItems.push(() => {
+              colItems.push(() => {
                 if (!attrs[pn].sort) {
                   let ldd = checkLoaded(refc, v, loaded);
                   if (ldd) {
@@ -403,13 +387,43 @@ function IonDataRepository(options) {
         }
 
         if (property.meta.selConditions) {
-          attrs[pn].colFilter =
-            Array.isArray(property.meta.selConditions) ?
-              conditionParser(property.meta.selConditions, property.meta._refClass, item) :
-              property.meta.selConditions;
+          let parsed = Array.isArray(property.meta.selConditions) ?
+            conditionParser(property.meta.selConditions, property.meta._refClass, item) :
+            property.meta.selConditions;
+
+          if (Array.isArray(attrs[pn].colFilter)) {
+            attrs[pn].colFilter.push({filter: parsed, for: item.getItemId(), col: colItems});
+          } else {
+            if (attrs[pn].colFilter) {
+              if (JSON.stringify(attrs[pn].colFilter) !== JSON.stringify(parsed)) {
+                attrs[pn].colFilter = [
+                  {filter: attrs[pn].colFilter, for: attrs[pn].prev, col: attrs[pn].colItems},
+                  {filter: parsed, for: item.getItemId(), col: colItems}
+                ];
+                attrs[pn].colItems = [];
+              } else {
+                attrs[pn].colItems.push(...colItems);
+              }
+            } else {
+              attrs[pn].colFilter = parsed;
+              if (attrs[pn].prev) {
+                if (Array.isArray(attrs[pn].prev)) {
+                  attrs[pn].prev.push(item.getItemId());
+                } else {
+                  attrs[pn].prev = [attrs[pn].prev, item.getItemId()];
+                }
+              } else {
+                attrs[pn].prev = item.getItemId();
+              }
+              attrs[pn].colItems.push(...colItems);
+            }
+          }
+
           if (!attrs[pn].colFilter) {
             delete attrs[pn].colFilter;
           }
+        } else {
+          attrs[pn].colItems.push(...colItems);
         }
       } else {
         item.collections[property.getName()].forEach((citem) => {
@@ -529,11 +543,55 @@ function IonDataRepository(options) {
   }
 
   /**
+   * @param {ClassMeta} cm
+   */
+  function descendantForced(cm, forced, options) {
+    formForced(cm.getForcedEnrichment(), forced, options);
+    let descs = cm.getDescendants();
+    descs.forEach((d) => {
+      descendantForced(d, forced, options);
+    });
+  }
+
+  function eagerLoadedAttrs(cm, options, ela, explicitForced, implicitForced, nestingDepth) {
+    let props = cm.getPropertyMetas();
+    if (!ela.hasOwnProperty(cm.getCanonicalName())) {
+      ela[cm.getCanonicalName()] = [];
+    }
+    let result = true;
+    props.forEach((p) => {
+      if (
+        (
+          explicitForced.hasOwnProperty(p.name) ||
+          nestingDepth > 0 ||
+          implicitForced.hasOwnProperty(p.name) &&
+          nestingDepth >= _this.maxEagerDepth
+        ) &&
+        (p.type === PropertyTypes.REFERENCE || p.type === PropertyTypes.COLLECTION)
+      ) {
+        ela[cm.getCanonicalName()].push(p.name);
+      }
+
+      if (options.needed && options.needed.hasOwnProperty(p.name)) {
+        if (p._formula) {
+          result = false;
+        }
+      }
+    });
+
+    let descs = cm.getDescendants();
+    descs.forEach((d) => {
+      result = eagerLoadedAttrs(d, options, ela, explicitForced, implicitForced, nestingDepth) ? result : false;
+    });
+    return result;
+  }
+
+  /**
    * @param {Item[]|Item} src2
    * @param {{}} options
    * @returns {Promise}
    */
-  function enrich(src2, options) {
+  function enrich(src2, options, cm) {
     let src = Array.isArray(src2) ? src2 : [src2];
     if (!src.length) {
       return Promise.resolve(src2);
@@ -545,61 +603,51 @@ function IonDataRepository(options) {
     let implicitForced = {};
     formForced(forceEnrichment, explicitForced, {});
     formForced(___implicitEnrichment, implicitForced, options);
+
+    descendantForced(cm, implicitForced, options);
+
+    if (!(Object.keys(explicitForced).length || nestingDepth > 0 || Object.keys(implicitForced).length && nestingDepth >= _this.maxEagerDepth)) {
+      return Promise.resolve(src2);
+    }
+
+    let needed2 = needed ? {} : null;
+
+    let promises = Promise.resolve();
     let attrs = {};
     ___loaded = ___loaded || {};
-    let promises = Promise.resolve();
-    try {
-      let pcl = {};
-      for (let i = 0; i < src.length; i++) {
-        if (src[i] instanceof Item) {
-          if (___loaded[src[i].getClassName() + '@' + src[i].getItemId()]) {
-            srcByKey[src[i].getItemId()] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
-            src[i] = ___loaded[src[i].getClassName() + '@' + src[i].getItemId()];
-          } else {
-            ___loaded[src[i].getClassName() + '@' + src[i].getItemId()] = src[i];
-            srcByKey[src[i].getItemId()] = src[i];
-          }
-        }
-      }
+    let ela = {};
+    if (!eagerLoadedAttrs(cm, options, ela, explicitForced, implicitForced, nestingDepth)) {
+      needed2 = null;
+    }
 
-      let needed2 = needed ? {} : null;
+    try {
 
       for (let i = 0; i < src.length; i++) {
         let item = src[i];
         if (item instanceof Item) {
-          let cm = item.getMetaClass();
-          let props = item.getProperties();
-          if (!pcl.hasOwnProperty(cm.getName()) && !cm.isSemanticCached()) {
-            pcl[cm.getName()] = true;
-            formForced(cm.getForcedEnrichment(), implicitForced, options);
+          if (___loaded[item.getClassName() + '@' + item.getItemId()]) {
+            srcByKey[item.getItemId()] = ___loaded[item.getClassName() + '@' + item.getItemId()];
+            src[i] = ___loaded[item.getClassName() + '@' + item.getItemId()];
+            item = src[i];
+          } else {
+            ___loaded[item.getClassName() + '@' + item.getItemId()] = item;
+            srcByKey[item.getItemId()] = item;
           }
-          for (let nm in props) {
-            if (props.hasOwnProperty(nm)) {
-              if (
-                explicitForced.hasOwnProperty(nm) ||
-                nestingDepth > 0 ||
-                (
-                  props[nm].eagerLoading() /*&& (!options.needed || options.needed.hasOwnProperty(nm))*/ ||
-                  implicitForced.hasOwnProperty(nm)
-                ) && nestingDepth >= _this.maxEagerDepth
-              ) {
-                if (props[nm].getType() === PropertyTypes.REFERENCE) {
-                  if (typeof item.references[nm] === 'undefined') {
-                    prepareRefEnrichment(item, props[nm], attrs, ___loaded);
-                  }
-                } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
-                  if (typeof item.collections[nm] === 'undefined') {
-                    prepareColEnrichment(item, props[nm], attrs, ___loaded);
-                  }
-                }
-              }
 
-              if (needed && needed.hasOwnProperty(nm)) {
-                if (props[nm].meta._formula) {
-                  needed2 = null;
+          let props = item.getProperties();
+          let eagerAttrs = ela[item.getClassName()];
+          if (Array.isArray(eagerAttrs)) {
+            eagerAttrs.forEach((nm) => {
+              if (props[nm].getType() === PropertyTypes.REFERENCE) {
+                if (typeof item.references[nm] === 'undefined') {
+                  prepareRefEnrichment(item, props[nm], attrs, ___loaded);
+                }
+              } else if (props[nm].getType() === PropertyTypes.COLLECTION) {
+                if (typeof item.collections[nm] === 'undefined') {
+                  prepareColEnrichment(item, props[nm], attrs, ___loaded);
                 }
               }
-            }
+            });
           }
         }
       }
@@ -634,8 +682,10 @@ function IonDataRepository(options) {
               cn = attrs[nm].refClass.getCanonicalName();
             } else if (
               attrs[nm].type === PropertyTypes.COLLECTION &&
-              Array.isArray(attrs[nm].colItems) &&
-              attrs[nm].colItems.length
+              (
+                (Array.isArray(attrs[nm].colItems) && attrs[nm].colItems.length) ||
+                Array.isArray(attrs[nm].colFilter)
+              )
             ) {
               let f = [];
               attrs[nm].colItems.forEach((v) => {
@@ -647,14 +697,37 @@ function IonDataRepository(options) {
                 }
               });
 
-              if (f.length) {
+              if (f.length || Array.isArray(attrs[nm].colFilter)) {
                 if (attrs[nm].backRef) {
                   filter = {[Operations.IN]: ['$' + attrs[nm].backRef, f]};
                 } else {
                   filter = filterByItemIds(_this.keyProvider, attrs[nm].colClass, f);
                 }
                 if (attrs[nm].colFilter) {
-                  filter = {[Operations.AND]: [filter, attrs[nm].colFilter]};
+                  if (Array.isArray(attrs[nm].colFilter)) {
+                    filter = [];
+                    attrs[nm].colFilter.forEach((cf) => {
+                      let f2;
+                      let f = [];
+                      cf.col.forEach((v) => {
+                        if (typeof v === 'function') {
+                          v = v();
+                        }
+                        if (v && f.indexOf(v) < 0) {
+                          f.push(v);
+                        }
+                      });
+
+                      if (attrs[nm].backRef) {
+                        f2 = {[Operations.IN]: ['$' + attrs[nm].backRef, f]};
+                      } else {
+                        f2 = filterByItemIds(_this.keyProvider, attrs[nm].colClass, f);
+                      }
+                      filter.push({filter: {[Operations.AND]: [f2, cf.filter]}, for: srcByKey[cf.for]});
+                    });
+                  } else {
+                    filter = {[Operations.AND]: [filter, attrs[nm].colFilter]};
+                  }
                 }
                 if (attrs[nm].sort) {
                   sort = attrs[nm].sort;
@@ -664,16 +737,37 @@ function IonDataRepository(options) {
             }
 
             if (filter) {
-              return getEnrichList({
-                src, srcByKey,
-                cn, sort, filter,
-                depth: nestingDepth,
-                forced: explicitForced[attrs[nm].attrName],
-                implForced: implicitForced[attrs[nm].attrName],
-                loaded: ___loaded,
-                attr: attrs[nm],
-                needed: needed2
-              });
+              if (Array.isArray(filter)) {
+                let result = Promise.resolve();
+                filter.forEach((f) => {
+                  result = result
+                    .then(
+                      () => getEnrichList({
+                        src: [f.for],
+                        srcByKey,
+                        cn, sort,
+                        filter: f.filter,
+                        depth: nestingDepth,
+                        forced: explicitForced[attrs[nm].attrName],
+                        implForced: implicitForced[attrs[nm].attrName],
+                        loaded: ___loaded,
+                        attr: attrs[nm],
+                        needed: needed2
+                      })
+                    );
+                });
+              } else {
+                return getEnrichList({
+                  src, srcByKey,
+                  cn, sort, filter,
+                  depth: nestingDepth,
+                  forced: explicitForced[attrs[nm].attrName],
+                  implForced: implicitForced[attrs[nm].attrName],
+                  loaded: ___loaded,
+                  attr: attrs[nm],
+                  needed: needed2
+                });
+              }
             } else {
               let reenrich = Object.values(attrs[nm].reenrich);
               let fe = explicitForced[attrs[nm].attrName];
@@ -687,7 +781,8 @@ function IonDataRepository(options) {
                     ___implicitEnrichment: [],
                     ___loaded,
                     needed: needed2
-                  }
+                  },
+                  cm
                 );
               }
             }
@@ -712,6 +807,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -724,16 +820,25 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getList = function (obj, options) {
-    let $options = clone(options || {});
-    let cm = getMeta(obj);
-    let rcm = getRootType(cm);
+    options = options || {};
+    let $options = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct,
+      joins: options.joins
+    };
+
+    const cm = getMeta(obj);
+    const rcm = getRootType(cm);
     $options.fields = {_class: '$_class', _classVer: '$_classVer'};
-    let props = cm.getPropertyMetas();
+    const props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       $options.fields[props[i].name] = '$' + props[i].name;
     }
     $options.filter = addFilterByItem(options.filter, obj);
-    $options.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    $options.filter = addDiscriminatorFilter($options.filter, cm, options.skipSubClasses);
     $options.joins = options.joins || [];
 
     return bubble(
@@ -762,7 +867,7 @@ function IonDataRepository(options) {
         }
         return fl.then(() => result);
       })
-      .then(result => enrich(result, options))
+      .then(result => enrich(result, options, cm))
       .then(result => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
@@ -772,7 +877,7 @@ function IonDataRepository(options) {
         if (data) {
           let item = _this._wrap(data._class, data, data._classVer);
           return loadFiles(item, _this.fileStorage, _this.imageStorage)
-            .then(item => enrich(item, options))
+            .then(item => enrich(item, options, item.getMetaClass()))
             .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
         }
         return Promise.resolve(null);
@@ -790,6 +895,7 @@ function IonDataRepository(options) {
    * @param {String | Item} obj
    * @param {Object} [options]
    * @param {Object} [options.filter]
+   * @param {Object} [options.joins]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
    * @param {Object} [options.sort]
@@ -802,15 +908,23 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._getIterator = function (obj, options) {
-    let opts = clone(options || {});
+    options = options || {};
+    let opts = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct,
+      joins: options.joins
+    };
     let cm = getMeta(obj);
     let rcm = getRootType(cm);
-    options.fields = {_class: '$_class', _classVer: '$_classVer'};
+    opts.fields = {_class: '$_class', _classVer: '$_classVer'};
     let props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
       opts.fields[props[i].name] = '$' + props[i].name;
     }
-    opts.filter = addFilterByItem(opts.filter, obj);
+    opts.filter = addFilterByItem(options.filter, obj);
     opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
     opts.joins = opts.joins || [];
     return bubble(
@@ -861,12 +975,14 @@ function IonDataRepository(options) {
                 join = joinsHash[jpth];
               } else {
                 joinsHash.zi$$$$counter++;
+                let alias = '___join' + joinsHash.zi$$$$counter;
                 join = {
                   table: tn(rc),
-                  alias: '___join' + joinsHash.zi$$$$counter,
+                  alias: alias,
                   left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
                   right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
-                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef
+                  many: pm.type === PropertyTypes.COLLECTION && !pm.backRef//,
+                  //filter: addDiscriminatorFilter(null, rc) @TODO Вернуть когда уйдем с монги
                 };
                 joinsHash[jpth] = join;
 
@@ -975,25 +1091,42 @@ function IonDataRepository(options) {
   /**
    * @param {String} className
    * @param {{}} [options]
+   * @param {{}} [options.joins]
    * @param {{}} [options.expressions]
    * @param {{}} [options.filter]
    * @param {{}} [options.groupBy]
+   * @param {Number} [options.offset]
+   * @param {Number} [options.count]
+   * @param {Object} [options.sort]
    * @param {Boolean} [options.skipSubClasses]
    * @returns {Promise}
    */
   this._aggregate = function (className, options) {
-    let opts = clone(options) || {};
+    options = options || {};
+    let opts = {
+      expressions: options.expressions,
+      fields: options.fields,
+      aggregates: options.aggregates,
+      joins: options.joins,
+      groupBy: options.groupBy,
+      offset: options.offset,
+      count: options.count,
+      sort: options.sort,
+      distinct: options.distinct,
+      to: options.to,
+      append: options.append
+    };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.joins = opts.joins || [];
     prepareResults(cm, opts, opts.joins);
-    opts.filter = addDiscriminatorFilter(opts.filter, cm, options.skipSubClasses);
-    return prepareFilterValues(cm, opts.filter, opts.joins).
-    then(function (filter) {
+    opts.filter = addDiscriminatorFilter(options.filter, cm, options.skipSubClasses);
+    return prepareFilterValues(cm, opts.filter, opts.joins)
+      .then((filter) => {
         opts.filter = filter;
         return _this.ds.aggregate(tn(rcm), opts);
-      }
-    ).catch(wrapDsError('aggregate', className));
+      })
+      .catch(wrapDsError('aggregate', className));
   };
 
   /**
@@ -1011,7 +1144,14 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._rawData = function (className, options) {
-    let opts = clone(options) || {};
+    options = options || {};
+    let opts = {
+      sort: options.sort,
+      offset: options.offset,
+      count: options.count,
+      countTotal: options.countTotal,
+      distinct: options.distinct
+    };
     let cm = getMeta(className);
     let rcm = getRootType(cm);
     opts.fields = {_class: '$_class', _classVer: '$_classVer'};
@@ -1046,7 +1186,8 @@ function IonDataRepository(options) {
   this._getItem = function (obj, id, options) {
     let cm = obj instanceof Item ? obj.getMetaClass() : getMeta(obj);
     let rcm = getRootType(cm);
-    let opts = clone(options || {});
+    options = options || {};
+    let opts = {};
     opts.fields = {_class: '$_class', _classVer: '$_classVer'};
     let props = cm.getPropertyMetas();
     for (let i = 0; i < props.length; i++) {
@@ -1119,8 +1260,8 @@ function IonDataRepository(options) {
     }
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
-      .then(item => options.skipEnrich ? item : enrich(item, options))
-      .then(item => options.skipCalculations ? item : calcProperties(item, false, options.needed));
+      .then(item => (options.skipEnrich || !item) ? item : enrich(item, options, item.getMetaClass()))
+      .then(item => (options.skipCalculations || !item) ? item : calcProperties(item, false, options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
@@ -1685,7 +1826,7 @@ function IonDataRepository(options) {
           true
         );
       }
-      return enrich(e.item, options);
+      return enrich(e.item, options, e.item.getMetaClass());
     };
   }
 
@@ -1889,7 +2030,7 @@ function IonDataRepository(options) {
    * @returns {Promise}
    */
   this._editItem = function (classname, id, data, changeLogger, options, supressEvent) {
-    options = clone(options) || {};
+    options = options || {};
     if (!id) {
       return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
     }

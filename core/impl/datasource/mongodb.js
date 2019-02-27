@@ -5,10 +5,10 @@
 
 const DataSource = require('core/interfaces/DataSource');
 const mongo = require('mongodb');
-const client = mongo.MongoClient;
+const MongoClient = mongo.MongoClient;
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const empty = require('core/empty');
-const clone = require('clone');
+const clone = require('fast-clone');
 const cuid = require('cuid');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-source');
@@ -16,6 +16,7 @@ const Iterator = require('core/interfaces/Iterator');
 const moment = require('moment');
 const Operations = require('core/FunctionCodes');
 const DsOperations = require('core/DataSourceFunctionCodes');
+const fs = require('fs');
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
@@ -98,6 +99,8 @@ function MongoDs(config) {
    */
   this.db = null;
 
+  this.client = null;
+
   this.isOpen = false;
 
   this.busy = false;
@@ -148,52 +151,157 @@ function MongoDs(config) {
     return new IonError(Errors.OPER_FAILED, {oper: oper, table: coll}, err);
   }
 
+  function buildUri(config) {
+    if (typeof config.uri === 'string') {
+      return config.uri;
+    }
+
+    if (typeof config.url === 'string') {
+      return config.url;
+    }
+
+    if (config.url && typeof config.url === 'object') {
+      if (!config.url.hosts) {
+        throw new Error('Не указаны настройки соединения с сервером БД.');
+      }
+
+      let uri = config.url.hosts;
+
+      if (config.url.user) {
+        uri = '@' + uri;
+        if (config.url.pwd) {
+          uri = ':' + encodeURIComponent(config.url.pwd) + uri;
+        }
+        uri = encodeURIComponent(config.url.user) + uri;
+      }
+
+      if (config.url.db) {
+        uri = uri + '/' + encodeURIComponent(config.url.db);
+      }
+
+      if (config.url.params && typeof config.url.params == 'object') {
+        let prms = [];
+        for (let nm in config.url.params) {
+          if (
+            config.url.params.hasOwnProperty(nm) &&
+            config.url.params[nm] !== null &&
+            config.url.params[nm] !== undefined
+          ) {
+            prms.push(encodeURIComponent(nm) + '=' + encodeURIComponent(config.url.params[nm]));
+          }
+        }
+        uri = uri + '?' + prms.join('&');
+      }
+      return 'mongodb://' + uri;
+    }
+    throw new Error('Не указаны настройки соединения с сервером БД.');
+  }
+
+  function readFiles(opts, nm) {
+    if (opts.hasOwnProperty(nm)) {
+      let v = opts[nm];
+      if (Array.isArray(v)) {
+        let result = Promise.resolve();
+        const vs = [];
+        v.forEach((v) => {
+          result = result
+            .then(
+              () => new Promise((resolve, reject) => {
+                fs.readFile(v, (err, data) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  vs.push(data);
+                });
+              })
+            );
+        });
+        return result.then(() => {
+          opts[nm] = vs;
+        });
+      } else {
+        return new Promise((resolve, reject) => {
+          fs.readFile(v, (err, data) => {
+            if (err) {
+              return reject(err);
+            }
+            opts[nm] = data;
+          });
+        });
+      }
+    }
+    return Promise.resolve();
+  }
+
   /**
    * @returns {Promise}
    */
   function openDb() {
-    return new Promise(function (resolve, reject) {
-      if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
-        return resolve(_this.db);
-      } else if (_this.db && _this.busy) {
-        _this.db.once('isOpen', function () {
+    if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
+      return Promise.resolve(_this.db);
+    } else if (_this.db && _this.busy) {
+      return new Promise((resolve) => {
+        _this.db.once('isOpen', () => {
           resolve(_this.db);
         });
-      } else {
-        _this.busy = true;
-        _this.isOpen = false;
-        if (!config.options.poolSize) {
-          config.options.poolSize = 20;
-        }
-        client.connect(config.uri, config.options, function (err, db) {
-          if (err) {
+      });
+    } else {
+      _this.busy = true;
+      _this.isOpen = false;
+      let copts = clone(config.options || {});
+      if (!copts.poolSize) {
+        copts.poolSize = 20;
+      }
+      copts.useNewUrlParser = true;
+      let result = Promise.resolve();
+
+      if (copts.sslCA) {
+        result = result.then(() => readFiles(copts, 'sslCA'));
+      }
+      if (copts.sslCert) {
+        result = result.then(() => readFiles(copts, 'sslCert'));
+      }
+      if (copts.sslKey) {
+        result = result.then(() => readFiles(copts, 'sslKey'));
+      }
+      if (copts.sslPass) {
+        result = result.then(() => readFiles(copts, 'sslPass'));
+      }
+
+      return result.then(
+        () => new Promise((resolve, reject) => {
+          try {
+            _this.client = new MongoClient(buildUri(config), copts);
+            _this.client.connect((err) => {
+              if (err) {
+                return reject(err);
+              }
+              try {
+                _this.db = _this.client.db();
+                _this.busy = false;
+                _this.isOpen = true;
+                log.info('Получено соединение с базой: ' + _this.db.s.databaseName);
+                _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
+                  .then(() => _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true}))
+                  .then(
+                    () => {
+                      resolve(_this.db);
+                      _this.db.emit('isOpen', _this.db);
+                    }
+                  )
+                  .catch(reject);
+              } catch (e) {
+                _this.busy = false;
+                _this.isOpen = false;
+                reject(e);
+              }
+            });
+          } catch (err) {
             reject(err);
           }
-          try {
-            _this.db = db;
-            _this.busy = false;
-            _this.isOpen = true;
-            log.info('Получено соединение с базой: ' + db.s.databaseName);
-            _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
-                .then(
-                  function () {
-                    return _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true});
-                  }
-                )
-                .then(
-                  function () {
-                    resolve(_this.db);
-                    _this.db.emit('isOpen', _this.db);
-                  }
-                ).catch(reject);
-          } catch (e) {
-            _this.busy = false;
-            _this.isOpen = false;
-            reject(e);
-          }
-        });
-      }
-    });
+        })
+      );
+    }
   }
 
   this._connection = function () {
@@ -211,7 +319,7 @@ function MongoDs(config) {
     return new Promise((resolve, reject) => {
       if (_this.db && _this.isOpen) {
         _this.busy = true;
-        _this.db.close(true, function (err) {
+        _this.client.close(true, (err) => {
           _this.isOpen = false;
           _this.busy = false;
           if (err) {
@@ -411,7 +519,7 @@ function MongoDs(config) {
         .then(data => cleanNulls(c, type, prepareData(data)))
         .then(data =>
           new Promise((resolve, reject) => {
-            c.insertOne(clone(data.data), (err, result) => {
+            c.insertOne(data.data, (err, result) => {
               if (err) {
                 reject(wrapError(err, 'insert', type));
               } else if (result.insertedId) {
@@ -922,13 +1030,13 @@ function MongoDs(config) {
             tmp2[part] = {$exists: false};
             parent[tmp].push(tmp2);
           } else if (nm === '$date') {
-            parent[part] = fDate(conditions[nm]);
+            parent[part] = fDate(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$dateAdd') {
-            parent[part] = fDateAdd(conditions[nm]);
+            parent[part] = fDateAdd(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$dateDiff') {
-            parent[part] = fDateDiff(conditions[nm]);
+            parent[part] = fDateDiff(prepareConditions(conditions[nm]));
             break;
           } else if (nm === '$joinExists' || nm === '$joinNotExists' || nm === '$joinSize') {
             if (conditions[nm].filter) {
@@ -983,6 +1091,7 @@ function MongoDs(config) {
   function doUpdate(type, conditions, data, options) {
     let hasData = false;
     if (data) {
+      delete data._id;
       for (let nm in data) {
         if (data.hasOwnProperty(nm) &&
           typeof data[nm] !== 'undefined' &&
@@ -1086,7 +1195,7 @@ function MongoDs(config) {
   this._delete = function (type, conditions) {
     return getCollection(type).then(
       function (c) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) => {
           conditions = parseCondition(conditions);
           prepareConditions(conditions);
           c.deleteMany(typeof conditions === 'object' ? conditions : {},
@@ -1902,8 +2011,8 @@ function MongoDs(config) {
 
     let p = null;
     if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then(function (c) {
-        return new Promise(function (resolve, reject) {
+      p = getCollection(GEOFLD_COLLECTION).then(c =>
+        new Promise((resolve, reject) => {
           c.find({__type: type}).limit(1).next(function (err, geoflds) {
             if (err) {
               return reject(err);
@@ -1915,8 +2024,8 @@ function MongoDs(config) {
             }
             resolve();
           });
-        });
-      });
+        })
+      );
     } else {
       p = Promise.resolve();
     }
@@ -2304,7 +2413,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   this._iterator = function (type, options) {
-    options = clone(options) || {};
+    options = clone(options || {});
     let c;
     let tmpCollections = {};
     return getCollection(type)
@@ -2372,13 +2481,7 @@ function MongoDs(config) {
                   if (err) {
                     return reject(wrapError(err, 'aggregate', type));
                   }
-                  if (tmpApp) {
-                    copyColl(tmpApp, options.append)
-                      .then(resolve)
-                      .catch(err => reject(wrapError(err, 'aggregate', type)));
-                    return;
-                  }
-                  resolve(result);
+                  resolve(result.toArray());
                 });
               } catch (err) {
                 reject(err);
@@ -2386,6 +2489,7 @@ function MongoDs(config) {
             })
           )
       )
+      .then(result => tmpApp ? copyColl(tmpApp, options.append).then(() => result) : result)
       .then(result => dropTmpCollections(tmpCollections).then(() => result))
       .catch(err => dropTmpCollections(tmpCollections).then(() => {
         throw err;
