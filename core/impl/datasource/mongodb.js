@@ -1128,15 +1128,15 @@ function MongoDs(config) {
                 pconditions,
                 updates,
                 {upsert: options.upsert || false},
-                (err) => {
+                (err, result) => {
                   if (err) {
                     return reject(wrapError(err, options.upsert ? 'upsert' : 'update', type));
                   }
                   let p;
                   if (options.skipResult) {
                     p = options.upsert ?
-                      adjustAutoInc(type, updates.$set, options.adjustAutoInc) :
-                      Promise.resolve();
+                      adjustAutoInc(type, updates.$set, options.adjustAutoInc).then(() => result.matchedCount) :
+                      Promise.resolve(result.matchedCount);
                   } else {
                     if (updates.$set) {
                       adjustSetKeys(conditions, updates.$set);
