@@ -311,7 +311,7 @@ function frontendInstall(pathDir) {
       }
       try {
         /**
-         * Configuration parameters bower
+         * Configuration parameters
          * @property {String} vendorDir - package installation folder
          */
         let packageJson = JSON.parse(fs.readFileSync(path.join(pathDir, 'package.json'), {encoding: 'utf-8'}));
@@ -378,7 +378,7 @@ function bowerInstall(pathDir) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
         console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
-        run(pathDir, 'bower', ['install', '--config.interactive=false'], function () {
+        run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root'], function () {
           let srcDir = path.join(pathDir, bc.directory);
           try {
             fs.accessSync(srcDir);
