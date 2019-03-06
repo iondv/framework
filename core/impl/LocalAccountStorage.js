@@ -119,9 +119,10 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {String} id
    * @param {String} [pwd]
+   * @param {Boolean} [disabled]
    * @returns {Promise.<{User}>}
    */
-  _get(id, pwd) {
+  _get(id, pwd, disabled) {
     let checker = pwd ? pwdHasher(pwd) : null;
     let type = UserTypes.LOCAL;
     if (id.indexOf('@') > 0) {
@@ -129,21 +130,23 @@ class LocalAccountStorage extends IAccountStorage {
       id = un[0];
       type = un[1];
     }
-    return this.ds.get('ion_user',
-      {
-        [F.AND]: [
-          {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          this.caseInsensitiveLogin
-            ? {[F.LIKE]: ['$id', `^${id}$`]}
-            : {[F.EQUAL]: ['$id', id]},
-          {
-            [F.OR]: [
-              {[F.EQUAL]: ['$disabled', false]},
-              {[F.EMPTY]: ['$disabled']}
-            ]
-          }
-        ]
-      })
+    let filter = [
+      {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
+      this.caseInsensitiveLogin
+        ? {[F.LIKE]: ['$id', `^${id}$`]}
+        : {[F.EQUAL]: ['$id', id]}
+    ];
+    if (!disabled) {
+      filter.push(
+        {
+          [F.OR]: [
+            {[F.EQUAL]: ['$disabled', false]},
+            {[F.EMPTY]: ['$disabled']}
+          ]
+        }
+      );
+    }
+    return this.ds.get('ion_user', {[F.AND]: filter})
       .then((user) => {
         if (user) {
           if (!user.pwd || !pwd) {
