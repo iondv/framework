@@ -292,8 +292,8 @@ function prepareSize(cm, filter, joins, numGen, context) {
  * @returns {{}}
  */
 function prepareEmpty(cm, filter, empty, joins, numGen, context) {
-  if (!filter[0] || typeof filter[0] !== 'string') {
-    return empty ? true : false;
+  if (typeof filter[0] !== 'string' || filter[0][0] != '$') {
+    return Boolean(empty ? !filter[0] : filter[0]);
   }
   let nm = filter[0].substr(1);
   if (nm.indexOf('.') < 0) {
