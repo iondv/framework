@@ -802,7 +802,7 @@ function DsMetaRepository(options) {
                   pm.defaultValue &&
                   (
                     typeof pm.defaultValue === 'object' ||
-                    (pm.defaultValue.indexOf('(') > 0 && pm.defaultValue.indexOf(')') > 0)
+                    (typeof pm.defaultValue === 'string' && pm.defaultValue.indexOf('(') > 0 && pm.defaultValue.indexOf(')') > 0)
                   ) &&
                   options.calc instanceof Calculator
                 ) {
