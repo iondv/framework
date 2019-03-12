@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
   <meta name="robots" content="noindex,nofollow">
   <base id="baseUrl" href="<%=baseUrl%>">
+  <!--[if IE]>
+    <script type="text/javascript">
+      // Fix for IE ignoring relative base tags.
+      (function() {
+          var baseTag = document.getElementsByTagName('base')[0];
+          baseTag.href = baseTag.href;
+      })();
+    </script>
+  <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">

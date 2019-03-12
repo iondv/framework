@@ -77,6 +77,51 @@ The "hints" feature represents the instructions in a separate modal window with 
 
 * `"confirmMessage"` - unique text to display in confirmation instead of standard text.
 
+## Utility to form an array of objects
+
+The utility allows you to create an object in the collection when the main object moves in the specified status. The fields of the created object are automatically filled in accordance with the settings specified for the `"values"` property.
+
+In the `di`, in the `options` property write the following option to attach the indicator value creation utility to the WF status. 
+
+```
+state - name of the WF status
+```
+When the object moves in this status, the objects in the collection should be created. 
+
+It is possible to use the utility as an "action". When remaking, just remove the command from the meta view.
+
+Configure the utility in the deploy.json of the project. Syntax settings:
+
+```
+"map": {
+    "workflow@namespace.stage": {
+       "className@namespace": { // for what class object we create the object to the collection
+           "collection": { // the name of the collection attribute in which the object is created
+               "elementClass": "className2@namespace", // class whose objects are created by the utility
+               "patterns": [
+                  {
+                      "values": {
+                          "attr1": "string", // string
+                          "attr2": 123, // number
+                          "attr3": true,
+                          "attr4": "$containerProperty1", // container property
+                          "attr5": {"add": ["$containerProperty2", 300]} // formula
+                      },
+                      "push": [
+                         "workflow2@namespace.stage1", // assignement of status to the WF of the created objects
+                      ]
+                  },
+                  ...
+               ]
+           },
+           ...
+       },
+       ...
+    },
+    ....
+}
+```
+
 ### The next page: [Workflow statuses](/docs/en/2_system_description/metadata_structure/meta_workflows/status_wf.md)
 
 --------------------------------------------------------------------------  
