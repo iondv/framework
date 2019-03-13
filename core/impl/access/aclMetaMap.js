@@ -18,6 +18,7 @@ const F = require('core/FunctionCodes');
  * @param {AclProvider} options.acl
  * @param {{}} options.accessManager
  * @param {Logger} options.log
+ * @param {Calculator} options.calculator
  * @constructor
  */
 function AclMetaMap(options) {
@@ -39,66 +40,117 @@ function AclMetaMap(options) {
     return null;
   }
 
+  function jumpsForEach (jumps, cb) {
+    if (Array.isArray(jumps)) {
+      jumps.forEach(cb);
+    } else if (jumps && typeof jumps === 'object') {
+      for (let j in jumps) {
+        cb(j, jumps[j]);
+      }
+    }
+    return;
+  }
+
+  function forceEnrichmentFromJumps (jumps) {
+    let forceEnrichment = [];
+    jumpsForEach(jumps, (jump) => {
+      let fe  = jump.split('.');
+      if (fe.length) {
+        forceEnrichment.push(fe);
+      }
+    });
+    return forceEnrichment;
+  }
 
   /**
    * @param {Item} item
    * @param {Function} cb
-   * @param {Boolean} breakOnResult
-   * @param {*} result
+   * @param {*} cache
    */
-  function jump(item, cb) {
+  function jump(item, cb, cache) {
     let config = locateMap(item.getMetaClass());
     if (config) {
-      if (Array.isArray(config.jumps)) {
-        let items = [];
-        let p = Promise.resolve();
-        config.jumps.forEach((j) => {
-          let prop = item.property(j);
-          if (prop) {
-            if (prop.meta.type === PropertyTypes.REFERENCE) {
-              let d = item.getAggregate(j);
-              if (d) {
-                items.push(d);
-              } else if (item.get(j)) {
-                items.push({cn: prop.meta._refClass.getCanonicalName(), id: item.get(j)});
+      let items = [];
+      let p = Promise.resolve();
+      jumpsForEach(config.jumps, (j, f) => {
+        let prop = item.property(j);
+        if (prop) {
+          if (prop.meta.type === PropertyTypes.REFERENCE) {
+            let d = item.getAggregate(j);
+            if (d) {
+              items.push(d);
+            } else if (item.get(j)) {
+              let rc = prop.meta._refClass;
+
+              if (Array.isArray(cache[rc.getCanonicalName()]) && cache[rc.getCanonicalName()].indexOf(item.get(j)) >= 0) {
+                return;
               }
-            } else if (prop.meta.type === PropertyTypes.COLLECTION) {
-              let d = item.getAggregates(j);
-              if (Array.isArray(d)) {
-                Array.prototype.push.apply(items, d);
-              } else {
+
+              let c = locateMap(rc);
+              let opts = {
+                filter: f, 
+                forceEnrichment: forceEnrichmentFromJumps(c.jumps)
+              };
+              p = p.then(() => options.dataRepo.getItem(rc.getCanonicalName(), item.get(j), opts))
+                .then((item) => {
+                  items.push(item);
+                })
+                .catch((err) => {
+                  if (options.log instanceof Logger) {
+                    options.log.warn(err.message || err);
+                  }
+                });
+            }
+          } else if (prop.meta.type === PropertyTypes.COLLECTION) {
+            let d = item.getAggregates(j);
+            if (Array.isArray(d)) {
+              let ff = options.calculator.parseFormula(f);
+              d.forEach((e) => {
                 p = p
-                  .then(() => options.dataRepo.getAssociationsList(item, j))
-                  .catch((err) => {
-                    if (options.log instanceof Logger) {
-                      options.log.warn(err.message || err);
-                    }
-                    return [];
-                  })
-                  .then((coll) => {
-                    items.push(...coll);
-                  });
-              }
+                .then(() => ff.apply(e))
+                .then((allowed) => {
+                  if (allowed) {
+                    items.push(e);
+                  }
+                });
+              });
+            } else {
+              let c = locateMap(prop.meta._refClass);
+              let opts = {
+                filter: f, 
+                forceEnrichment: forceEnrichmentFromJumps(c.jumps)
+              };
+              p = p
+                .then(() => options.dataRepo.getAssociationsList(item, j, opts))
+                .catch((err) => {
+                  if (options.log instanceof Logger) {
+                    options.log.warn(err.message || err);
+                  }
+                  return [];
+                })
+                .then((coll) => {
+                  items.push(...coll);
+                });
             }
           }
-        });
-        return p.then(() => walkItems(items, 0, cb, false));
-      }
+        }
+      });
+      return p.then(() => walkItems(items, 0, cb, cache, false));
     }
     return Promise.resolve();
   }
 
-  function walkItems(items, i, cb, skipCb) {
+  function walkItems(items, i, cb, cache, skipCb) {
     if (i >= items.length) {
       return Promise.resolve();
     }
+
     let item = items[i];
+    if (Array.isArray(cache[item.getClassName()]) && cache[item.getClassName()].indexOf(item.getItemId()) >= 0) {
+      return walkItems(items, i + 1, cb, cache, false);
+    }
 
-    let p = (item instanceof Item) ?
-      Promise.resolve(item) :
-      options.dataRepo.getItem(item.cn, item.id);
-
-    return p
+    return Promise.resolve(item)
       .then((item) => {
         if (!item) {
           return Promise.resolve();
@@ -107,20 +159,27 @@ function AclMetaMap(options) {
         if (!config) {
           return Promise.resolve();
         }
-
-        let sid = item.get(config.sidAttribute);
+        
+        let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
         let p = (skipCb || !sid) ? Promise.resolve() : cb(sid);
         if (!(p instanceof Promise)) {
           p = Promise.resolve(p);
         }
-        return p
-          .then(() => jump(item, cb))
-          .then(() => walkItems(items, i + 1, cb, false));
+        return p.then(() => {
+          if (!Array.isArray(cache[item.getClassName()])) {
+            cache[item.getClassName()] = [];
+          }
+          cache[item.getClassName()].push(item.getItemId());
+
+          return jump(item, cb, cache)
+            .then(() => walkItems(items, i + 1, cb, cache, false));
+        });
       })
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
         }
+        return;
       });
   }
 
@@ -128,20 +187,19 @@ function AclMetaMap(options) {
    * @param {String} sid
    * @param {String} cn
    * @param {Array} entries
+   * @param {Function} cb
+   * @param {*} cache
    * @returns {Function}
      */
-  function walkEntry(sid, i, entries, cb) {
+  function walkEntry(sid, i, entries, cb, cache) {
     if (i >= entries.length || !entries[i].sidAttribute) {
       return Promise.resolve();
     }
-    let f = {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]};
-    let jumps = [];
-    if (Array.isArray(entries[i].jumps)) {
-      entries[i].jumps.forEach((j) => {
-        jumps.push(j.split('.'));
-      });
-    }
-    return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+    let opts = {
+      filter: {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]}, 
+      forceEnrichment: forceEnrichmentFromJumps(entries[i].jumps)
+    };
+    return options.dataRepo.getList(entries[i]._cn, opts)
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
@@ -152,12 +210,12 @@ function AclMetaMap(options) {
         if (!items.length) {
           return Promise.resolve();
         }
-        return walkItems(items, 0, cb, true)
-          .then(() => walkEntry(sid, i + 1, entries, cb));
+        return walkItems(items, 0, cb, cache, true)
+          .then(() => walkEntry(sid, i + 1, entries, cb, cache));
       });
   }
 
-  function walkEntries(sid, cb) {
+  function walkEntries(sid, cb, cache) {
     let entries = [];
     for (let cn in options.map) {
       if (options.map.hasOwnProperty(cn)) {
@@ -170,12 +228,12 @@ function AclMetaMap(options) {
     if (!entries.length) {
       return Promise.resolve();
     }
-    return walkEntry(sid, 0, entries, cb);
+    return walkEntry(sid, 0, entries, cb, cache);
   }
 
 
   function walkRelatedSubjects(sid, cb) {
-    return walkEntries(sid, cb);
+    return walkEntries(sid, cb, {});
   }
 
   /**
