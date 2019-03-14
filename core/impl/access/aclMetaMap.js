@@ -45,7 +45,9 @@ function AclMetaMap(options) {
       jumps.forEach(cb);
     } else if (jumps && typeof jumps === 'object') {
       for (let j in jumps) {
-        cb(j, jumps[j]);
+        if (jumps.hasOwnProperty(j)) {
+          cb(j, jumps[j]);
+        }
       }
     }
     return;
@@ -112,7 +114,10 @@ function AclMetaMap(options) {
           } else if (prop.meta.type === PropertyTypes.COLLECTION) {
             let d = item.getAggregates(j);
             if (Array.isArray(d)) {
-              let ff = options.calculator.parseFormula(f);
+              if (!options.calculator) {
+                throw new Error('Calculator not set up for acl meta map.');
+              }
+              const ff = options.calculator.parseFormula(f);
               d.forEach((e) => {
                 if (e instanceof Item) {
                   let c = locateMap(e.getMetaClass());
@@ -121,7 +126,7 @@ function AclMetaMap(options) {
                   };
                   p = p
                     .then(() => options.dataRepo.getItem(e, null, opts))
-                    .then(e => ff.apply(e))
+                    .then(e => f ? ff.apply(e) : true)
                     .then((allowed) => {
                       if (allowed) {
                         items.push(e);
