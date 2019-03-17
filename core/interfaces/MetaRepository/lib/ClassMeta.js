@@ -97,16 +97,16 @@ function ClassMeta(metaObject) {
     return this.plain.name + (this.plain.namespace ? '@' + this.plain.namespace : '');
   };
 
-  this.getSemantics = function (item, dateCallback, circular) {
+  this.getSemantics = function (item) {
     if (typeof this._semanticFunc === 'function') {
-      return this._semanticFunc.call(item, dateCallback, circular);
+      return this._semanticFunc.call(item);
     }
 
     if (this.getAncestor()) {
-      return this.getAncestor().getSemantics(item, dateCallback, circular);
+      return this.getAncestor().getSemantics(item);
     }
 
-    return item.getItemId();
+    return Promise.resolve(item.getItemId());
   };
 
   this.isSemanticCached = function () {

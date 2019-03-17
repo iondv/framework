@@ -858,28 +858,7 @@ function calcProperties(item, skip, needed, cached) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  let calculations = Promise.resolve();
-  let props = item.getMetaClass().getPropertyMetas();
-  props.forEach((p) => {
-    if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
-      calculations = calculations.then(() => p._formula.apply(item))
-        .then((result) => {
-          if (p.type === PropertyTypes.REFERENCE && result instanceof Item) {
-            item.references[p.name] = result;
-            item.calculated[p.name] = result.getItemId();
-          } else if (p.type === PropertyTypes.COLLECTION
-            && Array.isArray(result)
-            && result.length === result.filter(r => r instanceof Item).length) {
-            item.collections[p.name] = result;
-            item.calculated[p.name] = result.map(r => r.getItemId());
-          } else {
-            item.calculated[p.name] = cast(result, p.type);
-          }
-        });
-    }
-  });
-
-  return calculations.then(() => item);
+  return item.calculateProperties(needed, cached);
 }
 
 module.exports.calcProperties = calcProperties;
