@@ -633,7 +633,7 @@ function IonDataRepository(options) {
             ___loaded[item.getClassName() + '@' + item.getItemId()] = item;
             srcByKey[item.getItemId()] = item;
           }
-
+          item.stringValue = false;
           let props = item.getProperties();
           let eagerAttrs = ela[item.getClassName()];
           if (Array.isArray(eagerAttrs)) {
