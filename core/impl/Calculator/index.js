@@ -39,8 +39,8 @@ function Calculator(options) {
   /**
    * @param {String | {}} formula
    */
-  this._parseFormula = function (formula, options) {
-    return parser(formula, funcLib, () => options.dataRepo, options);
+  this._parseFormula = function (formula, moptions) {
+    return parser(formula, funcLib, () => options.dataRepo, moptions || {});
   };
 }
 

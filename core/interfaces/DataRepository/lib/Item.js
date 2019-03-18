@@ -325,7 +325,7 @@ function Item(id, base, classMeta) {
       if (p.type === PropertyTypes.REFERENCE) {
         let agr = this.property(p.name).evaluate();
         if (agr) {
-          if (typeof this.meta.semanticGetter === 'function') {
+          if (typeof p.semanticGetter === 'function') {
             calculations = calculations
               .then(() => p.semanticGetter.apply(this))
               .then((v) => {

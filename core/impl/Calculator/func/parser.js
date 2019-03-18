@@ -131,14 +131,14 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
       let rp = ri instanceof Promise ? ri : Promise.resolve(ri);
       return rp.then((ri) => {
         if (ri instanceof Item) {
-          return objProp(ri, nm3, dataRepoGetter, options);
+          return objProp(ri, nm3, dataRepoGetter, null, options);
         } else if (Array.isArray(ri)) {
           let result = [];
           let p = Promise.resolve();
           ri.forEach((ri) => {
             if (ri instanceof Item) {
               p = p
-                .then(() => objProp(ri, nm3, dataRepoGetter, options))
+                .then(() => objProp(ri, nm3, dataRepoGetter, null, options))
                 .then((v) => {
                   if (Array.isArray(v)) {
                     result.push(...v);
@@ -181,9 +181,10 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
                       .then(items => items.length ? items[0] : null)
                 );
               } else {
-                return lazyLoader(obj, p.getName(),
-                  () =>
-                    dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}})
+                return lazyLoader(
+                  obj,
+                  p.getName(),
+                  () => dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}})
                 );
               }
             }
@@ -243,7 +244,7 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
  */
 function propertyGetter(nm, dataRepoGetter, options) {
   return function () {
-    return objProp(this, nm, dataRepoGetter, options);
+    return objProp(this, nm, dataRepoGetter, null, options);
   };
 }
 
