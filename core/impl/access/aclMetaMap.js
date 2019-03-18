@@ -18,6 +18,7 @@ const F = require('core/FunctionCodes');
  * @param {AclProvider} options.acl
  * @param {{}} options.accessManager
  * @param {Logger} options.log
+ * @param {Calculator} options.calculator
  * @constructor
  */
 function AclMetaMap(options) {
@@ -39,158 +40,193 @@ function AclMetaMap(options) {
     return null;
   }
 
+  function processJumps(jumps, cb) {
+    if (Array.isArray(jumps)) {
+      jumps.forEach(cb);
+    } else if (jumps && typeof jumps === 'object') {
+      for (let j in jumps) {
+        if (jumps.hasOwnProperty(j)) {
+          cb(j, jumps[j]);
+        }
+      }
+    }
+    return;
+  }
+
+  function jumpEnrichment(jumps) {
+    let forceEnrichment = [];
+    processJumps(jumps, (jump) => {
+      let fe  = jump.split('.');
+      if (fe.length) {
+        forceEnrichment.push(fe);
+      }
+    });
+    return forceEnrichment;
+  }
 
   /**
    * @param {Item} item
    * @param {Function} cb
-   * @param {Boolean} breakOnResult
-   * @param {*} result
+   * @param {*} cache
    */
-  function jump(item, cb, breakOnResult, result) {
+  function jump(item, cb, cache) {
     let config = locateMap(item.getMetaClass());
     if (config) {
-      if (Array.isArray(config.jumps)) {
-        let items = [];
-        let p = Promise.resolve();
-        config.jumps.forEach((j) => {
-          let prop = item.property(j);
-          if (prop) {
-            if (prop.meta.type === PropertyTypes.REFERENCE) {
-              let d = item.getAggregate(j);
-              if (d) {
-                items.push(d);
-              } else if (item.get(j)) {
-                items.push({cn: prop.meta._refClass.getCanonicalName(), id: item.get(j)});
-              }
-            } else if (prop.meta.type === PropertyTypes.COLLECTION) {
-              let d = item.getAggregates(j);
-              if (Array.isArray(d)) {
-                Array.prototype.push.apply(items, d);
-              } else {
-                p = p
-                  .then(() => options.dataRepo.getAssociationsList(item, j))
-                  .catch((err) => {
-                    if (options.log instanceof Logger) {
-                      options.log.warn(err.message || err);
-                    }
-                    return [];
-                  })
-                  .then((coll) => {
-                    items.push(...coll);
-                  });
+      let items = [];
+      let p = Promise.resolve();
+      processJumps(config.jumps, (j, f) => {
+        let prop = item.property(j);
+        if (prop) {
+          if (prop.meta.type === PropertyTypes.REFERENCE) {
+            let rid = item.get(j);
+            if (!rid) {
+              return;
+            }
+            let d = item.getAggregate(j);
+            let rc = prop.meta._refClass;
+            if (!(d instanceof Item)) {
+              if (cache[rc.getCanonicalName()] && (cache[rc.getCanonicalName()][rid] instanceof Item)) {
+                d = cache[rc.getCanonicalName()][rid];
               }
             }
+
+            let c = locateMap((d instanceof Item) ? d.getMetaClass() : rc);
+            let opts = {
+              filter: f,
+              forceEnrichment: jumpEnrichment(c.jumps)
+            };
+
+            if (d instanceof Item) {
+              p = p.then(() => options.dataRepo.getItem(d, null, opts));
+            } else if (item.get(j)) {
+              p = p.then(() => options.dataRepo.getItem(rc.getCanonicalName(), rid, opts));
+            }
+
+            p = p
+              .then((item) => {
+                items.push(item);
+              })
+              .catch((err) => {
+                if (options.log instanceof Logger) {
+                  options.log.warn(err.message || err);
+                }
+              });
+          } else if (prop.meta.type === PropertyTypes.COLLECTION) {
+            let d = item.getAggregates(j);
+            if (Array.isArray(d)) {
+              if (!options.calculator) {
+                throw new Error('Calculator not set up for acl meta map.');
+              }
+              const ff = options.calculator.parseFormula(f);
+              d.forEach((e) => {
+                if (e instanceof Item) {
+                  let c = locateMap(e.getMetaClass());
+                  let opts = {
+                    forceEnrichment: c ? jumpEnrichment(c.jumps) : []
+                  };
+                  p = p
+                    .then(() => options.dataRepo.getItem(e, null, opts))
+                    .then(e => f ? ff.apply(e) : true)
+                    .then((allowed) => {
+                      if (allowed) {
+                        items.push(e);
+                      }
+                    });
+                }
+              });
+            } else {
+              let c = locateMap(prop.meta._refClass);
+              let opts = {
+                filter: f,
+                forceEnrichment: jumpEnrichment(c.jumps)
+              };
+              p = p
+                .then(() => options.dataRepo.getAssociationsList(item, j, opts))
+                .catch((err) => {
+                  if (options.log instanceof Logger) {
+                    options.log.warn(err.message || err);
+                  }
+                  return [];
+                })
+                .then((coll) => {
+                  items.push(...coll);
+                });
+            }
           }
-        });
-        return p.then(() => walkItems(items, 0, cb, breakOnResult, false, result));
-      }
+        }
+      });
+      return p.then(() => walkItems(items, cb, cache, false));
     }
-    return Promise.resolve(result);
+    return Promise.resolve();
   }
 
-  function walkItems(items, i, cb, breakOnResult, skipCb, result) {
-    if (i >= items.length) {
-      return Promise.resolve(result);
-    }
-    let item = items[i];
-
-    let p = (item instanceof Item) ?
-      Promise.resolve(item) :
-      options.dataRepo.getItem(item.cn, item.id);
-
-    return p
-      .then((item) => {
-        if (!item) {
-          return Promise.resolve(result);
-        }
+  function walkItems(items, cb, cache, skipCb) {
+    let p = Promise.resolve();
+    items.forEach((item) => {
+      p = p.then(() => {
         let config = locateMap(item.getMetaClass());
         if (!config) {
-          return Promise.resolve(result);
+          return;
         }
+        if (!cache[item.getClassName()]) {
+          cache[item.getClassName()] = {};
+        }
+        if (!cache[item.getClassName()][item.getItemId()]) {
+          cache[item.getClassName()][item.getItemId()] = item;
 
-        let sid = item.get(config.sidAttribute);
-        let p = (skipCb || !sid) ? Promise.resolve(result) : cb(sid);
-        if (!(p instanceof Promise)) {
-          p = Promise.resolve(p || result);
-        }
-        return p.then((result) => {
-          if (result && breakOnResult) {
-            return result;
+          let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
+          let cbr = (skipCb || !sid) ? Promise.resolve() : cb(sid);
+          if (!(cbr instanceof Promise)) {
+            cbr = Promise.resolve(cbr);
           }
-          return jump(item, cb, breakOnResult, result)
-            .then((result) => {
-              if (result && breakOnResult) {
-                return result;
-              }
-              return walkItems(items, i + 1, cb, breakOnResult, false, result);
-            });
-        });
-      })
-      .catch((err) => {
+          return cbr.then(() => jump(item, cb, cache));
+        }
+      }).catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
         }
-        return result;
       });
+    });
+    return p;
   }
 
   /**
    * @param {String} sid
    * @param {String} cn
    * @param {Array} entries
+   * @param {Function} cb
+   * @param {*} cache
    * @returns {Function}
      */
-  function walkEntry(sid, i, entries, cb, breakOnResult, result) {
-    if (i >= entries.length || !entries[i].sidAttribute) {
-      return Promise.resolve(result);
-    }
-    let f = {[F.EQUAL]: ['$' + entries[i].sidAttribute, sid]};
-    let jumps = [];
-    if (Array.isArray(entries[i].jumps)) {
-      entries[i].jumps.forEach((j) => {
-        jumps.push(j.split('.'));
-      });
-    }
-    return options.dataRepo.getList(entries[i]._cn, {filter: f, forceEnrichment: jumps})
+  function walkEntry(sid, entry, cb, cache) {
+    let opts = {
+      filter: {[F.EQUAL]: ['$' + entry.sidAttribute, sid]},
+      forceEnrichment: jumpEnrichment(entry.jumps)
+    };
+    return options.dataRepo.getList(entry._cn, opts)
       .catch((err) => {
         if (options.log instanceof Logger) {
           options.log.warn(err.message || err);
         }
         return [];
       })
-      .then((items) => {
-        if (!items.length) {
-          return Promise.resolve(result);
-        }
-        return walkItems(items, 0, cb, breakOnResult, true, result)
-          .then((result) => {
-            if (result && breakOnResult) {
-              return result;
-            }
-            return walkEntry(sid, i + 1, entries, cb, breakOnResult, result);
-          });
-      });
+      .then(items => items.length ? walkItems(items, cb, cache, false) : null);
   }
 
-  function walkEntries(sid, cb, breakOnResult) {
-    let entries = [];
-    for (let cn in options.map) {
-      if (options.map.hasOwnProperty(cn)) {
-        if (options.map[cn].isEntry) {
-          options.map[cn]._cn = cn;
-          entries.push(options.map[cn]);
-        }
+  function walkEntries(sid, cb, cache) {
+    let p = Promise.resolve();
+    Object.keys(options.map).forEach((cn) => {
+      if (options.map[cn].isEntry) {
+        options.map[cn]._cn = cn;
+        p = p.then(() => walkEntry(sid, options.map[cn], cb, cache));
       }
-    }
-    if (!entries.length) {
-      return Promise.resolve();
-    }
-    return walkEntry(sid, 0, entries, cb, breakOnResult);
+    });
+    return p;
   }
 
 
-  function walkRelatedSubjects(sid, cb, breakOnResult) {
-    return walkEntries(sid, cb, breakOnResult);
+  function walkRelatedSubjects(sid, cb) {
+    return walkEntries(sid, cb, {});
   }
 
   /**
