@@ -24,10 +24,11 @@ class AccountStorage {
   /**
    * @param {String} id
    * @param {String} [pwd]
+   * @param {Boolean} [disabled]
    * @returns {Promise.<{User}>}
    */
-  get(id, pwd) {
-    return this._get(id, pwd);
+  get(id, pwd, disabled) {
+    return this._get(id, pwd, disabled);
   }
 
   /**
