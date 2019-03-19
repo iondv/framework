@@ -276,7 +276,7 @@ function OwnCloudStorage(config) {
     };
     return new Promise((resolve,reject) => {
       request.delete(reqParams, (err, res) => {
-        if (!err && res.statusCode === 204) {
+        if (!err && (res.statusCode === 204 || res.statusCode === 404)) {
           return resolve(id);
         } else {
           return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
