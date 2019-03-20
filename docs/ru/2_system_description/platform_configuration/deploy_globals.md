@@ -11,22 +11,41 @@
   "moduleTitles": {
   "explicitTopMenu": [
   "plugins": {
-     "sessionHandler": {
-     "wfEvents": {
-     "actualAclProvider": {
-     "aclProvider": {
-     "fileStorage": {
-     "dataRepo": {
-     "customProfile": {
-     "securedDataRepo": {
-     "indicatorWfHandler": {
-     "auth": {
   "jobs": {
-     "fact-creator": {
-     "report-builder": {
+```
+## Модули "moduleTitles"
+
+Укажите модули которые будут использованы в приложении в поле "moduleTitles". Также эти же модули будут отображаться в системном меню.
+
+```
+{
+  "namespace": "crm",
+  "globals": {
+    "moduleTitles": {
+      "registry": "Тех. поддержка",
+      "report": "Отчеты"
+    },
+```
+## Настройка скрытия модуля в системном меню
+
+Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
+
+```
+{
+  "namespace": "project-management",
+  "parametrised": true, //
+  "globals": {
+    "moduleTitles": {
+      "registry": {
+        "description": "Проектное управление",
+        "order": 10,
+        "skipModules": true
+      }
+      "ionadmin": null
+    },
 ```
 
-## Настройка отображения общего системного меню для всех модулей проекта
+## Настройка отображения общего системного меню для всех модулей проекта "explicitTopMenu"`
 
 Для того, что бы в системном меню отображался одинаковый набор пунктов, не зависимо от того, на странице какого модуля находишься - необходимо в `deploy.json` файле проекта задать `"explicitTopMenu"` на глобальном уровне, с сохранением возможности переопределять `"explicitTopMenu"` в `registry`.
 
@@ -80,22 +99,15 @@
 * `"url"` - url секции навигации
 * `"caption"` - наименование секции навигации
 * `"name"` - системное наименование модуля
-* 
-## Настройка HTML атрибутов для отражения и сохранения картинок в атрибуте
+
+
+## Поле "plugins"
+
+В данном поле задаются настройки, которые позволяют дополнительно расширить возможности приложения. 
+
+### Настройка HTML атрибутов для отражения и сохранения картинок в атрибуте
 
 `"plugins":{`
-
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
-```
-
 ```
 "fileStorage": {
         "module": "core/impl/resource/OwnCloudStorage",
@@ -150,16 +162,33 @@
         "defaultImageDir": "images",
         "contentImageStorage": "htmlImages"
 ```
-## Настройки отображения имени пользователя и аватара во всех модулях проекта
+
+### Настройка прав доступа "aclProvider"
+
+`"plugins":{`
+
+```
+ "aclProvider": {
+        "module": "core/impl/access/aclMetaMap",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataRepo": "lazy://dataRepo",
+          "acl": "lazy://actualAclProvider",
+          "accessManager": "lazy://roleAccessManager",
+```
+
+### Настройки отображения имени пользователя и аватара во всех модулях проекта
 
 Для задания аватара через деплой прописываем связь с изображением.
 Аватар будет браться из соответствующего атрибута класса, объект которого привязан к текущему системному пользователю.
 
 ### Пример
 
+`"plugins":{`
+
 ```
-"globals": {
-    "plugins": {
+
       "customProfile": {
         "module": "lib/plugins/customProfile",
         "initMethod": "inject",
@@ -177,18 +206,17 @@
           }
         }
       }
-    }
-  }
-}
 ```
 
-## Поле "sessionHandler" - TODO
-## Поле "wfEvents" - TODO
-## Поле "actualAclProvider" - TODO
-## Поле "dataRepo" - TODO
-## Поле "securedDataRepo" - TODO
-## Поле "indicatorWfHandler" - TODO
-## Поле "auth" - TODO
+### Настройка глубины жадной загрузки
+
+```
+ },
+      "dataRepo": {
+        "options": {
+          "maxEagerDepth": 4
+        }
+```
 
 ### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
 

@@ -22,7 +22,7 @@
 
 *  [Deploy](/docs/en/2_system_description/platform_configuration/deploy.md)
 *  [Package](/docs/en/2_system_description/platform_configuration/package.md)
-*  [Ini-файлы](/docs/en/2_system_description/platform_configuration/ini_files.md)
+*  [Ini-files](/docs/en/2_system_description/platform_configuration/ini_files.md)
 
 ### Functionality
 
