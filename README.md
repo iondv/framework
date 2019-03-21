@@ -108,8 +108,6 @@ Set the `NODE_PATH` environment variable which is equal to the path of the appli
 
 The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp version - is `4.0`. 
 
-Import the application meta with the command - `node bin\import --src C:\workspace\framework\applications\dnt_en --ns develop-and-test`.
-
 Further, execute the `gulp assemble` command to build the application.
 
 Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. 
