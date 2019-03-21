@@ -1,9 +1,8 @@
 'use strict';
 /* eslint no-process-exit:off, no-sync:off */
 /**
- * Created by kras on 10.07.16.
+ * Created by krasilneg on 21.03.19.
  */
-const metaImporter = require('lib/import-meta');
 const dataImporter = require('lib/import-data');
 const config = require('../config');
 const di = require('core/di');
@@ -11,15 +10,13 @@ const IonLogger = require('core/impl/log/IonLogger');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
-const path = require('path');
 errorSetup(config.lang || 'ru');
 
 var sysLog = new IonLogger(config.log || {});
 
 var params = {
-  src: '../in',
+  src: '../in/data',
   ns: null,
-  importData: false,
   ignoreIntegrityCheck: true
 };
 
@@ -29,12 +26,10 @@ process.argv.forEach(function (val) {
   if (val === '--ignoreIntegrityCheck') {
     console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
     params.ignoreIntegrityCheck = true;
-  } else if (val === '--with-data') {
-    params.importData = true;
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
   } else if (setParam) {
-      params[setParam] = val;
+    params[setParam] = val;
   }
 });
 
@@ -57,16 +52,8 @@ di('boot', config.bootstrap,
   )
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(scope =>
-    metaImporter(params.src,
-      {
-        sync: scope.dbSync,
-        metaRepo: scope.metaRepo,
-        log: sysLog,
-        namespace: params.ns
-      }).then(() => scope)
-  )
-  .then(scope => (!params.importData) ? scope :
-    dataImporter(path.join(params.src, 'data'),
+    dataImporter(
+      params.src,
       {
         metaRepo: scope.metaRepo,
         dataRepo: scope.dataRepo,
@@ -79,7 +66,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Импорт выполнен успешно.');
+    console.info('Импорт данных выполнен успешно.');
     process.exit(0);
   })
   .catch((err) => {
