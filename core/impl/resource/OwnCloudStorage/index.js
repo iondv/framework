@@ -258,6 +258,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
+      directory = parseDirId(directory);
       directory = ensureDirSep(directory);
 
       if (!data) {
