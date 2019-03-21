@@ -116,7 +116,7 @@
           "app": "ion://application",
           "log": "ion://sysLog",
           "storage": {
-            "type": "mongodb",
+            "type": "db",
             "dataSource": "ion://Db"
           },
           "session": {
