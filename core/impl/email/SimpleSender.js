@@ -23,7 +23,7 @@ class SimpleSender extends IEmailSender {
   /**
    * @param {String} from
    * @param {String} to
-   * @param {{subject: String, body: String, type: String}} message
+   * @param {{subject: String, html: String, plain: String}} message
    * @returns {*}
    */
   _send(from, to, message) {
@@ -32,18 +32,10 @@ class SimpleSender extends IEmailSender {
       to: to,
       subject: message.subject || ''
     };
-    if (message.type === 'html') {
-      letter.html = message.body;
-    } else {
-      letter.text = message.body;
-    }
+    letter.html = message.html;
+    letter.text = message.plain;
     return new Promise((resolve, reject) => {
-      this.sender(letter, (err, reply) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve(reply);
-      });
+      this.sender(letter, (err, reply) => err ? reject(err) : resolve(reply));
     });
   }
 }
