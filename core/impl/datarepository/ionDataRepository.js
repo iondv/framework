@@ -1652,7 +1652,7 @@ function IonDataRepository(options) {
   function saveDirectRefItem(nm, meta, id, updates, changeLogger, needSetRef) {
     return function () {
       return _this._saveItem(meta.getCanonicalName(), id, updates, meta.getVersion(), changeLogger)
-        .then(function (item) {
+        .then((item) => {
           if (needSetRef && (!id || id !== item.getItemId())) {
             needSetRef[nm] = item.getItemId();
           }
@@ -2272,7 +2272,7 @@ function IonDataRepository(options) {
         .catch(wrapDsError('saveItem', classname, id, null, cm))
         .then((d) => {
           let item;
-          if (d && !(options.skipResult && !(da.refUpdates || da.backRefUpdates))) {
+          if (d && (typeof d === 'object')) {
             item = _this._wrap(d._class, d, d._classVer);
           } else {
             item = _this._wrap(classname, conditionsData || updates, null);
