@@ -2272,7 +2272,7 @@ function IonDataRepository(options) {
         .catch(wrapDsError('saveItem', classname, id, null, cm))
         .then((d) => {
           let item;
-          if (d) {
+          if (d && !(options.skipResult && !(da.refUpdates || da.backRefUpdates))) {
             item = _this._wrap(d._class, d, d._classVer);
           } else {
             item = _this._wrap(classname, conditionsData || updates, null);
