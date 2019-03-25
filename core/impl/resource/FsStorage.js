@@ -55,7 +55,9 @@ function FsStorage(options) {
   this._accept = function (data, directory, options) {
     let opts = clone(options) || {};
     let m = moment();
-    let pth = directory ? directory.replace(/[\\/]/, path.sep) : m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+    let pth = directory 
+      ? directory.replace(/[\\/]/, path.sep)
+      : m.format('YYYY') + path.sep + m.format('MM') + path.sep + m.format('DD');
     if (pth.charAt(0) === path.sep) {
       pth = pth.slice(1);
     }
@@ -102,6 +104,8 @@ function FsStorage(options) {
     } else {
       throw new Error('Переданы данные недопустимого типа:!');
     }
+
+    fn = fn.replace(/[\/,\\]/, '_');
 
     function checkDest(filename, prompt) {
       return new Promise((resolve, reject) => {
