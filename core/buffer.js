@@ -4,8 +4,8 @@
 'use strict';
 
 module.exports = function (data, enc) {
-  if (process.version.substring(1, 1) === '6') {
-    return Buffer.from(data, enc);
+  if (parseInt(process.version.substr(1, 1)) < 6) {
+    return new Buffer(data, enc);
   }
-  return new Buffer(data, enc);
+  return Buffer.from(data, enc);
 };
