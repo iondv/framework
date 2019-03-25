@@ -135,8 +135,6 @@ fs.urlBase=/files
 
 При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `4.0`.
 
-Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\dnt_ru --ns develop-and-test`.
-
 Далее выполните команду сборки приложения `gulp assemble`. 
 
 Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
