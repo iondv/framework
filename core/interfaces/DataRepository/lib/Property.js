@@ -31,6 +31,8 @@ function Property(item, propertyMeta, name) {
 
   this.selectList = null;
 
+  this.displayValue = false;
+
   this.getName = function () {
     return this.name || this.meta.name;
   };
@@ -81,24 +83,7 @@ function Property(item, propertyMeta, name) {
     return equal(this.getValue(), key);
   };
 
-  this.getDisplayValue = function (dateCallback, circular) {
-    circular  = typeof circular !== 'undefined' && circular !== null ? circular : {};
-    if (this.getType() === PropertyTypes.COLLECTION) {
-      let result = '';
-      let agregates = this.evaluate();
-      if (Array.isArray(agregates)) {
-        for (let i = 0; i < agregates.length; i++) {
-          if (typeof this.meta.semanticGetter === 'function') {
-            result = result + (result ? ' ' : '') +
-              this.meta.semanticGetter.call(agregates[i], dateCallback, circular);
-          } else {
-            result = result + (result ? ' ' : '') + agregates[i].toString(null, dateCallback, circular);
-          }
-        }
-      }
-      return result;
-    }
-
+  this.getDisplayValue = function (dateCallback) {
     let v = this.getValue();
 
     if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
@@ -116,15 +101,9 @@ function Property(item, propertyMeta, name) {
       }
     }
 
-    if (this.getType() === PropertyTypes.REFERENCE) {
-      let agr = this.evaluate();
-      if (agr) {
-        if (typeof this.meta.semanticGetter === 'function') {
-          return this.meta.semanticGetter.call(agr, dateCallback, circular);
-        }
-        return agr.toString(null, dateCallback, circular);
-      } else {
-        return '';
+    if (this.getType() === PropertyTypes.COLLECTION || this.getType() === PropertyTypes.REFERENCE) {
+      if (this.displayValue !== false) {
+        return this.displayValue || '';
       }
     }
 
