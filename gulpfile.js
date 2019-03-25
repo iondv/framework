@@ -14,7 +14,7 @@ const extend = require('extend');
 
 const fs = require('fs');
 const path = require('path');
-const importer = require('lib/import');
+const importer = require('lib/import-meta');
 const deployer = require('lib/deploy');
 const alias = require('core/scope-alias');
 const aclImport = require('lib/aclImport');
@@ -641,22 +641,24 @@ function _themeDirs(basePath) {
 function appImporter(appDir, scope, log, dep) {
   return function () {
     let ns = dep ? dep.namespace || '' : '';
-    console.log('Import application meta ' + appDir + ' is implemented in' +
+    console.log('Application meta from ' + appDir + ' is imported to ' +
       (ns ? 'namespace ' + ns : 'global namespace'));
     return aclImport(path.join(appDir, 'acl'), scope.roleAccessManager, log, scope.auth)
       .catch(err => log.error(err))
       .then(() => importer(appDir, {
         sync: scope.dbSync,
         metaRepo: scope.metaRepo,
-        dataRepo: scope.dataRepo,
-        workflows: scope.workflows,
-        sequences: scope.sequenceProvider,
+        // dataRepo: scope.dataRepo,
+        // workflows: scope.workflows,
+        // sequences: scope.sequenceProvider,
         log: log,
-        namespace: ns,
+        namespace: ns //,
         // Ignoring integrity monitoring, otherwise reference attributes are deleted, because objects are referenced,
         // not yet imported
-        ignoreIntegrityCheck: true
-      })).then(() => {console.log('Meta and application data ' + appDir + ' imported to DB');});
+        // ignoreIntegrityCheck: true
+      })).then(() => {
+        console.log('Meta from ' + appDir + ' was imported to database');
+      });
   };
 }
 
