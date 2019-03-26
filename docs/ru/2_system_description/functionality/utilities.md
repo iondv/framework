@@ -56,11 +56,77 @@
 
 Примеры реализованных утилит для приложения `sakh-pm`:
 
-- `lib/actions/createIndicatorValueHandler.js` - утилита создания показателей в коллекции за выбранных период   
+- `lib/actions/createIndicatorValueHandler.js` - утилита создания показателей в коллекции за выбранный период
 - `lib/actions/createProjectReportsHandler.js` - утилита автоматического создания печатных форм по проекту с сохранением файлов в облако
 - `lib/actions/assignmentToEventOnly.js` - утилита, формирующая из поручения контрольную точку
 
-При реализации утилит в приложении с относительно большим функционалом сами файлы программы могут быть разбиты на несколько зависимых файлов.
+## Создание утилиты для приложения на примере createIndicatorValueHandler
+
+### Реализация
+
+Для реализации как правило используется язык JavaScript с использованием доступного функционала модулей, входящих в приложение.   
+При реализации утилит в приложении с относительно большим функционалом сами файлы могут быть разбиты на несколько зависимых файлов.
+
+В приведенном примере в главном файле утилиты `lib/actions/createPlanIndicatorsHandler.js` должен быть экспорт последней строкой:
+```
+module.exports = CreatePlanIndicatorsHandler;
+```
+
+### Подключение к приложению
+
+Для запуска утилиты при эксплуатации приложения нужно настроить параметры подключения в `deploy`.
+
+Для примера нужно сначала для утилиты добавить элемент интерфейса в представлении, который будет запускать утилиту. Для этого в файле `views/indicatorFinancial/item.json` нужно добавить кнопку `CREATE_INDICATOR_VALUE`:
+```
+{
+      "id": "CREATE_INDICATOR_VALUE",
+      "caption": "Сформировать собираемые значения",
+      "visibilityCondition": null,
+      "enableCondition": null,
+      "needSelectedItem": false,
+      "signBefore": false,
+      "signAfter": false,
+      "isBulk": false
+}
+```
+
+Затем нужно добавить настройки в `deploy`, чтобы связать кнопку в интерфейсе `CREATE_INDICATOR_VALUE` и утилиту `createIndicatorValueHandler`:
+
+```
+"modules": {
+    "registry": {
+      "globals": {
+          "di": {
+            "createIndicatorValueHandler": {
+                "module": "applications/sakh-pm/lib/actions/createIndicatorValueHandler",
+                "initMethod": "init",
+                "initLevel": 2,
+                "options": {
+                "data": "ion://securedDataRepo",
+                "workflows": "ion://workflows",
+                "log": "ion://sysLog",
+                "changelogFactory": "ion://changelogFactory",
+                "state": "onapp"
+                }
+            },
+            "actions": {
+                "options": {
+                "actions": [
+                    {
+                    "code": "CREATE_INDICATOR_VALUE",
+                    "handler": "ion://createIndicatorValueHandler"
+                    }
+                ]
+            }
+          }
+```
+
+В примере все настройки хранятся для модуля registry, так как из него будет вызвана утилита при нажатии на кнопку `CREATE_INDICATOR_VALUE` в форме объекта класса `indicatorFinancial`.
+
+## Дополнительная информация
+
+#### [Настройки модулей в deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)
+#### [Мета представлений - Действия](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)
 
 --------------------------------------------------------------------------  
 
