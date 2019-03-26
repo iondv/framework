@@ -5,6 +5,7 @@
 
 const Property = require('./Property');
 const PropertyTypes = require('core/PropertyTypes');
+const cast = require('core/cast');
 
 // jshint maxstatements: 30
 
@@ -22,6 +23,8 @@ function Item(id, base, classMeta) {
    * @type {String}
    */
   this.id = id;
+
+  this.stringValue = false;
 
   /**
    * @type {Object}
@@ -268,21 +271,92 @@ function Item(id, base, classMeta) {
     }
     return this.properties;
   };
+
+  /**
+   * @param {{}} [needed]
+   * @param {Boolean} [cached]
+   * @returns {Promise}
+   */
+  this.calculateProperties = function (needed, cached) {
+    let calculations = Promise.resolve();
+    let props = this.getMetaClass().getPropertyMetas();
+    props.forEach((p) => {
+      if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
+        calculations = calculations.then(() => p._formula.apply(this))
+          .then((result) => {
+            if (p.type === PropertyTypes.REFERENCE && result instanceof Item) {
+              this.references[p.name] = result;
+              this.calculated[p.name] = result.getItemId();
+            } else if (p.type === PropertyTypes.COLLECTION
+              && Array.isArray(result)
+              && result.length === result.filter(r => r instanceof Item).length) {
+              this.collections[p.name] = result;
+              this.calculated[p.name] = result.map(r => r.getItemId());
+            } else {
+              this.calculated[p.name] = cast(result, p.type);
+            }
+          });
+      }
+
+      if (p.type === PropertyTypes.COLLECTION) {
+        let result = '';
+        let agregates = this.property(p.name).evaluate();
+        if (Array.isArray(agregates)) {
+          if (typeof p.semanticGetter === 'function') {
+            for (let i = 0; i < agregates.length; i++) {
+              calculations = calculations
+                .then(() => p.semanticGetter.apply(this))
+                .then((v) => {
+                  result = result + (result ? ' ' : '') + v;
+                });
+            }
+            calculations = calculations.then(() => {
+              this.property(p.name).displayValue = result;
+            });
+          } else {
+            for (let i = 0; i < agregates.length; i++) {
+              result = result + (result ? ' ' : '') + agregates[i].toString();
+            }
+            this.property(p.name).displayValue = result;
+          }
+        }
+      }
+
+      if (p.type === PropertyTypes.REFERENCE) {
+        let agr = this.property(p.name).evaluate();
+        if (agr) {
+          if (typeof p.semanticGetter === 'function') {
+            calculations = calculations
+              .then(() => p.semanticGetter.apply(this))
+              .then((v) => {
+                this.property(p.name).displayValue = v;
+              });
+          } else {
+            this.property(p.name).displayValue = agr.toString();
+          }
+        }
+      }
+    });
+
+    if (this.stringValue === false) {
+      this.stringValue === id;
+      if (this.classMeta.isSemanticCached()) {
+        this.stringValue = this.base.__semantic;
+      } else {
+        calculations = calculations
+          .then(() => this.classMeta.getSemantics(this))
+          .then((v) => {
+            this.stringValue = v;
+          });
+      }
+    }
+
+    return calculations.then(() => this);
+  };
 }
 
-Item.prototype.toString = function (semanticGetter, dateCallback, circular) {
-  circular = typeof circular !== 'undefined' && circular !== null ? circular : {};
-  if (circular[this.getClassName() + '@' + this.getItemId()]) {
-    return '';
-  }
-  circular[this.getClassName() + '@' + this.getItemId()] = true;
-  if (typeof semanticGetter === 'function') {
-    return semanticGetter.call(this, dateCallback, circular);
-  }
-  if (this.classMeta.isSemanticCached()) {
-    return this.base.__semantic;
-  }
-  return this.classMeta.getSemantics(this, dateCallback, circular);
+Item.prototype.toString = function () {
+  return this.stringValue;
 };
 
 module.exports = Item;
