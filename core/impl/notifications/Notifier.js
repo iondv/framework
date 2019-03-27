@@ -93,7 +93,7 @@ class Notifier extends INotifier {
       .then(
         (recievers) => {
           let p = Promise.resolve();
-          if (recievers.length && notification.dispatch) {
+          if (recievers.length) {
             let senderAccount = null;
             if (notification.sender) {
               p = p.then(() => this.accounts.get(notification.sender)).then((u) => {
@@ -109,7 +109,7 @@ class Notifier extends INotifier {
                     let notifyTo = r.properties().notifyTo;
                     if (
                       (!notifyTo && !notification.dispatch) ||
-                      (notifyTo && notifyTo[dest]) ||
+                      (Array.isArray(notifyTo) && (notifyTo.indexOf(dest) >= 0)) ||
                       (notification.dispatch && notification.dispatch[dest])
                     ) {
                       rcvrs.push(r);
@@ -126,7 +126,7 @@ class Notifier extends INotifier {
                           message: notification.message,
                           subject: notification.subject,
                           type: notification.type,
-                          options: notification.dispatch[dest] || {}
+                          options: (notification.dispatch && notification.dispatch[dest]) || {}
                         }
                       )
                     )

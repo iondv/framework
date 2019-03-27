@@ -10,6 +10,7 @@ class EmailNotifier extends INotificationSender {
    * @param {String} [options.tplDir]
    * @param {Logger} options.log
    * @param {{}} [options.templates]
+   * @param {String} [options.defaultSenderEmail]
    */
   constructor(options) {
     super();
@@ -17,6 +18,7 @@ class EmailNotifier extends INotificationSender {
     this.tplDir = options.tplDir ? resolvePath(options.tplDir) : null;
     this.log = options.log;
     this.templates = options.templates;
+    this.defaultSenderEmail = options.defaultSenderEmail;
   }
 
   /**
@@ -44,7 +46,7 @@ class EmailNotifier extends INotificationSender {
       }
       return new Promise((resolve, reject) => {
         ejs.renderFile(
-          tpl,
+          path.join(this.tplDir, tpl),
           {
             subject: notification.subject,
             message: notification.message,
@@ -69,7 +71,7 @@ class EmailNotifier extends INotificationSender {
           })
           .then(html =>
             this.sender.send(
-              sender && sender.email(),
+              (sender && sender.email() || this.defaultSenderEmail),
               reciever.email(),
               {
                 subject: notification.subject,
@@ -80,7 +82,7 @@ class EmailNotifier extends INotificationSender {
           )
           .catch((err) => {
             if (this.log) {
-              this.log.warn('Не удалось отправить оповещение на электронную почту' + reciever.email());
+              this.log.warn('Не удалось отправить оповещение на электронную почту ' + reciever.email());
               this.log.error(err);
             }
           });

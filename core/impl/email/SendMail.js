@@ -1,14 +1,17 @@
 const IEmailSender = require('core/interfaces/EmailSender');
 const sendmail = require('sendmail');
+const merge = require('merge');
 
-class SimpleSender extends IEmailSender {
+class SendMail extends IEmailSender {
   /**
    * @param {{}} options
    * @param {Logger} options.log
+   * @param {{}} [options.settings]
    */
-  construct(options) {
+  constructor(options) {
+    super();
     this.log = options.log;
-    let opts = {silent: false};
+    let opts = merge({silent: true}, options.settings || {});
     if (this.log) {
       opts.logger = {
         debug: this.log.log,
@@ -40,4 +43,5 @@ class SimpleSender extends IEmailSender {
   }
 }
 
-module.exports = SimpleSender;
+module.exports = SendMail;
+
