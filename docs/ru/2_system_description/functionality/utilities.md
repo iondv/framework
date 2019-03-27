@@ -126,12 +126,13 @@ module.exports = CreatePlanIndicatorsHandler;
 ## Дополнительная информация
 
 #### [Настройки модулей в deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)
+
 #### [Мета представлений - Действия](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/virtual_attr.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/utilities.md)   &ensp; [FAQs](/faqs.md)          
 
 
 

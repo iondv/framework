@@ -16,6 +16,7 @@
 |[**Filters**](/docs/en/2_system_description/functionality/filter.md) |Query for filter on the list view form. |
 |[**Connection of two namespaces**](/docs/en/2_system_description/functionality/namespace.md)| Connect two projects using "namespace".  |
 |[**Virtual attributes**](/docs/en/2_system_description/functionality/virtual_attr.md) |Special type of attributes that allows you to display the full code and name of the class.|
+|[**Utilities**](/docs/en/2_system_description/functionality/utilities.md) | Additional programs for more specialized applications.|
 
 ### The next page: [Module description](/docs/en/3_modules_description/modules.md)
 
