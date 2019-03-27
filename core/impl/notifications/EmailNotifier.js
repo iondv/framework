@@ -60,19 +60,25 @@ class EmailNotifier extends INotificationSender {
 
     };
     let p = Promise.resolve();
-    recievers.forEach((reciever) => {
-      if (reciever.email()) {
+    if (notification.options && !notification.options.individual) {
+      const rcvrs = [];
+      recievers.forEach((reciever) => {
+        if (reciever.email()) {
+          rcvrs.push(reciever.email());
+        }
+      });
+      if (rcvrs.length) {
         let plain;
         p = p
-          .then(() => preprocess(reciever, plainTpl))
+          .then(() => preprocess(null, plainTpl))
           .then((msg) => {
             plain = msg;
-            return preprocess(reciever, htmlTpl);
+            return preprocess(null, htmlTpl);
           })
           .then(html =>
             this.sender.send(
               (sender && sender.email() || this.defaultSenderEmail),
-              reciever.email(),
+              rcvrs,
               {
                 subject: notification.subject,
                 html: html,
@@ -82,12 +88,41 @@ class EmailNotifier extends INotificationSender {
           )
           .catch((err) => {
             if (this.log) {
-              this.log.warn('Не удалось отправить оповещение на электронную почту ' + reciever.email());
+              this.log.warn('Не удалось отправить оповещения на адреса электронной почты: ', rcvrs.join(', '));
               this.log.error(err);
             }
           });
       }
-    });
+    } else {
+      recievers.forEach((reciever) => {
+        if (reciever.email()) {
+          let plain;
+          p = p
+            .then(() => preprocess(reciever, plainTpl))
+            .then((msg) => {
+              plain = msg;
+              return preprocess(reciever, htmlTpl);
+            })
+            .then(html =>
+              this.sender.send(
+                (sender && sender.email() || this.defaultSenderEmail),
+                reciever.email(),
+                {
+                  subject: notification.subject,
+                  html: html,
+                  plain: plain
+                }
+              )
+            )
+            .catch((err) => {
+              if (this.log) {
+                this.log.warn('Не удалось отправить оповещение на электронную почту ' + reciever.email());
+                this.log.error(err);
+              }
+            });
+        }
+      });
+    }
     return p;
   }
 }

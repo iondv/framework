@@ -16,7 +16,7 @@ class NodeMailer extends IEmailSender {
 
   /**
    * @param {String} from
-   * @param {String} to
+   * @param {String | Stringp[]} to
    * @param {{subject: String, html: String, plain: String}} message
    * @returns {*}
    */

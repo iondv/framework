@@ -25,7 +25,7 @@ class SendMail extends IEmailSender {
 
   /**
    * @param {String} from
-   * @param {String} to
+   * @param {String | String[]} to
    * @param {{subject: String, html: String, plain: String}} message
    * @returns {*}
    */

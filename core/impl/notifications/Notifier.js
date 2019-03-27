@@ -8,6 +8,7 @@ const INotificationSender = require('core/interfaces/NotificationSender');
 const resolvePath = require('core/resolvePath');
 const path = require('path');
 const User = require('core/User');
+const merge = require('merge');
 
 class Notifier extends INotifier {
 
@@ -35,16 +36,21 @@ class Notifier extends INotifier {
   /**
    * @param {{}} notification
    * @param {{} | String} notification.message
+   * @param {String} notification.type
    * @param {String} [notification.sender]
    * @param {String[] | String} [notification.recievers]
    * @param {String} [notification.subject]
    * @param {{}} [notification.dispatch]
-   * @param {String} [notification.type]
+   * @param {String} [notification.options]
    * @returns {Promise}
    */
   _notify(notification) {
     if (!notification.message) {
       throw new Error('Не указан текст уведомления.');
+    }
+
+    if (!notification.type) {
+      notification.type = 'untyped';
     }
 
     const preprocess = () => {
@@ -126,7 +132,10 @@ class Notifier extends INotifier {
                           message: notification.message,
                           subject: notification.subject,
                           type: notification.type,
-                          options: (notification.dispatch && notification.dispatch[dest]) || {}
+                          options: merge(
+                            notification.options || {},
+                            (notification.dispatch && notification.dispatch[dest]) || {}
+                          )
                         }
                       )
                     )
@@ -157,7 +166,10 @@ class Notifier extends INotifier {
                     subject: notification.subject,
                     message: message || String(notification.message),
                     raw: message ? notification.message : null,
-                    options: notification.dispatch && notification.dispatch.native
+                    options: merge(
+                      notification.options || {},
+                      notification.dispatch && notification.dispatch.native || {}
+                    )
                   },
                   {}
                 ))
