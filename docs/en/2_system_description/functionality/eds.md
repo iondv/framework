@@ -33,9 +33,9 @@ There are three types of digital signatures that differ in their use:
 
 The EDS utility works on the cryptoPro basis, so it should be installed on the same computer:
 
-- install cryptopro - https://www.cryptopro.ru/products/csp/downloads
-- install cryptopro plugin - https://www.cryptopro.ru/products/cades/plugin
-- issue a certificate for testing  - https://www.cryptopro.ru/certsrv/certrqma.asp
+- install [cryptopro](https://www.cryptopro.ru/products/csp/downloads)
+- install [cryptopro plugin](https://www.cryptopro.ru/products/cades/plugin)
+- issue a [certificate](https://www.cryptopro.ru/certsrv/certrqma.asp) for testing
 
 ## Implementation
 
@@ -58,7 +58,7 @@ Add the `signedClasses` setting in the `deploy` file for the registry module, so
 ...
 ```
 
-In the `workflows/indicatorValueBasic.wf.json` worflow add a transition with the `"signBefore": true` property:
+In the `workflows/indicatorValueBasic.wf.json` worflow add a transition with the `"signBefore": true` property.
 
 ### Example
 

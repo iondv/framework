@@ -33,9 +33,9 @@
 
 Работает утилита ЭЦП на основе КриптоПро, поэтому он должен быть установлен на одном компьютере:
 
-- ставим крипто про - https://www.cryptopro.ru/products/csp/downloads
-- ставим плагин - https://www.cryptopro.ru/products/cades/plugin
-- для тестирования, выпускаем сертификат - https://www.cryptopro.ru/certsrv/certrqma.asp
+- ставим [крипто про](https://www.cryptopro.ru/products/csp/downloads)
+- ставим [плагин](https://www.cryptopro.ru/products/cades/plugin)
+- для тестирования, выпускаем [сертификат](https://www.cryptopro.ru/certsrv/certrqma.asp)
 
 ## Реализация
 
@@ -45,6 +45,8 @@
 - `lib/digest/signSaver.js` - прикрепление подписи к объекту
 
 Для того, чтобы статус ЭП запрашивался/отображался, для registry добавляем в `deploy` настройку signedClasses.
+
+### Пример
 
 ```
 "modules": {
@@ -56,7 +58,10 @@
 ...
 ```
 
-В БП `workflows/indicatorValueBasic.wf.json` добавляем переход со свойством `"signBefore": true`
+В БП `workflows/indicatorValueBasic.wf.json` добавляем переход со свойством `"signBefore": true`.
+
+### Пример
+
 ```
  {
       "name": "needAppTrs_sign",
