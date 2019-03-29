@@ -16,6 +16,7 @@
 |[**Фильтры на форме**](/docs/ru/2_system_description/functionality/filter.md) |Запрос для фильтра на форме представления списка. |
 |[**Связь двух неймспейсов**](/docs/ru/2_system_description/functionality/namespace.md)| Для связывания двух проектов.  |
 |[**Виртуальные атрибуты**](/docs/ru/2_system_description/functionality/virtual_attr.md) |Специальный тип атрибутов, который позволяет выводить полный код и наименование класса.|
+|[**Утилиты**](/docs\ru\2_system_description\functionality\utilities.md) |Дополнительные программы для более специализированного применения|
 
 ### Следующая страница: [Описание модулей](/docs/ru/3_modules_description/modules.md)
 
