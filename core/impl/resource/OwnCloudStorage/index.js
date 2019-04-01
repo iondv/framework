@@ -258,6 +258,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
+      directory = parseDirId(directory);
       directory = ensureDirSep(directory);
 
       if (!data) {
@@ -333,7 +334,7 @@ function OwnCloudStorage(config) {
     };
     return new Promise((resolve,reject) => {
       request.delete(reqParams, (err, res) => {
-        if (!err && res.statusCode === 204) {
+        if (!err && (res.statusCode === 204 || res.statusCode === 404)) {
           return resolve(id);
         } else {
           return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
@@ -532,6 +533,8 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
+    name = name && parseDirId(name);
+    parentDirId = parentDirId && parseDirId(parentDirId);
     let id = slashChecker(parentDirId) + ensureDirSep(name);
     let reqParams = {
       uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
