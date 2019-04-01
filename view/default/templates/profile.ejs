@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
   <meta name="robots" content="noindex,nofollow">
   <base id="baseUrl" href="<%=baseUrl%>">
+  <!--[if IE]>
+    <script type="text/javascript">
+      // Fix for IE ignoring relative base tags.
+      (function() {
+          var baseTag = document.getElementsByTagName('base')[0];
+          baseTag.href = baseTag.href;
+      })();
+    </script>
+  <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
@@ -26,7 +35,11 @@
     <form id="reg-form" action="profile" method="post" class="dlg-form boxed">
       <header><i class="fa fa-users"></i> Профиль пользователя <%=user.name()%></header>
       <fieldset>
-        <% Object.keys(fields).forEach(function(fieldName){ %>
+        <%  let showSubmit = false;
+        Object.keys(fields).forEach(function(fieldName){ 
+          if (!fields[fieldName].readonly) {
+            showSubmit = true;
+          } %>
         <section>
           <label class="label">
             <%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>
@@ -50,7 +63,7 @@
         <% }) %>
       </fieldset>
       <footer>
-        <button id="authbutton" type="submit" class="btn btn-primary pull-right">Сохранить</button>
+        <% if (showSubmit) { %><button id="authbutton" type="submit" class="btn btn-primary pull-right">Сохранить</button><% } %>
         <div class="forgot-password pull-left">
           <a href="<%=baseUrl%>"><b>Вернуться в приложение</b></a>
         </div>

@@ -1,6 +1,36 @@
-# IONDV. Framework 
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/ION_logo_black_mini.png" alt="IONDV. Framework" width="600" align="center"></a>
+</h1>  
 
-![logoIONdv](/docs/ru/images/iondv_logo.png)  
+<h4 align="center">JS framework for rapid business application development</h4>
+  
+<p align="center">
+<a href="http://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat" alt="license" title=""></a>
+</p>
+
+<div align="center">
+  <h3>
+    <a href="https://www.iondv.com/" target="_blank">
+      Website
+    </a>
+    <span> | </span>
+    <a href="https://www.iondv.com/portal/get-it" target="_blank">
+      Get it Free
+    </a>
+    <span> | </span>
+    <a href="https://github.com/iondv/framework/docs/en/index.md" target="_blank">
+      Documentation
+    </a>
+  </h3>
+</div>
+
+<p align="center">
+<a href="https://twitter.com/ion_dv" target="_blank"><img src="/docs/ru/images/twitter.png" height="36px" alt="" title=""></a>
+<a href="https://www.facebook.com/iondv/" target="_blank"><img src="/docs/ru/images/facebook.png" height="36px" margin-left="20px" alt="" title=""></a>
+<a href="https://www.linkedin.com/company/iondv/" target="_blank"><img src="/docs/ru/images/linkedin.png" height="36px" margin-left="20px" alt="" title=""></a>
+<a href="https://www.instagram.com/iondv/" target="_blank"><img src="/docs/ru/images/Insta.png" height="36px" margin-left="20px" alt="" title=""></a> 
+</p>
+
+# IONDV. Framework 
 
 This page in [English](/README.md/)
 
@@ -42,7 +72,7 @@ This page in [English](/README.md/)
 
 Для сборки компонентов и библиотек фреймворка необходимо установить глобально:
 * пакет [node-gyp](<https://github.com/nodejs/node-gyp>) `npm install -g node-gyp`. Для работы библиотеки под операционной системой семейства windows дополнительно необходимо установить пакет windows-build-tools `npm install -g --production windows-build-tools`.
-* пакет сборщика проектов [Gulp](<http://gulpjs.com/>) `npm install -g gulp@3.9.1`. `3.9.1` - поддерживаемая версия `Gulp`.
+* пакет сборщика проектов [Gulp](<http://gulpjs.com/>) `npm install -g gulp@4.0`. `4.0` - поддерживаемая версия `Gulp`.
 * менджер пакетов фронтенд библиотек [Bower](<https://bower.io>) `npm install -g bower`.
 
 ### Установка ядра, модулей и приложения
@@ -103,9 +133,7 @@ fs.urlBase=/files
 
 Задайте переменную окружения NODE_PATH равной пути к ядру приложения следующей командой `set NODE_PATH=c:\workspace\dnt` для Windows и `export NODE_PATH=/workspace/dnt` для Linux, где `workspace\dnt` - папка файлов ядра приложения.    
 
-При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `3.9.1`.
-
-Выполните импорт меты приложения командой `node bin\import --src C:\workspace\framework\applications\dnt_ru --ns develop-and-test`.
+При первом запуске необходимо выполнить `npm install` - она поставит ключевые зависимости, в том числе локально сборщик `gulp`. Убедитесь, что версия `Gulp` - `4.0`.
 
 Далее выполните команду сборки приложения `gulp assemble`. 
 

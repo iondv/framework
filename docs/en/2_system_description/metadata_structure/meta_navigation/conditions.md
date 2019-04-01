@@ -144,11 +144,263 @@ where, `atr1 .__ class` is an attribute of the parent class by which objects are
 |8| Create date |  DATE | 
 |9| Add the time frame to the date | DATEADD |
 |10|  Find the time frame between dates | DATEDIFF |
+|12|  Subtraction |  |
+|24|  Day of the month | |
 
 The `DATEADD` arguments: _data, time frame, unit for measuring time [ms, s, min, h, d, m, y] (by default - day (d))_
 
 The `DATEDIFF` arguments: _end date, start date, unit for measuring the result [ms, s, min, h, d, m, y] (by default - day (d)), the logical flag of casting to an integer_
 
+#### Comparing the current date with the month
+
+Setting the selection of objects in the list with the ability to compare the date value with any month of the year.
+For example, setting the filter in such a way that only objects where the "End Date" attribute value is the current month would be shown in the navigation.
+
+For this, the beginning of the current month is calculated. After that, you can add or subtract an arbitrary number of months to it and compare the result with the required date.
+
+_Calculate the end of the current month_:
+
+```
+{
+  "property": null,
+  "operation": 9,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 9,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 8,
+          "value": ["today"],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": 12,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": null,
+              "value": [0],
+              "nestedConditions": []
+            },
+            {
+              "property": null,
+              "operation": 24,
+              "value": null,
+              "nestedConditions": [
+                {
+                  "property": null,
+                  "operation": 8,
+                  "value": ["today"],
+                  "nestedConditions": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": ["d"],
+          "nestedConditions": []
+        }
+      ]
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": [1],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": ["m"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+
+1. Firstly the day of the month is calculated for the current date::
+
+```
+{
+  "property": null,
+  "operation": 24,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 8,
+      "value": ["today"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+
+2. Received conditional value "d". Next, you need to subtract the resulting value from 0 (0-d):
+
+```
+{
+  "property": null,
+  "operation": 12,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": null,
+      "value": [0],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": 24,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 8,
+          "value": ["today"],
+          "nestedConditions": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+3. The conditional value "-d" is obtained. Next to the current date is added the value of "-d" days:
+
+```
+{
+  "property": null,
+  "operation": 9,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 8,
+      "value": ["today"],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": 12,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": null,
+          "value": [0],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": 24,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": 8,
+              "value": ["today"],
+              "nestedConditions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": ["d"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+4. Received the beginning of the current month. 
+5. To calculate the end of the current month, add 1 month to the received value of the beginning of the month:
+
+```
+{
+  "property": "date",
+  "operation": 5,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 9,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 9,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": 8,
+              "value": ["today"],
+              "nestedConditions": []
+            },
+            {
+              "property": null,
+              "operation": 12,
+              "value": null,
+              "nestedConditions": [
+                {
+                  "property": null,
+                  "operation": null,
+                  "value": [0],
+                  "nestedConditions": []
+                },
+                {
+                  "property": null,
+                  "operation": 24,
+                  "value": null,
+                  "nestedConditions": [
+                    {
+                      "property": null,
+                      "operation": 8,
+                      "value": ["today"],
+                      "nestedConditions": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "property": null,
+              "operation": null,
+              "value": ["d"],
+              "nestedConditions": []
+            }
+          ]
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": [1],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": ["m"],
+          "nestedConditions": []
+        }
+      ]
+    }
+  ]
+}
+```
 --------------------------------------------------------------------------  
 
 

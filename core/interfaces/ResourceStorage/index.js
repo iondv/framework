@@ -24,10 +24,11 @@ function ResourceStorage() {
 
   /**
    * @param {String[]} ids
+   * @param {{}} options
    * @returns {Promise}
    */
-  this.fetch = function (ids) {
-    return this._fetch(ids);
+  this.fetch = function (ids, options) {
+    return this._fetch(ids, options);
   };
 
   /**

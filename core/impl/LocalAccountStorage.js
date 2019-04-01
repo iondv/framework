@@ -15,7 +15,7 @@ class LocalAccountStorage extends IAccountStorage {
   constructor(options) {
     super();
     this.ds = options.dataSource;
-    this.passwordMinLength = options.passwordMinLength;
+    this.passwordMinLength = options.passwordMinLength || 0;
     this.caseInsensitiveLogin = Boolean(options.caseInsensitiveLogin);
   }
 
@@ -39,7 +39,7 @@ class LocalAccountStorage extends IAccountStorage {
       user.id = user.name;
     }
 
-    if (typeof user.pwd === 'string') {
+    if (typeof user.pwd === 'string' && user.pwd) {
       let hasher = pwdHasher(user.pwd);
       return new Promise((resolve, reject) => {
         hasher.hash((err, hash) => {
@@ -53,11 +53,11 @@ class LocalAccountStorage extends IAccountStorage {
             .catch(reject);
         });
       });
-    } else if (user.pwd && user.pwd.hash) {
-      user.pwd = user.pwd.hash;
+    } else if (user.pwd && user.pwd.hash || this.passwordMinLength === 0) {
+      user.pwd = user.pwd ? user.pwd.hash : null;
       user.pwdDate = new Date();
       user.disabled = false;
-      return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user);
+      return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else if (user.type !== UserTypes.LOCAL) {
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else {
@@ -89,7 +89,31 @@ class LocalAccountStorage extends IAccountStorage {
       id = un[0];
       type = un[1];
     }
+
+    const writer = (resolve, reject) => {
+      hasher.hash((err, hash) => {
+        let pwd = hash;
+        let pwdDate = new Date();
+        this.ds.update(
+          'ion_user',
+          {
+            [F.AND]: [
+              {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
+              {[F.EQUAL]: ['$id', id]}
+            ]
+          },
+          {pwd, pwdDate}
+          )
+          .then(() => resolve(true))
+          .catch(reject);
+      });
+    };
+
     return new Promise((resolve, reject) => {
+      if (!oldpwd) {
+        return writer(resolve, reject);
+      }
+
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
           if (err) {
@@ -98,20 +122,7 @@ class LocalAccountStorage extends IAccountStorage {
           if (verified) {
             reject(new Error('Новый пароль совпадает со старым!'));
           }
-          hasher.hash((err, hash) => {
-            let pwd = hash;
-            let pwdDate = new Date();
-            this.ds.update(
-                'ion_user',
-                {[F.AND]: [
-                  {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-                  {[F.EQUAL]: ['$id', id]}
-                ]},
-                {pwd, pwdDate}
-              )
-              .then(() => resolve(true))
-              .catch(reject);
-          });
+          writer(resolve, reject);
         });
     });
   }
@@ -119,40 +130,44 @@ class LocalAccountStorage extends IAccountStorage {
   /**
    * @param {String} id
    * @param {String} [pwd]
+   * @param {Boolean} [disabled]
    * @returns {Promise.<{User}>}
    */
-  _get(id, pwd) {
-    let checker = pwd ? pwdHasher(pwd) : null;
+  _get(id, pwd, disabled) {
+    let checker = (typeof pwd === 'string') ? pwdHasher(pwd) : null;
     let type = UserTypes.LOCAL;
     if (id.indexOf('@') > 0) {
       let un = id.split('@');
       id = un[0];
       type = un[1];
     }
-    return this.ds.get('ion_user',
-      {
-        [F.AND]: [
-          {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
-          this.caseInsensitiveLogin
-            ? {[F.LIKE]: ['$id', `^${id}$`]}
-            : {[F.EQUAL]: ['$id', id]},
-          {
-            [F.OR]: [
-              {[F.EQUAL]: ['$disabled', false]},
-              {[F.EMPTY]: ['$disabled']}
-            ]
-          }
-        ]
-      })
+    let filter = [
+      {[F.EQUAL]: ['$type', type || UserTypes.LOCAL]},
+      this.caseInsensitiveLogin
+        ? {[F.LIKE]: ['$id', `^${id}$`]}
+        : {[F.EQUAL]: ['$id', id]}
+    ];
+    if (!disabled) {
+      filter.push(
+        {
+          [F.OR]: [
+            {[F.EQUAL]: ['$disabled', false]},
+            {[F.EMPTY]: ['$disabled']}
+          ]
+        }
+      );
+    }
+
+    return this.ds.get('ion_user', {[F.AND]: filter})
       .then((user) => {
         if (user) {
-          if (!user.pwd || !pwd) {
-            return user;
-          }
-          if (!checker) {
+          if ((!user.pwd && (pwd === '') && this.passwordMinLength === 0) || !checker) {
             return user;
           }
           return new Promise((resolve, reject) => {
+            if (!user.pwd && pwd || user.pwd && !pwd) {
+              return reject(new Error('Неверно указан пароль.'));
+            }
             checker.verifyAgainst(user.pwd, (err, verified) => {
               if (verified) {
                 return resolve(user);
@@ -160,7 +175,7 @@ class LocalAccountStorage extends IAccountStorage {
               if (!err) {
                 err = new Error('Неверно указан пароль.');
               }
-              return reject(err);
+              reject(err);
             });
           });
         }
@@ -185,7 +200,7 @@ class LocalAccountStorage extends IAccountStorage {
     let data = {};
     if (updates) {
       for (let nm in updates) {
-        if (updates.hasOwnProperty(nm) && nm !== 'properties') {
+        if (updates.hasOwnProperty(nm) && nm !== 'properties' && nm !== 'pwd') {
           data[nm] = updates[nm];
         }
       }

@@ -147,10 +147,263 @@
 |8| Создаем дату |  DATE | 
 |9| Добавляем к дате интервал | DATEADD |
 |10|  Находим интервал между датами | DATEDIFF |
+|12|  Вычитание |  |
+|24|  День месяца | |
 
 Аргументы `DATEADD`: _дата, интервал, ед.изм интервала [ms, s, min, h, d, m, y] (по умолчанию - день(d))_
 
 Аргументы `DATEDIFF`: _конечная дата, начальная дата, ед. изм. результата [ms, s, min, h, d, m, y] (по умолчанию - день(d)), логический флаг приведения к целому числу_
+
+#### Сравнение текущей даты с месяцем
+
+Настройка выборки объектов в списке с возможностью сравнения значения даты с любым месяцем года.
+Например, настройка фильтра таким образом, что бы в навигации показывались только те объекты, у которых значение атрибута "Дата окончания" - текущий месяц.
+
+Для этого вычисляется начало текущего месяца. После этого к нему можно добавлять или вычитать произвольное колличество месяцев и сравнивать полученный результат с необходимой датой.
+
+_Вычисление конца текущего месяца_:
+
+```
+{
+  "property": null,
+  "operation": 9,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 9,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 8,
+          "value": ["today"],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": 12,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": null,
+              "value": [0],
+              "nestedConditions": []
+            },
+            {
+              "property": null,
+              "operation": 24,
+              "value": null,
+              "nestedConditions": [
+                {
+                  "property": null,
+                  "operation": 8,
+                  "value": ["today"],
+                  "nestedConditions": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": ["d"],
+          "nestedConditions": []
+        }
+      ]
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": [1],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": ["m"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+
+1. Для начала вычисляется значение дня месяца для текущей даты:
+
+```
+{
+  "property": null,
+  "operation": 24,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 8,
+      "value": ["today"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+
+2. Получено условное значение "d". Далее необходимо отнять полученное значение от 0 (0-d):
+
+```
+{
+  "property": null,
+  "operation": 12,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": null,
+      "value": [0],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": 24,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 8,
+          "value": ["today"],
+          "nestedConditions": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+3. Получено условное значение "-d". Далее к текущей дате прибавляется значение "-d" дней:
+
+```
+{
+  "property": null,
+  "operation": 9,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 8,
+      "value": ["today"],
+      "nestedConditions": []
+    },
+    {
+      "property": null,
+      "operation": 12,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": null,
+          "value": [0],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": 24,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": 8,
+              "value": ["today"],
+              "nestedConditions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": null,
+      "operation": null,
+      "value": ["d"],
+      "nestedConditions": []
+    }
+  ]
+}
+```
+4. Получено начало текущего месяца. 
+5. Для вычисления конца текущего месяца нужно прибавить к полученному значению начала месяца 1 месяц:
+
+```
+{
+  "property": "date",
+  "operation": 5,
+  "value": null,
+  "nestedConditions": [
+    {
+      "property": null,
+      "operation": 9,
+      "value": null,
+      "nestedConditions": [
+        {
+          "property": null,
+          "operation": 9,
+          "value": null,
+          "nestedConditions": [
+            {
+              "property": null,
+              "operation": 8,
+              "value": ["today"],
+              "nestedConditions": []
+            },
+            {
+              "property": null,
+              "operation": 12,
+              "value": null,
+              "nestedConditions": [
+                {
+                  "property": null,
+                  "operation": null,
+                  "value": [0],
+                  "nestedConditions": []
+                },
+                {
+                  "property": null,
+                  "operation": 24,
+                  "value": null,
+                  "nestedConditions": [
+                    {
+                      "property": null,
+                      "operation": 8,
+                      "value": ["today"],
+                      "nestedConditions": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "property": null,
+              "operation": null,
+              "value": ["d"],
+              "nestedConditions": []
+            }
+          ]
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": [1],
+          "nestedConditions": []
+        },
+        {
+          "property": null,
+          "operation": null,
+          "value": ["m"],
+          "nestedConditions": []
+        }
+      ]
+    }
+  ]
+}
+```
 
 --------------------------------------------------------------------------  
 

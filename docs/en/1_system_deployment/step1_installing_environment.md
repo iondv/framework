@@ -38,7 +38,7 @@ Install the global dependencies in the command prompt `cmd.exe` run as administr
 
 ### The project build-tool
 
-Use the [Gulp](http://gulpjs.com/) app to organize testing and building of distributions. Install globally by the `npm install -g gulp@3.9.1` command. `3.9.1` -  supported version of `Gulp`. 
+Use the [Gulp](http://gulpjs.com/) app to organize testing and building of distributions. Install globally by the `npm install -g gulp@4.0` command. `4.0` -  supported version of `Gulp`. 
 
 ### The installer of frontend dependencies
 
