@@ -180,37 +180,21 @@ function componentInitConstructor(component, method, scope) {
 }
 
 function levelConstructor(initLoaders) {
-  return function () {
-    let p;
+  return () => {
+    let p = Promise.resolve();
     for (let i = 0; i < initLoaders.length; i++) {
-      if (p) {
-        p = p.then(initLoaders[i]);
-      } else {
-        p = initLoaders[i]();
-      }
+      p = p.then(initLoaders[i]);
     }
-    if (p) {
-      return p;
-    }
-    return Promise.resolve();
+    return p;
   };
 }
 
 function diInit(levels) {
-  let p;
+  let p = Promise.resolve();
   for (let i = 0; i < levels.length; i++) {
-    if (p) {
-      p = p.then(levels[i]);
-    } else {
-      p = levels[i]();
-    }
+    p = p.then(levels[i]);
   }
-
-  if (p) {
-    return p;
-  }
-
-  return Promise.resolve();
+  return p;
 }
 
 /**
@@ -262,32 +246,26 @@ function di(context, struct, presets, parentContext, skip, cwd) {
     }
   }
 
-  init.sort(function (a, b) {
-    return (a.initLevel || 0) - (b.initLevel || 0);
-  });
+  init.sort((a, b) => (a.initLevel || 0) - (b.initLevel || 0));
 
   contexts[context] = scope;
 
-  let initLevels = [];
-  let initLevel = [];
-  for (let i = 0; i < init.length; i++) {
-    initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod], scope));
-    if (i < init.length - 1) {
-      if (init[i + 1].initLevel > init[i].initLevel) {
-        initLevels.push(levelConstructor(initLevel));
-        initLevel = [];
+  let p = Promise.resolve();
+  init.forEach((initiator) => {
+    if (scope[initiator.name]) {
+      const c = scope[initiator.name];
+      if (typeof c[initiator.initMethod] == 'function') {
+        p = p.then(() => c[initiator.initMethod].apply(c));
+      } else {
+        return Promise.reject(new Error('Не найден метод ' + initiator.initMethod + ' компонента ' + initiator.name));
       }
     } else {
-      initLevels.push(levelConstructor(initLevel));
+      return Promise.reject(new Error('Не найден компонент ' + initiator.name));
     }
-  }
+    p = p.then();
+  });
 
-  return diInit(initLevels)
-    .then(
-      function () {
-        return Promise.resolve(scope);
-      }
-    );
+  return p.then(() => scope);
 }
 
 module.exports = di;
