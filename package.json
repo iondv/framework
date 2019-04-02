@@ -21,7 +21,7 @@
     "url": "https://github.com/iondv/framework.git",
     "type": "git"
   },
-  "version": "2.7.2",
+  "version": "2.8.0",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
