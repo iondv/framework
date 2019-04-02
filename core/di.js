@@ -141,6 +141,8 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   if (component.loaded) {
     if (scope.hasOwnProperty(name)) {
       return scope[name];
+    } else {
+      throw new Error('Компонент ' + name + ' имеет циклическую зависимость с другим компонентом.');
     }
   }
 
@@ -150,7 +152,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (modulePath.indexOf('./') === 0) {
       modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
     }
-
+    component.loaded = true;
     let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
@@ -160,12 +162,14 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
         return F.call(scope, opts);
       };
       if (component.initMethod) {
+        if (typeof F[component.initMethod] != 'function') {
+          throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
+        }
         result[component.initMethod] = F[component.initMethod];
       }
     }
     scope[name] = result;
     component.name = name;
-    component.loaded = true;
     if (component.initMethod) {
       init.push(component);
     }
