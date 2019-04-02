@@ -177,30 +177,6 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   return result;
 }
 
-function componentInitConstructor(component, method, scope) {
-  return function () {
-    return method.apply(component, [scope]);
-  };
-}
-
-function levelConstructor(initLoaders) {
-  return () => {
-    let p = Promise.resolve();
-    for (let i = 0; i < initLoaders.length; i++) {
-      p = p.then(initLoaders[i]);
-    }
-    return p;
-  };
-}
-
-function diInit(levels) {
-  let p = Promise.resolve();
-  for (let i = 0; i < levels.length; i++) {
-    p = p.then(levels[i]);
-  }
-  return p;
-}
-
 /**
  * @param {String} context
  * @param {{}} struct
