@@ -141,9 +141,9 @@ The `npm install` installs all key dependencies, including locally the `gulp` bu
 
 Further, execute the `gulp assemble` command to build the application.
 
-Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. 
+Add the admin user with the 123 password executing the `node bin/adduser.js --name admin --pwd 123` command. 
 
-Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
+Add admin rights to the user executing the `node bin/acl.js --u admin@local --role admin --p full` command.
 
 ### Running
 

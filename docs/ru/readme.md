@@ -137,9 +137,9 @@ fs.urlBase=/files
 
 Далее выполните команду сборки приложения `gulp assemble`. 
 
-Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
+Добавьте пользователя admin с паролем 123 командой `node bin/adduser.js --name admin --pwd 123`.
 
-Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
+Добавьте пользователю права администратора командой `node bin/acl.js --u admin@local --role admin --p full`.
 
 ### Запуск
 

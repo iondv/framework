@@ -22,15 +22,15 @@ Building the application includes the installation of all libraries, import of a
 
 3. Before launching the app add a new user. Open `Mongo Compass` and find the `ino-user` table to delete all entries. Further, returne to the console and run the following command. 
 
-`node bin\adduser.js --name admin --pwd 123` - adds a new admin user with the password 123.
+`node bin/adduser.js --name admin --pwd 123` - adds a new admin user with the password 123.
 
-`node bin\acl.js --u admin@local --role admin --p full` - adds right to the user.
+`node bin/acl.js --u admin@local --role admin --p full` - adds right to the user.
 
 ## Start of the application
 
 When building is over you can run the app. Please make sure that the `NODE_PATH` environment variable is set. Without it, the system will display an error that some components are missing. 
 
-The `npm start` command starts the system. The alternative is `node bin\www` command.  
+The `npm start` command starts the system. The alternative is `node bin/www` command.  
 
 When you'll see the message that you're running the system on port `8888`, you can open the browser and type the system adress - `http://localhost:8888`.   
 
