@@ -235,7 +235,7 @@ function di(context, struct, presets, parentContext, skip, cwd) {
     if (scope[initiator.name]) {
       const c = scope[initiator.name];
       if (typeof c[initiator.initMethod] == 'function') {
-        p = p.then(() => c[initiator.initMethod].apply(c));
+        p = p.then(() => c[initiator.initMethod].call(c, scope));
       } else {
         return Promise.reject(new Error('Не найден метод ' + initiator.initMethod + ' компонента ' + initiator.name));
       }
