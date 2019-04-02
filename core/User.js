@@ -70,7 +70,7 @@ function User(data, coactors, tz) {
 
   this.isDisabled = function () {
     return data.disabled;
-  }
+  };
 }
 
 module.exports = User;

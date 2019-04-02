@@ -192,6 +192,63 @@ function OwnCloudStorage(config) {
       });
   }
 
+  function requestProperties(id, options) {
+    options = options || {};
+    id = parseDirId(id);
+    const reqParams = {
+      uri: urlResolver(config.url, urlTypes.WEBDAV, escape(id)),
+      auth: {
+        user: config.login,
+        password: config.password
+      },
+      headers: {
+        Depth: '1'
+      },
+      method: 'PROPFIND'
+    };
+    return new Promise(function (resolve,reject) {
+      request(reqParams, function (err, res, body) {
+        if (err || res.statusCode !== 207) {
+          return resolve(null);
+        }
+        const result = {
+          files: [],
+          dirs: []
+        };
+        try {
+          let dom = new Dom();
+          let doc = dom.parseFromString(body);
+          let dResponse = xpath.select(
+            '/*[local-name()="multistatus"]/*[local-name()="response"]',
+            doc
+          );
+          for (let i = 0; i < dResponse.length; i++) {
+            const hrefNode = xpath.select('*[local-name()="href"]', dResponse[i]);
+            const href = decodeURI(hrefNode[0].firstChild.nodeValue);
+            const props = xpath.select('*[local-name()="propstat"]/*[local-name()="prop"]/*', dResponse[i]);
+            const data = {href};
+            props.forEach((prop) => {
+              if (prop.localName === 'resourcetype') {
+                const collection = xpath.select('/*[local-name()="collection"]', prop);
+                data.resourcetype = collection.length ? 'dir' : 'file';
+              } else {
+                data[prop.localName] = prop.firstChild && prop.firstChild.nodeValue;
+              }
+            });
+            if (data.resourcetype === 'dir') {
+              result.dirs.push(data);
+            } else {
+              result.files.push(data);
+            }
+          }
+          return resolve(result);
+        } catch (err) {
+          return reject(err);
+        }
+      });
+    });
+  }
+
   /**
    * @param {Buffer | String | {} | stream.Readable} data
    * @param {String} directory
@@ -201,6 +258,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
+      directory = parseDirId(directory);
       directory = ensureDirSep(directory);
 
       if (!data) {
@@ -276,7 +334,7 @@ function OwnCloudStorage(config) {
     };
     return new Promise((resolve,reject) => {
       request.delete(reqParams, (err, res) => {
-        if (!err && res.statusCode === 204) {
+        if (!err && (res.statusCode === 204 || res.statusCode === 404)) {
           return resolve(id);
         } else {
           return reject(err || new Error('Status code: ' + res.statusCode + '. ' + res.body));
@@ -287,28 +345,37 @@ function OwnCloudStorage(config) {
 
   /**
    * @param {String[]} ids
+   * @param {{}} options
    * @returns {Promise}
    */
-  this._fetch = function (ids) {
-    return new Promise((resolve) => {
-      let result = [];
-      if (Array.isArray(ids)) {
-        ids.forEach((id) => {
-          if (typeof id === 'string') {
-            let parts = id.split('/');
-            result.push(
-              new StoredFile(
-                id,
-                urlResolver(slashChecker(urlBase), id),
-                {name: parts[parts.length - 1]},
-                streamGetter(id)
-              )
+  this._fetch = function (ids, options) {
+    options = options || {};
+    if (!Array.isArray(ids)) {
+      return Promise.resolve([]);
+    }
+    let promise = Promise.resolve();
+    const result = [];
+    ids.forEach((oid) => {
+      const id = decodeURIComponent(parseDirId(oid));
+      const parts = String(id).split('/');
+      const info = {name: parts[parts.length - 1]};
+      if (options.fetchInfo) {
+        promise = promise
+          .then(() => requestProperties(id))
+          .then((stats) => {
+            const fileInfo = Object.assign(
+              info,
+              stats && stats.files && stats.files[0]
             );
-          }
-        });
+            result.push(
+              new StoredFile(id, urlResolver(slashChecker(urlBase), id), fileInfo, streamGetter(id))
+            );
+          });
+      } else {
+        result.push(new StoredFile(id, urlResolver(slashChecker(urlBase), id), info, streamGetter(id)));
       }
-      resolve(result);
     });
+    return promise.then(() => result);
   };
 
   function respondFile(req, res) {
@@ -466,6 +533,8 @@ function OwnCloudStorage(config) {
    * @returns {Promise}
    */
   this._createDir = function (name, parentDirId, fetch) {
+    name = name && parseDirId(name);
+    parentDirId = parentDirId && parseDirId(parentDirId);
     let id = slashChecker(parentDirId) + ensureDirSep(name);
     let reqParams = {
       uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),

@@ -633,7 +633,7 @@ function IonDataRepository(options) {
             ___loaded[item.getClassName() + '@' + item.getItemId()] = item;
             srcByKey[item.getItemId()] = item;
           }
-
+          item.stringValue = false;
           let props = item.getProperties();
           let eagerAttrs = ela[item.getClassName()];
           if (Array.isArray(eagerAttrs)) {
@@ -1504,8 +1504,8 @@ function IonDataRepository(options) {
           let lost = bro.property(pm.backRef).evaluate();
           if (lost) {
             if (options.log) {
-              options.log.warn('Объект "' + bro.toString() +
-                '" был отвязан от "' + lost.toString() + '".');
+              options.log.warn('Объект "' + bro.getClassName() + '@' + bro.getItemId +
+                '" был отвязан от "' + lost.getClassName() + '@' + lost.getItemId() + '".');
             }
           }
           return options.dataSource.update(tn(rcm), conds, ups);
@@ -1515,7 +1515,7 @@ function IonDataRepository(options) {
     if (oldId) {
       let p;
       if (!rpm.nullable) {
-        p = options.dataSource.get(tn(rcm), clrf).then(function (bri) {
+        p = options.dataSource.get(tn(rcm), clrf).then((bri) => {
           if (bri) {
             if (options.log) {
               options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
@@ -1652,7 +1652,7 @@ function IonDataRepository(options) {
   function saveDirectRefItem(nm, meta, id, updates, changeLogger, needSetRef) {
     return function () {
       return _this._saveItem(meta.getCanonicalName(), id, updates, meta.getVersion(), changeLogger)
-        .then(function (item) {
+        .then((item) => {
           if (needSetRef && (!id || id !== item.getItemId())) {
             needSetRef[nm] = item.getItemId();
           }
@@ -2272,7 +2272,7 @@ function IonDataRepository(options) {
         .catch(wrapDsError('saveItem', classname, id, null, cm))
         .then((d) => {
           let item;
-          if (d) {
+          if (d && (typeof d === 'object')) {
             item = _this._wrap(d._class, d, d._classVer);
           } else {
             item = _this._wrap(classname, conditionsData || updates, null);

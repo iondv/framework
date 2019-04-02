@@ -6,9 +6,10 @@
 function Calculator() {
   /**
    * @param {String | {}} formula
+   * @param {{}} [options]
    */
-  this.parseFormula = function (formula) {
-    return this._parseFormula(formula);
+  this.parseFormula = function (formula, options) {
+    return this._parseFormula(formula, options || {});
   };
 }
 
