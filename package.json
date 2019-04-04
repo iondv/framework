@@ -62,7 +62,6 @@
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
     "password-hash-and-salt": "^0.1.4",
-    "puppeteer": "^1.14.0",
     "redis": "^2.8.0",
     "request": "^2.83.0",
     "rimraf": "^2.6.2",
