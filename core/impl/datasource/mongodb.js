@@ -1187,7 +1187,8 @@ function MongoDs(config) {
       {
         upsert: true,
         skipResult: options.skipResult,
-        adjustAutoInc: options.adjustAutoInc
+        adjustAutoInc: options.adjustAutoInc,
+        bulk: options.bulk
       }
     );
   };

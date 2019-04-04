@@ -233,6 +233,26 @@ class Notifier extends INotifier {
   }
 
   /**
+   * @param {String} reciever
+   * @returns {Promise}
+   */
+  _markAllAsRead(reciever) {
+    return this.ds.upsert(
+      'ion_notification_recievers',
+      {
+        [F.AND]: [
+          {[F.EMPTY]: ['$recieved']},
+          {[F.EQUAL]: ['$reciever', reciever]}
+        ]
+      },
+      {
+        recieved: new Date()
+      }, {
+        bulk: true
+      });
+  }
+
+  /**
    * @param {String} id
    * @returns {Promise}
    * @private
@@ -256,6 +276,9 @@ class Notifier extends INotifier {
     }
     if (options.new) {
       f.push({[F.EMPTY]: ['$recieved']});
+    }
+    if (options.viewed) {
+      f.push({[F.NOT_EMPTY]: ['$recieved']});
     }
     if (options.since) {
       f.push({[F.GREATER_OR_EQUAL]: ['$n.date', options.since]});
