@@ -83,6 +83,24 @@ function Property(item, propertyMeta, name) {
     return equal(this.getValue(), key);
   };
 
+  function findDisplayValue(item, nm) {
+    const i = nm.indexOf('.');
+    if (i >= 0) {
+      let nm1 = nm.substr(0, i);
+      let p = item.property(nm1);
+      let ri = p.evaluate();
+      if (ri) {
+        return findDisplayValue(ri, nm.substr(i + 1));
+      }
+    } else {
+      let p = item.property(nm);
+      if (p) {
+        return p.displayValue;
+      }
+    }
+    return false;
+  }
+
   this.getDisplayValue = function (dateCallback) {
     let v = this.getValue();
 
@@ -102,8 +120,15 @@ function Property(item, propertyMeta, name) {
     }
 
     if (this.getType() === PropertyTypes.COLLECTION || this.getType() === PropertyTypes.REFERENCE) {
-      if (this.displayValue !== false) {
-        return this.displayValue || '';
+      if (this.name && this.name.indexOf('.') > 0) {
+        let dv = findDisplayValue(this.item, this.name);
+        if (dv !== false) {
+          return dv || '';
+        }
+      } else {
+        if (this.displayValue !== false) {
+          return this.displayValue || '';
+        }
       }
     }
 

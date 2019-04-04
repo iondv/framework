@@ -277,72 +277,80 @@ function Item(id, base, classMeta) {
    * @param {Boolean} [cached]
    * @returns {Promise}
    */
-  this.calculateProperties = function (needed, cached) {
+  this.calculateProperties = function (needed, cached, recursive) {
     let calculations = Promise.resolve();
-    let props = this.getMetaClass().getPropertyMetas();
-    props.forEach((p) => {
-      if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
-        calculations = calculations.then(() => p._formula.apply(this))
-          .then((result) => {
-            if (p.type === PropertyTypes.REFERENCE && result instanceof Item) {
-              this.references[p.name] = result;
-              this.calculated[p.name] = result.getItemId();
-            } else if (p.type === PropertyTypes.COLLECTION
-              && Array.isArray(result)
-              && result.length === result.filter(r => r instanceof Item).length) {
-              this.collections[p.name] = result;
-              this.calculated[p.name] = result.map(r => r.getItemId());
-            } else {
-              this.calculated[p.name] = cast(result, p.type);
-            }
+    if (!this.calculating) {
+      this.calculating = true;
+      let props = this.getMetaClass().getPropertyMetas();
+      recursive = (recursive === false) ? false : true;
+
+      this.stringValue = this.stringValue || id;
+      if (this.classMeta.isSemanticCached()) {
+        this.stringValue = this.base.__semantic;
+      }
+
+      if (!this.classMeta.isSemanticCached()) {
+        calculations = calculations
+          .then(() => this.classMeta.getSemantics(this))
+          .then((v) => {
+            this.stringValue = v;
           });
       }
 
-      if (p.type === PropertyTypes.COLLECTION) {
-        let result = '';
-        let agregates = this.property(p.name).evaluate();
-        if (Array.isArray(agregates)) {
-          if (typeof p.semanticGetter === 'function') {
-            for (let i = 0; i < agregates.length; i++) {
+      props.forEach((p) => {
+        if (!needed || needed.hasOwnProperty(p.name)) {
+          if (p.type === PropertyTypes.COLLECTION) {
+            let result = '';
+            let agregates = this.property(p.name).evaluate();
+            if (Array.isArray(agregates)) {
+              agregates.forEach((item) => {
+                calculations = calculations
+                  .then(() => recursive ? item.calculateProperties(null, cached, recursive) : null)
+                  .then(() => (typeof p.semanticGetter === 'function') ? p.semanticGetter.apply(item) : item.toString())
+                  .then((v) => {
+                    result = result + (result ? ' ' : '') + v;
+                  });
+              });
+              calculations = calculations.then(() => {
+                this.properties[p.name].displayValue = result;
+              });
+            }
+          }
+
+          if (p.type === PropertyTypes.REFERENCE) {
+            let agr = this.property(p.name).evaluate();
+            if (agr) {
               calculations = calculations
-                .then(() => p.semanticGetter.apply(this))
+                .then(() => recursive ? agr.calculateProperties(null, cached, recursive) : null)
+                .then(() => (typeof p.semanticGetter === 'function') ? p.semanticGetter.apply(agr) : agr.toString())
                 .then((v) => {
-                  result = result + (result ? ' ' : '') + v;
+                  this.properties[p.name].displayValue = v;
                 });
             }
-            calculations = calculations.then(() => {
-              this.property(p.name).displayValue = result;
+          }
+        }
+      });
+
+      props.forEach((p) => {
+        if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
+          calculations = calculations.then(() => p._formula.apply(this))
+            .then((result) => {
+              if (p.type === PropertyTypes.REFERENCE && result instanceof Item) {
+                this.references[p.name] = result;
+                this.calculated[p.name] = result.getItemId();
+              } else if (p.type === PropertyTypes.COLLECTION
+                && Array.isArray(result)
+                && result.length === result.filter(r => r instanceof Item).length) {
+                this.collections[p.name] = result;
+                this.calculated[p.name] = result.map(r => r.getItemId());
+              } else {
+                this.calculated[p.name] = cast(result, p.type);
+              }
             });
-          } else {
-            for (let i = 0; i < agregates.length; i++) {
-              result = result + (result ? ' ' : '') + agregates[i].toString();
-            }
-            this.property(p.name).displayValue = result;
-          }
         }
-      }
+      });
 
-      if (p.type === PropertyTypes.REFERENCE) {
-        let agr = this.property(p.name).evaluate();
-        if (agr) {
-          if (typeof p.semanticGetter === 'function') {
-            calculations = calculations
-              .then(() => p.semanticGetter.apply(this))
-              .then((v) => {
-                this.property(p.name).displayValue = v;
-              });
-          } else {
-            this.property(p.name).displayValue = agr.toString();
-          }
-        }
-      }
-    });
-
-    if (this.stringValue === false) {
-      this.stringValue === id;
-      if (this.classMeta.isSemanticCached()) {
-        this.stringValue = this.base.__semantic;
-      } else {
+      if (!this.classMeta.isSemanticCached()) {
         calculations = calculations
           .then(() => this.classMeta.getSemantics(this))
           .then((v) => {
@@ -350,13 +358,15 @@ function Item(id, base, classMeta) {
           });
       }
     }
-
-    return calculations.then(() => this);
+    return calculations.then(() => {
+      delete this.calculating;
+      return this;
+    });
   };
 }
 
 Item.prototype.toString = function () {
-  return this.stringValue;
+  return this.stringValue || this.getItemId();
 };
 
 module.exports = Item;
