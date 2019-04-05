@@ -154,8 +154,16 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
       });
     }
 
+    let getDisplayValue = false;
+    if (nm[nm.length - 1] == '@') {
+      getDisplayValue = true;
+      nm = nm.substr(0, nm.length - 1);
+    }
     let p = obj.property(nm);
     if (p) {
+      if (getDisplayValue) {
+        return p.getDisplayValue();
+      }
       switch (p.meta.type) {
         case PropertyTypes.REFERENCE:
         {
