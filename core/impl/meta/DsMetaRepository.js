@@ -630,6 +630,9 @@ function DsMetaRepository(options) {
     if (typeof semantic === 'string') {
       if (semantic[0] === '$') {
         let aname = semantic.substr(1);
+        if (aname[aname.length - 1] == '@') {
+          aname = aname.substr(0, aname.length - 1);
+        }
         if (semanticAttrs) {
           semanticAttrs.push(aname);
         }
@@ -682,6 +685,8 @@ function DsMetaRepository(options) {
               let pn = '$' + tmp[1];
               if (pm.type === PropertyTypes.DATETIME) {
                 pn = {[F.DATE_FORMAT]: [pn]};
+              } else {
+                pn = pn + '@';
               }
               if (tmp[3]) {
                 args.push({[F.SUBSTR]: [pn, tmp[3], tmp[5]]});
