@@ -29,6 +29,7 @@ const Errors = require('core/errors/data-repo');
 const MetaErrors = require('core/errors/meta-repo');
 const DsErrors = require('core/errors/data-source');
 const clone = require('fast-clone');
+const merge = require('merge');
 const Operations = require('core/FunctionCodes');
 const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
@@ -449,7 +450,7 @@ function IonDataRepository(options) {
   }
 
   function getEnrichList(options) {
-    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed} = options;
+    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed, skipCalc} = options;
     return _this._getList(cn,
       {
         sort: sort,
@@ -458,7 +459,8 @@ function IonDataRepository(options) {
         forceEnrichment: forced,
         ___implicitEnrichment: implForced,
         ___loaded: loaded,
-        needed
+        needed,
+        skipCalculations: skipCalc
       }
     ).then((items) => {
       if (items && items.length) {
@@ -596,7 +598,7 @@ function IonDataRepository(options) {
     if (!src.length) {
       return Promise.resolve(src2);
     }
-    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed} = options;
+    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed, skipCalc} = options;
     nestingDepth = nestingDepth || 0;
     let srcByKey = {};
     let explicitForced = {};
@@ -752,7 +754,8 @@ function IonDataRepository(options) {
                         implForced: implicitForced[attrs[nm].attrName],
                         loaded: ___loaded,
                         attr: attrs[nm],
-                        needed: needed2
+                        needed: needed2,
+                        skipCalc
                       })
                     );
                 });
@@ -765,7 +768,8 @@ function IonDataRepository(options) {
                   implForced: implicitForced[attrs[nm].attrName],
                   loaded: ___loaded,
                   attr: attrs[nm],
-                  needed: needed2
+                  needed: needed2,
+                  skipCalc
                 });
               }
             } else {
@@ -780,7 +784,8 @@ function IonDataRepository(options) {
                     forceEnrichment: fe,
                     ___implicitEnrichment: [],
                     ___loaded,
-                    needed: needed2
+                    needed: needed2,
+                    skipCalc
                   },
                   cm
                 );
@@ -798,7 +803,7 @@ function IonDataRepository(options) {
   function calcItemsProperties(items, options) {
     let calcs = Promise.resolve();
     items.forEach((item) => {
-      calcs = calcs.then(() => calcProperties(item, false, options.needed));
+      calcs = calcs.then(() => item.calculateProperties(options.needed));
     });
     return calcs.then(() => items);
   }
@@ -867,7 +872,7 @@ function IonDataRepository(options) {
         }
         return fl.then(() => result);
       })
-      .then(result => enrich(result, options, cm))
+      .then(result => enrich(result, merge(options, {skipCalc: true}), cm))
       .then(result => options.skipCalculations ? result : calcItemsProperties(result, options));
   };
 
@@ -877,7 +882,7 @@ function IonDataRepository(options) {
         if (data) {
           let item = _this._wrap(data._class, data, data._classVer);
           return loadFiles(item, _this.fileStorage, _this.imageStorage)
-            .then(item => enrich(item, options, item.getMetaClass()))
+            .then(item => enrich(item, merge(options, {skipCalc: true}), item.getMetaClass()))
             .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
         }
         return Promise.resolve(null);
@@ -1260,8 +1265,8 @@ function IonDataRepository(options) {
     }
     return fetcher
       .catch(wrapDsError('getItem', cm.getCanonicalName(), id || obj.getItemId()))
-      .then(item => (options.skipEnrich || !item) ? item : enrich(item, options, item.getMetaClass()))
-      .then(item => (options.skipCalculations || !item) ? item : calcProperties(item, false, options.needed));
+      .then(item => (options.skipEnrich || !item) ? item : enrich(item, merge(options, {skipCalc: true}), item.getMetaClass()))
+      .then(item => (options.skipCalculations || !item) ? item : item.calculateProperties(options.needed));
   };
 
   function fileSaver(updates, id, cm, pm) {
