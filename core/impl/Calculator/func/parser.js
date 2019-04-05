@@ -67,7 +67,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
           argsSrc.substring(start, closeBracketPos + 1).trim(),
           funcLib,
           dataRepoGetter,
-          merge({byRef: cbr && byRefMask.indexOf(i) >= 0}, options)
+          merge(options, {byRef: cbr && byRefMask.indexOf(i) >= 0})
         )
       );
       commaPos = findComma(argsSrc, closeBracketPos + 1);
@@ -77,7 +77,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
           argsSrc.substring(start, commaPos).trim(),
           funcLib,
           dataRepoGetter,
-          merge({byRef: cbr && byRefMask.indexOf(i) >= 0}, options)
+          merge(options, {byRef: cbr && byRefMask.indexOf(i) >= 0})
         )
       );
     } else {
@@ -86,7 +86,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
           argsSrc.substring(start).trim(),
           funcLib,
           dataRepoGetter,
-          merge({byRef: cbr && byRefMask.indexOf(i) >= 0}, options)
+          merge(options, {byRef: cbr && byRefMask.indexOf(i) >= 0})
         )
       );
     }
@@ -292,7 +292,7 @@ function evaluate(formula, funcLib, dataRepoGetter, options) {
         formula.substring(pos + 1, closeBracketPos).trim(),
         funcLib,
         dataRepoGetter,
-        merge({byRefMask: f.byRefMask}, options)
+        merge(options, {byRefMask: f.byRefMask})
       );
 
       if (byRef) {
@@ -332,7 +332,7 @@ function parseObject(formula, funcLib, dataRepoGetter, options) {
           v,
           funcLib,
           dataRepoGetter,
-          merge({byRefMask: null, byRef: cbr && byRefMask.indexOf(ind) >= 0}, options)
+          merge(options, {byRefMask: null, byRef: cbr && byRefMask.indexOf(ind) >= 0})
         )
       );
     });
@@ -358,7 +358,7 @@ function parseObject(formula, funcLib, dataRepoGetter, options) {
       }
       if (funcLib.hasOwnProperty(func)) {
         let f = funcLib[func];
-        args = parseObject(args, funcLib, dataRepoGetter, merge({byRefMask: f.byRefMask}, options));
+        args = parseObject(args, funcLib, dataRepoGetter, merge(options, {byRefMask: f.byRefMask}));
         if (byRef) {
           return byRefConstructor(f, args);
         }
