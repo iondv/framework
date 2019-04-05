@@ -141,6 +141,8 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   if (component.loaded) {
     if (scope.hasOwnProperty(name)) {
       return scope[name];
+    } else {
+      throw new Error('Компонент ' + name + ' имеет циклическую зависимость с другим компонентом.');
     }
   }
 
@@ -150,7 +152,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (modulePath.indexOf('./') === 0) {
       modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
     }
-
+    component.loaded = true;
     let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
@@ -160,57 +162,19 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
         return F.call(scope, opts);
       };
       if (component.initMethod) {
+        if (typeof F[component.initMethod] != 'function') {
+          throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
+        }
         result[component.initMethod] = F[component.initMethod];
       }
     }
     scope[name] = result;
     component.name = name;
-    component.loaded = true;
     if (component.initMethod) {
       init.push(component);
     }
   }
   return result;
-}
-
-function componentInitConstructor(component, method, scope) {
-  return function () {
-    return method.apply(component, [scope]);
-  };
-}
-
-function levelConstructor(initLoaders) {
-  return function () {
-    let p;
-    for (let i = 0; i < initLoaders.length; i++) {
-      if (p) {
-        p = p.then(initLoaders[i]);
-      } else {
-        p = initLoaders[i]();
-      }
-    }
-    if (p) {
-      return p;
-    }
-    return Promise.resolve();
-  };
-}
-
-function diInit(levels) {
-  let p;
-  for (let i = 0; i < levels.length; i++) {
-    if (p) {
-      p = p.then(levels[i]);
-    } else {
-      p = levels[i]();
-    }
-  }
-
-  if (p) {
-    return p;
-  }
-
-  return Promise.resolve();
 }
 
 /**
@@ -262,32 +226,26 @@ function di(context, struct, presets, parentContext, skip, cwd) {
     }
   }
 
-  init.sort(function (a, b) {
-    return (a.initLevel || 0) - (b.initLevel || 0);
-  });
+  init.sort((a, b) => (a.initLevel || 0) - (b.initLevel || 0));
 
   contexts[context] = scope;
 
-  let initLevels = [];
-  let initLevel = [];
-  for (let i = 0; i < init.length; i++) {
-    initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod], scope));
-    if (i < init.length - 1) {
-      if (init[i + 1].initLevel > init[i].initLevel) {
-        initLevels.push(levelConstructor(initLevel));
-        initLevel = [];
+  let p = Promise.resolve();
+  init.forEach((initiator) => {
+    if (scope[initiator.name]) {
+      const c = scope[initiator.name];
+      if (typeof c[initiator.initMethod] == 'function') {
+        p = p.then(() => c[initiator.initMethod].call(c, scope));
+      } else {
+        return Promise.reject(new Error('Не найден метод ' + initiator.initMethod + ' компонента ' + initiator.name));
       }
     } else {
-      initLevels.push(levelConstructor(initLevel));
+      return Promise.reject(new Error('Не найден компонент ' + initiator.name));
     }
-  }
+    p = p.then();
+  });
 
-  return diInit(initLevels)
-    .then(
-      function () {
-        return Promise.resolve(scope);
-      }
-    );
+  return p.then(() => scope);
 }
 
 module.exports = di;
