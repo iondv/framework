@@ -1,14 +1,17 @@
 const IEmailSender = require('core/interfaces/EmailSender');
 const sendmail = require('sendmail');
+const merge = require('merge');
 
-class SimpleSender extends IEmailSender {
+class SendMail extends IEmailSender {
   /**
    * @param {{}} options
    * @param {Logger} options.log
+   * @param {{}} [options.settings]
    */
-  construct(options) {
+  constructor(options) {
+    super();
     this.log = options.log;
-    let opts = {silent: false};
+    let opts = merge({silent: true}, options.settings || {});
     if (this.log) {
       opts.logger = {
         debug: this.log.log,
@@ -22,8 +25,8 @@ class SimpleSender extends IEmailSender {
 
   /**
    * @param {String} from
-   * @param {String} to
-   * @param {{subject: String, body: String, type: String}} message
+   * @param {String | String[]} to
+   * @param {{subject: String, html: String, plain: String}} message
    * @returns {*}
    */
   _send(from, to, message) {
@@ -32,20 +35,13 @@ class SimpleSender extends IEmailSender {
       to: to,
       subject: message.subject || ''
     };
-    if (message.type === 'html') {
-      letter.html = message.body;
-    } else {
-      letter.text = message.body;
-    }
+    letter.html = message.html;
+    letter.text = message.plain;
     return new Promise((resolve, reject) => {
-      this.sender(letter, (err, reply) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve(reply);
-      });
+      this.sender(letter, (err, reply) => err ? reject(err) : resolve(reply));
     });
   }
 }
 
-module.exports = SimpleSender;
+module.exports = SendMail;
+

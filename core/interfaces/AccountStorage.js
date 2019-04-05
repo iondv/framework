@@ -11,6 +11,14 @@ class AccountStorage {
     return this._unregister(id);
   }
 
+  profileFields() {
+    return this._profileFields();
+  }
+
+  validate(data) {
+    return this._validate(data);
+  }
+
   /**
    * @param {String} id
    * @param {String} oldPwd
