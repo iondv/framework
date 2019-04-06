@@ -100,9 +100,11 @@ function WorkflowProvider(options) {
       )
       .then((states) => {
         for (let i = 0; i < states.length; i++) {
-          if (states[i].workflow.indexOf('@') < 0 && 
-              wfByName.hasOwnProperty(states[i].workflow) && 
-              wfByName.hasOwnProperty(states[i].workflow).namespace) {
+          if (
+            states[i].workflow.indexOf('@') < 0 &&
+            wfByName.hasOwnProperty(states[i].workflow) &&
+            wfByName[states[i].workflow].namespace
+          ) {
             states[i].workflow = states[i].workflow + '@' + wfByName[states[i].workflow].namespace;
           }
           result[states[i].workflow] = {
@@ -425,7 +427,7 @@ function WorkflowProvider(options) {
           }
           return Promise.reject(
             new IonError(Errors.TRANS_IMPOSSIBLE, {
-              workflow: wf.caption || wf.name, 
+              workflow: wf.caption || wf.name,
               trans: transition.caption || transition.name
             })
           );
@@ -498,7 +500,7 @@ function WorkflowProvider(options) {
                 {
                   info: item.getClassName() + '@' + item.getItemId(),
                   state: target.caption || target.name,
-                  workflow: wf.caption || wf.caption
+                  workflow: wf.caption || wf.name
                 }
               );
             }
