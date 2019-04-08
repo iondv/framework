@@ -1,5 +1,5 @@
 {
-  "name": "iondv-framework",
+  "name": "ion-platform",
   "lint-staged": {
     "*.js": [
       "eslint --fix",
