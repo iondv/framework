@@ -26,7 +26,7 @@ describe('# Проверка достижимости классов из нав
   const appList = getDirList(pathApplications).dirList;
   let meta = {}; // Мета
   appList.forEach((pathApp) => {
-    if (['viewlib', 'viewlib-extra'].indexOf(pathApp) === ARR_NOTFOUND) {
+    if (['viewlib', 'viewlib-extra', 'extensions', 'extensions-ru'].indexOf(pathApp) === ARR_NOTFOUND) {
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'), meta);
     }
   });
