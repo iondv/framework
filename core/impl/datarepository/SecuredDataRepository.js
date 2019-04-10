@@ -551,6 +551,9 @@ function SecuredDataRepository(options) {
       let pn = sid.substr(1);
       let p = item.property(pn);
       if (!p) {
+        if (options.log instanceof Logger) {
+          options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + pn + ' класса ' + item.getClassName());
+        }
         return false;
       }
       actor = p.evaluate();
