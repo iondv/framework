@@ -549,9 +549,13 @@ function SecuredDataRepository(options) {
     let actor = sid;
     if (sid && sid[0] === '$') {
       let pn = sid.substr(1);
-      actor = item.property(pn).evaluate();
+      let p = item.property(pn);
+      if (!p) {
+        return false;
+      }
+      actor = p.evaluate();
       if (!actor) {
-        actor = item.property(pn).getValue();
+        actor = p.getValue();
       }
     }
     if (actor) {
