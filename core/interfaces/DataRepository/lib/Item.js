@@ -83,8 +83,8 @@ function Item(id, base, classMeta) {
    * @param {String} name
    * @returns {Item | null}
    */
-  this.getAggregate = function(name) {
-    const prop = this.getProperties()[name];
+  this.getAggregate = function (name) {
+    const prop = this.property(name);
     if (prop && prop.getType() === PropertyTypes.REFERENCE)
       return this.references[name] || null;
     return null;
@@ -94,8 +94,8 @@ function Item(id, base, classMeta) {
    * @param {String} name
    * @returns {Array | null}
    */
-  this.getAggregates = function(name) {
-    const prop = this.getProperties()[name];
+  this.getAggregates = function (name) {
+    const prop = this.property(name);
     if (prop && prop.getType() === PropertyTypes.COLLECTION && this.collections)
       return this.collections[name] || null;
     return null;
@@ -145,7 +145,7 @@ function Item(id, base, classMeta) {
     }
   }
 
-  this.get = function(name) {
+  this.get = function (name) {
     if (name === '__class')
       return this.getClassName();
 
@@ -174,7 +174,7 @@ function Item(id, base, classMeta) {
     return getFromBase(name);
   };
 
-  this.set = function(name, value) {
+  this.set = function (name, value) {
     const dot = name.indexOf('.');
     if (dot > -1) {
       const i = this.getAggregate(name.substring(0, dot));
@@ -206,7 +206,7 @@ function Item(id, base, classMeta) {
    * @param {String} name
    * @returns {Property | null}
    */
-  this.property = function(name) {
+  this.property = function (name) {
     const props = this.getProperties();
     if (typeof props[name] !== 'undefined')
       return props[name];
@@ -271,7 +271,7 @@ function Item(id, base, classMeta) {
             if (Array.isArray(agregates)) {
               agregates.forEach((item) => {
                 calculations = calculations
-                  // eslint-disable-next-line no-confusing-arrow
+                // eslint-disable-next-line no-confusing-arrow
                   .then(() => recursive ? item.calculateProperties(null, cached, recursive) : null)
                   // eslint-disable-next-line no-confusing-arrow
                   .then(() => (typeof prop.semanticGetter === 'function') ?
@@ -292,7 +292,7 @@ function Item(id, base, classMeta) {
             const agr = this.property(prop.name).evaluate();
             if (agr) {
               calculations = calculations
-                // eslint-disable-next-line no-confusing-arrow
+              // eslint-disable-next-line no-confusing-arrow
                 .then(() => recursive ? agr.calculateProperties(null, cached, recursive) : null)
                 // eslint-disable-next-line no-confusing-arrow
                 .then(() => (typeof prop.semanticGetter === 'function') ?
