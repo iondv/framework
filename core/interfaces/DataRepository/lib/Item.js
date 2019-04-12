@@ -1,12 +1,8 @@
-/* eslint-disable max-lines */
-/* eslint-disable max-statements */
-/* eslint-disable func-names */
-
+/* eslint-disable id-match, max-statements, valid-jsdoc, max-lines, func-names, no-underscore-dangle, require-jsdoc */
+/* eslint-disable id-length, no-magic-numbers, complexity */
 /**
  * Created by Vasiliy Ermilov (email: inkz@xakep.ru, telegram: @inkz1) on 29.04.16.
  */
-'use strict';
-
 const Property = require('./Property');
 const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
@@ -38,30 +34,19 @@ function Item(id, base, classMeta) {
   this.classMeta = classMeta;
 
   this.properties = null;
-
   this.references = {};
-
   this.collections = {};
-
   this.calculated = {};
-
   this.files = {};
-
   this.slCacheClean = true;
 
   this.emptify = function() {
     this.id = null;
-
     this.base = {};
-
     this.references = {};
-
     this.collections = {};
-
     this.calculated = {};
-
     this.files = {};
-
     this.slCacheClean = true;
   };
 
@@ -117,45 +102,43 @@ function Item(id, base, classMeta) {
   };
 
   function getFromBase(name) {
-    if (_this.calculated.hasOwnProperty(name)) {
+    if (typeof _this.calculated[name] !== 'undefined')
       return _this.calculated[name];
-    }
 
-    if (_this.base.hasOwnProperty(name)) {
-      let props = _this.getProperties();
-      let p = props[name];
-      if (p && (
-        p.getType() === PropertyTypes.FILE ||
-        p.getType() === PropertyTypes.IMAGE ||
-        p.getType() === PropertyTypes.FILE_LIST
+    if (typeof _this.base[name] !== 'undefined') {
+      const p = _this.getProperty(name);
+      if (
+        p &&
+        (
+          p.getType() === PropertyTypes.FILE ||
+          p.getType() === PropertyTypes.IMAGE ||
+          p.getType() === PropertyTypes.FILE_LIST
         )
       ) {
-        if (_this.files.hasOwnProperty(name)) {
+        if (typeof _this.files[name] !== 'undefined')
           return _this.files[name];
-        }
       }
       return _this.base[name];
     }
     return null;
   }
 
-  function setToBase(name,value) {
-    let p = _this.property(name);
+  function setToBase(name, value) {
+    const p = _this.property(name);
     if (p) {
       if (value instanceof Item) {
         _this.references[name] = value;
         _this.base[name] = value.getItemId();
       } else {
-        if (p.getType() === PropertyTypes.REFERENCE) {
+        if (p.getType() === PropertyTypes.REFERENCE)
           delete _this.references[name];
-        }
+
         _this.base[name] = value;
       }
       if (_this.properties && !_this.slCacheClean) {
-        for (let nm in _this.properties) {
-          if (_this.properties.hasOwnProperty(nm)) {
+        for (const nm in _this.properties) {
+          if (typeof _this.properties[nm] !== 'undefined')
             _this.properties[nm].selectList = null;
-          }
         }
         _this.slCacheClean = true;
       }
@@ -172,20 +155,18 @@ function Item(id, base, classMeta) {
     const dot = name.indexOf('.');
     if (dot > -1) {
       const pn = name.substring(0, dot);
-      const props = this.getProperties();
-      if (props.hasOwnProperty(pn)) {
-        if (props[pn].getType() === PropertyTypes.REFERENCE) {
-          const i = this.getAggregate(pn);
-          if (i)
-            return i.get(name.substring(dot + 1));
-        } else if (props[pn].getType() === PropertyTypes.COLLECTION) {
-          const is = this.getAggregates(pn);
-          if (Array.isArray(is)) {
-            const result = [];
-            for (let i = 0; i < is.length; i++)
-              result.push(is[i].get(name.substring(dot + 1)));
-            return result;
-          }
+      const p = this.getProperty(pn);
+      if (p && p.getType() === PropertyTypes.REFERENCE) {
+        const i = this.getAggregate(pn);
+        if (i)
+          return i.get(name.substring(dot + 1));
+      } else if (p && p.getType() === PropertyTypes.COLLECTION) {
+        const is = this.getAggregates(pn);
+        if (Array.isArray(is)) {
+          const result = [];
+          for (let i = 0; i < is.length; i++)
+            result.push(is[i].get(name.substring(dot + 1)));
+          return result;
         }
       }
       return null;
@@ -227,7 +208,7 @@ function Item(id, base, classMeta) {
    */
   this.property = function(name) {
     const props = this.getProperties();
-    if (props.hasOwnProperty(name))
+    if (typeof props[name] !== 'undefined')
       return props[name];
     const pm = findPropertyMeta(name, this.classMeta);
     if (pm)
@@ -236,14 +217,13 @@ function Item(id, base, classMeta) {
   };
 
   function initClassProps(cm) {
-    if (cm.getAncestor()) {
+    if (cm.getAncestor())
       initClassProps(cm.getAncestor());
-    }
-    let pm = cm.getPropertyMetas();
+
+    const pm = cm.getPropertyMetas();
     for (let i = 0; i < pm.length; i++) {
-      if (pm[i].type !== PropertyTypes.STRUCT) {
+      if (pm[i].type !== PropertyTypes.STRUCT)
         _this.properties[pm[i].name] = new Property(_this, pm[i]);
-      }
     }
   }
 
@@ -284,7 +264,7 @@ function Item(id, base, classMeta) {
       }
 
       props.forEach((prop) => {
-        if (!needed || needed.hasOwnProperty(prop.name)) {
+        if (!needed || typeof needed[prop.name] !== 'undefined') {
           if (prop.type === PropertyTypes.COLLECTION) {
             let result = '';
             const agregates = this.property(prop.name).evaluate();
@@ -294,7 +274,10 @@ function Item(id, base, classMeta) {
                   // eslint-disable-next-line no-confusing-arrow
                   .then(() => recursive ? item.calculateProperties(null, cached, recursive) : null)
                   // eslint-disable-next-line no-confusing-arrow
-                  .then(() => (typeof prop.semanticGetter === 'function') ? prop.semanticGetter.apply(item) : item.toString())
+                  .then(() => (typeof prop.semanticGetter === 'function') ?
+                    prop.semanticGetter.apply(item) :
+                    item.toString()
+                  )
                   .then((val) => {
                     result = result + (result ? ' ' : '') + val;
                   });
@@ -312,7 +295,10 @@ function Item(id, base, classMeta) {
                 // eslint-disable-next-line no-confusing-arrow
                 .then(() => recursive ? agr.calculateProperties(null, cached, recursive) : null)
                 // eslint-disable-next-line no-confusing-arrow
-                .then(() => (typeof prop.semanticGetter === 'function') ? prop.semanticGetter.apply(agr) : agr.toString())
+                .then(() => (typeof prop.semanticGetter === 'function') ?
+                  prop.semanticGetter.apply(agr) :
+                  agr.toString()
+                )
                 .then((val) => {
                   this.properties[prop.name].displayValue = val;
                 });
@@ -322,7 +308,7 @@ function Item(id, base, classMeta) {
       });
 
       props.forEach((prop) => {
-        if (prop._formula && (!prop.cached || cached) && (!needed || needed.hasOwnProperty(prop.name))) {
+        if (prop._formula && (!prop.cached || cached) && (!needed || typeof needed[prop.name] !== 'undefined')) {
           calculations = calculations.then(() => prop._formula.apply(this))
             .then((result) => {
               if (prop.type === PropertyTypes.REFERENCE && result instanceof Item) {
@@ -347,7 +333,7 @@ function Item(id, base, classMeta) {
             this.stringValue = val;
           });
       }
-      calculations.then(() => {
+      calculations = calculations.then(() => {
         delete this.calculating;
       });
     }
