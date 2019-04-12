@@ -34,7 +34,7 @@
 
 Эта страница на [Русском](/docs/ru/readme.md) 
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme.png" alt="IONDV. Framework" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework" align="center"></a>
 </h1>  
 
 ## Description  
