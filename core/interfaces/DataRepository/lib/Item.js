@@ -106,7 +106,7 @@ function Item(id, base, classMeta) {
       return _this.calculated[name];
 
     if (typeof _this.base[name] !== 'undefined') {
-      const p = _this.getProperty(name);
+      const p = _this.property(name);
       if (
         p &&
         (
@@ -155,7 +155,7 @@ function Item(id, base, classMeta) {
     const dot = name.indexOf('.');
     if (dot > -1) {
       const pn = name.substring(0, dot);
-      const p = this.getProperty(pn);
+      const p = this.property(pn);
       if (p && p.getType() === PropertyTypes.REFERENCE) {
         const i = this.getAggregate(pn);
         if (i)
