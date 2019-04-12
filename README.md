@@ -181,7 +181,7 @@ docker run  --name mongodb \
 ```bash
 docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
 docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib --reset
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
 ```
 
 3. Create user `admin` with password `123` and `admin` role
