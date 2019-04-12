@@ -1,9 +1,9 @@
 class EmailSender {
   /**
    * @param {String} from
-   * @param {String} to
+   * @param {String | String[]} to
    * @param {{subject: String, body: String, type: String}} message
-   * @returns {*}
+   * @returns {Promise}
    */
   send(from, to, message) {
     return this._send(from, to, message);

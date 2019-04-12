@@ -100,7 +100,11 @@ function WorkflowProvider(options) {
       )
       .then((states) => {
         for (let i = 0; i < states.length; i++) {
-          if (states[i].workflow.indexOf('@') < 0 && wfByName.hasOwnProperty(states[i].workflow)) {
+          if (
+            states[i].workflow.indexOf('@') < 0 &&
+            wfByName.hasOwnProperty(states[i].workflow) &&
+            wfByName[states[i].workflow].namespace
+          ) {
             states[i].workflow = states[i].workflow + '@' + wfByName[states[i].workflow].namespace;
           }
           result[states[i].workflow] = {
@@ -112,14 +116,14 @@ function WorkflowProvider(options) {
 
         let rp = Promise.resolve();
         workflows.forEach((wf) => {
-          let fullWfName = wf.name + '@' + wf.namespace;
+          let fullWfName = wf.name + (wf.namespace ? '@' + wf.namespace : '');
           if (!result.hasOwnProperty(fullWfName)) {
             result[fullWfName] = {
               next: {}
             };
           }
           let state = result[fullWfName];
-          state.workflowCaption = wf.caption;
+          state.workflowCaption = wf.caption || wf.name;
 
           let stage = wf.statesByName[state.stage] || wf.statesByName[wf.startState];
           if (stage) {
@@ -143,28 +147,34 @@ function WorkflowProvider(options) {
               }
 
               if (tOptions.user) {
-                for (let j = 0; j < stage.itemPermissions.length; j++) {
-                  if (
-                    tOptions.user.isMe(stage.itemPermissions[j].role) ||
-                    tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
-                  ) {
-                    addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
+                if (Array.isArray(stage.itemPermissions)) {
+                  for (let j = 0; j < stage.itemPermissions.length; j++) {
+                    if (
+                      tOptions.user.isMe(stage.itemPermissions[j].role) ||
+                      tOptions.user.isMe(item.get(stage.itemPermissions[j].role))
+                    ) {
+                      addPermissions(itemPermissions, stage.itemPermissions[j].permissions);
+                    }
                   }
                 }
 
-                for (let j = 0; j < stage.propertyPermissions.length; j++) {
-                  for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
-                    if (
-                      tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
-                      tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
-                    ) {
-                      if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
-                        propertyPermissions[stage.propertyPermissions[j].property] = {};
+                if (Array.isArray(stage.propertyPermissions)) {
+                  for (let j = 0; j < stage.propertyPermissions.length; j++) {
+                    if (Array.isArray(stage.propertyPermissions[j].permissions)) {
+                      for (let k = 0; k < stage.propertyPermissions[j].permissions.length; k++) {
+                        if (
+                          tOptions.user.isMe(stage.propertyPermissions[j].permissions[k].role) ||
+                          tOptions.user.isMe(item.get(stage.propertyPermissions[j].permissions[k].role))
+                        ) {
+                          if (!propertyPermissions.hasOwnProperty(stage.propertyPermissions[j].property)) {
+                            propertyPermissions[stage.propertyPermissions[j].property] = {};
+                          }
+                          addPermissions(
+                            propertyPermissions[stage.propertyPermissions[j].property],
+                            stage.propertyPermissions[j].permissions[k].permissions
+                          );
+                        }
                       }
-                      addPermissions(
-                        propertyPermissions[stage.propertyPermissions[j].property],
-                        stage.propertyPermissions[j].permissions[k].permissions
-                      );
                     }
                   }
                 }
@@ -218,9 +228,9 @@ function WorkflowProvider(options) {
         return rp.then(() => {
           return {
             stages: result,
-            itemPermissions: itemPermissions,
-            propertyPermissions: propertyPermissions,
-            selectionProviders: selectionProviders
+            itemPermissions,
+            propertyPermissions,
+            selectionProviders
           };
         });
       });
@@ -314,7 +324,7 @@ function WorkflowProvider(options) {
     }
 
     if (!wf.transitionsByName.hasOwnProperty(name)) {
-      return Promise.reject(new IonError(Errors.TRANS_NOT_FOUND, {workflow: wf.caption, trans: name}));
+      return Promise.reject(new IonError(Errors.TRANS_NOT_FOUND, {workflow: wf.caption || wf.name, trans: name}));
     }
 
     let transition = wf.transitionsByName[name];
@@ -337,7 +347,7 @@ function WorkflowProvider(options) {
                 }
                 if (!allowed) {
                   return Promise.reject(
-                    new IonError(Errors.ACCESS_DENIED, {trans: wf.caption + '.' + transition.caption})
+                    new IonError(Errors.ACCESS_DENIED, {trans: (wf.caption || wf.name) + '.' + (transition.caption || transition.name)})
                   );
                 }
               }
@@ -345,7 +355,7 @@ function WorkflowProvider(options) {
               let nextState = wf.statesByName[transition.finishState];
               if (!nextState) {
                 return Promise.reject(
-                  new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption})
+                  new IonError(Errors.STATE_NOT_FOUND, {state: transition.finishState, workflow: wf.caption || wf.name})
                 );
               }
 
@@ -368,8 +378,8 @@ function WorkflowProvider(options) {
                         Errors.CONDITION_VIOLATION,
                         {
                           info: item.getClassName() + '@' + item.getItemId(),
-                          state: nextState.caption,
-                          workflow: wf.caption
+                          state: nextState.caption || nextState.name,
+                          workflow: wf.caption || wf.name
                         }
                       );
                   }
@@ -416,13 +426,16 @@ function WorkflowProvider(options) {
             }
           }
           return Promise.reject(
-            new IonError(Errors.TRANS_IMPOSSIBLE, {workflow: wf.caption, trans: transition.caption})
+            new IonError(Errors.TRANS_IMPOSSIBLE, {
+              workflow: wf.caption || wf.name,
+              trans: transition.caption || transition.name
+            })
           );
         }
         return Promise.reject(
           new IonError(
             Errors.NOT_IN_WORKFLOW,
-            {workflow: wf.caption, info: item.getMetaClass().getCaption() + '@' + item.getItemId()}
+            {workflow: wf.caption || wf.name, info: item.getMetaClass().getCaption() + '@' + item.getItemId()}
           )
         );
       });
@@ -472,7 +485,7 @@ function WorkflowProvider(options) {
         }
          */
         if (!wf.statesByName.hasOwnProperty(state)) {
-          throw new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption});
+          throw new IonError(Errors.STATE_NOT_FOUND, {state: state, workflow: wf.caption || wf.name});
         }
 
         let target = wf.statesByName[state];
@@ -486,8 +499,8 @@ function WorkflowProvider(options) {
                 Errors.CONDITION_VIOLATION,
                 {
                   info: item.getClassName() + '@' + item.getItemId(),
-                  state: target.caption,
-                  workflow: wf.caption
+                  state: target.caption || target.name,
+                  workflow: wf.caption || wf.name
                 }
               );
             }

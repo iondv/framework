@@ -21,7 +21,7 @@
     "url": "https://github.com/iondv/framework.git",
     "type": "git"
   },
-  "version": "2.7.2",
+  "version": "2.9.1",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -57,6 +57,7 @@
     "morgan": "^1.9.0",
     "nearley": "^2.13.0",
     "node-forge": "^0.7.1",
+    "nodemailer": "^6.0.0",
     "oauth2-server": "^3.0.0",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
@@ -64,7 +65,8 @@
     "redis": "^2.8.0",
     "request": "^2.83.0",
     "rimraf": "^2.6.2",
-    "sendmail": "^1.2.0",
+    "sanitize-filename": "^1.6.1",
+    "sendmail": "^1.4.1",
     "serve-favicon": "^2.4.5",
     "sharp": "^0.20.3",
     "uuid": "^3.1.0",

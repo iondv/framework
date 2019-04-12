@@ -11,12 +11,14 @@ class LocalAccountStorage extends IAccountStorage {
    * @param {Number} [options.passwordMinLength]
    * @param {Boolean} [options.caseInsensitiveLogin]
    * @param {DataSource} options.dataSource
+   * @param {Array.<ProfilePlugin>} [options.plugins]
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.passwordMinLength = options.passwordMinLength || 0;
     this.caseInsensitiveLogin = Boolean(options.caseInsensitiveLogin);
+    this.plugins = options.plugins || [];
   }
 
   init() {
@@ -127,6 +129,28 @@ class LocalAccountStorage extends IAccountStorage {
     });
   }
 
+  _pluginAction(cb) {
+    let promises = Promise.resolve();
+    let fields = {};
+    Object.values(this.plugins).forEach(
+      (plugin) => {
+        promises = promises
+          .then(() => cb(plugin))
+          .then((result) => {
+            fields = Object.assign(fields, result);
+          });
+      });
+    return promises.then(() => fields);
+  }
+
+  _profileFields() {
+    return this._pluginAction(plugin => plugin.fields());
+  }
+
+  _validate(data) {
+    return this._pluginAction(plugin => plugin.validate(data));
+  }
+
   /**
    * @param {String} id
    * @param {String} [pwd]
@@ -181,7 +205,17 @@ class LocalAccountStorage extends IAccountStorage {
         }
         return null;
       })
-      .then(user => user ? new User(user) : null);
+      .then((user) => {
+        if (!user) {
+          return null;
+        }
+        const u = new User(user);
+        return this._pluginAction(plugin => plugin.properties(u.id()))
+          .then((data) => {
+            u.setProperties(data);
+            return u;
+          });
+      });
   }
 
   /**
@@ -269,10 +303,17 @@ class LocalAccountStorage extends IAccountStorage {
       .fetch('ion_user', {filter: f.length ? {[F.AND]: f} : null})
       .then((list) => {
         let result = [];
+        let p = Promise.resolve();
         list.forEach((u) => {
-          result.push(new User(u));
+          let user = new User(u);
+          p = p
+            .then(() => this._pluginAction(plugin => plugin.properties(user.id())))
+            .then((data) => {
+              user.setProperties(data);
+              result.push(user);
+            });
         });
-        return result;
+        return p.then(() => result);
       });
   }
 

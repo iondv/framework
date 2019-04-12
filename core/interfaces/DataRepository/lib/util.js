@@ -858,7 +858,7 @@ function calcProperties(item, skip, needed, cached) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  return item.calculateProperties(needed, cached);
+  return item.calculateProperties(needed, cached, false);
 }
 
 module.exports.calcProperties = calcProperties;
