@@ -18,9 +18,10 @@
   },
   "private": true,
   "repository": {
-    "url": "https://github.com/iondv/framework.git",
+    "url": "https://git.iondv.ru/ION/platform.git",
     "type": "git"
   },
+  "homepage": "https://git.iondv.ru/ION/platform",
   "version": "3.0.0",
   "dependencies": {
     "acl": "^0.4.11",
@@ -87,6 +88,6 @@
     "gulp-jsmin": "~0.1.5",
     "gulp-less": "~4.0.1",
     "gulp-rename": "~1.4.0"
-  },
-  "homepage": "https://github.com/iondv/framework"
+  }
+
 }
