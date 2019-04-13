@@ -152,6 +152,9 @@ version - is `4.0`.
 
 Further, execute the `gulp assemble` command to build and deploy the application.
 
+If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
+`node bin/import-data --src ./applications/develop-and-test --ns develop-and-test`
+
 Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. 
 
 Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
@@ -164,7 +167,7 @@ Open this link `http://localhost:8888` in a browser and log in. `8888` —  is a
 
 
 ### Docker
-Follow these steps to deploy docker container:
+Follow these steps to deploy docker container on the example of the `develop-and-test` application:
 
 1. Run mongodb
 
@@ -177,11 +180,16 @@ docker run  --name mongodb \
             mongo
 ```
 
-2. Deploy your **IONDV. Develop-and-test** and additional applications 
+2. Deploy your **IONDV. Develop-and-test** and additional applications (import and setup must be performed for all applications)
 ```bash
 docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
 docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
 docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
+```
+
+If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
+```bash
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import-data --src ./applications/develop-and-test --ns develop-and-test
 ```
 
 3. Create user `admin` with password `123` and `admin` role
@@ -214,9 +222,7 @@ Some handy links to learn more information on developing applications using IOND
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
-
-
+#### [Licence](/LICENCE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
 
 

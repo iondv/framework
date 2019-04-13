@@ -137,6 +137,9 @@ fs.urlBase=/files
 
 Далее выполните команду сборки приложения `gulp assemble`. 
 
+Если вы хотите выполнить импорт данных в вашем проекте, проверьте папку `data` в приложении и выполните команду:
+`node bin/import-data --src ./applications/develop-and-test --ns develop-and-test`
+
 Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
 
 Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
@@ -146,6 +149,46 @@ fs.urlBase=/files
 Запустите приложение командой в папке ядра `npm start`. 
 
 Откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении , где `8888` - порт указанный в параметре server.ports конфигурации запуска.
+
+### Docker
+Для запуска приложений с докер контейнера, следуйте следующим инструкциям на примере приложения `develop-and-test`:
+
+1. Запустите СУБД mongodb
+
+```bash
+docker run  --name mongodb \
+            -v mongodb_data:/data/db \
+            -p 27017:27017 \
+            --restart unless-stopped \
+            -d \
+            mongo
+```
+
+2. Разверните **IONDV. Develop-and-test** и вспомогательные приложения (import и setup должны быть выполенны для всех приложений)
+```bash
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
+```
+
+Если вы хотите импортированных данные в ваше проект, проверьте папку с демо данными `data` в приложении и выполните команду:
+```bash
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import-data --src ./applications/develop-and-test --ns develop-and-test
+```
+
+3. Создайтей пользователя `admin` с паролем `123` и ролью `admin`
+```
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/adduser --name admin --pwd 123
+docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/acl --u admin@local --role admin --p full
+```
+
+4. Запустите приложение
+```
+docker run -d -p 80:8888 --name dnt --link mongodb iondv/dnt
+```
+
+Откройте в браузере `http://localhost/`.
+
 
 ## Документация 
 
@@ -163,9 +206,8 @@ fs.urlBase=/files
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
-
-
+#### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 --------------------------------------------------------------------------  
 
