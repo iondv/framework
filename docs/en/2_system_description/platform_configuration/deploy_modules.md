@@ -622,7 +622,7 @@ Set the following function in the `"modules"` section in the deploy.json file of
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

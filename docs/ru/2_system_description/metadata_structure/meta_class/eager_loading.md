@@ -70,7 +70,7 @@ NB. Если вместо `"node1"` поставить `"*"`, то при поп
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
