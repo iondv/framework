@@ -28,13 +28,7 @@
   "description": "Метапроект для тестирования и разработки",
   "version": "1.9.2",
   "homepage": "http://docker.local:8080",
-  "bugs": {
-    "url": "https://ion-dv.atlassian.net/projects/IONCORE/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://git.iondv.ru/ION-METADATA/develop-and-test.git"
-  },
+  
   "engines": {
     "ion": "1.24.1"
   },
@@ -53,10 +47,7 @@
   },
   "ionMetaDependencies": {
     "viewlib": "0.9.1"
-  },
-  "dependencies": {
-    "esia": "git+https://git.iondv.ru/node-modules/esia.git"
-  },
+  }
 }
 
 
