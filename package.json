@@ -1,0 +1,93 @@
+{
+  "name": "iondv-framework",
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "license": "Apache License 2.0",
+  "engines": {
+    "node": ">=8.9.1"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "bugs": {
+    "url": "https://github.com/iondv/framework"
+  },
+  "private": true,
+  "repository": {
+    "url": "https://github.com/iondv/framework.git",
+    "type": "git"
+  },
+  "homepage": "https://github.com/iondv/framework",
+  "version": "3.0.0",
+  "dependencies": {
+    "acl": "^0.4.11",
+    "base64-js": "^1.2.1",
+    "base64-stream": "^0.1.3",
+    "body-parser": "^1.18.2",
+    "clone": "^2.1.1",
+    "connect-flash": "~0.1",
+    "connect-memcached": "~1.0",
+    "connect-redis": "~3.4.0",
+    "cookie-parser": "^1.4.3",
+    "cuid": "^1.3.8",
+    "ejs": "^2.5.7",
+    "ejs-locals": "^1.0.2",
+    "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "extend": "^3.0.1",
+    "fast-clone": "^1.5",
+    "file-stream-rotator": "^0.2.0",
+    "ini": "^1.3.5",
+    "js-yaml": "^3.10.0",
+    "jsonwebtoken": "^8.1.0",
+    "jssc": "^0.2.6",
+    "jszip": "^3.1.5",
+    "locale": "^0.1.0",
+    "lodash": "^4.17.10",
+    "memcached": "^2.2.2",
+    "merge": "^1.2.0",
+    "method-override": "^2.3.10",
+    "mkdirp": "^0.5.1",
+    "moment": "^2.19.3",
+    "moment-timezone": "^0.5.14",
+    "mongodb": "~3.1",
+    "morgan": "^1.9.0",
+    "nearley": "^2.13.0",
+    "node-forge": "^0.7.1",
+    "nodemailer": "^6.0.0",
+    "oauth2-server": "^3.0.0",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
+    "password-hash-and-salt": "^0.1.4",
+    "redis": "^2.8.0",
+    "request": "^2.83.0",
+    "rimraf": "^2.6.2",
+    "sanitize-filename": "^1.6.1",
+    "sendmail": "^1.4.1",
+    "serve-favicon": "^2.4.5",
+    "sharp": "^0.20.3",
+    "uuid": "^3.1.0",
+    "xmldom": "^0.1.27",
+    "xpath": "0.0.27",
+    "xss": "^0.3.4"
+  },
+  "scripts": {
+    "setup": "gulp deploy",
+    "lint": "eslint --fix",
+    "start": "node bin/www",
+    "build": "gulp build",
+    "test": "gulp test"
+  },
+  "devDependencies": {
+    "gulp": "^4.0.0",
+    "gulp-clean-css": "~4.0.0",
+    "gulp-jsmin": "~0.1.5",
+    "gulp-less": "~4.0.1",
+    "gulp-rename": "~1.4.0"
+  }
+
+}

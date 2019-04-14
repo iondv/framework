@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+/* eslint no-process-exit:off, no-sync:off */
+'use strict';
+const config = require('../config');
+const IonLogger = require('core/impl/log/IonLogger');
+const Scheduler = require('core/impl/Scheduler');
+const sysLog = new IonLogger(config.log || {});
+const server = require('lib/server');
+
+server({
+  config,
+  sysLog,
+  onStart: (scope) => {
+    if (config.runJobs) {
+      sysLog.info('Запуск заданий по расписанию');
+      return scope.scheduler.start().then(() => {
+        sysLog.info('Подсистема заданий по расписанию запущена');
+      });
+    }
+  }
+});

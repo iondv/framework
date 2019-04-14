@@ -1,0 +1,49 @@
+{
+    "log_level": "notice",
+    "port": [
+        3000,
+        3001,
+        3002
+    ],
+    "defaultModule":"registry",
+    "datasources":[
+      {
+        "name":"Db",
+        "module":"core/impl/datasource/mongodb",
+        "config": {
+          "uri": "mongodb://127.0.0.1:27017/database",
+          "options": {
+            "server": {
+              "socketOptions":{
+                "keepAlive": 1
+              }
+            }
+          },
+          "connectionLimit": 10,
+          "schema": "database",
+          "user": "user",
+          "password": "pwd"
+        }
+      }
+    ],
+    "metaDs": "Db",
+    "dataDs": "Db",
+    "sessionDs": "Db",
+    "auth": {
+      "denyTopLevel": false,
+      "localAuthDS": "Db"
+    },
+    "policy": [
+        {
+            "module": "core/impl/access/aclmongo",
+            "config": {
+                "accessDs": "Db"
+            }
+        }
+    ],
+    "session": {
+       "secret": "ion:demo:secret",
+       "resave": false,
+       "saveUninitialized": true
+    }
+}

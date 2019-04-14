@@ -1,0 +1,27 @@
+/**
+ * Created by kras on 04.09.16.
+ */
+'use strict';
+module.exports = {
+  TEXT_SIMPLE: 0,
+  TEXT_AUTOCOMPLETE: 1,
+
+  COLLECTION_LIST: 0,
+  COLLECTION_LINK: 1,
+  COLLECTION_LINKS: 2,
+  COLLECTION_TABLE: 3,
+  COLLECTION_HASHTAGS: 4,
+
+  REF_STRING: 0,
+  REF_LINK: 1,
+  REF_INFO: 2,
+  REF_HIERARCHY: 3,
+  REF_SPECIFY: 4,
+
+  GEO_MAP: 0,
+  GEO_LOCATOR: 1,
+  GEO_CANVAS: 2,
+
+  GROUP_VERTICAL: 0,
+  GROUP_HORIZONTAL: 1
+};

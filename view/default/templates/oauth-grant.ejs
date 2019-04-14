@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IONDV Framework: OAuth2 access</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+  <base id="baseUrl" href="<%=baseUrl%>">
+    <!--[if IE]>
+      <script type="text/javascript">
+        // Fix for IE ignoring relative base tags.
+        (function() {
+            var baseTag = document.getElementsByTagName('base')[0];
+            baseTag.href = baseTag.href;
+        })();
+      </script>
+    <![endif]-->
+  <link rel="shortcut icon" href="favicon.ico">
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <link href="css/base.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+
+<div class="padding-15">
+  <div class="login-box">
+    <!-- login form -->
+    <form action="oauth/grant" method="post" class="dlg-form boxed">
+      <header><i class="fa fa-users"></i> Aplication <%=claimApp%> get access</header>
+      <footer>
+        <button name="grant" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
+          Grant access
+        </button>
+        <button name="deny" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
+          Decline
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+<%- pageEndContent %>
+</body>
+</html>

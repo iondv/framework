@@ -1,0 +1,260 @@
+label {
+  font-weight: normal;
+}
+
+i.fa {
+  text-decoration: none !important
+}
+
+.fa {
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale
+}
+
+.fa-user:before {
+  content: "\f007"
+}
+
+.fa-lock:before {
+  content: "\f023"
+}
+
+.fa-users:before {
+  content: "\f0c0"
+}
+
+a:active, a:focus, a:hover {
+  text-decoration: none
+}
+
+form > input, form > select, form > textarea {
+  margin-bottom: 8px
+}
+
+.checkbox:hover i, .input:hover input, .radio:hover i, .select:hover select, .textarea:hover textarea, .toggle:hover i {
+  border-color: rgba(0, 0, 0, .6)
+}
+
+.btn {
+  height: 40px
+}
+
+a.btn {
+  line-height: 26px
+}
+
+.dlg-form .radio input + i:after {
+  content: ''
+}
+
+.dlg-form .select i:after {
+  content: ''
+}
+
+.dlg-form .select i:before {
+  content: ''
+}
+
+.dlg-form footer:after {
+  content: ''
+}
+
+.dlg-form header {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box
+}
+
+.dlg-form, .dlg-form .label {
+  color: #333;
+  text-align: left;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 300
+}
+
+.dlg-form.boxed {
+  border: 1px solid rgba(0, 0, 0, .1)
+}
+
+.dlg-form header {
+  margin: 0;
+  background-color: transparent;
+  background: -webkit-linear-gradient(top, #fff 1%, #f9f9f9 98%);
+  background: linear-gradient(to bottom, #fff 1%, #f9f9f9 98%);
+  border-bottom: rgba(0, 0, 0, .07) 1px solid;
+  padding: 15px 20px;
+  font-size: 20px;
+  font-weight: 400
+}
+
+.dlg-form.boxed fieldset {
+  padding: 15px
+}
+
+.dlg-form fieldset {
+  display: block;
+  padding: 25px 30px 5px;
+  border: none
+}
+
+.dlg-form section {
+  padding: 0;
+  margin-bottom: 20px
+}
+
+.dlg-form footer {
+  margin: 0 15px 10px;
+  border-top: rgba(0, 0, 0, .03) 1px solid
+}
+
+.dlg-form footer:after {
+  display: table;
+  clear: both
+}
+
+.dlg-form .label {
+  display: block;
+  margin-bottom: 6px;
+  line-height: 19px
+}
+
+.dlg-form .button, .dlg-form .checkbox, .dlg-form .input, .dlg-form .radio, .dlg-form .select, .dlg-form .textarea, .dlg-form .toggle {
+  position: relative;
+  display: block
+}
+
+.dlg-form .input input, .dlg-form .select select, .dlg-form .textarea textarea {
+  display: block;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  width: 100%;
+  height: 39px;
+  padding: 8px 10px;
+  outline: 0;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 0;
+  background: #fff;
+  font: 15px/19px 'Open Sans', Helvetica, Arial, sans-serif;
+  color: #404040;
+  appearance: normal;
+  -moz-appearance: none;
+  -webkit-appearance: none
+}
+
+.dlg-form .btn {
+  margin: 10px 0 0 20px
+}
+
+.dlg-form .btn:hover {
+  margin-bottom: 0
+}
+
+.dlg-form .checkbox i {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .icon-append {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .icon-prepend {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .input input {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .radio i {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .select select {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .textarea textarea {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .toggle i {
+  border-color: #e5e5e5;
+  transition: border-color .3s;
+}
+
+.dlg-form .icon-append {
+  color: #ccc;
+  position: absolute;
+  top: 5px;
+  width: 29px;
+  height: 29px;
+  font-size: 15px;
+  line-height: 29px;
+  text-align: center;
+  right: 5px;
+  padding-left: 3px;
+  border-left-width: 1px;
+  border-left-style: solid
+}
+
+.dlg-form .checkbox:hover i {
+  border-color: #8dc9e5
+}
+
+.dlg-form .input:hover input {
+  border-color: #8dc9e5
+}
+
+.dlg-form .radio:hover i {
+  border-color: #8dc9e5
+}
+
+.dlg-form .select:hover select {
+  border-color: #8dc9e5
+}
+
+.dlg-form .textarea:hover textarea {
+  border-color: #8dc9e5
+}
+
+.dlg-form .toggle:hover i {
+  border-color: #8dc9e5
+}
+
+html, body {
+  background: #f1f2f7;
+  height: 100%
+}
+
+body {
+  color: #676a6c;
+  direction: ltr;
+  overflow-x: hidden;
+  font-size: 14px;
+  font-family: 'Open Sans', Arial, sans-serif
+}
+
+.forgot-password {
+  display: inline-block
+}
+
+.login-box {
+  max-width: 350px;
+  margin: 10% auto auto
+}
+
+.login-box > form {
+  background-color: #fff
+}

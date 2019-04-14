@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IONDV Framework: Change password</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+  <base id="baseUrl" href="<%=baseUrl%>">
+  <!--[if IE]>
+    <script type="text/javascript">
+      // Fix for IE ignoring relative base tags.
+      (function() {
+          var baseTag = document.getElementsByTagName('base')[0];
+          baseTag.href = baseTag.href;
+      })();
+    </script>
+  <![endif]-->
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <link href="css/base.css" rel="stylesheet" type="text/css">
+  <script src="vendor/jquery/jquery.min.js"></script>
+</head>
+
+<body>
+<div class="padding-15">
+  <div class="login-box">
+    <% if(errors.length) { %>
+    <div id="error" class="alert alert-danger">
+      <% errors.forEach(function(error){ %>
+      <p><%= error %></p>
+      <% }); %>
+    </div>
+    <% } %>
+    <div id="errors" class="alert alert-danger" style="display: none"></div>
+
+    <form action="chpwd" method="post" id="reg-form" class="dlg-form boxed">
+      <header><i class="fa fa-users"></i> Change password</header>
+      <fieldset>
+        <section>
+          <label class="label">New password</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input type="password" name="password">
+          </label>
+        </section>
+
+        <section>
+          <label class="label">Repeat password</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input type="password" name="password2">
+          </label>
+        </section>
+      </fieldset>
+
+      <footer>
+        <button id="submit-btn" type="button" class="btn btn-primary pull-left" style="margin-left:0;">
+          Change password
+        </button>
+        <div class="forgot-password pull-right">
+          <a class="btn btn-link" href="/"><span class="glyphicon glyphicon-home"></span> <b>Home</b></a>
+        </div>
+      </footer>
+    </form>
+
+  </div>
+</div>
+<script>
+  jQuery(function(){
+    var options = <%- JSON.stringify(options)%>;
+    var $errors = $('#errors');
+    var $submit = $('#submit-btn');
+    var $regForm = $('#reg-form');
+    var $pwd = $regForm.find('[name="password"]');
+    var $pwd2 = $regForm.find('[name="password2"]');
+    $submit.click(function(){
+      $errors.hide();
+      var pwd = $pwd.val();
+      var pwd2 = $pwd2.val();
+      var valid = true;
+      var messages = [];
+      if (pwd && pwd2 && pwd === pwd2) {
+        if (options.pwdMinLength) {
+          if (pwd.length < options.pwdMinLength) {
+            valid = false;
+            messages.push('Password minimal length ' + options.pwdMinLength + ' symbols');
+          }
+        }
+      } else {
+        valid = false;
+        messages.push('Wrong repeat password');
+      }
+      if (valid) {
+        $regForm.submit();
+      } else if (messages.length) {
+        for (var i = 0; i < messages.length; i++) {
+          $('<div/>').html(messages[i]).appendTo($errors);
+        }
+        $errors.show();
+      }
+    });
+  });
+</script>
+<%- pageEndContent %>
+</body>
+</html>

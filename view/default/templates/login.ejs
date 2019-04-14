@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IONDV Framework: Log in</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+  <base id="baseUrl" href="<%=baseUrl%>">
+    <!--[if IE]>
+      <script type="text/javascript">
+        // Fix for IE ignoring relative base tags.
+        (function() {
+            var baseTag = document.getElementsByTagName('base')[0];
+            baseTag.href = baseTag.href;
+        })();
+      </script>
+    <![endif]-->
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <link href="css/base.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+<script src="vendor/jquery/jquery.min.js"></script>
+<script src="vendor/moment/moment.min.js"></script>
+<script src="vendor/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+
+<div class="padding-15">
+  <div class="login-box">
+    <% if(errors.length) { %>
+    <div id="error" class="alert alert-danger">
+      <% errors.forEach(function(error){ %>
+      <p><%= error %></p>
+      <% }); %>
+    </div>
+    <% } %>
+    <!-- login form -->
+    <form action="auth" method="post" class="dlg-form boxed">
+      <header><i class="fa fa-users"></i> Log in</header>
+      <input type="hidden" name="timezone" value="" />
+      <fieldset>
+        <section>
+          <label class="label">Login</label>
+          <label class="input">
+            <i class="icon-append fa fa-user"></i>
+            <input id="username" type="login" name="username">
+          </label>
+        </section>
+
+        <section>
+          <label class="label">Password</label>
+          <label class="input">
+            <i class="icon-append fa fa-lock"></i>
+            <input id="password" type="password" name="password">
+          </label>
+        </section>
+      </fieldset>
+
+      <footer>
+        <button id="authbutton" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
+          Enter
+        </button>
+        <div class="forgot-password pull-right">
+          <% if (canRegister) { %>
+          <a class="btn btn-link" href="register"><b>Create account</b></a>
+          <% } %>
+          <% if (goHome) { %>
+          &nbsp;&nbsp;
+          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Home</b></a>
+          <% } %>
+        </div>
+      </footer>
+    </form>
+
+  </div>
+</div>
+<script>
+  $(function () {
+    $('input[name=timezone]').val(moment.tz.guess());
+  });
+</script>
+<%- pageEndContent %>
+</body>
+</html>
