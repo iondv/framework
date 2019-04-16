@@ -219,7 +219,7 @@ class Notifier extends INotifier {
    * @returns {Promise}
    */
   _markAsRead(reciever, id) {
-    return this.ds.upsert(
+    return this.ds.update(
       'ion_notification_recievers',
       {
         [F.AND]: [
@@ -229,7 +229,11 @@ class Notifier extends INotifier {
       },
       {
         recieved: new Date()
-      });
+      },
+      {
+        bulk: true
+      }
+    );
   }
 
   /**
@@ -237,7 +241,7 @@ class Notifier extends INotifier {
    * @returns {Promise}
    */
   _markAllAsRead(reciever) {
-    return this.ds.upsert(
+    return this.ds.update(
       'ion_notification_recievers',
       {
         [F.AND]: [
