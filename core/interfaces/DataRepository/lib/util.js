@@ -538,13 +538,13 @@ function createSearchRegexp(search, mode, asString) {
   return new RegExp(result, 'i');
 }
 
-function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
+function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode, strictSearch) {
   if (pm.selectionProvider) {
     spFilter(cm, pm, or, createSearchRegexp(sv, mode), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
       return searchFilter(scope, pm._refClass, or,
-        {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
+        {searchBy: pm._refClass.getSemanticAttrs(), strictSearch}, sv, lang, false,
         (prefix || '') + pm.name + '.', depth - 1, mode);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
@@ -572,7 +572,10 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
+          if (strictSearch)
+            or.push({[Operations.EQUAL]: [aname, sv]});
+          else
+            or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
           pm.type === PropertyTypes.INT ||
@@ -639,7 +642,7 @@ function fillSearchIds(scope, scm, opts, ids, sv, lang, depth) {
  * @param {{}} scope
  * @param {ClassMeta} cm
  * @param {Array} or
- * @param {{searchBy: String[], splitBy: String, mode: String[]}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], strictSearch: Boolean}} opts
  * @param {Array} [opts.searchByRefs]
  * @param {String} sv
  * @param {String} lang
@@ -710,11 +713,11 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           result = result ? result.then(
             () => attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i])
+              d, smodes[i], opts.strictSearch)
           ) :
             attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i]);
+              d, smodes[i], opts.strictSearch);
         }
       } else {
         let pm = cm.getPropertyMeta(nm);
@@ -722,8 +725,8 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           if (pm.indexSearch && useFullText) {
             fullText = true;
           }
-          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
+          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch)) :
+            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch);
         }
       }
     }
@@ -742,7 +745,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
 
 /**
  * @param {ClassMeta} cm
- * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String, strictSearch: Boolean}} opts
  * @param {String} sv
  * @param {String} lang
  * @param {Boolean} useFullText
