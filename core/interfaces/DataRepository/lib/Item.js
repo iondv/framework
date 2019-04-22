@@ -40,7 +40,7 @@ function Item(id, base, classMeta) {
   this.files = {};
   this.slCacheClean = true;
 
-  this.emptify = function () {
+  this.emptify = function() {
     this.id = null;
     this.base = {};
     this.references = {};
@@ -50,32 +50,32 @@ function Item(id, base, classMeta) {
     this.slCacheClean = true;
   };
 
-  this.getItemId = function () {
+  this.getItemId = function() {
     return this.id;
   };
 
-  this.getClassName = function () {
+  this.getClassName = function() {
     return this.classMeta.getCanonicalName();
   };
 
   /**
    * @returns {ClassMeta}
    */
-  this.getMetaClass = function () {
+  this.getMetaClass = function() {
     return this.classMeta;
   };
 
   /**
    * @returns {String}
    */
-  this.getCreator = function () {
+  this.getCreator = function() {
     return this.base._creator;
   };
 
   /**
    * @returns {String}
    */
-  this.getEditor = function () {
+  this.getEditor = function() {
     return this.base._editor;
   };
 
@@ -244,7 +244,7 @@ function Item(id, base, classMeta) {
    * @param {Boolean} [recursive]
    * @returns {Promise}
    */
-  this.calculateProperties = function (needed, cached, recursive) {
+  this.calculateProperties = function(needed, cached, recursive) {
     let calculations = Promise.resolve();
     if (!this.calculating) {
       this.calculating = true;
@@ -341,7 +341,7 @@ function Item(id, base, classMeta) {
   };
 }
 
-Item.prototype.toString = function () {
+Item.prototype.toString = function() {
   return this.stringValue || this.getItemId();
 };
 
