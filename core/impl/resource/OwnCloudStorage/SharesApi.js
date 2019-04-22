@@ -1,24 +1,13 @@
 const url = require('url');
-const request = require('request');
 const OwnCloudError = require('./OwnCloudError');
 const {urlResolver, slashChecker} = require('./util');
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
+const requester = require('core/util/request');
 
 const urlTypes = {
   OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
   SHARE: 'index.php/s/'
 };
-
-function requester(reqParams) {
-  return new Promise((resolve, reject) => {
-    request(reqParams, (err, res, body) => {
-      if (err) {
-        return reject(err);
-      }
-      return resolve(body);
-    });
-  });
-}
 
 function produceShare(obj) {
   if (Array.isArray(obj)) {
