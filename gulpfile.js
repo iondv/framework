@@ -320,7 +320,7 @@ function frontendInstall(pathDir) {
               }
             }
             if (copyers.length) {
-              Promise.all(copyers).then(resolve).catch(reject);
+              Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
               return;
             }
           } catch (error) {
