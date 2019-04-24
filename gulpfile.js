@@ -1,6 +1,6 @@
 /*eslint "require-jsdoc": off,  "no-console": off, "no-sync": off*/
 
-const {series, parallel} = require('gulp');
+const {series} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
 const assert = require('assert');
@@ -45,9 +45,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(parallel(buildBackendNpm, buildFrontend, buildBower, compileLessAll),
-  parallel(minifyCssAll, minifyJsAll));
-
+const build = series(buildBackendNpm, buildFrontend, buildBower, compileLessAll, minifyCssAll, minifyJsAll);
 
 function deploy(done) {
   console.log('Deploying and importing the application data.');
@@ -224,9 +222,7 @@ function minifyJsAll(done) {
 }
 
 function buildBackendNpm(done) {
-  let w = buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications');
-
-  w
+  buildDir(buildDir(npm(platformPath)(), 'modules'), 'applications')
     .then(done)
     .catch((err) => {
       console.error(err);
@@ -235,46 +231,24 @@ function buildBackendNpm(done) {
 }
 
 function buildFrontend(done) {
-  let themes = themeDirs();
-  let start = null;
-  for (let i = 0; i < themes.length; i++) {
-    if (start) {
-      start = start.then(frontendInstall(themes[i]));
-    } else {
-      start = frontendInstall(themes[i])();
-    }
-  }
-  if (!start) {
-    start = Promise.resolve();
-  }
-  start
-    .then(function () {
-      done();
-    })
-    .catch(function (err) {
+  const themes = themeDirs();
+  let start = Promise.resolve();
+  for (let i = 0; i < themes.length; i++)
+    start = start.then(frontendInstall(themes[i]));
+  start.then(done)
+    .catch((err) => {
       console.error(err);
       done(err);
     });
 }
 
 function buildBower(done) {
-  let themes = themeDirs();
-  let start = null;
-  for (let i = 0; i < themes.length; i++) {
-    if (start) {
-      start = start.then(bowerInstall(themes[i]));
-    } else {
-      start = bowerInstall(themes[i])();
-    }
-  }
-  if (!start) {
-    start = Promise.resolve();
-  }
-  start
-    .then(function () {
-      done();
-    })
-    .catch(function (err) {
+  const themes = themeDirs();
+  let start = Promise.resolve();
+  for (let i = 0; i < themes.length; i++)
+    start = start.then(bowerInstall(themes[i]));
+  start.then(done)
+    .catch((err) => {
       console.error(err);
       done(err);
     });

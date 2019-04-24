@@ -1,0 +1,117 @@
+body {
+    background: #f2f2f2;
+}
+
+a {
+    color: #006AB4;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.demo {
+    width: 600px;
+    margin: 20px auto;
+    padding: 10px;
+    color: #4F6B72;
+    font-family: "PT Sans", Verdana, Arial, sans-serif;
+    font-size: 13px;
+}
+
+.demo .permalink {
+    display: block;
+    color: #4F6B72;
+    text-decoration: none;
+    margin: 10px 0;
+}
+
+.clear {
+    clear: both;
+}
+
+.user-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+.user-card img {
+    float: left;
+}
+
+.user-data {
+    padding-left: 60px;
+}
+
+.sign-out {
+    margin-top: 10px;
+}
+
+.auth-form {
+    padding: 10px;
+    background: #fff;
+    width: 240px;
+    -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.error-msg {
+    padding: 5px;
+    border: 1px solid red;
+    margin-bottom: 8px;
+}
+
+.auth-form .input {
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 3px;
+    color: #555555;
+    display: inline-block;
+    font-size: 13px;
+    height: 18px;
+    line-height: 18px;
+    margin-bottom: 9px;
+    padding: 4px 4px 4px 23px;
+    width: 210px;
+}
+
+.auth-form .user {
+    background: url("/img/ico-user.png") 4px no-repeat;
+}
+
+.auth-form .password {
+    background: url("/img/ico-lock.png") 4px no-repeat;
+}
+
+.auth-form .buttons {
+    text-align: right;
+}
+
+.auth-form .buttons span {
+    float: left;
+    margin-top: 6px;
+}
+
+.auth-form button {
+    background-color: #575A82;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 6px;
+}
+
+.auth-form button:hover {
+    background-color: #FF875E;
+}
+
+.soc-auth, .sign-out {
+    margin-top: 10px;
+}
+
+.auth-form select {
+  width: 239px;
+  margin-bottom: 9px;
+}
