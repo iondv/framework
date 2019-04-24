@@ -320,8 +320,7 @@ function frontendInstall(pathDir) {
               }
             }
             if (copyers.length) {
-              Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
-              return;
+              return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
             }
           } catch (error) {
             return reject(error);
@@ -375,8 +374,7 @@ function bowerInstall(pathDir) {
               console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
             }
             if (copyers.length) {
-              Promise.all(copyers).then(resolve).catch(reject);
-              return;
+              return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
             }
           } catch (error) {
             return reject(error);
