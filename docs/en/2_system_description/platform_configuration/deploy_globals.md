@@ -226,7 +226,7 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

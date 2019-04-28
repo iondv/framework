@@ -23,7 +23,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

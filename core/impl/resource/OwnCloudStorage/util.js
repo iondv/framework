@@ -1,5 +1,4 @@
 const url = require('url');
-const path = require('path');
 
 function urlResolver(uri) {
   if (arguments.length > 1) {
