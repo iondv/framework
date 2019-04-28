@@ -10,6 +10,7 @@ const conditionParser = require('core/ConditionParser');
 const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
+const DateSize = require('core/DateSizes');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
@@ -65,6 +66,22 @@ function castValue(value, pm) {
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
     v = dateOffset(v, pm.mode);
+    switch (pm.size) {
+      case DateSize.SECONDS:
+        v.setMilliseconds(0);
+        break;
+      case DateSize.MINUTES:
+        v.setSeconds(0, 0);
+        break;
+      case DateSize.HOURS:
+        v.setMinutes(0, 0, 0);
+        break;
+      case DateSize.DAY:
+        v.setHours(0, 0, 0, 0);
+        break;
+      default:
+        break;
+    }
   }
   return v;
 }
