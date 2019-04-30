@@ -224,13 +224,15 @@ function IonDataRepository(options) {
    * @param {String} [version]
    * @param {{}} [options]
    * @param {User} [options.user]
+   * @param {String} [options.lang]
    * @private
    * @returns {Item | null}
    */
-  this._wrap = function (className, data, version) {
-    let acm = this.meta.getMeta(className, version);
+  this._wrap = function (className, data, version, options) {
+    const acm = this.meta.getMeta(className, version);
     delete data._id;
-    return new Item(this.keyProvider.formKey(acm, data), data, acm);
+    options = options || {};
+    return new Item(this.keyProvider.formKey(acm, data), data, acm, options.lang);
   };
 
   /**
@@ -450,7 +452,7 @@ function IonDataRepository(options) {
   }
 
   function getEnrichList(options) {
-    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed, skipCalc} = options;
+    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed, skipCalc, lang} = options;
     return _this._getList(cn,
       {
         sort: sort,
@@ -460,7 +462,8 @@ function IonDataRepository(options) {
         ___implicitEnrichment: implForced,
         ___loaded: loaded,
         needed,
-        skipCalculations: skipCalc
+        skipCalculations: skipCalc,
+        lang
       }
     ).then((items) => {
       if (items && items.length) {
@@ -598,7 +601,7 @@ function IonDataRepository(options) {
     if (!src.length) {
       return Promise.resolve(src2);
     }
-    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed, skipCalc} = options;
+    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed, skipCalc, lang} = options;
     nestingDepth = nestingDepth || 0;
     let srcByKey = {};
     let explicitForced = {};
@@ -755,7 +758,8 @@ function IonDataRepository(options) {
                         loaded: ___loaded,
                         attr: attrs[nm],
                         needed: needed2,
-                        skipCalc
+                        skipCalc,
+                        lang
                       })
                     );
                 });
@@ -769,7 +773,8 @@ function IonDataRepository(options) {
                   loaded: ___loaded,
                   attr: attrs[nm],
                   needed: needed2,
-                  skipCalc
+                  skipCalc,
+                  lang
                 });
               }
             } else {
@@ -785,7 +790,8 @@ function IonDataRepository(options) {
                     ___implicitEnrichment: [],
                     ___loaded,
                     needed: needed2,
-                    skipCalc
+                    skipCalc,
+                    lang
                   },
                   cm
                 );
@@ -862,7 +868,7 @@ function IonDataRepository(options) {
         let result = [];
         let fl = Promise.resolve();
         data.forEach((d) => {
-          let wd = _this._wrap(d._class, d, d._classVer);
+          let wd = _this._wrap(d._class, d, d._classVer, options);
           result.push(wd);
           fl = fl.then(() => loadFiles(wd, _this.fileStorage, _this.imageStorage));
         });
@@ -880,7 +886,7 @@ function IonDataRepository(options) {
     this._next = function () {
       iterator.next().then((data) => {
         if (data) {
-          let item = _this._wrap(data._class, data, data._classVer);
+          let item = _this._wrap(data._class, data, data._classVer, options);
           return loadFiles(item, _this.fileStorage, _this.imageStorage)
             .then(item => enrich(item, merge(options, {skipCalc: true}), item.getMetaClass()))
             .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
@@ -1226,7 +1232,7 @@ function IonDataRepository(options) {
         .then(f => _this.ds.get(tn(rcm), f, opts))
         .then((data) => {
           if (data) {
-            let item = _this._wrap(data._class, data, data._classVer);
+            let item = _this._wrap(data._class, data, data._classVer, options);
             return loadFiles(item, _this.fileStorage, _this.imageStorage);
           }
           return Promise.resolve(null);
@@ -1247,7 +1253,7 @@ function IonDataRepository(options) {
             })
             .then((data) => {
               for (let i = 0; i < data.length; i++) {
-                let item = _this._wrap(data[i]._class, data[i], data[i]._classVer);
+                let item = _this._wrap(data[i]._class, data[i], data[i]._classVer, options);
                 return loadFiles(item, _this.fileStorage, _this.imageStorage);
               }
               return Promise.resolve(null);
@@ -1257,7 +1263,7 @@ function IonDataRepository(options) {
         if (options.skipAutoAssign) {
           fetcher = Promise.resolve(obj);
         } else {
-          fetcher = autoAssign(cm, obj.base, true, options.user).then(() => obj);
+          fetcher = autoAssign(cm, obj.base, true, options.user, options).then(() => obj);
         }
       }
     } else {
@@ -1366,7 +1372,7 @@ function IonDataRepository(options) {
    * @param {Boolean} onlyDefaults
    * @param {String} uid
    */
-  function autoAssign(cm, updates, onlyDefaults, user) {
+  function autoAssign(cm, updates, onlyDefaults, user, options) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       updates[cm.getCreationTracker()] = new Date();
     }
@@ -1380,7 +1386,7 @@ function IonDataRepository(options) {
     let calcs = Promise.resolve(updates);
 
     let calcContext = {
-      $context: _this._wrap(cm.getCanonicalName(), updates),
+      $context: _this._wrap(cm.getCanonicalName(), updates, options),
       $uid: user ? user.id() : null
     };
 
@@ -1950,7 +1956,7 @@ function IonDataRepository(options) {
         .then(preWriteEventHandler(data))
         .then(() => {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
-          return autoAssign(cm, updates, false, options.user);
+          return autoAssign(cm, updates, false, options.user, options);
         })
         .then(() => checkRequired(cm, updates, false, options.ignoreIntegrityCheck))
         .then(() => {
@@ -1987,7 +1993,7 @@ function IonDataRepository(options) {
               throw new Error('Объект не был найден после создания.');
             }
           }
-          let item = _this._wrap(data._class, data, data._classVer);
+          let item = _this._wrap(data._class, data, data._classVer, options);
           delete updates._class;
           delete updates._classVer;
           if (updates._creator) {
@@ -2073,7 +2079,7 @@ function IonDataRepository(options) {
               cm,
               {
                 id: id,
-                item: b && _this._wrap(b._class, b, b._classVer),
+                item: b && _this._wrap(b._class, b, b._classVer, options),
                 data: data,
                 user: options.user
               });
@@ -2125,7 +2131,7 @@ function IonDataRepository(options) {
             if (!data) {
               throw new IonError(Errors.ITEM_NOT_FOUND, {info: `${classname}@${id}`});
             }
-            let item = _this._wrap(data._class, data, data._classVer);
+            let item = _this._wrap(data._class, data, data._classVer, options);
             if (updates._editor) {
               delete updates._editor;
             }
@@ -2220,7 +2226,7 @@ function IonDataRepository(options) {
             cm,
             {
               id: id,
-              item: b && _this._wrap(b._class, b, b._classVer),
+              item: b && _this._wrap(b._class, b, b._classVer, options),
               data: data,
               user: options.user
             });
@@ -2242,7 +2248,7 @@ function IonDataRepository(options) {
         .then(() => {
           updates = formUpdatedData(cm, data, true, refUpdates, da) || {};
           if (options && options.autoAssign) {
-            return autoAssign(cm, updates, true, options.user);
+            return autoAssign(cm, updates, true, options.user, options);
           } else {
             if (cm.getChangeTracker()) {
               updates[cm.getChangeTracker()] = new Date();
@@ -2261,7 +2267,7 @@ function IonDataRepository(options) {
             return checkRequired(cm, updates, true);
           } else {
             event = EventType.CREATE;
-            return autoAssign(cm, updates, false, options.user)
+            return autoAssign(cm, updates, false, options.user, options)
               .then(() => checkRequired(cm, updates, false, options.ignoreIntegrityCheck));
           }
         })
@@ -2278,9 +2284,9 @@ function IonDataRepository(options) {
         .then((d) => {
           let item;
           if (d && (typeof d === 'object')) {
-            item = _this._wrap(d._class, d, d._classVer);
+            item = _this._wrap(d._class, d, d._classVer, options);
           } else {
-            item = _this._wrap(classname, conditionsData || updates, null);
+            item = _this._wrap(classname, conditionsData || updates, null, options);
           }
           return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
         })
