@@ -113,14 +113,14 @@ function Property(item, propertyMeta, name) {
       let lang = (typeof dateCallback === 'string') ? dateCallback : (this.item.getLang() || 'ru');
       let size = this.meta.size || 0;
       let format = (size < 4) ? 'L LT' : 'L';
-      console.log(this.meta.name, lang, format);
+
       switch (this.meta.mode) {
         case DateType.LOCALIZED:
           return ((typeof v.utcOffset !== 'undefined') ? moment(v).utcOffset(v.utcOffset) : moment(v))
             .locale(lang)
             .format(format);
         case DateType.UTC:
-          return moment(v).utc().locale(lang).format(format);
+          return moment.utc(v).locale(lang).format(format);
         default:
           return moment(v).locale(lang).format(format);
       }
