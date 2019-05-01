@@ -11,9 +11,12 @@ const cast = require('core/cast');
  * @param {String} id
  * @param {{}} base
  * @param {ClassMeta} classMeta
+ * @param {{}} options
+ * @param {String} [options.lang]
+ * @param {User} [options.user]
  * @constructor
  */
-function Item(id, base, classMeta, lang) {
+function Item(id, base, classMeta, options) {
   const _this = this;
 
   /**
@@ -39,7 +42,8 @@ function Item(id, base, classMeta, lang) {
   this.calculated = {};
   this.files = {};
   this.slCacheClean = true;
-  this.lang = lang;
+  this.lang = options.lang;
+  this.tz = options.user && options.user.timeZone();
 
   this.emptify = function() {
     this.id = null;

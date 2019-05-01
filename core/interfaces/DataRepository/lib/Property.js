@@ -122,7 +122,7 @@ function Property(item, propertyMeta, name) {
         case DateType.UTC:
           return moment.utc(v).locale(lang).format(format);
         default:
-          return moment(v).locale(lang).format(format);
+          return (this.item.tz ? moment(v).tz(this.item.tz) : moment(v)).locale(lang).format(format);
       }
     }
 
