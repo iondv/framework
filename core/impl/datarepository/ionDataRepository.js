@@ -231,8 +231,7 @@ function IonDataRepository(options) {
   this._wrap = function (className, data, version, options) {
     const acm = this.meta.getMeta(className, version);
     delete data._id;
-    options = options || {};
-    return new Item(this.keyProvider.formKey(acm, data), data, acm, options.lang);
+    return new Item(this.keyProvider.formKey(acm, data), data, acm, options || {});
   };
 
   /**
@@ -452,7 +451,7 @@ function IonDataRepository(options) {
   }
 
   function getEnrichList(options) {
-    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed, skipCalc, lang} = options;
+    let {src, srcByKey, cn, sort, filter, depth, forced, implForced, loaded, attr, needed, skipCalc, lang, user} = options;
     return _this._getList(cn,
       {
         sort: sort,
@@ -463,7 +462,8 @@ function IonDataRepository(options) {
         ___loaded: loaded,
         needed,
         skipCalculations: skipCalc,
-        lang
+        lang,
+        user
       }
     ).then((items) => {
       if (items && items.length) {
@@ -601,7 +601,7 @@ function IonDataRepository(options) {
     if (!src.length) {
       return Promise.resolve(src2);
     }
-    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed, skipCalc, lang} = options;
+    let {nestingDepth, forceEnrichment, ___loaded, ___implicitEnrichment, needed, skipCalc, lang, user} = options;
     nestingDepth = nestingDepth || 0;
     let srcByKey = {};
     let explicitForced = {};
@@ -759,7 +759,8 @@ function IonDataRepository(options) {
                         attr: attrs[nm],
                         needed: needed2,
                         skipCalc,
-                        lang
+                        lang,
+                        user
                       })
                     );
                 });
@@ -774,7 +775,8 @@ function IonDataRepository(options) {
                   attr: attrs[nm],
                   needed: needed2,
                   skipCalc,
-                  lang
+                  lang,
+                  user
                 });
               }
             } else {
@@ -791,7 +793,8 @@ function IonDataRepository(options) {
                     ___loaded,
                     needed: needed2,
                     skipCalc,
-                    lang
+                    lang,
+                    user
                   },
                   cm
                 );

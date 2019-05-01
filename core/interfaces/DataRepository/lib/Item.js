@@ -42,8 +42,8 @@ function Item(id, base, classMeta, options) {
   this.calculated = {};
   this.files = {};
   this.slCacheClean = true;
-  this.lang = options.lang;
-  this.tz = options.user && options.user.timeZone();
+  this.lang = options && options.lang;
+  this.tz = options && (options.user && options.user.timeZone() || options.tz);
 
   this.emptify = function() {
     this.id = null;

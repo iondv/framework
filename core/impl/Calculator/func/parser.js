@@ -185,7 +185,8 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
                       {
                         filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
                         needed: needed || {},
-                        lang: obj.getLang()
+                        lang: obj.getLang(),
+                        tz: obj.tz
                       })
                       .then(items => items.length ? items[0] : null)
                 );
@@ -195,7 +196,8 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
                   p.getName(),
                   () => dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {
                     needed: needed || {},
-                    lang: obj.getLang()
+                    lang: obj.getLang(),
+                    tz: obj.tz
                   })
                 );
               }
@@ -213,7 +215,8 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
             if (dr instanceof DataRepository) {
               return lazyLoader(obj, p.getName(), () => dr.getAssociationsList(obj, p.getName(), {
                   needed: needed || {},
-                  lang: obj.getLang()
+                  lang: obj.getLang(),
+                  tz: obj.tz
                 })
                 .catch((err) => {
                   if (err.code === Errors.ITEM_NOT_FOUND) {
