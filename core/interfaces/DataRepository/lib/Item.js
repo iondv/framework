@@ -11,9 +11,12 @@ const cast = require('core/cast');
  * @param {String} id
  * @param {{}} base
  * @param {ClassMeta} classMeta
+ * @param {{}} options
+ * @param {String} [options.lang]
+ * @param {User} [options.user]
  * @constructor
  */
-function Item(id, base, classMeta) {
+function Item(id, base, classMeta, options) {
   const _this = this;
 
   /**
@@ -39,6 +42,8 @@ function Item(id, base, classMeta) {
   this.calculated = {};
   this.files = {};
   this.slCacheClean = true;
+  this.lang = options && options.lang;
+  this.tz = options && (options.user && options.user.timeZone() || options.tz);
 
   this.emptify = function() {
     this.id = null;
@@ -77,6 +82,10 @@ function Item(id, base, classMeta) {
    */
   this.getEditor = function() {
     return this.base._editor;
+  };
+
+  this.getLang = function () {
+    return this.lang;
   };
 
   /**
@@ -255,7 +264,7 @@ function Item(id, base, classMeta) {
       if (this.classMeta.isSemanticCached())
         this.stringValue = this.base.__semantic;
 
-      if (!this.classMeta.isSemanticCached()) {
+      if (!this.classMeta.isSemanticCached() || cached) {
         calculations = calculations
           .then(() => this.classMeta.getSemantics(this))
           .then((val) => {
@@ -320,13 +329,13 @@ function Item(id, base, classMeta) {
                 this.collections[prop.name] = result;
                 this.calculated[prop.name] = result.map(res => res.getItemId());
               } else {
-                this.calculated[prop.name] = cast(result, prop.type);
+                this.calculated[prop.name] = cast(result, prop);
               }
             });
         }
       });
 
-      if (!this.classMeta.isSemanticCached()) {
+      if (!this.classMeta.isSemanticCached() || cached) {
         calculations = calculations
           .then(() => this.classMeta.getSemantics(this))
           .then((val) => {
