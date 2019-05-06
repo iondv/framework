@@ -9,7 +9,6 @@ const DataRepository = DataRepositoryModule.DataRepository;
 const Item = DataRepositoryModule.Item;
 const PropertyTypes = require('core/PropertyTypes');
 const ChangeLogger = require('core/interfaces/ChangeLogger');
-const cast = require('core/cast');
 const EventType = require('core/interfaces/ChangeLogger').EventType;
 const uuid = require('uuid');
 const EventManager = require('core/impl/EventManager');
@@ -21,6 +20,7 @@ const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filte
 const addDiscriminatorFilter = require('core/interfaces/DataRepository/lib/util').addDiscriminatorFilter;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
 const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
+const castValue = require('core/interfaces/DataRepository/lib/util').castValue;
 const conditionParser = require('core/ConditionParser');
 const Iterator = require('core/interfaces/Iterator');
 const sortingParser = require('core/SortingParser');
@@ -1368,11 +1368,15 @@ function IonDataRepository(options) {
    */
   function autoAssign(cm, updates, onlyDefaults, user) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
-      updates[cm.getCreationTracker()] = new Date();
+      let pm = cm.getPropertyMeta(cm.getCreationTracker());
+      updates[cm.getCreationTracker()] = castValue(new Date(), pm);
+
     }
 
     if (cm.getChangeTracker() && !updates[cm.getChangeTracker()]) {
-      updates[cm.getChangeTracker()] = new Date();
+      let pm = cm.getPropertyMeta(cm.getChangeTracker());
+      updates[cm.getChangeTracker()] = castValue(new Date(), pm);
+
     }
 
     let properties = cm.getPropertyMetas();
@@ -1408,7 +1412,7 @@ function IonDataRepository(options) {
               updates[pm.name] = uuid.v1();
               break;
             case PropertyTypes.DATETIME:
-              updates[pm.name] = new Date();
+              updates[pm.name] = castValue(new Date(), pm);
               break;
             case PropertyTypes.INT:
               delete updates[pm.name];
@@ -1427,12 +1431,12 @@ function IonDataRepository(options) {
               calcs = calcs
                 .then(() => pm._dvFormula.apply(calcContext))
                 .then((result) => {
-                  updates[pm.name] = cast(result instanceof Item ? result.getItemId() : result, pm.type);
+                  updates[pm.name] = castValue(result instanceof Item ? result.getItemId() : result, pm.type);
                   return updates;
                 });
             }
           } else {
-            updates[pm.name] = cast(v, pm.type);
+            updates[pm.name] = castValue(v, pm.type);
           }
         } else if (keys.indexOf(pm.name) >= 0 && !onlyDefaults) {
           throw new IonError(Errors.NO_KEY_SPEC, {info: cm.getCaption() + '.' + pm.caption});
