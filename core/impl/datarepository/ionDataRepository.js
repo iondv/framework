@@ -19,7 +19,6 @@ const formUpdatedData = require('core/interfaces/DataRepository/lib/util').formD
 const filterByItemIds = require('core/interfaces/DataRepository/lib/util').filterByItemIds;
 const addDiscriminatorFilter = require('core/interfaces/DataRepository/lib/util').addDiscriminatorFilter;
 const loadFiles = require('core/interfaces/DataRepository/lib/util').loadFiles;
-const calcProperties = require('core/interfaces/DataRepository/lib/util').calcProperties;
 const castValue = require('core/interfaces/DataRepository/lib/util').castValue;
 const conditionParser = require('core/ConditionParser');
 const Iterator = require('core/interfaces/Iterator');
@@ -1891,7 +1890,7 @@ function IonDataRepository(options) {
         _this._getItem(item, null, {forceEnrichment: eager, skipAutoAssign: true}) :
         Promise.resolve(item);
 
-      return p.then(item => calcProperties(item, false, needed, true))
+      return p.then(item => item.calculateProperties(needed, true, false))
         .then((item) => {
           let rcm = getRootType(item.getMetaClass());
           if (!conditions) {
@@ -2010,10 +2009,11 @@ function IonDataRepository(options) {
         })
         .then(item => updateBackRefs(item, cm, data))
         .then(item => refUpdator(item, refUpdates, changeLogger))
+        .then(item => (item && !options.skipResult) ? enrich(item, merge(true, options, {skipCalc: true}), item.getMetaClass()) : item)
+        .then(item => (item && !options.skipResult) ? item.calculateProperties() : item)
         .then(item => refreshCaches(item, null, options))
-        .then(item => options.skipResult ? null : loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then(item => options.skipResult ? item : loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then(item =>
-          options.skipResult ? null :
           bubble(
             'create',
             item.getMetaClass(),
@@ -2025,7 +2025,7 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(changeLogger, options))
-        .then(item => item ? calcProperties(item, options.skipResult, null) : null);
+        .then(item => options.skipResult ? null : item);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -2146,8 +2146,10 @@ function IonDataRepository(options) {
           })
           .then(item => updateBackRefs(item, cm, data, id))
           .then(item => refUpdator(item, refUpdates, changeLogger))
+          .then(item => (item && !options.skipResult) ? enrich(item, merge(true, options, {skipCalc: true}), item.getMetaClass()) : item)
+          .then(item => (item && !options.skipResult) ? item.calculateProperties() : item)
           .then(item => refreshCaches(item, conditions, options))
-          .then(item => loadFiles(item, _this.fileStorage, _this.imageStorage))
+          .then(item => options.skipResult ? item : loadFiles(item, _this.fileStorage, _this.imageStorage))
           .then((item) => {
             if (!supressEvent) {
               return bubble(
@@ -2163,7 +2165,7 @@ function IonDataRepository(options) {
             return {item: item};
           })
           .then(writeEventHandler(changeLogger, options))
-          .then(item => calcProperties(item, options.skipResult));
+          .then(item => options.skipResult ? null : item);
       } else {
         return Promise.reject(new IonError(Errors.BAD_PARAMS, {method: 'editItem'}));
       }
@@ -2311,8 +2313,10 @@ function IonDataRepository(options) {
             return item;
           }
         })
+        .then(item => (item && !options.skipResult) ? enrich(item, merge(true, options, {skipCalc: true}), item.getMetaClass()) : item)
+        .then(item => (item && !options.skipResult) ? item.calculateProperties() : item)
         .then(item => refreshCaches(item, conditions, options))
-        .then(item => loadFiles(item, _this.fileStorage, _this.imageStorage))
+        .then(item => options.skipResult ? item : loadFiles(item, _this.fileStorage, _this.imageStorage))
         .then(item =>
           bubble(
             'save',
@@ -2325,7 +2329,7 @@ function IonDataRepository(options) {
           )
         )
         .then(writeEventHandler(changeLogger, options))
-        .then(item => calcProperties(item, options.skipResult));
+        .then(item => options.skipResult ? null : item);
     } catch (err) {
       return Promise.reject(err);
     }
