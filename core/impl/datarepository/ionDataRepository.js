@@ -1377,14 +1377,17 @@ function IonDataRepository(options) {
   function autoAssign(cm, updates, onlyDefaults, user, options) {
     if (cm.getCreationTracker() && !updates[cm.getCreationTracker()]) {
       let pm = cm.getPropertyMeta(cm.getCreationTracker());
-      updates[cm.getCreationTracker()] = castValue(new Date(), pm);
+      if (pm) {
+        updates[cm.getCreationTracker()] = castValue(new Date(), pm);
+      }
 
     }
 
     if (cm.getChangeTracker() && !updates[cm.getChangeTracker()]) {
       let pm = cm.getPropertyMeta(cm.getChangeTracker());
-      updates[cm.getChangeTracker()] = castValue(new Date(), pm);
-
+      if (pm) {
+        updates[cm.getChangeTracker()] = castValue(new Date(), pm);
+      }
     }
 
     let properties = cm.getPropertyMetas();
