@@ -1,4 +1,4 @@
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/en/images/ION_logo_black_mini.png" alt="IONDV. Framework" width="600" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/en/images/ION_logo_black_mini.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" width="600" align="center"></a>
 </h1>  
 
 <h4 align="center">JS framework for rapid business application development</h4>
