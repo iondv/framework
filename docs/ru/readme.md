@@ -1,4 +1,4 @@
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/ION_logo_black_mini.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" width="600" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/ION_logo_black_mini.png" alt="IONDV. Framework logo" width="600" align="center"></a>
 </h1>  
 
 <h4 align="center">JS framework for rapid business application development</h4>
@@ -33,6 +33,9 @@
 # IONDV. Framework 
 
 This page in [English](/README.md/)
+
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
+</h1>  
 
 ## Описание 
 **IONDV.Framework** — фреймворк по созданию высокоуровневых веб-приложений на основе метаданных, в том числе без программирования. При этом фреймворк предусматривает изменение функциональности с помощью дополнительных готовых компонентов или написания собственных. 
@@ -77,7 +80,7 @@ This page in [English](/README.md/)
 
 ### Установка ядра, модулей и приложения
 
-Рассматриваем на примере приложения `develop-and-test`. Находим приложение в репозитории.   
+Рассматриваем на примере приложения `develop-and-test`. На месте приложения `develop-and-test` в пути может быть указано `namespace`. Это значит, что необходимо самостоятельно проставить название приложения в путь, вместо `namespace`. Находим приложение `develop-and-test` в репозитории.   
 Смотрим зависимости указаные в файле `package.json`.   
 
 ```

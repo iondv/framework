@@ -1,4 +1,4 @@
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/en/images/ION_logo_black_mini.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" width="600" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/en/images/ION_logo_black_mini.png" alt="IONDV. Framework logo" width="600" align="center"></a>
 </h1>  
 
 <h4 align="center">JS framework for rapid business application development</h4>
@@ -34,7 +34,7 @@
 
 Эта страница на [Русском](/docs/ru/readme.md) 
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
 
 ## Description  
@@ -82,9 +82,9 @@ To build all components and libraries, you need to install the following compone
 
 ### Core, modules and application
 
-The [IONDV. Develop-and-test](https://github.com/iondv/develop-and-test) is an example application.
+The [IONDV. Develop-and-test](https://github.com/iondv/develop-and-test) is an example application. There can be the `namespace` instead of the `develop-and-test` application in the path. This means that you need to put the application name in the path instead of `namespace`.
 
-The dependencies are listed in the [`package.json`](https://github.com/iondv/develop-and-test/blob/master/package.json) file.
+Find the `develop-and-test` application in the repository. The dependencies are listed in the [`package.json`](https://github.com/iondv/develop-and-test/blob/master/package.json) file.
 
 ```
   "engines": {
