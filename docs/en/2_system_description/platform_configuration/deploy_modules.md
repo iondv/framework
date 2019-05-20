@@ -2,7 +2,7 @@
 
 ### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-### The previous page: [Global settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_globals.md)
+### The previous page: [Global settings in deploy.json](/docs/en/2_system_description/platform_configuration/deploy_globals.md)
 
 # Module settings in `deploy.json`
 
