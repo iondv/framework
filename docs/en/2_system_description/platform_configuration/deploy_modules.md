@@ -405,7 +405,7 @@ The logo for the module is described through the standard mechanism of static ro
 
 # The "gantt-chart" module
 
-**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the dashboard module](/docs/en/3_modules_description/gantt_chart.md).
+**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the gantt_chart module](/docs/en/3_modules_description/gantt_chart.md).
 
 ## Setting the time scale 
 
