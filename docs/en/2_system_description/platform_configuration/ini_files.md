@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Dependencies in package.json](docs/en/2_system_description/platform_configuration/package.md)
+### The previous page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
 
 # How to configure the parameters?
 
