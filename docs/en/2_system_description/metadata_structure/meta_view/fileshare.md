@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Options](/docs/ru/2_system_description/metadata_structure/meta_view/options.md)
+### The previous page: [Options](/docs/en/2_system_description/metadata_structure/meta_view/options.md)
 
 ## Maintenance of project documents
 
