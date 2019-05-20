@@ -90,7 +90,7 @@ An example of the sequence generators: now for each object its code is the code 
 
 ## Setting the eager loading for printed forms `"skipEnvOptions"`
 
-[Printed forms](/docs/ru/2_system_description/functionality/printed_forms.md) in more details.
+[Printed forms](/docs/en/2_system_description/functionality/printed_forms.md) in more details.
 
 Use the `skipEnvOptions` flag to enable/disable the eager loading.
 
