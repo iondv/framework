@@ -50,11 +50,6 @@
 
 ## 5. [System test](/docs/en/5_system_test)
 
-*  [Setting and running](/docs/en/5_system_test/5_system_test)
-
-## 6. [Speed optimization](/docs/en/5_system_test/6_optimization)
-
-* [Metadata speed optimization](/docs/en/5_system_test/6_optimization/speed_optimization.md)
 
 
 
