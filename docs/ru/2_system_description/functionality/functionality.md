@@ -17,7 +17,7 @@
 |[**Связь двух неймспейсов**](/docs/ru/2_system_description/functionality/namespace.md)| Для связывания двух проектов.  |
 |[**ЭЦП**](/docs/ru/2_system_description/functionality/eds.md)| Электронно-цифровая подпись.  |
 |[**Виртуальные атрибуты**](/docs/ru/2_system_description/functionality/virtual_attr.md) |Специальный тип атрибутов, который позволяет выводить полный код и наименование класса.|
-|[**Утилиты**](/docs\ru\2_system_description\functionality\utilities.md) |Дополнительные программы для более специализированного применения|
+|[**Утилиты**](/docs/ru/2_system_description/functionality/utilities.md) |Дополнительные программы для более специализированного применения|
 
 ### Следующая страница: [Описание модулей](/docs/ru/3_modules_description/modules.md)
 
