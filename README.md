@@ -39,25 +39,61 @@
 
 ## Description  
 
-**IONDV.Framework** - is a low-code framework for creating high-level web applications based on metadata. Moreover, the framework allows you to change functionality with the additional components, such as ready-made modules or your new ones. 
+**IONDV. Framework** — is a tool for creating high-level web applications based on metadata. You can change the system by adding the additional components to change functionality. There are ready-made modules, but nothing limits you to create new ones to personalize the application. Moreover, it's low-code framework
 
-**Typical applications**:
+The main purpose is the implementation of complex data registry systems. The functional base is the data registry - the Registry module. This is a key module designed specifically to work with data based on metadata structures - including the management of projects, programs, activities, etc.
 
-* project management system;
-* accounting and data processing registries based on workflows;
-* CRM.  
+**IONDV. Framework** is an open source software in JavaScript with open metadata structure in human-readable JSON files.
 
-The main advantages of IONDV.Framework are open source software in JavaScript and open metadata structure in human-readable JSON files.
+## How to design an application?
 
-## Functionality  
+**What?**
+Business application of any class.
 
-* creation of arbitrary multi-user systems of data recording
-* allocation of access and data security
-* data management based on workflows
-* generation of reports and analytics
-* ability to visualize data on geolayer
-* possibility of arbitrary data display in portal forms
-* easy data integration with REST and SOAP 
+**How?**
+Describe the data and apply ready-made modules with the ability to adjust for specific tasks.
+
+`core + metadata + modules = application`
+
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" alt="Application structure - core, metadata, modules" align="center"></a>
+</h1>  
+
+In the square frames  - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - are the base of the simplest application. Below are additional types of meta and modules. They represent additional functionality and could be applied in accordance with the application. Look for the application dependencies in the `package.json` file.
+
+### Typical applications
+
+It's a frame for creating applications, both enterprise level and highly functional - from the portal to analytics:
+
+- Document Management;
+- Accounting and Reporting;
+- Enterprise Resource Management;
+- Workflow Management and Project Activities;
+- Data Capture;
+- Business Analytics;
+- System Integration.
+
+### Free Demos
+
+For now, we have three demos to show you:
+
+* [Studio](https://studio.iondv.com/index) -is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](github.com/iondv/studio).
+* [DNT](https://dnt.iondv.com/auth) - is our application for development and testing, on the basis of which new meta components are implemented and tested. So almost all elements of the system are in the DNT app.[GitHub Repo](github.com/iondv/develop-and-test).
+* [War Archive](https://war-archive.iondv.com/portal/index) - is the IONDV. Framework web-application designed to store, group and demonstrate the data based on archival documents about Great Patriotic War (World War II). [GitHub Repo](https://github.com/iondv/war-archive).
+* Project Management - *coming soon on GitHub*.
+* Telecom - *coming soon on GitHub*.
+* CRM - *coming soon on GitHub*.
+
+The login for access is - demo and the password is - ion-demo. No registration required.
+
+## Top features  
+
+* Work in multiuser mode
+* Manage data based on workflows
+* Access and data security
+* Reports and analytics
+* Visualize data on map
+* Form data in portal forms
+* Data integration with REST and SOAP 
 
 ## Quick start with the repository
 
