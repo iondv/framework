@@ -28,13 +28,7 @@
   "description": "Метапроект для тестирования и разработки",
   "version": "1.9.2",
   "homepage": "http://docker.local:8080",
-  "bugs": {
-    "url": "https://ion-dv.atlassian.net/projects/IONCORE/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://git.iondv.ru/ION-METADATA/develop-and-test.git"
-  },
+  
   "engines": {
     "ion": "1.24.1"
   },
@@ -53,10 +47,7 @@
   },
   "ionMetaDependencies": {
     "viewlib": "0.9.1"
-  },
-  "dependencies": {
-    "esia": "git+https://git.iondv.ru/node-modules/esia.git"
-  },
+  }
 }
 
 
@@ -83,7 +74,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

@@ -66,3 +66,6 @@ module.skip[]=offline-sync ; отключенные модули
 ; Настройки файлового хранилища
 fs.storageRoot=./files ; корневая директория хранилища, куда будут сохраняться файлы
 fs.urlBase=/files ; база для публикации файлов в http (база URL файлов)
+
+;auth.aclProvider=aclProvider ;  включение проверки доступа к урлам
+;server.requestSizeLimit=100mb ; Ограничение на размер запрсоов заказчиваемых (файлов)
