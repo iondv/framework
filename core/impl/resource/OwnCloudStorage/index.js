@@ -765,7 +765,10 @@ function OwnCloudStorage(config) {
       .then((shares) => {
         let result = [];
         let promise = Promise.resolve();
-        let addShare = shareInfo => result.push(new Share(shareInfo.shareUrl, shareInfo));
+        let addShare = shareInfo => {
+          const url = shareInfo.shareUrl || encodeURI(urlConcat(config.url, urlTypes.WEBDAV, dirId));
+          result.push(new Share(url, shareInfo));
+        };
         if (options && options.shareWith && Array.isArray(config.users)) {
           const shareWith = Array.isArray(options.shareWith) ? options.shareWith : [options.shareWith];
           shareWith.forEach((sw) => {

@@ -59,7 +59,7 @@ of the "Link" attribute [resolution].
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

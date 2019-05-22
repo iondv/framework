@@ -1,0 +1,42 @@
+# Service files
+**/.eslintrc.yml
+.eslinignore
+.editorconfig
+.tern-project
+
+.gitignore
+.git/**
+**/.git/**
+
+.npmignore
+**/package-lock.json
+
+**/.dockerignore
+**/Dockerfile
+
+# Config demo
+/config/config.json.devel
+/config/config.json.prod
+/config/setup.ini.example
+
+# Documents
+/docs/**
+**/docs/**
+/changelog*
+
+# Log
+/log/**
+
+# Tests
+/test/**
+
+# Core frontend build library
+/view/default/vendor
+/view/default/node_modules
+# Modules frontend build library
+/modules/*/view/default/vendor/**
+/modules/*/view/default/node_modules/**
+# Apps frontend build library
+/applications/*/themes/*/vendor/**
+/applications/*/themes/*/node_modules/**
+

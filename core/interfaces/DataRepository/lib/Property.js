@@ -7,6 +7,8 @@
 const PropertyTypes = require('core/PropertyTypes');
 const equal = require('core/equal');
 const scheduleToString = require('core/util/schedule').scheduleToString;
+const DateType = require('core/DateTypes');
+const moment = require('moment-timezone');
 
 // jshint maxstatements: 40, maxcomplexity: 20
 
@@ -95,7 +97,7 @@ function Property(item, propertyMeta, name) {
     } else {
       let p = item.property(nm);
       if (p) {
-        return p.displayValue;
+        return p.getDisplayValue();
       }
     }
     return false;
@@ -105,7 +107,23 @@ function Property(item, propertyMeta, name) {
     let v = this.getValue();
 
     if (this.getType() === PropertyTypes.DATETIME && v instanceof Date) {
-      v = typeof dateCallback === 'function' ? dateCallback.call(null, v) : v.toDateString();
+      if (typeof dateCallback === 'function') {
+        return dateCallback.call(null, v);
+      }
+      let lang = (typeof dateCallback === 'string') ? dateCallback : (this.item.getLang() || 'ru');
+      let size = this.meta.size || 0;
+      let format = (size < 4) ? 'L LT' : 'L';
+
+      switch (this.meta.mode) {
+        case DateType.LOCALIZED:
+          return ((typeof v.utcOffset !== 'undefined') ? moment(v).utcOffset(v.utcOffset) : moment(v))
+            .locale(lang)
+            .format(format);
+        case DateType.UTC:
+          return moment.utc(v).locale(lang).format(format);
+        default:
+          return (this.item.tz ? moment(v).tz(this.item.tz) : moment(v)).locale(lang).format(format);
+      }
     }
 
     if (this.meta.selectionProvider) {
