@@ -58,7 +58,7 @@ This page in [English](/README.md/)
 <h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" alt="Application structure - core, metadata, modules" align="center"></a>
 </h1>  
 
-В квадратных рамках - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - это база простейшего приложения. Чуть ниже представлены дополнительные типы меты и модули. Они представляют собой дополнительную функциональность и применяются в соответсвии с приложением. Зависимости приложения смотрим в файле `package.json`.
+В квадратных рамках - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - это база простейшего приложения. Чуть ниже представлены дополнительные типы меты и модули. Они представляют собой дополнительную функциональность и применяются в соответствии с приложением. Зависимости приложения смотрим в файле `package.json`.
 
 ### Типичные приложения
 
