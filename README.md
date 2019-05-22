@@ -29,13 +29,14 @@
 <a href="https://www.linkedin.com/company/iondv/" target="_blank"><img src="/docs/en/images/linkedin.png" height="36px" margin-left="20px" alt="" title=""></a>
 <a href="https://www.instagram.com/iondv/" target="_blank"><img src="/docs/en/images/Insta.png" height="36px" margin-left="20px" alt="" title=""></a> 
 </p>
+ 
 
-# IONDV. Framework 
-
-Эта страница на [Русском](/docs/ru/readme.md) 
+Эта страница на [Русском](/docs/ru/readme.md)
 
 <h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
+
+# IONDV. Framework 
 
 ## Description  
 
@@ -51,7 +52,7 @@ The main purpose is the implementation of complex data registry systems. The fun
 Business application of any class.
 
 **How?**
-Describe the data and apply ready-made modules with the ability to adjust for specific tasks.
+Describe the data and apply ready-made modules that you can adjust for specific tasks.
 
 `core + metadata + modules = application`
 
@@ -62,7 +63,7 @@ In the square frames  - *ioncore*, *meta class*, *meta view*, *meta navigation* 
 
 ### Typical applications
 
-It's a frame for creating applications, both enterprise level and highly functional - from the portal to analytics:
+We give you a frame for creating applications in JavaScript, both enterprise level and highly functional - from the portal to analytics:
 
 - Document Management;
 - Accounting and Reporting;
@@ -76,7 +77,7 @@ It's a frame for creating applications, both enterprise level and highly functio
 
 For now, we have three demos to show you:
 
-* [Studio](https://studio.iondv.com/index) -is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](github.com/iondv/studio).
+* [Studio](https://studio.iondv.com/index) - is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](github.com/iondv/studio).
 * [DNT](https://dnt.iondv.com/auth) - is our application for development and testing, on the basis of which new meta components are implemented and tested. So almost all elements of the system are in the DNT app.[GitHub Repo](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - is the IONDV. Framework web-application designed to store, group and demonstrate the data based on archival documents about Great Patriotic War (World War II). [GitHub Repo](https://github.com/iondv/war-archive).
 * Project Management - *coming soon on GitHub*.
@@ -93,14 +94,14 @@ The login for access is - demo and the password is - ion-demo. No registration r
 * Reports and analytics
 * Visualize data on map
 * Form data in portal forms
-* Data integration with REST and SOAP 
+* Data integration with REST API and SOAP 
 
 ## Quick start with the repository
 
 You can get access to the already built applications deployed on Cloud servers or explore the different ways on the [IONDV.Framework site](https://iondv.com), for example:  
 * installer for windows operating system
-* archive with the already built application
-* docker-container with the already built application
+* archive with already built application
+* docker-container with already built application
 
 ### System environment
 
@@ -186,7 +187,7 @@ the application.
 The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp 
 version - is `4.0`. 
 
-Further, execute the `gulp assemble` command to build and deploy the application.
+Deployment: execute the `gulp assemble` command to build and deploy the application.
 
 If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
 `node bin/import-data --src ./applications/develop-and-test --ns develop-and-test`
@@ -244,7 +245,7 @@ Open `http://localhost/` in your browser.
 
 ## Documentation 
 
-The IONDV.Framework documentation is available in two languages —  [english](/docs/en/index.md) and [russian](/docs/ru/index.md).  
+The IONDV.Framework documentation is available in two languages —  [english](/docs/en/index.md) and [russian](/docs/ru/index.md). We are open to any suggestions on IONDV. Framework localization.
 
 ## Links
 
@@ -258,7 +259,7 @@ Some handy links to learn more information on developing applications using IOND
 --------------------------------------------------------------------------  
 
 
-#### [Licence](/LICENCE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
+#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
 
 

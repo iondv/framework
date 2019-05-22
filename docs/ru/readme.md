@@ -30,12 +30,12 @@
 <a href="https://www.instagram.com/iondv/" target="_blank"><img src="/docs/ru/images/Insta.png" height="36px" margin-left="20px" alt="" title=""></a> 
 </p>
 
-# IONDV. Framework 
-
 This page in [English](/README.md/)
 
 <h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
+
+# IONDV. Framework 
 
 ## Описание 
 
@@ -43,7 +43,7 @@ This page in [English](/README.md/)
 
 Основное предназначение - реализация сложносоставных систем реестра данных. Основу функциональности составляет реестр данных — модуль Регистри. Это ключевой модуль, предназначенный непосредственно для работы с данными на основе структур метаданных – в том числе по ведению проектов, программ, мероприятий и др. 
 
-**IONDV. Framework** это открытый исходный код на JavaScript и открытая структура метаданных в формате JSON.
+**IONDV. Framework** это фреймворк с открытым исходным кодом на JavaScript и открытой структурой метаданных в формате JSON.
 
 ## Как спроектировать приложение?
 
@@ -246,7 +246,7 @@ docker run -d -p 80:8888 --name dnt --link mongodb iondv/dnt
 --------------------------------------------------------------------------  
 
 
-#### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)
+#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 --------------------------------------------------------------------------  
