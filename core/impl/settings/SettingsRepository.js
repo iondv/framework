@@ -9,7 +9,7 @@ const fs = require('fs');
  * @param {{dataSource: DataSource}} options
  * @constructor
  */
-function SettingsRepository(options) {
+function SettingsRepository() {
 
   let registry = {};
 
@@ -50,8 +50,8 @@ function SettingsRepository(options) {
     let p = Promise.resolve();
     let appsPath = path.normalize(path.join(__dirname, '..', '..', '..', 'applications'));
 
-    const reader = (fn) => {
-      return read(path.join(appsPath, fn))
+    const reader = fn =>
+      read(path.join(appsPath, fn))
         .then((config) => {
           if (config.globals && typeof config.globals === 'object')
             setParams(null, config.globals);
@@ -62,7 +62,6 @@ function SettingsRepository(options) {
             });
           }
         });
-    }
 
     fs.readdir(appsPath, {withFileTypes: true}, (err, files) => {
       if (!err) {
