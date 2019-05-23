@@ -9,7 +9,7 @@ const fs = require('fs');
  * @param {{dataSource: DataSource}} options
  * @constructor
  */
-function SettingsRepository(options) {
+function SettingsRepository() {
 
   let registry = {};
 
@@ -49,22 +49,31 @@ function SettingsRepository(options) {
   this._init = function () {
     let p = Promise.resolve();
     let appsPath = path.normalize(path.join(__dirname, '..', '..', '..', 'applications'));
+
+    const reader = fn =>
+      read(path.join(appsPath, fn))
+        .then((config) => {
+          if (config.globals && typeof config.globals === 'object')
+            setParams(null, config.globals);
+
+          if (config.modules && typeof config.modules === 'object') {
+            Object.keys(config.modules).forEach((module) => {
+              setParams(module, config.modules[module]);
+            });
+          }
+        });
+
     fs.readdir(appsPath, {withFileTypes: true}, (err, files) => {
       if (!err) {
         files.forEach((f) => {
-          if (f.isDirectory()) {
+          if (typeof f == 'string') {
             p = p
-              .then(() => read(path.join(appsPath, f.name)))
-              .then((config) => {
-                if (config.globals && typeof config.globals === 'object')
-                  setParams(null, config.globals);
-
-                if (config.modules && typeof config.modules === 'object') {
-                  Object.keys(config.modules).forEach((module) => {
-                    setParams(module, config.modules[module]);
-                  });
-                }
-              });
+              .then(() => new Promise((resolve, reject) => {
+                fs.stat(path.join(appsPath, f), (err, fstat) => err ? reject(err) : resolve(fstat.isDirectory()));
+              }))
+              .then(isDir => isDir ? reader(f) : null);
+          } else if (f.isDirectory()) {
+            p = p.then(() => reader(f.name));
           }
         });
       }
