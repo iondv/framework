@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [View types](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
+### The previous page: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
 
 # Input masks
 

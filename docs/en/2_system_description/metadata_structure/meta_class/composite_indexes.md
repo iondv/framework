@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Journaling](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)
+### The previous page: [Journaling](/docs/en/2_system_description/metadata_structure/meta_class/journaling.md)
 
 # Composite indexation  
 

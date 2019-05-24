@@ -35,31 +35,21 @@
 
 ## 3. [Modules description](/docs/en/3_modules_description)
 
-*  [Admin](/docs/en/4_modules_description/admin.md)
-*  [Registry](/docs/en/4_modules_description/registry.md)
-*  [Report](/docs/en/4_modules_description/report.md)
-*  [Gantt](/docs/en/4_modules_description/gantt_chart.md)
-*  [Diagram](/docs/en/4_modules_description/diagram.md)
-*  [Rest](/docs/en/4_modules_description/rest.md)
-*  [Soap](/docs/en/4_modules_description/soap.md)
-*  [Geo](/docs/en/4_modules_description/geomap.md)
-*  [Account](/docs/en/4_modules_description/account.md)
-*  [Portal](/docs/en/4_modules_description/portal.md)
-*  [Jira](/docs/en/4_modules_description/jira.md)
-*  [Dashboard](/docs/en/4_modules_description/dashboards.md)
-*  [1С](/docs/en/4_modules_description/1c.md)
+*  [Admin](/docs/en/3_modules_description/admin.md)
+*  [Registry](/docs/en/3_modules_description/registry.md)
+*  [Report](/docs/en/3_modules_description/report.md)
+*  [Gantt](/docs/en/3_modules_description/gantt_chart.md)
+*  [Soap](/docs/en/3_modules_description/soap.md)
+*  [Account](/docs/en/3_modules_description/account.md)
+*  [Portal](/docs/en/3_modules_description/portal.md)
+*  [Dashboard](/docs/en/3_modules_description/dashboards.md)
 
 ## 4. [ION model project](/docs/en/4_ion_model)
 
-*  [ION environment setup](/docs/en/3_ion_model/ion_environment.md)
+*  [ION environment setup](/docs/en/4_ion_model/ion_environment.md)
 
 ## 5. [System test](/docs/en/5_system_test)
 
-*  [Setting and running](/docs/en/5_system_test/5_system_test)
-
-## 6. [Speed optimization](/docs/en/5_system_test/6_optimization)
-
-* [Metadata speed optimization](/docs/en/5_system_test/6_optimization/speed_optimization.md)
 
 
 

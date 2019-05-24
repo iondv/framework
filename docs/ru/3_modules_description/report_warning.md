@@ -1,4 +1,4 @@
-### Назад: [Модуль отчетов](/docs/en/3_modules_description/report.md)
+### Назад: [Модуль отчетов](/docs/ru/3_modules_description/report.md)
 
 # Замечания при проектировании шахты
 

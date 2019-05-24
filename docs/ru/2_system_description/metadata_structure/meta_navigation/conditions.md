@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Мета узлов навигации](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
+### Назад: [Мета узлов навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
 
 # Условия выборки - `"conditions"`
 
