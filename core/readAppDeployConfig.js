@@ -9,10 +9,10 @@ module.exports = (appPath) => {
   try {
     return readConfig(path.join(appPath, 'deploy.json'))
       .then(config => new Promise((resolve, reject) => {
-        read(config, appPath, (err, config) => {
+        read(config, appPath, (err, conf) => {
           if (err)
             return reject(err);
-          resolve(config);
+          return resolve(conf);
         });
       }));
   } catch (err) {
