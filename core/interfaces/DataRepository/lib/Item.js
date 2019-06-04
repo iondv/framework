@@ -329,7 +329,7 @@ function Item(id, base, classMeta, options) {
                 this.collections[prop.name] = result;
                 this.calculated[prop.name] = result.map(res => res.getItemId());
               } else {
-                this.calculated[prop.name] = cast(result, prop);
+                this.calculated[prop.name] = cast(result, prop.type);
               }
             });
         }
