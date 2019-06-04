@@ -58,7 +58,7 @@ function SettingsRepository() {
 
           if (config.modules && typeof config.modules === 'object') {
             Object.keys(config.modules).forEach((module) => {
-              setParams(module, config.modules[module]);
+              setParams(module, config.modules[module].globals);
             });
           }
         });
