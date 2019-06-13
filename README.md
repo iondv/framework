@@ -121,14 +121,14 @@ curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > iondv-app.zip
   unzip -p iondv-app.zip iondv-app-master/iondv-app > iondv-app &&\
   bash iondv-app -m localhost:27017 develop-and-test
 ```
-Where the parameters for the iondv-app are: `localhost: 27017` is the MongoDB address, and the `develop-and-test` is the app name.
+Where the parameters for the iondv-app are the following: `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
 
 Also the other way is to clone - (`git clone https://github.com/iondv/iondv-app.git`) and install the app by using the `bash iondv-app -m localhost:27017 develop-and-test` command.
 
 <details>
   <summary> 
     <h3> 
-      Installation instruction with repository
+      Gitclone with repository
     </h3> 
   </summary>
   
