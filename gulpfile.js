@@ -351,7 +351,7 @@ function bowerInstall(pathDir) {
          */
         let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
         console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
-        run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root'], function () {
+        run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root', '--quiet'], function () {
           let srcDir = path.join(pathDir, bc.directory);
           try {
             fs.accessSync(srcDir);
