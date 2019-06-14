@@ -111,7 +111,7 @@ This page in [English](/README.md/)
 
 ### Установщик
 
-Вы можете использовать установщик приложений IONDV. Framework, требующий установленных node, mongodb и git. В ходе установки будет проверены и установлены все остальные зависимости, а также собрано и запущено само приложение.
+Вы можете использовать установщик приложений IONDV. Framework [iondv-app](https://github.com/iondv/iondv-app), требующий установленных node, mongodb и git. В ходе установки будет проверены и установлены все остальные зависимости, а также собрано и запущено само приложение.
 
 Установка в одну строку:
 
@@ -121,7 +121,7 @@ curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > iondv-app.zip
   bash iondv-app -q -m localhost:27017 develop-and-test
 ```
 
-Где вместо `localhost:27017` нужно указать адрес MongoDb. После запуска открыть ссылку 'http://localhost', учетная запись бек офиса **demo**, пароль **ion-demo**.
+Где вместо `localhost:27017` нужно указать адрес MongoDb. После запуска открыть ссылку 'http://localhost:8888', учетная запись бек офиса **demo**, пароль **ion-demo**.
 
 Где параметры для iondv-app `localhost:27017` адрес многодб, а `develop-and-test` название приложения.
 
