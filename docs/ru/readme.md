@@ -118,8 +118,11 @@ This page in [English](/README.md/)
 ```
 curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > iondv-app.zip &&\
   unzip -p iondv-app.zip iondv-app-master/iondv-app > iondv-app &&\
-  bash iondv-app -m localhost:27017 develop-and-test
+  bash iondv-app -q -m localhost:27017 develop-and-test
 ```
+
+Где вместо `localhost:27017` нужно указать адрес MongoDb. После запуска открыть ссылку 'http://localhost', учетная запись бек офиса **demo**, пароль **ion-demo**.
+
 Где параметры для iondv-app `localhost:27017` адрес многодб, а `develop-and-test` название приложения.
 
 Также другой способ заключается в клонировании - (`git clone https://github.com/iondv/iondv-app.git`) и установите приложение с помощью команды `bash iondv-app -m localhost:27017 develop-and-test`.
