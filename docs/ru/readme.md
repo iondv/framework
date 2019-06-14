@@ -113,7 +113,7 @@ This page in [English](/README.md/)
 
 Вы можете использовать установщик приложений IONDV. Framework, требующий установленных node, mongodb и git. В ходе установки будет проверены и установлены все остальные зависимости, а также собрано и запущено само приложение.
 
-Установка в одну комманду:
+Установка в одну строку:
 
 ```
 curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > iondv-app.zip &&\
