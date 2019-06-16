@@ -118,7 +118,9 @@ You can use IONDV. Framework apps installer, requiring installed node, mongodb a
 Install in one command:
 
 ```
-curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > iondv-app.zip &&  unzip -p iondv-app.ziiondv-app-master/iondv-app > iondv-app &&  bash iondv-app -q -i -m localhost:27017 develop-and-test
+curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > 
+iondv-app.zip &&  unzip -p iondv-app.ziiondv-app-master/iondv-app > 
+iondv-app &&  bash iondv-app -q -i -m localhost:27017 develop-and-test
 ```
 Where the parameters for the iondv-app are the following: `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
 
