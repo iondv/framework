@@ -6,7 +6,7 @@ const F = require('core/FunctionCodes');
 const smartMerge = require('./util/merge-configs');
 const ISettingsRepository = require('core/interfaces/SettingsRepository');
 /**
- * @param {{dataSource: DataSource}} options
+ * @param {{dataSource: DataSource, logger: Logger}} options
  * @constructor
  */
 function DsSettingsRepository(options) {

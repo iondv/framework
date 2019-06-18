@@ -68,6 +68,7 @@
         "initLevel": 1,
         "options": {
           "mode": "[[deploy.mode]]",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       }

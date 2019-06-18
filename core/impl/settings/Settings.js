@@ -6,7 +6,7 @@
 const ISettingsRepository = require('core/interfaces/SettingsRepository');
 
 /**
- * @param {{dataSource: DataSource}} options
+ * @param {{dataSource: DataSource, logger: Logger}} options
  * @constructor
  */
 function Settings(options) {

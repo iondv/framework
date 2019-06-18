@@ -6,10 +6,10 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * @param {{dataSource: DataSource}} options
+ * @param {{dataSource: DataSource, logger: Logger}} opts
  * @constructor
  */
-function SettingsRepository() {
+function SettingsRepository(opts) {
 
   let registry = {};
 
@@ -46,39 +46,46 @@ function SettingsRepository() {
     }
   }
 
-  this._init = function () {
-    let p = Promise.resolve();
-    let appsPath = path.normalize(path.join(__dirname, '..', '..', '..', 'applications'));
+  function reader(ap) {
+    return fn => read(path.join(ap, fn))
+      .then((config) => {
+        if (config.globals && typeof config.globals === 'object')
+          setParams(null, config.globals);
 
-    const reader = fn =>
-      read(path.join(appsPath, fn))
-        .then((config) => {
-          if (config.globals && typeof config.globals === 'object')
-            setParams(null, config.globals);
+        if (config.modules && typeof config.modules === 'object') {
+          Object.keys(config.modules).forEach((mod) => {
+            setParams(module, config.modules[mod].globals);
+          });
+        }
+      })
+      .catch(err => opts.logger.error(err));
+  }
 
-          if (config.modules && typeof config.modules === 'object') {
-            Object.keys(config.modules).forEach((module) => {
-              setParams(module, config.modules[module].globals);
-            });
-          }
-        });
-
-    fs.readdir(appsPath, {withFileTypes: true}, (err, files) => {
-      if (!err) {
+  this._init = () => {
+    const appsPath = path.normalize(path.join(__dirname, '..', '..', '..', 'applications'));
+    return new Promise((resolve, reject) => {
+      fs.readdir(appsPath, {withFileTypes: true}, (err, files) => {
+        if (err)
+          return reject(err);
+        let p = Promise.resolve();
         files.forEach((f) => {
-          if (typeof f == 'string') {
-            p = p
-              .then(() => new Promise((resolve, reject) => {
-                fs.stat(path.join(appsPath, f), (err, fstat) => err ? reject(err) : resolve(fstat.isDirectory()));
-              }))
-              .then(isDir => isDir ? reader(f) : null);
+          if (typeof f === 'string') {
+            p = p.then(() => new Promise((rs, rj) => {
+              fs.stat(path.join(appsPath, f), (err2, fstat) => {
+                if (err2)
+                  rj(err2);
+                else
+                  rs(fstat.isDirectory() ? f : null);
+              });
+            }))
+            .then(reader(appsPath));
           } else if (f.isDirectory()) {
-            p = p.then(() => reader(f.name));
+            p = p.then(() => reader(appsPath)(f.name));
           }
         });
-      }
+        p.then(() => resolve()).catch(reject);
+      });
     });
-    return p;
   };
 }
 
