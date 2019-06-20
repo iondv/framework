@@ -4,7 +4,7 @@
 
 ## The Personal account module
 
-**Personal account** (PA) - is used to display various "instrumental" forms, i.e. in the applications, we set up the navigation (or the page-forms themselves), the module reads them and forms the navigation based on them, and the logic for displaying these pages.
+**Personal account** (PA) - is used to display various "instrumental" forms, i.e. in the applications, we set up the navigation (or the page-forms), the module reads these data and forms the navigation and the display of these pages.
 
 ### Module configuration
 
