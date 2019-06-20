@@ -16,27 +16,24 @@
 3. Открываем файл `package.json` в котором смотрим зависимости.
 
 ```
-  "engines": {
-    "ion": "1.24.1"
+ "engines": {
+    "ion": "3.0.0"
   },
   "ionModulesDependencies": {
-    "registry": "1.27.1",
+    "registry": "3.0.0",
     "geomap": "1.5.0",
-    "graph": "1.3.2",
-    "portal": "1.3.0",
-    "report": "1.9.2",
-    "ionadmin": "1.4.0",
+    "portal": "1.4.0",
+    "report": "2.0.0",
+    "ionadmin": "2.0.0",
     "dashboard": "1.1.0",
-    "lk": "1.0.1",
-    "soap": "1.1.2",
-    "gantt-chart": "0.8.0"
+    "soap": "1.1.2"
   },
   "ionMetaDependencies": {
     "viewlib": "0.9.1"
-    "viewlib-extra": "0.1.0"
+  }
 ```
 
-1. `engines": "ion": 1.24.1` - версия ядра `1.24.1`.  
+1. `engines": "ion": 3.0.0` - версия ядра `3.0.0`.  
 
 2. `ionModulesDependencies` - список модулей и их версий.  
 
@@ -94,48 +91,14 @@ auth.denyTop=false
 auth.registration=false 
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
-db.uri=mongodb://127.0.0.1:27017/db
-db.user=username
-db.pwd=password
+db.uri=mongodb://127.0.0.1:27017/iondv-dnt-db
 server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
 module.default=registry
-module.skip[]=offline-sync
 fs.storageRoot=./files
 fs.urlBase=/files
 
 ```
 Самый главный параметр - `db.uri=mongodb://127.0.0.1:27017/db`. Он указывает на название базы которую мы будем использовать для приложения. База данных будет создана автоматически.
-
-### Пример файла `setup.ini` с комментариями
-
-```
-auth.denyTop=false // - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
-auth.registration=false // если не требуется регистрация
-
-// Исключения из проверки доступа безопасности
-auth.exclude[]=/files/**
-auth.exclude[]=/images/**
-
-db.uri=mongodb://127.0.0.1:27017/db // URI подключения к БД
-db.user=username // пользователь БД
-db.pwd=password // пароль пользователя БД
-
-// Запуск системы на этих портах
-server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
-
-module.default=registry // модуль по умолчанию
-
-module.skip[]=offline-sync // отключенные модули
-
-// Настройки файлового хранилища
-fs.storageRoot=./files // корневая директория хранилища, куда будут сохраняться файлы
-fs.urlBase=/files // база для публикации файлов в http (база URL файлов)
-```
-Пример файла `setup.ini` перед использованием требует чтобы из него были удалены все комментарии начинающиеся со знаков `//`.
 
 ### Следующая страница: [Шаг 3 Сборка, развертывание и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
 
