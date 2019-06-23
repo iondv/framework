@@ -1,4 +1,5 @@
-/* eslint-disable valid-jsdoc, require-jsdoc, no-underscore-dangle, object-curly-newline, no-prototype-builtins, id-length */
+/* eslint-disable valid-jsdoc, require-jsdoc, no-underscore-dangle, object-curly-newline, no-prototype-builtins */
+/* eslint-disable valid-jsdoc, require-jsdoc, no-underscore-dangle, object-curly-newline, no-prototype-builtins, id-length, id-match */
 const smartMerge = require('./util/merge-configs');
 const ISettingsRepository = require('core/interfaces/SettingsRepository');
 const read = require('core/readAppDeployConfig');
@@ -10,51 +11,44 @@ const fs = require('fs');
  * @constructor
  */
 function SettingsRepository(opts) {
+  const registry = {};
 
-  let registry = {};
-
-  this._set = function (nm, value, options) {
+  this._set = (nm, value, options) => {
     const {merge} = (options === true) ? {} : options || {};
     registry[nm] = merge ? smartMerge(registry[nm], value, options) : value;
   };
 
-  this._get = function (nm) {
-    if (registry.hasOwnProperty(nm)) {
+  this._get = (nm) => {
+    if (registry.hasOwnProperty(nm))
       return registry[nm];
-    }
     return null;
   };
 
-  this._apply = function () {
-    return Promise.resolve();
-  };
+  this._apply = () => Promise.resolve();
 
   /**
-   * @param {Boolean} preserveImportant
    * @returns {Promise}
    */
-  this._reset = function () {
-    return Promise.resolve();
-  };
+  this._reset = () => Promise.resolve();
 
-  function setParams(module, globals) {
+  function setParams(mod, globals) {
     for (const nm in globals) {
       if (globals.hasOwnProperty(nm)) {
-        const snm = (module ? `${module}.` : '') + nm;
+        const snm = (mod ? `${mod}.` : '') + nm;
         registry[snm] = smartMerge(registry[snm], globals[nm]);
       }
     }
   }
 
-  function reader(ap) {
-    return fn => read(path.join(ap, fn))
+  function reader(fn) {
+    return read(fn)
       .then((config) => {
         if (config.globals && typeof config.globals === 'object')
           setParams(null, config.globals);
 
         if (config.modules && typeof config.modules === 'object') {
           Object.keys(config.modules).forEach((mod) => {
-            setParams(module, config.modules[mod].globals);
+            setParams(mod, config.modules[mod].globals);
           });
         }
       })
@@ -70,20 +64,20 @@ function SettingsRepository(opts) {
         let p = Promise.resolve();
         files.forEach((f) => {
           if (typeof f === 'string') {
-            p = p.then(() => new Promise((rs, rj) => {
-              fs.stat(path.join(appsPath, f), (err2, fstat) => {
-                if (err2)
-                  rj(err2);
-                else
-                  rs(fstat.isDirectory() ? f : null);
-              });
-            }))
-            .then(reader(appsPath));
+            p = p
+              .then(() => new Promise((rs, rj) => {
+                fs.stat(path.join(appsPath, f), (err2, fstat) => {
+                  if (err2)
+                    return rj(err2);
+                  return rs(fstat.isDirectory() ? f : null);
+                });
+              }))
+              .then(() => reader(path.join(appsPath, f)));
           } else if (f.isDirectory()) {
-            p = p.then(() => reader(appsPath)(f.name));
+            p = p.then(() => reader(path.join(appsPath, f.name)));
           }
         });
-        p.then(() => resolve()).catch(reject);
+        return p.then(() => resolve()).catch(reject);
       });
     });
   };
