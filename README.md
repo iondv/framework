@@ -140,7 +140,7 @@ Find the `develop-and-test` application in the repository. The dependencies are 
     "viewlib": "0.9.1"
   }
 ```
-* Install the core, Its version is specified in the `engines": "ion": 3.0.0` parameter. Copy the URL of the core repository
+* Install the core, its version is specified in the `engines": "ion": 3.0.0` parameter. Copy the URL of the core repository
  and execute the command `git clone https://github.com/iondv/framework.git dnt`, where `dnt` is a application name, for 
  example full path is `/workspace/dnt'. Go to 
  the core folder and switch the tag of  the version number `git checkout tags/3.0.0`.
@@ -159,7 +159,7 @@ number `git checkout tags/0.9.1`. Repeat for each application.
  
 #### Building, configuring and deploying the application
 
-Building the application provides installation of all depended libraries, importing data into the database and preparing 
+Building the application provides installation of all dependent libraries, importing data into the database and preparing 
 the application for launch.  
 
 Create the configuration file `setup.ini` in the `/config` folder of the core to set the main parameters of the 
@@ -181,7 +181,7 @@ Open the file and paste the text above. The main parameter is `db.uri=mongodb://
 base name that we use for the application. The DB will be created automatically. 
 
 Set the `NODE_PATH` environment variable which is equal to the path of the application core. For Windows the command 
-is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`. `/workspace/dnt` is the directory of 
+is `set NODE_PATH=c:\workspace\dnt`, for Linux - `export NODE_PATH=/workspace/dnt`, where `/workspace/dnt` is the directory of 
 the application.   
 
 The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp 

@@ -4,7 +4,7 @@
 
 # The "gantt-chart" module 
 
-**The "gantt-chart" module** – is a central module designed specifically for working with data based on metadata structures - including project management, programs, events, etc.
+**The "gantt-chart" module** – is a module designed to display specific types of hierarchical data with dates.
 
 ## Configuration in deploy.json
 
