@@ -32,7 +32,7 @@ function parseShareResponse(body) {
     try {
       body = JSON.parse(body);
     } catch (err) {
-      throw new OwnCloudError(`Некорректный ответ сервера owncloud: ${body}`);
+      throw new OwnCloudError('Некорректный ответ сервера owncloud', null, body);
     }
   }
 
