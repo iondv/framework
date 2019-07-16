@@ -1442,7 +1442,7 @@ function IonDataRepository(options) {
               calcs = calcs
                 .then(() => pm._dvFormula.apply(calcContext))
                 .then((result) => {
-                  updates[pm.name] = castValue(result instanceof Item ? result.getItemId() : result, pm.type);
+                  updates[pm.name] = castValue(result instanceof Item ? result.getItemId() : result, pm);
                   return updates;
                 });
             }
