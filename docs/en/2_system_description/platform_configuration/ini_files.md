@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Dependencies in package.json](docs/en/2_system_description/platform_configuration/package.md)
+### The previous page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
 
 # How to configure the parameters?
 
@@ -216,7 +216,7 @@ db.operTimeOut=
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

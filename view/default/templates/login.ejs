@@ -15,6 +15,7 @@
       </script>
     <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
@@ -34,7 +35,7 @@
     </div>
     <% } %>
     <!-- login form -->
-    <form action="auth" method="post" class="dlg-form boxed">
+    <form action="auth" method="post" class="sky-form boxed">
       <header><i class="fa fa-users"></i> Вход в систему</header>
       <input type="hidden" name="timezone" value="" />
       <fieldset>
@@ -43,6 +44,7 @@
           <label class="input">
             <i class="icon-append fa fa-user"></i>
             <input id="username" type="login" name="username">
+            <span class="tooltip tooltip-top-right">Логин</span>
           </label>
         </section>
 
@@ -51,6 +53,7 @@
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password" type="password" name="password">
+            <b class="tooltip tooltip-top-right">Пароль</b>
           </label>
         </section>
       </fieldset>
@@ -78,5 +81,6 @@
     $('input[name=timezone]').val(moment.tz.guess());
   });
 </script>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

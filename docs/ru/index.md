@@ -27,7 +27,7 @@
 ### Функциональность 
 
 *  [ЭЦП](/docs/ru/2_system_description/functionality/eds.md)
-*  [Шаблоны модулей](/docs/ru/2_system_description/functionality/module_patterns.md)
+*  [Шаблоны модулей](/docs/ru/2_system_description/functionality/module_templates.md)
 *  [Уведомления](/docs/ru/2_system_description/functionality/notifications.md)
 *  [Печатные формы](/docs/ru/2_system_description/functionality/printed_forms.md)
 *  [Настройка заданий по расписанию](/docs/ru/2_system_description/functionality/schedule.md)
@@ -35,31 +35,20 @@
 
 ## 3. [Описание модулей](/docs/ru/3_modules_description) 
 
-*  [Админ](/docs/ru/4_modules_description/admin.md)
-*  [Регистри](/docs/ru/4_modules_description/registry.md)
-*  [Отчёты](/docs/ru/4_modules_description/report.md)
-*  [Гантт](/docs/ru/4_modules_description/gantt_chart.md)
-*  [Диаграмма](/docs/ru/4_modules_description/diagram.md)
-*  [Рест](/docs/ru/4_modules_description/rest.md)
-*  [Соап](/docs/ru/4_modules_description/soap.md)
-*  [Гео](/docs/ru/4_modules_description/geomap.md)
-*  [ЛК](/docs/ru/4_modules_description/account.md)
-*  [Портал](/docs/ru/4_modules_description/portal.md)
-*  [Джира](/docs/ru/4_modules_description/jira.md)
-*  [Дашборд](/docs/ru/4_modules_description/dashboards.md)
-*  [1С](/docs/ru/4_modules_description/1c.md)
+*  [Админ](/docs/ru/3_modules_description/admin.md)
+*  [Регистри](/docs/ru/3_modules_description/registry.md)
+*  [Отчёты](/docs/ru/3_modules_description/report.md)
+*  [Гантт](/docs/ru/3_modules_description/gantt_chart.md)
+*  [Соап](/docs/ru/3_modules_description/soap.md)
+*  [ЛК](/docs/ru/3_modules_description/account.md)
+*  [Портал](/docs/ru/3_modules_description/portal.md)
+*  [Дашборд](/docs/ru/3_modules_description/dashboards.md)
 
 ## 4. [Создание проекта модели ИОН](/docs/ru/4_ion_model)
 
-*  [Настройка среды разработки ION](/docs/ru/3_ion_model/ion_environment.md)
+*  [Настройка среды разработки ION](/docs/ru/4_ion_model/ion_environment.md)
 
 ## 5. [Тестирование](/docs/ru/5_system_test)
-
-*  [Настройка и применение](/docs/ru/5_system_test/5_system_test)
-
-## 6. [Оптимизация скорости](/docs/ru/5_system_test/6_optimization)
-
-* [Оптимизация скорости работы с метаданными](/docs/ru/5_system_test/6_optimization/speed_optimization.md)
 
 
 
@@ -67,7 +56,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/index.md)  &ensp; [FAQs](/faqs.md)          
+ #### [Licence](platform/licence.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/index.md)  &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

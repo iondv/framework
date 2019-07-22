@@ -17,14 +17,14 @@
 |[**Связь двух неймспейсов**](/docs/ru/2_system_description/functionality/namespace.md)| Для связывания двух проектов.  |
 |[**ЭЦП**](/docs/ru/2_system_description/functionality/eds.md)| Электронно-цифровая подпись.  |
 |[**Виртуальные атрибуты**](/docs/ru/2_system_description/functionality/virtual_attr.md) |Специальный тип атрибутов, который позволяет выводить полный код и наименование класса.|
-|[**Утилиты**](/docs\ru\2_system_description\functionality\utilities.md) |Дополнительные программы для более специализированного применения|
+|[**Утилиты**](/docs/ru/2_system_description/functionality/utilities.md) |Дополнительные программы для более специализированного применения|
 
 ### Следующая страница: [Описание модулей](/docs/ru/3_modules_description/modules.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/functionality.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/functionality.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

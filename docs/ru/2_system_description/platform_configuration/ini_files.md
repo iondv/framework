@@ -8,7 +8,8 @@
 * через переменную окружения
 
 **NB:** Приоритетной является настройка, заданная через переменные окружения, а не через ini-файлы.
-
+При этом настройки /config/setup.ini не влияют на настройки деплой приложения - они используются только для ядра и модулей. 
+Deploy.json всего параметризируеются через ini в дирректории приложения.
 
 ## Пример конфигурации параметров ownCloud, вместе с учетной записью
 
@@ -217,7 +218,7 @@ db.operTimeOut=
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

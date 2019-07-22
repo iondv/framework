@@ -18,7 +18,7 @@ const ARR_NOTFOUND = -1;
 const ARR_START = 0;
 const PROP_TYPE_LINK = 13;
 const PROP_TYPE_COL = 14;
-const SKIP_NS = ['viewlib', 'viewlib-extra', 'fias'];
+const SKIP_NS = ['viewlib', 'viewlib-extra', 'fias', 'extensions', 'extensions-ru'];
 
 describe('# Проверка достижимости классов из навигации и валидности ссылок', function () {
   this.timeout(TIMEOUT);
@@ -26,7 +26,7 @@ describe('# Проверка достижимости классов из нав
   const appList = getDirList(pathApplications).dirList;
   let meta = {}; // Мета
   appList.forEach((pathApp) => {
-    if (['viewlib', 'viewlib-extra'].indexOf(pathApp) === ARR_NOTFOUND) {
+    if (['viewlib', 'viewlib-extra', 'extensions', 'extensions-ru'].indexOf(pathApp) === ARR_NOTFOUND) {
       meta = getMetaFiles(path.join(pathApplications, pathApp, 'meta'), meta);
     }
   });

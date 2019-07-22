@@ -1965,6 +1965,11 @@ function MongoDs(config) {
           }
         }
 
+        attributes.forEach((a) => {
+          attrs[a + '__tzoffset'] = '$_id.' + a + '__tzoffset';
+          expr.$group._id[a + '__tzoffset'] = '$' + a + '__tzoffset';
+        });
+
         if (options.aggregates) {
           let preaggregates = {};
 
@@ -1989,7 +1994,29 @@ function MongoDs(config) {
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
         }
       }
+    } catch (err) {
+      return Promise.reject(wrapError(err, 'aggregate', type));
+    }
 
+    let tmp = [];
+    attributes.forEach(a => tmp.push(a + '__tzoffset'));
+    attributes = attributes.concat(tmp);
+
+    return getCollection(GEOFLD_COLLECTION).then(c =>
+      new Promise((resolve, reject) => {
+        c.find({__type: type}).limit(1).next(function (err, geoflds) {
+          if (err) {
+            return reject(err);
+          }
+          for (let fld in geoflds) {
+            if (geoflds.hasOwnProperty(fld) && fld !== '__type' && fld !== '_id') {
+              attributes.push('__geo__' + fld + '_f');
+            }
+          }
+          resolve();
+        });
+      })
+    ).then(() => {
       resultAttrs = attributes.slice(0);
 
       if (options.filter) {
@@ -2005,32 +2032,7 @@ function MongoDs(config) {
         (joins.length || options.to || forcedStages.length || analise.needRedact || analise.needPostFilter)) {
         result.push({$match: prefilter});
       }
-    } catch (err) {
-      return Promise.reject(wrapError(err, 'aggregate', type));
-    }
-
-    let p = null;
-    if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then(c =>
-        new Promise((resolve, reject) => {
-          c.find({__type: type}).limit(1).next(function (err, geoflds) {
-            if (err) {
-              return reject(err);
-            }
-            for (let fld in geoflds) {
-              if (geoflds.hasOwnProperty(fld) && fld !== '__type' && fld !== '_id') {
-                resultAttrs.push('__geo__' + fld + '_f');
-              }
-            }
-            resolve();
-          });
-        })
-      );
-    } else {
-      p = Promise.resolve();
-    }
-
-    return p.then(() => {
+    }).then(() => {
       if (joins.length || analise.needRedact || analise.needPostFilter) {
         if (joins.length) {
           processJoins(attributes, joins, result);
@@ -2133,14 +2135,17 @@ function MongoDs(config) {
           }
         }
 
+
         if (data[nm] instanceof Date) {
           if (typeof data[nm + '__tzoffset'] !== 'undefined') {
             data[nm].utcOffset = data[nm + '__tzoffset'];
             delete data[nm + '__tzoffset'];
           }
+
         }
       }
     }
+
     return data;
   }
 
@@ -2161,6 +2166,7 @@ function MongoDs(config) {
    */
   function fetch(c, options, aggregate, resolve, reject) {
     let r;
+
     if (aggregate) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {

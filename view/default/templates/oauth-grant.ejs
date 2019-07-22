@@ -15,6 +15,7 @@
       </script>
     <![endif]-->
   <link rel="shortcut icon" href="favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
@@ -24,7 +25,7 @@
 <div class="padding-15">
   <div class="login-box">
     <!-- login form -->
-    <form action="oauth/grant" method="post" class="dlg-form boxed">
+    <form action="oauth/grant" method="post" class="sky-form boxed">
       <header><i class="fa fa-users"></i> Приложение <%=claimApp%> запрашивает доступ от вашего имени</header>
       <footer>
         <button name="grant" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
@@ -37,5 +38,6 @@
     </form>
   </div>
 </div>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

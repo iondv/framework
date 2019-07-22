@@ -63,10 +63,12 @@
         }
       },
       "settings": {
-        "module": "core/impl/SettingsRepository",
+        "module": "core/impl/settings/Settings",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
+          "mode": "[[deploy.mode]]",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       }

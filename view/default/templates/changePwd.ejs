@@ -15,6 +15,7 @@
     </script>
   <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
@@ -32,7 +33,7 @@
     <% } %>
     <div id="errors" class="alert alert-danger" style="display: none"></div>
 
-    <form action="chpwd" method="post" id="reg-form" class="dlg-form boxed">
+    <form action="chpwd" method="post" id="reg-form" class="sky-form boxed">
       <header><i class="fa fa-users"></i> Смена пароля</header>
       <fieldset>
         <section>
@@ -40,6 +41,7 @@
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input type="password" name="password">
+            <b class="tooltip tooltip-top-right">Новый пароль</b>
           </label>
         </section>
 
@@ -48,6 +50,7 @@
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input type="password" name="password2">
+            <b class="tooltip tooltip-top-right">Повтор пароля</b>
           </label>
         </section>
       </fieldset>
@@ -100,5 +103,6 @@
     });
   });
 </script>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 ### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-### The previous page: [Global settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_globals.md)
+### The previous page: [Global settings in deploy.json](/docs/en/2_system_description/platform_configuration/deploy_globals.md)
 
 # Module settings in `deploy.json`
 
@@ -90,7 +90,7 @@ An example of the sequence generators: now for each object its code is the code 
 
 ## Setting the eager loading for printed forms `"skipEnvOptions"`
 
-[Printed forms](/docs/ru/2_system_description/functionality/printed_forms.md) in more details.
+[Printed forms](/docs/en/2_system_description/functionality/printed_forms.md) in more details.
 
 Use the `skipEnvOptions` flag to enable/disable the eager loading.
 
@@ -405,7 +405,7 @@ The logo for the module is described through the standard mechanism of static ro
 
 # The "gantt-chart" module
 
-**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the dashboard module](/docs/en/3_modules_description/gantt_chart.md).
+**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the gantt-chart module](/docs/en/3_modules_description/gantt_chart.md).
 
 ## Setting the time scale 
 
@@ -622,7 +622,7 @@ Set the following function in the `"modules"` section in the deploy.json file of
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

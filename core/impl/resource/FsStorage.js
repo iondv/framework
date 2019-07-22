@@ -14,7 +14,6 @@ const cuid = require('cuid');
 const merge = require('merge');
 const clone = require('clone');
 const mkdirp = require('mkdirp');
-const sanitize = require('sanitize-filename');
 const xss = require('xss');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
 
@@ -56,9 +55,7 @@ function FsStorage(options) {
   this._accept = function (data, directory, options) {
     let opts = clone(options) || {};
     let m = moment();
-    let pth = directory
-      ? directory.replace(/[\\/]/, path.sep)
-      : path.join(m.format('YYYY'), m.format('MM'), m.format('DD'));
+    let pth = directory ? directory.replace(/[\\/]/, path.sep) : m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
     if (pth.charAt(0) === path.sep) {
       pth = pth.slice(1);
     }
@@ -105,8 +102,6 @@ function FsStorage(options) {
     } else {
       throw new Error('Переданы данные недопустимого типа:!');
     }
-
-    fn = sanitize(fn);
 
     function checkDest(filename, prompt) {
       return new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-### Назад: [Модуль отчетов](/docs/en/3_modules_description/report.md)
+### Назад: [Модуль отчетов](/docs/ru/3_modules_description/report.md)
 
 # Замечания при проектировании шахты
 
@@ -55,8 +55,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
-[English](/docs/en/3_modules_description/report_warning.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  
+[English](/docs/en/3_modules_description/report_warning.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
