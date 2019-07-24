@@ -53,7 +53,6 @@ const FUNC_OPERS = {
   [Operations.DATE]: '$date',
   [Operations.DATE_ADD]: '$dateAdd',
   [Operations.DATE_DIFF]: '$dateDiff',
-  [Operations.DATE_STR]: '$dateToStr',
   [Operations.DATE_YEAR]: '$year',
   [Operations.DATE_MONTH]: '$month',
   [Operations.DATE_DAY]: '$dayOfMonth',
@@ -79,7 +78,8 @@ const FUNC_OPERS = {
   [Operations.CASE]: '$case',
   [Operations.LITERAL]: '$literal',
   [Operations.SIZE]: '$strLenCP',
-  [Operations.FORMAT]: '$dateToString'
+  [Operations.FORMAT]: '$dateToString',
+  [Operations.DATE_FORMAT]: '$dateToString'
 };
 
 const OPERS = Object.values(QUERY_OPERS).concat(Object.values(FUNC_OPERS));
@@ -597,6 +597,10 @@ function MongoDs(config) {
     return v;
   }
 
+  function fDateFormat(args) {
+    return {$dateToString: {date: args[0], format: prepareDateFormat(args[1])}};
+  }
+
   function fDateAdd(args) {
     let base = args[0];
     let unit = 'd';
@@ -922,9 +926,8 @@ function MongoDs(config) {
             } else if (oper === Operations.SIZE) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               return {$strLenCP: args[0]};
-            } else if (oper === Operations.FORMAT) {
-              let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
-              return {$dateToString: {date: args[0], format: prepareDateFormat(args[1])}};
+            } else if (oper === Operations.FORMAT || oper === Operations.DATE_FORMAT) {
+              return fDateFormat(parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter));
             } else if (oper === Operations.CASE) {
               let args = parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter);
               let result = {$switch: {
@@ -1668,7 +1671,11 @@ function MongoDs(config) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name[0] === '$') {
+          if (name === '$dateToString') {
+            let tmp = find[name];
+            tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix, true);
+            result.push(fDateFormat(tmp));
+          } else if (name[0] === '$') {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix, true);
             if (tmp !== null) {
               let nm = name;
@@ -1707,6 +1714,7 @@ function MongoDs(config) {
                 } else {
                   tmp = tmp2;
                 }
+              
               }
               if (tmp) {
                 result.push({[nm]: tmp});
@@ -2166,7 +2174,6 @@ function MongoDs(config) {
    */
   function fetch(c, options, aggregate, resolve, reject) {
     let r;
-
     if (aggregate) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {
@@ -2323,6 +2330,7 @@ function MongoDs(config) {
     return getCollection(type)
       .then((col) => {
         c = col;
+
         options.filter = parseCondition(options.filter);
         prepareConditions(options.filter);
 

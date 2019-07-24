@@ -19,7 +19,6 @@ module.exports = {
   DATE_ADD: 'dateAdd',
   DATE_DIFF: 'dateDiff',
   DATE_FORMAT: 'dateFormat',
-  DATE_STR: 'dateToStr',
   DATE_YEAR: 'year',
   DATE_MONTH: 'month',
   DATE_DAY: 'day',
