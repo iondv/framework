@@ -50,6 +50,7 @@ const FUNC_OPERS = {
   [Operations.AND]: '$and',
   [Operations.OR]: '$or',
   [Operations.NOT]: '$not',
+  [Operations.NOW]: '$date',
   [Operations.DATE]: '$date',
   [Operations.DATE_ADD]: '$dateAdd',
   [Operations.DATE_DIFF]: '$dateDiff',
@@ -79,7 +80,9 @@ const FUNC_OPERS = {
   [Operations.LITERAL]: '$literal',
   [Operations.SIZE]: '$strLenCP',
   [Operations.FORMAT]: '$dateToString',
-  [Operations.DATE_FORMAT]: '$dateToString'
+  [Operations.DATE_FORMAT]: '$dateToString',
+  [Operations.TO_UPPER]: '$toUpper',
+  [Operations.TO_LOWER]: '$toLower'
 };
 
 const OPERS = Object.values(QUERY_OPERS).concat(Object.values(FUNC_OPERS));
@@ -861,6 +864,9 @@ function MongoDs(config) {
                 return processed;
               }
             }
+            if (oper === Operations.NOW) {
+              return {[FUNC_OPERS[oper]]: []};
+            }
             if (oper === Operations.SIZE) {
               let args = parseCondition(c[oper]);
               return {$strLenCP: args[0]};
@@ -919,6 +925,8 @@ function MongoDs(config) {
               };
             } else if (oper === Operations.DATE) {
               return fDate(e[oper]);
+            } else if (oper === Operations.NOW) {
+              return fDate();
             } else if (oper === Operations.DATE_ADD) {
               return fDateAdd(parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter));
             } else if (oper === Operations.DATE_DIFF) {
@@ -1675,6 +1683,8 @@ function MongoDs(config) {
             let tmp = find[name];
             tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix, true);
             result.push(fDateFormat(tmp));
+          } else if (name === '$toUpper' || name === '$toLower') {
+            result.push({[name]: produceRedactFilter(find[name], explicitJoins, prefix, true)});
           } else if (name[0] === '$') {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix, true);
             if (tmp !== null) {

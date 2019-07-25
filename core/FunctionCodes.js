@@ -16,6 +16,7 @@ module.exports = {
   OR: 'or',
   NOT: 'not',
   DATE: 'date',
+  NOW: 'now',
   DATE_ADD: 'dateAdd',
   DATE_DIFF: 'dateDiff',
   DATE_FORMAT: 'dateFormat',
@@ -48,5 +49,7 @@ module.exports = {
   LITERAL: 'literal',
   SIZE: 'size',
   FORMAT: 'format',
-  NUMBER_TO_WORDS: 'number2words'
+  NUMBER_TO_WORDS: 'number2words',
+  TO_UPPER: 'upper',
+  TO_LOWER: 'lower'
 };
