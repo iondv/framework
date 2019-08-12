@@ -3,7 +3,7 @@
 В папке содержаться скрипты запуска приложения, реализованного на IONDV. Framework, такие как:
 
 ##### [acl.js](https://git.iondv.ru/ION/platform/blob/ORG-330/docs/ru/1_system_deployment/files_in_folder_bin.md#acljs-1)
-##### [export.js]
+##### [export.js](https://git.iondv.ru/ION/platform/blob/ORG-330/docs/ru/1_system_deployment/files_in_folder_bin.md#exportjs-1)
 ##### [import.js] и [import-data.js]
 ##### [setup.js]
 
