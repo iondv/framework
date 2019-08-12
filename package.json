@@ -46,6 +46,7 @@
     "jsonwebtoken": "^8.1.0",
     "jssc": "^0.2.6",
     "jszip": "^3.1.5",
+    "ldapauth-fork": "^4.2.0",
     "locale": "^0.1.0",
     "lodash": "^4.17.10",
     "memcached": "^2.2.2",
@@ -66,6 +67,7 @@
     "redis": "^2.8.0",
     "request": "^2.83.0",
     "rimraf": "^2.6.2",
+    "sanitize-filename": "^1.6.1",
     "sendmail": "^1.4.1",
     "serve-favicon": "^2.4.5",
     "sharp": "^0.20.3",
@@ -82,11 +84,10 @@
     "test": "gulp test"
   },
   "devDependencies": {
-    "gulp": "^4.0.0",
+    "gulp": "^4.0.2",
     "gulp-clean-css": "~4.0.0",
     "gulp-jsmin": "~0.1.5",
     "gulp-less": "~4.0.1",
     "gulp-rename": "~1.4.0"
   }
-
 }
