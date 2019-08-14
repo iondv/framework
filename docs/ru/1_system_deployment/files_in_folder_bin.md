@@ -24,7 +24,7 @@ NB. Запускаются локально из папки platform, шабло
 
 - [x] Настройка доступа - `node bin/acl.js --u admin@local --role admin --p full`
 
-- [x] Права на генерацию токена для сервиса rest/token - `bin/acl.js --role admin --p USE --res ws:::gen-ws-token`
+- [x] Права на генерацию токена для сервиса rest/token - `node bin/acl.js --role admin --p USE --res ws:::gen-ws-token`
 
 ```
 По такому же принципу можно задавать пользователей и права на отдельные ресурсы системы
