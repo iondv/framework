@@ -76,7 +76,7 @@ This page in [English](/README.md/)
 
 Посмотрите наши демо уже сейчас:
 
-* [Studio](https://studio.iondv.com/index) - специализированная IDE, помогающая ускорить и упростить разработку приложений на IONDV. Framework. [GitHub Репозиторий](github.com/iondv/studio).
+* [Studio](https://studio.iondv.com/index) - специализированная IDE, помогающая ускорить и упростить разработку приложений на IONDV. Framework. [GitHub Репозиторий](https://github.com/iondv/studio/tree/master/tutorial/ru/index.md).
 * [DNT](https://dnt.iondv.com/auth) - наше приложение для разработки и тестирования, на основе которого внедряются и тестируются новые метакомпоненты. Практически все элементы системы находятся в приложении DNT.[GitHub Репозиторий](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - это программное решение на основе IONDV. Framework, реализованное для действующего проекта "Вспомнить каждого", цель которого оцифровать архивные документы, внести информацию в базу и обеспечить к ним свободный доступ. [GitHub Репозиторий](https://github.com/iondv/war-archive).
 * Project Management - *скоро на GitHub*.
