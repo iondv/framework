@@ -2,10 +2,10 @@
 
 В папке содержаться скрипты запуска приложения, реализованного на IONDV. Framework, такие как:
 
-* [acl.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#acljs-1)
-* [export.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#exportjs-1)
-* [import.js и import-data.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#importjs-%D0%B8-import-datajs-1)
-* [setup.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#setupjs-1)
+* [acl.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#acljs)
+* [export.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#exportjs)
+* [import.js и import-data.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#importjs-%D0%B8-import-datajs)
+* [setup.js](/docs/ru/1_system_deployment/files_in_folder_bin.md#setupjs)
 
 ```
 NB. Запускаются локально из папки platform, шаблоны команд указаны в разделах с описанием назначения скрипта.
