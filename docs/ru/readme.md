@@ -79,8 +79,9 @@ This page in [English](/README.md/)
 * [Studio](https://studio.iondv.com/index) - специализированная IDE, помогающая ускорить и упростить разработку приложений на IONDV. Framework. [GitHub Репозиторий](github.com/iondv/studio).
 * [DNT](https://dnt.iondv.com/auth) - наше приложение для разработки и тестирования, на основе которого внедряются и тестируются новые метакомпоненты. Практически все элементы системы находятся в приложении DNT.[GitHub Репозиторий](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - это программное решение на основе IONDV. Framework, реализованное для действующего проекта "Вспомнить каждого", цель которого оцифровать архивные документы, внести информацию в базу и обеспечить к ним свободный доступ. [GitHub Репозиторий](https://github.com/iondv/war-archive).
-* Project Management - *скоро на GitHub*.
-* Telecom - *скоро на GitHub*.
+* [Project Management](https://pm-gov-ru.iondv.com) - это программное решение на основе IONDV. Framework, реализованное для организации проектной деятельности, целью которой является контроль результатов, соблюдение и сокращение сроков их достижения, эффективное использование временных, человеческих и финансовых ресурсов, принятие своевременных и обоснованных управленческих решений.
+* [Telecom](https://telecom-ru.iondv.com) - это программное решение на основе IONDV. Framework, реализованное для организации учета, хранения и отображения данных о наличии услуг связи
+(интернет, сотовая связь, телевидение, почта и др.) в населенных пукнтах региона.
 * CRM - *скоро на GitHub*.
 
 Логин для доступа - demo, пароль - ion-demo. Регистрация не требуется.
@@ -95,18 +96,44 @@ This page in [English](/README.md/)
 * Подготовить отчет с расчетами
 * Интегрировать данные по REST и SOAP 
 
-## Быстрый старт с использованием репозитория
+## Быстрый старт
 
 Вы можете посмотреть собранные приложения, развернутые в облаке или получить продукты для изучения другим способом на [сайте фреймворка](https://iondv.com), в том числе:
-* инсталятор для операционной системы Windows
-* архив с собранным приложением
+* инсталятор для операционной системы Linux
+* клонирование репозитория и установка всех компонентов
 * docker-контейнер с собранным приложением
+* архив с собранным приложением
 
 ### Cистемное окружение
 
 Запуск фреймворка осуществляется в среде [Node.js](<https://nodejs.org/en/>) версии 10.x.x.
 
 Для хранения данных необходимо установить и запустить [MongoDb](https://www.mongodb.org/) версии 3.6.
+
+### Установщик
+
+Вы можете использовать установщик приложений IONDV. Framework [iondv-app](https://github.com/iondv/iondv-app), требующий установленных node, mongodb и git. В ходе установки будет проверены и установлены все остальные зависимости, а также собрано и запущено само приложение.
+
+Установка в одну строку:
+
+```
+curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > 
+iondv-app.zip &&  unzip -p iondv-app.ziiondv-app-master/iondv-app > 
+iondv-app &&  bash iondv-app -q -i -m localhost:27017 develop-and-test
+```
+
+Где вместо `localhost:27017` нужно указать адрес MongoDb. После запуска открыть ссылку 'http://localhost:8888', учетная запись бек офиса **demo**, пароль **ion-demo**.
+
+Где параметры для iondv-app `localhost:27017` адрес многодб, а `develop-and-test` название приложения.
+
+Также другой способ заключается в клонировании - (`git clone https://github.com/iondv/iondv-app.git`) и установите приложение с помощью команды `bash iondv-app -m localhost:27017 develop-and-test`.
+
+<details>
+  <summary> 
+    <h3> 
+      Gitclone репозитория
+    </h3> 
+  </summary>
 
 ### Глобальные зависимости
 
@@ -190,44 +217,15 @@ fs.urlBase=/files
 
 Откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении , где `8888` - порт указанный в параметре server.ports конфигурации запуска.
 
+</details>
+
 ### Docker
-Для запуска приложений с докер контейнера, следуйте следующим инструкциям на примере приложения `develop-and-test`:
 
-1. Запустите СУБД mongodb
+Запуск приложения с использованием докер контейнера:
 
-```bash
-docker run  --name mongodb \
-            -v mongodb_data:/data/db \
-            -p 27017:27017 \
-            --restart unless-stopped \
-            -d \
-            mongo
-```
-
-2. Разверните **IONDV. Develop-and-test** и вспомогательные приложения (import и setup должны быть выполенны для всех приложений)
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
-```
-
-Если вы хотите импортированных данные в ваше проект, проверьте папку с демо данными `data` в приложении и выполните команду:
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import-data --src ./applications/develop-and-test --ns develop-and-test
-```
-
-3. Создайтей пользователя `admin` с паролем `123` и ролью `admin`
-```
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/adduser --name admin --pwd 123
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/acl --u admin@local --role admin --p full
-```
-
-4. Запустите приложение
-```
-docker run -d -p 80:8888 --name dnt --link mongodb iondv/dnt
-```
-
-Откройте в браузере `http://localhost/`.
+1. Запустите СУБД mongodb: `docker run --name mongodb -v mongodb_data:/data/db -p 27017:27017 -d mongo`
+2. Запустите IONDV. develop-and-test  `docker run -d -p 80:8888 --link mongodb iondv/develop-and-test`.
+3. Откройте ссылку `http://localhost` в браузере через минуту (время требуется для инициализации данных). Для бек офиса логин: **demo**, пароль: **ion-demo** 
 
 
 ## Документация 

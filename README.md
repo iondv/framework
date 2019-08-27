@@ -80,8 +80,9 @@ For now, we have three demos to show you:
 * [Studio](https://studio.iondv.com/index) - is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](github.com/iondv/studio).
 * [DNT](https://dnt.iondv.com/auth) - is our application for development and testing, on the basis of which new meta components are implemented and tested. So almost all elements of the system are in the DNT app.[GitHub Repo](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - is the IONDV. Framework web-application designed to store, group and demonstrate the data based on archival documents about Great Patriotic War (World War II). [GitHub Repo](https://github.com/iondv/war-archive).
-* Project Management - *coming soon on GitHub*.
-* Telecom - *coming soon on GitHub*.
+* [Project Management](https://pm-gov-ru.iondv.com) - is a web enterprise application based on IONDV. Framework. Project management system allows you to organize project activities: to monitor the results, to comply with and reduce the deadlines, to use effectively temporary, human and financial resources, making timely and informed management decisions.
+* [Telecom](https://telecom-ru.iondv.com) - is a web application based on IONDV. Framework. It is used as a registry to account, store, and present the data on the
+availability of communication services (Internet, mobile communications, television, mail, etc.) in populated areas of the region.
 * CRM - *coming soon on GitHub*.
 
 The login for access is - demo and the password is - ion-demo. No registration required.
@@ -96,19 +97,42 @@ The login for access is - demo and the password is - ion-demo. No registration r
 * Form data in portal forms
 * Data integration with REST API and SOAP 
 
-## Quick start with the repository
+## Quick start 
 
 You can get access to the already built applications deployed on Cloud servers or explore the different ways on the [IONDV.Framework site](https://iondv.com), for example:  
-* installer for windows operating system
-* archive with already built application
-* docker-container with already built application
+* gitclone with this repository
+* installer for linux operating system
+* docker-container with the already built application
+* archive with the already built application
 
-### System environment
+### Software requirements
 
 Install [Node.js](<https://nodejs.org/en/>) runtime and npm package manager to run the IONDV.Framework. Version 10.x.x.   
 
 Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. Version 3.6.  
 
+### Installer
+
+You can use IONDV. Framework apps installer, requiring installed node, mongodb and git. During the installation, all other dependencies will be checked and installed, and the application itself will be built and run.
+
+Install in one command:
+
+```
+curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > 
+iondv-app.zip &&  unzip -p iondv-app.ziiondv-app-master/iondv-app > 
+iondv-app &&  bash iondv-app -q -i -m localhost:27017 develop-and-test
+```
+Where the parameters for the iondv-app are the following: `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
+
+Also the other way is to clone - (`git clone https://github.com/iondv/iondv-app.git`) and install the app by using the `bash iondv-app -m localhost:27017 develop-and-test` command.
+
+<details>
+  <summary> 
+    <h3> 
+      Gitclone with repository
+    </h3> 
+  </summary>
+  
 ### Global dependencies
 
 To build all components and libraries, you need to install the following components globally:
@@ -117,11 +141,12 @@ To build all components and libraries, you need to install the following compone
 * [Gulp](<http://gulpjs.com/>) installation package `npm install -g gulp@4.0`. `4.0` - supported version of `Gulp`
 * package manager of frontend libraries [Bower](<https://bower.io>) `npm install -g bower`
 
+  
 ### Core, modules and application
 
-The [IONDV. Develop-and-test](https://github.com/iondv/develop-and-test) is an example application. There can be the `namespace` instead of the `develop-and-test` application in the path. This means that you need to put the application name in the path instead of `namespace`.
+The [IONDV. Develop-and-test](https://github.com/iondv/develop-and-test) is an example application.
 
-Find the `develop-and-test` application in the repository. The dependencies are listed in the [`package.json`](https://github.com/iondv/develop-and-test/blob/master/package.json) file.
+The dependencies are listed in the [`package.json`](https://github.com/iondv/develop-and-test/blob/master/package.json) file.
 
 ```
   "engines": {
@@ -187,7 +212,7 @@ the application.
 The `npm install` installs all key dependencies, including locally the `gulp` build-tool. Please make sure that the Gulp 
 version - is `4.0`. 
 
-Deployment: execute the `gulp assemble` command to build and deploy the application.
+Further, execute the `gulp assemble` command to build and deploy the application.
 
 If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
 `node bin/import-data --src ./applications/develop-and-test --ns develop-and-test`
@@ -201,51 +226,20 @@ Add admin rights to the user executing the `node bin\acl.js --u admin@local --ro
 Run the app, executing the `npm start` or `node bin/www` command. 
 
 Open this link `http://localhost:8888` in a browser and log in. `8888` —  is a port in the `server.ports` parameter.
+ </details>
 
 
 ### Docker
 Follow these steps to deploy docker container on the example of the `develop-and-test` application:
 
-1. Run mongodb
-
-```bash
-docker run  --name mongodb \
-            -v mongodb_data:/data/db \
-            -p 27017:27017 \
-            --restart unless-stopped \
-            -d \
-            mongo
-```
-
-2. Deploy your **IONDV. Develop-and-test** and additional applications (import and setup must be performed for all applications)
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
-```
-
-If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import-data --src ./applications/develop-and-test --ns develop-and-test
-```
-
-3. Create user `admin` with password `123` and `admin` role
-```
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/adduser --name admin --pwd 123
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/acl --u admin@local --role admin --p full
-```
-
-4. Start application
-```
-docker run -d -p 80:8888 --name dnt --link mongodb iondv/dnt
-```
-
-Open `http://localhost/` in your browser.
+1. Run mongodb DBMS: `docker run - name mongodb -v mongodb_data: / data / db -p 27017: 27017 -d mongo`
+2. Run IONDV. develop-and-test `docker run -d -p 80: 8888 --link mongodb iondv / develop-and-test`.
+3. Open the `http: // localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: ** demo **, password: ** ion-demo **
 
 
 ## Documentation 
 
-The IONDV.Framework documentation is available in two languages —  [english](/docs/en/index.md) and [russian](/docs/ru/index.md). We are open to any suggestions on IONDV. Framework localization.
+The IONDV.Framework documentation is available in two languages —  [english](/docs/en/index.md) and [russian](/docs/ru/index.md).  
 
 ## Links
 
@@ -259,7 +253,7 @@ Some handy links to learn more information on developing applications using IOND
 --------------------------------------------------------------------------  
 
 
-#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
+#### [Licence](/LICENCE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/readme.md)   &ensp; [FAQs](/faqs.md)          
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
 
 
@@ -267,4 +261,3 @@ Some handy links to learn more information on developing applications using IOND
 
 Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved.  
-
