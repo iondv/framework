@@ -6,43 +6,47 @@
 
 ### Структура глобальных настройек `"globals"` на примере приложения "Project management system": 
 
-```
+```javascript
 "globals": {
-  "moduleTitles": {
-  "explicitTopMenu": [
-  "plugins": {
-  "jobs": {
+  "moduleTitles": {},
+  "explicitTopMenu": []
+  "plugins": {}
+  "jobs": {}
 ```
 ## Модули "moduleTitles"
 
 Укажите модули которые будут использованы в приложении в поле "moduleTitles". Также эти же модули будут отображаться в системном меню.
 
-```
+```javascript
 {
   "namespace": "crm",
   "globals": {
     "moduleTitles": {
       "registry": "Тех. поддержка",
       "report": "Отчеты"
-    },
+    }
+  }
+}
 ```
-## Настройка скрытия модуля в системном меню
+### Настройка скрытия модуля в системном меню
 
 Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
 
-```
+```javascript
 {
   "namespace": "project-management",
-  "parametrised": true, //
+  "parametrised": true,
   "globals": {
     "moduleTitles": {
       "registry": {
         "description": "Проектное управление",
         "order": 10,
         "skipModules": true
-      }
+      },
       "ionadmin": null
-    },
+    }
+  }
+}
 ```
 
 ## Настройка отображения общего системного меню для всех модулей проекта "explicitTopMenu"`
@@ -51,7 +55,7 @@
 
 ### Пример 
 
-```
+```javascript
 "globals": {
     "explicitTopMenu": [
       {
@@ -108,32 +112,32 @@
 ### Настройка HTML атрибутов для отражения и сохранения картинок в атрибуте
 
 `"plugins":{`
-```
+
+```javascript
 "fileStorage": {
-        "module": "core/impl/resource/OwnCloudStorage",
-        "options": {
-          "url": "https://owncloud.iondv.ru/",
-          "login": "api",
-          "password": "apiapi"
-        }
-      },
+    "module": "core/impl/resource/OwnCloudStorage",
+    "options": {
+      "url": "https://owncloud.iondv.ru/",
+      "login": "api",
+      "password": "apiapi"
+    }
+}
 ```
 
-```
+```javascript
 "htmlFiles": {
-        "module": "core/impl/resource/FsStorage",
-        "initMethod":"init",
-        "initLevel": 3,
-        "options": {
-          "storageBase": "./htmlFiles",
-          "urlBase": "/htmlFiles",
-          "dataSource": "ion://Db",
-          "log": "ion://sysLog",
-          "app": "ion://application",
-          "auth": "ion://auth"
-        }
-      },
-      "htmlImages": {
+    "module": "core/impl/resource/FsStorage",
+    "initMethod":"init",
+    "initLevel": 3,
+    "options": {
+      "storageBase": "./htmlFiles",
+      "urlBase": "/htmlFiles",
+      "dataSource": "ion://Db",
+      "log": "ion://sysLog",
+      "app": "ion://application",
+      "auth": "ion://auth"
+    },
+    "htmlImages": {
         "module": "core/impl/resource/ImageStorage",
         "initMethod": "init",
         "initLevel": 3,
@@ -150,6 +154,8 @@
             }
           }
         }
+    }
+}
 ```
 
 `"modules": {`
@@ -164,19 +170,34 @@
 }
 ```
 
+### Настройка минимальной длины пароля для входа в систему
+
+Для указания минимальной длины пароля для входа в систему используем свойство `"passwordMinLength"`
+```
+"plugins":{
+    "accounts": {
+        "options": {
+          "passwordMinLength": 8
+        }
+    }
+}
+```
+
 ### Настройка прав доступа "aclProvider"
 
 `"plugins":{`
 
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
+```javascript
+"aclProvider": {
+    "module": "core/impl/access/aclMetaMap",
+    "initMethod": "init",
+    "initLevel": 1,
+    "options":{
+      "dataRepo": "lazy://dataRepo",
+      "acl": "lazy://actualAclProvider",
+      "accessManager": "lazy://roleAccessManager"
+    }
+}
 ```
 
 ### Настройки отображения имени пользователя и аватара во всех модулях проекта
@@ -188,35 +209,32 @@
 
 `"plugins":{`
 
-```
-
-      "customProfile": {
-        "module": "lib/plugins/customProfile",
-        "initMethod": "inject",
-        "options": {
-          "auth": "ion://auth",
-          "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo",
-          "propertyMap": {
-            "person@project-management": {
-              "filter": "user",
-              "properties": {
-                "avatar": "foto"
-              }
-            }
-          }
-        }
+```javascript
+"customProfile": {
+"module": "lib/plugins/customProfile",
+"initMethod": "inject",
+"options": {
+  "auth": "ion://auth",
+  "metaRepo": "ion://metaRepo",
+  "dataRepo": "ion://dataRepo",
+  "propertyMap": {
+    "person@project-management": {
+      "filter": "user",
+      "properties": {
+        "avatar": "foto"
       }
+    }
+  }
+}
 ```
 
 ### Настройка глубины жадной загрузки
 
-```
- },
-      "dataRepo": {
-        "options": {
-          "maxEagerDepth": 4
-        }
+```javascript
+"dataRepo": {
+"options": {
+  "maxEagerDepth": 4
+}
 ```
 
 ### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
