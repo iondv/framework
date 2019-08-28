@@ -96,6 +96,8 @@ The login for access is - demo and the password is - ion-demo. No registration r
 
 ## Top features  
 
+You can find out [more](/docs/en/key_features.md) about the functionality of the framework and its modules.
+
 * Work in multiuser mode
 * Manage data based on workflows
 * Access and data security
