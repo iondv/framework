@@ -38,6 +38,13 @@
 
 # IONDV. Framework 
 
+IONDV. Framework - is a node.js open source framework for developing accounting applications
+or microservices based on metadata and individual modules. Framework is a part of 
+instrumental digital platform to create enterprise 
+(ERP) apps. This platform consists of the following open-source components: the [IONDV. Framework](https://github.com/iondv/framework), the
+[modules](https://github.com/topics/iondv-module) и ready-made applications expanding it
+functionality, visual development environment [Studio](https://github.com/iondv/studio) to create metadata for the app.
+
 ## Description  
 
 **IONDV. Framework** — is a tool for creating high-level web applications based on metadata. You can change the system by adding the additional components to change functionality. There are ready-made modules, but nothing limits you to create new ones to personalize the application. Moreover, it's low-code framework
@@ -80,9 +87,9 @@ For now, we have three demos to show you:
 * [Studio](https://studio.iondv.com/index) - is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](github.com/iondv/studio).
 * [DNT](https://dnt.iondv.com/auth) - is our application for development and testing, on the basis of which new meta components are implemented and tested. So almost all elements of the system are in the DNT app.[GitHub Repo](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - is the IONDV. Framework web-application designed to store, group and demonstrate the data based on archival documents about Great Patriotic War (World War II). [GitHub Repo](https://github.com/iondv/war-archive).
-* [Project Management](https://pm-gov-ru.iondv.com) - is a web enterprise application based on IONDV. Framework. Project management system allows you to organize project activities: to monitor the results, to comply with and reduce the deadlines, to use effectively temporary, human and financial resources, making timely and informed management decisions.
+* [Project Management](https://pm-gov-ru.iondv.com) - is a web enterprise application based on IONDV. Framework. Project management system allows you to organize project activities: to monitor the results, to comply with and reduce the deadlines, to use effectively temporary, human and financial resources, making timely and informed management decisions. [GitHub Repo](https://github.com/iondv/pm-gov-ru)
 * [Telecom](https://telecom-ru.iondv.com) - is a web application based on IONDV. Framework. It is used as a registry to account, store, and present the data on the
-availability of communication services (Internet, mobile communications, television, mail, etc.) in populated areas of the region.
+availability of communication services (Internet, mobile communications, television, mail, etc.) in populated areas of the region. [GitHub Repo](https://github.com/iondv/telecom-ru)
 * CRM - *coming soon on GitHub*.
 
 The login for access is - demo and the password is - ion-demo. No registration required.
@@ -113,16 +120,14 @@ Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. 
 
 ### Installer
 
-You can use IONDV. Framework apps installer, requiring installed node, mongodb and git. During the installation, all other dependencies will be checked and installed, and the application itself will be built and run.
+You can use IONDV. Framework apps installer, requiring installed node.js, mongodb and git. During the installation, all other dependencies will be checked and installed, and the application itself will be built and run.
 
 Install in one command:
 
 ```
-curl -L -s https://github.com/iondv/iondv-app/archive/master.zip > 
-iondv-app.zip &&  unzip -p iondv-app.ziiondv-app-master/iondv-app > 
-iondv-app &&  bash iondv-app -q -i -m localhost:27017 develop-and-test
+bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-app) -q -i -m localhost:27017 develop-and-test
 ```
-Where the parameters for the iondv-app are the following: `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
+Where  `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
 
 Also the other way is to clone - (`git clone https://github.com/iondv/iondv-app.git`) and install the app by using the `bash iondv-app -m localhost:27017 develop-and-test` command.
 
