@@ -154,13 +154,14 @@
 
 `"modules": {`
 `"registry": {`
-`"globals": {`
-```
-"refShortViewDelay": 1000, //количество миллисекунд до появления окна 
-//с инфо. Если не указан или 0, или нет shortView представления, то 
-//окно не выводится
-        "defaultImageDir": "images",
-        "contentImageStorage": "htmlImages"
+`"globals": `
+
+```javascript
+{
+    "refShortViewDelay": 1000, // количество миллисекунд до появления окна с инфо. Если не указан или 0, или нет shortView представления, то окно не выводится
+    "defaultImageDir": "images",
+    "contentImageStorage": "htmlImages"
+}
 ```
 
 ### Настройка прав доступа "aclProvider"
