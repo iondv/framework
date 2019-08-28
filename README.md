@@ -33,7 +33,7 @@
 
 Эта страница на [Русском](/docs/ru/readme.md)
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" height="800px" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
 
 # IONDV. Framework 
@@ -63,7 +63,7 @@ Describe the data and apply ready-made modules that you can adjust for specific 
 
 `core + metadata + modules = application`
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" alt="Application structure - core, metadata, modules" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" height="500px" alt="Application structure - core, metadata, modules" align="center"></a>
 </h1>  
 
 In the square frames  - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - are the base of the simplest application. Below are additional types of meta and modules. They represent additional functionality and could be applied in accordance with the application. Look for the application dependencies in the `package.json` file.
@@ -239,7 +239,7 @@ Follow these steps to deploy docker container on the example of the `develop-and
 
 1. Run mongodb DBMS: `docker run - name mongodb -v mongodb_data: / data / db -p 27017: 27017 -d mongo`
 2. Run IONDV. develop-and-test `docker run -d -p 80: 8888 --link mongodb iondv / develop-and-test`.
-3. Open the `http: // localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: ** demo **, password: ** ion-demo **
+3. Open the `http: // localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: **demo**, password: **ion-demo**
 
 
 ## Documentation 

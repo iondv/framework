@@ -32,7 +32,7 @@
 
 This page in [English](/README.md/)
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" height="800px" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
 
 # IONDV. Framework 
@@ -63,7 +63,7 @@ IONDV. Framework - это опенсорный фреймворк на node.js �
 
 `core + metadata + modules = application`
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" alt="Application structure - core, metadata, modules" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" height="500px" alt="Application structure - core, metadata, modules" align="center"></a>
 </h1>  
 
 В квадратных рамках - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - это база простейшего приложения. Чуть ниже представлены дополнительные типы меты и модули. Они представляют собой дополнительную функциональность и применяются в соответствии с приложением. Зависимости приложения смотрим в файле `package.json`.
