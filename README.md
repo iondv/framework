@@ -84,7 +84,7 @@ We give you a frame for creating applications in JavaScript, both enterprise lev
 
 For now, we have three demos to show you:
 
-* [Studio](https://studio.iondv.com/index) - is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](https://github.com/iondv/studio/tree/master/tutorial/en/index.md).
+* [Studio](https://studio.iondv.com/index) - is an IONDV. Framework specialized IDE that helps you to speed and simplify the development of applications on the IONDV. [GitHub Repo](https://github.com/iondv/studio/tree/master/tutorial/en/index.md). [Instruction to create an app using ION. Studio](https://github.com/iondv/ticket-en/tree/master/tutorial/en/index.md)
 * [DNT](https://dnt.iondv.com/auth) - is our application for development and testing, on the basis of which new meta components are implemented and tested. So almost all elements of the system are in the DNT app.[GitHub Repo](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - is the IONDV. Framework web-application designed to store, group and demonstrate the data based on archival documents about Great Patriotic War (World War II). [GitHub Repo](https://github.com/iondv/war-archive).
 * [Project Management](https://pm-gov-ru.iondv.com) - is a web enterprise application based on IONDV. Framework. Project management system allows you to organize project activities: to monitor the results, to comply with and reduce the deadlines, to use effectively temporary, human and financial resources, making timely and informed management decisions. [GitHub Repo](https://github.com/iondv/pm-gov-ru)
