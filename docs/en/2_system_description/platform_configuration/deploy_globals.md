@@ -161,6 +161,18 @@ This field contains settings that allow you to expand the capabilities of the ap
         "defaultImageDir": "images",
         "contentImageStorage": "htmlImages"
 ```
+### Setting the minimum password length
+
+You can specify the minimum password length to log in, using the `"passwordMinLength"` property.
+```
+"plugins":{
+    "accounts": {
+        "options": {
+          "passwordMinLength": 8
+        }
+    }
+}
+```
 
 ### Setting the access rights "aclProvider"
 
