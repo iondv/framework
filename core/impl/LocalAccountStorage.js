@@ -106,7 +106,7 @@ class LocalAccountStorage extends IAccountStorage {
           },
           {pwd, pwdDate}
           )
-          .then(() => resolve(true))
+          .then(() => resolve(pwd))
           .catch(reject);
       });
     };
