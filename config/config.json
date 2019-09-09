@@ -156,7 +156,7 @@
             "upperLower": "[[auth.passwordComplexity.upperLower]]",
             "number": "[[auth.passwordComplexity.number]]",
             "special": "[[auth.passwordComplexity.special]]"
-          }
+          },
           "attemptTimeOut": "[[auth.attemptTimeOut]]",
           "attemptLimit": "[[auth.attemptLimit]]",
           "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
