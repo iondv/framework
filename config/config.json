@@ -151,6 +151,7 @@
           "passwordLifetime": "[[auth.passwordLifeTime]]",
           "passwordMinPeriod": "[[auth.passwordMinPeriod]]",
           "passwordMinLength": "[[auth.passwordMinLength]]",
+          "passwordJournalSize": "[[auth.passwordJournalSize]]",
           "attemptTimeOut": "[[auth.attemptTimeOut]]",
           "attemptLimit": "[[auth.attemptLimit]]",
           "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
