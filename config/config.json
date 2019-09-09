@@ -149,6 +149,7 @@
           "acl": "ion://aclProvider",
           "inactiveTimeout": "[[auth.inactivityTimeout]]",
           "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinPeriod": "[[auth.passwordMinPeriod]]",
           "passwordMinLength": "[[auth.passwordMinLength]]",
           "attemptTimeOut": "[[auth.attemptTimeOut]]",
           "attemptLimit": "[[auth.attemptLimit]]",
