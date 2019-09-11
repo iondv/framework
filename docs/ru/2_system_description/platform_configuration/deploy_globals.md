@@ -1,12 +1,12 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Конфигурационный файл - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Назад: [Конфигурационный файл - deploy.json](deploy.md)
 
 # Глобальные настройки в `deploy.json`
 
 ### Структура глобальных настройек `"globals"` на примере приложения "Project management system": 
 
-```javascript
+```json
 "globals": {
   "moduleTitles": {},
   "explicitTopMenu": []
@@ -17,7 +17,7 @@
 
 Укажите модули которые будут использованы в приложении в поле "moduleTitles". Также эти же модули будут отображаться в системном меню.
 
-```javascript
+```json
 {
   "namespace": "crm",
   "globals": {
@@ -32,7 +32,7 @@
 
 Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
 
-```javascript
+```json
 {
   "namespace": "project-management",
   "parametrised": true,
@@ -55,7 +55,7 @@
 
 ### Пример 
 
-```javascript
+```json
 "globals": {
     "explicitTopMenu": [
       {
@@ -113,7 +113,7 @@
 
 `"plugins":{`
 
-```javascript
+```json
 "fileStorage": {
     "module": "core/impl/resource/OwnCloudStorage",
     "options": {
@@ -124,7 +124,7 @@
 }
 ```
 
-```javascript
+```json
 "htmlFiles": {
     "module": "core/impl/resource/FsStorage",
     "initMethod":"init",
@@ -162,41 +162,11 @@
 `"registry": {`
 `"globals": `
 
-```javascript
+```json
 {
     "refShortViewDelay": 1000, // количество миллисекунд до появления окна с инфо. Если не указан или 0, или нет shortView представления, то окно не выводится
     "defaultImageDir": "images",
     "contentImageStorage": "htmlImages"
-}
-```
-
-### Настройка минимальной длины пароля для входа в систему
-
-Для указания минимальной длины пароля для входа в систему используем свойство `"passwordMinLength"`
-```
-"plugins":{
-    "accounts": {
-        "options": {
-          "passwordMinLength": 8
-        }
-    }
-}
-```
-
-### Настройка прав доступа "aclProvider"
-
-`"plugins":{`
-
-```javascript
-"aclProvider": {
-    "module": "core/impl/access/aclMetaMap",
-    "initMethod": "init",
-    "initLevel": 1,
-    "options":{
-      "dataRepo": "lazy://dataRepo",
-      "acl": "lazy://actualAclProvider",
-      "accessManager": "lazy://roleAccessManager"
-    }
 }
 ```
 
@@ -209,7 +179,7 @@
 
 `"plugins":{`
 
-```javascript
+```json
 "customProfile": {
 "module": "lib/plugins/customProfile",
 "initMethod": "inject",
@@ -230,14 +200,14 @@
 
 ### Настройка глубины жадной загрузки
 
-```javascript
+```json
 "dataRepo": {
 "options": {
   "maxEagerDepth": 4
 }
 ```
 
-### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### Полный пример файла [deploy.json](deploy_ex.md)
 
 --------------------------------------------------------------------------  
 

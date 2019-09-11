@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Конфигурационный файл - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Назад: [Конфигурационный файл - deploy.json](deploy.md)
 
 # Настройки модулей в `deploy.json`
 
@@ -634,7 +634,7 @@
     }
  ```
 
-### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### Полный пример файла [deploy.json](deploy_ex.md)
 
 --------------------------------------------------------------------------  
 

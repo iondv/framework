@@ -6,7 +6,7 @@
 
 ### Structure of global settings `"globals"` on the example of "Project management system":
 
-```
+```json
 "globals": {
   "moduleTitles": {
   "explicitTopMenu": [
@@ -17,7 +17,7 @@
 
 In the "moduleTitles" field specify the modules that will be used in the application. Also, the same modules will be displayed in the system menu.
 
-```
+```json
 {
   "namespace": "crm",
   "globals": {
@@ -30,7 +30,7 @@ In the "moduleTitles" field specify the modules that will be used in the applica
 ## Setting to hide module in system menu
 
 Set the **null** value in the module that you would like to hide in the system menu of the project, for example `"ionadmin": null`.
-```
+```json
 {
   "namespace": "project-management",
   "parametrised": true, //
@@ -51,7 +51,7 @@ Set the `"explicitTopMenu"` at the global level, preserving the ability to overr
 
 ### Example 
 
-```
+```json
 "globals": {
     "explicitTopMenu": [
       {
@@ -108,7 +108,7 @@ This field contains settings that allow you to expand the capabilities of the ap
 
 `"plugins":{`
 
-```
+```json
 "fileStorage": {
         "module": "core/impl/resource/OwnCloudStorage",
         "options": {
@@ -119,7 +119,7 @@ This field contains settings that allow you to expand the capabilities of the ap
       },
 ```
 
-```
+```json
 "htmlFiles": {
         "module": "core/impl/resource/FsStorage",
         "initMethod":"init",
@@ -155,38 +155,11 @@ This field contains settings that allow you to expand the capabilities of the ap
 `"modules": {`
 `"registry": {`
 `"globals": {`
-```
+```json
 "refShortViewDelay": 1000, //milliseconds before the window opens 
 // If 0, not specified or not shortView, the window is not displayed.
         "defaultImageDir": "images",
         "contentImageStorage": "htmlImages"
-```
-### Setting the minimum password length
-
-You can specify the minimum password length to log in, using the `"passwordMinLength"` property.
-```
-"plugins":{
-    "accounts": {
-        "options": {
-          "passwordMinLength": 8
-        }
-    }
-}
-```
-
-### Setting the access rights "aclProvider"
-
-`"plugins":{`
-
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
 ```
 
 ### Setting to display username and user icon (avatar) in all modules of the project 
@@ -197,7 +170,7 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
 
 `"plugins":{`
 
-```
+```json
 "globals": {
     "plugins": {
       "customProfile": {
@@ -223,7 +196,7 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
 ```
 ### Seting the depth of the eager loading
 
-```
+```json
  },
       "dataRepo": {
         "options": {
