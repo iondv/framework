@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Мета представлений - атрибутивная часть](/docs/ru/2_system_description/metadata_structure/meta_view/meta_view_attribute.md)
+### Предыдущая страница: [Мета представлений - атрибутивная часть](meta_view_attribute.md)
 
 # Типы представлений
 
@@ -38,10 +38,10 @@ module.exports = {
 
 | Код | Наименование  | Описание                                                                                                                                          | 
 |----:|:------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------|
-|   0 | [**Группа**](/docs/ru/2_system_description/metadata_structure/meta_view/type_group.md)                                          | Особая структура представлений создания и изменения.                                                                                        |                                                                            |
+|   0 | [**Группа**](type_group.md)                                          | Особая структура представлений создания и изменения.                                                                                        |                                                                            |
 |   1 | Строковое                                       | Представление для текстовых данных или приведение к текстовому виду. Настроен trim - т.е. отбрасывание пробелов с начала и конца строки                                                                                                   
-|   2 | [**Ссылка**](/docs/ru/2_system_description/metadata_structure/meta_view/type_coll_ref.md)                                          | Для ссылочных полей, связь 1кN. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                          
-|   3 | [**Коллекция**](/docs/ru/2_system_description/metadata_structure/meta_view/type_coll_ref.md)                                       | Для коллекций, связь Nк1. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                                                        |                                                                            |
+|   2 | [**Ссылка**](type_coll_ref.md)                                          | Для ссылочных полей, связь 1кN. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                          
+|   3 | [**Коллекция**](type_coll_ref.md)                                       | Для коллекций, связь Nк1. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                                                        |                                                                            |
 |   4 | Флаг                                            | Чекбокс для логического типа.                                                                                                                                            | 
 |   5 | [**Выпадающий список**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)                               | Для имеющих заданное поле `selectionProvider`.                                                                                                                             |                           | 
 |   7 | Многострочный текст                             | Представление для текста. Настроен trim - т.е. отбрасывание пробелов с начала и конца строки                                                                                                                                              
@@ -65,7 +65,8 @@ module.exports = {
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

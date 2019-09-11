@@ -9,7 +9,7 @@
 
 ## СУБД
 
-1. Необходимо установить СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия `3.6.9`. 
+1. Необходимо установить СУБД [MongoDB](https://www.mongodb.org/). Проверенная версия `3.6.9` и `4.0.0`. 
 
 2. Далее создаем папку `data` на диске C: и в ней подпапку `db`.
 
@@ -17,7 +17,6 @@
 Если есть необходимость использовать каталог с БД отличный от `c:\data\db`, тогда файл `mongod.exe` необходимо запустить
 с параметром `--dbpath` после которого указать путь к каталогу.
 
-4. Для более подробной информации см. [настойка MongoDB](/docs/ru/manuals/mongoDB.md). 
 
 ## Среда выполнения Node.js
 
@@ -48,12 +47,13 @@ Node.js - является средой, в которой осуществля�
 Для установки библиотек фронтенд используется [bower](https://bower.io). Установите глобально командой `npm install -g bower`.  
 
 
-### Следующая страница: [Установка ядра, модулей и приложения](/docs/ru/1_system_deployment/step2_project_with_modules.md)  
+### Следующая страница: [Установка ядра, модулей и приложения](step2_project_with_modules.md)  
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/1_system_deployment/step1_installing_environment.md)    &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

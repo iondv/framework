@@ -139,7 +139,7 @@ bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-a
 <details>
   <summary> 
     <h3> 
-      Gitclone репозитория
+      Сборка приложения из репозитория
     </h3> 
   </summary>
 
@@ -190,16 +190,9 @@ bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-a
 ```
 auth.denyTop=false 
 auth.registration=false 
-auth.exclude[]=/files/**
-auth.exclude[]=/images/**
 db.uri=mongodb://127.0.0.1:27017/db
-db.user=username
-db.pwd=password
 server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
 module.default=registry
-module.skip[]=offline-sync
 fs.storageRoot=./files
 fs.urlBase=/files
 
@@ -238,21 +231,20 @@ fs.urlBase=/files
 
 ## Документация 
 
-Документация по платформе IONDV.Framework доступна на двух языках  - [русский](/docs/ru/index.md) и [english](/docs/en/index.md).
+Документация по платформе IONDV.Framework доступна на двух языках  - [русский](index.md) и [english](/docs/en/index.md).
 
 ## Ссылки
 
 Ниже представлены ссылки на дополнительную информацию по разработке приложений с использованием IONDV.Framework.
-* [Документация](/docs/ru/index.md)
+* [Документация](index.md)
 * [Домашняя страница фреймворка](https://iondv.com/)
 * Обратная связь на [Facebook](https://www.facebook.com/iondv/)
-* Вопросы на [Stack Overflow](https://stackoverflow.com/questions/tagged/iondv)
 
 
 --------------------------------------------------------------------------  
 
 
-#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)
+#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/README.md)   &ensp; 
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 --------------------------------------------------------------------------  

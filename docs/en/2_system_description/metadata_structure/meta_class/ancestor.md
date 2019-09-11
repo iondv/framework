@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Metadata versions](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)
+### The previous page: [Metadata versions](metaversion.md)
 
 # Inheritance
 
@@ -60,7 +60,7 @@ In the meta of the parent class the set of attributes is formed in such a way th
 
 ## Сlass view:
 
-If the [criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md) is set in the parent class, then there is no need to set the view for this class.
+If the [criteria of abstraction](abstract.md) is set in the parent class, then there is no need to set the view for this class.
 
 The class view is set for each heir separately with the desired set of attributes (attributes of the new class plus of the parent class, if needed).
 
@@ -90,7 +90,7 @@ Set the list of the heir classes to create objects by reference in the meta clas
 
 * Attribute types - Reference or Collection.
 * For the reference, collection types of attributes the reference/collection class for the parent class should be specified. 
-* In addition to [hiding the parent class](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md), when creating an object, you do not need to display all the heir classes in the class selection list to create an object by reference.
+* In addition to [hiding the parent class](abstract.md), when creating an object, you do not need to display all the heir classes in the class selection list to create an object by reference.
 
 ### Example
 
@@ -154,7 +154,7 @@ In the [Project] class, there is an attribute of the "Collection" type that refe
 
 
 ```
-If the [criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md) is set in the class, then when creating an object of the [Event] class in the collection, only the heirs specified in the `"allowedSubclasses"` property will be desplayed. 
+If the [criteria of abstraction](abstract.md) is set in the class, then when creating an object of the [Event] class in the collection, only the heirs specified in the `"allowedSubclasses"` property will be desplayed. 
 
 Based on the example, only the objects of the "Event 1" and "Event 2" classes can be created in the "Events" collection.
 
@@ -236,11 +236,12 @@ those that are higher in the inheritance hierarchy.
 ```
 The `[eventBlock]` heir will inherit the set of the attributes of the `[basicObj]` parent class, as well as the `[eventBasic]` heir class.
  
-### The next page: [Time tag of created objects](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)
+### The next page: [Time tag of created objects](time_user_tracker.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/ancestor.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/ancestor.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

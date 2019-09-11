@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Fields](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)
+### The previous page: [Fields](fields.md)
 
 # Commands
 
@@ -88,12 +88,13 @@ In the general part of the meta view of the class there can be listed the comman
         }
 ```
 
-### The next page: [Visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md) 
+### The next page: [Visibility conditions](visibility.md) 
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Автозаполнение](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
+### Предыдущая страница: [Автозаполнение](atr_autoassigned.md)
 
 # Значение по умолчанию 
 
@@ -71,11 +71,12 @@ get(className, id) // проверяем наличие объекта в БД, 
 get(className, attr1, val1, attr2, val2, ...) // возвращаем id первого объекта удовлетворяющего критериям поиска: attr1=val1 и attr2=val2 и т.д.
 ```
 
-### Следующая страница: [Аттрибут "Ссылка"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### Следующая страница: [Аттрибут "Ссылка"](atr_ref_backref.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](atr_default_value.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

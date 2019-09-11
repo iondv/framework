@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous pege: [Step 2 Core, modules and application](/docs/en/1_system_deployment/step2_project_with_modules.md)
+### The previous pege: [Step 2 Core, modules and application](/step2_project_with_modules.md)
 
 # Step 3 Building and deploying the application
 
@@ -38,7 +38,8 @@ When you'll see the message that you're running the system on port `8888`, you c
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step3_building_and_running.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/1_system_deployment/step3_building_and_running.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

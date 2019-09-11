@@ -6,7 +6,7 @@
 * [Шаг 2 Установка ядра, модулей и приложения](1_system_deployment/step2_project_with_modules.md)
 * [Шаг 3 Сборка и запуск приложения](1_system_deployment/step3_building_and_running.md)
 
-## 2. [Описание системы](/docs/ru/2_system_description)
+## 2. [Описание системы](2_system_description)
 
 ### Структура метаданных
 
@@ -34,7 +34,7 @@
 *  [Настройка заданий по расписанию](2_system_description/functionality/schedule.md)
 *  [Утилиты](2_system_description/functionality/utilities.md)
 
-## 3. [Описание модулей](/docs/ru/3_modules_description) 
+## 3. [Описание модулей](3_modules_description) 
 
 *  [Админ](3_modules_description/admin.md)
 *  [Регистри](3_modules_description/registry.md)
@@ -49,7 +49,6 @@
 
 *  [Настройка среды разработки ION](4_ion_model/ion_environment.md)
 
-## 5. [Тестирование](5_system_test)
 
 
 
@@ -57,7 +56,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/contacts) &ensp;  [English](/docs/en/index.md)  &ensp; <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/index.md)  &ensp; 
+ <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

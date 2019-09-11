@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### Back to: [Configuration file - deploy.json](deploy.md)
 
 # Global settings in `deploy.json`
 
@@ -231,14 +231,14 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
         }
 ```
 
-### The next page: [Module settings in deploy.json](/docs/en/2_system_description/platform_configuration/deploy_modules.md)
+### The next page: [Module settings in deploy.json](deploy_modules.md)
 
-### The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the deploy.json file
+### The [full example](deploy_ex.md) of the deploy.json file
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

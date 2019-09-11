@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Maintenance of project documents](/docs/en/2_system_description/metadata_structure/meta_view/fileshare.md)
+### The previous page: [Maintenance of project documents](fileshare.md)
 
 # Comments for attributes of the "Collection" type
 
@@ -244,7 +244,7 @@ Next, configure the functionality of `"options"` for the "Comment" view on the e
 ### Meta class with the attribute of the "Collection" type with the "Comment" view
 
 1. Create an attribute of the "Collection" type.
-2. In the edit view form, create an attribute of the "Collection" type as usual but with the `"options"` setting, see the ["options" configuration](/docs/en/2_system_description/metadata_structure/meta_view/comments.md#the-options-configuration) for more details.
+2. In the edit view form, create an attribute of the "Collection" type as usual but with the `"options"` setting, see the ["options" configuration](comments.md#the-options-configuration) for more details.
 
 ### Meta class by reference from the attribute of the "Collection" type with the "Comment" view 
 
@@ -454,12 +454,13 @@ Next, configure the functionality of `"options"` for the "Comment" view on the e
 
 ```
 
-### The next page: [View types](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)
+### The next page: [View types](view_types.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/comments.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/comments.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### The previous page: [Configuration file - deploy.json](deploy.md)
 
 # Dependencies in package.json
 
@@ -68,12 +68,12 @@ The **package.json** file - defines the structure of dependencies and the detail
 | `"dependencies"`   | **Dependencies**      |  Other project dependencies.
 
 
-### The next page: [Configuration parameters - ini-files](/docs/en/2_system_description/platform_configuration/ini_files.md)
+### The next page: [Configuration parameters - ini-files](ini_files.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/package.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
+### The previous page: [Dependencies in package.json](package.md)
 
 # How to configure the parameters?
 
@@ -216,14 +216,14 @@ db.operTimeOut=
 ```
 auth.passwordMinLength=8
 ```
-You can override the setting for an application in the [deploy.json](https://github.com/iondv/framework/blob/master/docs/en/2_system_description/platform_configuration/deploy_globals.md#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%BC%D0%B8%D0%BD%D0%B8%D0%BC%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B9-%D0%B4%D0%BB%D0%B8%D0%BD%D1%8B-%D0%BF%D0%B0%D1%80%D0%BE%D0%BB%D1%8F-%D0%B4%D0%BB%D1%8F-%D0%B2%D1%85%D0%BE%D0%B4%D0%B0-%D0%B2-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%83) file.
+You can override the setting for an application in the [deploy.json](https://github.com/iondv/framework/blob/masterdeploy_globals.md#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%BC%D0%B8%D0%BD%D0%B8%D0%BC%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B9-%D0%B4%D0%BB%D0%B8%D0%BD%D1%8B-%D0%BF%D0%B0%D1%80%D0%BE%D0%BB%D1%8F-%D0%B4%D0%BB%D1%8F-%D0%B2%D1%85%D0%BE%D0%B4%D0%B0-%D0%B2-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%83) file.
 
 ### The next page: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 
