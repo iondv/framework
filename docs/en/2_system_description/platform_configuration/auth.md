@@ -1,10 +1,58 @@
-# Настройки авторизации и безопасности
+# Authorization and Security Settings
 
-## Параметры конфигруации приложения, файл `deploy.json`
-Параметры конфигурации приложения предназначены для определения ключевых возможностей 
-системы при работе приложения на этапе проектирования и изменения параметров по умолчанию.
+## Application configuration options, `deploy.json` file
+Application configuration options are designed to identify key features.
+system when the application is running at the design stage and changing the default settings.
 
-## Параметры конфигруации приложения, файл `deploy.json`
+### Setting authorization parameters when working with a password
+Password settings and requirements are set in `di` in `auth` component configuration of the module. 
+But mostly settings are set globally.
+```json
+{
+  "globals": {
+    "parametrised": true,  
+    "plugins":{
+      "auth": {
+        "module": "lib/auth",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "app": "ion://application",
+          "logger": "ion://sysLog",
+          "dataSource": "ion://Db",
+          "acl": "ion://aclProvider",
+          "passwordLifetime": "[[auth.passwordLifeTime]]", // Maximum password validity
+          "passwordMinPeriod": "[[auth.passwordMinPeriod]]", // Minimum password validity
+          "passwordMinLength": "[[auth.passwordMinLength]]", // Minimum password length
+          "passwordComplexity": { // Password complexity requirements
+            "upperLower": true, // Upper and lower case required
+            "number": true, // Mandatory use of at least one number
+            "special": true // Must use at least one special character
+          },
+          "passwordJournalSize": "[[auth.passwordJournalSize]]", // Keep a password log of password size
+          "tempBlockInterval": "[[auth.tempBlockInterval]]", // Time to reset block counter
+          "attemptLimit": "[[auth.attemptLimit]]", // Limit of attempts
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]" // Account lockout duration
+        }
+      }
+```
+The values indicated as`[[auth.passwordLifeTime]]` can be reconfigured in the application settings file - `/config/setup.ini`.
+But for this, it is necessary to verify that the `"parametrised": true` setting is set to global.
+
+The lifetime is set in the format `[duration][unit]`, while units:
+* y - year
+* d - day
+* h - hour
+* m - minute
+* s - second
+
+By default, the key parameter values are:
+* passwordLifetime = 100y
+* passwordMinPeriod = 0d
+* passwordMinLength = 8
+
+All created passwords in the system, including imported ones, are automatically set as required for the change.
+In order to avoid changing passwords during import, the `needPwdReset: false` parameter must be specified in the user properties in the imported acl file.
 
 ### Setting the minimum password length
 
@@ -19,23 +67,55 @@ You can specify the minimum password length to log in, using the `"passwordMinLe
 }
 ```
 
-### Setting the access rights "aclProvider"
+### Setting the access rights "aclProvider" 
 
 `"plugins":{`
 
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
+```javascript
+"aclProvider": {
+    "module": "core/impl/access/aclMetaMap",
+    "initMethod": "init",
+    "initLevel": 1,
+    "options":{
+      "dataRepo": "lazy://dataRepo",
+      "acl": "lazy://actualAclProvider",
+      "accessManager": "lazy://roleAccessManager"
+    }
+}
 ```
 
 
-## Параметры настроек фреймворка и прложения в файле `config/setup.ini
+## Settings for the framework and application in `config/setup.ini
+
+Settings are used to specify and change the application parameters and
+initialized at start. Settings take precedence over configuration settings.
+
+Application settings can also be set in environment variables, while environment variables take precedence over settings.
+
+### Overriding password configuration settings
+
+The password parameters set in the `deploy.json` of the project, if parameterization is enabled and the parameter code is specified, you can redefine them via the platform settings or through environment variables.
+
+Example of the setup file `/config/setup.ini` in which the values specified in the `deploy.json` file are redefined.
+
+```ini
+# Maximum password validity
+auth.passwordLifeTime=90d
+# Maximum password validity
+auth.passwordMinPeriod=75d
+# Minimum password length
+auth.passwordMinLength=8
+# Keep a password log of password length
+auth.passwordJournalSize=5
+# Time to reset block counter
+auth.tempBlockInterval=30m
+# Limit of attempts
+auth.attemptLimit=6
+# Limit duration
+auth.tempBlockPeriod=30m
+# Lifetime of an authorized session, in the absence of activity
+auth.sessionLifeTime=4h
+```
 
 ### Setting the session length in the system
 
