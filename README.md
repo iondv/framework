@@ -96,15 +96,22 @@ The login for access is - demo and the password is - ion-demo. No registration r
 
 ## Top features  
 
-You can find out [more](/docs/en/key_features.md) about the functionality of the framework and its modules.
+**IONDV. Framework** provides the following functionality:
 
-* Work in multiuser mode
-* Manage data based on workflows
-* Access and data security
-* Reports and analytics
-* Visualize data on map
-* Form data in portal forms
-* Data integration with REST API and SOAP 
+- descriptive metadata into the data storage structure in the DBMS;
+- functionality to work with various DBMS (ORM technology);
+- authorization in a system with different policies, by default oath2, with an open, configurable API for connecting passport library authorization modules which provides up to 500 different authorization policies;
+- securing access to data - static securing to data types, to navigation, to stages of business processes, to actions on a form; dynamic securing- through the conditions in the data that the profile of the current user must correspond to (belonging to the unit or organization specified in the object, group or other conditions); through url; providing exceptions in authorization and security by url or for a special user;
+- connection of modules providing additional functionality and implemented through access to the kernel interfaces (APIs);
+- providing import, export of data in the system, metadata, security from files;
+- providing interaction with the file system for storing data, including external file storages, such as nextcloud;
+- calculating values with formulas and caching this data;
+- providing eager loading and data filtering in connected collections;
+- caching requests and sessions in memcached, redis;
+- scheduled tasks;
+- notification of users by events.
+
+You can find out [more](/docs/en/key_features.md) about the functionality of the framework and its modules.
 
 ## Quick start 
 
