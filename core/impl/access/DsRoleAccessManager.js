@@ -154,7 +154,7 @@ function DsRoleAccessManager(config) {
           });
       }
     );
-    return p;
+    return p.then(() => config.logger.logChange(changeObj));
   };
 
   /**
@@ -206,7 +206,7 @@ function DsRoleAccessManager(config) {
       });
     });
 
-    return p;
+    return p.then(() => config.logger.logChange(changeObj));
   };
 
   /**
@@ -235,7 +235,8 @@ function DsRoleAccessManager(config) {
       f.push({[F.IN]: ['$permission', permissions]});
     }
 
-    return config.dataSource.delete(perms_table, {[F.AND]: f});
+    return config.dataSource.delete(perms_table, {[F.AND]: f})
+      .then(() => config.logger.logChange(changeObj));
   };
 
   /**
@@ -271,7 +272,7 @@ function DsRoleAccessManager(config) {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
         });
-        return p;
+        return p.then(() => config.logger.logChange(changeObj));
       });
   };
   /**
@@ -304,7 +305,8 @@ function DsRoleAccessManager(config) {
         });
         return p;
       })
-      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}));
+      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}))
+      .then(() => config.logger.logChange(changeObj));
   };
 
   this._defineRole = function (role, caption = null, description = null) {
@@ -318,7 +320,8 @@ function DsRoleAccessManager(config) {
     if (description) {
       data.description = description;
     }
-    return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data);
+    return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
+      .then(() => config.logger.logChange(changeObj));
   };
 
   this._defineResource = function (resource, caption = null) {
@@ -329,7 +332,8 @@ function DsRoleAccessManager(config) {
     if (caption) {
       data.name = caption;
     }
-    return config.dataSource.upsert('ion_security_resource', {[F.EQUAL]: ['$id', resource]}, data);
+    return config.dataSource.upsert('ion_security_resource', {[F.EQUAL]: ['$id', resource]}, data)
+      .then(() => config.logger.logChange(changeObj));
   };
 
   /**
@@ -342,7 +346,8 @@ function DsRoleAccessManager(config) {
     }
     return config.dataSource
       .delete('ion_security_resource', {[F.IN]: ['$id', resources]})
-      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}));
+      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}))
+      .then(() => config.logger.logChange(changeObj));
   };
 }
 

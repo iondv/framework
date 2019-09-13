@@ -1,0 +1,16 @@
+module.exports.record = (???) => {
+
+  this.??? = ???;
+
+  this.normalize = () => {
+
+  };
+};
+
+module.exports.filter = (???) => {
+  const and = [];
+  if (???.???) {
+    and.push({[F.EQUAL]: ['$???', ???.???]});
+  }
+  return {[F.AND]: and};
+};
