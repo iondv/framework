@@ -85,6 +85,72 @@
 
 Подтверждаем удаление пользователя.
 
+## Настройки аутентификации пользователя. Требования к паролю.
+
+Настройка требований к паролю задается в _ini-файле_ приложения, после чего переменные необходимо объявить в файле настройки конфигурации приложения *deploy.json*.
+
+##### В файле setup.ini:
+```ini
+auth.passwordLifeTime=90d # Максимальный срок действия пароля
+auth.passwordMinPeriod=75d # Минимальный срок действия пароля
+auth.passwordMinLength=8 # Минимальная длина пароля
+auth.passwordJournalSize=5 # Число уникальных новых паролей пользователя до повторного использования старого пароля
+auth.tempBlockInterval=30m # Время до сброса счетчика блокировки
+auth.attemptLimit=6 # Количество неудачных попыток входа в систему, приводящее к блокировке учетной записи пользователя
+auth.tempBlockPeriod=30m # Продолжительность блокировки учетной записи
+auth.sessionLifeTime=4h # Время жизни авторизованной сессии, при отсутствии активности
+
+```
+
+Длительность везде задается в формате: `[длительность][ед. изм]`
+
+|Ед. измерения | Значение|
+|---|---|
+|`y`| Год|
+|`d`| День|
+|`h`| Час|
+|`m` | Минута|
+|`s`| Секунда|
+
+
+##### В файле deploy.json:
+
+```
+NB. Нужно обязательно, чтобы стояла настройка "parametrised": true, на уровне "gloabal"
+```
+
+```javascript
+{
+  "parametrised": true,
+  "globals": {
+    "plugins":{
+      "auth": {
+        "module": "lib/auth",
+        "initMethod": "init",
+        "initLevel": 2,
+        "options": {
+          "app": "ion://application",
+          "logger": "ion://sysLog",
+          "dataSource": "ion://Db",
+          "acl": "ion://aclProvider",
+          "passwordLifetime": "[[auth.passwordLifeTime]]", // максимальный срок действия пароля
+          "passwordMinPeriod": "[[auth.passwordMinPeriod]]", // минимальный срок действия пароля
+          "passwordMinLength": "[[auth.passwordMinLength]]", // минимальная длина пароля
+          "passwordComplexity": { // требования к сложности пароля
+            "upperLower": true, // требование использовать буквы в разном регистре
+            "number": true, // требование использовать числа
+            "special": true // требование использовать спецсимволы
+          },
+          "passwordJournalSize": "[[auth.passwordJournalSize]]", // ведение журнала паролей
+          "tempBlockInterval": "[[auth.tempBlockInterval]]", // счетчик блокировки
+          "attemptLimit": "[[auth.attemptLimit]]", // пороговое значение блокировки 
+          "tempBlockPeriod": "[[auth.tempBlockPeriod]]" // продолжительность блокировки
+        }
+      }
+    }
+  }
+}
+```
 --------------------------------------------------------------------------  
 
 
