@@ -98,7 +98,7 @@
             "options": {
               "table": "ion_role_access_changelog",
               "dataSource": "ion://Db",
-              "record": {
+              "recordClass": {
                 "module": "core/impl/access/DsRoleAccessLogRecord"
               }
             }

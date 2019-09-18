@@ -122,9 +122,10 @@ function DsRoleAccessManager(config) {
   /**
    * @param {String[]} subjects
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this._assignRoles = function (subjects, roles) {
+  this._assignRoles = function (subjects, roles, author = null) {
     if (!subjects || !roles) {
       return Promise.resolve();
     }
@@ -150,20 +151,21 @@ function DsRoleAccessManager(config) {
               {[F.EQUAL]: ['$user', s]},
               {user: s, roles: rc},
               {skipResult: true}
-            );
+            ).then(() => config.logger.logChange(type, author, user, beforeRoles, roleUpdates));
           });
       }
     );
-    return p.then(() => config.logger.logChange(changeObj));
+    return p;
   };
 
   /**
    * @param {String[]} roles
    * @param {String[]} resources
    * @param {String[]} [permissions]
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this._grant = function (roles, resources, permissions) {
+  this._grant = function (roles, resources, permissions, author = null) {
     if (!roles) {
       return Promise.resolve();
     }
@@ -204,18 +206,20 @@ function DsRoleAccessManager(config) {
           ));
         });
       });
+      p.then(() => config.logger.logChange(type, author, role, beforePermissions, updatesPermissions));
     });
 
-    return p.then(() => config.logger.logChange(changeObj));
+    return p;
   };
 
   /**
    * @param {String[]} roles
    * @param {String[]} resources
    * @param {String[]} [permissions]
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this._deny = function (roles, resources, permissions) {
+  this._deny = function (roles, resources, permissions, author = null) {
     if (!roles) {
       return Promise.resolve();
     }
@@ -236,15 +240,16 @@ function DsRoleAccessManager(config) {
     }
 
     return config.dataSource.delete(perms_table, {[F.AND]: f})
-      .then(() => config.logger.logChange(changeObj));
+      .then(() => config.logger.logChange(type, author, role, beforePermissions, updatesPermissions));
   };
 
   /**
    * @param {String[]} subjects
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this._unassignRoles = function (subjects, roles) {
+  this._unassignRoles = function (subjects, roles, author = null) {
     if (!subjects || !roles) {
       return Promise.resolve();
     }
@@ -271,15 +276,18 @@ function DsRoleAccessManager(config) {
           } else {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
+          p.then(() => config.logger.logChange(type, author, user, beforeRoles, roles));
         });
-        return p.then(() => config.logger.logChange(changeObj));
+        return p;
       });
   };
+
   /**
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this._undefineRoles = function (roles) {
+  this._undefineRoles = function (roles, author = null) {
     if (!roles) {
       return Promise.resolve();
     }
@@ -306,10 +314,10 @@ function DsRoleAccessManager(config) {
         return p;
       })
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}))
-      .then(() => config.logger.logChange(changeObj));
+      .then(() => config.logger.logChange(type, author, role));
   };
 
-  this._defineRole = function (role, caption = null, description = null) {
+  this._defineRole = function (role, caption = null, description = null, author = null) {
     if (!role) {
       return Promise.resolve();
     }
@@ -321,7 +329,7 @@ function DsRoleAccessManager(config) {
       data.description = description;
     }
     return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
-      .then(() => config.logger.logChange(changeObj));
+      .then(() => config.logger.logChange(type, author, role));
   };
 
   this._defineResource = function (resource, caption = null) {
@@ -332,8 +340,7 @@ function DsRoleAccessManager(config) {
     if (caption) {
       data.name = caption;
     }
-    return config.dataSource.upsert('ion_security_resource', {[F.EQUAL]: ['$id', resource]}, data)
-      .then(() => config.logger.logChange(changeObj));
+    return config.dataSource.upsert('ion_security_resource', {[F.EQUAL]: ['$id', resource]}, data);
   };
 
   /**
@@ -346,8 +353,7 @@ function DsRoleAccessManager(config) {
     }
     return config.dataSource
       .delete('ion_security_resource', {[F.IN]: ['$id', resources]})
-      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}))
-      .then(() => config.logger.logChange(changeObj));
+      .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$resource', resources]}));
   };
 }
 
