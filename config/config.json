@@ -93,6 +93,7 @@
         "module": "core/impl/access/DsRoleAccessManager",
         "options": {
           "dataSource": "ion://Db",
+          "accounts": "ion://accounts",
           "logger": {
             "module": "core/impl/changelogger/DsChangeLogger2",
             "options": {

@@ -4,6 +4,12 @@ const logRecord = require('core/impl/changelogger/DsChangeLogger2').logRecord;
 class Record extends logRecord {
 
   normalize() {
+    const result = {
+      timestamp: this.base.timestamp || new Date(),
+      type: this.base.type,
+      before: this.base.before,
+      updates: this.base.updates
+    };
     return {
       timestamp: new Date(),
       type: this.base.type,
@@ -23,8 +29,8 @@ class Record extends logRecord {
       UNASSIGN_ROLES: "UNASSIGN_ROLES",
       GRANT: "GRANT",
       DENY: "DENY",
-      _undefineRoles
-      _defineRole
+      UNDEFINE_ROLES: "UNDEFINE_ROLE",
+      DEFINE_ROLE: "DEFINE_ROLE"
     };
   }
 

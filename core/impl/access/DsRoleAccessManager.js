@@ -13,6 +13,7 @@ const F = require('core/FunctionCodes');
 /**
  * @param {{}} config
  * @param {DataSource} config.dataSource
+ * @param {IAccountStorage} config.accounts
  * @param {String} [config.allAlias]
  * @constructor
  */
@@ -139,7 +140,9 @@ function DsRoleAccessManager(config) {
           .then(() => config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', s]}))
           .then((u) => {
             const rc = roles.slice(0);
+            let beforeRoles = null;
             if (u) {
+              beforeRoles = u.roles;
               u.roles.forEach((r) => {
                 if (rc.indexOf(r) < 0) {
                   rc.push(r);
@@ -151,7 +154,8 @@ function DsRoleAccessManager(config) {
               {[F.EQUAL]: ['$user', s]},
               {user: s, roles: rc},
               {skipResult: true}
-            ).then(() => config.logger.logChange(type, author, user, beforeRoles, roleUpdates));
+            ).then(() => config.accounts.get(s, null, true))
+            .then(user => config.logger.logChange(type, author, user, beforeRoles, roles));
           });
       }
     );
@@ -182,31 +186,44 @@ function DsRoleAccessManager(config) {
       permissions = [Permissions.FULL];
     }
 
-    let p = Promise.resolve();
+    let beforePermissions = null;
+    let p = config.dataSource.fetch(perms_table, {
+      filter: {[F.IN]: ['$subject', roles]}
+    }).then(result => result.forEach((doc) => {
+      if (!beforePermissions)
+        beforePermissions = {};
+      if (!beforePermissions[doc.subject])
+        beforePermissions[doc.subject] = [];
+      beforePermissions[doc.subject].push({
+        resource: doc.resource,
+        permission: doc.permission
+      });
+    }));
 
     roles.forEach((role) => {
+      const updatesPermissions = [];
       resources.forEach((resource) => {
         permissions.forEach((permission) => {
           p = p
             .then(() => this._defineResource(resource))
             .then(() => config.dataSource.upsert(
-            perms_table,
-            {
-              [F.AND]: [
-                {[F.EQUAL]: ['$subject', role]},
-                {[F.EQUAL]: ['$resource', resource || globalMarker]},
-                {[F.EQUAL]: ['$permission', permission]}
-              ]
-            },
-            {
-              subject: role,
-              resource,
-              permission
-            }
-          ));
+              perms_table,
+              {
+                [F.AND]: [
+                  {[F.EQUAL]: ['$subject', role]},
+                  {[F.EQUAL]: ['$resource', resource]},
+                  {[F.EQUAL]: ['$permission', permission]}
+                ]
+              },
+              {
+                subject: role,
+                resource,
+                permission
+              }
+            )).then(() => updatesPermissions.push({resource, permission}));
         });
       });
-      p.then(() => config.logger.logChange(type, author, role, beforePermissions, updatesPermissions));
+      p.then(() => config.logger.logChange(type, author, role, beforePermissions[role], updatesPermissions));
     });
 
     return p;
@@ -239,8 +256,34 @@ function DsRoleAccessManager(config) {
       f.push({[F.IN]: ['$permission', permissions]});
     }
 
-    return config.dataSource.delete(perms_table, {[F.AND]: f})
-      .then(() => config.logger.logChange(type, author, role, beforePermissions, updatesPermissions));
+    return config.dataSource.fetch(perms_table, {filter: {[F.IN]: ['$subject', roles]}})
+      .then((result) => {
+        let before = {};
+        let updates = {};
+        result.forEach((doc) => {
+          if (!before[doc.subject])
+            before[doc.subject] = [];
+          before[doc.subject].push({
+            resource: doc.resource,
+            permission: doc.permission
+          });
+          if (!updates[doc.subject])
+            updates[doc.subject] = [];
+          if (resources && resources.includes(doc.resource) && permissions && permissions.includes(doc.permission))
+            updates[doc.subject].push({
+              resource: doc.resource,
+              permission: doc.permission
+          });
+        });
+        return config.dataSource.delete(perms_table, {[F.AND]: f})
+          .then(() => {
+            let p = Promise.resolve();
+            roles.forEach((role) => {
+              p = p.then(() => config.logger.logChange(type, author, role, before[role], updates[role]));
+            });
+            return p;
+          });
+      });
   };
 
   /**
@@ -258,7 +301,9 @@ function DsRoleAccessManager(config) {
       .then((ur) => {
         let p = Promise.resolve();
         ur.forEach((u) => {
+          let beforeRoles = null;
           if (u) {
+            beforeRoles = u.roles;
             roles.forEach((r) => {
               let ind = u.roles.indexOf(r);
               if (ind >= 0) {
@@ -276,7 +321,8 @@ function DsRoleAccessManager(config) {
           } else {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
-          p.then(() => config.logger.logChange(type, author, user, beforeRoles, roles));
+          p.then(() => config.accounts.get(u.user, null, true))
+            .then(user => config.logger.logChange(type, author, user, beforeRoles, roles));
         });
         return p;
       });
@@ -314,7 +360,7 @@ function DsRoleAccessManager(config) {
         return p;
       })
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}))
-      .then(() => config.logger.logChange(type, author, role));
+      .then(() => config.logger.logChange(type, author, roles));
   };
 
   this._defineRole = function (role, caption = null, description = null, author = null) {
@@ -329,7 +375,7 @@ function DsRoleAccessManager(config) {
       data.description = description;
     }
     return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
-      .then(() => config.logger.logChange(type, author, role));
+      .then(() => config.logger.logChange(type, author, role, null, data));
   };
 
   this._defineResource = function (resource, caption = null) {

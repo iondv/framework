@@ -1,60 +1,34 @@
-class LogRecord {
-
-  constructor(datas, type) {
-    this.base = datas;
-    if (type) {
-      let t = LogRecord.types()[type.toUpperCase()];
-      if (!t)
-        throw new Error('Неверно указан тип записи журнала изменений!');
-      this.base.type = t;
-    }
-  }
-
-  static types() {
-    return {};
-  }
-
-  /**
-   * @returns {{}}
-   */
-  normalize() {
-    return this.datas;
-  }
-
-  /**
-   * @param {{}} filters
-   * @returns {{}}
-   */
-  static getFilter(filters) {
-    return filters;
-  }
-}
 
 /**
  * @param {table: String, DataSource: dataSource} options
  * @param {Function} options.recordClass
+ * @param {{}} options.types
  */
 module.exports = (options) => {
-  this.logChange = (record) => {
-    if (!(record instanceof options.recordClass))
-      throw new Error('Тип записи не соответствует журналу!');
-    return options.dataSource.insert(options.table, record.normalize())
-      .then(item => record);
+  const self = this;
+
+  this.types = () => {
+    return null;
+  };
+
+  this.logChange = (type, datas) => {
+    if (!this.types()[type.toUpperCase()])
+      throw new Error('Неверно указан тип записи журнала изменений!');
+    const record = this._normalize(datas);
+    record.timestamp = new Date();
+    record.type = type;
+    return options.dataSource.insert(options.table, record);
   };
 
   this.getChanges = (filters, sort, offset, count, countTotal) => {
     return options.dataSource.fetch(options.table, {
-      filter: options.recordClass.getFilter(filters),
+      filter: this._filter(filters),
       sort, offset, count, countTotal
     }).then((changes) => {
       const result = [];
-      for (let i = 0; i < changes.length; i++)
-        result.push(new options.recordClass(changes[i]));
-      if (changes.total)
-        result.total = changes.total;
-      return Promise.resolve(result);
+      changes.forEach(ch => result.push(self._record(ch)));
+      result.total = changes.total;
+      return result;
     });
   };
 };
-
-module.exports.logRecord = LogRecord;
