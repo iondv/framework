@@ -95,13 +95,10 @@
           "dataSource": "ion://Db",
           "accounts": "ion://accounts",
           "logger": {
-            "module": "core/impl/changelogger/DsChangeLogger2",
+            "module": "core/impl/access/DsRoleAccessChangeLogger",
             "options": {
               "table": "ion_role_access_changelog",
-              "dataSource": "ion://Db",
-              "recordClass": {
-                "module": "core/impl/access/DsRoleAccessLogRecord"
-              }
+              "dataSource": "ion://Db"
             }
           }
         }

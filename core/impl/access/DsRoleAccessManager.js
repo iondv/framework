@@ -9,6 +9,7 @@
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Permissions = require('core/Permissions');
 const F = require('core/FunctionCodes');
+const logRecordTypes = require('./DsRoleAccessChangeLogger').Types;
 
 /**
  * @param {{}} config
@@ -140,9 +141,9 @@ function DsRoleAccessManager(config) {
           .then(() => config.dataSource.get(roles_table, {[F.EQUAL]: ['$user', s]}))
           .then((u) => {
             const rc = roles.slice(0);
-            let beforeRoles = null;
+            let before = null;
             if (u) {
-              beforeRoles = u.roles;
+              before = u.roles;
               u.roles.forEach((r) => {
                 if (rc.indexOf(r) < 0) {
                   rc.push(r);
@@ -155,7 +156,7 @@ function DsRoleAccessManager(config) {
               {user: s, roles: rc},
               {skipResult: true}
             ).then(() => config.accounts.get(s, null, true))
-            .then(user => config.logger.logChange(type, author, user, beforeRoles, roles));
+            .then(user => config.logger.logChange(logRecordTypes.ASSIGN_ROLE, {author, user, before, updates: roles}));
           });
       }
     );
@@ -186,22 +187,22 @@ function DsRoleAccessManager(config) {
       permissions = [Permissions.FULL];
     }
 
-    let beforePermissions = null;
+    let before = null;
     let p = config.dataSource.fetch(perms_table, {
       filter: {[F.IN]: ['$subject', roles]}
     }).then(result => result.forEach((doc) => {
-      if (!beforePermissions)
-        beforePermissions = {};
-      if (!beforePermissions[doc.subject])
-        beforePermissions[doc.subject] = [];
-      beforePermissions[doc.subject].push({
+      if (!before)
+        before = {};
+      if (!before[doc.subject])
+        before[doc.subject] = [];
+      before[doc.subject].push({
         resource: doc.resource,
         permission: doc.permission
       });
     }));
 
     roles.forEach((role) => {
-      const updatesPermissions = [];
+      const updates = [];
       resources.forEach((resource) => {
         permissions.forEach((permission) => {
           p = p
@@ -220,10 +221,10 @@ function DsRoleAccessManager(config) {
                 resource,
                 permission
               }
-            )).then(() => updatesPermissions.push({resource, permission}));
+            )).then(() => updates.push({resource, permission}));
         });
       });
-      p.then(() => config.logger.logChange(type, author, role, beforePermissions[role], updatesPermissions));
+      p.then(() => config.logger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
     });
 
     return p;
@@ -279,7 +280,12 @@ function DsRoleAccessManager(config) {
           .then(() => {
             let p = Promise.resolve();
             roles.forEach((role) => {
-              p = p.then(() => config.logger.logChange(type, author, role, before[role], updates[role]));
+              p = p.then(() => config.logger.logChange(logRecordTypes.DENY, {
+                author,
+                role,
+                before: before[role],
+                updates: updates[role]
+              }));
             });
             return p;
           });
@@ -301,9 +307,9 @@ function DsRoleAccessManager(config) {
       .then((ur) => {
         let p = Promise.resolve();
         ur.forEach((u) => {
-          let beforeRoles = null;
+          let before = null;
           if (u) {
-            beforeRoles = u.roles;
+            before = u.roles;
             roles.forEach((r) => {
               let ind = u.roles.indexOf(r);
               if (ind >= 0) {
@@ -322,7 +328,7 @@ function DsRoleAccessManager(config) {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
           p.then(() => config.accounts.get(u.user, null, true))
-            .then(user => config.logger.logChange(type, author, user, beforeRoles, roles));
+            .then(user => config.logger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
         });
         return p;
       });
@@ -360,7 +366,13 @@ function DsRoleAccessManager(config) {
         return p;
       })
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}))
-      .then(() => config.logger.logChange(type, author, roles));
+      .then(() => {
+        let p = Promise.resolve();
+        roles.forEach((role) => {
+          p = p.then(() => config.logger.logChange(logRecordTypes.UNDEFINE_ROLE, {author, role}));
+        });
+        return p;
+      });
   };
 
   this._defineRole = function (role, caption = null, description = null, author = null) {
@@ -375,7 +387,7 @@ function DsRoleAccessManager(config) {
       data.description = description;
     }
     return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
-      .then(() => config.logger.logChange(type, author, role, null, data));
+      .then(() => config.logger.logChange(logRecordTypes.DEFINE_ROLE, {author, role, updates: data}));
   };
 
   this._defineResource = function (resource, caption = null) {
