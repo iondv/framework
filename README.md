@@ -231,9 +231,9 @@ Further, execute the `gulp assemble` command to build and deploy the application
 If you want to import data into your project, check the demo data in the `data` folder of the application and run the command:
 `node bin/import-data --src ./applications/develop-and-test --ns develop-and-test`
 
-Add the admin user with the 123 password executing the `node bin\adduser.js --name admin --pwd 123` command. 
+Add the admin user with the 123 password executing the `node bin/adduser.js --name admin --pwd 123` command. 
 
-Add admin rights to the user executing the `node bin\acl.js --u admin@local --role admin --p full` command.
+Add admin rights to the user executing the `node bin/acl.js --u admin@local --role admin --p full` command.
 
 #### Running
 
