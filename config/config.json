@@ -174,7 +174,22 @@
           "checkSignInAccess": "[[auth.checkSignInAccess]]",
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]",
-          "passports":[]
+          "passports":[],
+          "eventLogger": {
+            "module": "core/impl/changelogger/DsChangeLogger2",
+            "options": {
+              "table": "ion_auth_changelog",
+              "dataSource": "ion://Db",
+              "types": {
+                "LOGIN": "LOGIN",
+                "LOGOUT": "LOGOUT",
+                "FAILURE": "FAILURE",
+                "CHANGE_PASSWORD": "CHANGE_PASSWORD",
+                "REGISTER": "REGISTER",
+                "EDIT_PROFILE": "EDIT_PROFILE"
+              }
+            }
+          }
         }
       },
       "calculator": {

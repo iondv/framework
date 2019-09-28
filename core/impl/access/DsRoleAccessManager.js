@@ -15,6 +15,7 @@ const logRecordTypes = require('./DsRoleAccessChangeLogger').Types;
  * @param {{}} config
  * @param {DataSource} config.dataSource
  * @param {IAccountStorage} config.accounts
+ * @param {DsRoleAccessChangeLogger} config.logger
  * @param {String} [config.allAlias]
  * @constructor
  */
