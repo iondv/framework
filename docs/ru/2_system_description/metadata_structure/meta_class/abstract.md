@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Семантика](/docs/ru/2_system_description/metadata_structure/meta_class/semantic.md)
+### Предыдущая страница: [Семантика](semantic.md)
 
 ## Признак абстрактности класса
 
@@ -49,11 +49,12 @@
 ```
 
 
-### Следующая страница: [Версионирование](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)
+### Следующая страница: [Версионирование](metaversion.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

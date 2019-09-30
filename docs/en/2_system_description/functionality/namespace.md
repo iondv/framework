@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+### Back: [Functionality](functionality.md)
 
 # Connection of two namespaces
 
@@ -55,7 +55,8 @@ Also the classes from all Project References should be in the class selection li
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/namespace.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/functionality/namespace.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

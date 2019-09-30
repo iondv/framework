@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Значение по умолчанию](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md)  
+### Предыдущая страница: [Значение по умолчанию](atr_default_value.md)  
 
 # Ссылка
 
@@ -142,11 +142,12 @@ Post: {
 ```
 
 
-### Следующая страница: [Атрибут коллекция](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)
+### Следующая страница: [Атрибут коллекция](atr_itemclass_backcoll.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

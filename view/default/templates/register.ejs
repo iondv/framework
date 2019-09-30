@@ -17,12 +17,22 @@
     <![endif]-->
   <link rel="shortcut icon" href="favicon.ico">
   <script src="vendor/jquery/jquery.min.js" type="application/javascript"></script>
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
-
+<style>
+  .pwd-error {
+    position: absolute;
+    background-color: red;
+    color: white;
+    width: 100%;
+    padding: 10px;
+    z-index: 1000;
+  }
+</style>
 <div class="padding-15">
   <div class="login-box">
     <% if(errors.length) { %>
@@ -49,6 +59,7 @@
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password" type="password" name="password">
+            <div class="pwd-error" style="display: none;"></div>
             <b class="tooltip tooltip-top-right">Пароль</b>
           </label>
         </section>
@@ -58,6 +69,7 @@
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password2" type="password" name="password2">
+            <div class="pwd-error" style="display: none;"></div>
             <b class="tooltip tooltip-top-right">Повтор пароля</b>
           </label>
         </section>
@@ -91,8 +103,10 @@
     </form>
   </div>
 </div>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 <script>
+  var allowSubmit = true;
   jQuery(function(){
     var options = <%- JSON.stringify(options || {})%>;
     var fields = <%- JSON.stringify(fields || {})%>;
@@ -103,6 +117,9 @@
     var $pwd = $regForm.find('input[name="password"]');
     var $pwd2 = $regForm.find('input[name="password2"]');
     $submit.click(function(){
+      if (!allowSubmit) {
+        return false;
+      }
       $msgContainer.empty();
       var username = $username.val();
       var pwd = $pwd.val();
@@ -144,6 +161,37 @@
           $('<p/>').html(messages[i]).appendTo($msgContainer);
         }
       }
+      return false;
+    });
+
+    function checkPwd(fld, data) {
+      $.post('checkPwd', data)
+        .then(function (data) {
+          if (data.error) {
+            let offset = fld.offset();
+            fld.next().css({left: offset.x, top: offset.y + fld.height()}).html(data.error).show();
+          } else {
+            fld.next().hide();
+          }
+          fld.toggleClass('error', !data.result);
+          allowSubmit = data.result;
+        })
+        .fail(function (xhr) {
+          fld.toggleClass('error', true);
+          allowSubmit = false;
+        });
+    }
+
+    $('#password').change(function () {
+      let fld = $(this);
+      let pwd = fld.val();
+      checkPwd(fld, {password: pwd, password2: pwd});
+    });
+    $('#password2').change(function () {
+      let fld = $(this);
+      let pwd2 = fld.val();
+      let pwd = $('#password').val();
+      checkPwd(fld, {password: pwd, password2: pwd2});
     });
   });
 </script>

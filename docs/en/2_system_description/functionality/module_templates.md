@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+### Back: [Functionality](functionality.md)
 
 # Module templates
 
@@ -49,7 +49,8 @@ Set the path to the theme directory in the `theme` field according to the follow
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/module_templates.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/functionality/module_templates.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

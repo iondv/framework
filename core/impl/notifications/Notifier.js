@@ -26,7 +26,7 @@ class Notifier extends INotifier {
     super();
     this.ds = options.dataSource;
     this.accounts = options.accounts;
-    this.dispatchers = options.dispatchers;
+    this.dispatchers = options.dispatchers || {};
     this.tplDir = options.tplDir ? resolvePath(options.tplDir) : null;
     this.system = options.systemSender || 'ion.system';
     this.log = options.log;

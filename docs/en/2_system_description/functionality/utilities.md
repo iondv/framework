@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+### Back: [Functionality](functionality.md)
 
 # Utilities
 
@@ -28,18 +28,21 @@ Core utilities are the most necessary utilities from installation to operating t
 - `bin/bg.js` - to run low priority background procedures that require high power from the processor or run relatively long time
 - `bin/export.js` - to export the application to a local directory. Launch parameters:
     - `--dst` - path to the directory where the export result will be written (by default ../out)   
-    - `--ns` - application code  
+    - `--ns` - application namespace  
     - `--file-dir` - path to the directory to which files from file attributes will be exported  
     - `--acl` - optionally export security settings   
     - `--nodata` - skip export for all created objects in the application  
     - `--nofiles` - skip file attribute export   
     - `--ver` - version (last version -last)
 
-- `bin/import.js` - to export the application to a local directory. Launch parameters:
+- `bin/import.js` - to import the application metadata. Launch parameters:
     - `--src` - path to the directory from which the import will occur (by default ../in)   
-    - `--ns` - application code
-    - `--skip` - skip import of all objects in the application from the data directory
+    - `--ns` - application namespace
     - `--ignoreIntegrityCheck` - data integrity ignored during import
+
+- `bin/import-data.js` - to import the application data. Launch parameters:
+     - `--src` - path to the directory from which the import will occur (by default ../in)   
+     - `--ns` - application namespace
 
 - `bin/job-runner.js` - to run scheduled tasks
 - `bin/job.js` - to run the job component from the job-runner utility
@@ -133,7 +136,8 @@ In this example all settings are held for the registry module, bacause by clicki
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/utilities.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/functionality/utilities.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

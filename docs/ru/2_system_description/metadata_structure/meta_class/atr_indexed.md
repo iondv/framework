@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)  
+### Предыдущая страница: [Типы атрибутов](property_types.md)  
 
 # Индексация атрибутов
 
@@ -27,11 +27,12 @@ NB. Запрещается индексация атрибутов типа "Т�
     Связано с ограничением MongoDB на размер индексируемого значения, 
     т.к. размер значения атрибутов данных типов может превышать допустимый размер.
 ```
-### Следующая страница: [Автозаполнение](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
+### Следующая страница: [Автозаполнение](atr_autoassigned.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_indexed.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_indexed.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

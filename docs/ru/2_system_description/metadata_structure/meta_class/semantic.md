@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Ключевой атрибут](/docs/ru/2_system_description/metadata_structure/meta_class/key.md)
+### Предыдущая страница: [Ключевой атрибут](key.md)
 
 # Семантика
  
@@ -54,11 +54,12 @@
 
 6. В форме создания, если создается объект в коллекции или ссылке, над заголовком мелким шрифтом выводим строку "Создание объекта в коллекции/по ссылке <...> объекта <...>".  
 
-### Следующая страница: [Признак абстрактности для класса](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)
+### Следующая страница: [Признак абстрактности для класса](abstract.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_descriptionmetadata_structure/meta_class/semantic.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_descriptionmetadata_structure/meta_class/semantic.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Reference attribute](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### The previous page: [Reference attribute](atr_ref_backref.md)
 
 # Collection attribute
 
@@ -264,11 +264,12 @@ The working principle of collections on the create and edit form is fundamentall
 * On the edite form, it is possible to get a server response if necessary, and to change the select parameters upon request, depending on the actions performed in the collection.
 
 
-### The next page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)  
+### The next page: [Conditions of sorting the valid values](atr_selconditions.md)  
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 --------------------------------------------------------------------------  

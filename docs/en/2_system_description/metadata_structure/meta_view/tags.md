@@ -1,10 +1,10 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Obligation conditions](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)
+### The previous page: [Obligation conditions](obligation.md)
 
 ## CSS fields
 
-**CSS fields** - set styles for attribute values using the `tags` attribute. The analog setting is set in `"options"` using templates. For more details see ["Options"](/docs/en/2_system_description/metadata_structure/meta_view/options.md).
+**CSS fields** - set styles for attribute values using the `tags` attribute. The analog setting is set in `"options"` using templates. For more details see ["Options"](options.md).
 
 ### Syntax:
 
@@ -87,12 +87,13 @@
 ```
 *Result:* when you open the coordinate creation form, the coordinates are automatically determined according to the value of the `" tags "` property. Where `$ address` is the value of the *address* attribute from the current class.
 
-### The next page: [Options](/docs/en/2_system_description/metadata_structure/meta_view/options.md)
+### The next page: [Options](options.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

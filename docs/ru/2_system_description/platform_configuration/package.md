@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Предыдущая страница: [Конфигурационный файл deploy.json](deploy.md)
 
 # Зависмости в package.json
 
@@ -28,13 +28,7 @@
   "description": "Метапроект для тестирования и разработки",
   "version": "1.9.2",
   "homepage": "http://docker.local:8080",
-  "bugs": {
-    "url": "https://ion-dv.atlassian.net/projects/IONCORE/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://git.iondv.ru/ION-METADATA/develop-and-test.git"
-  },
+  
   "engines": {
     "ion": "1.24.1"
   },
@@ -53,37 +47,35 @@
   },
   "ionMetaDependencies": {
     "viewlib": "0.9.1"
-  },
-  "dependencies": {
-    "esia": "git+https://git.iondv.ru/node-modules/esia.git"
-  },
+  }
 }
 
 
 ```
 ## Описание полей
 
-| Поле            | Наименование | Описание                                                                                                                                                                                                                                                                                 |
+| Поле            | Наименование | Описание  |
 |:----------------|:----------------------|:--------------------------------|
 | `"name"`       | **Имя**      | Имя проекта.  |
 | `"description"`| **Описание** | Описание проекта. |
 | `"version"`    | **Версия**   | Номер текущей версии. |
 | `"homepage"`   | **Домашняя страница** | Ссылка на собранный проект на докере. |
 |    `"bugs"`     |   **Ошибки**           | Указывается ссылка на проект приложения в GitLab, где принимаются заявки об ошибках.|
-| `"repository"` | **Репозиторий**  | Состоит из полей "type" и "url". Указыается тип репозитория и ссылка на него.                                                                                                                                                                                                                   |
+| `"repository"` | **Репозиторий**  | Состоит из полей "type" и "url". Указыается тип репозитория и ссылка на него. |
 | `"engines"`    | **Ядро**     | Номер версии ядра.  |
-| `"scripts"`    | **Скрипты**  | Скрипт для сборки меты из разных групп и разных url.
-| `"ionModulesDependencies"`        | **Зависимости модулей ion**               | Задает модули и их версии, используемые  в приложении. Проект включает в себя следующий состав модулей: •  "**ionadmin**" – модуль администрирования •  "**registry**" – модуль регистра •  "**report**" – модуль отчетов •  "**rest**": "- модуль rest-сервисов •  "**dashboard**" – модуль дашбоардов •  "**geomap**" - геомодуль •  "**gantt-chart**" – модуль диаграмм ганта •  "**portal**" – модуль портала                                                                                                                                    |
-| `"ionMetaDependencies"`       | **Зависимости метаданных ion**        | Дополнительные приложения для функционирования системы.                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                                                                              
-| `"dependencies"`   | **Зависимости**      |  Прочие зависимости проекта.
+| `"scripts"`    | **Скрипты**  | Скрипт для сборки меты из разных групп и разных url./
+| `"ionModulesDependencies"`        | **Зависимости модулей ion**               | Задает модули и их версии, используемые  в приложении. Проект включает в себя следующий состав модулей: •  "**ionadmin**" – модуль администрирования •  "**registry**" – модуль регистра •  "**report**" – модуль отчетов •  "**rest**": "- модуль rest-сервисов •  "**dashboard**" – модуль дашбоардов •  "**geomap**" - геомодуль •  "**gantt-chart**" – модуль диаграмм ганта •  "**portal**" – модуль портала |
+| `"ionMetaDependencies"`       | **Зависимости метаданных ion**        | Дополнительные приложения для функционирования системы.|
+| `"dependencies"`   | **Зависимости**      |  Прочие зависимости проекта из репозитория npm. |
 
 
-### Следующая страница: [Конфигурация парaметров - ini-файлы](/docs/ru/2_system_description/platform_configuration/ini_files.md)
+### Следующая страница: [Конфигурация парaметров - ini-файлы](ini_files.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/platform_configuration/package.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

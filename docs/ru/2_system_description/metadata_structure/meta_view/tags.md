@@ -1,10 +1,10 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Условия обязательности](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)
+### Предыдущая страница: [Условия обязательности](obligation.md)
 
 ## CSS поля
 
-**CSS поля** - задают стили для значений атрибутов и настраиваются посредством атрибута `tags`. Аналогичная настройка задается в `"options"` с использованием шаблонов. Подробнее см. ["Опции"](/docs/ru/2_system_description/metadata_structure/meta_view/options.md).
+**CSS поля** - задают стили для значений атрибутов и настраиваются посредством атрибута `tags`. Аналогичная настройка задается в `"options"` с использованием шаблонов. Подробнее см. ["Опции"](options.md).
 
 ### Синтаксис:
 
@@ -87,12 +87,13 @@
 ```
 *Результат*: при открытии формы создания координат - автоматически определятся координаты в соответствии со значением свойства `"tags"`. Где `$address` - значение атрибута *address* из текущего класса.
 
-### Следующая страница: [Опции](/docs/ru/2_system_description/metadata_structure/meta_view/options.md)
+### Следующая страница: [Опции](options.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

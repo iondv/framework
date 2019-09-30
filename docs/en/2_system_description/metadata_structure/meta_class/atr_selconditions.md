@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+### The previous page: [Collection](atr_itemclass_backcoll.md) 
 
 # Conditions of sorting the valid values
 
@@ -126,7 +126,7 @@ The **CONTAINS** operation is applied to the following attribute types:
 | `"value"`            | **Value**                 | Depends on the operation type                                              | The second value for binary filtering operations                    |
 | `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions |                                                                     |
 
-**Attention:** the "selection_provider" field. For more detail see [**Selection list of valid values**](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
+**Attention:** the "selection_provider" field. For more detail see [**Selection list of valid values**](atr_selectionprovider.md).
 
 ### Example
 
@@ -271,11 +271,12 @@ For more details see the [variables](/docs/en/2_system_description/metadata_stru
 ```
 
 
-### The next page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The next page: [Sorting a sample of valid values](atr_selsorting.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

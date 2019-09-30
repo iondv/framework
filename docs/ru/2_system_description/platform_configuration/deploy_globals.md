@@ -1,48 +1,52 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Конфигурационный файл - deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Назад: [Конфигурационный файл - deploy.json](deploy.md)
 
 # Глобальные настройки в `deploy.json`
 
 ### Структура глобальных настройек `"globals"` на примере приложения "Project management system": 
 
-```
+```json
 "globals": {
-  "moduleTitles": {
-  "explicitTopMenu": [
-  "plugins": {
-  "jobs": {
+  "moduleTitles": {},
+  "explicitTopMenu": []
+  "plugins": {}
+  "jobs": {}
 ```
 ## Модули "moduleTitles"
 
 Укажите модули которые будут использованы в приложении в поле "moduleTitles". Также эти же модули будут отображаться в системном меню.
 
-```
+```json
 {
   "namespace": "crm",
   "globals": {
     "moduleTitles": {
       "registry": "Тех. поддержка",
       "report": "Отчеты"
-    },
+    }
+  }
+}
 ```
-## Настройка скрытия модуля в системном меню
+### Настройка скрытия модуля в системном меню
 
 Для скрытия модуля из системного меню проекта присваиваем этому модулю, в файле `deploy.json`, значение _null_, например `"ionadmin": null`.
 
-```
+```json
 {
   "namespace": "project-management",
-  "parametrised": true, //
+  "parametrised": true,
   "globals": {
     "moduleTitles": {
       "registry": {
         "description": "Проектное управление",
         "order": 10,
         "skipModules": true
-      }
+      },
       "ionadmin": null
-    },
+    }
+  }
+}
 ```
 
 ## Настройка отображения общего системного меню для всех модулей проекта "explicitTopMenu"`
@@ -51,7 +55,7 @@
 
 ### Пример 
 
-```
+```json
 "globals": {
     "explicitTopMenu": [
       {
@@ -108,32 +112,32 @@
 ### Настройка HTML атрибутов для отражения и сохранения картинок в атрибуте
 
 `"plugins":{`
-```
+
+```json
 "fileStorage": {
-        "module": "core/impl/resource/OwnCloudStorage",
-        "options": {
-          "url": "https://owncloud.iondv.ru/",
-          "login": "api",
-          "password": "apiapi"
-        }
-      },
+    "module": "core/impl/resource/OwnCloudStorage",
+    "options": {
+      "url": "https://owncloud.iondv.ru/",
+      "login": "api",
+      "password": "apiapi"
+    }
+}
 ```
 
-```
+```json
 "htmlFiles": {
-        "module": "core/impl/resource/FsStorage",
-        "initMethod":"init",
-        "initLevel": 3,
-        "options": {
-          "storageBase": "./htmlFiles",
-          "urlBase": "/htmlFiles",
-          "dataSource": "ion://Db",
-          "log": "ion://sysLog",
-          "app": "ion://application",
-          "auth": "ion://auth"
-        }
-      },
-      "htmlImages": {
+    "module": "core/impl/resource/FsStorage",
+    "initMethod":"init",
+    "initLevel": 3,
+    "options": {
+      "storageBase": "./htmlFiles",
+      "urlBase": "/htmlFiles",
+      "dataSource": "ion://Db",
+      "log": "ion://sysLog",
+      "app": "ion://application",
+      "auth": "ion://auth"
+    },
+    "htmlImages": {
         "module": "core/impl/resource/ImageStorage",
         "initMethod": "init",
         "initLevel": 3,
@@ -150,32 +154,20 @@
             }
           }
         }
+    }
+}
 ```
 
 `"modules": {`
 `"registry": {`
-`"globals": {`
-```
-"refShortViewDelay": 1000, //количество миллисекунд до появления окна 
-//с инфо. Если не указан или 0, или нет shortView представления, то 
-//окно не выводится
-        "defaultImageDir": "images",
-        "contentImageStorage": "htmlImages"
-```
+`"globals": `
 
-### Настройка прав доступа "aclProvider"
-
-`"plugins":{`
-
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
+```json
+{
+    "refShortViewDelay": 1000, // количество миллисекунд до появления окна с инфо. Если не указан или 0, или нет shortView представления, то окно не выводится
+    "defaultImageDir": "images",
+    "contentImageStorage": "htmlImages"
+}
 ```
 
 ### Настройки отображения имени пользователя и аватара во всех модулях проекта
@@ -187,43 +179,41 @@
 
 `"plugins":{`
 
-```
-
-      "customProfile": {
-        "module": "lib/plugins/customProfile",
-        "initMethod": "inject",
-        "options": {
-          "auth": "ion://auth",
-          "metaRepo": "ion://metaRepo",
-          "dataRepo": "ion://dataRepo",
-          "propertyMap": {
-            "person@project-management": {
-              "filter": "user",
-              "properties": {
-                "avatar": "foto"
-              }
-            }
-          }
-        }
+```json
+"customProfile": {
+"module": "lib/plugins/customProfile",
+"initMethod": "inject",
+"options": {
+  "auth": "ion://auth",
+  "metaRepo": "ion://metaRepo",
+  "dataRepo": "ion://dataRepo",
+  "propertyMap": {
+    "person@project-management": {
+      "filter": "user",
+      "properties": {
+        "avatar": "foto"
       }
+    }
+  }
+}
 ```
 
 ### Настройка глубины жадной загрузки
 
-```
- },
-      "dataRepo": {
-        "options": {
-          "maxEagerDepth": 4
-        }
+```json
+"dataRepo": {
+"options": {
+  "maxEagerDepth": 4
+}
 ```
 
-### Полный пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
+### Полный пример файла [deploy.json](deploy_ex.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_desc.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_desc.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

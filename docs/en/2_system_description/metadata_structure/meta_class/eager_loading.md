@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+### The previous page: [Selection list of valid values](atr_selectionprovider.md)
 
 # Eager loading
 
@@ -66,11 +66,12 @@ You can specify the depth of the eager loading in the `maxEagerDepth: 1` propert
 
 The maximum depth of the eager loading determines the maximum permissible level of nesting of an object.
 
-### The next page: [Computable fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)
+### The next page: [Computable fields](atr_formula.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 
