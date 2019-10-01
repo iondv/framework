@@ -55,7 +55,6 @@
       "dataRepo": {...},
       "accounts": {...},
       "securedDataRepo": {...},
-      "indicatorWfHandler": {...},
       "ldap": {...},
       "auth": {...},
       "sendmail": {...},
