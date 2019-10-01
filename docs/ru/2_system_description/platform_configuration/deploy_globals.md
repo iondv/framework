@@ -7,36 +7,32 @@
 Глобальная настройка конфигурации приложения включает в себя следующие разделы:
 
 - [x] Пространство имен приложния `"namespace"`
-- [x] [Параметризация `"parametrised"`]()
-- [x] [Путь к шаблонам `"theme"`]()
-- [x] [`"staticOptions"`]()
-- [x] [Наименование вкладки в браузере`"pageTitle"`]()
-- [x] [Модули приложения `"moduleTitles"`]()
-- [x] [Настройка отображения общего системного меню для всех модулей проекта `"explicitTopMenu"`]()
-
-- [x] [`"sessionHandler"`]()
-- [x] [`"wfEvents"`]()
-- [x] [`"actualAclProvider"`]()
-- [x] [`"aclProvider"`]()
-- [x] [Настройка HTML атрибутов для отображения и сохранения картинок в атрибуте `"fileStorage"`]()
-- [x] [Настройка глубины жадной загрузки `"dataRepo"`]()
-- [x] [Настройки отображения имени пользователя и аватара во всех модулях проекта `"customProfile"`]()
-- [x] [`"accounts"`]()
-- [x] [`"securedDataRepo"`]()
-- [x] [`"indicatorWfHandler"`]()
-- [x] [`"ldap"`]()
-- [x] [`"auth"`]()
-- [x] [`"sendmail"`]()
-- [x] [`"nodemailer"`]()
-- [x] [`"emailNotifier"`]()
-- [x] [`"notifier"`]()
-- [x] [`"eventNotifier"`]()
-- [x] [Настройки интеграции с календарем `"icsMailer"`]()
-
-- [x] [`"recache"`]()
-- [x] [`"fact-creator"`]()
-- [x] [`"report-builder"`]()
-- [x] [`"projectReportCreator"`]()
+- [x] Параметризация `"parametrised"`
+- [x] Путь к шаблонам `"theme"`
+- [x] Максимальный размер `"staticOptions"`
+- [x] Наименование вкладки в браузере`"pageTitle"`
+- [x] [Модули приложения `"moduleTitles"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#модули-приложения)
+- [x] [Настройка отображения общего системного меню для всех модулей проекта `"explicitTopMenu"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#настройка-отображения-общего-системного-меню-для-всех-модулей-проекта)
+- [x] Переопределение настроек хранилища сессий `"sessionHandler"`
+- [x] `"actualAclProvider"`
+- [x] `"aclProvider"`
+- [x] [Настройка HTML атрибутов для отображения и сохранения картинок в атрибуте `"fileStorage"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#настройка-html-атрибутов-для-отображения-и-сохранения-картинок-в-атрибуте)
+- [x] [Настройки отображения имени пользователя и аватара во всех модулях проекта `"customProfile"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#настройки-отображения-имени-пользователя-и-аватара-во-всех-модулях-проекта)
+- [x] [Настройка глубины жадной загрузки `"dataRepo"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#настройка-глубины-жадной-загрузки)
+- [x] `"accounts"`
+- [x] `"securedDataRepo"`
+- [x] `"ldap"`
+- [x] `"auth"`
+- [x] `"sendmail"`
+- [x] `"nodemailer"`
+- [x] `"emailNotifier"`
+- [x] `"notifier"`
+- [x] `"eventNotifier"`
+- [x] [Настройки интеграции с календарем `"icsMailer"`](/docs/ru/2_system_description/platform_configuration/deploy_globals.md#настройки-интеграции-с-календарем)
+- [x] `"recache"`
+- [x] `"fact-creator"`
+- [x] `"report-builder"`
+- [x] `"projectReportCreator"`
 
 
 Структура которых строится следующим образом: 
@@ -52,12 +48,11 @@
     "explicitTopMenu": [...],
     "plugins": {
       "sessionHandler": {...},
-      "wfEvents": {...},
       "actualAclProvider": {...},
       "aclProvider": {...},
       "fileStorage": {...},
-      "dataRepo": {...},
       "customProfile": {...},
+      "dataRepo": {...},
       "accounts": {...},
       "securedDataRepo": {...},
       "indicatorWfHandler": {...},
