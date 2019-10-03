@@ -1,4 +1,4 @@
-const ChangeLogger = require('core/impl/changelogger/DsChangeLogger2');
+const ChangeLogger = require('core/impl/changelogger/EventLogger');
 const User = require('core/User');
 const F = require('core/FunctionCodes');
 

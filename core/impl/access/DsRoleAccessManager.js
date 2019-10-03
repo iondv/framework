@@ -15,7 +15,7 @@ const logRecordTypes = require('./DsRoleAccessChangeLogger').Types;
  * @param {{}} config
  * @param {DataSource} config.dataSource
  * @param {IAccountStorage} config.accounts
- * @param {DsRoleAccessChangeLogger} config.logger
+ * @param {DsRoleAccessChangeLogger} config.eventLogger
  * @param {String} [config.allAlias]
  * @constructor
  */
@@ -157,7 +157,7 @@ function DsRoleAccessManager(config) {
               {user: s, roles: rc},
               {skipResult: true}
             ).then(() => config.accounts.get(s, null, true))
-            .then(user => config.logger.logChange(logRecordTypes.ASSIGN_ROLE, {author, user, before, updates: roles}));
+            .then(user => config.eventLogger.logChange(logRecordTypes.ASSIGN_ROLE, {author, user, before, updates: roles}));
           });
       }
     );
@@ -225,7 +225,7 @@ function DsRoleAccessManager(config) {
             )).then(() => updates.push({resource, permission}));
         });
       });
-      p.then(() => config.logger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
+      p.then(() => config.eventLogger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
     });
 
     return p;
@@ -281,7 +281,7 @@ function DsRoleAccessManager(config) {
           .then(() => {
             let p = Promise.resolve();
             roles.forEach((role) => {
-              p = p.then(() => config.logger.logChange(logRecordTypes.DENY, {
+              p = p.then(() => config.eventLogger.logChange(logRecordTypes.DENY, {
                 author,
                 role,
                 before: before[role],
@@ -329,7 +329,7 @@ function DsRoleAccessManager(config) {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
           p.then(() => config.accounts.get(u.user, null, true))
-            .then(user => config.logger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
+            .then(user => config.eventLogger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
         });
         return p;
       });
@@ -370,7 +370,7 @@ function DsRoleAccessManager(config) {
       .then(() => {
         let p = Promise.resolve();
         roles.forEach((role) => {
-          p = p.then(() => config.logger.logChange(logRecordTypes.UNDEFINE_ROLE, {author, role}));
+          p = p.then(() => config.eventLogger.logChange(logRecordTypes.UNDEFINE_ROLE, {author, role}));
         });
         return p;
       });
@@ -388,7 +388,7 @@ function DsRoleAccessManager(config) {
       data.description = description;
     }
     return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
-      .then(() => config.logger.logChange(logRecordTypes.DEFINE_ROLE, {author, role, updates: data}));
+      .then(() => config.eventLogger.logChange(logRecordTypes.DEFINE_ROLE, {author, role, updates: data}));
   };
 
   this._defineResource = function (resource, caption = null) {

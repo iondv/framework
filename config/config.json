@@ -94,13 +94,14 @@
         "options": {
           "dataSource": "ion://Db",
           "accounts": "ion://accounts",
-          "logger": {
-            "module": "core/impl/access/DsRoleAccessChangeLogger",
-            "options": {
-              "table": "ion_role_access_changelog",
-              "dataSource": "ion://Db"
-            }
-          }
+          "eventLogger": "ion://accessLogger"
+        }
+      },
+      "accessLogger": {
+        "module": "core/impl/access/DsRoleAccessChangeLogger",
+        "options": {
+          "table": "ion_role_access_changelog",
+          "dataSource": "ion://Db"
         }
       },
       "accounts": {
@@ -175,20 +176,21 @@
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]",
           "passports":[],
-          "eventLogger": {
-            "module": "core/impl/changelogger/DsChangeLogger2",
-            "options": {
-              "table": "ion_auth_changelog",
-              "dataSource": "ion://Db",
-              "types": {
-                "LOGIN": "LOGIN",
-                "LOGOUT": "LOGOUT",
-                "FAILURE": "FAILURE",
-                "CHANGE_PASSWORD": "CHANGE_PASSWORD",
-                "REGISTER": "REGISTER",
-                "EDIT_PROFILE": "EDIT_PROFILE"
-              }
-            }
+          "eventLogger": "ion://authLogger"
+        }
+      },
+      "authLogger": {
+        "module": "core/impl/changelogger/EventLogger",
+        "options": {
+          "table": "ion_auth_changelog",
+          "dataSource": "ion://Db",
+          "types": {
+            "LOGIN": "LOGIN",
+            "LOGOUT": "LOGOUT",
+            "FAILURE": "FAILURE",
+            "CHANGE_PASSWORD": "CHANGE_PASSWORD",
+            "REGISTER": "REGISTER",
+            "EDIT_PROFILE": "EDIT_PROFILE"
           }
         }
       },
