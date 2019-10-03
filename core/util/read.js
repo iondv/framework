@@ -13,6 +13,7 @@ function merge(obj, other) {
   });
   return result;
 }
+module.exports.merge = merge;
 
 function processDir(dir, filter, handler, onErr) {
   try {
