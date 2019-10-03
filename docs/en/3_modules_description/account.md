@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Modules](/docs/en/3_modules_description/modules.md)
+### Back: [Modules](modules.md)
 
 ## The Personal account module
 
@@ -19,7 +19,8 @@ There is also the possibility of structuring the menu by nesting directories.
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/account.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](account.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

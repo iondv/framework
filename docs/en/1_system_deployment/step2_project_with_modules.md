@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Step 1 Installing the environment](docs/en/1_system_deployment/step1_installing_environment.md)
+### The previous page: [Step 1 Installing the environment](step1_installing_environment.md)
 
 # Step 2 Core, modules and application
 
@@ -102,12 +102,13 @@ fs.urlBase=/files
 
 The most important parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It indicates the the DB name used for the application. The DB will be created automatically.  
 
-### The next page: [Step 3 Build, deploy and start of the application](/docs/en/1_system_deployment/step3_building_and_running.md)
+### The next page: [Step 3 Build, deploy and start of the application](/step3_building_and_running.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step2_project_with_modules.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/1_system_deployment/step2_project_with_modules.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

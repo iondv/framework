@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Indexation](/docs/en/2_system_description/metadata_structure/meta_class/atr_indexed.md)
+### The previous page: [Indexation](atr_indexed.md)
 
 # Autocomplete attributes
 
@@ -39,11 +39,12 @@ ID = crypto.randomBytes(20).toString('hex');
     }
 ```
 
-### The next page: [Default values](/docs/en/2_system_description/metadata_structure/meta_class/atr_default_value.md)
+### The next page: [Default values](atr_default_value.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

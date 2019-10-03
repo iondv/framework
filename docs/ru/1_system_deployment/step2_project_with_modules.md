@@ -100,12 +100,13 @@ fs.urlBase=/files
 ```
 Самый главный параметр - `db.uri=mongodb://127.0.0.1:27017/db`. Он указывает на название базы которую мы будем использовать для приложения. База данных будет создана автоматически.
 
-### Следующая страница: [Шаг 3 Сборка, развертывание и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
+### Следующая страница: [Шаг 3 Сборка, развертывание и запуск](step3_building_and_running.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/1_system_deployment/step2_project_with_modules.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/1_system_deployment/step2_project_with_modules.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
