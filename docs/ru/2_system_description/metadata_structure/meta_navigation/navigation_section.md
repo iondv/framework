@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Мета навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/meta_navigation.md)
+### Предыдущая страница: [Мета навигации](meta_navigation.md)
 
 # Мета секций навигации
 
@@ -42,12 +42,13 @@
 }
 ```
 
-### Следующая страница: [Мета узлов навигации](/docs/ru/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md)
+### Следующая страница: [Мета узлов навигации](navigation_nodes.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_section.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_section.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

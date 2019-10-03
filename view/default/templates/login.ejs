@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>IONDV Framework: Log in</title>
+  <title>Платформа ION: Вход</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
   <base id="baseUrl" href="<%=baseUrl%>">
@@ -15,6 +15,7 @@
       </script>
     <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
@@ -34,38 +35,40 @@
     </div>
     <% } %>
     <!-- login form -->
-    <form action="auth" method="post" class="dlg-form boxed">
-      <header><i class="fa fa-users"></i> Log in</header>
+    <form action="auth" method="post" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Вход в систему</header>
       <input type="hidden" name="timezone" value="" />
       <fieldset>
         <section>
-          <label class="label">Login</label>
+          <label class="label">Логин</label>
           <label class="input">
             <i class="icon-append fa fa-user"></i>
             <input id="username" type="login" name="username">
+            <span class="tooltip tooltip-top-right">Логин</span>
           </label>
         </section>
 
         <section>
-          <label class="label">Password</label>
+          <label class="label">Пароль</label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password" type="password" name="password">
+            <b class="tooltip tooltip-top-right">Пароль</b>
           </label>
         </section>
       </fieldset>
 
       <footer>
         <button id="authbutton" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
-          Enter
+          Войти
         </button>
         <div class="forgot-password pull-right">
           <% if (canRegister) { %>
-          <a class="btn btn-link" href="register"><b>Create account</b></a>
+          <a class="btn btn-link" href="register"><b>Зарегистрироваться</b></a>
           <% } %>
           <% if (goHome) { %>
           &nbsp;&nbsp;
-          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Home</b></a>
+          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
           <% } %>
         </div>
       </footer>
@@ -78,6 +81,6 @@
     $('input[name=timezone]').val(moment.tz.guess());
   });
 </script>
-<%- pageEndContent %>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

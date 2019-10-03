@@ -682,12 +682,12 @@ function DsMetaRepository(options) {
             let ppath = tmp[1].split('.');
             let pm = locatePropertyMeta(ppath, cm);
             if (pm) {
-              let pn = '$' + tmp[1];
-              if (pm.type === PropertyTypes.DATETIME) {
+              let pn = '$' + tmp[1] + '@';
+              /*if (pm.type === PropertyTypes.DATETIME) {
                 pn = {[F.DATE_FORMAT]: [pn]};
               } else {
                 pn = pn + '@';
-              }
+               }*/
               if (tmp[3]) {
                 args.push({[F.SUBSTR]: [pn, tmp[3], tmp[5]]});
               } else {

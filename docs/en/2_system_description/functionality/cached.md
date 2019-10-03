@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [](/docs/en/2_system_description/functionality/.md)
+### [Functionality](functionality.md)
 
 # Data caching
 
@@ -66,12 +66,13 @@ cache.redis.port=6379 // port redis
 ```
 Cache is not used by default.
 
-### The next page: [](/docs/en/2_system_description/functionality/.md)
+### [Functionality](functionality.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/cached.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](cached.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

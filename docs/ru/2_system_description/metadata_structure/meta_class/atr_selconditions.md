@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)
+### Предыдущая страница: [Атрибут "Коллекция"](atr_itemclass_backcoll.md)
 
 # Условия отбора допустимых значений
 
@@ -128,7 +128,7 @@ module.exports = {
 ### Пример
 **Внимание**
 
-Поле "selection_provider". См. подробнее [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
+Поле "selection_provider". См. подробнее [Список выбора допустимых значений](atr_selectionprovider.md).
 * "type": "SIMPLE" - простой тип,   
 * "list": [] - массив допустимых значений
 
@@ -270,11 +270,12 @@ module.exports = {
 ```
 
 
-### Следующая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### Следующая страница: [Сортировка выборки допустимых значений](atr_selsorting.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

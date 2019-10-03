@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The previous page: [Sorting a sample of valid values](atr_selsorting.md)
 
 # Selection list of valid values
 
@@ -790,11 +790,12 @@ In the example above, for each vector the selection list is limited to one item,
 
 
 
-### The next page: [Eager loading](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md)
+### The next page: [Eager loading](eager_loading.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

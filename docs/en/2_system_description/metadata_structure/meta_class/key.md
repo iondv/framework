@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Structure](/docs/en/2_system_description/metadata_structure/meta_class/isstruct.md)
+### The previous page: [Structure](isstruct.md)
 
 # The key attributes
 
@@ -18,11 +18,12 @@ When creating the key attribute meta, set the `" unique "` and `"autoassigned"` 
 
 If the attribute is not automatically generated, then set the `"autoassigned"` field to `false`, so the field must be set by the operator when creating. 
 
-### The next page: [Semantic attributes](/docs/en/2_system_description/metadata_structure/meta_class/semantic.md)
+### The next page: [Semantic attributes](semantic.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/key.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/key.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

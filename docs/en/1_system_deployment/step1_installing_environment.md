@@ -1,4 +1,4 @@
-### The previous page: [Content](docs/en/index.md)
+### The previous page: [Content](/docs/en/index.md)
 
 # Step 1 Installing the environment
 
@@ -45,12 +45,13 @@ Use the [Gulp](http://gulpjs.com/) app to organize testing and building of distr
 To install the frontend libraries, you should install [bower](https://bower.io) globally, by the `npm install -g bower` command. 
 
 
-### The next page: [Step 2 Core, modules and application](docs/en/1_system_deployment/step2_project_with_modules.md)  
+### The next page: [Step 2 Core, modules and application](/step2_project_with_modules.md)  
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step1_installing_environment.md)    &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/1_system_deployment/step1_installing_environment.md)    &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

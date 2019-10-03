@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Ссылка](/docs/ru/2_system_description/metadata_structure/meta_class/type_reference13.md)
+### Предыдущая страница: [Ссылка](type_reference13.md)
 
 # Коллекция
 
@@ -15,15 +15,16 @@
 2. `многие-ко-многим` - необходимо определить коллекцию без ссылок, и указать класс вложенных элементов - связи создаются при помещении в коллекцию и хранятся как отдельные сущности в БД. __См. Коллекции.__
 3. `обратная коллекция` - если коллекция многие ко многим задается на основании коллекции в другом объекте. то другая сторона связи задается через *backColl*. __См. Обратные коллекции.__
 
-См. полное описание типа `Коллекция` в атрибутивной части меты класса - [**Атрибут коллекции и обратной коллекции**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md).
+См. полное описание типа `Коллекция` в атрибутивной части меты класса - [**Атрибут коллекции и обратной коллекции**](atr_itemclass_backcoll.md).
 
 
 
-### Следующая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
+### Следующая страница: [Структура](type_isstruct16.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

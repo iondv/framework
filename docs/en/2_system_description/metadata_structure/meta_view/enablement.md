@@ -1,13 +1,13 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md)
+### The previous page: [Visibility conditions](visibility.md)
 
 # Activity conditions
 
 ## Description
 
 **Activity conditions** - set the activity conditions for the filed in the view. It defines if the field is available for editing or not.
-The syntax is the same as in the [visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
+The syntax is the same as in the [visibility conditions](visibility.md).
 
 ### Example in JSON:
 ```
@@ -87,12 +87,13 @@ The syntax is the same as in the [visibility conditions](/docs/en/2_system_descr
           "tags": null
         }
 ```
-### The next page: [Obligation conditions](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)
+### The next page: [Obligation conditions](obligation.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

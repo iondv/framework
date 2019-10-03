@@ -63,10 +63,12 @@
         }
       },
       "settings": {
-        "module": "core/impl/SettingsRepository",
+        "module": "core/impl/settings/Settings",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
+          "mode": "[[deploy.mode]]",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       }
@@ -147,7 +149,14 @@
           "acl": "ion://aclProvider",
           "inactiveTimeout": "[[auth.inactivityTimeout]]",
           "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinPeriod": "[[auth.passwordMinPeriod]]",
           "passwordMinLength": "[[auth.passwordMinLength]]",
+          "passwordJournalSize": "[[auth.passwordJournalSize]]",
+          "passwordComplexity": {
+            "upperLower": "[[auth.passwordComplexity.upperLower]]",
+            "number": "[[auth.passwordComplexity.number]]",
+            "special": "[[auth.passwordComplexity.special]]"
+          },
           "attemptTimeOut": "[[auth.attemptTimeOut]]",
           "attemptLimit": "[[auth.attemptLimit]]",
           "tempBlockPeriod": "[[auth.tempBlockPeriod]]",

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta workflows](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)
+### The previous page: [Meta workflows](meta_workflows.md)
 
 # Workflow statuses
 
@@ -33,12 +33,12 @@
 |`"selectionProviders"`|   Selection list of valid values. |
 
 
-### The next page: [Workflow transitions](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)
+### The next page: [Workflow transitions](transitions_wf.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

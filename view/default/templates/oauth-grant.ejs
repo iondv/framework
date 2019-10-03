@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>IONDV Framework: OAuth2 access</title>
+  <title>Платформа ION: OAuth2 Запрос доступа</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
   <base id="baseUrl" href="<%=baseUrl%>">
@@ -15,6 +15,7 @@
       </script>
     <![endif]-->
   <link rel="shortcut icon" href="favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
 </head>
@@ -24,19 +25,19 @@
 <div class="padding-15">
   <div class="login-box">
     <!-- login form -->
-    <form action="oauth/grant" method="post" class="dlg-form boxed">
-      <header><i class="fa fa-users"></i> Aplication <%=claimApp%> get access</header>
+    <form action="oauth/grant" method="post" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Приложение <%=claimApp%> запрашивает доступ от вашего имени</header>
       <footer>
         <button name="grant" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
-          Grant access
+          Предоставить доступ
         </button>
         <button name="deny" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
-          Decline
+          Отклонить
         </button>
       </footer>
     </form>
   </div>
 </div>
-<%- pageEndContent %>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

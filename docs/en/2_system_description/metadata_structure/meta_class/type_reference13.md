@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page:[Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+### The previous page:[Attribute types](property_types.md)
 
 # Reference
 
@@ -12,7 +12,7 @@ Values in the attribute of the reference type are displayed in accordance with t
 
 The ability to replace an object by a back reference is determined by the `nullable` property of the reference attribute. When replacing an object, you lose the reference and the object by reference will be deleted when you try to change the reference from the collection with a back reference.
 
-See the full description of the `Reference` type in the attribute part of the meta class -[**Reference and Back reference**](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md).
+See the full description of the `Reference` type in the attribute part of the meta class -[**Reference and Back reference**](atr_ref_backref.md).
 
 ## Types of connections of the "reference" type
 
@@ -23,11 +23,12 @@ Reference type in context of the attribute part of the meta class:
 
 
 
-### The next page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
+### The next page: [Collection](type_collection14.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_reference13.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](type_reference13.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

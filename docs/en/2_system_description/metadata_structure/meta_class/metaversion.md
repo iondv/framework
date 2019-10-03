@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Criteria of abstraction for class](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)
+### The previous page: [Criteria of abstraction for class](abstract.md)
 
 # Versioning
  
@@ -66,11 +66,12 @@ When processing the meta classes, the data is divided into versions. The names o
 Sample of object data occurs according to the version. The version of the object is passed as the `version` parameter of the request to open the object.
 
 
-### The next page: [Ancestor](/docs/en/2_system_description/metadata_structure/meta_class/ancestor.md)
+### The next page: [Ancestor](ancestor.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

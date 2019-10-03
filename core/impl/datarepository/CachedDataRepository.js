@@ -94,8 +94,8 @@ function CachedDataRepository(options) {
         let processed = {};
         list.items.forEach((li) => {
           p = p
-            .then(() => uncacheItem(li.className, li.id, processed))
-            .then(item => item ? item : loadItem(li.className, li.id, {forceEnrichment: options.forceEnrichment}))
+            .then(() => uncacheItem(li.className, li.id, options, processed))
+            .then(item => item ? item : loadItem(li.className, li.id, options))
             .then((item) => {
               if (item) {
                 result.push(item);
@@ -170,7 +170,7 @@ function CachedDataRepository(options) {
       .then(item => !item ? item : cacheItem(item));
   }
 
-  function uncacheItem(className, id, processed, eagerLoaded) {
+  function uncacheItem(className, id, options, processed, eagerLoaded) {
     if (className instanceof Item) {
       if (!id) {
         id = className.getItemId();
@@ -189,7 +189,7 @@ function CachedDataRepository(options) {
           return null;
         }
 
-        let result = _this._wrap(className, item.base);
+        let result = _this._wrap(className, item.base, null, options);
         processed = processed || {};
         processed[className + '@' + id] = result;
         let p = Promise.resolve();
@@ -198,7 +198,7 @@ function CachedDataRepository(options) {
           .forEach(
             (nm) => {
               p = p
-                .then(() => uncacheItem(item.references[nm].className, item.references[nm].id, processed, true))
+                .then(() => uncacheItem(item.references[nm].className, item.references[nm].id, options, processed, true))
                 .then((ri) => {
                   result.references[nm] = ri;
                 });
@@ -211,7 +211,7 @@ function CachedDataRepository(options) {
             item.collections[nm]
               .forEach((tmp) => {
                 p = p
-                  .then(() => uncacheItem(tmp.className, tmp.id, processed, true))
+                  .then(() => uncacheItem(tmp.className, tmp.id, options, processed, true))
                   .then((item) => {
                     if (item) {
                       result.collections[nm].push(item);
@@ -303,7 +303,7 @@ function CachedDataRepository(options) {
         return dataRepo.getItem(obj, id, options);
       }
     }
-    return uncacheItem(obj, id).then(item => item ? item : loadItem(obj, id, options));
+    return uncacheItem(obj, id, options).then(item => item ? item : loadItem(obj, id, options));
   };
 
   /**

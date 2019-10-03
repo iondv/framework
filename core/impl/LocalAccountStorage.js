@@ -48,6 +48,7 @@ class LocalAccountStorage extends IAccountStorage {
           user.pwd = hash;
           user.pwdDate = new Date();
           user.disabled = false;
+          user.needPwdReset = (typeof user.needPwdReset == 'undefined') ? false : user.needPwdReset;
           this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user)
             .then((u) => {
               resolve(new User(u));
@@ -59,6 +60,7 @@ class LocalAccountStorage extends IAccountStorage {
       user.pwd = user.pwd ? user.pwd.hash : null;
       user.pwdDate = new Date();
       user.disabled = false;
+      user.needPwdReset = (typeof user.needPwdReset == 'undefined') ? false : user.needPwdReset;
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else if (user.type !== UserTypes.LOCAL) {
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
@@ -104,9 +106,9 @@ class LocalAccountStorage extends IAccountStorage {
               {[F.EQUAL]: ['$id', id]}
             ]
           },
-          {pwd, pwdDate}
+          {pwd, pwdDate, needPwdReset: false}
           )
-          .then(() => resolve(true))
+          .then(() => resolve(pwd))
           .catch(reject);
       });
     };

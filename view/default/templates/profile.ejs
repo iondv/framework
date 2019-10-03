@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>IONDV Framework: User account</title>
+  <title>Платформа ION: Профиль пользователя</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0"/>
   <meta name="robots" content="noindex,nofollow">
@@ -16,6 +16,7 @@
     </script>
   <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
@@ -32,8 +33,8 @@
       <% }); %>
     </div>
     <% } %>
-    <form id="reg-form" action="profile" method="post" class="dlg-form boxed">
-      <header><i class="fa fa-users"></i> User account <%=user.name()%></header>
+    <form id="reg-form" action="profile" method="post" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Профиль пользователя <%=user.name()%></header>
       <fieldset>
         <%  let showSubmit = false;
         Object.keys(fields).forEach(function(fieldName){ 
@@ -63,15 +64,15 @@
         <% }) %>
       </fieldset>
       <footer>
-        <% if (showSubmit) { %><button id="authbutton" type="submit" class="btn btn-primary pull-right">Save</button><% } %>
+        <% if (showSubmit) { %><button id="authbutton" type="submit" class="btn btn-primary pull-right">Сохранить</button><% } %>
         <div class="forgot-password pull-left">
-          <a href="<%=baseUrl%>"><b>Retrun to application</b></a>
+          <a href="<%=baseUrl%>"><b>Вернуться в приложение</b></a>
         </div>
       </footer>
     </form>
   </div>
 </div>
-<%- pageEndContent %>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 <script>
   jQuery(function(){
@@ -91,8 +92,8 @@
             field = $regForm.find('[name='+fieldName+']');
             if (!field.val()) {
               valid = false;
-              messages.push('Field ' + (fields[fieldName].caption ? fields[fieldName].caption : fieldName )
-                + ' required');
+              messages.push('Поле ' + (fields[fieldName].caption ? fields[fieldName].caption : fieldName )
+                + ' обязательно для заполнения');
             }
           }
         }

@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Модули](/docs/ru/3_modules_description/modules.md)
+### Назад: [Модули](modules.md)
 
 # Модуль "report"
 
@@ -13,7 +13,7 @@
 
 ## Метаданные
 [Метаданные модуля отчетов (шахта, навигация)](/docs/ru/2_system_description/metadata_structure/meta_report/meta_report.md)   
-[Замечания при проектировании шахты](/docs/ru/3_modules_description/report_warning.md)
+[Замечания при проектировании шахты](report_warning.md)
 
 ## Настройка автоматической сборки шахты данных
 
@@ -37,7 +37,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/report.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/3_modules_description/report.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
