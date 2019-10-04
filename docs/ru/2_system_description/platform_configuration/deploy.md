@@ -12,9 +12,9 @@
 |:-------------|:--------|:-------------|
 | `"namespace":`   |  **Название проекта**  | Пространство имен проекта.  |
 | `"parametrised": true,`| **Параметризация**   | Подключение параметризации. При установленном значении "true" есть возможность задавать параметры, в которые, при сборке приложения, передаются переменные, заданные в ini-файлах или переменных окружения проекта.   |
-| `"globals": {`     |  [**Глобальные настройки**](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)  | Глобальные настройки конфигурации.   |
+| `"globals": {`     |  [**Глобальные настройки**](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)  | Глобальные параметры конфигурирования.   |
 | `"deployer": "built-in"`    | **Сборки**   | Параметр конфигурирования сборки, на данный момент единственный.  |
-| `"modules"`     |  [**Настройки модулей**](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)  | Настройки конфигурации модулей.  |
+| `"modules"`     |  [**Настройки модулей**](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)  | Массив объектов - описание модулей.  |
 
 ### Пример файла [deploy.json](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)
 
@@ -23,7 +23,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

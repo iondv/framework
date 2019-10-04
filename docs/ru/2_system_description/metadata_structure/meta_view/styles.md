@@ -6,7 +6,7 @@
 
 Условия **выделение цветом** строк в списке задаются с помощью формулы. 
 
-Список поддерживаемых функций можно посмотреть [здесь](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md). Настройка задается в общей части меты представления списка и выглядит следующим образом:
+Список поддерживаемых функций можно посмотреть [здесь](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md). Настройка задается в общей части меты представления списка и выглядит следующим образом:
 
 ```
 "styles": {
@@ -42,7 +42,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/styles.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/styles.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -22,7 +22,7 @@ Filter of sorting the valid values is used in the meta class for the attributes 
 •  MORE: 6, // more >
 •  LESS_OR_EQUAL: 7, // less or equal <=
 •  MORE_OR_EQUAL: 8, // more or equal >=
-•  IN: 9, // similar (IN) 
+•  IN: 9, // item is in collection / array (IN) 
 •  CONTAINS: 10 // contains
 
 ```
@@ -77,6 +77,12 @@ The operation of the key-expression type - the key is the attribute name in the 
 Use the "nestedConditions" to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
 
 To inquiry attribute values that are not equal to zero, use the `nempty` operation and specify `null` in the "value" field.
+
+The **CONTAINS** operation is applied to the following attribute types:
+- string - the LIKE operation is applied to the data string
+- collection
+- the IN operation is applied if the compared `value` is an array and contains at least one element
+- transition to nested conditions `nestedConditions` occurs if the compared `value` is not an array or does not contain at least one element in the array
 
 ## JSON
  ```
@@ -269,7 +275,7 @@ For more details see the [variables](/docs/en/2_system_description/metadata_stru
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

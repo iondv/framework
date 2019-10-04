@@ -2,13 +2,13 @@
 
 ### Back to: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
 
-### The previous page: [Global settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_globals.md)
+### The previous page: [Global settings in deploy.json](/docs/en/2_system_description/platform_configuration/deploy_globals.md)
 
 # Module settings in `deploy.json`
 
 # The "registry" module
 
-**Registry module** – is a central module designed specifically for working with data based on metadata structures - including project management, programs, events, etc.
+**Registry module** – is a central module designed specifically for working with data based on metadata structures - including project management, programs, events, etc. [Read more about the registry module](/docs/en/3_modules_description/registry.md).
 
 ## Setting of configurable file save
 
@@ -90,7 +90,7 @@ An example of the sequence generators: now for each object its code is the code 
 
 ## Setting the eager loading for printed forms `"skipEnvOptions"`
 
-[Printed forms](/docs/ru/2_system_description/functionality/printed_forms.md) in more details.
+[Printed forms](/docs/en/2_system_description/functionality/printed_forms.md) in more details.
 
 Use the `skipEnvOptions` flag to enable/disable the eager loading.
 
@@ -405,7 +405,7 @@ The logo for the module is described through the standard mechanism of static ro
 
 # The "gantt-chart" module
 
-**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates.
+**Gantt-chart module** – is a module designed to display specific types of hierarchical data with dates. [Read more about the gantt-chart module](/docs/en/3_modules_description/gantt_chart.md).
 
 ## Setting the time scale 
 
@@ -454,7 +454,7 @@ In the preconfiguration "Step" is set through the `step` parameter:
 
 # The "report" module
 
-**Report module** – is the module intended to form the analytical reports and reference information using the specific metadata.
+**Report module** – is the module intended to form the analytical reports and reference information using the specific metadata. [Read more about the report module](/docs/en/3_modules_description/report.md).
 
 ```
 "report": {
@@ -504,7 +504,7 @@ In the preconfiguration "Step" is set through the `step` parameter:
 
 # The "portal" module
 
-**Portal module** – is a module for displaying arbitrary data templates.
+**Portal module** – is a module for displaying arbitrary data templates. [Read more about the portal module](/docs/en/3_modules_description/portal.md).
 
 ```
 "portal": {
@@ -534,7 +534,7 @@ In the preconfiguration "Step" is set through the `step` parameter:
 
 # The "ionadmin" module
 
-**Admin module** – is used for assigning rights, managing tasks on a schedule and other administrative tasks.
+**Admin module** – is used for assigning rights, managing tasks on a schedule and other administrative tasks. [Read more about the ionadmin module](/docs/en/3_modules_description/admin.md).
 
 ## Hiding roles in admin from assignment to user
 
@@ -554,7 +554,7 @@ For roles that you want to hide in the admin from being assigned to the user, in
 
 # The "dashboard" module
 
-**Dashboard module** – is a module designed to display brief information in the form of blocks.
+**Dashboard module** – is a module designed to display brief information in the form of blocks. [Read more about the dashboard module](/docs/en/3_modules_description/dashboards.md). 
 
 Set the following function in the `"modules"` section in the deploy.json file of the application, to load the data from the meta into the "dashboard" module.
 
@@ -622,7 +622,7 @@ Set the following function in the `"modules"` section in the deploy.json file of
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_modules.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

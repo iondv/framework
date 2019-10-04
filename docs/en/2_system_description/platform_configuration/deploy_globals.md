@@ -11,20 +11,22 @@
   "moduleTitles": {
   "explicitTopMenu": [
   "plugins": {
-     "sessionHandler": {
-     "wfEvents": {
-     "actualAclProvider": {
-     "aclProvider": {
-     "fileStorage": {
-     "dataRepo": {
-     "customProfile": {
-     "securedDataRepo": {
-     "indicatorWfHandler": {
-     "auth": {
   "jobs": {
-     "fact-creator": {
-     "report-builder": {
 ```
+## The "moduleTitles" field
+
+In the "moduleTitles" field specify the modules that will be used in the application. Also, the same modules will be displayed in the system menu.
+
+```
+{
+  "namespace": "crm",
+  "globals": {
+    "moduleTitles": {
+      "registry": "Technical support",
+      "report": "Reports"
+    },
+```
+
 ## Setting to hide module in system menu
 
 Set the **null** value in the module that you would like to hide in the system menu of the project, for example `"ionadmin": null`.
@@ -97,21 +99,14 @@ Set the `"explicitTopMenu"` at the global level, preserving the ability to overr
 * `"url"` - url of the navigation section
 * `"caption"` - name of the navigation section
 * `"name"` - system name of the module
+
+## The "plugins" field
+
+This field contains settings that allow you to expand the capabilities of the application.
  
-## Setting the HTML attributes to display and save images in attributes
+### Setting the HTML attributes to display and save images in attributes
 
 `"plugins":{`
-
-```
- "aclProvider": {
-        "module": "core/impl/access/aclMetaMap",
-        "initMethod": "init",
-        "initLevel": 1,
-        "options":{
-          "dataRepo": "lazy://dataRepo",
-          "acl": "lazy://actualAclProvider",
-          "accessManager": "lazy://roleAccessManager",
-```
 
 ```
 "fileStorage": {
@@ -166,11 +161,29 @@ Set the `"explicitTopMenu"` at the global level, preserving the ability to overr
         "defaultImageDir": "images",
         "contentImageStorage": "htmlImages"
 ```
-## Setting to display username and user icon (avatar) in all modules of the project 
+
+### Setting the access rights "aclProvider"
+
+`"plugins":{`
+
+```
+ "aclProvider": {
+        "module": "core/impl/access/aclMetaMap",
+        "initMethod": "init",
+        "initLevel": 1,
+        "options":{
+          "dataRepo": "lazy://dataRepo",
+          "acl": "lazy://actualAclProvider",
+          "accessManager": "lazy://roleAccessManager",
+```
+
+### Setting to display username and user icon (avatar) in all modules of the project 
 
 Set the connection with the icon in the "avatar" field to set the user icon. The system will choose the user icon from the corresponding class attribute whose object is bound to the current system user.
 
 ### Example
+
+`"plugins":{`
 
 ```
 "globals": {
@@ -196,23 +209,24 @@ Set the connection with the icon in the "avatar" field to set the user icon. The
   }
 }
 ```
+### Seting the depth of the eager loading
 
-## The "sessionHandler" field - TODO
-## The "wfEvents" field - TODO
-## The "actualAclProvider" field - TODO
-## The "dataRepo" field - TODO
-## The "securedDataRepo" field - TODO
-## The "indicatorWfHandler" field - TODO
-## The "auth" field - TODO
+```
+ },
+      "dataRepo": {
+        "options": {
+          "maxEagerDepth": 4
+        }
+```
 
-### The next page: [Module settings in deploy.json](docs/en/2_system_description/platform_configuration/deploy_modules.md)
+### The next page: [Module settings in deploy.json](/docs/en/2_system_description/platform_configuration/deploy_modules.md)
 
 ### The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the deploy.json file
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy_globals.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

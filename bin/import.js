@@ -3,7 +3,7 @@
 /**
  * Created by kras on 10.07.16.
  */
-const worker = require('lib/import');
+const metaImporter = require('lib/import-meta');
 const config = require('../config');
 const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
@@ -17,7 +17,6 @@ var sysLog = new IonLogger(config.log || {});
 var params = {
   src: '../in',
   ns: null,
-  skip: [],
   ignoreIntegrityCheck: true
 };
 
@@ -30,11 +29,7 @@ process.argv.forEach(function (val) {
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
   } else if (setParam) {
-    if (setParam === 'skip') {
-      params[setParam].push(val);
-    } else {
       params[setParam] = val;
-    }
   }
 });
 
@@ -57,17 +52,12 @@ di('boot', config.bootstrap,
   )
   .then(scope => alias(scope, scope.settings.get('di-alias')))
   .then(scope =>
-    worker(params.src,
+    metaImporter(params.src,
       {
         sync: scope.dbSync,
         metaRepo: scope.metaRepo,
-        dataRepo: scope.dataRepo,
-        workflows: scope.workflows,
-        sequences: scope.sequenceProvider,
         log: sysLog,
-        namespace: params.ns,
-        ignoreIntegrityCheck: params.ignoreIntegrityCheck,
-        skip: params.skip
+        namespace: params.ns
       }).then(() => scope)
   )
   .then(scope => scope.dataSources.disconnect())

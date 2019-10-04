@@ -832,7 +832,7 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Rissian](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Rissian](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

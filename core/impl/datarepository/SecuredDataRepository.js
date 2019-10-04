@@ -290,14 +290,12 @@ function SecuredDataRepository(options) {
     if (item && item.getItemId()) {
       permMap[item.getClassName() + '@' + item.getItemId()] = merge(true,
         permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+        permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
 
-      permMap[item.getClassName() + '@' + item.getItemId()].__class =
-        permissions[classPrefix + item.getClassName()] || {};
-
       permMap[item.getClassName() + '@' + item.getItemId()].__attr =
-        attrPermMap(item, permissions, options) || {};
+        attrPermMap(item, permissions, options, permMap[item.getClassName() + '@' + item.getItemId()]) || {};
 
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
@@ -341,7 +339,7 @@ function SecuredDataRepository(options) {
       }
     });
 
-    return aclProvider.getPermissions(options.user.id(), resources, true)
+    return aclProvider.getPermissions(options.user, resources, true)
       .then((permissions) => {
         let permMap = {};
         list.forEach((item) => {
@@ -464,7 +462,7 @@ function SecuredDataRepository(options) {
     return result;
   }
 
-  function attrPermMap(item, permissions, options) {
+  function attrPermMap(item, permissions, options, iperm) {
     let props = item.getProperties();
     let result = {};
     let global = permissions[globalMarker] || {};
@@ -472,18 +470,15 @@ function SecuredDataRepository(options) {
       if (props.hasOwnProperty(nm) && (!options.needed || options.needed[nm])) {
         let p = props[nm];
         result[p.getName()] = {};
+        result[p.getName()][Permissions.READ] = iperm[Permissions.READ] || false;
+        result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
+
         if (p.getType() === PropertyTypes.REFERENCE) {
           let ri = p.evaluate();
           let cn = ri ? ri.getClassName() : p.meta._refClass.getCanonicalName();
           let tmp = itemPrefix + cn + '@' + p.getValue();
           let rperm = merge(true, permissions[tmp] || {}, global);
           let rcperm = merge(true, permissions[classPrefix + cn] || {}, global);
-
-          result[p.getName()][Permissions.READ] = rperm[Permissions.READ] || rcperm[Permissions.READ] || false;
-
-          if (p.meta.backRef) {
-            result[p.getName()][Permissions.WRITE] = rperm[Permissions.WRITE] || rcperm[Permissions.WRITE] || false;
-          }
 
           result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE] || false;
 
@@ -494,10 +489,8 @@ function SecuredDataRepository(options) {
           result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = rcperm[Permissions.DELETE] || rperm[Permissions.DELETE] || false;
 
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          let rcperm = merge(true, permissions[classPrefix + p.meta._refClass.getCanonicalName()] || {}, global);
-          result[p.getName()][Permissions.READ] = rcperm[Permissions.READ] || Boolean(classRoleConfig(p.meta._refClass));
-
-          result[p.getName()][Permissions.WRITE] = rcperm[Permissions.USE] || Boolean(classRoleConfig(p.meta._refClass));
+          let cn = p.meta._refClass.getCanonicalName();
+          let rcperm = merge(true, permissions[classPrefix + cn] || {}, global);
 
           result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = rcperm[Permissions.USE] || false;
 
@@ -526,15 +519,10 @@ function SecuredDataRepository(options) {
         let p = props[nm];
         let pperm = permissions[p.getName()] || {};
         result[p.getName()] = {};
+        result[p.getName()][Permissions.READ] = iperm[Permissions.READ] || false;
+        result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
+
         if (p.getType() === PropertyTypes.REFERENCE) {
-          result[p.getName()][Permissions.READ] = (iperm[Permissions.READ] || false) && pperm[Permissions.READ];
-
-          if (p.meta.backRef) {
-            result[p.getName()][Permissions.WRITE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.WRITE];
-          } else {
-            result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
-          }
-
           result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_CREATE];
 
           result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_VIEW];
@@ -542,12 +530,7 @@ function SecuredDataRepository(options) {
           result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_EDIT];
 
           result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_DELETE];
-
         } else if (p.getType() === PropertyTypes.COLLECTION) {
-          result[p.getName()][Permissions.READ] = (iperm[Permissions.READ] || false) && pperm[Permissions.READ];
-
-          result[p.getName()][Permissions.WRITE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.WRITE];
-
           result[p.getName()][Permissions.ATTR_CONTENT_CREATE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_CREATE];
 
           result[p.getName()][Permissions.ATTR_CONTENT_VIEW] = (iperm[Permissions.READ] || false) && pperm[Permissions.ATTR_CONTENT_VIEW];
@@ -555,9 +538,6 @@ function SecuredDataRepository(options) {
           result[p.getName()][Permissions.ATTR_CONTENT_EDIT] = (iperm[Permissions.READ] || false) || pperm[Permissions.ATTR_CONTENT_EDIT];
 
           result[p.getName()][Permissions.ATTR_CONTENT_DELETE] = (iperm[Permissions.WRITE] || false) && pperm[Permissions.ATTR_CONTENT_DELETE];
-        } else {
-          result[p.getName()][Permissions.READ] = iperm[Permissions.READ] || false;
-          result[p.getName()][Permissions.WRITE] = iperm[Permissions.WRITE] || false;
         }
       }
     }
@@ -569,9 +549,16 @@ function SecuredDataRepository(options) {
     let actor = sid;
     if (sid && sid[0] === '$') {
       let pn = sid.substr(1);
-      actor = item.property(pn).evaluate();
+      let p = item.property(pn);
+      if (!p) {
+        if (options.log instanceof Logger) {
+          options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + pn + ' класса ' + item.getClassName());
+        }
+        return false;
+      }
+      actor = p.evaluate();
       if (!actor) {
-        actor = item.property(pn).getValue();
+        actor = p.getValue();
       }
     }
     if (actor) {
@@ -631,12 +618,11 @@ function SecuredDataRepository(options) {
       }
       let p;
       if (!item.permissions || !item.attrPermissions) {
-        let roleConf = classRoleConfig(item.getMetaClass());
         let statics = permMap && permMap[item.getClassName() + '@' + item.getItemId()];
 
         if (!statics) {
           p = aclProvider.getPermissions(
-            moptions.user.id(), [
+            moptions.user, [
               globalMarker,
               classPrefix + item.getClassName(),
               itemPrefix + item.getClassName() + '@' + item.getItemId()
@@ -646,12 +632,9 @@ function SecuredDataRepository(options) {
               (permissions) => {
                 let pmp = merge(true,
                   permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
+                  permissions[classPrefix + item.getClassName()] || {},
                   permissions[globalMarker] || {}
                 );
-                pmp.__class = permissions[classPrefix + item.getClassName()] || {};
-                if (roleConf) {
-                  pmp.__class[Permissions.READ] = false;
-                }
                 return pmp;
               }
             );
@@ -672,8 +655,8 @@ function SecuredDataRepository(options) {
             ) {
               return;
             }
-            item.permissions = merge(true, item.permissions, item.permissions.__class);
-            delete item.permissions.__class;
+
+            let roleConf = classRoleConfig(item.getMetaClass());
             if (roleConf) {
               let result = Promise.resolve();
               Object.keys(roleConf).forEach((role) => {
@@ -745,9 +728,9 @@ function SecuredDataRepository(options) {
           .then(() => noDrill ? null :
             ((statics && statics.__attr) ?
               attrPermissions(item, item.permissions, clone(statics.__attr), moptions) :
-              aclProvider.getPermissions(moptions.user.id(), attrResources(item, moptions)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions), moptions))))
+              aclProvider.getPermissions(moptions.user, attrResources(item, moptions)).then(ap => attrPermissions(item, item.permissions, attrPermMap(item, ap, moptions, item.permissions), moptions))))
           .then((ap) => {
-            item.attrPermissions = merge(false, true, ap || {}, item.attrPermissions);
+            item.attrPermissions = merge(false, true, item.attrPermissions || {}, ap || {});
           });
       } else {
         p = Promise.resolve();
@@ -956,7 +939,7 @@ function SecuredDataRepository(options) {
   this._createItem = function (classname, data, version, changeLogger, moptions) {
     moptions = moptions || {};
     return (moptions.user ?
-      aclProvider.checkAccess(moptions.user.id(), classPrefix + classname, [Permissions.USE]) :
+      aclProvider.checkAccess(moptions.user, classPrefix + classname, [Permissions.USE]) :
       Promise.resolve(true))
       .then((accessible) => {
         if (accessible) {
@@ -975,7 +958,7 @@ function SecuredDataRepository(options) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
-    return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(moptions.user, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.WRITE] ||
@@ -1062,7 +1045,7 @@ function SecuredDataRepository(options) {
     if (!moptions.user) {
       return Promise.resolve(true);
     }
-    return aclProvider.getPermissions(moptions.user.id(), [classPrefix + classname, itemPrefix + classname + '@' + id])
+    return aclProvider.getPermissions(moptions.user, [classPrefix + classname, itemPrefix + classname + '@' + id])
       .then((permissions) => {
         let accessible = permissions[classPrefix + classname] &&
           permissions[classPrefix + classname][Permissions.DELETE] ||
@@ -1226,7 +1209,7 @@ function SecuredDataRepository(options) {
    */
   this._bulkEdit = function (classname, data, options) {
     options = options || {};
-    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+    return (options.user ? aclProvider.getPermissions(options.user, [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
           !permissions ||
@@ -1248,7 +1231,7 @@ function SecuredDataRepository(options) {
    */
   this._bulkDelete = function (classname, options) {
     options = options || {};
-    return (options.user ? aclProvider.getPermissions(options.user.id(), [classPrefix + classname]) : Promise.resolve(null))
+    return (options.user ? aclProvider.getPermissions(options.user, [classPrefix + classname]) : Promise.resolve(null))
       .then((permissions) => {
         if (
           !permissions ||

@@ -7,6 +7,8 @@ const INotifier = require('core/interfaces/Notifier');
 const INotificationSender = require('core/interfaces/NotificationSender');
 const resolvePath = require('core/resolvePath');
 const path = require('path');
+const User = require('core/User');
+const merge = require('merge');
 
 class Notifier extends INotifier {
 
@@ -18,30 +20,63 @@ class Notifier extends INotifier {
    * @param {String} options.systemSender
    * @param {Logger} options.log
    * @param {String} options.tplDir
+   * @param {{}} [options.templates]
    */
   constructor(options) {
     super();
     this.ds = options.dataSource;
     this.accounts = options.accounts;
-    this.dispatchers = options.dispatchers;
+    this.dispatchers = options.dispatchers || {};
     this.tplDir = options.tplDir ? resolvePath(options.tplDir) : null;
     this.system = options.systemSender || 'ion.system';
     this.log = options.log;
+    this.templates = options.templates;
   }
 
   /**
    * @param {{}} notification
    * @param {{} | String} notification.message
+   * @param {String} notification.type
    * @param {String} [notification.sender]
    * @param {String[] | String} [notification.recievers]
    * @param {String} [notification.subject]
    * @param {{}} [notification.dispatch]
+   * @param {String} [notification.options]
    * @returns {Promise}
    */
   _notify(notification) {
     if (!notification.message) {
       throw new Error('Не указан текст уведомления.');
     }
+
+    if (!notification.type) {
+      notification.type = 'untyped';
+    }
+
+    const preprocess = () => {
+      if (this.tplDir && this.templates && this.templates[notification.type]) {
+        let tpl = this.templates[notification.type];
+        tpl = path.join(this.tplDir, tpl);
+        return new Promise((resolve, reject) => {
+            ejs.renderFile(
+              tpl,
+              {
+                subject: notification.subject,
+                message: notification.message
+              },
+              {},
+              (err, content) => {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(content);
+              });
+          }
+        );
+      }
+      return false;
+    };
+
     let rcvrs;
     if (!Array.isArray(notification.recievers)) {
       if (notification.recievers) {
@@ -55,12 +90,16 @@ class Notifier extends INotifier {
       rcvrs = notification.recievers;
     }
 
+    if (rcvrs.length == 0) {
+      return Promise.resolve();
+    }
+
     return this.accounts
       .list(rcvrs)
       .then(
         (recievers) => {
           let p = Promise.resolve();
-          if (notification.dispatch) {
+          if (recievers.length) {
             let senderAccount = null;
             if (notification.sender) {
               p = p.then(() => this.accounts.get(notification.sender)).then((u) => {
@@ -68,20 +107,47 @@ class Notifier extends INotifier {
               });
             }
 
-            Object.keys(notification.dispatch).forEach((dest) => {
+            Object.keys(this.dispatchers).forEach((dest) => {
               if (this.dispatchers[dest] instanceof INotificationSender) {
-                p = p.then(() => this.dispatchers[dest].send(senderAccount, recievers, {
-                  message: notification.message,
-                  subject: notification.subject,
-                  options: notification.dispatch[dest]
-                })).catch((err) => {
-                  if (this.log) {
-                    this.log.warn('Ошибка при отправке уведомления в ' + dest);
-                    this.log.info(notification.subject);
-                    this.log.info(notification.message);
-                    this.log.error(err);
+                let rcvrs = [];
+                recievers.forEach((r) => {
+                  if (r instanceof User) {
+                    let notifyTo = r.properties().notifyTo;
+                    if (
+                      (!notifyTo && !notification.dispatch) ||
+                      (Array.isArray(notifyTo) && (notifyTo.indexOf(dest) >= 0)) ||
+                      (notification.dispatch && notification.dispatch[dest])
+                    ) {
+                      rcvrs.push(r);
+                    }
                   }
                 });
+                if (rcvrs.length) {
+                  p = p
+                    .then(() =>
+                      this.dispatchers[dest].send(
+                        senderAccount,
+                        rcvrs,
+                        {
+                          message: notification.message,
+                          subject: notification.subject,
+                          type: notification.type,
+                          options: merge(
+                            notification.options || {},
+                            (notification.dispatch && notification.dispatch[dest]) || {}
+                          )
+                        }
+                      )
+                    )
+                    .catch((err) => {
+                      if (this.log) {
+                        this.log.warn('Ошибка при отправке уведомления в ' + dest);
+                        this.log.info(notification.subject);
+                        this.log.info(notification.message);
+                        this.log.error(err);
+                      }
+                    });
+                }
               }
             });
           }
@@ -89,16 +155,21 @@ class Notifier extends INotifier {
           if (recievers.length && (!notification.dispatch || notification.dispatch.hasOwnProperty('native'))) {
             let id = cuid();
             p = p
+              .then(preprocess)
               .then(
-                () => this.ds.insert(
+                message => this.ds.insert(
                   'ion_notification',
                   {
                     id,
                     date: new Date(),
                     sender: notification.sender || this.system,
                     subject: notification.subject,
-                    message: notification.message,
-                    options: notification.dispatch && notification.dispatch.native
+                    message: message || String(notification.message),
+                    raw: message ? notification.message : null,
+                    options: merge(
+                      notification.options || {},
+                      notification.dispatch && notification.dispatch.native || {}
+                    )
                   },
                   {}
                 ))
@@ -127,7 +198,8 @@ class Notifier extends INotifier {
               });
           }
           return p;
-        });
+        }
+      );
   }
 
   _withdraw(id) {
@@ -214,34 +286,7 @@ class Notifier extends INotifier {
         count: options.count,
         countTotal: options.countTotal
       }
-    ).then((list) => {
-      let p = Promise.resolve();
-      list.forEach((n) => {
-        if (this.tplDir && n.options && (typeof n.options === 'string' || n.options.tpl)) {
-          p = p.then(() => {
-            let tpl = (typeof n.options === 'string') ? n.options : n.options.tpl;
-            tpl = path.join(this.tplDir, tpl);
-            return new Promise((resolve, reject) => {
-              ejs.renderFile(
-                tpl,
-                {
-                  subject: n.subject,
-                  message: n.message
-                },
-                {},
-                (err, content) => {
-                  if (err) {
-                    return reject(err);
-                  }
-                  n.message = content;
-                  resolve();
-                });
-            });
-          });
-        }
-      });
-      return p.then(() => list);
-    });
+    );
   }
 }
 

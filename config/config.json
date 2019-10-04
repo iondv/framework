@@ -33,24 +33,42 @@
               "options": {
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
+                "url": {
+                  "hosts": "[[db.hosts]]",
+                  "user": "[[db.user]]",
+                  "pwd": "[[db.pwd]]",
+                  "db": "[[db.dbname]]",
+                  "params": {
+                    "authMechanism": "[[db.authMechanism]]"
+                  }
+                },
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
                   "socketTimeoutMS": "[[db.operTimeOut]]",
-                  "poolSize": "[[db.poolSize]]"
-                },
-                "user": "[[db.user]]",
-                "password": "[[db.pwd]]"
+                  "poolSize": "[[db.poolSize]]",
+                  "sslValidate": "[[db.sslValidate]]",
+                  "checkServerIntegrity": "[[db.checkServerIntegrity]]",
+                  "sslCA": "[[db.sslCA]]",
+                  "sslCert": "[[db.sslCert]]",
+                  "sslKey": "[[db.sslKey]]",
+                  "sslPass": "[[db.sslPass]]",
+                  "replicaSet": "[[db.replicaSet]]",
+                  "authSource": "[[db.authSource]]",
+                  "ssl": "[[db.ssl]]"
+                }
               }
             }
           ]
         }
       },
       "settings": {
-        "module": "core/impl/SettingsRepository",
+        "module": "core/impl/settings/Settings",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
+          "mode": "[[deploy.mode]]",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       }
@@ -100,7 +118,7 @@
           "app": "ion://application",
           "log": "ion://sysLog",
           "storage": {
-            "type": "mongodb",
+            "type": "db",
             "dataSource": "ion://Db"
           },
           "session": {
@@ -214,8 +232,7 @@
           }
         }
       },
-      "keyProv": {
-        "name": "keyProvider",
+      "keyProvider": {
         "module": "core/impl/meta/keyProvider",
         "options": {
           "metaRepo": "ion://metaRepo",
@@ -230,7 +247,7 @@
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
-          "keyProvider": "ion://keyProv"
+          "keyProvider": "ion://keyProvider"
         }
       },
       "innerCache": {
@@ -334,7 +351,7 @@
           "data": "ion://cachedDataRepo",
           "meta": "ion://metaRepo",
           "acl": "ion://aclProvider",
-          "keyProvider": "ion://keyProv",
+          "keyProvider": "ion://keyProvider",
           "workflow": "ion://workflows",
           "meta": "ion://metaRepo",
           "log": "ion://sysLog",

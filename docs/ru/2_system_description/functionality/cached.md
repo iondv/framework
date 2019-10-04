@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [](/docs/ru/2_system_description/functionality/.md)
+### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
 
 # Кеширование данных
 
@@ -65,12 +65,10 @@ cache.redis.port=6379 // порт redis
 ```
 По умолчанию кеширование не используется.
 
-### Следующая страница: [](/docs/ru/2_system_description/functionality/.md)
-
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/cached.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/cached.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -34,7 +34,7 @@ module.exports = {
 };
 
 ```
-**NB:** подробнее см. [таблицу соответствий](\docs\ru\2_system_description\metadata_structure\correspondance_table.md).
+**NB:** подробнее см. [таблицу соответствий](/docs/ru/2_system_description/metadata_structure/correspondance_table.md).
 
 | Код | Наименование  | Описание                                                                                                                                          | 
 |----:|:------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------|
@@ -43,8 +43,7 @@ module.exports = {
 |   2 | [**Ссылка**](/docs/ru/2_system_description/metadata_structure/meta_view/type_coll_ref.md)                                          | Для ссылочных полей, связь 1кN. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                          
 |   3 | [**Коллекция**](/docs/ru/2_system_description/metadata_structure/meta_view/type_coll_ref.md)                                       | Для коллекций, связь Nк1. Позволяет задавать возможные операции над объектами класса, на который ссылаемся.                                                        |                                                                            |
 |   4 | Флаг                                            | Чекбокс для логического типа.                                                                                                                                            | 
-|   5 | [**Выпадающий список**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)                               | Для имеющих заданное поле `selectionProvider`.                                                                                 |                                                                            |
-|   6 | [**Выбор даты-времени**](/docs/ru/2_system_description/metadata_structure/meta_view/type_datetime.md)                              | Представление, позволяющее как ввести дату и время в формате "xx.xx.xxxx xx.xx", так и выбрать в выпадающем календаре и редакторе времени.                               | 
+|   5 | [**Выпадающий список**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)                               | Для имеющих заданное поле `selectionProvider`.                                                                                                                             |                           | 
 |   7 | Многострочный текст                             | Представление для текста. Настроен trim - т.е. отбрасывание пробелов с начала и конца строки                                                                                                                                              
 |   8 | Форматированный текст                           | Редактор форматированного текста.                                                                                                                                        | 
 |   9 | Альтернативный выбор                            | В атрибуте типа "Множество [15]" может быть один элемент множества. **Не реализовано**                                                                   | 
@@ -58,7 +57,6 @@ module.exports = {
 |  60 | Выбор периода                                   | Представление позволяющее вести две даты - границы периода.                                                                                                              | 
 | 100 | [**Геоданные**](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)                                       | Задает представление для типа "Геоданные [100]".                                                                                           | 
 | 110 | Набор файлов                                    | Представление для выбора и загрузки нескольких файлов. Контролирует что файлы принадлежат к одному из указанных в мете атрибута типов, общий размер файлов и количество. | 
-| 120 | Выбор даты                                      | Представление, позволяющее как ввести дату в формате "xx.xx.xxxx", так и выбрать в выпадающем календаре.                                                                 |
 | 210 | [**Расписание**](/docs/ru/2_system_description/metadata_structure/meta_class/type_schedule210.md)                                      | Представление для типа атрибута "Расписание [210]",  позволяет задать расписание, отображение в табличном виде.                                                          |                                                                            |
 | 220 | [**Календарь**](/docs/ru/2_system_description/metadata_structure/meta_class/type_schedule210.md)                                       | Представление для типа атрибута "Расписание [210]",  позволяет задать календарь, отображение в виде календаря.                                                           |                                                                            |
 
@@ -67,7 +65,7 @@ module.exports = {
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/view_types.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

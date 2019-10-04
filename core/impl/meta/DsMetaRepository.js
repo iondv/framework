@@ -13,6 +13,7 @@ const Calculator = require('core/interfaces/Calculator');
 const conditionParser = require('core/ConditionParser');
 const clone = require('clone');
 const merge = require('merge');
+const F = require('core/FunctionCodes');
 
 const defaultVersion = '___default';
 
@@ -604,32 +605,6 @@ function DsMetaRepository(options) {
     }
   }
 
-  function propertyGetter(prev, propertyName, start, length) {
-    return function (dateCallback, circular) {
-      let p = this.property(propertyName);
-      let tmp = p.getDisplayValue(dateCallback, circular);
-
-      if (start && typeof tmp === 'string') {
-        tmp = tmp.substr(start, length || null);
-      }
-
-      if (typeof prev === 'function') {
-        return prev.call(this, dateCallback, circular) + tmp;
-      }
-
-      return tmp;
-    };
-  }
-
-  function constGetter(prev, v) {
-    return function (dateCallback, circular) {
-      if (typeof prev === 'function') {
-        return prev.call(this, dateCallback, circular) + v;
-      }
-      return v;
-    };
-  }
-
   /**
    * @param {String[]} path
    * @param {ClassMeta} cm
@@ -651,22 +626,17 @@ function DsMetaRepository(options) {
     return null;
   }
 
-  /**
-   * @param {String} semantic
-   * @param {ClassMeta} cm
-   * @returns {*}
-   */
-  function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
-    let result;
-    let re = /^\w[\w.]*\w$/;
-    let parts = semantic.split('|');
-    for (let i = 0; i < parts.length; i++) {
-      let tmp = /^([^\s[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
-      if (tmp) {
-        if (semanticAttrs && re.test(tmp[1])) {
-          semanticAttrs.push(tmp[1]);
+  function analyseSemantic(cm, semantic, semanticAttrs, forceEnrichment, prefix) {
+    if (typeof semantic === 'string') {
+      if (semantic[0] === '$') {
+        let aname = semantic.substr(1);
+        if (aname[aname.length - 1] == '@') {
+          aname = aname.substr(0, aname.length - 1);
         }
-        let ppath = tmp[1].split('.');
+        if (semanticAttrs) {
+          semanticAttrs.push(aname);
+        }
+        let ppath = aname.split('.');
         let pm = locatePropertyMeta(ppath, cm);
         if (pm) {
           if (forceEnrichment) {
@@ -680,15 +650,63 @@ function DsMetaRepository(options) {
               forceEnrichment.push(ppath);
             }
           }
-          result = propertyGetter(result, tmp[1], tmp[3], tmp[5]);
-        } else {
-          result = constGetter(result, parts[i]);
         }
-      } else {
-        result = constGetter(result, parts[i]);
       }
+    } else if (semantic && (typeof semantic === 'object')) {
+      for (let oper in semantic) {
+        if (semantic.hasOwnProperty(oper)) {
+          analyseSemantic(cm, semantic[oper], semanticAttrs, forceEnrichment, prefix);
+        }
+      }
+    } else if (Array.isArray(semantic)) {
+      semantic.forEach((e) => {
+        analyseSemantic(cm, e, semanticAttrs, forceEnrichment, prefix);
+      });
     }
-    return result;
+  }
+
+  /**
+   * @param {String} semantic
+   * @param {ClassMeta} cm
+   * @returns {*}
+   */
+  function createSemanticFunc(semantic, cm, forceEnrichment, semanticAttrs, prefix) {
+    if (typeof semantic === 'string') {
+      let re = /^\w[\w.]*\w$/;
+      let parts = semantic.split('|');
+      let args = [];
+      for (let i = 0; i < parts.length; i++) {
+        let tmp = /^([^\s[]+)\s*(\[\s*(\d+)(\s*,\s*(\d+))?\s*\])?$/.exec(parts[i].trim());
+        if (tmp) {
+          if (re.test(tmp[1])) {
+            let ppath = tmp[1].split('.');
+            let pm = locatePropertyMeta(ppath, cm);
+            if (pm) {
+              let pn = '$' + tmp[1] + '@';
+              /*if (pm.type === PropertyTypes.DATETIME) {
+                pn = {[F.DATE_FORMAT]: [pn]};
+              } else {
+                pn = pn + '@';
+               }*/
+              if (tmp[3]) {
+                args.push({[F.SUBSTR]: [pn, tmp[3], tmp[5]]});
+              } else {
+                args.push(pn);
+              }
+              continue;
+            }
+          }
+        }
+        args.push(parts[i]);
+      }
+      semantic = {[F.CONCAT]: args};
+    }
+
+    if ((typeof semantic === 'object') && semantic) {
+      analyseSemantic(cm, semantic, semanticAttrs, forceEnrichment, prefix);
+      return options.calc.parseFormula(semantic, {lazyLoading: false});
+    }
+    return null;
   }
 
   /**
@@ -802,7 +820,7 @@ function DsMetaRepository(options) {
                   pm.defaultValue &&
                   (
                     typeof pm.defaultValue === 'object' ||
-                    (pm.defaultValue.indexOf('(') > 0 && pm.defaultValue.indexOf(')') > 0)
+                    (typeof pm.defaultValue === 'string' && pm.defaultValue.indexOf('(') > 0 && pm.defaultValue.indexOf(')') > 0)
                   ) &&
                   options.calc instanceof Calculator
                 ) {

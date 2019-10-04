@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Dependencies in package.json](docs/en/2_system_description/platform_configuration/package.md)
+### The previous page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
 
 # How to configure the parameters?
 
@@ -142,6 +142,54 @@ auth.exclude[] = /registry/api/naselenniyPunkt@khv-svyaz-info/** # exclude queri
 
 When you go to the page specified in the module settings - the data is displayed without the authorization.
 
+### Deactivation of the authorization for static paths on the example of the develop-and-test project:
+
+```
+; Exclude static core paths from security access checks
+auth.exclude[]=/
+auth.exclude[]=/vendor/**
+auth.exclude[]=/css/**
+auth.exclude[]=/fonts/**
+auth.exclude[]=/favicon.ico
+
+; Exclude static module paths from security access checks
+auth.exclude[]=/registry/vendor/**
+auth.exclude[]=/registry/css/**
+auth.exclude[]=/registry/js/**
+auth.exclude[]=/registry/app-vendor/**
+auth.exclude[]=/registry/app-static/**
+auth.exclude[]=/registry/common-static/**
+auth.exclude[]=/registry/img/**
+auth.exclude[]=/registry/fonts/**
+auth.exclude[]=/dashboard/vendor/**
+auth.exclude[]=/dashboard/develop-and-test/** ; for the develop-and-test project
+auth.exclude[]=/dashboard/js/**
+auth.exclude[]=/registry/viewlib-ext-static/** ; for the viewlib-extra project
+auth.exclude[]=/registry/viewlib-static/js/** ; for the viewlib project
+auth.exclude[]=/gantt-chart/vendor/**
+auth.exclude[]=/gantt-chart/gantt/**
+auth.exclude[]=/gantt-chart/css/**
+auth.exclude[]=/gantt-chart/js/**
+auth.exclude[]=/gantt-chart/common-static/**
+auth.exclude[]=/gantt-chart/fonts/**
+auth.exclude[]=/geomap/vendor/**
+auth.exclude[]=/geomap/css/**
+auth.exclude[]=/geomap/js/**
+auth.exclude[]=/geomap/common-static/**
+auth.exclude[]=/geomap/img/**
+auth.exclude[]=/geomap/fonts/**
+auth.exclude[]=/report/vendor/**
+auth.exclude[]=/report/css/**
+auth.exclude[]=/report/js/**
+auth.exclude[]=/report/common-static/**
+auth.exclude[]=/report/img/**
+auth.exclude[]=/report/fonts/**
+
+; Exclude entire module from security access check
+auth.exclude[]=/portal/**
+
+```
+
 ## Setting to cache the data at the core level
 
 Setting of cached data at the core level - allows to correctly recover from the cache eager loaded reference attributes and collections, as well as files and calculated attributes. Lists are cached correctly. Caching is implemented in the geomodule. This setting once and for all solves the problem of circular references when serializing objects.
@@ -168,7 +216,7 @@ db.operTimeOut=
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
  
  --------------------------------------------------------------------------  
 

@@ -17,7 +17,8 @@
 | 4   | Image              | String   | Image stored in file storage with preview in views.                                                                                                                                                              
 | 5   | File                     | String   | File stored in file storage.                                                                                                                                                                                                                                     
 | 6   | Integer                    | Int32    | Whole number.                                                                                                                                                                                                                                                                                                  
-| 7   | Real number           | Double   | Any positive number, negative number, or zero.                                                                                                                                                                                                                                                                   |
+| 7   | Real number           | Double   | Any positive number, negative number, or zero.       
+| 9   | [**Date/time**](/docs/en/2_system_description/metadata_structure/meta_class/type_datetime9.md)       | Date     | Date in ISODate format. It can be displayed as a date, or as a date-time.                                                                                                                                                                                                                                                              |
 | 8   |  Decimal               | Double   | Number in the decimal numeric. The alphabet of this number system consists of 10 digits from zero to 9, hence the name is decimal.
 | 10  | Logical               | Boolean  | Accepts two possible values - true or false.                                                                                                                                                                                                                                  
 | 11  | Password                   | String   | Password hash.                                                                                                                                                                                                                                                                                                         |
@@ -64,7 +65,7 @@ module.exports = {
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

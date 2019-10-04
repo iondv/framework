@@ -17,7 +17,8 @@
 | 4   | Изображение              | String   | Изображение, сохраняемое в файловом хранилище с предпросмотром в представлениях.                                                                                                                                                     
 | 5   | Файл                     | String   | Файл, сохраняемый в файловом хранилище. В процессе реализации в регистри.                                                                                                                                                                                                                                     
 | 6   | Целое                    | Int32    | Целое число                                                                                                                                                                                                                                                                                                   
-| 7   | Действительное           | Double   | Любое положительное число, отрицательное число или ноль.                                                                                                                                                                                                                                                                   
+| 7   | Действительное           | Double   | Любое положительное число, отрицательное число или ноль. 
+| 9   | [**Дата/время**](/docs/ru/2_system_description/metadata_structure/meta_class/type_datetime9.md)       | Date     | Дата в формате ISODate. Может быть отображена как дата, либо как дата-время.                                                                                                                                                                                                                                                               
 | 8   | Десятичное               | Double   | Число, представленное в десятичной системе счисления. Алфавит этой системы счисления состоит из 10 цифр от нуля до 9, отсюда и название - десятичная.  
 | 10  | Логический               | Boolean  | Принимает два возможных значения, называемых истиной (true) и ложью (false).                                                                                                                                                                                                                                  
 | 11  | Пароль                   | String   | Хеш пароля                                                                                                                                                                                                                                                                                                         
@@ -63,7 +64,7 @@ module.exports = {
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

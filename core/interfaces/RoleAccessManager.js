@@ -15,6 +15,10 @@ function RoleAccessManager() {
     return Promise.resolve();
   };
 
+  this.globalMarker = function () {
+    return this._globalMarker();
+  }
+
   /**
    *
    * @param {String} subject

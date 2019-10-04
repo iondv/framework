@@ -67,6 +67,10 @@ function User(data, coactors, tz) {
   this.timeZone = function () {
     return timezone;
   };
+
+  this.isDisabled = function () {
+    return data.disabled;
+  };
 }
 
 module.exports = User;

@@ -19,22 +19,26 @@ function EventManager() {
 
   this.trigger = function (event) {
     if (listeners[event.type]) {
-      var promises = [];
+      const results = [];
+      let promises = Promise.resolve();
       try {
-        for (let i = 0; i < listeners[event.type].length; i++) {
-          let r = listeners[event.type][i](event);
-          if (r instanceof Promise) {
-            promises.push(r);
-          }
-        }
+        listeners[event.type].forEach((listener) => {
+          promises = promises
+            .then(() => listener(event))
+            .then((result) => {
+              if (typeof result !== 'undefined') {
+                results.push(result);
+              }
+            });
+        });
       } catch (err) {
         return Promise.reject(err);
       }
-      return Promise.all(promises)
+      return promises
         .then(
-          function (results) {
+          () => {
             event.results = results;
-            return Promise.resolve(event);
+            return event;
           }
         );
     } else {

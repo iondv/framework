@@ -8,7 +8,8 @@
 * через переменную окружения
 
 **NB:** Приоритетной является настройка, заданная через переменные окружения, а не через ini-файлы.
-
+При этом настройки /config/setup.ini не влияют на настройки деплой приложения - они используются только для ядра и модулей. 
+Deploy.json всего параметризируеются через ini в дирректории приложения.
 
 ## Пример конфигурации параметров ownCloud, вместе с учетной записью
 
@@ -143,6 +144,54 @@ auth.exclude[] = /registry/api/naselenniyPunkt@khv-svyaz-info/** # исключ�
 
 При переходе на страницу указанного в настройке модуля - данные отображаются без необходимости авторизации.
 
+### Отключение авторизации для статичных путей на примере проекта develop-and-test:
+
+```
+; Исключение статичных путей ядра из проверки доступа безопасности
+auth.exclude[]=/
+auth.exclude[]=/vendor/**
+auth.exclude[]=/css/**
+auth.exclude[]=/fonts/**
+auth.exclude[]=/favicon.ico
+
+; Исключение статичных путей модулей из проверки доступа безопасности
+auth.exclude[]=/registry/vendor/**
+auth.exclude[]=/registry/css/**
+auth.exclude[]=/registry/js/**
+auth.exclude[]=/registry/app-vendor/**
+auth.exclude[]=/registry/app-static/**
+auth.exclude[]=/registry/common-static/**
+auth.exclude[]=/registry/img/**
+auth.exclude[]=/registry/fonts/**
+auth.exclude[]=/dashboard/vendor/**
+auth.exclude[]=/dashboard/develop-and-test/** ; для проекта develop-and-test
+auth.exclude[]=/dashboard/js/**
+auth.exclude[]=/registry/viewlib-ext-static/** ; для проекта viewlib-extra
+auth.exclude[]=/registry/viewlib-static/js/** ; для проекта viewlib
+auth.exclude[]=/gantt-chart/vendor/**
+auth.exclude[]=/gantt-chart/gantt/**
+auth.exclude[]=/gantt-chart/css/**
+auth.exclude[]=/gantt-chart/js/**
+auth.exclude[]=/gantt-chart/common-static/**
+auth.exclude[]=/gantt-chart/fonts/**
+auth.exclude[]=/geomap/vendor/**
+auth.exclude[]=/geomap/css/**
+auth.exclude[]=/geomap/js/**
+auth.exclude[]=/geomap/common-static/**
+auth.exclude[]=/geomap/img/**
+auth.exclude[]=/geomap/fonts/**
+auth.exclude[]=/report/vendor/**
+auth.exclude[]=/report/css/**
+auth.exclude[]=/report/js/**
+auth.exclude[]=/report/common-static/**
+auth.exclude[]=/report/img/**
+auth.exclude[]=/report/fonts/**
+
+; Исключение всего модуля из проверки доступа безопасности
+auth.exclude[]=/portal/**
+
+```
+
 ## Настройка кеширования данных на уровне ядра
 
 Настройка кеширования данных на уровне ядра - позволяет корректно восстановливать из кеша жаднозагружаемые ссылочные атрибуты и коллекции, а также файлы и вычисляемые атрибуты. Корректно кешируются списки. Внедрено кеширование в геомодуле. Настройка раз и навсегда решает проблему циклических ссылок при сериализации объектов.
@@ -169,7 +218,7 @@ db.operTimeOut=
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/ini_files.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

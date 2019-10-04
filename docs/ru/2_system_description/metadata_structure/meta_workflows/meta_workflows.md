@@ -77,12 +77,54 @@
 
 * `"confirmMessage"` - уникальный текст для вывода в подтверждении взамен стандартного.
 
+## Утилита формирования массива объектов
+
+Утилита позволяет создавать объект в коллекцию при переходе основного объекта в заданный статус. Поля созданного объекта автоматически заполняются в соответствии с настройками, заданными для свойства `"values"`.
+
+Теперь чтобы прикрепить утилиту создания значений показателя к этапу БП, надо в `di` в свойстве `options` прописать опцию 
+```
+state - имя этапа БП
+```
+при переходе на который, должны создаваться объекты в коллекцию. 
+
+Есть возможность использовать утилиту как "action". При переделке нужно просто убрать команду из модели представления.
+Параметры задаются в файле deploy.json проекта. Синтаксис настройки:
+```
+"map": {
+    "workflow@namespace.stage": {
+       "className@namespace": { // для объекта какого класса создается объект в коллекцию
+           "collection": { // наименование атрибута коллекции, в которой создается объект
+               "elementClass": "className2@namespace", // класс, объекты которого создаются утилитой
+               "patterns": [
+                  {
+                      "values": {
+                          "attr1": "string", // строка
+                          "attr2": 123, // число
+                          "attr3": true,
+                          "attr4": "$containerProperty1", // свойство контейнера
+                          "attr5": {"add": ["$containerProperty2", 300]} // формула
+                      },
+                      "push": [
+                         "workflow2@namespace.stage1", // присвоение БП созданных объектов статуса
+                      ]
+                  },
+                  ...
+               ]
+           },
+           ...
+       },
+       ...
+    },
+    ....
+}
+```
+
 ### Следующая страница: [Статусы бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
