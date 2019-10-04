@@ -6,68 +6,55 @@ const path = require('path');
 const {
   readConfigFiles, merge
 } = require('core/util/read');
-const read = require('lib/config-reader');
 const {promisify} = require('util');
-const readdir = promisify(fs.readdir);
+const configReader = require('lib/config-reader');
+const read = promisify(configReader);
+const readdirPromise = promisify(fs.readdir);
 
-const isConfig = f => ['.json', '.yml'].includes(path.extname(f));
-const joinPath = (...pths) => f => path.join(...pths, f);
+const isConfig = fn => ['.json', '.yml'].includes(path.extname(fn));
+const joinPath = (...pths) => fn => path.join(...pths, fn);
+const isBasename = nm => fn => path.basename(fn, path.extname(fn)) === nm;
+const readdir = pth => readdirPromise(pth)
+  .then(files => files.filter(isConfig).map(joinPath(pth)))
+  .catch(() => []);
+const mergeConfigs = (data) => {
+  let result = {};
+  Object.keys(data).forEach((key) => {
+    result = merge(result, data[key]);
+  });
+  return result;
+};
 
 module.exports = (appPath) => {
   let config = {};
-  const moduleNames = [];
   const moduleFiles = [];
-
   const configDirs = [
-    readdir(appPath).catch(() => []),
-    readdir(path.join(appPath, 'deploy')).catch(() => []),
-    readdir(path.join(appPath, 'deploy', 'modules')).catch(() => [])
+    readdir(appPath),
+    readdir(path.join(appPath, 'deploy')),
+    readdir(path.join(appPath, 'deploy', 'modules'))
   ];
 
   return Promise.all(configDirs)
     .then((dirs) => {
       moduleFiles.push(...dirs[2]);
       const [rootFiles, deployFiles] = dirs;
-      const deployConfigs = [];
-      deployConfigs.push(...rootFiles.filter(f => ['deploy.json', 'deploy.yml'].includes(f)).map(joinPath(appPath)));
-      deployConfigs.push(...deployFiles.filter(isConfig).map(joinPath(appPath, 'deploy')));
-      return readConfigFiles(deployConfigs);
+      return readConfigFiles([...rootFiles.filter(isBasename('deploy')), ...deployFiles]);
     })
     .then((results) => {
-      config = merge(config, results.deploy);
+      config = results.deploy || {};
       delete results.deploy;
-      Object.keys(results).forEach((key) => {
-        config = merge(config, results[key]);
-      });
+      config = merge(config, mergeConfigs(results));
       config.modules = config.modules || {};
-      moduleNames.push(...Object.keys(config.modules));
-      const promises = moduleNames.map((mn) => {
-        const moduleConfigs = moduleFiles
-          .filter(isConfig)
-          .filter(f => path.basename(f, path.extname(f)) === mn)
-          .map(joinPath(appPath, 'deploy', 'modules'));
-        return readdir(path.join(appPath, 'deploy', 'modules', mn))
-          .catch(() => [])
-          .then((mfiles) => {
-            moduleConfigs.push(...mfiles.filter(isConfig).map(joinPath(appPath, 'deploy', 'modules', mn)));
-            return readConfigFiles(moduleConfigs);
-          })
+      const promises = Object.keys(config.modules)
+        .map(mn => readdir(path.join(appPath, 'deploy', 'modules', mn))
+          .then(mfiles => readConfigFiles([...moduleFiles.filter(isBasename(mn)), ...mfiles]))
           .then((mresults) => {
-            let mconfig = {};
-            Object.keys(mresults).forEach((mkey) => {
-              mconfig = merge(mconfig, mresults[mkey]);
-            });
+            const mconfig = mergeConfigs(mresults);
             config.modules[mn] = config.modules[mn] || {};
             config.modules[mn] = merge(config.modules[mn], mconfig);
-          });
-      });
-      return Promise.all(promises).then(() => config);
+          })
+        );
+      return Promise.all(promises);
     })
-    .then(config => new Promise((resolve, reject) => {
-      read(config, appPath, (err, conf) => {
-        if (err)
-          return reject(err);
-        return resolve(conf);
-      });
-    }));
+    .then(() => read(config, appPath));
 };
