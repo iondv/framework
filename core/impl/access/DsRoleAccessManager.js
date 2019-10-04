@@ -9,7 +9,6 @@
 const RoleAccessManager = require('core/interfaces/RoleAccessManager');
 const Permissions = require('core/Permissions');
 const F = require('core/FunctionCodes');
-const logRecordTypes = require('./DsRoleAccessChangeLogger').Types;
 
 /**
  * @param {{}} config
@@ -23,6 +22,8 @@ function DsRoleAccessManager(config) {
   const roles_table = 'ion_acl_user_roles';
 
   const perms_table = 'ion_acl_permissions';
+
+  const logRecordTypes = config.eventLogger.types();
 
   const globalMarker = config.allAlias ? config.allAlias : '*';
 
@@ -156,8 +157,14 @@ function DsRoleAccessManager(config) {
               {[F.EQUAL]: ['$user', s]},
               {user: s, roles: rc},
               {skipResult: true}
-            ).then(() => config.accounts.get(s, null, true))
-            .then(user => config.eventLogger.logChange(logRecordTypes.ASSIGN_ROLE, {author, user, before, updates: roles}));
+            ).then((result) => {
+              if (author) {
+                return config.accounts.get(s, null, true)
+                  .then(user => config.eventLogger.logChange(logRecordTypes.ASSIGN_ROLE, {author, user, before, updates: roles}))
+                  .then(result => result);
+              }
+              return result;
+            });
           });
       }
     );
@@ -189,18 +196,21 @@ function DsRoleAccessManager(config) {
     }
 
     let before = null;
-    let p = config.dataSource.fetch(perms_table, {
-      filter: {[F.IN]: ['$subject', roles]}
-    }).then(result => result.forEach((doc) => {
-      if (!before)
-        before = {};
-      if (!before[doc.subject])
-        before[doc.subject] = [];
-      before[doc.subject].push({
-        resource: doc.resource,
-        permission: doc.permission
-      });
-    }));
+    let p = Promise.resolve();
+    if (author) {
+      p = config.dataSource.fetch(perms_table, {
+        filter: {[F.IN]: ['$subject', roles]}
+      }).then(result => result.forEach((doc) => {
+        if (!before)
+          before = {};
+        if (!before[doc.subject])
+          before[doc.subject] = [];
+        before[doc.subject].push({
+          resource: doc.resource,
+          permission: doc.permission
+        });
+      }));
+    }
 
     roles.forEach((role) => {
       const updates = [];
@@ -225,7 +235,7 @@ function DsRoleAccessManager(config) {
             )).then(() => updates.push({resource, permission}));
         });
       });
-      p.then(() => config.eventLogger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
+      p.then(() => author && config.eventLogger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
     });
 
     return p;
@@ -258,10 +268,12 @@ function DsRoleAccessManager(config) {
       f.push({[F.IN]: ['$permission', permissions]});
     }
 
-    return config.dataSource.fetch(perms_table, {filter: {[F.IN]: ['$subject', roles]}})
+    let p = Promise.resolve();
+    let before = {};
+    let updates = {};
+    if (author) {
+      p = config.dataSource.fetch(perms_table, {filter: {[F.IN]: ['$subject', roles]}})
       .then((result) => {
-        let before = {};
-        let updates = {};
         result.forEach((doc) => {
           if (!before[doc.subject])
             before[doc.subject] = [];
@@ -277,20 +289,23 @@ function DsRoleAccessManager(config) {
               permission: doc.permission
           });
         });
-        return config.dataSource.delete(perms_table, {[F.AND]: f})
-          .then(() => {
-            let p = Promise.resolve();
-            roles.forEach((role) => {
-              p = p.then(() => config.eventLogger.logChange(logRecordTypes.DENY, {
-                author,
-                role,
-                before: before[role],
-                updates: updates[role]
-              }));
-            });
-            return p;
-          });
       });
+    }
+    return p.then(() => config.dataSource.delete(perms_table, {[F.AND]: f})
+      .then(() => {
+        let p = Promise.resolve();
+        if (author) {
+          roles.forEach((role) => {
+            p = p.then(() => config.eventLogger.logChange(logRecordTypes.DENY, {
+              author,
+              role,
+              before: before[role],
+              updates: updates[role]
+            }));
+          });
+        }
+        return p;
+      }));
   };
 
   /**
@@ -328,8 +343,10 @@ function DsRoleAccessManager(config) {
           } else {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
-          p.then(() => config.accounts.get(u.user, null, true))
-            .then(user => config.eventLogger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
+          if (author) {
+            p.then(() => config.accounts.get(u.user, null, true))
+              .then(user => config.eventLogger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
+          }
         });
         return p;
       });
@@ -369,9 +386,11 @@ function DsRoleAccessManager(config) {
       .then(() => config.dataSource.delete(perms_table, {[F.IN]: ['$subject', roles]}))
       .then(() => {
         let p = Promise.resolve();
-        roles.forEach((role) => {
-          p = p.then(() => config.eventLogger.logChange(logRecordTypes.UNDEFINE_ROLE, {author, role}));
-        });
+        if (author) {
+          roles.forEach((role) => {
+            p = p.then(() => config.eventLogger.logChange(logRecordTypes.UNDEFINE_ROLE, {author, role}));
+          });
+        }
         return p;
       });
   };
@@ -388,7 +407,7 @@ function DsRoleAccessManager(config) {
       data.description = description;
     }
     return config.dataSource.upsert('ion_security_role', {[F.EQUAL]: ['$id', role]}, data)
-      .then(() => config.eventLogger.logChange(logRecordTypes.DEFINE_ROLE, {author, role, updates: data}));
+      .then(() => author && config.eventLogger.logChange(logRecordTypes.DEFINE_ROLE, {author, role, updates: data}));
   };
 
   this._defineResource = function (resource, caption = null) {

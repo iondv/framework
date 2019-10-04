@@ -1,13 +1,14 @@
+/* eslint-disable func-names */
 const clone = require('clone');
 const F = require('core/FunctionCodes');
 
 /**
  * @param {table: String, DataSource: dataSource, types: {}} options
  */
-module.exports = (options) => {
+module.exports = function (options) {
   const self = this;
 
-  this.logChange = (type, datas) => {
+  this.logChange = function(type, datas) {
     if (!this.types()[type.toUpperCase()])
       throw new Error('Неверно указан тип записи журнала изменений!');
     const record = this.normalize(datas);
@@ -16,7 +17,7 @@ module.exports = (options) => {
     return options.dataSource.insert(options.table, record);
   };
 
-  this.getChanges = (filters, sort, offset, count, countTotal) => {
+  this.getChanges = function(filters, sort, offset, count, countTotal) {
     const opts = {
       sort, offset, count, countTotal
     };
@@ -45,13 +46,19 @@ module.exports = (options) => {
     });
   };
 
-  this.types = () => options.types;
+  this.types = function() {
+    return options.types;
+  };
 
-  this.normalize = datas => clone(datas);
+  this.normalize = function(datas) {
+    return clone(datas);
+  };
 
-  this.record = rec => rec;
+  this.record = function(rec) {
+    return rec;
+  };
 
-  this.filter = (filters) => {
+  this.filter = function(filters) {
     let result = [];
     Object.keys(filters).forEach(f => result.push({[F.EQUAL]: [`$${f}`, filters[f]]}));
     return result;

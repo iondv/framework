@@ -1,24 +1,25 @@
-const ChangeLogger = require('core/impl/changelogger/EventLogger');
+/* eslint-disable func-names */
+const EventLogger = require('core/impl/changelogger/EventLogger');
 const User = require('core/User');
 const F = require('core/FunctionCodes');
-
-const RoleAccessChangeLoggerRecordTypes = {
-  ASSIGN_ROLE: 'ASSIGN_ROLE',
-  GRANT: 'GRANT',
-  DENY: 'DENY',
-  UNASSIGN_ROLE: 'UNASSIGN_ROLE',
-  UNDEFINE_ROLE: 'UNDEFINE_ROLE',
-  DEFINE_ROLE: 'DEFINE_ROLE'
-};
 
 /**
  * @param {table: String, DataSource: dataSource} options
  */
 function dsRoleAccessChangeLogger(options) {
 
-  this.types = () => RoleAccessChangeLoggerRecordTypes;
+  this.types = function() {
+    return {
+      ASSIGN_ROLE: 'ASSIGN_ROLE',
+      GRANT: 'GRANT',
+      DENY: 'DENY',
+      UNASSIGN_ROLE: 'UNASSIGN_ROLE',
+      UNDEFINE_ROLE: 'UNDEFINE_ROLE',
+      DEFINE_ROLE: 'DEFINE_ROLE'
+    };
+  };
 
-  this.normalize = (datas) => {
+  this.normalize = function(datas) {
     if (!(datas.author instanceof User))
       throw new Error('Author not specified!');
     const result = {
@@ -39,14 +40,12 @@ function dsRoleAccessChangeLogger(options) {
     return result;
   };
 
-  this.record = rec => rec;
-
-  this.filter = (filters) => {
-    let result = [];
+  this.filter = function(filters) {
+    const result = [];
     if (filters.author) {
       result.push({[F.OR]: [
         {[F.EQUAL]: ['$authorId', filters.author]},
-        {[F.EQUAL]: ['$authorName', filters.author]},
+        {[F.EQUAL]: ['$authorName', filters.author]}
       ]});
     }
     if (filters.ip)
@@ -62,6 +61,5 @@ function dsRoleAccessChangeLogger(options) {
   };
 }
 
-dsRoleAccessChangeLogger.prototype = new ChangeLogger();
+dsRoleAccessChangeLogger.prototype = new EventLogger();
 module.exports = dsRoleAccessChangeLogger;
-module.exports.Types = RoleAccessChangeLoggerRecordTypes;
