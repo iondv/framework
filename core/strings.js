@@ -35,6 +35,7 @@ module.exports.s = function (prefix, id, params) {
         return s;
       }
     }
+    return id;
   }
   return '';
 };

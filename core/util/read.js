@@ -13,6 +13,12 @@ function merge(obj, other) {
   });
   return result;
 }
+module.exports.merge = merge;
+
+function isConfig(fn) {
+  return ['.json', '.yml'].includes(path.extname(fn));
+}
+module.exports.isConfig = isConfig;
 
 function processDir(dir, filter, handler, onErr) {
   try {
