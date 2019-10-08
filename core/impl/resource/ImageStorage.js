@@ -44,7 +44,7 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {{}} options.thumbnails
  * @param {{}} options.urlBase
  * @param {Boolean} options.storeThumbnails
- * @param {ThumbnailGenerator} options.thumbsGenerator
+ * @param {ThumbnailGenerator} [options.thumbsGenerator]
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
  * @param {{apply: Function} | Array | Function} [options.preProcessors]
@@ -59,7 +59,7 @@ function ImageStorage(options) { // jshint ignore:line
 
   let storeThumbnails = (options.storeThumbnails !== false);
   if (typeof options.fileStorage.fileOptionsSupport === 'function') {
-    storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
+    storeThumbnails = tg && storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
 
   function streamToBuffer(stream) {
@@ -77,6 +77,13 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {*}
    */
   function setThumbnails(file, thumbnails) {
+    if (!tg) {
+      Object.keys(options.thumbnails).forEach((thumb) => {
+        thumbnails[thumb] = file.clone();
+      });
+      return;
+    }
+
     Object.keys(options.thumbnails).forEach((thumb) => {
       let o = clone(file.options);
       o.thumbType = thumb;
