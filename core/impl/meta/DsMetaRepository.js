@@ -34,7 +34,7 @@ const defaultVersion = '___default';
  */
 function DsMetaRepository(options) {
 
-  var _this = this;
+  const _this = this;
 
   /**
    * @type {String}
@@ -64,22 +64,22 @@ function DsMetaRepository(options) {
   /**
    * @type {DbSync}
    */
-  var sync = options.sync;
+  const sync = options.sync;
 
   /**
    * @type {DataSource}
    */
-  var ds = options.dataSource;
+  const ds = options.dataSource;
 
   if (!ds) {
     throw 'Не указан источник данных мета репозитория!';
   }
 
-  var classMeta = {};
+  let classMeta = {};
 
-  var workflowMeta = {};
+  let workflowMeta = {};
 
-  var viewMeta = {
+  let viewMeta = {
     listModels: {},
     collectionModels: {},
     itemModels: {},
@@ -89,13 +89,13 @@ function DsMetaRepository(options) {
     validators: {}
   };
 
-  var navMeta = {
+  let navMeta = {
     sections: {},
     nodes: {},
     classnames: {}
   };
 
-  var userTypes = {};
+  let userTypes = {};
 
   function viewPath(nodeCode, className) {
     return (nodeCode ? nodeCode + '/' : '') + className;
@@ -172,25 +172,21 @@ function DsMetaRepository(options) {
     let cn = parseCanonicalName(name);
     name = cn.name;
     namespace = cn.namespace || namespace;
-    try {
-      let ns = formNS(namespace);
-      if (classMeta[ns] && classMeta[ns].hasOwnProperty(name)) {
-        if (version) {
-          if (typeof classMeta[ns][name][version] !== 'undefined') {
-            return classMeta[ns][name].byVersion[version];
-          } else {
-            let cm = findByVersion(classMeta[ns][name].byOrder, version);
-            if (cm) {
-              return cm;
-            }
+    let ns = formNS(namespace);
+    if (classMeta[ns] && classMeta[ns].hasOwnProperty(name)) {
+      if (version) {
+        if (typeof classMeta[ns][name][version] !== 'undefined') {
+          return classMeta[ns][name].byVersion[version];
+        } else {
+          let cm = findByVersion(classMeta[ns][name].byOrder, version);
+          if (cm) {
+            return cm;
           }
         }
-        if (classMeta[ns][name][defaultVersion]) {
-          return classMeta[ns][name][defaultVersion];
-        }
       }
-    } catch (err) {
-      throw err;
+      if (classMeta[ns][name][defaultVersion]) {
+        return classMeta[ns][name][defaultVersion];
+      }
     }
     throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') + ' не найден в пространстве имен ' + namespace + '!');
   }
