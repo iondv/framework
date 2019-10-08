@@ -8,10 +8,12 @@ const path = require('path');
 /**
  * @param {String} lang
  * @param {String} dir
- * @param {String} prefix
+ * @param {String} [prefix]
+ * @param {Logger} [log]
  * @returns {Promise}
  */
-function i18nSetup(lang, dir, prefix = 'i18n') {
+function i18nSetup(lang, dir, prefix, log) {
+  prefix = prefix || 'i18n';
   const msgDir = path.join(toAbsolute(dir), lang);
   let base;
   try {
@@ -21,7 +23,10 @@ function i18nSetup(lang, dir, prefix = 'i18n') {
   }
   base = base || {};
   return processDirAsync(msgDir, isConfig)
-    .catch(() => [])
+    .catch(() => {
+      log && log.info(`Base for language "${lang}" does not exist in path "${dir}"`);
+      return [];
+    })
     .then(files => Promise.all(files.map(fn => readConfigAsync(fn))))
     .then((messages) => {
       messages.forEach((msg) => {
@@ -34,9 +39,11 @@ function i18nSetup(lang, dir, prefix = 'i18n') {
 /**
  * @param {String} lang
  * @param {String} dir
- * @param {String} prefix
+ * @param {String} [prefix]
+ * @param {Logger} [log]
  */
-function i18nSetupSync(lang, dir, prefix = 'i18n') {
+function i18nSetupSync(lang, dir, prefix, log) {
+  prefix = prefix || 'i18n';
   const msgDir = path.join(toAbsolute(dir), lang);
   let base;
   try {
@@ -53,7 +60,9 @@ function i18nSetupSync(lang, dir, prefix = 'i18n') {
       base = merge(base, messages);
     },
     (err) => {
-      if (err.code !== 'ENOENT') {
+      if (err.code === 'ENOENT') {
+        log && log.info(`Base for language "${lang}" does not exist in path "${dir}"`);
+      } else {
         throw err;
       }
     },
