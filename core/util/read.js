@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const _ = require('lodash');
+const {promisify} = require('util');
+const readdirPromise = promisify(fs.readdir);
+const readFilePromise = promisify(fs.readFile);
 
 function merge(obj, other) {
   let result = _.mergeWith(obj, other, (objValue, srcValue) => {
@@ -20,17 +23,16 @@ function isConfig(fn) {
 }
 module.exports.isConfig = isConfig;
 
-function processDir(dir, filter, handler, onErr) {
+function processDir(dir, filter, handler, onErr, recursive = true) {
   try {
-    fs.accessSync(dir, fs.constants.F_OK);
-    let files = fs.readdirSync(dir);
+    const files = fs.readdirSync(dir);
     for (let i = 0; i < files.length; i++) {
-      let fn = path.join(dir, files[i]);
-      let stat = fs.lstatSync(fn);
-      if (stat.isDirectory()) {
+      const fn = path.join(dir, files[i]);
+      const stat = fs.lstatSync(fn);
+      if (stat.isDirectory() && recursive) {
         processDir(fn, filter, handler, onErr);
       } else if (filter(files[i])) {
-        handler(fn);
+        handler(fn, dir);
       }
     }
   } catch (e) {
@@ -44,14 +46,7 @@ function processDir(dir, filter, handler, onErr) {
 module.exports.processDir = processDir;
 
 function readFile(filePath) {
-  return new Promise(function (resolve, reject) {
-    fs.readFile(filePath, {encoding: 'utf-8'}, function (err, data) {
-      if (err) {
-        return reject(err);
-      }
-      return resolve(data);
-    });
-  });
+  return readFilePromise(filePath, 'utf8');
 }
 module.exports.readFile = readFile;
 
@@ -65,20 +60,10 @@ function readJSON(filePath) {
 }
 module.exports.readJSON = readJSON;
 
-function processDirAsync(dir) {
-  return new Promise(function (resolve, reject) {
-    fs.access(dir, fs.R_OK, function (err) {
-      if (err) {
-        return reject(err);
-      }
-      fs.readdir(dir, function (err, files) {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(files.map(f => path.join(dir, f)));
-      });
-    });
-  });
+function processDirAsync(dir, filter) {
+  return readdirPromise(dir)
+    .then(files => filter ? files.filter(filter) : files)
+    .then(files => files.map(f => path.join(dir, f)));
 }
 module.exports.processDirAsync = processDirAsync;
 
@@ -144,22 +129,13 @@ function readConfigAsync(filePath) {
   const params = path.parse(filePath);
   const ymlFilePath = params.ext === '.yml' ? filePath : path.join(params.dir, params.name + '.yml');
   const jsonFilePath = params.ext === '.json' ? filePath : path.join(params.dir, params.name + '.json');
-  return new Promise((resolve, reject) => {
-    fs.readFile(ymlFilePath, 'utf-8', (err, data) => {
-      const ymlFile = err ? false : yaml.safeLoad(data);
-      fs.readFile(jsonFilePath, 'utf-8', (err, data) => {
-        let jsonFile = false;
-        if (err) {
-          if (!ymlFile) {
-            return reject(new Error(`Failed to read configuration from ${filePath}`));
-          }
-        } else {
-          jsonFile = JSON.parse(data);
-        }
-        resolve(merge(ymlFile || {}, jsonFile || {}));
-      });
+  return Promise.all([readYAML(ymlFilePath).catch(() => false), readJSON(jsonFilePath).catch(() => false)])
+    .then((files) => {
+      const [ymlConfig, jsonConfig] = files;
+      if (!ymlConfig && !jsonConfig) {
+        throw new Error(`Failed to read configuration from ${path.join(params.dir, params.name)}[.yml|.json]`);
+      }
+      return merge(ymlConfig || {}, jsonConfig || {});
     });
-  });
 }
-
 module.exports.readConfigAsync = readConfigAsync;
