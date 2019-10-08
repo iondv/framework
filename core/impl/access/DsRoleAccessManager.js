@@ -235,7 +235,8 @@ function DsRoleAccessManager(config) {
             )).then(() => updates.push({resource, permission}));
         });
       });
-      p.then(() => author && config.eventLogger.logChange(logRecordTypes.GRANT, {author, role, before: before[role], updates}));
+      if (author)
+        p.then(() => config.eventLogger.logChange(logRecordTypes.GRANT, {author, role, before: (before ? before[role] : before), updates}));
     });
 
     return p;

@@ -100,7 +100,7 @@
       "accessLogger": {
         "module": "core/impl/access/DsRoleAccessChangeLogger",
         "options": {
-          "table": "ion_role_access_changelog",
+          "table": "ion_accesslog",
           "dataSource": "ion://Db"
         }
       },
@@ -182,7 +182,7 @@
       "authLogger": {
         "module": "core/impl/changelogger/EventLogger",
         "options": {
-          "table": "ion_auth_changelog",
+          "table": "ion_authlog",
           "dataSource": "ion://Db",
           "types": {
             "LOGIN": "LOGIN",

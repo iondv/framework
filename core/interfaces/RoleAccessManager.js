@@ -83,8 +83,8 @@ function RoleAccessManager() {
     return this._unassignRoles(subjects, roles, author);
   };
 
-  this.defineRole = function (role, caption = null, author = null) {
-    return this._defineRole(role, caption, author);
+  this.defineRole = function (role, caption = null, description = null, author = null) {
+    return this._defineRole(role, caption, description, author);
   };
 
   this.defineResource = function (resource, caption = null) {

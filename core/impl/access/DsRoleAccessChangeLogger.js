@@ -8,6 +8,8 @@ const F = require('core/FunctionCodes');
  */
 function dsRoleAccessChangeLogger(options) {
 
+  this.options = options;
+
   this.types = function() {
     return {
       ASSIGN_ROLE: 'ASSIGN_ROLE',

@@ -8,13 +8,15 @@ const F = require('core/FunctionCodes');
 module.exports = function (options) {
   const self = this;
 
+  this.options = options;
+  
   this.logChange = function(type, datas) {
     if (!this.types()[type.toUpperCase()])
       throw new Error('Неверно указан тип записи журнала изменений!');
     const record = this.normalize(datas);
     record.timestamp = new Date();
     record.type = type;
-    return options.dataSource.insert(options.table, record);
+    return this.options.dataSource.insert(this.options.table, record);
   };
 
   this.getChanges = function(filters, sort, offset, count, countTotal) {
@@ -38,7 +40,7 @@ module.exports = function (options) {
     and.push(...this.filter(recordFilters));
     if (and.length)
       opts.filter = and.length > 1 ? {[F.AND]: and} : and[0];
-    return options.dataSource.fetch(options.table, opts).then((changes) => {
+    return this.options.dataSource.fetch(this.options.table, opts).then((changes) => {
       const result = [];
       changes.forEach(ch => result.push(self.record(ch)));
       result.total = changes.total;
@@ -47,7 +49,7 @@ module.exports = function (options) {
   };
 
   this.types = function() {
-    return options.types;
+    return this.options.types;
   };
 
   this.normalize = function(datas) {
