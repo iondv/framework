@@ -3,7 +3,6 @@
 'use strict';
 const config = require('../config');
 const IonLogger = require('core/impl/log/IonLogger');
-const Scheduler = require('core/impl/Scheduler');
 const sysLog = new IonLogger(config.log || {});
 const server = require('lib/server');
 
