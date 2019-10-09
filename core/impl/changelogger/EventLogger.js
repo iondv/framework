@@ -6,7 +6,6 @@ const F = require('core/FunctionCodes');
  * @param {table: String, DataSource: dataSource, types: {}} options
  */
 module.exports = function (options) {
-  const self = this;
 
   this.options = options;
   
@@ -20,6 +19,7 @@ module.exports = function (options) {
   };
 
   this.getChanges = function(filters, sort, offset, count, countTotal) {
+    const self = this;
     const opts = {
       sort, offset, count, countTotal
     };
@@ -62,7 +62,7 @@ module.exports = function (options) {
 
   this.filter = function(filters) {
     let result = [];
-    Object.keys(filters).forEach(f => result.push({[F.EQUAL]: [`$${f}`, filters[f]]}));
+    Object.keys(filters).forEach(f => filters[f] && result.push({[F.EQUAL]: [`$${f}`, filters[f]]}));
     return result;
   };
 };

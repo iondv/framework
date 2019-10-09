@@ -324,16 +324,13 @@ function DsRoleAccessManager(config) {
       .then((ur) => {
         let p = Promise.resolve();
         ur.forEach((u) => {
-          let before = null;
-          if (u) {
-            before = u.roles;
-            roles.forEach((r) => {
-              let ind = u.roles.indexOf(r);
-              if (ind >= 0) {
-                u.roles.splice(ind, 1);
-              }
-            });
-          }
+          const before = u.roles.slice();
+          roles.forEach((r) => {
+            let ind = u.roles.indexOf(r);
+            if (ind >= 0) {
+              u.roles.splice(ind, 1);
+            }
+          });
           if (u.roles.length) {
             p = p.then(() => config.dataSource.update(
               roles_table,
@@ -345,7 +342,7 @@ function DsRoleAccessManager(config) {
             p = p.then(() => config.dataSource.delete(roles_table, {[F.EQUAL]: ['$user', u.user]}));
           }
           if (author) {
-            p.then(() => config.accounts.get(u.user, null, true))
+            p = p.then(() => config.accounts.get(u.user, null, true))
               .then(user => config.eventLogger.logChange(logRecordTypes.UNASSIGN_ROLE, {author, user, before, updates: roles}));
           }
         });

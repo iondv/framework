@@ -61,6 +61,11 @@ function dsRoleAccessChangeLogger(options) {
     }
     return result;
   };
+
+  this.record = function(rec) {
+    rec.subject = rec.userId || rec.role;
+    return rec;
+  };
 }
 
 dsRoleAccessChangeLogger.prototype = new EventLogger();
