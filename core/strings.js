@@ -20,11 +20,12 @@ module.exports.registerBase = function (prefix, base) {
  * @param {String} id
  * @param {{}} params
  */
-module.exports.s = function (prefix, id, params) {
-  if (prefix && id) {
+module.exports.s = function (prefix, ...ids) {
+  const params = (ids.length && typeof ids[ids.length - 1] !== 'string') ? ids.pop() : null;
+  if (prefix && ids.length) {
     if (strBase.hasOwnProperty(prefix)) {
-      if (strBase[prefix].hasOwnProperty(id)) {
-        let s = strBase[prefix][id];
+      let s = ids.reduce((base, id) => base && base[id], strBase[prefix]);
+      if (s) {
         if (params) {
           for (let p in params) {
             if (params.hasOwnProperty(p)) {
@@ -32,10 +33,10 @@ module.exports.s = function (prefix, id, params) {
             }
           }
         }
-        return s;
+        return s;       
       }
     }
-    return id;
+    return ids[ids.length - 1];
   }
   return '';
 };

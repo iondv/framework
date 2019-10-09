@@ -14,6 +14,7 @@ const conditionParser = require('core/ConditionParser');
 const clone = require('clone');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
+const strings = require('core/strings');
 
 const defaultVersion = '___default';
 
@@ -70,6 +71,8 @@ function DsMetaRepository(options) {
    * @type {DataSource}
    */
   const ds = options.dataSource;
+
+  const __ = (...args) => strings.s('meta-captions', ...args);
 
   if (!ds) {
     throw 'Не указан источник данных мета репозитория!';
@@ -731,6 +734,17 @@ function DsMetaRepository(options) {
     }
   }
 
+  /**
+   * @param {ClassMeta} cm
+   */
+  function translateClassMeta(cm) {
+    cm.plain.caption = __('classMeta', cm.getCanonicalName(), cm.plain.caption, cm.plain);
+    const propertyMetas = cm.getPropertyMetas();
+    propertyMetas.forEach((pm) => {
+      pm.caption = __('classMeta', `${cm.getCanonicalName()}.${pm.name}`, cm.plain.caption, cm.plain);
+    });
+  }
+
   function acceptClassMeta(metas) {
     classMeta = {};
     for (let i = 0; i < metas.length; i++) {
@@ -844,6 +858,7 @@ function DsMetaRepository(options) {
               expandProperty(cm);
               setupSelections(cm);
               produceSemantics(cm);
+              translateClassMeta(cm);
             }
           }
         }
@@ -899,6 +914,15 @@ function DsMetaRepository(options) {
     return vm;
   }
 
+  function translateView(vm) {
+    vm.caption = __('views', `${vm.className}.${vm.type}`, vm.caption, vm);
+    return vm;
+  }
+
+  function prepareView(vm) {
+    return translateView(compileStyles(sortViewElements(vm)));
+  }
+
   function acceptViews(views) {
     viewMeta = {
       listModels: {},
@@ -913,8 +937,8 @@ function DsMetaRepository(options) {
 
     for (let i = 0; i < views.length; i++) {
       switch (views[i].type){
-        case 'list': assignVm(viewMeta.listModels, compileStyles(sortViewElements(views[i]))); break;
-        case 'collection': assignVm(viewMeta.collectionModels, compileStyles(sortViewElements(views[i]))); break;
+        case 'list': assignVm(viewMeta.listModels, prepareView(views[i])); break;
+        case 'collection': assignVm(viewMeta.collectionModels, prepareView(views[i])); break;
         case 'item': {
           let pathParts = views[i].path.split('.');
           let pathParts2 = pathParts[0].split(':');
@@ -938,14 +962,14 @@ function DsMetaRepository(options) {
               if (!viewMeta.workflowModels[wf].hasOwnProperty(state)) {
                 viewMeta.workflowModels[wf][state] = {};
               }
-              viewMeta.workflowModels[wf][state][cm.getCanonicalName()] = views[i];
+              viewMeta.workflowModels[wf][state][cm.getCanonicalName()] = prepareView(views[i]);
             }
           } else {
             assignVm(viewMeta.itemModels, compileStyles(sortViewElements(views[i])));
           }
         } break;
-        case 'create': assignVm(viewMeta.createModels, compileStyles(sortViewElements(views[i]))); break;
-        case 'detail': assignVm(viewMeta.detailModels, compileStyles(sortViewElements(views[i]))); break;
+        case 'create': assignVm(viewMeta.createModels, prepareView(views[i])); break;
+        case 'detail': assignVm(viewMeta.detailModels, prepareView(views[i])); break;
         case 'masks': viewMeta.masks[views[i].name] = views[i]; break;
         case 'validators': viewMeta.validators[views[i].name] = views[i]; break;
         default: break;
@@ -1101,6 +1125,7 @@ function DsMetaRepository(options) {
         for (let name in navMeta.nodes[ns]) {
           if (navMeta.nodes[ns].hasOwnProperty(name)) {
             navMeta.nodes[ns][name].children.sort((a, b) => a.orderNumber - b.orderNumber);
+            navMeta.nodes[ns][name].caption = __('navigation', navMeta.nodes[ns][name].code, navMeta.nodes[ns][name].caption);
           }
         }
       }
@@ -1109,27 +1134,20 @@ function DsMetaRepository(options) {
 
   function init() {
     return Promise.all(
-        [
-          ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
-          ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
-          ds.fetch(_this.viewTableName, {sort: {type: 1, className: -1, path: -1, version: 1}}),
-          ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
-          ds.fetch(_this.workflowTableName, {sort: {wfClass: -1, name: 1, version: 1}})
-        ]
-      ).then(
-        function (results) {
-          try {
-            acceptUserTypes(results[0]);
-            acceptClassMeta(results[1]);
-            acceptNavigation(results[3]);
-            acceptViews(results[2]);
-            acceptWorkflows(results[4]);
-            return Promise.resolve();
-          } catch (err) {
-            return Promise.reject(err);
-          }
-        }
-      );
+      [
+        ds.fetch(_this.userTypeTableName, {sort: {name: 1}}),
+        ds.fetch(_this.metaTableName, {sort: {name: 1, version: 1}}),
+        ds.fetch(_this.viewTableName, {sort: {type: 1, className: -1, path: -1, version: 1}}),
+        ds.fetch(_this.navTableName, {sort: {itemType: -1, name: 1}}),
+        ds.fetch(_this.workflowTableName, {sort: {wfClass: -1, name: 1, version: 1}})
+      ]
+    ).then((results) => {
+      acceptUserTypes(results[0]);
+      acceptClassMeta(results[1]);
+      acceptNavigation(results[3]);
+      acceptViews(results[2]);
+      acceptWorkflows(results[4]);
+    });
   }
 
   /**

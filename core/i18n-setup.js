@@ -13,6 +13,9 @@ const path = require('path');
  * @returns {Promise}
  */
 function i18nSetup(lang, dir, prefix, log) {
+  if (!lang || !dir) {
+    return Promise.resolve();
+  }
   prefix = prefix || 'i18n';
   const msgDir = path.join(toAbsolute(dir), lang);
   let base;
@@ -33,6 +36,7 @@ function i18nSetup(lang, dir, prefix, log) {
         base = merge(base, msg);
       });
       strings.registerBase(prefix, base);
+      log && log.info(`i18n settings for language "${lang}" registered from path "${dir}"`);
     });
 }
 
@@ -43,6 +47,9 @@ function i18nSetup(lang, dir, prefix, log) {
  * @param {Logger} [log]
  */
 function i18nSetupSync(lang, dir, prefix, log) {
+  if (!lang || !dir) {
+    return;
+  }
   prefix = prefix || 'i18n';
   const msgDir = path.join(toAbsolute(dir), lang);
   let base;
@@ -69,7 +76,9 @@ function i18nSetupSync(lang, dir, prefix, log) {
     false
   );
   strings.registerBase(prefix, base);
+  log && log.info(`i18n settings for language "${lang}" registered from path "${dir}"`);
 }
 
+module.exports = i18nSetupSync;
 module.exports.i18nSetup = i18nSetup;
 module.exports.i18nSetupSync = i18nSetupSync; // eslint-disable-line no-sync
