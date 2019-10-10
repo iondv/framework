@@ -598,9 +598,14 @@ function DsMetaRepository(options) {
     cm.___structs_expanded = true;
   }
 
+  function translateUserType(type) {
+    type.caption = __('userTypes', type.name, type.caption);
+    return type;
+  }
+
   function acceptUserTypes(types) {
     for (let i = 0; i < types.length; i++) {
-      userTypes[types[i].name] = types[i];
+      userTypes[types[i].name] = translateUserType(types[i]);
     }
   }
 
@@ -741,8 +746,9 @@ function DsMetaRepository(options) {
     cm.plain.caption = __('classMeta', cm.getCanonicalName(), cm.plain.caption, cm.plain);
     const propertyMetas = cm.getPropertyMetas();
     propertyMetas.forEach((pm) => {
-      pm.caption = __('classMeta', `${cm.getCanonicalName()}.${pm.name}`, cm.plain.caption, cm.plain);
+      pm.caption = __('classMeta', cm.getCanonicalName(), cm.plain.caption, cm.plain);
     });
+    return cm;
   }
 
   function acceptClassMeta(metas) {
@@ -916,6 +922,17 @@ function DsMetaRepository(options) {
 
   function translateView(vm) {
     vm.caption = __('views', `${vm.className}.${vm.type}`, vm.caption, vm);
+    Array.isArray(vm.commands) && vm.commands.forEach((cmd) => {
+      cmd.caption = __('views', `${vm.className}.${vm.type}`, cmd.caption);
+    });
+    Array.isArray(vm.tabs) && vm.tabs.forEach((tab) => {
+      Array.isArray(tab.fullFields) && tab.fullFields.forEach((ff) => {
+        ff.caption = __('views', `${vm.className}.${vm.type}`, ff.caption);
+      });
+      Array.isArray(tab.shortFields) && tab.shortFields.forEach((sf) => {
+        sf.caption = __('views', `${vm.className}.${vm.type}`, sf.caption);
+      });
+    });
     return vm;
   }
 
@@ -975,6 +992,17 @@ function DsMetaRepository(options) {
         default: break;
       }
     }
+  }
+
+  function translateWorkflow(wf) {
+    wf.caption = __('workflows', `${wf.wfClass}.${wf.name}`, wf.caption);
+    Array.isArray(wf.states) && wf.states.forEach((st) => {
+      st.caption = __('workflows', `${wf.wfClass}.${wf.name}`, st.caption);
+    });
+    Array.isArray(wf.transitions) && wf.transitions.forEach((tr) => {
+      tr.caption = __('workflows', `${wf.wfClass}.${wf.name}`, tr.caption);
+    });
+    return wf;
   }
 
   function acceptWorkflows(workflows) {
@@ -1052,7 +1080,7 @@ function DsMetaRepository(options) {
           wf.transitionsByDest[wf.transitions[j].finishState].push(wf.transitions[j]);
         }
 
-        workflowMeta[ns][wfClass][wf.name].push(wf);
+        workflowMeta[ns][wfClass][wf.name].push(translateWorkflow(wf));
       } catch (e) {
         if (options.log) {
           options.log.warn(e);
