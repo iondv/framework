@@ -6,6 +6,7 @@
   "templates.default.enter": "Вход в систему",
   "templates.default.login.title": "Вход",
   "templates.default.login.register": "Зарегистрироваться",
+  "templates.default.login.signin": "Войти",
   "templates.default.changePwd.title": "Смена пароля",
   "templates.default.changePwd.newPwd": "Новый пароль",
   "templates.default.changePwd.changePwd": "Изменить пароль",
