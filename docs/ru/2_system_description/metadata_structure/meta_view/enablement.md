@@ -1,13 +1,13 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Условия отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md)
+### Предыдущая страница: [Условия отображения](visibility.md)
 
 # Условия активности
 
 ## Описание
 
 **Условия активности** - задают условия активности, то есть доступности  поля для редактирования в представлении.
-Синтаксис условий такой же, как в [условиях отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md).
+Синтаксис условий такой же, как в [условиях отображения](visibility.md).
 
 ### Пример в JSON:
 ```
@@ -87,12 +87,13 @@
           "tags": null
         }
 ```
-### Следующая страница: [Условия обязательности](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)
+### Следующая страница: [Условия обязательности](obligation.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

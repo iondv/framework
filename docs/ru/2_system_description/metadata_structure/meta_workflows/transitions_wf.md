@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Статус бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)
+### Предыдущая страница: [Статус бизнес-процесса](status_wf.md)
 
 # Переходы бизнес-процесса
 
@@ -58,7 +58,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [The key attributes](/docs/en/2_system_description/metadata_structure/meta_class/key.md)
+### The previous page: [The key attributes](key.md)
 
 # Collection base
 
@@ -112,11 +112,12 @@ In the `backref_searchRefs` class we have the `backref_searchRefs_binding` and `
 ```
 
 
-### The next page: [Criteria of abstraction](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)
+### The next page: [Criteria of abstraction](abstract.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_descriptionmetadata_structure/meta_class/binding.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_descriptionmetadata_structure/meta_class/binding.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

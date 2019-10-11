@@ -108,7 +108,7 @@ function AclMetaMap(options) {
               })
               .catch((err) => {
                 if (options.log instanceof Logger) {
-                  options.log.warn(err.message || err);
+                  options.log.error(err);
                 }
               });
           } else if (prop.meta.type === PropertyTypes.COLLECTION) {
@@ -144,7 +144,7 @@ function AclMetaMap(options) {
                 .then(() => options.dataRepo.getAssociationsList(item, j, opts))
                 .catch((err) => {
                   if (options.log instanceof Logger) {
-                    options.log.warn(err.message || err);
+                    options.log.error(err);
                   }
                   return [];
                 })
@@ -163,29 +163,31 @@ function AclMetaMap(options) {
   function walkItems(items, cb, cache, skipCb) {
     let p = Promise.resolve();
     items.forEach((item) => {
-      p = p.then(() => {
-        let config = locateMap(item.getMetaClass());
-        if (!config) {
-          return;
-        }
-        if (!cache[item.getClassName()]) {
-          cache[item.getClassName()] = {};
-        }
-        if (!cache[item.getClassName()][item.getItemId()]) {
-          cache[item.getClassName()][item.getItemId()] = item;
-
-          let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
-          let cbr = (skipCb || !sid) ? Promise.resolve() : cb(sid);
-          if (!(cbr instanceof Promise)) {
-            cbr = Promise.resolve(cbr);
+      if (item instanceof Item) {
+        p = p.then(() => {
+          let config = locateMap(item.getMetaClass());
+          if (!config) {
+            return;
           }
-          return cbr.then(() => jump(item, cb, cache));
-        }
-      }).catch((err) => {
-        if (options.log instanceof Logger) {
-          options.log.warn(err.message || err);
-        }
-      });
+          if (!cache[item.getClassName()]) {
+            cache[item.getClassName()] = {};
+          }
+          if (!cache[item.getClassName()][item.getItemId()]) {
+            cache[item.getClassName()][item.getItemId()] = item;
+
+            let sid = config.sidAttribute ? item.get(config.sidAttribute) : null;
+            let cbr = (skipCb || !sid) ? Promise.resolve() : cb(sid);
+            if (!(cbr instanceof Promise)) {
+              cbr = Promise.resolve(cbr);
+            }
+            return cbr.then(() => jump(item, cb, cache));
+          }
+        }).catch((err) => {
+          if (options.log instanceof Logger) {
+            options.log.error(err);
+          }
+        });
+      }
     });
     return p;
   }
@@ -206,7 +208,7 @@ function AclMetaMap(options) {
     return options.dataRepo.getList(entry._cn, opts)
       .catch((err) => {
         if (options.log instanceof Logger) {
-          options.log.warn(err.message || err);
+          options.log.error(err);
         }
         return [];
       })

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Options](/docs/ru/2_system_description/metadata_structure/meta_view/options.md)
+### The previous page: [Options](options.md)
 
 ## Maintenance of project documents
 
@@ -135,12 +135,13 @@ You can specify it in the `deploy.json` file of the project.
 }
 ```
 
-### The next page: [Comments](/docs/en/2_system_description/metadata_structure/meta_view/comments.md)
+### The next page: [Comments](comments.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/fileshare.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/fileshare.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,12 +1,13 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Functionality](/docs/en/2_system_description/functionality/functionality.md)
+### Back: [Functionality](functionality.md)
 
 # Electronic-numerical signature 
-
 ## Description
 
 **Electronic-numerical signature (EDS)** - refers to data in electronic form, which is logically associated with other data in electronic form and which is used by the signatory to sign. It is designed to protect this electronic document from forgery, obtained as a result of cryptographic transformation of information using the private key of an electronic digital signature. It allows you to identify the owner of the certificate key signature and establish that there is no distortion of information in the electronic document.
+
+RELEASED FOR RUSSIA ONLY
 
 ## Purpose of use
 
@@ -84,7 +85,8 @@ In the `workflows/indicatorValueBasic.wf.json` worflow add a transition with the
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/functionality/eds.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/functionality/eds.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

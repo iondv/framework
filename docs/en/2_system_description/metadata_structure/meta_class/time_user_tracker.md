@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Ancestor](/docs/en/2_system_description/metadata_structure/meta_class/ancestor.md)
+### The previous page: [Ancestor](ancestor.md)
 
 # Time tag of created objects and committed changes
 
@@ -165,11 +165,12 @@ These are the following fields of the main part of the meta class:
 
 ```
 
-### The next page: [Journaling the changes](/docs/en/2_system_description/metadata_structure/meta_class/journaling.md) 
+### The next page: [Journaling the changes](journaling.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/time_user_tracker.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/time_user_tracker.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

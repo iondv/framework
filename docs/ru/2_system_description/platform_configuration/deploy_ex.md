@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Конфигурационный файл deploy.json](/docs/ru/2_system_description/platform_configuration/deploy.md)
+### Назад: [Конфигурационный файл deploy.json](deploy.md)
 
 ## Файл `deploy.json` на примере приложения "Project management system"
  
@@ -832,7 +832,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/platform_configuration/deploy_ex.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

@@ -12,18 +12,18 @@
 |:-------------|:--------|:-------------|
 | `"namespace":`   |  **Project name**  | The project namespace.  |
 | `"parametrised": true,`| **Parameterization**   | The parameterization settings. Set the "true" value to spesify the parameters to which, the system transfers the variables defined in ini-files or variables of the project environment when building the application.     |
-| `"globals": {`     |  [**Global settings**](/docs/en/2_system_description/platform_configuration/deploy_globals.md)  | Global configuration settings.   |
+| `"globals": {`     |  [**Global settings**](deploy_globals.md)  | Global configuration settings.   |
 | `"deployer": "built-in"`    | **Builds**   | The built configuration parameter. Currently, it is the only one.  |
-| `"modules"`     |  [**Modules settings**](/docs/en/2_system_description/platform_configuration/deploy_modules.md)  | Module configuration settings.  |
+| `"modules"`     |  [**Modules settings**](deploy_modules.md)  | Module configuration settings.  |
 
-## The [full example](/docs/en/2_system_description/platform_configuration/deploy_ex.md) of the "deploy.json" file
+## The [full example](deploy_ex.md) of the "deploy.json" file
 
-### The next page: [Dependencies in package.json](/docs/en/2_system_description/platform_configuration/package.md)
+### The next page: [Dependencies in package.json](package.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/deploy.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

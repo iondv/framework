@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Time and user tag of created objects and committed changes](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)
+### The previous page: [Time and user tag of created objects and committed changes](time_user_tracker.md)
 
 # Journaling the changes 
 
@@ -26,11 +26,12 @@
 ```  
 
 
-### The next page: [Composite indexation](/docs/en/2_system_description/metadata_structure/meta_class/composite_indexes.md)
+### The next page: [Composite indexation](composite_indexes.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

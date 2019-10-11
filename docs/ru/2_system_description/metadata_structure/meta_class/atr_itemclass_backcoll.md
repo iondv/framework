@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Атрибут cсылка](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### Предыдущая страница: [Атрибут cсылка](atr_ref_backref.md)
 
 # Коллекция
 
@@ -267,11 +267,12 @@
 
 
 
-### Следующая страница: [Условия отбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)  
+### Следующая страница: [Условия отбора допустимых значений](atr_selconditions.md)  
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

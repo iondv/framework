@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Journaling](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)
+### The previous page: [Journaling](journaling.md)
 
 # Composite indexation  
 
@@ -128,11 +128,12 @@ Composite indexation is located in the `"compositeIndexes"` field, which allows 
 
 
 
-### The next page: [Meta class - attribute part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_attribute.md)
+### The next page: [Meta class - attribute part](meta_class_attribute.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/composite_indexes.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/composite_indexes.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

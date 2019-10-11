@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Key attribute](/docs/en/2_system_description/metadata_structure/meta_class/key.md)
+### The previous page: [Key attribute](key.md)
 
 # Semantics
  
@@ -57,11 +57,12 @@ Here you can use additional words and expressions using the `|` sign, for exampl
 
 6. In the creation form, if an object is created in a collection or a reference, we display the following line in fine print "Creating an object in the collection/by reference <...> object <...>" above the title. 
 
-### The next page: [Criteria of abstraction for class](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)
+### The next page: [Criteria of abstraction for class](abstract.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/semantic.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/semantic.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

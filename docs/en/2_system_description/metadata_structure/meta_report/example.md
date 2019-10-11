@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Meta report](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)
+### Back: [Meta report](meta_report.md)
 
 ### Example of a simple full report 
 
@@ -182,7 +182,7 @@ reports:
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_report/example.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_report/example.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

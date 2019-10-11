@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)  
+### The previous page: [Attribute types](property_types.md)  
 
 # Attribute indexation
 
@@ -25,11 +25,12 @@ Except for the following attribute types:
 
 **NB:** The indexation of the attributes of the "Text" [1] and "HTML" [2] types is prohibited. Because the MongoDB has a limit on the size of the indexed value, and the size of the attribute values of these types may exceed the allowable size.
 
-### The next page: [Autocompletion](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
+### The next page: [Autocompletion](atr_autoassigned.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_indexed.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_indexed.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

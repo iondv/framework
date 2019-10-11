@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Step 1 Installing the environment](docs/en/1_system_deployment/step1_installing_environment.md)
+### The previous page: [Step 1 Installing the environment](step1_installing_environment.md)
 
 # Step 2 Core, modules and application
 
@@ -17,27 +17,24 @@ We are going to use the `develop-and-test` application as an example.
 3. Open the `package.json` file to check all the dependencies.
 
 ```
-  "engines": {
-    "ion": "1.24.1"
+ "engines": {
+    "ion": "3.0.0"
   },
   "ionModulesDependencies": {
-    "registry": "1.27.1",
+    "registry": "3.0.0",
     "geomap": "1.5.0",
-    "graph": "1.3.2",
-    "portal": "1.3.0",
-    "report": "1.9.2",
-    "ionadmin": "1.4.0",
+    "portal": "1.4.0",
+    "report": "2.0.0",
+    "ionadmin": "2.0.0",
     "dashboard": "1.1.0",
-    "lk": "1.0.1",
-    "soap": "1.1.2",
-    "gantt-chart": "0.8.0"
+    "soap": "1.1.2"
   },
   "ionMetaDependencies": {
     "viewlib": "0.9.1"
-    "viewlib-extra": "0.1.0"
+  }
 ```
 
-1. `engines": "ion": 1.24.1` - core version `1.24.1`.  
+1. `engines": "ion": 3.0.0` - core version `3.0.0`.  
 
 2. `ionModulesDependencies` - list of modules and its versions.  
 
@@ -95,14 +92,9 @@ auth.denyTop=false
 auth.registration=false 
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
-db.uri=mongodb://127.0.0.1:27017/db
-db.user=username
-db.pwd=password
+db.uri=mongodb://127.0.0.1:27017/iondv-dnt-db
 server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
 module.default=registry
-module.skip[]=offline-sync
 fs.storageRoot=./files
 fs.urlBase=/files
 
@@ -110,41 +102,13 @@ fs.urlBase=/files
 
 The most important parameter is `db.uri=mongodb://127.0.0.1:27017/ion-dnt`. It indicates the the DB name used for the application. The DB will be created automatically.  
 
-### Example of the `setup.ini` file with comments
-
-```
-auth.denyTop=false // - true if platform-level authentication is not needed, and each module will authenticate itself
-auth.registration=false // if registration is not required
-
-// Exceptions to security access checks
-auth.exclude[]=/files/**
-auth.exclude[]=/images/**
-
-db.uri=mongodb://127.0.0.1:27017/db // DB URI connection
-db.user=username // DB user
-db.pwd=password // DB user password
-
-// running the system on these ports
-server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
-
-module.default=registry // modules by default
-
-module.skip[]=offline-sync // disabled modules
-
-// file storage settings
-fs.storageRoot=./files // root directory of the file storage
-fs.urlBase=/files // base for publishing files in http (base of URL files)
-```
-The example of the `setup.ini` file requires to delete all comments, starting with `//` symbols.
-
-### The next page: [Step 3 Build, deploy and start of the application](/docs/en/1_system_deployment/step3_building_and_running.md)
+### The next page: [Step 3 Build, deploy and start of the application](/step3_building_and_running.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/1_system_deployment/step2_project_with_modules.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/1_system_deployment/step2_project_with_modules.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

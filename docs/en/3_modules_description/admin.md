@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Module](/docs/en/3_modules_description/modules.md)
+### Back: [Module](modules.md)
 
 # The ionadmin module
 
@@ -78,12 +78,13 @@ Setting in the *ionmodule/config*:
 
 ## User's guide for ionadmin security
 
-User's guide for ionadmin security is [here](/docs/en/3_modules_description/admin_security.md).
+User's guide for ionadmin security is [here](admin_security.md).
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/admin.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/3_modules_description/admin.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

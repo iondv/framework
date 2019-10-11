@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta node navigation](docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) 
+### The previous page: [Meta node navigation](/docs/en/2_system_description/metadata_structure/meta_navigation/navigation_nodes.md) 
 
 # Meta workflow
 
@@ -30,8 +30,8 @@
 |`"caption"`| Logical name   | Workflow logical name.|
 |`"wfClass"`| Workflow class | Class to apply the workflow.|
 |`"startState"`| Status   | Status assigned to the beginning of the workflow.|
-|`"states"`|  [List of statuses](/docs/en/2_system_description/metadata_structure/meta_workflows/status_wf.md) | List of workflow statuses. |
-|`"transitions"`|  [Transitions](/docs/en/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)  | Transitions between  business process statuses. |
+|`"states"`|  [List of statuses](status_wf.md) | List of workflow statuses. |
+|`"transitions"`|  [Transitions](transitions_wf.md)  | Transitions between  business process statuses. |
 |`"metaVersion"`|  Versioning | Metadata versions.
 
 ## "Сontains" condition
@@ -122,12 +122,13 @@ Configure the utility in the deploy.json of the project. Syntax settings:
 }
 ```
 
-### The next page: [Workflow statuses](/docs/en/2_system_description/metadata_structure/meta_workflows/status_wf.md)
+### The next page: [Workflow statuses](status_wf.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 
