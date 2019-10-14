@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Функциональность](/docs/ru/2_system_description/functionality/functionality.md)
+### Назад: [Функциональность](functionality.md)
 
 # Фильтры на форме представления списка
 
@@ -68,7 +68,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/functionality/filter.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/functionality/filter.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -1,13 +1,13 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Activity conditions](/docs/en/2_system_description/metadata_structure/meta_view/enablement.md)
+### The previous page: [Activity conditions](enablement.md)
 
 # Obligation conditions
 
 ## Description
 
 **Obligation conditions** - set the condition to make the field mandatory in the view.
-The syntax is the same as in the [visibility conditions](/docs/en/2_system_description/metadata_structure/meta_view/visibility.md).
+The syntax is the same as in the [visibility conditions](visibility.md).
 
 Under this condition, the attribute becomes mandatory, otherwise the attribute remains the same as it was specified in the view before the obligation condition was applied.
 
@@ -90,12 +90,13 @@ Under this condition, the attribute becomes mandatory, otherwise the attribute r
         }
 
 ```
-### The next page: [Tags](/docs/en/2_system_description/metadata_structure/meta_view/tags.md)
+### The next page: [Tags](tags.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

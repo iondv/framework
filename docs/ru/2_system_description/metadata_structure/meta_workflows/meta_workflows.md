@@ -30,8 +30,8 @@
 |`"caption"`| Логическое имя   |логическое имя бизнес-процесса|
 |`"wfClass"`| Класс БП | Класс, к которому применяется бизнес-процесс|
 |`"startState"`| Статус   | Статус, присвоенный началу бизнес-процесса|
-|`"states"`|  [Список статусов](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md) | Список статусов бизнес-процесса. |
-|`"transitions"`|  [Переходы](/docs/ru/2_system_description/metadata_structure/meta_workflows/transitions_wf.md)  | Переходы между статусами для бизнес-процесса. |
+|`"states"`|  [Список статусов](status_wf.md) | Список статусов бизнес-процесса. |
+|`"transitions"`|  [Переходы](transitions_wf.md)  | Переходы между статусами для бизнес-процесса. |
 |`"metaVersion"`|  Версионирование | Версия метаданных.
 
 ## Условие "contains" ("содержит")
@@ -119,12 +119,13 @@ state - имя этапа БП
 }
 ```
 
-### Следующая страница: [Статусы бизнес-процесса](/docs/ru/2_system_description/metadata_structure/meta_workflows/status_wf.md)
+### Следующая страница: [Статусы бизнес-процесса](status_wf.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_workflows/meta_workflows.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

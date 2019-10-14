@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### Back: [Configuration file - deploy.json](deploy.md)
 
 ## The `deploy.json` file on the example of the "Project management system" application
  
@@ -832,9 +832,10 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Rissian](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Rissian](/docs/ru/2_system_description/platform_configuration/deploy_ex.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 
 Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 
+

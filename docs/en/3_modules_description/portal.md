@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Modules](/docs/en/3_modules_description/modules.md)
+### Back: [Modules](modules.md)
 
 # Portal module structure
 
@@ -206,7 +206,8 @@ An example of creating a navigation node:
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/portal.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/3_modules_description/portal.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 
