@@ -19,6 +19,7 @@ class Notifier extends INotifier {
    * @param {{}} options.dispatchers
    * @param {String} options.systemSender
    * @param {Logger} options.log
+   * @param {{}} options.app
    * @param {String} options.tplDir
    * @param {{}} [options.templates]
    */
@@ -31,6 +32,7 @@ class Notifier extends INotifier {
     this.system = options.systemSender || 'ion.system';
     this.log = options.log;
     this.templates = options.templates;
+    this.app =options.app;
   }
 
   /**
@@ -62,7 +64,8 @@ class Notifier extends INotifier {
               tpl,
               {
                 subject: notification.subject,
-                message: notification.message
+                message: notification.message,
+                getBaseUrl: this.app.getBaseUrl
               },
               {},
               (err, content) => {
