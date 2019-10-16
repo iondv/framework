@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [View types](/docs/ru/2_system_description/metadata_structure/meta_view/view_types.md)
+### The previous page: [View types](view_types.md)
 
 # Input masks
 
@@ -134,12 +134,13 @@ Masks are also used with "regex".
 
 Use the `"maskName"` field of the attribute part of the meta view to set the mask from the mask preset. **To be realized.**
 
-### The next page: [Fields](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)
+### The next page: [Fields](fields.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/mask.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_view/mask.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

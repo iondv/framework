@@ -52,19 +52,19 @@ process.argv.forEach(function (val) {
 
 if (!params.aclDir) {
   if (!params.roles.length) {
-    console.error('Не указаны роли!');
+    console.error('Roles are not listed!');
     process.exit(130);
   }
 
   if (!params.users.length && !params.resources.length && !params.permissions.length) {
-    console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
+    console.error('Neither users, resources, nor rights are specified!');
     process.exit(130);
   }
 }
 
 let sysLog = new IonLogger(config.log || {});
 
-// Связываем приложение
+// Link the application
 di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then(scope =>
     di(
@@ -99,7 +99,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   })
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Права назначены');
+    console.info('Rights assigned');
     process.exit(0);
   })
   .catch((err) => {

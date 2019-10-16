@@ -83,7 +83,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
         if (components.hasOwnProperty(nm)) {
           return loadComponent(nm, components[nm], scope, components, init, skip, cwd);
         }
-        throw new Error('Не найден компонент с именем ' + nm + '.');
+        throw new Error('No component found with this name ' + nm + '.');
       } else if (options.substr(0, 7) === 'lazy://') {
         let nm = options.substr(7);
         if (!nm && skip && skip.indexOf(nm) >= 0) {
@@ -92,7 +92,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
         if (components.hasOwnProperty(nm)) {
           return createProxy(scope, options.substr(7));
         }
-        throw new Error('Не найден компонент с именем ' + nm + '.');
+        throw new Error('No component found with this name ' + nm + '.');
       }
       return options;
     } else if (options instanceof Array) {
@@ -142,7 +142,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (scope.hasOwnProperty(name)) {
       return scope[name];
     } else {
-      throw new Error('Компонент ' + name + ' имеет циклическую зависимость с другим компонентом.');
+      throw new Error(' ' + name + ' component has a cyclical dependency with another component.');
     }
   }
 
@@ -163,7 +163,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
       };
       if (component.initMethod) {
         if (typeof F[component.initMethod] != 'function') {
-          throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
+          throw new Error(' ' + component.initMethod + ' component method not found' + name);
         }
         result[component.initMethod] = F[component.initMethod];
       }
@@ -237,10 +237,10 @@ function di(context, struct, presets, parentContext, skip, cwd) {
       if (typeof c[initiator.initMethod] == 'function') {
         p = p.then(() => c[initiator.initMethod].call(c, scope));
       } else {
-        return Promise.reject(new Error('Не найден метод ' + initiator.initMethod + ' компонента ' + initiator.name));
+        return Promise.reject(new Error(' ' + initiator.initMethod + ' component method not found' + initiator.name));
       }
     } else {
-      return Promise.reject(new Error('Не найден компонент ' + initiator.name));
+      return Promise.reject(new Error('Component not found ' + initiator.name));
     }
     p = p.then();
   });

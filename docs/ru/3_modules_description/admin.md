@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Назад: [Модули](/docs/ru/3_modules_description/modules.md)
+### Назад: [Модули](modules.md)
 
 # Модуль ionadmin
 
@@ -78,12 +78,13 @@
 
 ## Руководство пользователя по безопасности
 
-Руководство пользователя по безопасности находится [здесь](/docs/ru/3_modules_description/admin_security.md).
+Руководство пользователя по безопасности находится [здесь](admin_security.md).
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/3_modules_description/admin.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/3_modules_description/admin.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

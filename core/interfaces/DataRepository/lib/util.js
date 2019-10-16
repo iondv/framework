@@ -10,6 +10,7 @@ const conditionParser = require('core/ConditionParser');
 const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
+const DateSize = require('core/DateSizes');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
@@ -47,7 +48,7 @@ function castValue(value, pm) {
     }
     let rpm = pm._refClass.getPropertyMeta(refkey[0]);
     if (!rpm) {
-      throw new Error(`Не найден атрибут "${refkey[0]}" класса "${pm._refClass.getCaption()}"!`);
+      throw new Error(`Attribue not found"${refkey[0]}" Class "${pm._refClass.getCaption()}"!`);
     }
     return castValue(value, rpm);
   } else if (pm.type === PropertyTypes.BOOLEAN) {
@@ -65,6 +66,22 @@ function castValue(value, pm) {
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
     v = dateOffset(v, pm.mode);
+    switch (pm.size) {
+      case DateSize.SECONDS:
+        v.setMilliseconds(0);
+        break;
+      case DateSize.MINUTES:
+        v.setSeconds(0, 0);
+        break;
+      case DateSize.HOURS:
+        v.setMinutes(0, 0, 0);
+        break;
+      case DateSize.DAY:
+        v.setHours(0, 0, 0, 0);
+        break;
+      default:
+        break;
+    }
   }
   return v;
 }
@@ -150,7 +167,7 @@ module.exports.formDsUpdatedData = formUpdatedData;
  */
 function filterByItemIds(keyProvider, cm, ids) {
   if (!Array.isArray(ids)) {
-    throw new Error('неправильные данные');
+    throw new Error('incorrect data');
   }
   if (cm.getKeyProperties().length === 1) {
     let filter = [];
@@ -216,7 +233,7 @@ function joinColl(cm, pm, joins, context, numGen) {
   let colMeta = pm._refClass;
 
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-    throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+    throw new Error('Terms for collections on composite keys are not supported!');
   }
 
   let tbl = tn(colMeta);
@@ -250,11 +267,11 @@ function prepareContains(cm, filter, joins, numGen, context) {
   let nm = filter[0].substr(1);
   let pm = findPm(cm, nm);
   if (!pm) {
-    throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+    throw new Error('Attribute not found ' + nm + ' class ' + cm.getCanonicalName());
   }
 
   if (pm.type !== PropertyTypes.COLLECTION) {
-    throw new Error('Операция contains не применима к атрибуту ' + nm + ' класса ' + cm.getCanonicalName());
+    throw new Error('contains operation is not applicable to the attribute of the ' + nm + ' class ' + cm.getCanonicalName());
   }
 
   return prepareFilterOption(pm._refClass, filter[1], joins, numGen, joinColl(cm, pm, joins, context, numGen));
@@ -271,14 +288,14 @@ function prepareSize(cm, filter, joins, numGen, context) {
     let nm = filter[0].substr(1);
     let pm = findPm(cm, nm);
     if (!pm) {
-      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+      throw new Error('Attribute not found ' + nm + ' class ' + cm.getCanonicalName());
     }
 
     if (pm.type !== PropertyTypes.COLLECTION) {
       return {[Operations.SIZE]: [filter[0]]};
     }
 
-    // TODO Реализовать возможность обращения через несколько уровней вложенности
+    // TODO Implement the ability to access through multiple levels of nesting 
 
     return {[dsOperations.JOIN_SIZE]: join(pm, cm, pm._refClass, null, context)};
   }
@@ -299,15 +316,15 @@ function prepareEmpty(cm, filter, empty, joins, numGen, context) {
   if (nm.indexOf('.') < 0) {
     let pm = findPm(cm, nm);
     if (!pm) {
-      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+      throw new Error('Attribute not found ' + nm + ' class ' + cm.getCanonicalName());
     }
     if (pm.type === PropertyTypes.COLLECTION) {
       let colMeta = pm._refClass;
       if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-        throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+        throw new Error('Terms for collections on composite keys are not supported!');
       }
 
-      // TODO Реализовать возможность обращения через несколько уровней вложенности
+      // TODO Implement the ability to access through multiple levels of nesting 
 
       if (empty) {
         return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null, context)};
@@ -364,7 +381,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
   if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) && path.length > 1) {
     let rMeta = pm._refClass;
     if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
-      throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
+      throw new Error('Terms on composite keys links are not supported!');
     }
     let tbl = tn(rMeta);
     let alias = '';
@@ -377,7 +394,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
         left: (context ? context.alias + '.' : '') +
                 (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-        // filter: addDiscriminatorFilter(null, rMeta), TODO: Вернуть когда уйдем от монги, или вынести в настройку
+        // filter: addDiscriminatorFilter(null, rMeta),  TODO: Return when we get away from Mongi, or make it in settings 
         alias: alias
       };
       joins.push(j);
@@ -538,13 +555,13 @@ function createSearchRegexp(search, mode, asString) {
   return new RegExp(result, 'i');
 }
 
-function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
+function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode, strictSearch) {
   if (pm.selectionProvider) {
     spFilter(cm, pm, or, createSearchRegexp(sv, mode), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
       return searchFilter(scope, pm._refClass, or,
-        {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
+        {searchBy: pm._refClass.getSemanticAttrs(), strictSearch}, sv, lang, false,
         (prefix || '') + pm.name + '.', depth - 1, mode);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
@@ -572,7 +589,10 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
+          if (strictSearch)
+            or.push({[Operations.EQUAL]: [aname, sv]});
+          else
+            or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
           pm.type === PropertyTypes.INT ||
@@ -639,7 +659,7 @@ function fillSearchIds(scope, scm, opts, ids, sv, lang, depth) {
  * @param {{}} scope
  * @param {ClassMeta} cm
  * @param {Array} or
- * @param {{searchBy: String[], splitBy: String, mode: String[]}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], strictSearch: Boolean}} opts
  * @param {Array} [opts.searchByRefs]
  * @param {String} sv
  * @param {String} lang
@@ -710,11 +730,11 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           result = result ? result.then(
             () => attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i])
+              d, smodes[i], opts.strictSearch)
           ) :
             attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i]);
+              d, smodes[i], opts.strictSearch);
         }
       } else {
         let pm = cm.getPropertyMeta(nm);
@@ -722,8 +742,8 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           if (pm.indexSearch && useFullText) {
             fullText = true;
           }
-          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
+          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch)) :
+            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch);
         }
       }
     }
@@ -742,7 +762,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
 
 /**
  * @param {ClassMeta} cm
- * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String, strictSearch: Boolean}} opts
  * @param {String} sv
  * @param {String} lang
  * @param {Boolean} useFullText

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Computable fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)
+### The previous page: [Computable fields](atr_formula.md)
 
 # Cached values of computable attribute
 
@@ -99,11 +99,12 @@ The value of this attribute, derived from the formula, is cached. Plus, to updat
 ```
 
 
-### The next page: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+### The next page: [Attribute types](property_types.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

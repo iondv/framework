@@ -99,8 +99,8 @@ function QueryParser() {
         return result;
       }
     }
-    // TODO: корректная обработка дат,
-    // скорее всего нужно отдельное соглашение как их записывать/распознавать
+    // TODO: correct date handling,
+    // most likely need a separate agreement on how to write / recognize them
     /*if (typeof obj === 'string') {
       let dv;
       try {

@@ -1,10 +1,10 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Modules](/docs/en/3_modules_description/modules.md)
+### Back: [Modules](modules.md)
 
 # The "gantt-chart" module 
 
-**The "gantt-chart" module** – is a central module designed specifically for working with data based on metadata structures - including project management, programs, events, etc.
+**The "gantt-chart" module** – is a module designed to display specific types of hierarchical data with dates.
 
 ## Configuration in deploy.json
 
@@ -133,7 +133,8 @@ It is used if the filter is configured for a column and allows you not to displa
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/gantt_chart.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/3_modules_description/gantt_chart.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

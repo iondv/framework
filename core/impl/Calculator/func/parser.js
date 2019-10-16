@@ -43,7 +43,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
       while (open > 0) {
         closeBracketPos = argsSrc.indexOf(')', bp);
         if (closeBracketPos < 0) {
-          throw new Error('Ошибка синтаксиса формулы во фрагменте "' + argsSrc + '".');
+          throw new Error('Formula syntax error in fragment "' + argsSrc + '".');
         }
 
         openBracketPos = argsSrc.indexOf('(', bp);
@@ -184,7 +184,9 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
                       p.meta._refClass.getCanonicalName(),
                       {
                         filter: {[F.EQUAL]: ['$' + p.meta.backRef, obj.getItemId()]},
-                        needed: needed || {}
+                        needed: needed || {},
+                        lang: obj.getLang(),
+                        tz: obj.tz
                       })
                       .then(items => items.length ? items[0] : null)
                 );
@@ -192,7 +194,11 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
                 return lazyLoader(
                   obj,
                   p.getName(),
-                  () => dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {needed: needed || {}})
+                  () => dr.getItem(p.meta._refClass.getCanonicalName(), p.getValue(), {
+                    needed: needed || {},
+                    lang: obj.getLang(),
+                    tz: obj.tz
+                  })
                 );
               }
             }
@@ -207,7 +213,11 @@ function objProp(obj, nm, dataRepoGetter, needed, options) {
           ) {
             let dr = dataRepoGetter();
             if (dr instanceof DataRepository) {
-              return lazyLoader(obj, p.getName(), () => dr.getAssociationsList(obj, p.getName(), {needed: needed || {}})
+              return lazyLoader(obj, p.getName(), () => dr.getAssociationsList(obj, p.getName(), {
+                  needed: needed || {},
+                  lang: obj.getLang(),
+                  tz: obj.tz
+                })
                 .catch((err) => {
                   if (err.code === Errors.ITEM_NOT_FOUND) {
                     return null;
@@ -294,7 +304,7 @@ function evaluate(formula, funcLib, dataRepoGetter, options) {
       let f = funcLib[func];
       let closeBracketPos = formula.lastIndexOf(')');
       if (closeBracketPos < 0) {
-        throw new Error('Ошибка синтаксиса формулы во фрагменте "' + formula + '"');
+        throw new Error('Formula syntax error in fragment "' + formula + '"');
       }
       let args = parseArgs(
         formula.substring(pos + 1, closeBracketPos).trim(),
@@ -308,7 +318,7 @@ function evaluate(formula, funcLib, dataRepoGetter, options) {
       }
       return funcLib[func](args);
     } else {
-      throw new Error('Не найдена функция ' + func);
+      throw new Error('Function not found' + func);
     }
   }
 

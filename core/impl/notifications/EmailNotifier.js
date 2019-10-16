@@ -88,7 +88,7 @@ class EmailNotifier extends INotificationSender {
           )
           .catch((err) => {
             if (this.log) {
-              this.log.warn('Не удалось отправить оповещения на адреса электронной почты: ', rcvrs.join(', '));
+              this.log.warn('Failed to send alerts to email addresses: ', rcvrs.join(', '));
               this.log.error(err);
             }
           });
@@ -116,7 +116,7 @@ class EmailNotifier extends INotificationSender {
             )
             .catch((err) => {
               if (this.log) {
-                this.log.warn('Не удалось отправить оповещение на электронную почту ' + reciever.email());
+                this.log.warn('Failed to send email alert ' + reciever.email());
                 this.log.error(err);
               }
             });

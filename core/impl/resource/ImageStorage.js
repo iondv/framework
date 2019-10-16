@@ -199,7 +199,7 @@ function ImageStorage(options) { // jshint ignore:line
     let mime = opts.mimetype || opts.mimeType || data.mimetype || data.mimeType;
 
     if (mime && mime.indexOf('image/') !== 0) {
-      return Promise.reject(new Error('Переданные данные не являются изображением!'));
+      return Promise.reject(new Error('Transmitted data is not an image!'));
     }
 
     let p = Promise.resolve();

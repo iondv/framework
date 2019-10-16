@@ -1,6 +1,6 @@
 /* eslint no-invalid-this:off */
 /**
- * Created by Данил on 10.10.2016.
+* Created on 10.10.2016.
  */
 'use strict';
 // jshint maxstatements: 30
@@ -130,10 +130,10 @@ function produceContainsFilter(rcm, condition, context, lang) {
       let tmp = toScalar(condition.value, context);
       return {[Operations.LIKE]: ['$' + condition.property, tmp[0]]};
     } else {
-      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new Error('CONTAINS condition not applicable to attribute ' + rcm.getCanonicalName() + '.' + condition.property);
     }
   } else {
-    throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
+    throw new Error('Attribute specified in the condition ' + rcm.getCanonicalName() + '.' + condition.property + ' not found');
   }
 }
 
@@ -199,7 +199,7 @@ function produceFilter(condition, type, rcm, context, lang, unar) {
 function produceAggregationOperation(condition, rcm, context, lang) {
   var an, av, pn, pm;
   if (!condition.value || !condition.value.length) {
-    throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
+    throw new Error('Incorrectly specified aggregation operation - there is no information about the class and property.');
   }
 
   if (condition.value.length === 1) {
@@ -302,7 +302,7 @@ function conditionParser(condition, rcm, context, lang) {
           }
           return {[Operations.IN]: ['$' + condition.property, arr]};
         }
-        default: throw new Error('Некорректный тип условия!');
+        default: throw new Error('Invalid condition type!');
       }
     } else {
       let oper = parseInt(condition.operation);
@@ -313,10 +313,10 @@ function conditionParser(condition, rcm, context, lang) {
             case OperationTypes.AND: return {[Operations.AND]: tmp};
             case OperationTypes.OR: return {[Operations.OR]: tmp};
             case OperationTypes.NOT: return {[Operations.NOT]: tmp};
-            default: throw new Error('Некорректный тип операции!');
+            default: throw new Error('Invalid operation type!');
           }
         } else {
-          throw new Error('Не указаны аргументы операции!');
+          throw new Error('Operation arguments are not specified!');
         }
       } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
@@ -327,10 +327,10 @@ function conditionParser(condition, rcm, context, lang) {
             case OperationTypes.AVG: return {[Operations.AVG]: tmp};
             case OperationTypes.SUM: return {[Operations.SUM]: tmp};
             case OperationTypes.COUNT: return {[Operations.COUNT]: tmp};
-            default: throw new Error('Некорректный тип операции!');
+            default: throw new Error('Invalid operation type!');
           }
         } else {
-          throw new Error('Не указаны аргументы операции!');
+          throw new Error('Operation arguments are not specified!');
         }
       } else if (Funcs.indexOf(oper) !== -1) {
         let tmp = [];
@@ -369,7 +369,7 @@ function conditionParser(condition, rcm, context, lang) {
           case OperationTypes.SUBSTR: return {[Operations.SUBSTR]: tmp};
           case OperationTypes.MOD: return {[Operations.MOD]: tmp};
           case OperationTypes.ABS: return {[Operations.ABS]: tmp};
-          default: throw new Error('Некорректный тип операции!');
+          default: throw new Error('Invalid operation type!');
         }
       } else if (condition.value && condition.value.length) {
         return toScalar(condition.value, context, PropertyTypes.STRING, lang);
@@ -377,7 +377,7 @@ function conditionParser(condition, rcm, context, lang) {
     }
   }
   return null;
-  // Throw new Error('Мета условий выборки не соответствует спецификации!');
+  // Throw new Error('The meta of sample conditions does not meet the specifications!');
 }
 
 module.exports = conditionParser;

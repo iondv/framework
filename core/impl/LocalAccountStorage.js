@@ -48,6 +48,7 @@ class LocalAccountStorage extends IAccountStorage {
           user.pwd = hash;
           user.pwdDate = new Date();
           user.disabled = false;
+          user.needPwdReset = (typeof user.needPwdReset == 'undefined') ? false : user.needPwdReset;
           this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user)
             .then((u) => {
               resolve(new User(u));
@@ -59,11 +60,12 @@ class LocalAccountStorage extends IAccountStorage {
       user.pwd = user.pwd ? user.pwd.hash : null;
       user.pwdDate = new Date();
       user.disabled = false;
+      user.needPwdReset = (typeof user.needPwdReset == 'undefined') ? false : user.needPwdReset;
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else if (user.type !== UserTypes.LOCAL) {
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else {
-      throw new Error('Не передан пароль');
+      throw new Error('Password not passed');
     }
   }
 
@@ -104,9 +106,9 @@ class LocalAccountStorage extends IAccountStorage {
               {[F.EQUAL]: ['$id', id]}
             ]
           },
-          {pwd, pwdDate}
+          {pwd, pwdDate, needPwdReset: false}
           )
-          .then(() => resolve(true))
+          .then(() => resolve(pwd))
           .catch(reject);
       });
     };
@@ -119,10 +121,10 @@ class LocalAccountStorage extends IAccountStorage {
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
           if (err) {
-            reject(new Error('Не удалось поменять пароль!'));
+            reject(new Error('Unable to change the password!'));
           }
           if (verified) {
-            reject(new Error('Новый пароль совпадает со старым!'));
+            reject(new Error('New password is the same as the old one!'));
           }
           writer(resolve, reject);
         });
@@ -190,14 +192,14 @@ class LocalAccountStorage extends IAccountStorage {
           }
           return new Promise((resolve, reject) => {
             if (!user.pwd && pwd || user.pwd && !pwd) {
-              return reject(new Error('Неверно указан пароль.'));
+              return reject(new Error('Invalid password.'));
             }
             checker.verifyAgainst(user.pwd, (err, verified) => {
               if (verified) {
                 return resolve(user);
               }
               if (!err) {
-                err = new Error('Неверно указан пароль.');
+                err = new Error('Invalid password.');
               }
               reject(err);
             });

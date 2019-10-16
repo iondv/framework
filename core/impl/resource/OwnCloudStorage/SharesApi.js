@@ -1,24 +1,13 @@
 const url = require('url');
-const request = require('request');
 const OwnCloudError = require('./OwnCloudError');
 const {urlResolver, slashChecker} = require('./util');
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
+const requester = require('core/util/request');
 
 const urlTypes = {
   OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
   SHARE: 'index.php/s/'
 };
-
-function requester(reqParams) {
-  return new Promise((resolve, reject) => {
-    request(reqParams, (err, res, body) => {
-      if (err) {
-        return reject(err);
-      }
-      return resolve(body);
-    });
-  });
-}
 
 function produceShare(obj) {
   if (Array.isArray(obj)) {
@@ -43,7 +32,7 @@ function parseShareResponse(body) {
     try {
       body = JSON.parse(body);
     } catch (err) {
-      throw new Error('Некорректный ответ сервера owncloud');
+      throw new OwnCloudError('Invalid reponse from owncloud server', null, body);
     }
   }
 
@@ -68,7 +57,7 @@ class SharesApi {
    */
   constructor(options) {
     if (!options.url || !options.login || !options.password) {
-      throw new Error('не указаны параметры подключения (url, login, password)');
+      throw new Error('connection parameters are not specified (url, login, password)');
     }
 
     this.options = options;
@@ -85,7 +74,7 @@ class SharesApi {
       case ShareAccessLevel.READ: return '1';
       case ShareAccessLevel.WRITE: return '15';
       default:
-        throw new Error('Некорректное значение уровня доступа!');
+        throw new Error('Invalid access level value!');
     }
   }
 
@@ -104,7 +93,7 @@ class SharesApi {
       result = share;
     }
     if (typeof result === 'undefined') {
-      throw new Error('Передан неправильный адрес share');
+      throw new Error('Invalid share address was passed');
     }
 
     return result;

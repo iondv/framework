@@ -9,8 +9,9 @@
   "license": "Apache-2.0",
   "vendorDir": "./static/vendor",
   "dependencies": {
-    "bootstrap": "^3.3.5",
-    "jquery": "^2.2.4",
+    "bootstrap": "^3.4.1",
+    "font-awesome": "^4.7.0",
+    "jquery": "^3.4",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.23"
   }

@@ -27,7 +27,7 @@ module.exports = function (dataRepo) {
           if (n > 0) {
             if (n === 1) {
               if (!(args[0] instanceof Item)) {
-                throw new Error('Функции выборки не переданы все необходимые аргументы!');
+                throw new Error('Sample functions have not all the necessary arguments!');
               }
               return dataRepo.getItem(args[0], null, options);
             } else if (n === 2) {
@@ -47,7 +47,7 @@ module.exports = function (dataRepo) {
                 .then(data => data.length ? data[0] : null);
             }
           } else {
-            throw new Error('Функции выборки не переданы все необходимые аргументы!');
+            throw new Error('Sample functions have not all the necessary arguments!');
           }
         });
       };

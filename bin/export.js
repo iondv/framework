@@ -44,7 +44,7 @@ process.argv.forEach(function (val) {
   }
 });
 
-// Связываем приложение
+// Link the application
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
@@ -84,7 +84,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Экспорт выполнен успешно.', params.dst);
+    console.info('Export succeeded.', params.dst);
     process.exit(0);
   })
   .catch((err) => {

@@ -68,7 +68,7 @@ module.exports = function (collFunc, af) {
               return null;
             }
           } else {
-            throw new Error('Не указан источник данных агрегации!');
+            throw new Error('No aggregation data source is specified!');
           }
         });
       };

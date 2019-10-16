@@ -6,9 +6,9 @@ const moment = require('moment');
 
 var segments = ['year', 'month', 'day', 'weekday', 'hour', 'minute', 'second'];
 var segmentCaptions = {
-  month: ['', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь',
-    'ноябрь', 'декабрь'],
-  weekday: ['', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
+  month: ['', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october',
+    'november', 'december'],
+  weekday: ['', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday','sunday']
 };
 
 function getLevels(keys) {
@@ -110,8 +110,8 @@ function intervalToString(start, end, mask) { // jshint ignore:line
     endString += segmentCaptions.month[e.month];
   }
   if (mask.indexOf('day') > -1) {
-    startString += (startString ? ' ' : '') + s.day + '-го';
-    endString += (endString ? ' ' : '') + e.day + '-го';
+    startString += (startString ? ' ' : '') + e.day + '-th';
+    endString += (endString ? ' ' : '') + e.day + '-nd';
   }
   /*If (mask.indexOf('weekday') > -1) {
     StartString += segmentCaptions.month[s.month];
@@ -129,7 +129,7 @@ function intervalToString(start, end, mask) { // jshint ignore:line
       endString += (endString ? ' ' : '') + moment({hours: e.hour, minutes: e.minute}).format('HH:mm');
     }
   }
-  return 'с ' + startString + ' до ' + endString;
+  return 'from ' + startString + ' to ' + endString;
 }
 
 function getMask(duration) {
@@ -222,7 +222,7 @@ function scheduleToString(value) {
       result += ' ' + createBasePeriod(groups[top][baseKey]);
       var skipPeriod = createSkipsPeriod(groups[top][baseKey], skips);
       if (skipPeriod) {
-        result += ' (перерыв ';
+        result += ' (break ';
         result += skipPeriod;
         result += ')';
       }

@@ -5,14 +5,14 @@
 const codes = require('core/errors/workflow');
 
 module.exports = {
-  [codes.ACCESS_DENIED]: `Недостаточно прав для выполнения перехода рабочего процесса '%trans'`,
-  [codes.WORKFLOW_NOT_FOUND]: `Рабочий процесс '%workflow' не найден.`,
-  [codes.TRANS_ERROR]: `Ошибка при выполнении перехода рабочего процесса '%trans'.`,
-  [codes.STATE_NOT_FOUND]: `Не найдено состояние '%state' рабочего процесса '%workflow'.`,
+  [codes.ACCESS_DENIED]: `Insufficient rights to perform workflow transition '%trans'`,
+  [codes.WORKFLOW_NOT_FOUND]: `'%workflow' workflow not found.`,
+  [codes.TRANS_ERROR]: `Error while executing workflow transition '%trans'.`,
+  [codes.STATE_NOT_FOUND]: `Condition not found '%state' of the '%workflow' workflow.`,
   [codes.CONDITION_VIOLATION]:
-    `Объект '%info' не соответствует условиям конечного состояния '%state' рабочего процесса '%workflow'.`,
-  [codes.NOT_IN_WORKFLOW]: `Объект '%info' не находится в рабочем процессе '%workflow'.`,
-  [codes.TRANS_IMPOSSIBLE]: `Невозможно выполнение перехода '%trans' рабочего процесса '%workflow'.`,
-  [codes.TRANS_NOT_FOUND]: `Не найден переход '%trans' рабочего процесса '%workflow'.`,
-  [codes.IN_WORKFLOW]: `Объект уже находится в рабочем процессе '%workflow'`
+    `Object '%info' does not meet the conditions of the final state '%state' of the '%workflow' workflow.`,
+  [codes.NOT_IN_WORKFLOW]: `Object '%info' is not in the '%workflow' workflow.`,
+  [codes.TRANS_IMPOSSIBLE]: `Unable to complete transition '%trans' work-flow '%workflow'.`,
+  [codes.TRANS_NOT_FOUND]: `Transition not found '%trans' work-flow '%workflow'.`,
+  [codes.IN_WORKFLOW]: `Object is already in workflow '%workflow'`
 };

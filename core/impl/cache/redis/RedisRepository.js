@@ -68,7 +68,7 @@ function RedisRepository(config) {
     if (!config.enabled) {
       return Promise.resolve();
     }
-    log.info('Инициализация Redis');
+    log.info('Redis initialization');
     const redisOptions = {host: rHost, port: rPort};
     if (config.connectOptions) {
       for (let p in config.connectOptions) {
@@ -80,7 +80,7 @@ function RedisRepository(config) {
     client = redis.createClient(redisOptions);
     return new Promise((resolve) => {
       client.on('ready', () => {
-        log.info('Redis подключен');
+        log.info('Redis connected');
         available = true;
         resolve();
       });

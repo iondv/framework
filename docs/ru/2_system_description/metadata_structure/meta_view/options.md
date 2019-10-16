@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Теги](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
+### Предыдущая страница: [Теги](tags.md)
 
 # Опции 
 
@@ -247,85 +247,13 @@
 
 Описание выше относится только к стандартным шаблонам полей из стандартной темы оформления. 
 
-## Настройка фильтров на форме списка объектов.
-
-Представляет собой предзаданные поля на форме представления списка (расположены над действиями на форме). Фитровать объекты можно, в том числе, по тем значениям атрибутов класса, которые есть на форме редактирования, но нет на форме представления списка. Поля фильтра - это атрибуты связанных объектов с текущим (по ссылке) или атрибуты текущего объекта.
-
-Задается настройка в общей части меты представления списка. 
-В свойстве `options` модели представления в параметре `filters`, в виде полей ввода, комбобоксов select2, либо datepicker.
-Спецификация настройки filters:
-```
-{
-  "filters": [
-     {
-         "label": "c",
-         "attribute": "plannedDateStart",
-         "operation": "gte",
-     },
-     {
-         "label": "по",
-         "attribute": "plannedDateStart",
-         "operation": "lt",
-     },
-     {
-         "label": "Руководитель",
-         "attribute": "head",         
-     }
-  ]
-}
-```
-* По умолчанию `operation = eq`. 
-* Для атрибутов типа "Дата" - отображается календарь.
-* Для прочих атрибутов отображается поле ввода, либо `select2` если у атрибута есть список выбора (явно заданный, либо атрибут является ссылочным). Cписки выбора `select2` заполняются аналогично спискам выбора у полей на форме. 
-* `label` отображается как плейсхолдер.
-
-*Пример:*
-
-```json
-    "actions": null,
-    "allowSearch": false,
-    "pageSize": 3,
-    "useEditModels": false,
-    "version": null,
-    "overrideMode": 1,
-    "commands": [],
-    "options": {
-        "filters": [
-          {
-            "label": "Ссылка",
-            "property": "reference"
-          },
-          {
-            "label": "Значение поля",
-            "property": "selectionProvider"
-          },
-          {
-            "label": "С",
-            "property": "dataStartEvent",
-            "operation": "gte"
-          },
-          {
-            "label": "По",
-            "property": "dataEndEvent",
-            "operation": "lte"
-          }
-        ]
-    },  
-```
-Фильтрует объекты класса по:
-1. Ссылке - выбираем из списка значение атрибута по ссылке (или вводим вручную) и в списке отображаются объекты, которые ссылаются на данную сущность
-2. Значение поля - выбираем значение из выпадающего списка объектов и в списке отображаются объекты, у которых в поле "selectionProvider" задано текущее значение.
-3. Дате начала - задаем дату и в списке отображаются объекты, дата начала которых больше, либо равна заданной.
-4. Дате окончания - задаем дату и в списке отображаются объекты, дата окончания которых меньше, либо равна заданной.
-
-
-
-### Следующая страница: [Проектные документы](/docs/ru/2_system_description/metadata_structure/meta_view/fileshare.md)
+### Следующая страница: [Проектные документы](fileshare.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/options.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/options.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

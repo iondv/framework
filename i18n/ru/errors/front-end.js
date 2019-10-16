@@ -4,5 +4,5 @@
 const codes = require('core/errors/front-end');
 
 module.exports = {
-  [codes.ACCESS_DENIED]: `Недостаточно прав на выполнение операции.`
+  [codes.ACCESS_DENIED]: `Insufficient rights to perform operation.`
 };

@@ -9,7 +9,7 @@ function DsChangeLogFactory(options) {
   this.ds = options.dataSource;
 
   if (!this.ds) {
-    throw new Error('Не указан источник данных фабрики логгеров изменений!');
+    throw new Error('No data source of change logger factory specified!');
   }
 
   this.logger = function (authCallback) {

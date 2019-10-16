@@ -162,7 +162,7 @@ function MongoDs(config) {
 
     if (config.url && typeof config.url === 'object') {
       if (!config.url.hosts) {
-        throw new Error('Не указаны настройки соединения с сервером БД.');
+        throw new Error('No settings are specified for connecting to the database server.');
       }
 
       let uri = config.url.hosts;
@@ -194,7 +194,7 @@ function MongoDs(config) {
       }
       return 'mongodb://' + uri;
     }
-    throw new Error('Не указаны настройки соединения с сервером БД.');
+    throw new Error('No settings are specified for connecting to the database server.');
   }
 
   function readFiles(opts, nm) {
@@ -280,7 +280,7 @@ function MongoDs(config) {
                 _this.db = _this.client.db();
                 _this.busy = false;
                 _this.isOpen = true;
-                log.info('Получено соединение с базой: ' + _this.db.s.databaseName);
+                log.info('Received connection with the base: ' + _this.db.s.databaseName);
                 _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                   .then(() => _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true}))
                   .then(
@@ -341,7 +341,7 @@ function MongoDs(config) {
   function getCollection(type) {
     return openDb()
       .then(function () {
-        // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
+        // Here we intercept the auto-creation of collections to insert a hook to create indexes, for example
         return new Promise((resolve, reject) => {
           _this.db.collection(type, {strict: true}, (err, c) => {
             if (!c) {
@@ -613,7 +613,7 @@ function MongoDs(config) {
       case 'd': interval = {$multiply: [interval, 86400000]};break;
       case 'm': interval = {$multiply: [interval, 2626200000]};break;
       case 'y': interval = {$multiply: [interval, 31514400000]};break;
-      default: throw 'Передан некорректный тип интервала дат!';
+      default: throw 'Invalid date interval type passed!';
     }
     return {$add: [base, interval]};
   }
@@ -702,7 +702,7 @@ function MongoDs(config) {
       case 'min': result = {$divide: [{$subtract: [d1, d2]}, 60000]};break;
       case 'h': result = {$divide: [{$subtract: [d1, d2]}, 3600000]};break;
       case 'd': result = {$divide: [{$subtract: [d1, d2]}, 86400000]};break;
-      default: throw 'Передан некорректный тип интервала дат!';
+      default: throw 'Invalid date interval type passed!';
     }
 
     if (floor) {
@@ -987,7 +987,7 @@ function MongoDs(config) {
                   break;
               }
             } else if (oper === Operations.LIKE) {
-              throw new Error('Операция LIKE не может быть использована в выражении для поля выборки.');
+              throw new Error('The LIKE operation cannot be used in an expression for the selection field.');
             } else {
               return {[o]: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)};
             }
@@ -1249,7 +1249,7 @@ function MongoDs(config) {
   function processJoins(attributes, joins, result, prefix) {
     if (joins.length) {
       if (!attributes || !attributes.length) {
-        throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
+        throw new Error('Not given a list of attributes required to perform joins.');
       }
       joins.forEach((join) => {
         let left = (prefix ? prefix + '.' : '') + join.left;
@@ -1341,7 +1341,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, analise, counter, prefix);
-        //if (tmp !== null) { // TODO Потенциальная жопа с парсингом аргументов логических атрибутов
+        //if (tmp !== null) { // TODO Potential issue with parsing boolean attribute arguments
           result.push(tmp);
         //}
       }
@@ -1965,6 +1965,11 @@ function MongoDs(config) {
           }
         }
 
+        attributes.forEach((a) => {
+          attrs[a + '__tzoffset'] = '$_id.' + a + '__tzoffset';
+          expr.$group._id[a + '__tzoffset'] = '$' + a + '__tzoffset';
+        });
+
         if (options.aggregates) {
           let preaggregates = {};
 
@@ -1989,7 +1994,29 @@ function MongoDs(config) {
           attributes.filter((value, index, self) => (self.indexOf(value) === index) && value !== '_id');
         }
       }
+    } catch (err) {
+      return Promise.reject(wrapError(err, 'aggregate', type));
+    }
 
+    let tmp = [];
+    attributes.forEach(a => tmp.push(a + '__tzoffset'));
+    attributes = attributes.concat(tmp);
+
+    return getCollection(GEOFLD_COLLECTION).then(c =>
+      new Promise((resolve, reject) => {
+        c.find({__type: type}).limit(1).next(function (err, geoflds) {
+          if (err) {
+            return reject(err);
+          }
+          for (let fld in geoflds) {
+            if (geoflds.hasOwnProperty(fld) && fld !== '__type' && fld !== '_id') {
+              attributes.push('__geo__' + fld + '_f');
+            }
+          }
+          resolve();
+        });
+      })
+    ).then(() => {
       resultAttrs = attributes.slice(0);
 
       if (options.filter) {
@@ -2005,32 +2032,7 @@ function MongoDs(config) {
         (joins.length || options.to || forcedStages.length || analise.needRedact || analise.needPostFilter)) {
         result.push({$match: prefilter});
       }
-    } catch (err) {
-      return Promise.reject(wrapError(err, 'aggregate', type));
-    }
-
-    let p = null;
-    if (joins.length) {
-      p = getCollection(GEOFLD_COLLECTION).then(c =>
-        new Promise((resolve, reject) => {
-          c.find({__type: type}).limit(1).next(function (err, geoflds) {
-            if (err) {
-              return reject(err);
-            }
-            for (let fld in geoflds) {
-              if (geoflds.hasOwnProperty(fld) && fld !== '__type' && fld !== '_id') {
-                resultAttrs.push('__geo__' + fld + '_f');
-              }
-            }
-            resolve();
-          });
-        })
-      );
-    } else {
-      p = Promise.resolve();
-    }
-
-    return p.then(() => {
+    }).then(() => {
       if (joins.length || analise.needRedact || analise.needPostFilter) {
         if (joins.length) {
           processJoins(attributes, joins, result);
@@ -2133,14 +2135,17 @@ function MongoDs(config) {
           }
         }
 
+
         if (data[nm] instanceof Date) {
           if (typeof data[nm + '__tzoffset'] !== 'undefined') {
             data[nm].utcOffset = data[nm + '__tzoffset'];
             delete data[nm + '__tzoffset'];
           }
+
         }
       }
     }
+
     return data;
   }
 
@@ -2161,6 +2166,7 @@ function MongoDs(config) {
    */
   function fetch(c, options, aggregate, resolve, reject) {
     let r;
+
     if (aggregate) {
       r = c.aggregate(aggregate, {cursor: {batchSize: options.batchSize || options.count || 1}, allowDiskUse: true});
     } else {

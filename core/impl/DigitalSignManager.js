@@ -85,7 +85,7 @@ function DigitalSignManager(options) {
    */
   this._persistSignature = function (id, data, signature, attributes) {
     if (!options.dataSource) {
-        throw new Error('Не настроен источник данных.');
+        throw new Error('No data source configured.');
     }
 
     if (Array.isArray(signature)) {
@@ -152,7 +152,7 @@ function DigitalSignManager(options) {
    */
   this._getSignatures = function (id, since, till, opts) {
     if (!options.dataSource) {
-      throw new Error('Не настроен источник данных.');
+      throw new Error('No data source configured.');
     }
 
     let and = [];
@@ -173,7 +173,7 @@ function DigitalSignManager(options) {
     }
 
     if (!and.length) {
-      throw new Error('Не указаны параметры выборки!');
+      throw new Error('Sample parameters are not specified!');
     }
 
     return options.dataSource.fetch('ion_signatures',

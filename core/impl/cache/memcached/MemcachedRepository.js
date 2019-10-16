@@ -43,7 +43,7 @@ function MemcachedRepository(config) {
 
   function afterConnect(cb) {
     return function () {
-      log.info('Выполнена проверка доступности серверов memcached.');
+      log.info('A check was performed on the availability of memcached servers.');
       setTimeout(() => {
         checkingForServers = false;
       }, reconnectTimeout * 1000);
@@ -66,7 +66,7 @@ function MemcachedRepository(config) {
                 availableServers.push(server);
               }
             } else {
-              log.warn('Сервер memcached ' + server + ' недоступен.');
+              log.warn('Memcached server ' + server + ' is unavailable');
             }
             resolve();
           });
@@ -132,7 +132,7 @@ function MemcachedRepository(config) {
         return resolve();
       }
       try {
-        log.log('Инициализация memcached...');
+        log.log('Memcached initialization');
         memcached = new Memcached(mServerLocations, mOptions);
         memcached
           .on('issue', (details) => {

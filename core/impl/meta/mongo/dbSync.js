@@ -194,7 +194,7 @@ function MongoDbSync(options) {
         }
         findClassRoot(anc, namespace, metaCollection, done, h);
       } else {
-        done(new Error('Класс ' + cn.name + '@' + namespace + ' не найден!'));
+        done(new Error('Class ' + cn.name + '@' + namespace + ' not found!'));
       }
     });
   }
@@ -367,7 +367,7 @@ function MongoDbSync(options) {
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
             let pmn = cm.compositeIndexes[i].properties[j];
             if (!props.hasOwnProperty(pmn)) {
-              throw new Error(`Атрибут ${pmn} указанный в составном индексе отсутствует в классе "${cm.caption} (${cm.name})".`);
+              throw new Error(` ${pmn} attribute specified in a composite index is missing in  "${cm.caption} (${cm.name})" class.`);
             }
 
             if (
@@ -479,7 +479,7 @@ function MongoDbSync(options) {
                 .then(addIndexes(classMeta, cm, namespace, chierarchy))
                 .then(() => {
                   delete classMeta._id;
-                  log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
+                  log.log('Class registration ' + classMeta.name + '@' + namespace);
                   metaCollection.replaceOne(
                     {
                       name: classMeta.name,
@@ -492,7 +492,7 @@ function MongoDbSync(options) {
                       if (err) {
                         return reject(err);
                       }
-                      log.log('Класс ' + classMeta.name + '@' + namespace + ' зарегистрирован.');
+                      log.log('Class ' + classMeta.name + '@' + namespace + ' registered.');
                       resolve(result);
                     }
                   );
@@ -546,8 +546,8 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создано представление ' + type +
-                ' для класса ' + className + (viewMeta.path ? ' и пути ' + viewMeta.path : ''));
+              log.log('View created ' + type +
+                ' for class ' + className + (viewMeta.path ? ' and path ' + viewMeta.path : ''));
               resolve(vm);
             }
           );
@@ -592,7 +592,7 @@ function MongoDbSync(options) {
         });
       })
       .then(() => {
-        log.log('Создана секция навигации ' + navSection.namespace + '@' + navSection.name);
+        log.log('Created navigation section ' + navSection.namespace + '@' + navSection.name);
       });
   };
 
@@ -644,7 +644,7 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создан узел навигации ' + navNode.namespace + '@' + navNode.code);
+              log.log('Created navigation node ' + navNode.namespace + '@' + navNode.code);
               resolve(ns);
             }
           );
@@ -698,7 +698,7 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создан бизнес-процесс ' + wfMeta.name + '@' + wfMeta.namespace + ' для класса ' + wfMeta.wfClass);
+              log.log('Workflow for ' + wfMeta.name + '@' + wfMeta.namespace + ' class was created ' + wfMeta.wfClass);
               resolve(wf);
             });
         })

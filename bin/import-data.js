@@ -24,7 +24,7 @@ let setParam = null;
 
 process.argv.forEach(function (val) {
   if (val === '--ignoreIntegrityCheck') {
-    console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
+    console.warn('During import, data integrity is ignored, errors in the database are possible');
     params.ignoreIntegrityCheck = true;
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
@@ -33,7 +33,7 @@ process.argv.forEach(function (val) {
   }
 });
 
-// Связываем приложение
+// Link the application
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
@@ -66,7 +66,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Импорт данных выполнен успешно.');
+    console.info('Data import was successful.');
     process.exit(0);
   })
   .catch((err) => {

@@ -35,7 +35,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
     }
   )
   .then(() => {
-    sysLog.info('Задания запущены');
+    sysLog.info('Tasks are running');
   })
   .catch((err) => {
     sysLog.error(err);

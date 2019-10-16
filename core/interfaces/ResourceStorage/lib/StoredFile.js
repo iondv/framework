@@ -24,7 +24,7 @@ function StoredFile (id, link, options, streamGetter) {
               return reject(err);
             }
             if (!stream) {
-              return reject(new Error('Не удалось получить поток чтения файла.'));
+              return reject(new Error('Could not get file read stream.'));
             }
             return resolve({
               name: this.name,
@@ -36,7 +36,7 @@ function StoredFile (id, link, options, streamGetter) {
           reject(err);
         }
       } else {
-        reject(new Error('Не указана функция получения потока ввода для файла.'));
+        reject(new Error('No function to get input stream for file.'));
       }
     });
   };

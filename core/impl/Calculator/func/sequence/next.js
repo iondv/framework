@@ -12,7 +12,7 @@ module.exports = function (sp) {
         if (args.length > 0) {
           return sp.next(args[0]);
         } else {
-          throw new Error('Не указано имя последовательности!');
+          throw new Error('The sequence name is not specified!');
         }
       });
     };

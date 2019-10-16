@@ -56,7 +56,7 @@ if (process.argv.length > 2) {
     )
     .then(scope => scope.dataSources.disconnect())
     .then(() => {
-      console.info('Настройка выполнена успешно.');
+      console.info('Setup completed successfully.');
       process.exit(0);
     })
     .catch((err) => {

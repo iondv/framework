@@ -5,7 +5,7 @@
 const codes = require('core/errors/file-storage');
 
 module.exports = {
-  [codes.BAD_DATA]: `Некоррекный формат данных.`,
-  [codes.NO_DIR]: `Директория '%dir' не найдена.`,
-  [codes.NO_FILE]: `Файл '%file' не найден.`
+  [codes.BAD_DATA]: `Uncorrected data format.`,
+  [codes.NO_DIR]: `Directory '%dir' not found.`,
+  [codes.NO_FILE]: `File '%file' not found.`
 };

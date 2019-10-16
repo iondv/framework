@@ -4,20 +4,20 @@
 const codes = require('core/errors/data-repo');
 
 module.exports = {
-  [codes.ITEM_EXISTS]: `%class c таким атрибутом '%attr' уже существует.`,
-  [codes.ITEM_EXISTS_MULTI]: `%class c такими атрибутами '%attr' уже существует.`,
-  [codes.ITEM_NOT_FOUND]: `Объект '%info' не найден.`,
-  [codes.EXISTS_IN_COL]: `Объект '%info' уже присутствует в коллекции '%col'.`,
-  [codes.BAD_PARAMS]: `Некорректные параметры переданы методу '%method'.`,
-  [codes.FILE_ATTR_SAVE]: `Не удалось сохранить данные в файловый атрибут '%attr' объекта '%info'.`,
-  [codes.FILE_ATTR_LOAD]: `Не удалось загрузить файловый атрибут '%attr'.`,
-  [codes.NO_COLLECTION]: `В объекте %info отсутствует коллекция '%attr'.`,
-  [codes.INVALID_META]: `Ошибка в мета-данных класса объекта '%info'.`,
-  [codes.COMPOSITE_KEY]: `Использование составных ключей в операции '%oper' не поддерживается.`,
-  [codes.FAIL]: `Действие '%operation' не было выполнено для объекта '%info'.`,
-  [codes.MISSING_REQUIRED]: `Не заполнены обязательные атрибуты %info.`,
-  [codes.NO_KEY_SPEC]: `Не указано значение ключевого атрибута %info.`,
-  [codes.NO_BACK_REF]: `По обратной ссылке %backRef не найден атрибут %backAttr.`,
-  [codes.UNEXPECTED_ASYNC]: `При расчете значения по умолчанию атрибута %info выполнена асинхронная операция.`,
-  [codes.PERMISSION_LACK]: `Недостаточно прав для выполнения действия`
+  [codes.ITEM_EXISTS]: `%class with this attribute '%attr'already exists.`,
+  [codes.ITEM_EXISTS_MULTI]: `%class with sch attributes '%attr' already exists.`,
+  [codes.ITEM_NOT_FOUND]: `Object '%info' not found.`,
+  [codes.EXISTS_IN_COL]: `Object '%info' already present in collection '%col'.`,
+  [codes.BAD_PARAMS]: `Invalid parameters passed to '%method' method.`,
+  [codes.FILE_ATTR_SAVE]: `Failed to save data to file attribute '%attr' of object '%info'.`,
+  [codes.FILE_ATTR_LOAD]: `Could not load file attribute '%attr'.`,
+  [codes.NO_COLLECTION]: `In the %info object '%attr' collection is missing.`,
+  [codes.INVALID_META]: `Error in metadata object class '%info'.`,
+  [codes.COMPOSITE_KEY]: `Using composite keys in the '%oper' operation is not supported.`,
+  [codes.FAIL]: `Action '%operation' was not performed for the object '%info'.`,
+  [codes.MISSING_REQUIRED]: `Required attributes are not filled in %info.`,
+  [codes.NO_KEY_SPEC]: `The value of the key attribute %info is not specified.`,
+  [codes.NO_BACK_REF]: `%backAttr attribute not found by back reference %backRef.`,
+  [codes.UNEXPECTED_ASYNC]: `When calculating the default value of the %info attribute, an asynchronous operation was performed.`,
+  [codes.PERMISSION_LACK]: `Insufficient rights to perform an action`
 };

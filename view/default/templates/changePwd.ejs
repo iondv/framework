@@ -15,11 +15,21 @@
     </script>
   <![endif]-->
   <link rel="shortcut icon" href="/favicon.ico">
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
 </head>
-
+<style>
+  .pwd-error {
+    position: absolute;
+    background-color: red;
+    color: white;
+    width: 100%;
+    padding: 10px;
+    z-index: 1000;
+  }
+</style>
 <body>
 <div class="padding-15">
   <div class="login-box">
@@ -32,14 +42,16 @@
     <% } %>
     <div id="errors" class="alert alert-danger" style="display: none"></div>
 
-    <form action="chpwd" method="post" id="reg-form" class="dlg-form boxed">
-      <header><i class="fa fa-users"></i> Change password</header>
+    <form action="chpwd" method="post" id="reg-form" class="sky-form boxed">
+      <header><i class="fa fa-users"></i> Changing password</header>
       <fieldset>
         <section>
           <label class="label">New password</label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
-            <input type="password" name="password">
+            <input id="password" type="password" name="password">
+            <div class="pwd-error" style="display: none;"></div>
+            <b class="tooltip tooltip-top-right">New password</b>
           </label>
         </section>
 
@@ -47,14 +59,16 @@
           <label class="label">Repeat password</label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
-            <input type="password" name="password2">
+            <input id="password2" type="password" name="password2">
+            <div class="pwd-error" style="display: none;"></div>
+            <b class="tooltip tooltip-top-right">Repeat password</b>
           </label>
         </section>
       </fieldset>
 
       <footer>
         <button id="submit-btn" type="button" class="btn btn-primary pull-left" style="margin-left:0;">
-          Change password
+          Change Password
         </button>
         <div class="forgot-password pull-right">
           <a class="btn btn-link" href="/"><span class="glyphicon glyphicon-home"></span> <b>Home</b></a>
@@ -65,6 +79,7 @@
   </div>
 </div>
 <script>
+  var allowSubmit = true;
   jQuery(function(){
     var options = <%- JSON.stringify(options)%>;
     var $errors = $('#errors');
@@ -74,6 +89,9 @@
     var $pwd2 = $regForm.find('[name="password2"]');
     $submit.click(function(){
       $errors.hide();
+      if (!allowSubmit) {
+        return false;
+      }
       var pwd = $pwd.val();
       var pwd2 = $pwd2.val();
       var valid = true;
@@ -82,7 +100,7 @@
         if (options.pwdMinLength) {
           if (pwd.length < options.pwdMinLength) {
             valid = false;
-            messages.push('Password minimal length ' + options.pwdMinLength + ' symbols');
+            messages.push('Minimum password length ' + options.pwdMinLength + ' symbols');
           }
         }
       } else {
@@ -98,8 +116,38 @@
         $errors.show();
       }
     });
+
+    function checkPwd(fld, data) {
+      $.post('checkPwd', data)
+        .then(function (data) {
+          if (data.error) {
+            let offset = fld.offset();
+            fld.next().css({left: offset.x, top: offset.y + fld.height()}).html(data.error).show();
+          } else {
+            fld.next().hide();
+          }
+          fld.toggleClass('error', !data.result);
+          allowSubmit = data.result;
+        })
+        .fail(function (xhr) {
+          fld.toggleClass('error', true);
+          allowSubmit = false;
+        });
+    }
+
+    $('#password').change(function () {
+      let fld = $(this);
+      let pwd = fld.val();
+      checkPwd(fld, {password: pwd, password2: pwd});
+    });
+    $('#password2').change(function () {
+      let fld = $(this);
+      let pwd2 = fld.val();
+      let pwd = $('#password').val();
+      checkPwd(fld, {password: pwd, password2: pwd2});
+    });
   });
 </script>
-<%- pageEndContent %>
+<%- typeof pageEndContent !== 'undefined' ? pageEndContent : "" %>
 </body>
 </html>

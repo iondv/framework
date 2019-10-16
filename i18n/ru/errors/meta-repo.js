@@ -5,8 +5,8 @@
 const codes = require('core/errors/meta-repo');
 
 module.exports = {
-  [codes.NO_CLASS]: `Класс '%class' не найден.`,
-  [codes.NO_ATTR]: `Атрибут '%attr' не найден в классе '%class'.`,
-  [codes.NO_VIEW]: `Представление '%view' не найдено.`,
-  [codes.NO_WORKFLOW]: `Рабочий процесс '%workflow' не найден.`
+  [codes.NO_CLASS]: `Class '%class' not found.`,
+  [codes.NO_ATTR]: `Attribute '%attr' not found in the '%class' class.`,
+  [codes.NO_VIEW]: `View '%view' not found.`,
+  [codes.NO_WORKFLOW]: `'%workflow' workflow not found.`
 };

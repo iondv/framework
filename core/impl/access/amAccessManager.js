@@ -21,7 +21,7 @@ function MongoAclAccessManager(config) {
   var ds = config.dataSource;
 
   if (!ds || ds.constructor.prototype.constructor.name !== 'DataSource') {
-    throw 'Не указан источник данных для подсистемы контроля доступа!';
+    throw 'No data source is specified for the access control subsystem!';
   }
 
   this.acl = null;

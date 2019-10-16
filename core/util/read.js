@@ -133,3 +133,27 @@ function readConfig(filePath) {
   return result;
 }
 module.exports.readConfig = readConfig;
+
+function readConfigAsync(filePath) {
+  const params = path.parse(filePath);
+  const ymlFilePath = params.ext === '.yml' ? filePath : path.join(params.dir, params.name + '.yml');
+  const jsonFilePath = params.ext === '.json' ? filePath : path.join(params.dir, params.name + '.json');
+  return new Promise((resolve, reject) => {
+    fs.readFile(ymlFilePath, 'utf-8', (err, data) => {
+      const ymlFile = err ? false : yaml.safeLoad(data);
+      fs.readFile(jsonFilePath, 'utf-8', (err, data) => {
+        let jsonFile = false;
+        if (err) {
+          if (!ymlFile) {
+            return reject(new Error(`Failed to read configuration from ${filePath}`));
+          }
+        } else {
+          jsonFile = JSON.parse(data);
+        }
+        resolve(merge(ymlFile || {}, jsonFile || {}));
+      });
+    });
+  });
+}
+
+module.exports.readConfigAsync = readConfigAsync;

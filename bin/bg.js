@@ -59,19 +59,19 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then((scope) => {
     let worker = scope[params.task];
     if (!worker) {
-      throw new Error('Не найден рабочий компонент фоновой процедуры ' + params.task);
+      throw new Error('Working component of the background procedure was not found ' + params.task);
     }
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
-      throw new Error('Рабочий компонент фоновой процедуры ' + params.task + ' не имеет метода запуска');
+      throw new Error('The working component of the background procedure ' + params.task + ' does not have a start method');
     }
-    sysLog.info(new Date().toISOString() + ': Начало выполнения фоновой процедуры ' + params.task);
+    sysLog.info(new Date().toISOString() + ': Start the background routine ' + params.task);
     return typeof worker === 'function' ? worker(params) : worker.run(params);
   })
   .then((result) => {
     if (typeof process.send === 'function') {
       process.send(result);
     }
-    sysLog.info(new Date().toISOString() + ': Фоновая процедура ' + params.task + ' выполнена');
+    sysLog.info(new Date().toISOString() + ': Background procedure ' + params.task + ' done');
     process.exit(0);
   })
   .catch((err) => {

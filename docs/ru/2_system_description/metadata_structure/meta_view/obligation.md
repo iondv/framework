@@ -1,13 +1,13 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Условия активности](/docs/ru/2_system_description/metadata_structure/meta_view/enablement.md)
+### Предыдущая страница: [Условия активности](enablement.md)
 
 # Условия обязательности
 
 ## Описание
 
 **Условия обязательности** - задают условие обязательности заполнения поля в представлении.
-Синтаксис условий такой же, как в [условиях отображения](/docs/ru/2_system_description/metadata_structure/meta_view/visibility.md).
+Синтаксис условий такой же, как в [условиях отображения](visibility.md).
 
 Условия обязательности отличаются выполнением действий. При данном условии атрибут становится обязательным для заполнения, иначе атрибут остается таким же, каким был задан в представлении до применения условия обязательности.
 
@@ -90,12 +90,13 @@
         }
 
 ```
-### Следующая страница: [Теги](/docs/ru/2_system_description/metadata_structure/meta_view/tags.md)
+### Следующая страница: [Теги](tags.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/obligation.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

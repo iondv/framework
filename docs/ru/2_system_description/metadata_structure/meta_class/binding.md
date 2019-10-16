@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Ключевой атрибут](/docs/ru/2_system_description/metadata_structure/meta_class/key.md)
+### Предыдущая страница: [Ключевой атрибут](key.md)
 
 # Основание коллекции
 
@@ -112,11 +112,12 @@
 ```
 
 
-### Следующая страница: [Признак абстрактности для класса](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)
+### Следующая страница: [Признак абстрактности для класса](abstract.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_descriptionmetadata_structure/meta_class/binding.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_descriptionmetadata_structure/meta_class/binding.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -25,7 +25,7 @@ function Scheduler(options) {
         let to = setTimeout(
           () => {
             if (options.log) {
-              options.log.warn(`Не удалось завершить задание ${nm} в отведенное время.`);
+              options.log.warn(`Failed to complete ${nm} job in the allotted time.`);
             }
             ch.removeAllListeners();
             resolve();

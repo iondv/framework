@@ -25,7 +25,7 @@ function Datasources(options) {
   this.connect = function () {
     var all, i;
     all = [];
-    log.info('Подключение источников данных');
+    log.info('Connecting data sources');
     for (i = 0; i < this.sources.length; i++) {
       all.push(this.sources[i].open());
     }
@@ -47,7 +47,7 @@ function Datasources(options) {
   if (this.runtimeEvents) {
     this.runtimeEvents.on('stop', function () {
       _this.disconnect().then(function () {
-        log.info('Источники данных успешно отключены!');
+        log.info('Data sources successfully disabled!');
       }).catch(function (err) {
         log.error(err);
       });

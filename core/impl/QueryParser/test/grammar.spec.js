@@ -23,11 +23,11 @@ const queries = [{
   query: 'propertyName = "some text"',
   result: {[F.EQUAL]: [{val: 'propertyName'}, 'some text']}
 },{
-  query: '`Атрибут` = 11',
-  result: {[F.EQUAL]: [{val: 'Атрибут'}, 11]}
+  query: '`Attribute` = 11',
+  result: {[F.EQUAL]: [{val: 'Attribute'}, 11]}
 },{
-  query: '`Атрибут` = "some text"',
-  result: {[F.EQUAL]: [{val: 'Атрибут'}, 'some text']}
+  query: '`Attribute` = "some text"',
+  result: {[F.EQUAL]: [{val: 'Attribute'}, 'some text']}
 },{
   query: 'propertyName LIKE "some text"',
   result: {[F.LIKE]: [{val: 'propertyName'}, 'some text']}
@@ -51,6 +51,6 @@ const queries = [{
   ]}
 }];
 
-describe('Тестирование nearley-грамматики парсера запросов', () => {
+describe(' Testing nearley-grammar of query parser ', () => {
   queries.forEach(q => it(q.query, () => assert.deepEqual(parse(q.query), q.result)));
 });

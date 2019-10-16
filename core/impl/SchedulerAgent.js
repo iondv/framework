@@ -76,7 +76,7 @@ function SchedulerAgent(options) {
     try {
       let jobs = options.settings.get('jobs');
       if (!jobs.hasOwnProperty(job)) {
-        throw new Error(`Задание ${job} не найдено в конфигурации`);
+        throw new Error(`Job ${job} not found in configuration`);
       }
 
       return setStatus(job, Scheduler.statusCodes.MANUALLY_STARTING);
@@ -93,7 +93,7 @@ function SchedulerAgent(options) {
     try {
       let jobs = options.settings.get('jobs');
       if (!jobs.hasOwnProperty(job)) {
-        throw new Error(`Задание ${job} не найдено в конфигурации.`);
+        throw new Error(`Job ${job} not found in configuration.`);
       }
       return setStatus(job, Scheduler.statusCodes.STARTING);
     } catch (err) {
@@ -186,7 +186,7 @@ function SchedulerAgent(options) {
   this.saveJob = function (jobName, jobSettings) {
     let jobs = options.settings.get('jobs');
     if (!jobSettings || !jobSettings.launch || !jobSettings.worker || !jobSettings.di) {
-      throw new Error('Переданы некорректные параметры задания.');
+      throw new Error('Invalid job parameters passed.');
     }
     jobs[jobName] = jobSettings;
     options.settings.set('jobs', jobs, true);

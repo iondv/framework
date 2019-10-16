@@ -18,7 +18,7 @@ function MongoAcl(config) {
   var ds = config.dataSource;
 
   if (!ds || ds.constructor.prototype.constructor.name !== 'DataSource') {
-    throw 'Не указан источник данных для подсистемы контроля доступа!';
+    throw 'No data source is specified for the access control subsystem!';
   }
 
   var _acl = null;
@@ -35,7 +35,7 @@ function MongoAcl(config) {
       return Promise.resolve(_acl);
     }
     if (connecting) {
-      return Promise.reject(new Error('Не удалось инициализировать ACL'));
+      return Promise.reject(new Error('Failed to initialize ACL'));
     }
     _acl = null;
     connecting = true;

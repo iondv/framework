@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [Modules](/docs/en/3_modules_description/modules.md)
+### Back: [Modules](modules.md)
 
 # The "Registry" module
 
@@ -8,7 +8,7 @@
 
 ## Setting
 
-* [DI (treegridController)](/docs/en/3_modules_description/registry_treegrid.md)
+* [DI (treegridController)](registry_treegrid.md)
 
 ## Deploy
 
@@ -44,12 +44,13 @@ For more information on the filters see [here](/docs/en/2_system_description/fun
 
 ## Code requirements
 
-Frontend component writing style is [here](/docs/en/3_modules_description/registry_code.md)
+Frontend component writing style is [here](registry_code.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/registry.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/3_modules_description/registry.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

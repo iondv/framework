@@ -552,7 +552,7 @@ function SecuredDataRepository(options) {
       let p = item.property(pn);
       if (!p) {
         if (options.log instanceof Logger) {
-          options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + pn + ' класса ' + item.getClassName());
+          options.log.warn('During dynamic security check, the attribute ' + pn + ' could not be found of class ' + item.getClassName());
         }
         return false;
       }
@@ -804,7 +804,7 @@ function SecuredDataRepository(options) {
     let pm = findPm(cm, tmp);
     if (!pm) {
       if (options.log instanceof Logger) {
-        options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + tmp.join('.') + ' класса ' + cm.getCanonicalName());
+        options.log.warn('During dynamic security check, the attribute ' + tmp.join('.') + ' could not be found of class' + cm.getCanonicalName());
       }
       return [];
     }

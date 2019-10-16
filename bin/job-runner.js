@@ -19,7 +19,7 @@ let jobName = false;
 if (process.argv.length > 2) {
   jobName = process.argv[2];
 } else {
-  console.error('Не передано имя задания');
+  console.error('Job name not passed');
   process.exit(130);
 }
 
@@ -155,11 +155,11 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
          */
         let job = jobs[jobName];
         if (!job.worker) {
-          throw new Error('Не указан рабочий компонент задания ' + jobName);
+          throw new Error('Job component not specified ' + jobName);
         }
 
         if (!job.launch) {
-          throw new Error('Не указаны параметры задания ' + jobName);
+          throw new Error('No job parameters specified ' + jobName);
         }
 
         let checkInterval = 1000;
@@ -195,7 +195,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
             let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
               if (ch.connected) {
-                sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
+                sysLog.warn(new Date().toISOString() + ': Job ' + jobName + ' timed out');
                 ch.kill(9);
                 busy = false;
               }
@@ -211,10 +211,10 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           interval = setTimeout(starter, checkInterval);
         };
 
-        sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
+        sysLog.info(new Date().toISOString() + ': Job ' + jobName + ' running');
         starter();
       } else {
-        throw new Error('Задание ' + jobName + ' не найдено');
+        throw new Error('Job ' + jobName + ' not found');
       }
     }
   )

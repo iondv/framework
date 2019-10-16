@@ -37,7 +37,7 @@ process.argv.forEach(function (val) {
   setPwd = false;
 });
 
-// Связываем приложение
+// Link the application
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
@@ -65,7 +65,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Пользователь успешно зарегистрирован.');
+    console.info('User successfully registered.');
     process.exit(0);
   })
   .catch((err) => {

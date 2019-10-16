@@ -84,7 +84,7 @@ function ChangeLogger() {
    */
   this.logChange = function (type, objectClass, objectId, updates, base) {
     if (!logRecordTypes.hasOwnProperty(type.toUpperCase())) {
-      throw new Error('Неверно указан тип записи журнала изменений!');
+      throw new Error('Invalid change log entry type!');
     }
     return this._log(type.toUpperCase(), objectClass, objectId, updates, base || {});
   };
@@ -105,14 +105,14 @@ function ChangeLogger() {
   this.getChanges = function (options) {
     let {className, id, since, till, author, type} = options;
     if (!(className || id || since || till || author || type)) {
-      throw new Error('Не указаны критерии выборки записей лога изменений');
+      throw new Error('Criteria for selecting change log entries are not specified');
     }
 
     if (
       since && !(since instanceof Date) ||
       till && !(till instanceof Date)
     ) {
-      throw new Error('Интервал должен быть задан объектами класса Date!');
+      throw new Error('Interval must be defined by the objects of the Date class!');
     }
 
     if (since && till && since.getTime() > till.getTime()) {

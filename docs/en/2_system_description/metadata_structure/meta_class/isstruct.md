@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Meta class - general part](/docs/en/2_system_description/metadata_structure/meta_class/meta_class_main.md)
+### The previous page: [Meta class - general part](meta_class_main.md)
 
 # Structure
 
@@ -280,11 +280,12 @@ Class object with an attribute of structure type in DB:
 
 
 
-### The next page: [Key attributes](/docs/en/2_system_description/metadata_structure/meta_class/key.md) in Meta class - general part 
+### The next page: [Key attributes](key.md) in Meta class - general part 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](type_isstruct16.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Eager loading](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) 
+### The previous page: [Eager loading](eager_loading.md) 
 
 # Computable attribute (without caching)
 
@@ -53,7 +53,7 @@ Each formula begins with a description of the object and the function in the JSO
     ]
       }
 ```
-You should specify [a suitable operation](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md#available-operations) in the `function1` field with the desired number of operands for the result.
+You should specify [a suitable operation](atr_formula.md#available-operations) in the `function1` field with the desired number of operands for the result.
 
 The object contains the full description of the algorithm, that controls the calculations except the functions stored in the depended computable attributes.
 
@@ -278,7 +278,7 @@ The functions operands could be:
 
 `pad` - additional symbols to the desired string length
 
-`next` - [derive a new value from a sequence](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md#auto-assignment-in-computable-attribute)
+`next` - [derive a new value from a sequence](atr_formula.md#auto-assignment-in-computable-attribute)
 
 `merge` - concatenation of attributes in the collection
 
@@ -344,11 +344,12 @@ or
 
 3. The `next($id)` operation (If the `$id` has a value) will always return 1, since for each object a separate sequence will be created, from which only the first value will be selected.
 
-### The next page: [Cached values of computable attribute](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
+### The next page: [Cached values of computable attribute](atr_cached_true.md)    
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

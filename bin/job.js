@@ -19,7 +19,7 @@ let jobName = false;
 if (process.argv.length > 2) {
   jobName = process.argv[2];
 } else {
-  console.error('Не передано имя задания');
+  console.error('Job name not passed');
   process.exit(130);
 }
 
@@ -56,23 +56,23 @@ di('boot', config.bootstrap,
         job = jobs[jobName];
         notifier = scope.notifier;
         if (!job.worker) {
-          throw new Error('Не указан рабочий компонент задания ' + jobName);
+          throw new Error('Job component not specified ' + jobName);
         }
         return di('job', jobs[jobName].di || {}, {}, 'app');
       } else {
-        throw new Error('Задание ' + jobName + ' не найдено');
+        throw new Error('Job ' + jobName + ' not found');
       }
     }
   )
   .then((scope) => {
     let worker = scope[job.worker];
     if (!worker) {
-      throw new Error('Не найден рабочий компонент задания ' + jobName);
+      throw new Error('Working component of the job was not found ' + jobName);
     }
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
-      throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
+      throw new Error('Working component of the job '  + jobName + ' has no start method');
     }
-    let msg = 'Начало выполнения задания ' + jobName;
+    let msg = 'Start the job ' + jobName;
     sysLog.info(msg);
     let promise = Promise.resolve();
     if (notifier && job.notify) {
@@ -86,7 +86,7 @@ di('boot', config.bootstrap,
     return promise.then(() => (typeof worker === 'function') ? worker() : worker.run());
   })
   .then(() => {
-    let msg = 'Задание ' + jobName + ' выполнено';
+    let msg = 'Job ' + jobName + ' done';
     sysLog.info(msg);
     let p = Promise.resolve();
     if (notifier && job.notify) {

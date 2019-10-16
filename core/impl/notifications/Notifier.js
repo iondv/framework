@@ -26,7 +26,7 @@ class Notifier extends INotifier {
     super();
     this.ds = options.dataSource;
     this.accounts = options.accounts;
-    this.dispatchers = options.dispatchers;
+    this.dispatchers = options.dispatchers || {};
     this.tplDir = options.tplDir ? resolvePath(options.tplDir) : null;
     this.system = options.systemSender || 'ion.system';
     this.log = options.log;
@@ -46,7 +46,7 @@ class Notifier extends INotifier {
    */
   _notify(notification) {
     if (!notification.message) {
-      throw new Error('Не указан текст уведомления.');
+      throw new Error('No notification text is specified.');
     }
 
     if (!notification.type) {
@@ -141,7 +141,7 @@ class Notifier extends INotifier {
                     )
                     .catch((err) => {
                       if (this.log) {
-                        this.log.warn('Ошибка при отправке уведомления в ' + dest);
+                        this.log.warn('Error sending notification to ' + dest);
                         this.log.info(notification.subject);
                         this.log.info(notification.message);
                         this.log.error(err);
@@ -190,7 +190,7 @@ class Notifier extends INotifier {
               })
               .catch((err) => {
                 if (this.log) {
-                  this.log.warn('Не удалось отправить уведомление');
+                  this.log.warn('Failed to send notification');
                   this.log.info(notification.subject);
                   this.log.info(notification.message);
                   this.log.error(err);
@@ -209,7 +209,7 @@ class Notifier extends INotifier {
         if (this.log) {
           this.log.error(err);
         }
-        throw new Error('Не удалось отозвать уведомление ' + id);
+        throw new Error('Failed to recall notification ' + id);
       });
   }
 

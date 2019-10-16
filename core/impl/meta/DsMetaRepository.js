@@ -72,7 +72,7 @@ function DsMetaRepository(options) {
   var ds = options.dataSource;
 
   if (!ds) {
-    throw 'Не указан источник данных мета репозитория!';
+    throw 'Meta repository data source not specified!';
   }
 
   var classMeta = {};
@@ -192,7 +192,7 @@ function DsMetaRepository(options) {
     } catch (err) {
       throw err;
     }
-    throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') + ' не найден в пространстве имен ' + namespace + '!');
+    throw new Error('Class ' + name + (version ? ' (ver.' + version + ')' : '') + ' was not found in ' + namespace + ' namespace!');
   }
 
   this._getMeta = function (name, version, namespace) {
@@ -519,7 +519,7 @@ function DsMetaRepository(options) {
             let cr = this.matrix[j]._checker.apply(item);
             if (cr) {
               if (cr instanceof Promise) {
-                throw new Error('Асинхронные вызовы в условиях соответствия списков выбора недопустимы!');
+                throw new Error('Asynchronous calls in the matching list selection conditions are not allowed!');
               }
               Array.prototype.push.apply(result, this.matrix[j].result || []);
             }
@@ -562,8 +562,8 @@ function DsMetaRepository(options) {
         try {
           structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
         } catch (err) {
-          throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
-            '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
+          throw new Error('Class not found [' + cm.plain.properties[i].refClass +
+            '] for structure [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
         }
         if (!structClass.___structs_expanded) {
           expandProperty(structClass);
@@ -682,12 +682,12 @@ function DsMetaRepository(options) {
             let ppath = tmp[1].split('.');
             let pm = locatePropertyMeta(ppath, cm);
             if (pm) {
-              let pn = '$' + tmp[1];
-              if (pm.type === PropertyTypes.DATETIME) {
+              let pn = '$' + tmp[1] + '@';
+              /*if (pm.type === PropertyTypes.DATETIME) {
                 pn = {[F.DATE_FORMAT]: [pn]};
               } else {
                 pn = pn + '@';
-              }
+               }*/
               if (tmp[3]) {
                 args.push({[F.SUBSTR]: [pn, tmp[3], tmp[5]]});
               } else {
@@ -770,7 +770,7 @@ function DsMetaRepository(options) {
                   cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
                   cm.ancestor.descendants.push(cm);
                 } catch (e) {
-                  throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
+                  throw new Error('The parent class of "' + cm.plain.ancestor + '" class not found ' +
                     cm.getCanonicalName() + '.');
                 }
               }
@@ -786,7 +786,7 @@ function DsMetaRepository(options) {
                     pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.getNamespace());
                   } catch (e) {
                     throw new Error(
-                      'Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
+                      ' "' + pm.refClass + '" class not found by attribute reference ' +
                       cm.getCanonicalName() + '.' + pm.name + '.'
                     );
                   }
@@ -795,7 +795,7 @@ function DsMetaRepository(options) {
                     pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
                   } catch (e) {
                     throw new Error(
-                      'Не найден класс "' + pm.itemsClass + '" по ссылке атрибута ' +
+                      ' "' + pm.itemsClass + '" class not found by attribute reference ' +
                       cm.getCanonicalName() + '.' + pm.name + '.'
                     );
                   }
@@ -804,14 +804,14 @@ function DsMetaRepository(options) {
                   try {
                     if (typeof pm.formula === 'string') {
                       (options.log || console).warn(
-                        'Формула вычисляемого атрибута "' + cm.getCanonicalName() + '.' + pm.name +
-                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
+                        'Formula of computed attribute "' + cm.getCanonicalName() + '.' + pm.name +
+                        '" set as string. This format is obsolete and will be excluded in future versions.'
                       );
                     }
                     pm._formula = options.calc.parseFormula(pm.formula);
                   } catch (e) {
                     throw new Error(
-                      'Некорректно задана формула для вычисляемого атрибута "' +
+                      'Incorrectly defined formula for calculated attribute "' +
                       cm.getCanonicalName() + '.' + pm.name + '": ' + e.message
                     );
                   }
@@ -828,8 +828,8 @@ function DsMetaRepository(options) {
                     pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                     if (typeof pm.defaultValue === 'string') {
                       (options.log || console).warn(
-                        'Формула значения по умолчанию атрибута "' + cm.getCanonicalName() + '.' + pm.name +
-                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
+                        'Formula of attribute\'s default value "' + cm.getCanonicalName() + '.' + pm.name +
+                        '" set as string. This format is obsolete and will be excluded in future versions.'
                       );
                     }
                   } catch (e) {
@@ -1036,7 +1036,7 @@ function DsMetaRepository(options) {
       } catch (e) {
         if (options.log) {
           options.log.warn(e);
-          options.log.warn('Бизнес-процесс ' + wf.name + '@' + wf.namespace + ' не был инициализирован!');
+          options.log.warn('Work-flow ' + wf.name + '@' + wf.namespace + ' was not initialized!');
         }
       }
     }

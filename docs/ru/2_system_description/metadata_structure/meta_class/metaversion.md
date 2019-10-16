@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Признак абстрактности для класса](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)
+### Предыдущая страница: [Признак абстрактности для класса](abstract.md)
 
 # Версионирование
  
@@ -63,11 +63,12 @@
 При выборке объектов, данные берутся с учётом версии. Версия объекта передаётся в виде параметра `version` запроса на открытие объекта.
 
 
-### Следующая страница: [Родительский класс](/docs/ru/2_system_description/metadata_structure/meta_class/ancestor.md)
+### Следующая страница: [Родительский класс](ancestor.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -5,12 +5,12 @@
 
 const codes = require('core/errors/validation');
 
-const defaultMessage = `Некорректное значение передано в атрибут %class.%property.`;
-const messageForRealAndDecimal = defaultMessage + ` Значение должно быть числом (дробная часть отделяется точкой).`;
-const messageForDatetimeAndPeriod = `Некорректное значение даты передано в атрибут %class.%property.`;
+const defaultMessage = `An invalid value was passed to the %class.%property attribute.`;
+const messageForRealAndDecimal = defaultMessage + ` The value must be a number (the fractional part is separated by a dot).`;
+const messageForDatetimeAndPeriod = `An invalid date value was passed to the %class.%property attribute.`;
 
 module.exports = {
-  [codes.INCORRECT_VALUE.INT]: defaultMessage + ` Значение должно быть целым числом.`,
+  [codes.INCORRECT_VALUE.INT]: defaultMessage + ` Value must be an integer.`,
   [codes.INCORRECT_VALUE.REAL]: messageForRealAndDecimal,
   [codes.INCORRECT_VALUE.DECIMAL]: messageForRealAndDecimal,
   [codes.INCORRECT_VALUE.DATETIME]: messageForDatetimeAndPeriod,

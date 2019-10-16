@@ -60,7 +60,7 @@ function MetaKeyProvider(options) {
       if (keyProps.length === 1) {
         let pm = cm.getPropertyMeta(keyProps[0]);
         if (!pm) {
-          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+          throw new Error(`${keyProps[0]} attribute of the ${cm.getCaption()} class not found!`);
         }
         return {[keyProps[0]]: cast(id, pm.type)};
       }
@@ -69,7 +69,7 @@ function MetaKeyProvider(options) {
       for (let i = 0; i < keyProps.length; i++) {
         let pm = cm.getPropertyMeta(keyProps[i]);
         if (!pm) {
-          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+          throw new Error(`${keyProps[0]} attribute of the ${cm.getCaption()} class not found!`);
         }
         result[keyProps[i]] = cast(parts[i], pm.type);
       }

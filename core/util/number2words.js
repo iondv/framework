@@ -3,22 +3,22 @@
 
 let words = [
   [
-    '', 'один', 'два', 'три', 'четыре', 'пять', 'шесть',
-    'семь', 'восемь', 'девять', 'десять', 'одиннадцать',
-    'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать',
-    'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'
+    '', 'one', 'two', 'three', 'four', 'five', 'six',
+    'seven', 'eight', 'nine', 'ten', 'eleven',
+    'twelve', 'thirteen', 'fourteen', 'fifteen',
+    'sixteen', 'seventeen', 'eighteen', 'nineteen'
   ],
   [
-    '', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят',
-    'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'
+    '', '', 'twenty', 'thirty', 'forty', 'fifty',
+    'sixty', 'seventy', 'eighty', 'ninety'
   ],
   [
-    '', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот',
-    'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'
+    '', 'hundred', 'two hundred', 'three hundred', 'four hundred', 'five hundred',
+    'six hundred', 'seven hundred', 'eight hundred', 'nine hundred'
   ]
 ];
 
-let rusRubles = ['рубль', 'рубля', 'рублей'];
+let rusRubles = ['dollar', 'dollar', 'dollar'];
 
 function plural(count, options) {
   if (options.length !== 3) {
@@ -66,22 +66,22 @@ function parseNumber(number, count, isCurr) {
     numeral = `(${numeral.trim()}) ${plural(number, rusRubles)}`;
   } else if (count === 1) {
     if (numeral !== '  ') {
-      numeral = numeral + plural(number, ['тысяча ', 'тысячи ', 'тысяч ']);
-      numeral = numeral.replace('один ', 'одна ').replace('два ', 'две ');
+      numeral = numeral + plural(number, ['thousand ', 'thousand ', 'thousand ']);
+      numeral = numeral.replace('one ', 'one ').replace('two ', 'two ');
     }
   } else if (count === 2) {
     if (numeral !== '  ') {
-      numeral = numeral + plural(number, ['миллион ', 'миллиона ', 'миллионов ']);
+      numeral = numeral + plural(number, ['million ', 'million ', 'million ']);
     }
   } else if (count === 3) {
-    numeral = numeral + plural(number, ['миллиард ', 'миллиарда ', 'миллиардов ']);
+    numeral = numeral + plural(number, ['billion ', 'billion ', 'billion ']);
   }
 
   return numeral;
 }
 
 function parseDecimals(number) {
-  let text = plural(number, ['копейка', 'копейки', 'копеек']);
+  let text = plural(number, ['cent', 'cent', 'cent']);
 
   if (number === 0) {
     number = '00';

@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Наследование](/docs/ru/2_system_description/metadata_structure/meta_class/ancestor.md)
+### Предыдущая страница: [Наследование](ancestor.md)
 
 # Метки времени создания и изменения
 
@@ -165,11 +165,12 @@
 
 ```
 
-### Следующая страница: [Журналирование изменений](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md) 
+### Следующая страница: [Журналирование изменений](journaling.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/time_user_tracker.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
