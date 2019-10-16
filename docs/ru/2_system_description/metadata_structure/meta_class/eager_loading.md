@@ -1,6 +1,6 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+### Предыдущая страница: [Список выбора допустимых значений](atr_selectionprovider.md)
 
 # Предварительная выборка 
 
@@ -66,11 +66,12 @@ NB. Если вместо `"node1"` поставить `"*"`, то при поп
 
 Максимальная глубина предварительной выборки определяет максимально допустимый уровень вложенности объекта относительно открытого объекта на странице.
 
-### Следующая страница: [Вычислимые поля](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)
+### Следующая страница: [Вычислимые поля](atr_formula.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

@@ -84,7 +84,7 @@ reports:
 
 Результат: таблица из двух колонок (Дата и Наименование), в которой будут выводится объекты класса из источника _"dataSource"_ , в соответствии с фильтром по датам, настроенном в `rangeFilters:`, а количество объектов в таблице будет равно количеству значений идентификатора, настроенном в свойстве `joins:`.
 
-Пример простого полного отчета можно посмотреть по [здесь](/docs/ru/2_system_description/metadata_structure/meta_report/example.md).
+Пример простого полного отчета можно посмотреть по [здесь](example.md).
 
 ## Настройка строгости сравнения
 
@@ -464,7 +464,8 @@ reports:
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)   &ensp; [FAQs](/faqs.md)  <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_report/meta_report.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
  
  --------------------------------------------------------------------------  
 

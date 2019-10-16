@@ -20,7 +20,16 @@
   <link href="css/base.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
 </head>
-
+<style>
+  .pwd-error {
+    position: absolute;
+    background-color: red;
+    color: white;
+    width: 100%;
+    padding: 10px;
+    z-index: 1000;
+  }
+</style>
 <body>
 <div class="padding-15">
   <div class="login-box">
@@ -40,7 +49,8 @@
           <label class="label">Новый пароль</label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
-            <input type="password" name="password">
+            <input id="password" type="password" name="password">
+            <div class="pwd-error" style="display: none;"></div>
             <b class="tooltip tooltip-top-right">Новый пароль</b>
           </label>
         </section>
@@ -49,7 +59,8 @@
           <label class="label">Повтор пароля</label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
-            <input type="password" name="password2">
+            <input id="password2" type="password" name="password2">
+            <div class="pwd-error" style="display: none;"></div>
             <b class="tooltip tooltip-top-right">Повтор пароля</b>
           </label>
         </section>
@@ -68,6 +79,7 @@
   </div>
 </div>
 <script>
+  var allowSubmit = true;
   jQuery(function(){
     var options = <%- JSON.stringify(options)%>;
     var $errors = $('#errors');
@@ -77,6 +89,9 @@
     var $pwd2 = $regForm.find('[name="password2"]');
     $submit.click(function(){
       $errors.hide();
+      if (!allowSubmit) {
+        return false;
+      }
       var pwd = $pwd.val();
       var pwd2 = $pwd2.val();
       var valid = true;
@@ -100,6 +115,36 @@
         }
         $errors.show();
       }
+    });
+
+    function checkPwd(fld, data) {
+      $.post('checkPwd', data)
+        .then(function (data) {
+          if (data.error) {
+            let offset = fld.offset();
+            fld.next().css({left: offset.x, top: offset.y + fld.height()}).html(data.error).show();
+          } else {
+            fld.next().hide();
+          }
+          fld.toggleClass('error', !data.result);
+          allowSubmit = data.result;
+        })
+        .fail(function (xhr) {
+          fld.toggleClass('error', true);
+          allowSubmit = false;
+        });
+    }
+
+    $('#password').change(function () {
+      let fld = $(this);
+      let pwd = fld.val();
+      checkPwd(fld, {password: pwd, password2: pwd});
+    });
+    $('#password2').change(function () {
+      let fld = $(this);
+      let pwd2 = fld.val();
+      let pwd = $('#password').val();
+      checkPwd(fld, {password: pwd, password2: pwd2});
     });
   });
 </script>

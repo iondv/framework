@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### Back: [The registry module](/docs/en/3_modules_description/registry.md)
+### Back: [The registry module](registry.md)
 
 # The logic of forming the id elements associated with objects by type
 
@@ -70,7 +70,8 @@ Navigation node of the open class.
  --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/3_modules_description/registry_code.md) &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/3_modules_description/registry_code.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

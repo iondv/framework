@@ -31,6 +31,10 @@ function User(data, coactors, tz) {
   this.pwdHash = function () {
     return data.pwd;
   };
+  
+  this.needPwdReset = function () {
+    return data.needPwdReset;
+  };
 
   this.toString = function () {
     return this.name();

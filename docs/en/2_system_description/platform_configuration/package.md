@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Configuration file - deploy.json](/docs/en/2_system_description/platform_configuration/deploy.md)
+### The previous page: [Configuration file - deploy.json](deploy.md)
 
 # Dependencies in package.json
 
@@ -60,20 +60,20 @@ The **package.json** file - defines the structure of dependencies and the detail
 | `"version"`    | **Version**   | Number of a current version. |
 | `"homepage"`   | **Home page** | Link to the already built project on the docker. |
 |    `"bugs"`     |   **Bugs**           | Specifies the link to the application project in GitLab, where issues about bugs are collected.|
-| `"repository"` | **Repository**  | Сonsists of "type" and "url" fields. Indicates the type of repository and a link to it.                                                                                                                                                                                                                  |
+| `"repository"` | **Repository**  | Сonsists of "type" and "url" fields. Indicates the type of repository and a link to it.|
 | `"engines"`    | **Core**     | Number of a core version. |
-| `"scripts"`    | **Scripts**  | Script to build meta from different groups and different url.
-| `"ionModulesDependencies"`        | **Dependencies of ion modules**               | Specifies the modules and their versions used in the application. The project includes the following modules: •  "**ionadmin**" – administration module •  "**registry**" – registry module •  "**report**" – report module •  "**rest**": "- REST module •  "**dashboard**" – dashboard module •  "**geomap**" - geo module •  "**gantt-chart**" – gantt chart module •  "**portal**" – portal module                                                                                                                                    |
-| `"ionMetaDependencies"`       | **Dependencies of ion metadata**        | Additional applications to operate the system.                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                                                                              
-| `"dependencies"`   | **Dependencies**      |  Other project dependencies.
+| `"scripts"`    | **Scripts**  | Script to build meta from different groups and different url.|
+| `"ionModulesDependencies"`        | **Dependencies of ion modules**               | Specifies the modules and their versions used in the application. The project includes the following modules: •  "**ionadmin**" – administration module •  "**registry**" – registry module •  "**report**" – report module •  "**rest**": "- REST module •  "**dashboard**" – dashboard module •  "**geomap**" - geo module •  "**gantt-chart**" – gantt chart module •  "**portal**" – portal module |
+| `"ionMetaDependencies"`       | **Dependencies of ion metadata**        | Additional applications to operate the system. |                                                                                                                                                                                                                                                                                                                                                                                              
+| `"dependencies"`   | **Dependencies**      |  Other project dependencies.|
 
 
-### The next page: [Configuration parameters - ini-files](/docs/en/2_system_description/platform_configuration/ini_files.md)
+### The next page: [Configuration parameters - ini-files](ini_files.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/package.md)   &ensp; [FAQs](/faqs.md) 
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/platform_configuration/package.md)   &ensp;  
  
  --------------------------------------------------------------------------  
 

@@ -32,14 +32,22 @@
 
 This page in [English](/README.md/)
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/iondv_readme1.png" height="800px" alt="IONDV. Framework in numbers: rest api, soap, json, yaml, JavaScript - free open source web business application development" align="center"></a>
 </h1>  
 
 # IONDV. Framework 
 
+IONDV. Framework - это опенсорный фреймворк на node.js для разработки учетных приложений 
+или микросервисов на основе метаданных и отдельных модулей. Он является частью 
+инструментальной цифровой платформы для создания enterprise 
+(ERP) приложений состоящей из опенсорсных компонентов: самого [фреймворка](https://github.com/iondv/framework), 
+[модулей](https://github.com/topics/iondv-module) и готовых приложений расширяющих его 
+функциональность, визуальной среды [Studio](https://github.com/iondv/studio) для 
+разработки метаданных приложений.
+
 ## Описание 
 
-**IONDV. Framework** — это инструмент для создания веб-приложений, на основе метаданных и без программирования. Можно изменять и дополнять систему с помощью наращивания дополнительной функциональности в виде модулей. Есть готовые модули, но ничто не ограничевает вас создать свои собственные и персонализировать приложение. 
+**IONDV. Framework** — это инструмент для создания веб-приложений, на основе метаданных без программирования. Можно изменять и дополнять систему с помощью наращивания дополнительной функциональности в виде модулей. Есть готовые модули, но ничто не ограничевает вас создать свои собственные и персонализировать приложение. 
 
 Основное предназначение - реализация сложносоставных систем реестра данных. Основу функциональности составляет реестр данных — модуль Регистри. Это ключевой модуль, предназначенный непосредственно для работы с данными на основе структур метаданных – в том числе по ведению проектов, программ, мероприятий и др. 
 
@@ -55,7 +63,7 @@ This page in [English](/README.md/)
 
 `core + metadata + modules = application`
 
-<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" alt="Application structure - core, metadata, modules" align="center"></a>
+<h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" height="500px" alt="Application structure - core, metadata, modules" align="center"></a>
 </h1>  
 
 В квадратных рамках - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - это база простейшего приложения. Чуть ниже представлены дополнительные типы меты и модули. Они представляют собой дополнительную функциональность и применяются в соответствии с приложением. Зависимости приложения смотрим в файле `package.json`.
@@ -76,37 +84,71 @@ This page in [English](/README.md/)
 
 Посмотрите наши демо уже сейчас:
 
-* [Studio](https://studio.iondv.com/index) - специализированная IDE, помогающая ускорить и упростить разработку приложений на IONDV. Framework. [GitHub Репозиторий](github.com/iondv/studio).
+* [Studio](https://studio.iondv.com/index) - специализированная IDE, помогающая ускорить и упростить разработку приложений на IONDV. Framework. [GitHub Репозиторий](https://github.com/iondv/studio). [Инструкция по созданию приложения при помощи ION. Studio](https://github.com/iondv/nutrition-tickets/blob/master/tutorial/ru/index.md)
 * [DNT](https://dnt.iondv.com/auth) - наше приложение для разработки и тестирования, на основе которого внедряются и тестируются новые метакомпоненты. Практически все элементы системы находятся в приложении DNT.[GitHub Репозиторий](github.com/iondv/develop-and-test).
 * [War Archive](https://war-archive.iondv.com/portal/index) - это программное решение на основе IONDV. Framework, реализованное для действующего проекта "Вспомнить каждого", цель которого оцифровать архивные документы, внести информацию в базу и обеспечить к ним свободный доступ. [GitHub Репозиторий](https://github.com/iondv/war-archive).
-* Project Management - *скоро на GitHub*.
-* Telecom - *скоро на GitHub*.
+* [Project Management](https://pm-gov-ru.iondv.com) - это программное решение на основе IONDV. Framework, реализованное для организации проектной деятельности, целью которой является контроль результатов, соблюдение и сокращение сроков их достижения, эффективное использование временных, человеческих и финансовых ресурсов, принятие своевременных и обоснованных управленческих решений. [GitHub Repo](https://github.com/iondv/pm-gov-ru)
+* [Telecom](https://telecom-ru.iondv.com) - это программное решение на основе IONDV. Framework, реализованное для организации учета, хранения и отображения данных о наличии услуг связи
+(интернет, сотовая связь, телевидение, почта и др.) в населенных пукнтах региона. [GitHub Repo](https://github.com/iondv/telecom-ru)
 * CRM - *скоро на GitHub*.
 
 Логин для доступа - demo, пароль - ion-demo. Регистрация не требуется.
 
 ## Функциональные возможности  
 
-* Вести данные в многопользовательском режиме
-* Распределить доступ и безопасность данных
-* Управлять данными на основе бизнес-процессов
-* Сформировать отчеты и аналитику
-* Отобразить данные на карте
-* Подготовить отчет с расчетами
-* Интегрировать данные по REST и SOAP 
+**IONDV. Framework** обеспечивает реализацию следующей функциональности:
 
-## Быстрый старт с использованием репозитория
+- обеспечение трансляции описательных метаданных в структуру хранения данных в СУБД;
+- обеспечение функциональности работы с различными СУБД (ORM технологию);
+- обеспечение авторизации в системе с различными политиками, по умолчанию oath2, с открытым конфигурируемым API для подключения авторизационных модулей библиотеки passport обеспечивает до 500 различных политик авторизации;
+- обеспечение безопасности доступа к данным – статической к типам данных, к навигации, к этапам бизнес-процессов, к действиям на форме; динамической – через условия в данных, которым должен соответствовать профиль текущего пользователя (принадлежность к подразделению или организации указанной в объекте, группе или другим условиям); через url; обеспечение исключения в авторизации и безопасности по url или для специального пользователя;
+- подключение модулей, обеспечивающих дополнительную функциональность и реализуемую через доступ к интерфейсам (API) ядра;
+- обеспечение импорта, экспорта данных в системе, метаданных, безопасности из файлов;
+- обеспечение взаимодействия с файловой системой для хранения данных, в том числе с внешними файловыми хранилищами, такими как nextcloud;
+- расчет значения с формулами и кэширование этих данных;
+- обеспечение жадной загрузки данных и их фильтрации в связанных коллекциях;
+- кэширование запросов и сессий в memcached, redis;
+- выполнение задач по расписанию;
+- уведомление пользователей по событиям.
+
+Подробнее о функциональных возможностях фреймворка и его модулей можно узнать [здесь](/docs/ru/key_features.md).
+
+## Быстрый старт
 
 Вы можете посмотреть собранные приложения, развернутые в облаке или получить продукты для изучения другим способом на [сайте фреймворка](https://iondv.com), в том числе:
-* инсталятор для операционной системы Windows
-* архив с собранным приложением
+* инсталятор для операционной системы Linux
+* клонирование репозитория и установка всех компонентов
 * docker-контейнер с собранным приложением
+* архив с собранным приложением
 
 ### Cистемное окружение
 
 Запуск фреймворка осуществляется в среде [Node.js](<https://nodejs.org/en/>) версии 10.x.x.
 
 Для хранения данных необходимо установить и запустить [MongoDb](https://www.mongodb.org/) версии 3.6.
+
+### Установщик
+
+Вы можете использовать установщик приложений IONDV. Framework [iondv-app](https://github.com/iondv/iondv-app), требующий установленных node, mongodb и git. В ходе установки будет проверены и установлены все остальные зависимости, а также собрано и запущено само приложение.
+
+Установка в одну строку:
+
+```
+bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-app) -q -i -m localhost:27017 develop-and-test
+```
+
+Где вместо `localhost:27017` нужно указать адрес MongoDb. После запуска открыть ссылку 'http://localhost:8888', учетная запись бек офиса **demo**, пароль **ion-demo**.
+
+Где параметры для iondv-app `localhost:27017` адрес многодб, а `develop-and-test` название приложения.
+
+Также другой способ заключается в клонировании - (`git clone https://github.com/iondv/iondv-app.git`) и установите приложение с помощью команды `bash iondv-app -m localhost:27017 develop-and-test`.
+
+<details>
+  <summary> 
+    <h3> 
+      Сборка приложения из репозитория
+    </h3> 
+  </summary>
 
 ### Глобальные зависимости
 
@@ -155,16 +197,9 @@ This page in [English](/README.md/)
 ```
 auth.denyTop=false 
 auth.registration=false 
-auth.exclude[]=/files/**
-auth.exclude[]=/images/**
 db.uri=mongodb://127.0.0.1:27017/db
-db.user=username
-db.pwd=password
 server.ports[]=8888
-server.ports[]=8889
-server.ports[]=3000
 module.default=registry
-module.skip[]=offline-sync
 fs.storageRoot=./files
 fs.urlBase=/files
 
@@ -182,7 +217,7 @@ fs.urlBase=/files
 
 Добавьте пользователя admin с паролем 123 командой `node bin\adduser.js --name admin --pwd 123`.
 
-Добавьте пользователю права администратора командой `node bin\acl.js --u admin@local --role admin --p full`.
+Добавьте пользователю права администратора командой `node bin/acl.js --u admin@local --role admin --p full`.
 
 ### Запуск
 
@@ -190,63 +225,33 @@ fs.urlBase=/files
 
 Откройте браузер с адресом `http://localhost:8888` и авторизуйтесь в приложении , где `8888` - порт указанный в параметре server.ports конфигурации запуска.
 
+</details>
+
 ### Docker
-Для запуска приложений с докер контейнера, следуйте следующим инструкциям на примере приложения `develop-and-test`:
 
-1. Запустите СУБД mongodb
+Запуск приложения с использованием докер контейнера:
 
-```bash
-docker run  --name mongodb \
-            -v mongodb_data:/data/db \
-            -p 27017:27017 \
-            --restart unless-stopped \
-            -d \
-            mongo
-```
-
-2. Разверните **IONDV. Develop-and-test** и вспомогательные приложения (import и setup должны быть выполенны для всех приложений)
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import --src ./applications/develop-and-test --ns develop-and-test
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup develop-and-test --reset
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/setup viewlib
-```
-
-Если вы хотите импортированных данные в ваше проект, проверьте папку с демо данными `data` в приложении и выполните команду:
-```bash
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/import-data --src ./applications/develop-and-test --ns develop-and-test
-```
-
-3. Создайтей пользователя `admin` с паролем `123` и ролью `admin`
-```
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/adduser --name admin --pwd 123
-docker run --entrypoint="" --link mongodb --rm iondv/dnt node bin/acl --u admin@local --role admin --p full
-```
-
-4. Запустите приложение
-```
-docker run -d -p 80:8888 --name dnt --link mongodb iondv/dnt
-```
-
-Откройте в браузере `http://localhost/`.
+1. Запустите СУБД mongodb: `docker run --name mongodb -v mongodb_data:/data/db -p 27017:27017 -d mongo`
+2. Запустите IONDV. develop-and-test  `docker run -d -p 80:8888 --link mongodb iondv/develop-and-test`.
+3. Откройте ссылку `http://localhost` в браузере через минуту (время требуется для инициализации данных). Для бек офиса логин: **demo**, пароль: **ion-demo** 
 
 
 ## Документация 
 
-Документация по платформе IONDV.Framework доступна на двух языках  - [русский](/docs/ru/index.md) и [english](/docs/en/index.md).
+Документация по платформе IONDV.Framework доступна на двух языках  - [русский](index.md) и [english](/docs/en/index.md).
 
 ## Ссылки
 
 Ниже представлены ссылки на дополнительную информацию по разработке приложений с использованием IONDV.Framework.
-* [Документация](/docs/ru/index.md)
+* [Документация](index.md)
 * [Домашняя страница фреймворка](https://iondv.com/)
 * Обратная связь на [Facebook](https://www.facebook.com/iondv/)
-* Вопросы на [Stack Overflow](https://stackoverflow.com/questions/tagged/iondv)
 
 
 --------------------------------------------------------------------------  
 
 
-#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/README.md)   &ensp; [FAQs](/faqs.md)
+#### [License](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/README.md)   &ensp; 
 <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 --------------------------------------------------------------------------  

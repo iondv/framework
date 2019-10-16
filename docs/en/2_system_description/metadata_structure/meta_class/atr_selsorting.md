@@ -1,6 +1,6 @@
 #### [Content](/docs/en/index.md)
 
-### The previous page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
+### The previous page: [Conditions of sorting the valid values](atr_selconditions.md)
 
 # Sorting a sample of valid values
 
@@ -55,11 +55,12 @@
 | `"mode"`     | **Sorting order** | _0 - in ascending order_                 | Sorting order                                  |
 |              |                        | _1 - in descending order_                    |                                                     |
 
-### The next page: [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+### The next page: [Selection list of valid values](atr_selectionprovider.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)   <div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 
