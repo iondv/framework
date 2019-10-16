@@ -89,11 +89,13 @@ function deploy(done) {
           console.log('No applications to install.');
           return scp.dataSources.disconnect();
         }
+        let appCount = 0;
         let first = true;
         applications.forEach((app) => {
           let pth = path.join(appDir, app);
           let stat = fs.statSync(pth);
           if (stat.isDirectory()) {
+            appCount++;
             stage1 = stage1.then(() =>
               deployer(
                 pth,
@@ -112,7 +114,7 @@ function deploy(done) {
         });
 
         return stage1.then(() => {
-          console.log('The application is deployed.');
+          console.log(appCount ? 'All applications where installed.' : 'No applications to install.');
           return scp.dataSources.disconnect();
         });
       } catch (err) {
