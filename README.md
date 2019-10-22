@@ -140,6 +140,8 @@ Where  `localhost: 27017` is the MongoDB address, and `develop-and-test` is the 
 
 Also the other way is to clone - (`git clone https://github.com/iondv/iondv-app.git`) and install the app by using the `bash iondv-app -m localhost:27017 develop-and-test` command.
 
+You can also build the application in Docker containers, then only docker and mongodb DBMS in the Docker container are needed from the environment. For more information, see the [IONDV. Framework apps installer] (https://github.com/iondv/iondv-app)
+
 <details>
   <summary> 
     <h3> 
