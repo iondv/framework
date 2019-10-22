@@ -246,9 +246,9 @@ Open this link `http://localhost:8888` in a browser and log in. `8888` —  is a
 ### Docker
 Follow these steps to deploy docker container on the example of the `develop-and-test` application:
 
-1. Run mongodb DBMS: `docker run - name mongodb -v mongodb_data: / data / db -p 27017: 27017 -d mongo`
-2. Run IONDV. develop-and-test `docker run -d -p 80: 8888 --link mongodb iondv / develop-and-test`.
-3. Open the `http: // localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: **demo**, password: **ion-demo**
+1. Run mongodb DBMS: `docker run --name mongodb -v mongodb_data:/data/db -p 27017:27017 -d mongo`
+2. Run IONDV. develop-and-test `docker run -d -p 80:8888 --link mongodb iondv/dnt`.
+3. Open the `http://localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: **demo**, password: **ion-demo**
 
 
 ## Documentation 
