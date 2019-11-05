@@ -28,6 +28,14 @@ class Notifier {
   }
 
   /**
+   * @param {String} reciever
+   * @returns {Promise}
+   */
+  markAllAsRead(reciever) {
+    return this._markAllAsRead(reciever);
+  }
+
+  /**
    * @param {String} id
    * @returns {Promise}
    */
