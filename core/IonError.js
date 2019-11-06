@@ -6,7 +6,7 @@ const strings = require('core/strings');
 
 /**
  *
- * @param {Number} code
+ * @param {String | Number} code
  * @param {{}} [params]
  * @param {Error} cause
  * @constructor
