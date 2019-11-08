@@ -1,7 +1,6 @@
 /**
  * Created by krasilneg on 25.04.17.
  */
-'use-strict';
 
 const IonError = require('core/IonError');
 const {
@@ -30,5 +29,5 @@ module.exports = function errorSetup(lang, baseDir) {
     const messages = readConfig(fn);
     base = merge(base, messages);
   });
-  IonError.registerMessages(base);
+  IonError.registerMessages(base, lang);
 };
