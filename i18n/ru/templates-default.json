@@ -17,6 +17,7 @@
   "templates.default.profile.title": "Профиль пользователя %name",
   "templates.default.profile.save": "Сохранить",
   "templates.default.profile.back": "Вернуться в приложение",
+  "templates.default.profile.language": "Язык",
   "templates.default.register.title": "Регистрация в системе",
   "templates.default.register.register": "Регистрация"
 }

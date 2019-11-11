@@ -20,6 +20,7 @@
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/base.css" rel="stylesheet" type="text/css">
   <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="js/i18n.js"></script>
 </head>
 
 <body>
@@ -36,11 +37,23 @@
     <form id="reg-form" action="profile" method="post" class="sky-form boxed">
       <header><i class="fa fa-users"></i> <%=__('templates.default.profile.title', {name: user.name()})%></header>
       <fieldset>
-        <%  let showSubmit = false;
-        Object.keys(fields).forEach(function(fieldName){ 
-          if (!fields[fieldName].readonly) {
-            showSubmit = true;
-          } %>
+         <section>
+          <label class="label">
+            <%=__('templates.default.profile.language')%>
+          </label>
+          <label class="input">
+            <select name="language">
+              <% for (let lang of languages){ %>
+              <option value="<%= lang %>" <%= lang === user.language() ? 'selected="true"' : ''%>>
+                <%= lang %>
+              </option>
+              <% } %>
+            </select>
+          </label>
+        </section>       
+      </fieldset>
+      <fieldset>
+        <% Object.keys(fields).forEach(function(fieldName){ %>
         <section>
           <label class="label">
             <%= fields[fieldName].caption ? fields[fieldName].caption : fieldName %>
@@ -51,22 +64,21 @@
             let val = user.properties()[fieldName];
             if (Array.isArray(fields[fieldName])) {
             %>
-            <select name="<%= fieldName %>">
+            <select name="properties[<%= fieldName %>]">
               <% for (let option of fields[fieldName]){ %>
               <option value="<%= option.value %>" <%=option.value === val ? 'selected="true"' : ''%>><%= option.key %></option>
               <% } %>
             </select>
             <% } else if (fields[fieldName]){ %>
-            <input type="text" name="<%= fieldName %>" class="input" <% if (fields[fieldName].required) { %>required<% } %> value="<%=val%>"/>
+            <input type="text" name="properties[<%= fieldName %>]"
+              class="input" <% if (fields[fieldName].required) { %>required<% } %> value="<%=val%>"/>
             <% } %>
           </label>
         </section>
         <% }) %>
       </fieldset>
       <footer>
-        <% if (showSubmit) { %>
-          <button id="authbutton" type="submit" class="btn btn-primary pull-right"><%=__('templates.default.profile.save')%></button>
-        <% } %>
+        <button id="authbutton" type="button" class="btn btn-primary pull-right"><%=__('templates.default.profile.save')%></button>
         <div class="forgot-password pull-left">
           <a href="<%=baseUrl%>"><b><%=__('templates.default.profile.back')%></b></a>
         </div>
@@ -94,8 +106,7 @@
             field = $regForm.find('[name='+fieldName+']');
             if (!field.val()) {
               valid = false;
-              messages.push('Поле ' + (fields[fieldName].caption ? fields[fieldName].caption : fieldName )
-                + ' обязательно для заполнения');
+              messages.push(s('i18n', 'js.profile.required', {field: fields[fieldName].caption ? fields[fieldName].caption : fieldName}));
             }
           }
         }

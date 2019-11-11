@@ -2,9 +2,10 @@ const onError = require('../../../backend/error');
 const respond = require('../../../backend/respond');
 const strings = require('core/strings');
 
-module.exports = (req, res) => respond([], (scope) => {
+module.exports = (req, res) => respond(['auth'], (scope) => {
   try {
-    res.send(strings.getBase(req.query.prefix, req.query.lang) || {});
+    const user = scope.auth.getUser(req);
+    res.send(strings.getBase('frontend', user.language()) || {});
   } catch (err) {
     scope.logRecorder.stop();
     onError(scope, err, res, true);

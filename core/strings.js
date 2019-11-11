@@ -7,13 +7,16 @@ const {setupLang} = require('./i18n-setup');
 const systemBase = {};
 const byLangBase = {};
 
+const parseLang = lang => typeof lang === 'string' ? (lang.match(/[a-z]+/gi)[0]).toLowerCase() : undefined;
+
 /**
  * @param {String} prefix
  * @param {String} id
  * @param {{}} params
  */
-const strings = (prefix, id, params, lang) => {
+const strings = (prefix, id, params, language) => {
   let str;
+  const lang = parseLang(language);
   if (prefix && id) {
     if (lang) {
       if (!byLangBase.hasOwnProperty(lang)) {
@@ -32,7 +35,6 @@ const strings = (prefix, id, params, lang) => {
     }
     if (str) {
       params && Object.keys(params).forEach((p) => {
-        console.log(str);
         str = str.replace(`%${p}`, params[p]);
       });
       return str;
@@ -63,12 +65,18 @@ module.exports.registerBase = function(prefix, base, lang) {
  * @param {String} prefix
  * @param {{}} base
  */
-module.exports.registerLang = function(lang, prefix, base) {
+module.exports.registerLang = function(language, prefix, base) {
+  const lang = parseLang(language);
   if (prefix && base && lang) {
     byLangBase[lang] = byLangBase[lang] || {};
     byLangBase[lang][prefix] = merge(base, byLangBase[lang][prefix] || {});
   }
 };
+
+/**
+ * @returns {Array.<String>}
+ */
+module.exports.getLangs = () => Object.keys(byLangBase);
 
 /**
  * @param {String} prefix
@@ -82,17 +90,19 @@ module.exports.unprefix = (prefix, lang) => (str, params) => strings(prefix, str
  * @param {String} prefix
  * @returns {{}}
  */
-module.exports.getBase = (prefix, lang) => {
+module.exports.getBase = (prefix, language) => {
+  const lang = parseLang(language);
   if (lang) {
     if (!byLangBase.hasOwnProperty(lang)) {
       setupLang(lang);
       byLangBase[lang] = byLangBase[lang] || {};
     }
-    if (byLangBase[lang].hasOwnProperty(prefix)) {
+    if (prefix && byLangBase[lang].hasOwnProperty(prefix)) {
       return byLangBase[lang][prefix] || {};
     }
+    return byLangBase[lang] || {};
   } else if (systemBase.hasOwnProperty(prefix)) {
     return systemBase[prefix] || {};
   }
-  return {};
+  return systemBase || {};
 };
