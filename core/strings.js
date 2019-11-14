@@ -67,7 +67,7 @@ module.exports.registerBase = function(prefix, base, lang) {
  */
 module.exports.registerLang = function(language, prefix, base) {
   const lang = parseLang(language);
-  if (prefix && base && lang) {
+  if (prefix && base && Object.keys(base).length && lang) {
     byLangBase[lang] = byLangBase[lang] || {};
     byLangBase[lang][prefix] = merge(base, byLangBase[lang][prefix] || {});
   }

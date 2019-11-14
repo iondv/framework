@@ -5,7 +5,11 @@ const strings = require('core/strings');
 module.exports = (req, res) => respond(['auth'], (scope) => {
   try {
     const user = scope.auth.getUser(req);
-    res.send(strings.getBase('frontend', user.language()) || {});
+    let base = strings.getBase(null, user.language());
+    if (!base || !Object.keys(base).length) {
+      base = strings.getBase();
+    }
+    res.send(base || {});
   } catch (err) {
     scope.logRecorder.stop();
     onError(scope, err, res, true);
