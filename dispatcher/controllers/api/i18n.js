@@ -9,7 +9,9 @@ module.exports = (req, res) => respond(['auth'], (scope) => {
     if (!base || !Object.keys(base).length) {
       base = strings.getBase();
     }
-    res.send(base || {});
+    res
+      .set('Content-type', 'application/javascript')
+      .render('i18n-handler', {base});
   } catch (err) {
     scope.logRecorder.stop();
     onError(scope, err, res, true);

@@ -1,18 +1,5 @@
 'use strict';
 
-$(function () {
-  $.ajax({
-    url: 'api/i18n',
-    type: 'GET',
-    success: function (data) {
-      window.i18n.base = data;
-    },
-    error: function (jqXHR, textStatus, errorThrown) {
-      console.error(errorThrown);
-    }
-  });
-});
-
 function I18nHandler() {
   this.base = {};
   this.s = function(prefix, id, params) {
@@ -34,3 +21,4 @@ function I18nHandler() {
 
 window.i18n = new I18nHandler();
 window.s = window.i18n.s.bind(window.i18n);
+window.i18n.base = <%- JSON.stringify(base) %>;

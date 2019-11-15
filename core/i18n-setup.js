@@ -22,6 +22,10 @@ function i18nSetup(lang, dir, prefix, log) {
   const absDir = toAbsolute(dir);
   sources.add(absDir);
   const msgDir = path.join(absDir, lang);
+  if (!msgDir.startsWith(absDir)) {
+    log && log.warn(`incorrect language "${lang}"`);
+    return;
+  }
   let base;
   try {
     base = require(msgDir);
@@ -58,6 +62,10 @@ function i18nSetupSync(lang, dir, prefix, log) {
   const absDir = toAbsolute(dir);
   sources.add(absDir);
   const msgDir = path.join(absDir, lang);
+  if (!msgDir.startsWith(absDir)) {
+    log && log.warn(`incorrect language "${lang}"`);
+    return;
+  }
   let base;
   try {
     base = require(msgDir);
@@ -86,11 +94,14 @@ function i18nSetupSync(lang, dir, prefix, log) {
  * @param {String} lang
  * @param {String} prefix
  */
-function setupLang(lang, prefix) {
+function setupLang(lang, prefix, log) {
   prefix = prefix || 'i18n';
   for (const dir of sources) {
     const msgDir = path.join(dir, lang);
-    // TODO: check for path traversal
+    if (!msgDir.startsWith(dir)) {
+      log && log.warn(`incorrect language "${lang}"`);
+      return;
+    }
     let base;
     try {
       base = require(msgDir);
