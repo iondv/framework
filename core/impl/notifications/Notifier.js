@@ -19,6 +19,7 @@ class Notifier extends INotifier {
    * @param {{}} options.dispatchers
    * @param {String} options.systemSender
    * @param {Logger} options.log
+   * @param {{}} options.app
    * @param {String} options.tplDir
    * @param {{}} [options.templates]
    */
@@ -31,6 +32,7 @@ class Notifier extends INotifier {
     this.system = options.systemSender || 'ion.system';
     this.log = options.log;
     this.templates = options.templates;
+    this.app =options.app;
   }
 
   /**
@@ -62,7 +64,8 @@ class Notifier extends INotifier {
               tpl,
               {
                 subject: notification.subject,
-                message: notification.message
+                message: notification.message,
+                getBaseUrl: this.app.getBaseUrl
               },
               {},
               (err, content) => {
@@ -219,7 +222,7 @@ class Notifier extends INotifier {
    * @returns {Promise}
    */
   _markAsRead(reciever, id) {
-    return this.ds.upsert(
+    return this.ds.update(
       'ion_notification_recievers',
       {
         [F.AND]: [
@@ -229,6 +232,30 @@ class Notifier extends INotifier {
       },
       {
         recieved: new Date()
+      },
+      {
+        bulk: true
+      }
+    );
+  }
+
+  /**
+   * @param {String} reciever
+   * @returns {Promise}
+   */
+  _markAllAsRead(reciever) {
+    return this.ds.update(
+      'ion_notification_recievers',
+      {
+        [F.AND]: [
+          {[F.EMPTY]: ['$recieved']},
+          {[F.EQUAL]: ['$reciever', reciever]}
+        ]
+      },
+      {
+        recieved: new Date()
+      }, {
+        bulk: true
       });
   }
 
@@ -256,6 +283,9 @@ class Notifier extends INotifier {
     }
     if (options.new) {
       f.push({[F.EMPTY]: ['$recieved']});
+    }
+    if (options.viewed) {
+      f.push({[F.NOT_EMPTY]: ['$recieved']});
     }
     if (options.since) {
       f.push({[F.GREATER_OR_EQUAL]: ['$n.date', options.since]});

@@ -72,7 +72,7 @@ function SettingsRepository(opts) {
                   return rs(fstat.isDirectory() ? f : null);
                 });
               }))
-              .then(() => reader(path.join(appsPath, f)));
+              .then(f => f && reader(path.join(appsPath, f)));
           } else if (f.isDirectory()) {
             p = p.then(() => reader(path.join(appsPath, f.name)));
           }
