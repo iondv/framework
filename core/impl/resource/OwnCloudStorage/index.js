@@ -258,7 +258,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
-      directory = parseDirId(directory);
+      directory = directory && parseDirId(directory);
       directory = ensureDirSep(directory);
 
       if (!data) {
@@ -431,7 +431,7 @@ function OwnCloudStorage(config) {
 
   function parseDirId(id) {
     let result = null;
-    let urlObj = url.parse(id, true);
+    let urlObj = url.parse(String(id), true);
     if (urlObj.host === ownCloudUrl.host) {
       if (urlObj.query && urlObj.query.dir) {
         result = urlObj.query.dir;
