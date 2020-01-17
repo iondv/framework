@@ -25,7 +25,7 @@
 В данном случае используется модуль listToDocx, следовательно в печатную форму будет выгружен список всех объектов определенного класса.  
 Для каждого такого класса в tplDir нужно создать папку с названием пространства имен, в которую затем поместить файл с названием нужного для выгрузки класса из этого пространства имен, например:
 ```
-C:\...\applications\khv-ticket-discount\export\list\khv-ticket-discount\ticketYear.docx
+...\applications\khv-ticket-discount\export\list\khv-ticket-discount\ticketYear.docx
 ```
 Таким образом в документ будет выгружен список всех объектов класса ticketYear@khv-ticket-discount.
 
