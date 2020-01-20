@@ -3,6 +3,7 @@
  */
 'use strict';
 const calc = require('../util').calculate;
+const {round10} = require('expected-round');
 
 function round(args) {
   let v1, v2;
@@ -19,7 +20,7 @@ function round(args) {
   if (args.length > 1 && !isNaN(args[1])) {
     v2 = args[1];
   }
-  return v1.toFixed(v2);
+  return round10(v1, -(v2));
 }
 
 module.exports = function (args) {
