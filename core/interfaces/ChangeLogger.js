@@ -20,7 +20,9 @@ const logRecordTypes = {
  * @param {String} obj.className
  * @param {String} obj.classVersion
  * @param {String} obj.id
- * @param {String} author
+ * @param {String} author.id
+ * @param {String} author.name
+ * @param {String} author.ip
  * @param {{}} updates
  * @param {{}} base
  * @constructor
@@ -55,7 +57,17 @@ function Change(time, type, obj, author, updates, base) {
   /**
    * @type {String}
    */
-  this.author = author;
+  this.author = author.id;
+
+  /**
+   * @type {String}
+   */
+  this.authorName = author.name;
+
+  /**
+   * @type {String}
+   */
+  this.authorIp = author.ip;
 
   /**
    * @type {Object}
