@@ -1,0 +1,51 @@
+# Шаблоны полей ввода данных в веб-форме
+Шаблоны предназначены для задания пользовательских параметров построения полей ввода данных в веб-форме.  
+Для подключения шаблона к полю веб-формы, необходимо указать его в опциях соответствующего поля json формы:
+```json
+{
+  "tabs": [
+    {
+      "caption": "Основные сведения",
+      "fullFields": [
+        {
+          "property": "surname",
+          "caption": "Фамилия",
+          ...
+          "options": {
+            "template": "capitalize"
+          },
+          "tags": ""
+        },
+```
+
+Шаблоны в формате `.ejs` загружаются по пути, указанном в `modules.registry.globals.templates` из `deploy.json`.  
+Например, если указан путь `applications/khv-ticket-discount/templates/registry`, то в прошлом примере для поля `property` будет загружен скрипт `applications/khv-ticket-discount/templates/registry/capitalize.ejs`.  
+  
+Скрипт будет выполнен при загрузке поля в веб-форме. Синтаксис стандартный для ejs.    
+Внутри скрипта доступны некоторые элементы веб-формы, подробнее: [Опции](../2_system_description/metadata_structure/meta_view/options.md).
+
+Пример скрипта для автоматической замены в текстовом поле ввода нижнего регистра букв на верхний и буквы "ё" на "е":
+```js
+<div class="form-group <%= field.required ? 'required' : '' %>">
+    <script>
+    </script>
+    <label for="a_khv-ticket-discount_applicant_<%= prop.getName().toLowerCase() %>" class="col-md-2 col-sm-3 control-label"><%= prop.getCaption() %>
+    </label>
+     <div class="col-sm-9">
+         <input id="a_khv-ticket-discount_applicant_<%= prop.getName().toLowerCase() %>" type="text" class="form-control attr-value" name="<%= prop.getName().toLowerCase() %>" data-mask="{&quot;regex&quot;:&quot;[ёЁа-яА-Я .-]{1,50}&quot;}" placeholder="<%= prop.getCaption() %>" value="" im-insert="true">
+         <script>
+             if (typeof inputField !== 'object') {inputField = [];}
+             propName = '<%= prop.getName().toLowerCase() %>';
+             inputField['<%= prop.getName().toLowerCase() %>'] = document.getElementById(`a_khv-ticket-discount_applicant_${propName}`);
+             inputField['<%= prop.getName().toLowerCase() %>'].addEventListener('focusout', () => {
+                 inputValue = inputField['<%= prop.getName().toLowerCase() %>'].value;
+                 while ((/[Ё]/).test(inputValue)) {inputValue = inputValue.replace(/[Ё]/,'Е');}
+                 while ((/[ё]/).test(inputValue)) {inputValue = inputValue.replace(/[ё]/,'е');}
+                 while ((/[а-я]/).test(inputValue)) {inputValue = inputValue.toUpperCase();}
+                 //(/[а-я]/).test(inputValue[0]) ? inputValue = inputValue[0].toUpperCase() + inputValue.substring(1) : ""; - только первая буква
+                 inputField['<%= prop.getName().toLowerCase() %>'].value = inputValue;
+             })
+         </script>
+     </div>
+</div>
+``` 
