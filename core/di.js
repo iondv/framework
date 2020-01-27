@@ -156,10 +156,10 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
-      result = new F(opts);
+      result = new F(opts || {});
     } else {
       result = function () {
-        return F.call(scope, opts);
+        return F.call(scope, opts || {});
       };
       if (component.initMethod) {
         if (typeof F[component.initMethod] != 'function') {
