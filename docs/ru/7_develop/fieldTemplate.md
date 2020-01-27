@@ -5,12 +5,12 @@
 {
   "tabs": [
     {
-      "caption": "Основные сведения",
+      "caption": "General info",
       "fullFields": [
         {
           "property": "surname",
-          "caption": "Фамилия",
-          ...
+          "caption": "Surname",
+          //...
           "options": {
             "template": "capitalize"
           },
@@ -24,7 +24,7 @@
 Скрипт будет выполнен при загрузке поля в веб-форме. Синтаксис стандартный для ejs.    
 Внутри скрипта доступны некоторые элементы веб-формы, подробнее: [Опции](../2_system_description/metadata_structure/meta_view/options.md).
 
-Пример скрипта для автоматической замены в текстовом поле ввода нижнего регистра букв на верхний и буквы "ё" на "е":
+Пример скрипта для автоматической замены в текстовом поле ввода нижнего регистра букв на верхний и буквы "ö" на "o":
 ```js
 <div class="form-group <%= field.required ? 'required' : '' %>">
     <script>
@@ -39,10 +39,10 @@
              inputField['<%= prop.getName().toLowerCase() %>'] = document.getElementById(`a_khv-ticket-discount_applicant_${propName}`);
              inputField['<%= prop.getName().toLowerCase() %>'].addEventListener('focusout', () => {
                  inputValue = inputField['<%= prop.getName().toLowerCase() %>'].value;
-                 while ((/[Ё]/).test(inputValue)) {inputValue = inputValue.replace(/[Ё]/,'Е');}
-                 while ((/[ё]/).test(inputValue)) {inputValue = inputValue.replace(/[ё]/,'е');}
-                 while ((/[а-я]/).test(inputValue)) {inputValue = inputValue.toUpperCase();}
-                 //(/[а-я]/).test(inputValue[0]) ? inputValue = inputValue[0].toUpperCase() + inputValue.substring(1) : ""; - только первая буква
+                 while ((/[Ö]/).test(inputValue)) {inputValue = inputValue.replace(/[Ö]/,'O');}
+                 while ((/[ö]/).test(inputValue)) {inputValue = inputValue.replace(/[ö]/,'o');}
+                 while ((/[a-z]/).test(inputValue)) {inputValue = inputValue.toUpperCase();}
+                 //(/[a-z]/).test(inputValue[0]) ? inputValue = inputValue[0].toUpperCase() + inputValue.substring(1) : ""; - capitalize only first letter
                  inputField['<%= prop.getName().toLowerCase() %>'].value = inputValue;
              })
          </script>
