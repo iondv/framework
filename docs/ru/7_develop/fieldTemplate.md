@@ -10,7 +10,7 @@
         {
           "property": "surname",
           "caption": "Surname",
-          //...        
+          //...
           "options": {
             "template": "capitalize"
           },
@@ -22,29 +22,39 @@
 Например, если указан путь `applications/khv-ticket-discount/templates/registry`, то в прошлом примере для поля `property` будет загружен скрипт `applications/khv-ticket-discount/templates/registry/capitalize.ejs`.  
   
 Скрипт будет выполнен при загрузке поля в веб-форме. Синтаксис стандартный для ejs.    
-Внутри скрипта доступны некоторые элементы веб-формы, подробнее: [Опции](../2_system_description/metadata_structure/meta_view/options.md).
+Внутри скрипта доступны некоторые элементы веб-формы, подробнее: [Опции](docs/ru/2_system_description/metadata_structure/meta_view/options.md).
 
 Пример скрипта для автоматической замены в текстовом поле ввода нижнего регистра букв на верхний и буквы "ö" на "o":
-```js
-<div class="form-group <%= field.required ? 'required' : '' %>">
-    <script>
-    </script>
-    <label for="a_khv-ticket-discount_applicant_<%= prop.getName().toLowerCase() %>" class="col-md-2 col-sm-3 control-label"><%= prop.getCaption() %>
+```html
+<% wfState = item.base.state %>
+<div class="form-group <%= wfState === 'edit' || item.id === null ? (field.required ? 'required' : '') : '' %> " style data-type="<%= wfState === 'edit' || item.id === null  ? 'input' : 'static' %>" data-name="<%= prop.getName().toLowerCase() %>" data-prop="<%= JSON.stringify(field) %>" >
+    <label for="a_khv-ticket-discount_<%= item.getClassName().split('@')[0] %>_<%= prop.getName().toLowerCase() %>" class="col-md-2 col-sm-3 control-label"><%= prop.getCaption() %>
     </label>
      <div class="col-sm-9">
-         <input id="a_khv-ticket-discount_applicant_<%= prop.getName().toLowerCase() %>" type="text" class="form-control attr-value" name="<%= prop.getName().toLowerCase() %>" data-mask="{&quot;regex&quot;:&quot;[ёЁа-яА-Я .-]{1,50}&quot;}" placeholder="<%= prop.getCaption() %>" value="" im-insert="true">
+         <input id="a_khv-ticket-discount_<%= item.getClassName().split('@')[0] %>_<%= prop.getName().toLowerCase() %>" type="<%= wfState === 'edit' || item.id === null ? 'text' : 'hidden' %>" class="form-control attr-value" name="<%= prop.getName().toLowerCase() %>" data-mask="{&quot;regex&quot;:&quot;[öÖa-zA-Z .-]{1,50}&quot;}" placeholder="<%= prop.getCaption() %>" value="<%= prop.getValue() !== null ? prop.getValue() : "" %>" im-insert="true">
+         <% if(wfState === 'done' && item.id !== null) { %>
+             <div class="form-control-static"><%= prop.getValue() %></div>
+         <% } %>
          <script>
              if (typeof inputField !== 'object') {inputField = [];}
              propName = '<%= prop.getName().toLowerCase() %>';
-             inputField['<%= prop.getName().toLowerCase() %>'] = document.getElementById(`a_khv-ticket-discount_applicant_${propName}`);
-             inputField['<%= prop.getName().toLowerCase() %>'].addEventListener('focusout', () => {
-                 inputValue = inputField['<%= prop.getName().toLowerCase() %>'].value;
-                 while ((/[Ö]/).test(inputValue)) {inputValue = inputValue.replace(/[Ö]/,'O');}
-                 while ((/[ö]/).test(inputValue)) {inputValue = inputValue.replace(/[ö]/,'o');}
-                 while ((/[a-z]/).test(inputValue)) {inputValue = inputValue.toUpperCase();}
-                 //(/[a-z]/).test(inputValue[0]) ? inputValue = inputValue[0].toUpperCase() + inputValue.substring(1) : ""; - capitalize only first letter
-                 inputField['<%= prop.getName().toLowerCase() %>'].value = inputValue;
-             })
+             inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'] = document.getElementById(`a_khv-ticket-discount_<%= item.getClassName().split('@')[0] %>_${propName}`);
+             inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].addEventListener('focusout',applyStyle)
+             inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].addEventListener('keyup', applyStyle)
+             inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].addEventListener('keydown', applyStyle)
+             inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].addEventListener('paste', applyStyle)
+             function applyStyle() {
+                 while ((/[Ö]/).test(inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value)) {
+                     inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value = inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value.replace(/[Ö]/, 'O');
+                 }
+                 while ((/[ö]/).test(inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value)) {
+                     inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value = inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value.replace(/[ö]/, 'o');
+                 }
+                 while ((/[a-z]/).test(inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value)) {
+                     inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value = inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value.toUpperCase();
+                 }
+                 //(/[а-я]/).test(inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value[0]) ? inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value = inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value[0].toUpperCase() + inputField['<%= item.getClassName().split('@')[0] %><%= prop.getName().toLowerCase() %>'].value.substring(1) : ""; - только первая буква}
+             }
          </script>
      </div>
 </div>
