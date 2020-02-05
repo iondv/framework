@@ -156,21 +156,26 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
-      result = new F(opts);
+      result = new F(opts || {});
     } else {
       result = function () {
-        return F.call(scope, opts);
+        return F.call(scope, opts || {});
       };
       if (component.initMethod) {
         if (typeof F[component.initMethod] != 'function') {
           throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
         }
         result[component.initMethod] = F[component.initMethod];
+      } else if (typeof F._initialization === 'function') {
+        result._initialization = F._initialization;
       }
     }
     scope[name] = result;
     component.name = name;
     if (component.initMethod) {
+      init.push(component);
+    } else if (typeof result._initialization === 'function') {
+      component.initLevel = component.initLevel || Infinity;
       init.push(component);
     }
   }
@@ -234,10 +239,11 @@ function di(context, struct, presets, parentContext, skip, cwd) {
   init.forEach((initiator) => {
     if (scope[initiator.name]) {
       const c = scope[initiator.name];
-      if (typeof c[initiator.initMethod] == 'function') {
-        p = p.then(() => c[initiator.initMethod].call(c, scope));
+      const im = initiator.initMethod || '_initialization';
+      if (typeof c[im] == 'function') {
+        p = p.then(() => c[im].call(c, scope));
       } else {
-        return Promise.reject(new Error('Не найден метод ' + initiator.initMethod + ' компонента ' + initiator.name));
+        return Promise.reject(new Error('Не найден метод ' + im + ' компонента ' + initiator.name));
       }
     } else {
       return Promise.reject(new Error('Не найден компонент ' + initiator.name));

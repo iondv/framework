@@ -1071,14 +1071,22 @@ function MongoDs(config) {
     if (conditions && typeof conditions === 'object' &&
       !(conditions instanceof Date) && !(conditions instanceof mongo.ObjectID)) {
       for (let oper in conditions) {
-        if (conditions.hasOwnProperty(oper) && oper === Operations.EQUAL) {
+        if (conditions.hasOwnProperty(oper)) {
           let args = conditions[oper];
-          for (let i = 0; i < args.length; i++) {
-            if (args[i] && typeof args[i] === 'string' && args[i][0] === '$') {
-              let an = args[i].substr(1);
-              if (data.hasOwnProperty(an)) {
-                conditions[oper] = [args[i], data[an]];
-                break;
+          if (oper === Operations.EQUAL) {
+            for (let i = 0; i < args.length; i++) {
+              if (args[i] && typeof args[i] === 'string' && args[i][0] === '$') {
+                let an = args[i].substr(1);
+                if (data.hasOwnProperty(an)) {
+                  conditions[oper] = [args[i], data[an]];
+                  break;
+                }
+              }
+            }
+          } else {
+            for (let i = 0; i < args.length; i++) {
+              if (args[i] && typeof args[i] === 'object') {
+                adjustSetKeys(args[i], data);
               }
             }
           }
@@ -1724,7 +1732,7 @@ function MongoDs(config) {
                 } else {
                   tmp = tmp2;
                 }
-              
+
               }
               if (tmp) {
                 result.push({[nm]: tmp});
