@@ -1,20 +1,16 @@
-; ВАЖНОЕ
+auth.denyTop=false
+auth.registration=false
 
-auth.denyTop=false ; - true если не нужна аутентификация на уровне платформы, и каждый модуль будет аутентифицироваться сам
-auth.registration=false ; если не требуется регистрация
-
-; Исключения из проверки доступа безопасности
+; Exclusion from security checks
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
 
-; Исключение статичных путей ядра из проверки доступа безопасности
 auth.exclude[]=/
 auth.exclude[]=/vendor/**
 auth.exclude[]=/css/**
 auth.exclude[]=/fonts/**
 auth.exclude[]=/favicon.ico
 
-; Исключение статичных путей модулей из проверки доступа безопасности
 auth.exclude[]=/registry/vendor/**
 auth.exclude[]=/registry/css/**
 auth.exclude[]=/registry/js/**
@@ -24,10 +20,7 @@ auth.exclude[]=/registry/common-static/**
 auth.exclude[]=/registry/img/**
 auth.exclude[]=/registry/fonts/**
 auth.exclude[]=/dashboard/vendor/**
-auth.exclude[]=/dashboard/develop-and-test/** ; для проекта develop-and-test
 auth.exclude[]=/dashboard/js/**
-auth.exclude[]=/registry/viewlib-ext-static/** ; для проекта viewlib-extra
-auth.exclude[]=/registry/viewlib-static/js/** ; для проекта viewlib
 auth.exclude[]=/gantt-chart/vendor/**
 auth.exclude[]=/gantt-chart/gantt/**
 auth.exclude[]=/gantt-chart/css/**
@@ -47,25 +40,22 @@ auth.exclude[]=/report/common-static/**
 auth.exclude[]=/report/img/**
 auth.exclude[]=/report/fonts/**
 
-; Исключение всего модуля из проверки доступа безопасности
 auth.exclude[]=/portal/**
 
-db.uri=mongodb://127.0.0.1:27017/db ; URI подключения к БД
-db.user=username ; пользователь БД
-db.pwd=password ; пароль пользователя БД
+db.uri=mongodb://127.0.0.1:27017/db
+db.user=username
+db.pwd=password
 
-; Пытаться запустить систему на этих портах
 server.ports[]=8888
 server.ports[]=8889
-server.ports[]=3000
 
-module.default=registry ; модуль по умолчанию
+module.default=registry
 
-module.skip[]=offline-sync ; отключенные модули
+module.skip[]=offline-sync
 
-; Настройки файлового хранилища
-fs.storageRoot=./files ; корневая директория хранилища, куда будут сохраняться файлы
-fs.urlBase=/files ; база для публикации файлов в http (база URL файлов)
 
-;auth.aclProvider=aclProvider ;  включение проверки доступа к урлам
-;server.requestSizeLimit=100mb ; Ограничение на размер запрсоов заказчиваемых (файлов)
+fs.storageRoot=./files
+fs.urlBase=/files
+
+;auth.aclProvider=aclProvider
+;server.requestSizeLimit=100mb

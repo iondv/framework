@@ -45,7 +45,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(buildBackendNpm, buildFrontend, buildBower, compileLessAll, minifyCssAll, minifyJsAll);
+const build = series(buildBackendNpm, buildFrontend, compileLessAll, minifyCssAll, minifyJsAll);  //buildBower,
 
 function deploy(done) {
   console.log('Deploying and importing the application data.');
@@ -244,17 +244,17 @@ function buildFrontend(done) {
     });
 }
 
-function buildBower(done) {
-  const themes = themeDirs();
-  let start = Promise.resolve();
-  for (let i = 0; i < themes.length; i++)
-    start = start.then(bowerInstall(themes[i]));
-  start.then(done)
-    .catch((err) => {
-      console.error(err);
-      done(err);
-    });
-}
+// function buildBower(done) {
+//   const themes = themeDirs();
+//   let start = Promise.resolve();
+//   for (let i = 0; i < themes.length; i++)
+//     start = start.then(bowerInstall(themes[i]));
+//   start.then(done)
+//     .catch((err) => {
+//       console.error(err);
+//       done(err);
+//     });
+// }
 
 /*******************************
  * Service function
@@ -264,13 +264,14 @@ function npm(pathDir) {
   return function () {
     return new Promise(function (resolve, reject) {
       let npmArgs = ['install', '--no-save', '--prefer-offline']; // TODO '--only=prod' if use - delete gulp in devDependce
-      try {
-        fs.accessSync(path.join(pathDir, 'package-lock.json'));
-        console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
-        npmArgs = ['ci', '--prefer-offline'];
-      } catch (error) {
-        console.log('Installing the backend packages for the path ' + pathDir);
-      }
+      // try { // 20200207 убрали ci - из-за него много проблем
+      //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
+      //   console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
+      //   npmArgs = ['ci', '--prefer-offline'];
+      // } catch (error) {
+      //   console.log('Installing the backend packages for the path ' + pathDir);
+      // }
+      console.info(`Backend NPM install: ${pathDir}`);
       run(pathDir, 'npm', npmArgs, resolve, reject);
     });
   };
@@ -296,13 +297,14 @@ function frontendInstall(pathDir) {
           packageJson.vendorDir = './static/vendor';
         }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
-        try {
-          fs.accessSync(path.join(pathDir, 'package-lock.json'));
-          console.log('Installing CI the frontend packages for the path ' + pathDir);
-          npmArgs = ['ci', '--only=prod', '--prefer-offline'];
-        } catch (error) {
-          console.log('Installing the frontend packages for the path ' + pathDir);
-        }
+        // try { // 20200207 убрали ci из-за него много проблем
+        //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
+        //   console.log('Installing CI the frontend packages for the path ' + pathDir);
+        //   npmArgs = ['ci', '--only=prod', '--prefer-offline'];
+        // } catch (error) {
+        //   console.log('Installing the frontend packages for the path ' + pathDir);
+        // }
+        console.info(`Front NPM install: ${pathDir}`);
         run(pathDir, 'npm', npmArgs, function () {
           const srcDir = path.join(pathDir, 'node_modules');
           try {
@@ -337,65 +339,65 @@ function frontendInstall(pathDir) {
   };
 }
 
-function bowerInstall(pathDir) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      try {
-        fs.accessSync(path.join(pathDir, '.bowerrc'));
-      } catch (error) {
-        resolve();
-        return;
-      }
-      try {
-        /**
-         * Параметры конфигурации bower
-         * @property {String} vendorDir - папка установки пакетов
-         */
-        let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
-        console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
-        run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root', '--quiet'], function () {
-          let srcDir = path.join(pathDir, bc.directory);
-          try {
-            fs.accessSync(srcDir);
-          } catch (err) {
-            resolve();
-            return;
-          }
-          try {
-            let vendorModules = fs.readdirSync(srcDir);
-            let copyers, copyer;
-            copyers = [];
-            if (bc.vendorDir) {
-              for (let i = 0; i < vendorModules.length; i++) {
-                copyer = copyVendorResources(srcDir, path.join(pathDir, bc.vendorDir), vendorModules[i]);
-                if (copyer) {
-                  copyers.push(copyer);
-                }
-              }
-            } else {
-              console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
-            }
-            if (copyers.length) {
-              return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
-            }
-          } catch (error) {
-            return reject(error);
-          }
-          resolve();
-        }, reject);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
+// function bowerInstall(pathDir) {
+//   return function () {
+//     return new Promise(function (resolve, reject) {
+//       try {
+//         fs.accessSync(path.join(pathDir, '.bowerrc'));
+//       } catch (error) {
+//         resolve();
+//         return;
+//       }
+//       try {
+//         /**
+//          * Параметры конфигурации bower
+//          * @property {String} vendorDir - папка установки пакетов
+//          */
+//         let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
+//         console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
+//         run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root', '--quiet'], function () {
+//           let srcDir = path.join(pathDir, bc.directory);
+//           try {
+//             fs.accessSync(srcDir);
+//           } catch (err) {
+//             resolve();
+//             return;
+//           }
+//           try {
+//             let vendorModules = fs.readdirSync(srcDir);
+//             let copyers, copyer;
+//             copyers = [];
+//             if (bc.vendorDir) {
+//               for (let i = 0; i < vendorModules.length; i++) {
+//                 copyer = copyVendorResources(srcDir, path.join(pathDir, bc.vendorDir), vendorModules[i]);
+//                 if (copyer) {
+//                   copyers.push(copyer);
+//                 }
+//               }
+//             } else {
+//               console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
+//             }
+//             if (copyers.length) {
+//               return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
+//             }
+//           } catch (error) {
+//             return reject(error);
+//           }
+//           resolve();
+//         }, reject);
+//       } catch (error) {
+//         reject(error);
+//       }
+//     });
+//   };
+// }
 
 function copyVendorResources(src, dst, module) {
   return new Promise(function (resolve, reject) {
     let dist = path.join(src, module, 'dist');
     let min = path.join(src, module, 'min');
     let dest = path.join(dst, module);
-
+    console.info(`Frontent resources are copied: ${pathDir}`);
     copyResources(
       dist,
       dest,
@@ -642,7 +644,7 @@ exports.assemble = assemble;
 exports.default = assemble;
 exports.buildBackendNpm = buildBackendNpm;
 exports.buildFrontend = buildFrontend;
-exports.buildBower = buildBower;
+//exports.buildBower = buildBower;
 
 
 
