@@ -1,5 +1,13 @@
 /*eslint "require-jsdoc": off,  "no-console": off, "no-sync": off*/
 
+// TODO размер для прода
+//   - Можно удалять папки views/**/vendor после установки
+//   - Можно удалять .git
+//   - Можно удалять пакеты gulp из devDependences
+// TODO Оптимизация установки
+//   - копирование вендосрких файлов - лучше через pipe с кешем гулпа - т.к. часто эти папки уже есть
+//   - минификация и less - затратно, каждый раз делать
+
 const {series} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
@@ -397,7 +405,7 @@ function copyVendorResources(src, dst, module) {
     let dist = path.join(src, module, 'dist');
     let min = path.join(src, module, 'min');
     let dest = path.join(dst, module);
-    console.info(`Frontent resources are copied: ${pathDir}`);
+
     copyResources(
       dist,
       dest,
@@ -429,7 +437,7 @@ function copyResources(srcPath, destPath, msg) {
         gulpSrc([path.join(srcPath, '**', '*')])
           .pipe(gulpDest(destPath))
           .on('finish', function () {
-            console.log(msg);
+            //console.log(msg); // Output from copyVendorResources
             resolve(true);
           })
           .on('error', reject);

@@ -1,7 +1,29 @@
+#deploy.mode=db
+
+db.uri=mongodb://127.0.0.1:27017/db
+#db.authSource=admin
+#db.authMechanism=SCRAM-SHA-1
+#db.hosts=127.0.0.1:27017
+#db.dbname=db
+#db.user=username
+#db.pwd=password
+
+server.ports[]=8888
+server.ports[]=8889
+
+module.default=registry
+module.skip[]=offline-sync
+
+fs.storageRoot=./files
+fs.urlBase=/files
+
+#server.requestSizeLimit=100mb
+
 auth.denyTop=false
 auth.registration=false
+#auth.aclProvider=aclProvider
 
-; Exclusion from security checks
+# Exclusion from security checks
 auth.exclude[]=/files/**
 auth.exclude[]=/images/**
 
@@ -41,21 +63,3 @@ auth.exclude[]=/report/img/**
 auth.exclude[]=/report/fonts/**
 
 auth.exclude[]=/portal/**
-
-db.uri=mongodb://127.0.0.1:27017/db
-db.user=username
-db.pwd=password
-
-server.ports[]=8888
-server.ports[]=8889
-
-module.default=registry
-
-module.skip[]=offline-sync
-
-
-fs.storageRoot=./files
-fs.urlBase=/files
-
-;auth.aclProvider=aclProvider
-;server.requestSizeLimit=100mb
