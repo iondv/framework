@@ -569,44 +569,72 @@ function buildDir(start, dir) {
 function themeDirs() {
   let themes = _themeDirs(path.join(platformPath, 'view'));
   let pth = path.join(platformPath, 'modules');
-  let tmp = fs.readdirSync(pth);
+  let tmp = fs.readdirSync(pth).filter(dir => ! ['node_modules', '.git'].includes(dir));
   tmp.forEach(function (dir) {
     let module = path.join(pth, dir);
-    let stat = fs.statSync(module);
-    if (stat.isDirectory()) {
-      themes.push(path.join(module, 'view'));
-      Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
-    }
+    try {
+      let stat = fs.statSync(module);
+      if (stat.isDirectory()) {
+        let viewDir = path.join(module, 'view');
+        try {
+          let statViewdir = fs.statSync(viewDir);
+          if (statViewdir.isDirectory()) {
+            themes.push(viewDir);
+            Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
   });
   pth = path.join(platformPath, 'applications');
-  tmp = fs.readdirSync(pth);
+  tmp = fs.readdirSync(pth).filter(dir => ! ['node_modules', '.git'].includes(dir));
   tmp.forEach(function (dir) {
-    let module = path.join(pth, dir);
-    let stat = fs.statSync(module);
-    if (stat.isDirectory()) {
-      let themesDir = path.join(module, 'themes');
-      if (fs.existsSync(themesDir)) {
-        Array.prototype.push.apply(themes, _themeDirs(themesDir));
-      } else {
-        themes.push(module);
+    let application = path.join(pth, dir);
+    try {
+      let stat = fs.statSync(application);
+      if (stat.isDirectory()) {
+        let themesDir = path.join(application, 'themes');
+        try {
+          const themesStat = fs.statSync(themesDir);
+          if (themesStat.isDirectory()) {
+            Array.prototype.push.apply(themes, _themeDirs(themesDir));
+          }
+        } catch (e) {}
+        let appFolders = fs.readdirSync(application)
+          .filter(dir => ! ['meta', 'navigation', 'views', 'wfviews', 'workflows',
+            'node_modules', 'themes', '.git'].includes(dir));
+        appFolders.forEach(function (subdir) {
+          let appSubdir = path.join(application, subdir);
+          try {
+            let statSubdir = fs.statSync(appSubdir);
+            if (statSubdir.isDirectory()) {
+              themes.push(appSubdir);
+            }
+          } catch (e) {}
+        });
       }
-    }
+    } catch (e) {}
   });
+
+
   return themes;
 }
 
 function _themeDirs(basePath) {
   let themes = [];
-  if (fs.existsSync(basePath)) {
-    let tmp = fs.readdirSync(basePath);
-    tmp.forEach(function (dir) {
-      let theme = path.join(basePath, dir);
-      let stat = fs.statSync(theme);
-      if (stat.isDirectory()) {
-        themes.push(theme);
-      }
-    });
-  }
+  try {
+    let statBase = fs.statSync(basePath);
+    if (statBase.isDirectory()) {
+      let tmp = fs.readdirSync(basePath).filter(dir => ! ['node_modules', '.git'].includes(dir));;
+      tmp.forEach(function (dir) {
+        let theme = path.join(basePath, dir);
+        let stat = fs.statSync(theme);
+        if (stat.isDirectory()) {
+          themes.push(theme);
+        }
+      });
+    }
+  } catch(e) {}
   return themes;
 }
 
