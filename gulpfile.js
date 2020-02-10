@@ -6,14 +6,13 @@
 //   - Можно удалять пакеты gulp из devDependences
 // TODO Оптимизация установки
 //   - копирование вендосрких файлов - лучше через pipe с кешем гулпа - т.к. часто эти папки уже есть
-//   - минификация и less - затратно, каждый раз делать
+//   - минификация - затратно, каждый раз делать
 
 const {series} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
 const assert = require('assert');
 
-const less = require('gulp-less');
 const cssMin = require('gulp-clean-css');
 const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
@@ -53,7 +52,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(buildBackendNpm, buildFrontend, compileLessAll, minifyCssAll, minifyJsAll);  //buildBower,
+const build = series(buildBackendNpm, buildFrontend, minifyCssAll, minifyJsAll);
 
 function deploy(done) {
   console.log('Deploying and importing the application data.');
@@ -166,29 +165,6 @@ function deploy(done) {
 // App build and deply
 const assemble = series(build, deploy);
 
-function compileLessAll (done) {
-  let themes = themeDirs();
-  let start = null;
-  for (let i = 0; i < themes.length; i++) {
-    if (start) {
-      start = start.then(compileLess(themes[i]));
-    } else {
-      start = compileLess(themes[i])();
-    }
-  }
-  if (!start) {
-    start = Promise.resolve();
-  }
-
-  start.then(function () {
-    done();
-  })
-    .catch(function (err) {
-      console.error(err);
-      done(err);
-    });
-}
-
 function minifyCssAll(done) {
   let themes = themeDirs();
   let start = null;
@@ -251,18 +227,6 @@ function buildFrontend(done) {
       done(err);
     });
 }
-
-// function buildBower(done) {
-//   const themes = themeDirs();
-//   let start = Promise.resolve();
-//   for (let i = 0; i < themes.length; i++)
-//     start = start.then(bowerInstall(themes[i]));
-//   start.then(done)
-//     .catch((err) => {
-//       console.error(err);
-//       done(err);
-//     });
-// }
 
 /*******************************
  * Service function
@@ -347,58 +311,6 @@ function frontendInstall(pathDir) {
   };
 }
 
-// function bowerInstall(pathDir) {
-//   return function () {
-//     return new Promise(function (resolve, reject) {
-//       try {
-//         fs.accessSync(path.join(pathDir, '.bowerrc'));
-//       } catch (error) {
-//         resolve();
-//         return;
-//       }
-//       try {
-//         /**
-//          * Параметры конфигурации bower
-//          * @property {String} vendorDir - папка установки пакетов
-//          */
-//         let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
-//         console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
-//         run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root', '--quiet'], function () {
-//           let srcDir = path.join(pathDir, bc.directory);
-//           try {
-//             fs.accessSync(srcDir);
-//           } catch (err) {
-//             resolve();
-//             return;
-//           }
-//           try {
-//             let vendorModules = fs.readdirSync(srcDir);
-//             let copyers, copyer;
-//             copyers = [];
-//             if (bc.vendorDir) {
-//               for (let i = 0; i < vendorModules.length; i++) {
-//                 copyer = copyVendorResources(srcDir, path.join(pathDir, bc.vendorDir), vendorModules[i]);
-//                 if (copyer) {
-//                   copyers.push(copyer);
-//                 }
-//               }
-//             } else {
-//               console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
-//             }
-//             if (copyers.length) {
-//               return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
-//             }
-//           } catch (error) {
-//             return reject(error);
-//           }
-//           resolve();
-//         }, reject);
-//       } catch (error) {
-//         reject(error);
-//       }
-//     });
-//   };
-// }
 
 function copyVendorResources(src, dst, module) {
   return new Promise(function (resolve, reject) {
@@ -443,31 +355,6 @@ function copyResources(srcPath, destPath, msg) {
           .on('error', reject);
       } else {
         resolve(true);
-      }
-    });
-  };
-}
-
-function compileLess(p) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      if (!fs.existsSync(path.join(p, 'less'))) {
-        return resolve();
-      }
-      console.log('Compiling less files for the path ' + p);
-      try {
-        gulpSrc([path.join(p, 'less', '*.less')])
-          .pipe(less({
-            paths: [path.join(p, 'less', '*.less')]
-          }))
-          .pipe(rename({
-            suffix: '.less'
-          }))
-          .pipe(gulpDest(path.join(p, 'static', 'css')))
-          .on('finish', resolve)
-          .on('error', reject);
-      } catch (error) {
-        reject(error);
       }
     });
   };

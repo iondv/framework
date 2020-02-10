@@ -88,7 +88,6 @@
     "gulp": "^4.0.2",
     "gulp-clean-css": "~4.0.0",
     "gulp-jsmin": "~0.1.5",
-    "gulp-less": "~4.0.1",
     "gulp-rename": "~1.4.0"
   }
 }
