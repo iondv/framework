@@ -759,7 +759,7 @@ function MongoDs(config) {
                   }
                 };
               case '$text':
-                return {$text: c[oper][0]};
+                return {$text: {$search: c[oper][0]}};
               case '$geoWithin':
               case '$geoIntersects':
               {
