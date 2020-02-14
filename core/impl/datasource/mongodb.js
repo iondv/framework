@@ -1941,7 +1941,7 @@ function MongoDs(config) {
    * @param {{}} [options.filter]
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
-   * @param {{}} [options.joins]
+   * @param {Object[]} [options.joins]
    * @param {{}} [options.sort]
    * @param {String} [options.to]
    * @param {Number} [options.offset]
