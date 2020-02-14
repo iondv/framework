@@ -1687,11 +1687,7 @@ function MongoDs(config) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$dateToString') {
-            let tmp = find[name];
-            tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix, true);
-            result.push(fDateFormat(tmp));
-          } else if (name === '$toUpper' || name === '$toLower') {
+          if (name === '$toUpper' || name === '$toLower') {
             result.push({[name]: produceRedactFilter(find[name], explicitJoins, prefix, true)});
           } else if (name[0] === '$') {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix, true);
@@ -1752,6 +1748,10 @@ function MongoDs(config) {
                       } else {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
+                    } else if (oper === '$dateToString') {
+                      let tmp = find[name][oper];
+                      tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix,true);
+                      result.push({$eq: [loperand, fDateFormat(tmp)]});
                     } else {
                       let tmp = produceRedactFilter(find[name][oper], explicitJoins, prefix);
                       if (Array.isArray(tmp) && oper !== '$in') {
