@@ -1,3 +1,7 @@
+# Ключевые функции ядра: dataRepo 
+
+TODO 
+
 //dataRepo
 info from
 1. core\impl\datarepository\ionDataRepository.js
