@@ -100,10 +100,12 @@
     "registry": {
       "globals": {
 ...
-        "di": {
+       "customTemplates": [
+...
+         "di": {
 ...
            "export": {
-             "options": {
+            "options": {
               "configs": {
                 "class@ns": {
                   "expertItemToDocx": {
@@ -113,13 +115,14 @@
                     "extension": "docx",
                     "skipEnvOptions": true,
                     "preprocessor": "ion://expertItemToDocx"
-                  }
-                }
-              }
+                   }
+                 }
+               }
              }
            }
 ...
-        }
+         }
+       }
      }
    }
  }
