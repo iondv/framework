@@ -14,7 +14,6 @@ function mapDirProperties(str, cb) {
     result = regx.exec(str);
   }
 }
-module.exports.mapDirProperties = mapDirProperties;
 
 /**
  * @param {String} str
@@ -46,16 +45,15 @@ function parseDirName(str, className, id, attr, item) {
     result = result.replace(new RegExp(`\\$\\{item\\.${prop}\\}`, 'g'), propValue);
   });
   const regx = new RegExp(`\\\${([^\\${path.sep}\\$\\{\\}]*)}`, 'g');
-  let moments = regx.exec(result);
+  const momentStr = result;
+  let moments = regx.exec(momentStr);
   while (Array.isArray(moments)) {
     if (moments[1])
       result = result.replace(new RegExp(`\\$\\{${moments[1]}\\}`, 'g'), m.format(moments[1]));
-    moments = regx.exec(result);
+    moments = regx.exec(momentStr);
   }
   return path.normalize(result);
 }
-
-module.exports.parseDirName = parseDirName;
 
 function ensureItemProperties(template, cn, id, dataRepo) {
   let eagerLoading = [];
@@ -84,4 +82,6 @@ function produceDirName(template, className, id, property, dataRepo) {
   return itemGetter.then(item => parseDirName(template, className, id, property, item));
 }
 
+module.exports.mapDirProperties = mapDirProperties;
+module.exports.parseDirName = parseDirName;
 exports.produceDirName = produceDirName;
