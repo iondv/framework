@@ -146,6 +146,12 @@ function Property(item, propertyMeta, name) {
       } else {
         if (this.displayValue !== false) {
           return this.displayValue || '';
+        } else if (this.getType() === PropertyTypes.REFERENCE) {
+          let ri = this.evaluate();
+          if (ri) {
+            this.displayValue = ri.toString();
+            return this.displayValue;
+          }
         }
       }
     }

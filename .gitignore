@@ -8,8 +8,8 @@
 /.project
 /distr/*
 /docker/*
-**/node_modules/*
-
+/**/node_modules/*
+/plugins/*
 /modules/*
 !/modules/readme.md
 /applications/*
