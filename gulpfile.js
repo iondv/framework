@@ -1,11 +1,18 @@
 /*eslint "require-jsdoc": off,  "no-console": off, "no-sync": off*/
 
+// TODO размер для прода
+//   - Можно удалять папки views/**/vendor после установки
+//   - Можно удалять .git
+//   - Можно удалять пакеты gulp из devDependences
+// TODO Оптимизация установки
+//   - копирование вендосрких файлов - лучше через pipe с кешем гулпа - т.к. часто эти папки уже есть
+//   - минификация - затратно, каждый раз делать
+
 const {series} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
 const assert = require('assert');
 
-const less = require('gulp-less');
 const cssMin = require('gulp-clean-css');
 const jsMin = require('gulp-jsmin');
 const rename = require('gulp-rename');
@@ -45,7 +52,7 @@ assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
  * Initializing the primary application.
  * First cleaned up folders and installed all modules.
  */
-const build = series(buildBackendNpm, buildFrontend, buildBower, compileLessAll, minifyCssAll, minifyJsAll);
+const build = series(buildBackendNpm, buildFrontend, minifyCssAll, minifyJsAll);
 
 function deploy(done) {
   console.log('Deploying and importing the application data.');
@@ -158,29 +165,6 @@ function deploy(done) {
 // App build and deply
 const assemble = series(build, deploy);
 
-function compileLessAll (done) {
-  let themes = themeDirs();
-  let start = null;
-  for (let i = 0; i < themes.length; i++) {
-    if (start) {
-      start = start.then(compileLess(themes[i]));
-    } else {
-      start = compileLess(themes[i])();
-    }
-  }
-  if (!start) {
-    start = Promise.resolve();
-  }
-
-  start.then(function () {
-    done();
-  })
-    .catch(function (err) {
-      console.error(err);
-      done(err);
-    });
-}
-
 function minifyCssAll(done) {
   let themes = themeDirs();
   let start = null;
@@ -244,18 +228,6 @@ function buildFrontend(done) {
     });
 }
 
-function buildBower(done) {
-  const themes = themeDirs();
-  let start = Promise.resolve();
-  for (let i = 0; i < themes.length; i++)
-    start = start.then(bowerInstall(themes[i]));
-  start.then(done)
-    .catch((err) => {
-      console.error(err);
-      done(err);
-    });
-}
-
 /*******************************
  * Service function
  ********************************/
@@ -264,13 +236,14 @@ function npm(pathDir) {
   return function () {
     return new Promise(function (resolve, reject) {
       let npmArgs = ['install', '--no-save', '--prefer-offline']; // TODO '--only=prod' if use - delete gulp in devDependce
-      try {
-        fs.accessSync(path.join(pathDir, 'package-lock.json'));
-        console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
-        npmArgs = ['ci', '--prefer-offline'];
-      } catch (error) {
-        console.log('Installing the backend packages for the path ' + pathDir);
-      }
+      // try { // 20200207 убрали ci - из-за него много проблем
+      //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
+      //   console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
+      //   npmArgs = ['ci', '--prefer-offline'];
+      // } catch (error) {
+      //   console.log('Installing the backend packages for the path ' + pathDir);
+      // }
+      console.info(`Backend NPM install: ${pathDir}`);
       run(pathDir, 'npm', npmArgs, resolve, reject);
     });
   };
@@ -296,13 +269,14 @@ function frontendInstall(pathDir) {
           packageJson.vendorDir = './static/vendor';
         }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
-        try {
-          fs.accessSync(path.join(pathDir, 'package-lock.json'));
-          console.log('Installing CI the frontend packages for the path ' + pathDir);
-          npmArgs = ['ci', '--only=prod', '--prefer-offline'];
-        } catch (error) {
-          console.log('Installing the frontend packages for the path ' + pathDir);
-        }
+        // try { // 20200207 убрали ci из-за него много проблем
+        //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
+        //   console.log('Installing CI the frontend packages for the path ' + pathDir);
+        //   npmArgs = ['ci', '--only=prod', '--prefer-offline'];
+        // } catch (error) {
+        //   console.log('Installing the frontend packages for the path ' + pathDir);
+        // }
+        console.info(`Front NPM install: ${pathDir}`);
         run(pathDir, 'npm', npmArgs, function () {
           const srcDir = path.join(pathDir, 'node_modules');
           try {
@@ -337,58 +311,6 @@ function frontendInstall(pathDir) {
   };
 }
 
-function bowerInstall(pathDir) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      try {
-        fs.accessSync(path.join(pathDir, '.bowerrc'));
-      } catch (error) {
-        resolve();
-        return;
-      }
-      try {
-        /**
-         * Параметры конфигурации bower
-         * @property {String} vendorDir - папка установки пакетов
-         */
-        let bc = JSON.parse(fs.readFileSync(path.join(pathDir, '.bowerrc'), {encoding: 'utf-8'}));
-        console.warn('DEPRICATED installing the bower packages for the path ' + pathDir + ' use npm');
-        run(pathDir, 'bower', ['install', '--config.interactive=false', '--allow-root', '--quiet'], function () {
-          let srcDir = path.join(pathDir, bc.directory);
-          try {
-            fs.accessSync(srcDir);
-          } catch (err) {
-            resolve();
-            return;
-          }
-          try {
-            let vendorModules = fs.readdirSync(srcDir);
-            let copyers, copyer;
-            copyers = [];
-            if (bc.vendorDir) {
-              for (let i = 0; i < vendorModules.length; i++) {
-                copyer = copyVendorResources(srcDir, path.join(pathDir, bc.vendorDir), vendorModules[i]);
-                if (copyer) {
-                  copyers.push(copyer);
-                }
-              }
-            } else {
-              console.warn('In the .bowerrc the destination directory for vendor files is not specified in!');
-            }
-            if (copyers.length) {
-              return Promise.all(copyers).then(()=>{resolve()}).catch(reject); // Gulp didn't wait array of promise result
-            }
-          } catch (error) {
-            return reject(error);
-          }
-          resolve();
-        }, reject);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-}
 
 function copyVendorResources(src, dst, module) {
   return new Promise(function (resolve, reject) {
@@ -427,37 +349,12 @@ function copyResources(srcPath, destPath, msg) {
         gulpSrc([path.join(srcPath, '**', '*')])
           .pipe(gulpDest(destPath))
           .on('finish', function () {
-            console.log(msg);
+            //console.log(msg); // Output from copyVendorResources
             resolve(true);
           })
           .on('error', reject);
       } else {
         resolve(true);
-      }
-    });
-  };
-}
-
-function compileLess(p) {
-  return function () {
-    return new Promise(function (resolve, reject) {
-      if (!fs.existsSync(path.join(p, 'less'))) {
-        return resolve();
-      }
-      console.log('Compiling less files for the path ' + p);
-      try {
-        gulpSrc([path.join(p, 'less', '*.less')])
-          .pipe(less({
-            paths: [path.join(p, 'less', '*.less')]
-          }))
-          .pipe(rename({
-            suffix: '.less'
-          }))
-          .pipe(gulpDest(path.join(p, 'static', 'css')))
-          .on('finish', resolve)
-          .on('error', reject);
-      } catch (error) {
-        reject(error);
       }
     });
   };
@@ -559,44 +456,72 @@ function buildDir(start, dir) {
 function themeDirs() {
   let themes = _themeDirs(path.join(platformPath, 'view'));
   let pth = path.join(platformPath, 'modules');
-  let tmp = fs.readdirSync(pth);
+  let tmp = fs.readdirSync(pth).filter(dir => ! ['node_modules', '.git'].includes(dir));
   tmp.forEach(function (dir) {
     let module = path.join(pth, dir);
-    let stat = fs.statSync(module);
-    if (stat.isDirectory()) {
-      themes.push(path.join(module, 'view'));
-      Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
-    }
+    try {
+      let stat = fs.statSync(module);
+      if (stat.isDirectory()) {
+        let viewDir = path.join(module, 'view');
+        try {
+          let statViewdir = fs.statSync(viewDir);
+          if (statViewdir.isDirectory()) {
+            themes.push(viewDir);
+            Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
   });
   pth = path.join(platformPath, 'applications');
-  tmp = fs.readdirSync(pth);
+  tmp = fs.readdirSync(pth).filter(dir => ! ['node_modules', '.git'].includes(dir));
   tmp.forEach(function (dir) {
-    let module = path.join(pth, dir);
-    let stat = fs.statSync(module);
-    if (stat.isDirectory()) {
-      let themesDir = path.join(module, 'themes');
-      if (fs.existsSync(themesDir)) {
-        Array.prototype.push.apply(themes, _themeDirs(themesDir));
-      } else {
-        themes.push(module);
+    let application = path.join(pth, dir);
+    try {
+      let stat = fs.statSync(application);
+      if (stat.isDirectory()) {
+        let themesDir = path.join(application, 'themes');
+        try {
+          const themesStat = fs.statSync(themesDir);
+          if (themesStat.isDirectory()) {
+            Array.prototype.push.apply(themes, _themeDirs(themesDir));
+          }
+        } catch (e) {}
+        let appFolders = fs.readdirSync(application)
+          .filter(dir => ! ['meta', 'navigation', 'views', 'wfviews', 'workflows',
+            'node_modules', 'themes', '.git'].includes(dir));
+        appFolders.forEach(function (subdir) {
+          let appSubdir = path.join(application, subdir);
+          try {
+            let statSubdir = fs.statSync(appSubdir);
+            if (statSubdir.isDirectory()) {
+              themes.push(appSubdir);
+            }
+          } catch (e) {}
+        });
       }
-    }
+    } catch (e) {}
   });
+
+
   return themes;
 }
 
 function _themeDirs(basePath) {
   let themes = [];
-  if (fs.existsSync(basePath)) {
-    let tmp = fs.readdirSync(basePath);
-    tmp.forEach(function (dir) {
-      let theme = path.join(basePath, dir);
-      let stat = fs.statSync(theme);
-      if (stat.isDirectory()) {
-        themes.push(theme);
-      }
-    });
-  }
+  try {
+    let statBase = fs.statSync(basePath);
+    if (statBase.isDirectory()) {
+      let tmp = fs.readdirSync(basePath).filter(dir => ! ['node_modules', '.git'].includes(dir));;
+      tmp.forEach(function (dir) {
+        let theme = path.join(basePath, dir);
+        let stat = fs.statSync(theme);
+        if (stat.isDirectory()) {
+          themes.push(theme);
+        }
+      });
+    }
+  } catch(e) {}
   return themes;
 }
 
@@ -642,7 +567,7 @@ exports.assemble = assemble;
 exports.default = assemble;
 exports.buildBackendNpm = buildBackendNpm;
 exports.buildFrontend = buildFrontend;
-exports.buildBower = buildBower;
+//exports.buildBower = buildBower;
 
 
 

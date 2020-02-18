@@ -759,7 +759,7 @@ function MongoDs(config) {
                   }
                 };
               case '$text':
-                return {$text: c[oper][0]};
+                return {$text: {$search: c[oper][0]}};
               case '$geoWithin':
               case '$geoIntersects':
               {
@@ -1071,14 +1071,22 @@ function MongoDs(config) {
     if (conditions && typeof conditions === 'object' &&
       !(conditions instanceof Date) && !(conditions instanceof mongo.ObjectID)) {
       for (let oper in conditions) {
-        if (conditions.hasOwnProperty(oper) && oper === Operations.EQUAL) {
+        if (conditions.hasOwnProperty(oper)) {
           let args = conditions[oper];
-          for (let i = 0; i < args.length; i++) {
-            if (args[i] && typeof args[i] === 'string' && args[i][0] === '$') {
-              let an = args[i].substr(1);
-              if (data.hasOwnProperty(an)) {
-                conditions[oper] = [args[i], data[an]];
-                break;
+          if (oper === Operations.EQUAL) {
+            for (let i = 0; i < args.length; i++) {
+              if (args[i] && typeof args[i] === 'string' && args[i][0] === '$') {
+                let an = args[i].substr(1);
+                if (data.hasOwnProperty(an)) {
+                  conditions[oper] = [args[i], data[an]];
+                  break;
+                }
+              }
+            }
+          } else {
+            for (let i = 0; i < args.length; i++) {
+              if (args[i] && typeof args[i] === 'object') {
+                adjustSetKeys(args[i], data);
               }
             }
           }
@@ -1679,11 +1687,7 @@ function MongoDs(config) {
       let result = [];
       for (let name in find) {
         if (find.hasOwnProperty(name)) {
-          if (name === '$dateToString') {
-            let tmp = find[name];
-            tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix, true);
-            result.push(fDateFormat(tmp));
-          } else if (name === '$toUpper' || name === '$toLower') {
+          if (name === '$toUpper' || name === '$toLower') {
             result.push({[name]: produceRedactFilter(find[name], explicitJoins, prefix, true)});
           } else if (name[0] === '$') {
             let tmp = produceRedactFilter(find[name], explicitJoins, prefix, true);
@@ -1724,7 +1728,7 @@ function MongoDs(config) {
                 } else {
                   tmp = tmp2;
                 }
-              
+
               }
               if (tmp) {
                 result.push({[nm]: tmp});
@@ -1744,6 +1748,10 @@ function MongoDs(config) {
                       } else {
                         result.push({$eq: [{$type: '$' + nm}, 'missing']});
                       }
+                    } else if (oper === '$dateToString') {
+                      let tmp = find[name][oper];
+                      tmp[0] = produceRedactFilter(tmp[0], explicitJoins, prefix,true);
+                      result.push({$eq: [loperand, fDateFormat(tmp)]});
                     } else {
                       let tmp = produceRedactFilter(find[name][oper], explicitJoins, prefix);
                       if (Array.isArray(tmp) && oper !== '$in') {
@@ -1933,7 +1941,7 @@ function MongoDs(config) {
    * @param {{}} [options.filter]
    * @param {{}} [options.fields]
    * @param {{}} [options.aggregates]
-   * @param {{}} [options.joins]
+   * @param {Object[]} [options.joins]
    * @param {{}} [options.sort]
    * @param {String} [options.to]
    * @param {Number} [options.offset]

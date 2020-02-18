@@ -11,7 +11,11 @@ function User(data, coactors, tz) {
     return data.id + (data.type ? `@${data.type}` : '');
   };
 
-  this.name = function() {
+  this.login = function () {
+    return data.id;
+  };
+
+  this.name = function () {
     return data.name || this.id();
   };
 
