@@ -7,6 +7,7 @@
 
 const ChangeLogger = require('core/interfaces/ChangeLogger');
 const F = require('core/FunctionCodes');
+const User = require('core/User');
 
 /**
  * @constructor
@@ -32,36 +33,47 @@ function DsChangeLogger(ds, authCallback) {
    * @return {Promise}
    * @private
    */
-  this._log = function (type, objectClass, objectId, updates, base) {
-    var author = null;
+  this._log = (type, objectClass, objectId, updates, base) => {
+    let authorIp = null;
+    let author = null;
+    let authorName = null;
     if (typeof authCallback === 'function') {
       author = authCallback();
+      if (typeof author === 'object' && author instanceof User) {
+        authorIp = author.properties().ip;
+        authorName = author.name();
+        author = author.id();
+      }
     }
     return _this.ds.insert('ion_changelog', {
-        timestamp: new Date(),
-        type: type,
-        className: typeof objectClass === 'string' ? objectClass : objectClass.name,
-        classVersion: typeof objectClass === 'string' ? null : objectClass.version,
-        id: objectId,
-        author: author,
-        base: base,
-        data: updates
-      }).then(function (item) {
-        return Promise.resolve(
-          new ChangeLogger.Change(
-            item.timestamp,
-            item.type,
-            {
-              className: item.className,
-              classVersion: item.classVersion,
-              id: item.id
-            },
-            item.author,
-            item.updates,
-            item.base
-          )
-        );
-      });
+      timestamp: new Date(),
+      type,
+      className: typeof objectClass === 'string' ? objectClass : objectClass.name,
+      classVersion: typeof objectClass === 'string' ? null : objectClass.version,
+      id: objectId,
+      base,
+      data: updates,
+      author,
+      authorName,
+      authorIp
+    }).then(item => Promise.resolve(
+      new ChangeLogger.Change(
+        item.timestamp,
+        item.type,
+        {
+          className: item.className,
+          classVersion: item.classVersion,
+          id: item.id
+        },
+        {
+          id: item.author,
+          name: item.authorName,
+          ip: item.authorIp
+        },
+        item.updates,
+        item.base
+      ))
+    );
   };
 
   /**
@@ -71,6 +83,8 @@ function DsChangeLogger(ds, authCallback) {
    * @param {Date} [options.since]
    * @param {Date} [options.till]
    * @param {String} [options.author]
+   * @param {String} [options.authorName]
+   * @param {String} [options.authorIp]
    * @param {String} [options.type]
    * @param {Number} [options.offset]
    * @param {Number} [options.count]
@@ -79,7 +93,7 @@ function DsChangeLogger(ds, authCallback) {
    * @private
    */
   this._getChanges = function (options) {
-    let {className, id, since, till, author, type, count, offset, total} = options;
+    let {className, id, since, till, author, authorName, authorIp, type, count, offset, total} = options;
 
     let qoptions = {
       sort: {timestamp: 1},
@@ -102,6 +116,12 @@ function DsChangeLogger(ds, authCallback) {
     if (author) {
       and.push({[F.EQUAL]: ['$author', author]});
     }
+    if (authorName) {
+      and.push({[F.EQUAL]: ['$authorName', authorName]});
+    }
+    if (authorIp) {
+      and.push({[F.EQUAL]: ['$authorIp', authorIp]});
+    }
     if (type) {
       and.push({[F.EQUAL]: ['$type', type]});
     }
@@ -123,7 +143,11 @@ function DsChangeLogger(ds, authCallback) {
               classVersion: changes[i].classVersion,
               id: changes[i].id
             },
-            changes[i].author,
+            {
+              id: changes[i].author,
+              name: changes[i].authorName,
+              ip: changes[i].authorIp
+            },
             changes[i].data,
             changes[i].base
           ));

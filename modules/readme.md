@@ -1,5 +1,2 @@
-# Назначение папки
-Папка предназначена для размещения модулей
-
-## Использование в продкутиве
-В каждом модуле(папке) в продуктиве должна быть выполненна команад `npm install --production`
+# Folder assignment
+The folder is intended for placing IONDV modules.
