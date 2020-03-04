@@ -23,5 +23,12 @@ module.exports = {
   ROUND: 16,
   CONCAT: 17,
   SUBSTR: 18,
-  ABS: 19
+  ABS: 19,
+  DATE_STR: 20,
+  DATE_YEAR: 21,
+  DATE_MONTH: 23,
+  DATE_DAY: 24,
+  DATE_HOUR: 25,
+  DATE_MINUTE: 26,
+  DATE_SECOND: 27
 };

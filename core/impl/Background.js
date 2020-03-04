@@ -1,10 +1,11 @@
 'use strict';
+/* eslint no-div-regex:off */
 
 const child = require('child_process');
 const toAbsolutePath = require('core/system').toAbsolute;
-const Logger = require('core/interfaces/Logger');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
+const clone = require('fast-clone');
 
 /**
  * @param {{}} options
@@ -57,9 +58,9 @@ function Background(options) {
 
   function fixTask(uid, name, sid) {
     return options.dataSource.update(
-        tableName,
-        {[F.AND]: [{[F.EQUAL]: ['$uid', uid]},{[F.EQUAL]: ['$name', name]},{[F.EQUAL]: ['$sid', sid]}]},
-        {state: Background.IDLE}
+      tableName,
+      {[F.AND]: [{[F.EQUAL]: ['$uid', uid]}, {[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]},
+      {state: Background.IDLE}
       )
       .catch((err) => {(options.log || console).error(err);});
   }
@@ -76,7 +77,18 @@ function Background(options) {
       throw new Error('Task is not registered in background!');
     }
 
-    moptions = merge(true, workers[name] || {}, moptions || {});
+    const workerOpts = clone(workers[name] || {});
+    const nodeOpts = (Array.isArray(workerOpts.node) && workerOpts.node || [])
+      .concat(process.execArgv)
+      .filter((v, i, a) => {
+        if (v.indexOf('=') > 0) {
+          const eqc = new RegExp('^' + v.replace(/=.*$/, '=.*') + '$');
+          return a.findIndex(v1 => (v === v1) || eqc.test(v1)) === i;
+        }
+        return a.indexOf(v) === i;
+      });
+    delete workerOpts.node;
+    moptions = merge(true, workerOpts, moptions || {});
 
     if (typeof pool[uid] === 'undefined') {
       pool[uid] = {};
@@ -85,51 +97,63 @@ function Background(options) {
       pool[uid][name] = {};
     }
     if (typeof pool[uid][name][sid] !== 'undefined') {
-      throw new Error('Task ' + name + '[' + sid + '] is already running!');
+      return Promise.reject(new Error('Task ' + name + '[' + sid + '] is already running!'));
     }
 
-   return getTask(uid, name, sid)
-     .then(
-       (running) => {
-         if (running && running.state === Background.RUNNING) {
-           throw new Error('Task ' + name + '[' + sid + '] is already running!');
-         }
-       }
-     )
-     .then(options.dataSource.upsert(tableName, {uid, name, sid, results: [], state: Background.RUNNING}, {skipResult: true}))
-     .then(() => {
-        let args = ['-task', name, '-uid', uid];
-        for (let nm in moptions) {
-          if (options.hasOwnProperty(nm)) {
-            args.push('-' + nm);
-            args.push(options[nm]);
+    return getTask(uid, name, sid)
+      .then(
+        (running) => {
+          if (running && running.state === Background.RUNNING) {
+            throw new Error('Task ' + name + '[' + sid + '] is already running!');
           }
         }
+      )
+      .then(
+        () => options.dataSource.upsert(
+          tableName,
+          {[F.AND]: [{[F.EQUAL]: ['$uid', uid]}, {[F.EQUAL]: ['$name', name]}, {[F.EQUAL]: ['$sid', sid]}]},
+          {uid, name, sid, results: [], state: Background.RUNNING},
+          {skipResult: true}
+        )
+      )
+      .then(
+        () => {
+          let args = ['-task', name, '-uid', uid, '-sid', sid];
+          for (let nm in moptions) {
+            if (moptions.hasOwnProperty(nm) && typeof moptions[nm] !== 'undefined' && moptions[nm] !== null) {
+              args.push('-' + nm);
+              args.push(moptions[nm]);
+            }
+          }
 
-        pool[uid][name][sid] = child.fork(toAbsolutePath('bin/bg'), args, {stdio: ['pipe', 'inherit', 'inherit', 'ipc']});
-        let ch = pool[uid][name][sid];
-        ch.on('message', (msg) => {
-          saveResult(uid, name, sid, msg);
-        });
-        ch.on('exit', () => {
-          fixTask(uid, name, sid);
-          if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
-            delete pool[uid][name][sid];
-          }
-        });
-        ch.on('error', (err) => {
-          if (options.log instanceof Logger) {
-            options.log.error(err);
-          } else {
-            console.error(err);
-          }
-          fixTask(uid, name, sid);
-          if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
-            delete pool[uid][name][sid];
-          }
-        });
-        return sid;
-      });
+          pool[uid][name][sid] = child.fork(
+            toAbsolutePath('bin/bg'),
+            args,
+            {
+              execArgv: nodeOpts,
+              stdio: ['pipe', 'inherit', 'inherit', 'ipc']
+            }
+          );
+          let ch = pool[uid][name][sid];
+          ch.on('message', (msg) => {
+            saveResult(uid, name, sid, msg);
+          });
+          ch.on('exit', () => {
+            fixTask(uid, name, sid);
+            if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
+              delete pool[uid][name][sid];
+            }
+          });
+          ch.on('error', (err) => {
+            (options.log || console).error(err);
+            fixTask(uid, name, sid);
+            if (pool[uid] && pool[uid][name] && pool[uid][name][sid]) {
+              delete pool[uid][name][sid];
+            }
+          });
+          return sid;
+        }
+      );
   };
 
   /**

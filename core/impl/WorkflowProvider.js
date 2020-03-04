@@ -349,7 +349,7 @@ function WorkflowProvider(options) {
                 );
               }
 
-              let updates = {};
+              let updates;
               let calculations = Promise.resolve();
 
               if (Array.isArray(transition.assignments) && transition.assignments.length) {
@@ -377,6 +377,9 @@ function WorkflowProvider(options) {
                   return _this.trigger({
                       user: tOptions.user || null,
                       type: workflow + '.' + nextState.name,
+                      state: nextState.name,
+                      from: status.stages[workflow] && status.stages[workflow].stage,
+                      transition: transition.name,
                       item: item
                     })
                     .then((e) => {
@@ -460,7 +463,7 @@ function WorkflowProvider(options) {
 
     return _this._getStatus(item, tOptions)
       .then((status) => {
-        if (status[workflow] && status[workflow].stage === state) {
+        if (status.stages[workflow] && status.stages[workflow].stage === state) {
           return Promise.resolve(item);
         }
         /*
@@ -493,6 +496,8 @@ function WorkflowProvider(options) {
             _this.trigger({
               user: tOptions.user || null,
               type: workflow + '.' + target.name,
+              state: target.name,
+              from: status.stages[workflow] && status.stages[workflow].stage,
               item: item
             })
           )

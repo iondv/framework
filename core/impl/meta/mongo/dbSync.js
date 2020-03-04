@@ -474,26 +474,30 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              createCollection(cm, namespace).then(addAutoInc(classMeta)).then(addIndexes(classMeta, cm, namespace, chierarchy)).then(function () {
-                delete classMeta._id;
-                log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
-                metaCollection.updateOne(
-                  {
-                    name: classMeta.name,
-                    version: classMeta.version,
-                    namespace: namespace
-                  },
-                  classMeta,
-                  {upsert: true},
-                  (err, result) => {
-                    if (err) {
-                      return reject(err);
+              createCollection(cm, namespace)
+                .then(addAutoInc(classMeta))
+                .then(addIndexes(classMeta, cm, namespace, chierarchy))
+                .then(() => {
+                  delete classMeta._id;
+                  log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
+                  metaCollection.replaceOne(
+                    {
+                      name: classMeta.name,
+                      version: classMeta.version,
+                      namespace: namespace
+                    },
+                    classMeta,
+                    {upsert: true},
+                    (err, result) => {
+                      if (err) {
+                        return reject(err);
+                      }
+                      log.log('Класс ' + classMeta.name + '@' + namespace + ' зарегистрирован.');
+                      resolve(result);
                     }
-                    log.log('Класс ' + classMeta.name + '@' + namespace + ' зарегистрирован.');
-                    resolve(result);
-                  }
-                );
-              }).catch(reject);
+                  );
+                })
+                .catch(reject);
             },
             chierarchy);
         });
@@ -529,7 +533,7 @@ function MongoDbSync(options) {
     return getMetaTable('view')
       .then(collection => new Promise(
         (resolve, reject) => {
-          collection.update(
+          collection.replaceOne(
             {
               type: viewMeta.type,
               className: viewMeta.className,
@@ -575,7 +579,7 @@ function MongoDbSync(options) {
         navSection.namespace = navSection.namespace || namespace || null;
         delete navSection._id;
         return new Promise((resolve, reject) => {
-          collection.updateOne(
+          collection.replaceOne(
             {
               name: navSection.name,
               itemType: navSection.itemType,
@@ -628,7 +632,7 @@ function MongoDbSync(options) {
         navNode.namespace = namespace;
         delete navNode._id;
         return new Promise((resolve, reject) => {
-          collection.updateOne(
+          collection.replaceOne(
             {
               code: navNode.code,
               itemType: navNode.itemType,
@@ -681,7 +685,7 @@ function MongoDbSync(options) {
     return getMetaTable('workflow')
       .then(collection => new Promise(
         (resolve, reject) => {
-          collection.update(
+          collection.replaceOne(
             {
               wfClass: wfMeta.wfClass,
               name: wfMeta.name,
@@ -744,7 +748,7 @@ function MongoDbSync(options) {
     return getMetaTable('user_type')
       .then(collection => new Promise(
         (resolve, reject) => {
-          collection.updateOne(
+          collection.replaceOne(
             {
               name: userType.name,
               namespace: userType.namespace

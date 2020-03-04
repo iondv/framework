@@ -1,12 +1,16 @@
-### Предыдущая страница:[Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница:[Типы атрибутов](property_types.md)
+
 # Ссылки
+
 ## Общее описание
 
 **Ссылка** - тип данных, который хранит в себе ссылку на другой объект. Данный объект может быть объектом исходного класса, если ссылка указывает на класс, в котором она определена. 
 
 Значение в поле атрибута типа "Ссылка" выводятся в соответствии с семантикой, указанной для класса по ссылке. Главное отличие от типа "Коллекция" в том, что в поле атрибута типа "Ссылка" может отображаться и храниться только один объект класса по ссылке. 
 
-См. полное описание типа `Ссылка` в атрибутивной части меты класса -[**Атрибут  ссылки и обратной ссылки**](/docs/ru/2_system_description/metadata_structure/meta_class/atr_ref_backref.md).
+См. полное описание типа `Ссылка` в атрибутивной части меты класса -[**Атрибут  ссылки и обратной ссылки**](atr_ref_backref.md).
 
 ## Способы задания ссылок :
 Способы задания ссылок с точки зрения используемых полей атрибутивной части меты классов: 
@@ -16,11 +20,12 @@
 
 
 
-### Следующая страница: [Коллекция](/docs/ru/2_system_description/metadata_structure/meta_class/type_collection14.md)
+### Следующая страница: [Коллекция](type_collection14.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_reference13.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_reference13.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

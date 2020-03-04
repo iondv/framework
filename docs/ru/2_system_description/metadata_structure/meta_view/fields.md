@@ -1,12 +1,12 @@
 #### [Оглавление](/docs/ru/index.md)
 
-### Предыдущая страница: [Маски](/docs/ru/2_system_description/metadata_structure/meta_view/mask.md)
+### Предыдущая страница: [Маски](mask.md)
 
 # Поля 
 
 ## Описание
 
-**Поля** - содержит в себе атрибуты класса, объединенные, по какому-либо признаку, в группу (более подробное описание см. [Тип "Группа [0]")](/docs/ru/2_system_description/metadata_structure/meta_view/type_group.md).
+**Поля** - содержат в себе атрибуты класса, объединенные, по какому-либо признаку, в группу (более подробное описание см. [Тип "Группа [0]")](type_group.md).
 
 **Внимание:** данное свойство применяется только для атрибута типа "Группа [0]".
 
@@ -51,12 +51,13 @@
 ```  
 
 
-### Следующая страница: [Действия](/docs/ru/2_system_description/metadata_structure/meta_view/commands.md)
+### Следующая страница: [Действия](commands.md)
 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_view/fields.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

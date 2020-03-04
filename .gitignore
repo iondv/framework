@@ -1,83 +1,31 @@
-﻿# Игнор-лист файлов проекта
-# Игнорировать ВСЕ файлы и директории, включая поддиректории и файлы в них
-#*
+﻿package-lock.json
 
-# ---- ФАЙЛЫ ----
-# Игнорирование по типу файла, будут игнорироваться в АБСОЛЮТНО всех директориях
-# Например /files/data.zip, /server.log, /uploads/users/data/info.xls
-#*.zip
-#*.log
-#*.pdf
-#*.xls
-*.swp
-
-# Игнорирование файла во ВСЕХ директориях
-# Например /params/db/config.php, /config.php
-#config.php
-package-lock.json
-
-# Игнорирование конкретного файла ТОЛЬКО в корне проекта
-# (корнём считается расположение файла .gitignore)
-# Например НЕ БУДЕТ проигнорирован файл /db/config.php
-#/config.php
-/npm-debug.log
-
-
-# Игнорирование конкретного файла ТОЛЬКО в указанной директории
-# Например НЕ БУДЕТ проигнорирован файл /prod/params/config.php
-#/params/config.php
-/config/*.ini
-
-# ---- ДИРЕКТОРИИ ----
-# Игнорирование всех файлов и папок ТОЛЬКО в конкретной директории(включая поддиректории и файлы в них)
-# Например /images/user.jpg, /images/company/logo.png
-# НЕ БУДУТ проигнорированы файлы и папки /prod/images/user.jpg
 /.hg/*
 /.idea/*
 /.git/*
 /.settings/*
 /.tmp/*
+/.project
 /distr/*
 /docker/*
-/log/*
-
+/**/node_modules/*
+/plugins/*
 /modules/*
+!/modules/readme.md
 /applications/*
-/node_modules/*
+
 
 /view/**/vendor/*
 /view/**/*.less.css
 /view/**/*.min.css
 /view/**/*.min.js
+
 /files
+/log/*
 
-# Игнорирование всех файлов и папок в ЛЮБЫХ директориях с указанным именем
-# Например /images/user.jpg, /core/images/user.jpg
-#images/*
-# Игнорирование ВСЕХ html-файлов в ОДНОЙ КОНКРЕТНОЙ директории(НЕ ВКЛЮЧАЯ поддиректории)
-# Например /private/index.html
+/config/*.ini
 
-# ИСКЛЮЧЕНИЯ ИЗ ИГОРИРОВАННЫХ ФАЙЛОВНЕ
-# НЕ БУДУТ проигнорированы файлы в /private/ivan/index.html
-#/private/*.html
-# Игнорирование ВСЕХ html-файлов в КОНКРЕТНОЙ директории ВКЛЮЧАЯ поддиректории
-# Например /private/info.html, /private/users/ivan/info.html
-#/private/**/*.html
+/npm-debug.log
+*.swp
 
-# ---- РАЗНОЕ ----
-# Исключение из игнорирования
-# Игнорирование ВСЕХ файлов и папок внутри директории /secret,
-# за исключением файла /secret/free.txt, он не будет проигнорирован
-
-!/modules/readme.md
-
-# Игнорирование файла с именем, содержащим спецсимволы
-# Например !readme!.txt
-#\!readme!.txt
-
-# Игнорирование всех JPG и JPEG файлов внутри директорий,
-# которые начинаются на "h" и МОГУТ содержать ещё один символ после
-# Например /images/h4/user.jpg, /images/h/company.jpeg
-#/images/h?/*.jp?g
-
-/.project
+/.git-*/*

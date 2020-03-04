@@ -9,6 +9,7 @@ const Acl = require('acl');
 const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
 const clone = require('clone');
+const merge = require('merge');
 
 function MongoAcl(config) {
 
@@ -121,80 +122,90 @@ function MongoAcl(config) {
   };
 
   /**
-   * @param {String} subject
+   * @param {String | String[]} subjects
    * @param {String | String[]} resources
    * @returns {Promise}
    */
-  this._getPermissions = function (subject, resources, skipGlobals) {
+  this._getPermissions = function (subjects, resources, skipGlobals) {
     let r = Array.isArray(resources) ? resources : [resources];
+    let subjs = Array.isArray(subjects) ? subjects.slice() : [subjects];
     let returnGlobal = r.indexOf(_this.globalMarker) >= 0;
     if (!skipGlobals) {
       if (r.indexOf(_this.globalMarker) < 0) {
         r = r.concat([_this.globalMarker]);
       }
     }
-    let res = null;
-    return getAcl().then(acl => new Promise((resolve, reject) => {
-        acl.allowedPermissions(subject, r, (err, perm) => {
-        if (err) {
-          return reject(err);
-        }
-        res = {};
-        let hasGlobals = false;
-        let globalPermissions = {};
-        if (!skipGlobals) {
-          if (perm.hasOwnProperty(_this.globalMarker)) {
-            for (let i = 0; i < perm[_this.globalMarker].length; i++) {
-              globalPermissions[perm[_this.globalMarker][i]] = true;
-              hasGlobals = true;
-            }
-          }
-        }
-
-        if (perm.hasOwnProperty(_this.globalMarker) && !returnGlobal) {
-          delete perm[_this.globalMarker];
-        }
-
-        for (let nm in perm) {
-          if (perm.hasOwnProperty(nm)) {
-            if (perm[nm].length || hasGlobals) {
-              res[nm] = clone(globalPermissions);
-              if (perm[nm].indexOf(Permissions.FULL) >= 0 || res[nm][Permissions.FULL]) {
-                res[nm][Permissions.READ] = true;
-                res[nm][Permissions.WRITE] = true;
-                res[nm][Permissions.DELETE] = true;
-                res[nm][Permissions.USE] = true;
-                res[nm][Permissions.FULL] = true;
-              } else {
-                for (let i = 0; i < perm[nm].length; i++) {
-                  res[nm][perm[nm][i]] = true;
+    let result = {};
+    return getAcl().then((acl) => {
+      let p = Promise.resolve();
+      subjs.forEach((subject) => {
+        p = p.then(() =>
+          new Promise((resolve, reject) => {
+            acl.allowedPermissions(subject, r, (err, perm) => {
+              if (err) {
+                return reject(err);
+              }
+              let res = {};
+              let hasGlobals = false;
+              let globalPermissions = {};
+              if (!skipGlobals) {
+                if (perm.hasOwnProperty(_this.globalMarker)) {
+                  for (let i = 0; i < perm[_this.globalMarker].length; i++) {
+                    globalPermissions[perm[_this.globalMarker][i]] = true;
+                    hasGlobals = true;
+                  }
                 }
               }
-            }
-          }
-        }
 
-        if (skipGlobals) {
-          return resolve(res);
-        }
-
-          acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
-          if (err) {
-            return reject(err);
-          }
-
-          for (let nm in perm) {
-            if (perm.hasOwnProperty(nm) && res.hasOwnProperty(nm)) {
-              for (let i = 0; i < perm[nm].length; i++) {
-                res[nm][perm[nm][i]] = true;
+              if (perm.hasOwnProperty(_this.globalMarker) && !returnGlobal) {
+                delete perm[_this.globalMarker];
               }
-            }
-          }
-          return resolve(res);
-        });
+
+              for (let nm in perm) {
+                if (perm.hasOwnProperty(nm)) {
+                  if (perm[nm].length || hasGlobals) {
+                    res[nm] = clone(globalPermissions);
+                    if (perm[nm].indexOf(Permissions.FULL) >= 0 || res[nm][Permissions.FULL]) {
+                      res[nm][Permissions.READ] = true;
+                      res[nm][Permissions.WRITE] = true;
+                      res[nm][Permissions.DELETE] = true;
+                      res[nm][Permissions.USE] = true;
+                      res[nm][Permissions.FULL] = true;
+                    } else {
+                      for (let i = 0; i < perm[nm].length; i++) {
+                        res[nm][perm[nm][i]] = true;
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (skipGlobals) {
+                return resolve(res);
+              }
+
+              acl.allowedPermissions(_this.globalMarker, r, (err, perm) => {
+                if (err) {
+                  return reject(err);
+                }
+
+                for (let nm in perm) {
+                  if (perm.hasOwnProperty(nm) && res.hasOwnProperty(nm)) {
+                    for (let i = 0; i < perm[nm].length; i++) {
+                      res[nm][perm[nm][i]] = true;
+                    }
+                  }
+                }
+                return resolve(res);
+              });
+            });
+          }).then((res) => {
+            result = merge.recursive(true, result, res);
+          })
+        );
       });
-      })
-    );
+      return p.then(() => result);
+    });
   };
 
   /**

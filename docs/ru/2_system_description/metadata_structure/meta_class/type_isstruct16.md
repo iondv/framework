@@ -1,4 +1,7 @@
-### Предыдущая страница: [Тип "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/type_collection14.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Тип "Коллекция"](type_collection14.md)
+
 # Тип "Структура [16]"
 
 **Структура** - способ отображения связанных объектов (ссылок). Если у поля указано структура, то данный тип атрибута нужен для уменьшения действий при заведении модели, при заранее известных типовых классах, атрибуты которых используются во многих других классах.   
@@ -281,11 +284,12 @@ _NB: Объекты класса-структуры не создаются!_
 
 
 
-### Следующая страница: [Пользовательский тип](/docs/ru/2_system_description/metadata_structure/meta_class/type_user17.md)
+### Следующая страница: [Пользовательский тип](type_user17.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

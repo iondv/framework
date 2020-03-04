@@ -1,4 +1,6 @@
-### Предыдущая страница: [Вычислимые поля](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Вычислимые поля](atr_formula.md)
 
 # Кеширование значения вычисляемого атрибута
 ## Описание функционала
@@ -33,7 +35,7 @@ cached: true
 cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 ``` 
 
-В настройке необходимо указать ссылки и коллекции, кеши объектов в которых необходимо обновить при редактировании объекта данного класса. Обновления выполняестя рекурсивно, то есть если в классе объекта в `refAttr1` настроено обновление кешей, оно будет запущено. Настройка наследуется в классах наследниках.
+В настройке необходимо указать ссылки и коллекции, кеши объектов в которых необходимо обновить при редактировании объекта данного класса. Обновления выполняестя рекурсивно, то есть если в классе объекта в `refAttr1` настроено обновление кешей, оно будет запущено. Настройка задается в базавом классе и наследуется для классов-наследников.
 
 ### Пример настройки:
 
@@ -96,15 +98,16 @@ cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 ```
 
 
-### Следующая страница: [Типы атрибутов](/docs/ru/2_system_description/metadata_structure/meta_class/property_types.md)
+### Следующая страница: [Типы атрибутов](property_types.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

@@ -89,6 +89,8 @@ function QueryParser() {
           throw new Error('invalid attr value');
         }
         return '$' + value;
+      } else if (obj instanceof Date) {
+        return obj;
       } else if (typeof obj === 'object') {
         let result = {};
         Object.keys(obj).forEach((k) => {
@@ -97,12 +99,19 @@ function QueryParser() {
         return result;
       }
     }
-    if (typeof obj === 'string') {
-      let dv = moment(obj);
-      if (dv.isValid()) {
+    // TODO: корректная обработка дат,
+    // скорее всего нужно отдельное соглашение как их записывать/распознавать
+    /*if (typeof obj === 'string') {
+      let dv;
+      try {
+        dv = moment(obj);
+      } catch (_) {
+        // Do nothing
+      }
+      if (dv && dv.isValid()) {
         return dv.toDate();
       }
-    }
+    }*/
     return obj;
   }
 

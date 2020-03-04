@@ -1,4 +1,7 @@
-### Предыдущая страница: [Журналирование изменений](/docs/ru/2_system_description/metadata_structure/meta_class/journaling.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Журналирование изменений](journaling.md)
+
 # Индексация 
 
 **Индексация** - составные уникальные поля. Используется для поиска и контроля целостности данных. 
@@ -127,15 +130,16 @@ Cоставной индекс задается перечислением вх�
 
 
 
-### Следующая страница: [Атрибуты](/docs/ru/2_system_description/metadata_structure/meta_class/meta_class_attribute.md)
+### Следующая страница: [Атрибуты](meta_class_attribute.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/composite_indexes.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/composite_indexes.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

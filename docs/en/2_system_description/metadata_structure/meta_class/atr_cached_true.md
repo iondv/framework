@@ -1,11 +1,16 @@
-### The previous page: [Computable fields](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Computable fields](atr_formula.md)
 
 # Cached values of computable attribute
+
 ## Description
 
 When you're applying the cached values, the attribute values are calculated during creating and editing an object. Previously calculated values are used for the samples.
 
-You have two computable attributes `A` and `B` refering to the collection `C`. The `A` has the cached value and `B` has not one, then when editing the object, the collection `C` will be pulled twice. First for the attribute `B` at the `securedDataRepo` level to verify the access. Second for the attribute `A` when calcullated into the `dataRepo`. In this case, when reading an object from the database, the cache of the attribute `A` simply does not make sense, since in any case the collection will be selected for the attribute `B`.
+### Example 
+
+You have two computable attributes `A` and `B` refering to the collection `C`. The `A` has the cached value and `B` hasn't, then when editing the object, the collection `C` will be pulled twice. First for the attribute `B` at the `securedDataRepo` level to verify the access. Second for the attribute `A` when calcullated into the `dataRepo`. In this case, when reading an object from the database, the cache of the attribute `A` simply does not make sense, since in any case the collection will be selected for the attribute `B`.
 
 ## Cached semantics
 
@@ -30,9 +35,9 @@ Set the following property in the meta class:
 ```
 cacheDependencies: ["refAttr1", "refAttr2.refAttr3", "refAttr2.collAttr4"]
 ``` 
-When configuring the meta class, specify the reference and collections, the caches of the objects in which you need to update when editing an object of this class. Updates are done recursively. If the `refAttr1` attribute is set to update caches in the class object, than the update will start. This setting is inherited in heir classes.
+When configuring the meta class, specify the reference and collections, the caches of the objects in which you need to update when editing an object of this class. Updates are done recursively. If the `refAttr1` attribute is set to update caches in the class object, then the update will start. This setting is inherited in the heir classes.
 
-### Example of configuration:
+### Example
 
 ```json
 {
@@ -94,11 +99,12 @@ The value of this attribute, derived from the formula, is cached. Plus, to updat
 ```
 
 
-### The next page: [Attribute types](/docs/en/2_system_description/metadata_structure/meta_class/property_types.md)
+### The next page: [Attribute types](property_types.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)     &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,4 +1,7 @@
-### Предыдущая страница: [Предварительная выборка](/docs/ru/2_system_description/metadata_structure/meta_class/eager_loading.md) 
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Предварительная выборка](eager_loading.md) 
+
 # Вычисляемые атрибуты (без кеширования)
 
 ## Описание
@@ -48,7 +51,7 @@
       }
 ```
 
-В объекте обязательно нужно указать [подходящую функцию](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC%D1%8B%D0%B5-%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8) с необходимым количеством операндов для получения результата в `function1`.
+В объекте обязательно нужно указать [подходящую функцию](atr_formula.md#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC%D1%8B%D0%B5-%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8) с необходимым количеством операндов для получения результата в `function1`.
 
 В объекте содержится полное описание алгоритма, по которому будут происходить вычисления, за исключением тех функций, которые находятся в зависимых вычисляемых атрибутах. 
 
@@ -274,7 +277,7 @@
 
 `pad` - дополнение строки символами до нужной длины
 
-`next` - [извлекает новое значение последовательности](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md#%D0%B0%D0%B2%D1%82%D0%BE%D0%BF%D1%80%D0%B8%D1%81%D0%B2%D0%BE%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8-%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B0%D1%82%D1%80%D0%B8%D0%B1%D1%83%D1%82%D0%B0-%D0%B2-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D1%8F%D0%B5%D0%BC%D0%BE%D0%BC-%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B8)
+`next` - [извлекает новое значение последовательности](atr_formula.md#%D0%B0%D0%B2%D1%82%D0%BE%D0%BF%D1%80%D0%B8%D1%81%D0%B2%D0%BE%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8-%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B0%D1%82%D1%80%D0%B8%D0%B1%D1%83%D1%82%D0%B0-%D0%B2-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D1%8F%D0%B5%D0%BC%D0%BE%D0%BC-%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B8)
 
 `merge` - конкатенация атрибутов в коллекции
 
@@ -340,11 +343,12 @@ substring - получение подстроки ([Строка], [ с како
 
 3. Функция `next($id)` (если в `$id` задано значение) будет всегда возвращать 1, так как для каждого объекта будет создаваться отдельная последовательность, из которой выбирается только первое значение.
 
-### Следующая страница: [Кеширование значения вычислимого атрибута](/docs/ru/2_system_description/metadata_structure/meta_class/atr_cached_true.md)    
+### Следующая страница: [Кеширование значения вычислимого атрибута](atr_cached_true.md)    
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_formula.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

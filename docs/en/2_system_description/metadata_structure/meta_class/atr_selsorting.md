@@ -1,17 +1,20 @@
-### The previous page: [Conditions of sorting the valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Conditions of sorting the valid values](atr_selconditions.md)
+
 # Sorting a sample of valid values
 
 ## Description
 
-**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the `"Reference"` type. Set it when creating the meta class in the `"selSorting"` field. 
+**Sorting a sample of valid values** - is a filter that specifies how to sort objects. It is used for attributes of the reference type. Set it in the `"selSorting"` field when creating the meta class. 
 
 ### Available types of sorting:
 
 •  Sorting in ascending order
+
 •  Sorting in descending order
 
-
-## Example in JSON
+### Example 
 ```
 {
       "orderNumber": 20,
@@ -52,11 +55,12 @@
 | `"mode"`     | **Sorting order** | _0 - in ascending order_                 | Sorting order                                  |
 |              |                        | _1 - in descending order_                    |                                                     |
 
-### The next page: [Selection list of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+### The next page: [Selection list of valid values](atr_selectionprovider.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

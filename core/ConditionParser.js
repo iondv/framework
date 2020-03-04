@@ -16,8 +16,13 @@ const cast = require('core/cast');
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
   OperationTypes.SUM, OperationTypes.COUNT];
-const Funcs = [OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATEDIFF, OperationTypes.ADD,
-              OperationTypes.SUB, OperationTypes.MUL, OperationTypes.DIV, OperationTypes.MOD];
+const Funcs = [
+  OperationTypes.DATE, OperationTypes.DATEADD, OperationTypes.DATEDIFF, OperationTypes.ADD, OperationTypes.SUB,
+  OperationTypes.MUL, OperationTypes.DIV, OperationTypes.MOD, OperationTypes.ROUND, OperationTypes.CONCAT,
+  OperationTypes.SUBSTR, OperationTypes.ABS, OperationTypes.DATE_STR, OperationTypes.DATE_YEAR,
+  OperationTypes.DATE_MONTH, OperationTypes.DATE_DAY, OperationTypes.DATE_HOUR, OperationTypes.DATE_MINUTE,
+  OperationTypes.DATE_SECOND
+];
 
 // jshint maxstatements: 40, maxcomplexity: 50
 /**
@@ -231,9 +236,7 @@ function produceArray(conditions, rcm, context, lang) {
   if (Array.isArray(conditions)) {
     for (let i = 0; i < conditions.length; i++) {
       let tmp = conditionParser(conditions[i], rcm, context, lang);
-      if (tmp) {
-        result.push(tmp);
-      }
+      result.push(tmp);
     }
   }
   return result.length ? result : null;
@@ -339,8 +342,24 @@ function conditionParser(condition, rcm, context, lang) {
         }
         switch (oper) {
           case OperationTypes.DATE: return {[Operations.DATE]: tmp};
-          case OperationTypes.DATEADD: return {[Operations.DATEADD]: tmp};
-          case OperationTypes.DATEDIFF: return {[Operations.DATEDIFF]: tmp};
+          case OperationTypes.DATEADD:
+            return {[Operations.DATE_ADD]: tmp};
+          case OperationTypes.DATEDIFF:
+            return {[Operations.DATE_DIFF]: tmp};
+          case OperationTypes.DATE_DAY:
+            return {[Operations.DATE_DAY]: tmp};
+          case OperationTypes.DATE_HOUR:
+            return {[Operations.DATE_HOUR]: tmp};
+          case OperationTypes.DATE_MINUTE:
+            return {[Operations.DATE_MINUTE]: tmp};
+          case OperationTypes.DATE_SECOND:
+            return {[Operations.DATE_SECOND]: tmp};
+          case OperationTypes.DATE_MONTH:
+            return {[Operations.DATE_MONTH]: tmp};
+          case OperationTypes.DATE_YEAR:
+            return {[Operations.DATE_YEAR]: tmp};
+          case OperationTypes.DATE_STR:
+            return {[Operations.DATE_STR]: tmp};
           case OperationTypes.ADD: return {[Operations.ADD]: tmp};
           case OperationTypes.SUB: return {[Operations.SUB]: tmp};
           case OperationTypes.MUL: return {[Operations.MUL]: tmp};

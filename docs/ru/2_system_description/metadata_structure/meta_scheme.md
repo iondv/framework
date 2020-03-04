@@ -1,4 +1,7 @@
+#### [Оглавление](/docs/ru/index.md)
+
 ### Предыдущая страница: [Шаг 3 Сборка и запуск](/docs/ru/1_system_deployment/step3_building_and_running.md)
+
 # Схема основных типов меты
 
 **Метаданные (Мета)** - совокупность JSON-файлов в полной мере описывающих комплект структур, которыми оперирует приложение, способов отображения данных структур в пользовательском интерфейсе и навигации по ним, а так же файлов конфигурации приложения.   
@@ -15,7 +18,7 @@
 8. Мета безопасности 
 
 ## Структура основных типов меты
-![shema](https://i.imgur.com/t55Srxn.png)
+![shema](/docs/ru/images/schema.png)
 
 Структуру основных типов меты можно представить следующим образом:
 
@@ -42,7 +45,8 @@
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_scheme.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_scheme.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

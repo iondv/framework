@@ -12,6 +12,10 @@ function User(data, coactors, tz) {
     return data.id + (data.type ? '@' + data.type : '');
   };
 
+  this.login = function () {
+    return data.id;
+  };
+
   this.name = function () {
     return data.name || this.id();
   };
@@ -30,6 +34,10 @@ function User(data, coactors, tz) {
 
   this.pwdHash = function () {
     return data.pwd;
+  };
+  
+  this.needPwdReset = function () {
+    return data.needPwdReset;
   };
 
   this.toString = function () {
@@ -66,6 +74,10 @@ function User(data, coactors, tz) {
 
   this.timeZone = function () {
     return timezone;
+  };
+
+  this.isDisabled = function () {
+    return data.disabled;
   };
 }
 

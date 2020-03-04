@@ -1,18 +1,22 @@
-### Предыдущая страница: [Семантика](/docs/ru/2_system_description/metadata_structure/meta_class/semantic.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Семантика](semantic.md)
+
 ## Признак абстрактности класса
 
-**Признак абстрактности класса** - требуется в случае, когда необходимо по ссылке атрибута на базовые класс отображать список выбора его наследников. т.е. при формировании списка выбора классов для создания обьекта, не включаем в список абстрактные классы.
+**Признак абстрактности класса** - требуется в случае, когда необходимо по ссылке атрибута на базовый класс отображать список выбора его наследников. При формировании списка выбора классов для создания обьекта абстрактные классы не включены. Выставите `true` в поле "abstract".
 
-В мете класса указываем:
+### Пример
+
 ```
 {
    "name": "SomeClassName",
    "abstract": true
 }
 ```
-И класс становится недоступным для инициализации на уровне UI.
+Класс становится недоступным для инициализации на уровне UI.
 
-#### Пример:
+### Пример
 ```
 {
   "isStruct": false,
@@ -45,15 +49,16 @@
 ```
 
 
-### Следующая страница: [Версионирование](/docs/ru/2_system_description/metadata_structure/meta_class/metaversion.md)
+### Следующая страница: [Версионирование](metaversion.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

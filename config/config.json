@@ -33,24 +33,42 @@
               "options": {
                 "logger": "ion://sysLog",
                 "uri": "[[db.uri]]",
+                "url": {
+                  "hosts": "[[db.hosts]]",
+                  "user": "[[db.user]]",
+                  "pwd": "[[db.pwd]]",
+                  "db": "[[db.dbname]]",
+                  "params": {
+                    "authMechanism": "[[db.authMechanism]]"
+                  }
+                },
                 "options": {
                   "keepAlive": 1,
                   "connectTimeoutMS": "[[db.connectTimeOut]]",
                   "socketTimeoutMS": "[[db.operTimeOut]]",
-                  "poolSize": "[[db.poolSize]]"
-                },
-                "user": "[[db.user]]",
-                "password": "[[db.pwd]]"
+                  "poolSize": "[[db.poolSize]]",
+                  "sslValidate": "[[db.sslValidate]]",
+                  "checkServerIntegrity": "[[db.checkServerIntegrity]]",
+                  "sslCA": "[[db.sslCA]]",
+                  "sslCert": "[[db.sslCert]]",
+                  "sslKey": "[[db.sslKey]]",
+                  "sslPass": "[[db.sslPass]]",
+                  "replicaSet": "[[db.replicaSet]]",
+                  "authSource": "[[db.authSource]]",
+                  "ssl": "[[db.ssl]]"
+                }
               }
             }
           ]
         }
       },
       "settings": {
-        "module": "core/impl/SettingsRepository",
+        "module": "core/impl/settings/Settings",
         "initMethod": "init",
         "initLevel": 1,
         "options": {
+          "mode": "[[deploy.mode]]",
+          "logger": "ion://sysLog",
           "dataSource": "ion://Db"
         }
       }
@@ -63,7 +81,7 @@
         }
       },
       "aclProvider":{
-        "module": "core/impl/access/aclmongo",
+        "module": "core/impl/access/DsAcl",
         "initMethod": "init",
         "initLevel": 1,
         "options":{
@@ -72,15 +90,23 @@
         }
       },
       "roleAccessManager": {
-        "module": "core/impl/access/amAccessManager",
-        "initMethod": "init",
-        "initLevel": 1,
+        "module": "core/impl/access/DsRoleAccessManager",
         "options": {
+          "dataSource": "ion://Db",
+          "accounts": "ion://accounts",
+          "eventLogger": "ion://accessLogger"
+        }
+      },
+      "accessLogger": {
+        "module": "core/impl/access/DsRoleAccessChangeLogger",
+        "options": {
+          "table": "ion_accesslog",
           "dataSource": "ion://Db"
         }
       },
       "accounts": {
         "module": "core/impl/LocalAccountStorage",
+        "initMethod": "init",
         "options": {
           "dataSource": "ion://Db"
         }
@@ -101,7 +127,7 @@
           "app": "ion://application",
           "log": "ion://sysLog",
           "storage": {
-            "type": "mongodb",
+            "type": "db",
             "dataSource": "ion://Db"
           },
           "session": {
@@ -132,7 +158,14 @@
           "acl": "ion://aclProvider",
           "inactiveTimeout": "[[auth.inactivityTimeout]]",
           "passwordLifetime": "[[auth.passwordLifeTime]]",
+          "passwordMinPeriod": "[[auth.passwordMinPeriod]]",
           "passwordMinLength": "[[auth.passwordMinLength]]",
+          "passwordJournalSize": "[[auth.passwordJournalSize]]",
+          "passwordComplexity": {
+            "upperLower": "[[auth.passwordComplexity.upperLower]]",
+            "number": "[[auth.passwordComplexity.number]]",
+            "special": "[[auth.passwordComplexity.special]]"
+          },
           "attemptTimeOut": "[[auth.attemptTimeOut]]",
           "attemptLimit": "[[auth.attemptLimit]]",
           "tempBlockPeriod": "[[auth.tempBlockPeriod]]",
@@ -142,7 +175,23 @@
           "checkSignInAccess": "[[auth.checkSignInAccess]]",
           "checkUrlAccess": "[[auth.checkUrlAccess]]",
           "goHome": "[[auth.goHome]]",
-          "passports":[]
+          "passports":[],
+          "eventLogger": "ion://authLogger"
+        }
+      },
+      "authLogger": {
+        "module": "core/impl/changelogger/EventLogger",
+        "options": {
+          "table": "ion_authlog",
+          "dataSource": "ion://Db",
+          "types": {
+            "LOGIN": "LOGIN",
+            "LOGOUT": "LOGOUT",
+            "FAILURE": "FAILURE",
+            "CHANGE_PASSWORD": "CHANGE_PASSWORD",
+            "REGISTER": "REGISTER",
+            "EDIT_PROFILE": "EDIT_PROFILE"
+          }
         }
       },
       "calculator": {
@@ -215,8 +264,7 @@
           }
         }
       },
-      "keyProv": {
-        "name": "keyProvider",
+      "keyProvider": {
         "module": "core/impl/meta/keyProvider",
         "options": {
           "metaRepo": "ion://metaRepo",
@@ -231,7 +279,7 @@
           "fileStorage": "ion://fileStorage",
           "imageStorage": "ion://imageStorage",
           "log": "ion://sysLog",
-          "keyProvider": "ion://keyProv"
+          "keyProvider": "ion://keyProvider"
         }
       },
       "innerCache": {
@@ -335,8 +383,9 @@
           "data": "ion://cachedDataRepo",
           "meta": "ion://metaRepo",
           "acl": "ion://aclProvider",
-          "keyProvider": "ion://keyProv",
+          "keyProvider": "ion://keyProvider",
           "workflow": "ion://workflows",
+          "meta": "ion://metaRepo",
           "log": "ion://sysLog",
           "calc": "lazy://calculator"
         }

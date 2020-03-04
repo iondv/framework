@@ -1,10 +1,12 @@
-### The previous page: [Autocompletion](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Autocompletion](atr_autoassigned.md)
 
 # Default value
 
 **Default value** - is set to display the value in the attribute field automatically when opening the form for creating an object. The default value is set by assigning the value `default` to the ` "defaultValue" ` property. It is mainly used for selection list of valid values.
 
-### Example:
+### Example
 
 ```
 {
@@ -69,11 +71,12 @@ get(className, id) // check the presence of the object in the DB, if the object 
 get(className, attr1, val1, attr2, val2, ...) // return the id of the first object that matches the search: attr1=val1 and attr2=val2 and etc.
 ```
 
-### The next page: [Attribute "Reference"](/docs/en/2_system_description/metadata_structure/meta_class/atr_ref_backref.md)
+### The next page: [Attribute "Reference"](atr_ref_backref.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

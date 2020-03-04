@@ -1,10 +1,14 @@
-### The previous page: [Collection](/docs/en/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Collection](atr_itemclass_backcoll.md) 
+
 # Conditions of sorting the valid values
 
 ## Description 
+
 **Conditions of sorting the valid values** - allows you to limit the selection of objects by reference that are valid for binding in this reference attribute.
 
-Filter of sorting the valid values is used in the meta class for the attributes of the "Reference" and "Collections" types. The filter sets the conditions to limit the sample of objects. Conditions are imposed as a list of consecutive operations.
+Filter of sorting the valid values is used in the meta class for the attributes of the reference and collection types. The filter sets the conditions to limit the sample of objects. Conditions are imposed as a list of consecutive operations.
 
 ### Available operations:
 
@@ -18,7 +22,7 @@ Filter of sorting the valid values is used in the meta class for the attributes 
 •  MORE: 6, // more >
 •  LESS_OR_EQUAL: 7, // less or equal <=
 •  MORE_OR_EQUAL: 8, // more or equal >=
-•  IN: 9, // similar (IN) 
+•  IN: 9, // item is in collection / array (IN) 
 •  CONTAINS: 10 // contains
 
 ```
@@ -70,9 +74,15 @@ The operation of the key-expression type - the key is the attribute name in the 
 
 ## Operations and other particular qualities
 
-Use the "nestedConditions" condition to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
+Use the "nestedConditions" to perform the attribute inquiry. For each attribute - a separate operation. Do not specify nested reference attributes by a point in the "property" field. 
 
 To inquiry attribute values that are not equal to zero, use the `nempty` operation and specify `null` in the "value" field.
+
+The **CONTAINS** operation is applied to the following attribute types:
+- string - the LIKE operation is applied to the data string
+- collection
+- the IN operation is applied if the compared `value` is an array and contains at least one element
+- transition to nested conditions `nestedConditions` occurs if the compared `value` is not an array or does not contain at least one element in the array
 
 ## JSON
  ```
@@ -111,17 +121,18 @@ To inquiry attribute values that are not equal to zero, use the `nempty` operati
 
 | Field                 | Name        | Acceptable values                                                   | Description                                                            |
 |:---------------------|:-----------------------------|:----------------------------------------------------------------------|:--------------------------------------------------------------------|
-| `"property"`         | **Attribute**                  | String only Latin without spaces                                  | Attribute of the reference class, according to which the values are filtered |
+| `"property"`         | **Attribute**                  | String in latin characters with no spaces                                  | Attribute of the reference class, according to which the values are filtered |
 | `"operation"`        | **Operation**                 | Operation code (see above)                                               | Operation of object filtration                  |
 | `"value"`            | **Value**                 | Depends on the operation type                                              | The second value for binary filtering operations                    |
-| `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions. |                                                                     |
+| `"nestedConditions"` | **Nested sorting conditions** | The object structure is similar to the structure of the object of the selection conditions |                                                                     |
+
+**Attention:** the "selection_provider" field. For more detail see [**Selection list of valid values**](atr_selectionprovider.md).
 
 ### Example
-**Attention**
 
-The "selection_provider" field. For more detail see [**Selection list of valid values**](/docs/en/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
 * "type": "SIMPLE" - simple type,   
 * "list": [ ] - an array of acceptable values.
+
 
  ```
      {
@@ -237,10 +248,12 @@ The "selection_provider" field. For more detail see [**Selection list of valid v
      }
  ```
  
-### Conditions of sorting the valid values for "Data" type attribute
+### Conditions of sorting the valid values for "Data" attribute type
 
 The core has the context attribute - `$$ now`, which returns the current date.
 `$$ now` is available everywhere if you specify the conditions.
+
+For more details see the [variables](/docs/en/2_system_description/metadata_structure/meta_variables.md).
 
 ### Example:
 
@@ -258,11 +271,12 @@ The core has the context attribute - `$$ now`, which returns the current date.
 ```
 
 
-### The next page: [Sorting a sample of valid values](/docs/en/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### The next page: [Sorting a sample of valid values](atr_selsorting.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

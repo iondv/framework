@@ -83,7 +83,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then((scope) => {
     if (params.resources.length || params.permissions.length) {
       if (!params.resources.length) {
-        params.resources.push(scope.roleAccessManager.globalMarker);
+        params.resources.push(scope.roleAccessManager.globalMarker());
       }
       if (!params.permissions.length) {
         params.permissions.push(Permissions.FULL);

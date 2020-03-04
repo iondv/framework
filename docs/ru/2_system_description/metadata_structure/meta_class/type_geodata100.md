@@ -1,11 +1,14 @@
-### Предыдущая страница: [Пользовательский тип](/docs/ru/2_system_description/metadata_structure/meta_class/type_user17.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Пользовательский тип](type_user17.md)
+
 # Геоданные
 
 Тип атрибута **геокоординаты** - является атрибутом, который хранит координаты с уникальными представлениями для создания и редактирования. Значение свойства "type" для атрибута, имеющего тип геокоординаты равно 100.
 
 ## Описание:
 
-Если атрибут имеет тип геокоординаты и на форме создания/редактирования объекта  атрибут заполнен (координаты заданы), то отображается поле карты с координатами и кнопка "Изменить". Если атрибут не заполнен – то отображается только кнопка "Задать координаты".
+Если атрибут имеет тип геокоординаты и на форме создания/редактирования объекта  атрибут заполнен (координаты заданы), то отображается поле карты с координатами и кнопка "Изменить". Если атрибут не заполнен – то отображается только кнопка "Задать координаты". _Доступно только в студии_
 
 ## Особенности работы
 
@@ -131,11 +134,12 @@
     }
 ```
 
-### Следующая страница: [Расписание](/docs/ru/2_system_description/metadata_structure/meta_class/type_schedule210.md) 
+### Следующая страница: [Расписание](type_schedule210.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

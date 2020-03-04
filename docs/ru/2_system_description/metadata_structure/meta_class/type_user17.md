@@ -1,4 +1,6 @@
-### Предыдущая страница: [Структура](/docs/ru/2_system_description/metadata_structure/meta_class/type_isstruct16.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Структура](type_isstruct16.md)
 
 # Пользовательские типы
 
@@ -69,11 +71,12 @@
 Таким образом, при вводе значения для атрибута `"Номер паспорта (Пользовательский тип [17])"` будет применяться маска, заданая для типа `"userPassport"` по ссылке свойства `"refClass"`. 
 
 
-### Следующая страница: [Геоданные](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)
+### Следующая страница: [Геоданные](type_geodata100.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

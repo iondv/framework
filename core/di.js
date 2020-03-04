@@ -141,6 +141,8 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
   if (component.loaded) {
     if (scope.hasOwnProperty(name)) {
       return scope[name];
+    } else {
+      throw new Error('Компонент ' + name + ' имеет циклическую зависимость с другим компонентом.');
     }
   }
 
@@ -150,67 +152,34 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (modulePath.indexOf('./') === 0) {
       modulePath = (cwd ? cwd + '/' : '') + modulePath.substr(2);
     }
-
+    component.loaded = true;
     let F = require(modulePath);
     let opts = processOptions(component.options, scope, components, init, skip, cwd);
     if (component.module) {
-      result = new F(opts);
+      result = new F(opts || {});
     } else {
       result = function () {
-        return F.call(scope, opts);
+        return F.call(scope, opts || {});
       };
       if (component.initMethod) {
+        if (typeof F[component.initMethod] != 'function') {
+          throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
+        }
         result[component.initMethod] = F[component.initMethod];
+      } else if (typeof F._initialization === 'function') {
+        result._initialization = F._initialization;
       }
     }
     scope[name] = result;
     component.name = name;
-    component.loaded = true;
     if (component.initMethod) {
+      init.push(component);
+    } else if (typeof result._initialization === 'function') {
+      component.initLevel = component.initLevel || Infinity;
       init.push(component);
     }
   }
   return result;
-}
-
-function componentInitConstructor(component, method, scope) {
-  return function () {
-    return method.apply(component, [scope]);
-  };
-}
-
-function levelConstructor(initLoaders) {
-  return function () {
-    let p;
-    for (let i = 0; i < initLoaders.length; i++) {
-      if (p) {
-        p = p.then(initLoaders[i]);
-      } else {
-        p = initLoaders[i]();
-      }
-    }
-    if (p) {
-      return p;
-    }
-    return Promise.resolve();
-  };
-}
-
-function diInit(levels) {
-  let p;
-  for (let i = 0; i < levels.length; i++) {
-    if (p) {
-      p = p.then(levels[i]);
-    } else {
-      p = levels[i]();
-    }
-  }
-
-  if (p) {
-    return p;
-  }
-
-  return Promise.resolve();
 }
 
 /**
@@ -262,32 +231,27 @@ function di(context, struct, presets, parentContext, skip, cwd) {
     }
   }
 
-  init.sort(function (a, b) {
-    return (a.initLevel || 0) - (b.initLevel || 0);
-  });
+  init.sort((a, b) => (a.initLevel || 0) - (b.initLevel || 0));
 
   contexts[context] = scope;
 
-  let initLevels = [];
-  let initLevel = [];
-  for (let i = 0; i < init.length; i++) {
-    initLevel.push(componentInitConstructor(scope[init[i].name], scope[init[i].name][init[i].initMethod], scope));
-    if (i < init.length - 1) {
-      if (init[i + 1].initLevel > init[i].initLevel) {
-        initLevels.push(levelConstructor(initLevel));
-        initLevel = [];
+  let p = Promise.resolve();
+  init.forEach((initiator) => {
+    if (scope[initiator.name]) {
+      const c = scope[initiator.name];
+      const im = initiator.initMethod || '_initialization';
+      if (typeof c[im] == 'function') {
+        p = p.then(() => c[im].call(c, scope));
+      } else {
+        return Promise.reject(new Error('Не найден метод ' + im + ' компонента ' + initiator.name));
       }
     } else {
-      initLevels.push(levelConstructor(initLevel));
+      return Promise.reject(new Error('Не найден компонент ' + initiator.name));
     }
-  }
+    p = p.then();
+  });
 
-  return diInit(initLevels)
-    .then(
-      function () {
-        return Promise.resolve(scope);
-      }
-    );
+  return p.then(() => scope);
 }
 
 module.exports = di;
@@ -303,28 +267,37 @@ module.exports.context = function (name) {
   return {};
 };
 
+function recCopyOption (v, src, dest) {
+  let ref = false;
+  if (!v) {
+    return;
+  } else if (typeof v === 'string') {
+    if (v.substr(0, 6) === 'ion://') {
+      v = v.substr(6);
+      ref = true;
+    } else if (v.substr(0, 7) === 'lazy://') {
+      v = v.substr(7);
+      ref = true;
+    }
+    if (ref) {
+      recCopy(v, src, dest);
+    }
+  } else if (Array.isArray(v)) {
+    v.forEach(v1 => recCopyOption(v1, src, dest));
+  } else if (typeof v === 'object') {
+    if (v && v.module && v.name && v.options) {
+      recCopyOptions(v.options, src, dest);
+    } else {
+      recCopyOptions(v, src, dest);
+    }
+  }
+  return;
+}
 
 function recCopyOptions(options, src, dest) {
   for (let nm in options) {
     if (options.hasOwnProperty(nm)) {
-      let v = options[nm];
-      let ref = false;
-      if (typeof v === 'string') {
-        if (v.substr(0, 6) === 'ion://') {
-          v = v.substr(6);
-          ref = true;
-        } else if (v.substr(0, 7) === 'lazy://') {
-          v = v.substr(7);
-          ref = true;
-        }
-        if (ref) {
-          recCopy(v, src, dest);
-        }
-      } else if (typeof v === 'object') {
-        if (v && v.module && v.name && v.options) {
-          recCopyOptions(v.options, src, dest);
-        }
-      }
+      recCopyOption(options[nm], src, dest);
     }
   }
 }

@@ -1,4 +1,7 @@
-### Предыдущая страница: [Индексация](/docs/ru/2_system_description/metadata_structure/meta_class/atr_indexed.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Индексация](atr_indexed.md)
+
 # Автозаполняемые атрибуты
 
 ## Описание
@@ -34,15 +37,16 @@ NB. Необходимо сделать проверку при сохранен
     }
 ```
 
-### Следующая страница: [Значение по умолчанию](/docs/ru/2_system_description/metadata_structure/meta_class/atr_default_value.md)
+### Следующая страница: [Значение по умолчанию](atr_default_value.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)    &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_autoassigned.md)    &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
 --------------------------------------------------------------------------  
 
-Copyright (c) 2018 **LLC "ION DV"**.
+Copyright (c) 2018 **LLC "ION DV"**.  
 All rights reserved. 

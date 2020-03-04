@@ -7,6 +7,18 @@ class AccountStorage {
     return this._register(data);
   }
 
+  unregister(id) {
+    return this._unregister(id);
+  }
+
+  profileFields() {
+    return this._profileFields();
+  }
+
+  validate(data) {
+    return this._validate(data);
+  }
+
   /**
    * @param {String} id
    * @param {String} oldPwd
@@ -20,10 +32,11 @@ class AccountStorage {
   /**
    * @param {String} id
    * @param {String} [pwd]
+   * @param {Boolean} [disabled]
    * @returns {Promise.<{User}>}
    */
-  get(id, pwd) {
-    return this._get(id, pwd);
+  get(id, pwd, disabled) {
+    return this._get(id, pwd, disabled);
   }
 
   /**

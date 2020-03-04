@@ -1,15 +1,18 @@
-### The previous page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [User type](type_user17.md)
+
 # Geodata
 
 The **Geodata** attribute type - stores coordinates with unique views for creating and editing forms. The value of the "type" property for Geodata attribute type is 100.
 
 ## Description:
 
-If the attribute has a geodata type and the coordinates are specified on the object creation/editing form, then the Map field with coordinates and the "Change" button are displayed. If the coordinates aren't specified, then only the "Set coordinates" button is displayed.
+If the attribute has a geodata type and the coordinates are specified on the object creation/editing form, then the Map field with coordinates and the "Change" button are displayed. If the coordinates aren't specified, then only the "Set coordinates" button is displayed. _Available only in Studio_
 
 ## Specificity of work 
 
-If the `"autoassigned"` property is set: `true` and the data is not specified when creating a form, then coordinates must be determined automatically from the address data from the attributes specified in the geodata properties.
+If the `"autoassigned"` property is set to: `true` and the data is not specified when creating a form, then coordinates must be determined automatically from the address data from the attributes specified in the geodata properties.
 
 ## Attributes on the form
 
@@ -132,11 +135,12 @@ In the logic name (`caption`) of the attribute you can set the display mode (`mo
     }
 ```
 
-### The next page: [Schedule](/docs/en/2_system_description/metadata_structure/meta_class/type_schedule210.md) 
+### The next page: [Schedule](type_schedule210.md) 
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/type_geodata100.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

@@ -1,4 +1,7 @@
-### Предыдущая страница: [Атрибут "Коллекция"](/docs/ru/2_system_description/metadata_structure/meta_class/atr_itemclass_backcoll.md) 
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Атрибут "Коллекция"](atr_itemclass_backcoll.md)
+
 # Условия отбора допустимых значений
 
 ## Описание 
@@ -18,7 +21,7 @@
 •  MORE: 6, // больше >
 •  LESS_OR_EQUAL: 7, // меньше или равно <=
 •  MORE_OR_EQUAL: 8, // больше или равно >=
-•  IN: 9, // похож (IN) 
+•  IN: 9, // элемент входит в коллекцию/массив (IN) 
 •  CONTAINS: 10 // содержит
 
 ```
@@ -74,6 +77,11 @@ module.exports = {
 
 Для запроса значений атрибута, которые не равны нулю, необходимо выполнить операцию `nempty `, в поле "value" указываем `null`. 
 
+Операция **CONTAINS** применима к типам атрибута:
+- строка - к строке данных применяется операция LIKE
+- коллекция
+  - применяется операция IN, если сравниваемое значение `value` является массивом и содержит хотя бы один элемент
+  - происходит переход к вложенным условиям `nestedConditions`, если сравниваемое значение `value` не является массивом или не содержит хотя бы один элемент в массиве
 
 ## JSON
  ```
@@ -120,7 +128,7 @@ module.exports = {
 ### Пример
 **Внимание**
 
-Поле "selection_provider". См. подробнее [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md).
+Поле "selection_provider". См. подробнее [Список выбора допустимых значений](atr_selectionprovider.md).
 * "type": "SIMPLE" - простой тип,   
 * "list": [] - массив допустимых значений
 
@@ -167,7 +175,7 @@ module.exports = {
  ```
  ### Пример 
  
- В ссылочном атрибуте необходимо показать только те объекты, у которых в ссылочном классе задан атрибут "selConditions", в поле `property` этого атрибута, указаного поле связанного класса, значение в поле "value" соответствует условию "operation".
+ В ссылочном атрибуте необходимо показать только те объекты, у которых в ссылочном классе задан атрибут "selConditions" и в поле `property` этого атрибута указано поле связанного класса,чьё значение в поле "value" соответствует условию "operation".
  
  В атрибуте организация, задача показать только организации ("refClass": "organization"), у которых в поле тип ( "property": "type") равно ( "operation": 0) значению zakazchik ("value": "zakazchik").  
  
@@ -244,6 +252,8 @@ module.exports = {
 В ядре реализован атрибут контекста `$$now`, возвращающий текущую дату.
 `$$now` доступен везде при задании условий.
 
+Подробнее см. [переменные](/docs/ru/2_system_description/metadata_structure/meta_variables.md).
+
 ### Пример:
 
 **Условие:** выводить объекты, у которых значение атрибута [dataStart] меньше текущей даты:
@@ -260,11 +270,12 @@ module.exports = {
 ```
 
 
-### Следующая страница: [Сортировка выборки допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selsorting.md)
+### Следующая страница: [Сортировка выборки допустимых значений](atr_selsorting.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/atr_selconditions.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 

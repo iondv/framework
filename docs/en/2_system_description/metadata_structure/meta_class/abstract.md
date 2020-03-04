@@ -1,18 +1,22 @@
-### The previous page: [Semantics](/docs/en/2_system_description/metadata_structure/meta_class/semantic.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Semantics](semantic.md)
+
 ## Criteria of abstraction 
 
-**Criteria of abstraction for a class** -  is used when it is necessary by the attribute reference to the base class to display the selection list of its heirs. That means, when forming the selection list of classes for creating an object, do not include abstract classes in the list.
+**Criteria of abstraction for a class** -  is used when it is necessary to display the selection list of the base class heirs in the attribute reference. When forming the selection list of classes for creating an object, do not include abstract classes in the list. Set the `true` value in the "abstract" field.
 
-Indicate in the meta class:
+### Example:
+
 ```
 {
    "name": "SomeClassName",
    "abstract": true
 }
 ```
-And the class becomes unavailable for initialization at the UI level.
+The class becomes unavailable for initialization at the UI level.
 
-#### Example:
+### Example:
 ```
 {
   "isStruct": false,
@@ -45,11 +49,12 @@ And the class becomes unavailable for initialization at the UI level.
 ```
 
 
-### The next page: [Version](/docs/en/2_system_description/metadata_structure/meta_class/metaversion.md)
+### The next page: [Version](metaversion.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/2_system_description/metadata_structure/meta_class/abstract.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 

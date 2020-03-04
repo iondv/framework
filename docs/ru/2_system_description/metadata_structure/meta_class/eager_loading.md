@@ -1,4 +1,7 @@
-### Предыдущая страница: [Список выбора допустимых значений](/docs/ru/2_system_description/metadata_structure/meta_class/atr_selectionprovider.md)
+#### [Оглавление](/docs/ru/index.md)
+
+### Предыдущая страница: [Список выбора допустимых значений](atr_selectionprovider.md)
+
 # Предварительная выборка 
 
 **Предварительная выборка объектов загрузки** (от англ. eager loading - "жадная загрузка") - процесс который позволяет указать в запросе какие связанные данные, в объёме достаточном для корректного отображения семантики связанного объекта необходимо загрузить при выполнении запроса. 
@@ -63,12 +66,16 @@ NB. Если вместо `"node1"` поставить `"*"`, то при поп
 
 Максимальная глубина предварительной выборки определяет максимально допустимый уровень вложенности объекта относительно открытого объекта на странице.
 
-### Следующая страница: [Вычислимые поля](/docs/ru/2_system_description/metadata_structure/meta_class/atr_formula.md)
+### Следующая страница: [Вычислимые поля](atr_formula.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md)&ensp;  [Contact us](https://iondv.ru/index.html) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE)&ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/eager_loading.md) &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>         
 
 
 
 --------------------------------------------------------------------------
+
+Copyright (c) 2018 **LLC "ION DV"**.  
+All rights reserved. 

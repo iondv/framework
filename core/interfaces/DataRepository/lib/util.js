@@ -10,6 +10,7 @@ const conditionParser = require('core/ConditionParser');
 const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
+const DateSize = require('core/DateSizes');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
@@ -65,6 +66,22 @@ function castValue(value, pm) {
   let v = cast(value, pm.type);
   if (pm.type === PropertyTypes.DATETIME && v instanceof Date) {
     v = dateOffset(v, pm.mode);
+    switch (pm.size) {
+      case DateSize.SECONDS:
+        v.setMilliseconds(0);
+        break;
+      case DateSize.MINUTES:
+        v.setSeconds(0, 0);
+        break;
+      case DateSize.HOURS:
+        v.setMinutes(0, 0, 0);
+        break;
+      case DateSize.DAY:
+        v.setHours(0, 0, 0, 0);
+        break;
+      default:
+        break;
+    }
   }
   return v;
 }
@@ -292,8 +309,8 @@ function prepareSize(cm, filter, joins, numGen, context) {
  * @returns {{}}
  */
 function prepareEmpty(cm, filter, empty, joins, numGen, context) {
-  if (!filter[0] || typeof filter[0] !== 'string') {
-    return empty ? true : false;
+  if (typeof filter[0] !== 'string' || filter[0][0] != '$') {
+    return Boolean(empty ? !filter[0] : filter[0]);
   }
   let nm = filter[0].substr(1);
   if (nm.indexOf('.') < 0) {
@@ -322,6 +339,35 @@ function prepareEmpty(cm, filter, empty, joins, numGen, context) {
   }
 }
 
+function formCnFilter(cm, filter) {
+  let descendants = cm.getDescendants();
+  for (let i = 0; i < descendants.length; i++) {
+    filter.push(descendants[i].getCanonicalName());
+    formCnFilter(descendants[i], filter);
+  }
+}
+
+/**
+ * @param {Object} filter
+ * @param {ClassMeta} cm
+ * @param {Boolean} [skipSc]
+ * @private
+ */
+function addDiscriminatorFilter(filter, cm, skipSc = false) {
+  let df;
+  if (skipSc) {
+    df = {[Operations.EQUAL]: ['$_class', cm.getCanonicalName()]};
+  } else {
+    let cnFilter = [cm.getCanonicalName()];
+    formCnFilter(cm, cnFilter);
+    df = {[Operations.IN]: ['$_class', cnFilter]};
+  }
+
+  return !filter ? df : {[Operations.AND]: [df, filter]};
+}
+
+module.exports.addDiscriminatorFilter = addDiscriminatorFilter;
+
 /**
  * @param {ClassMeta} cm
  * @param {String[]} path
@@ -348,7 +394,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
         left: (context ? context.alias + '.' : '') +
                 (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-        filter: null,
+        // filter: addDiscriminatorFilter(null, rMeta), TODO: Вернуть когда уйдем от монги, или вынести в настройку
         alias: alias
       };
       joins.push(j);
@@ -509,13 +555,13 @@ function createSearchRegexp(search, mode, asString) {
   return new RegExp(result, 'i');
 }
 
-function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
+function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode, strictSearch) {
   if (pm.selectionProvider) {
     spFilter(cm, pm, or, createSearchRegexp(sv, mode), prefix);
   } else if (pm.type === PropertyTypes.REFERENCE) {
     if (depth > 0) {
       return searchFilter(scope, pm._refClass, or,
-        {searchBy: pm._refClass.getSemanticAttrs()}, sv, lang, false,
+        {searchBy: pm._refClass.getSemanticAttrs(), strictSearch}, sv, lang, false,
         (prefix || '') + pm.name + '.', depth - 1, mode);
     }
   } else if (pm.type === PropertyTypes.COLLECTION) {
@@ -543,7 +589,10 @@ function attrSearchFilter(scope, cm, pm, or, sv, lang, prefix, depth, mode) {
         pm.type === PropertyTypes.HTML
       ) {
         if (!pm.autoassigned) {
-          or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
+          if (strictSearch)
+            or.push({[Operations.EQUAL]: [aname, sv]});
+          else
+            or.push({[Operations.LIKE]: [aname, createSearchRegexp(sv, mode, true)]});
         }
       } else if (!isNaN(floatv = parseFloat(sv)) && (
           pm.type === PropertyTypes.INT ||
@@ -610,7 +659,7 @@ function fillSearchIds(scope, scm, opts, ids, sv, lang, depth) {
  * @param {{}} scope
  * @param {ClassMeta} cm
  * @param {Array} or
- * @param {{searchBy: String[], splitBy: String, mode: String[]}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], strictSearch: Boolean}} opts
  * @param {Array} [opts.searchByRefs]
  * @param {String} sv
  * @param {String} lang
@@ -681,11 +730,11 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           result = result ? result.then(
             () => attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i])
+              d, smodes[i], opts.strictSearch)
           ) :
             attrSearchFilter(scope, cm, p, tmp, sval, lang,
               (prefix || '') + path.slice(0, path.length - 1).join('.') + '.',
-              d, smodes[i]);
+              d, smodes[i], opts.strictSearch);
         }
       } else {
         let pm = cm.getPropertyMeta(nm);
@@ -693,8 +742,8 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
           if (pm.indexSearch && useFullText) {
             fullText = true;
           }
-          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i])) :
-            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i]);
+          result = result ? result.then(() => attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch)) :
+            attrSearchFilter(scope, cm, pm, tmp, sval, lang, prefix, d, smodes[i], opts.strictSearch);
         }
       }
     }
@@ -713,7 +762,7 @@ function searchFilter(scope, cm, or, opts, sv, lang, useFullText, prefix, depth)
 
 /**
  * @param {ClassMeta} cm
- * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String}} opts
+ * @param {{searchBy: String[], splitBy: String, mode: String[], joinBy: String, strictSearch: Boolean}} opts
  * @param {String} sv
  * @param {String} lang
  * @param {Boolean} useFullText
@@ -829,18 +878,7 @@ function calcProperties(item, skip, needed, cached) {
   if (!item || skip) {
     return Promise.resolve(item);
   }
-  let calculations = Promise.resolve();
-  let props = item.getMetaClass().getPropertyMetas();
-  props.forEach((p) => {
-    if (p._formula && (!p.cached || cached) && (!needed || needed.hasOwnProperty(p.name))) {
-      calculations = calculations.then(() => p._formula.apply(item))
-        .then((result) => {
-          item.calculated[p.name] = cast(result, p.type);
-        });
-    }
-  });
-
-  return calculations.then(() => item);
+  return item.calculateProperties(needed, cached, false);
 }
 
 module.exports.calcProperties = calcProperties;

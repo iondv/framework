@@ -23,7 +23,7 @@ function MetaRepository() {
 
   /**
    *
-   * @param {String} ancestor
+   * @param {String} [ancestor]
    * @param {String} [version]
    * @param {Boolean} [direct]
    * @param {String} [namespace]

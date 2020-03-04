@@ -1,15 +1,18 @@
-### The previous page: [Collection type](/docs/en/2_system_description/metadata_structure/meta_class/type_collection14.md)
+#### [Content](/docs/en/index.md)
+
+### The previous page: [Collection type](type_collection14.md)
+
 # Structure
 
 **Structure** type - is a way of displaying related attributes of the structure-class. It simplifies the procedure of creating a meta class. The "true" value in the `"isStruct"` field means that this meta class is a structure-class. If the meta class has an attribute of the "structure [16]" type and in the "refClass" field the name of the structure-class, than it displays all the attributes of the structure-class.  
 
 In the meta view of creation and change use the type "Group [0]" for the attributes of the "Structure [16]" type. If you do not specify the fields in the group, they are created automatically according to the meta. In list views, there is no need to create columns for structure attributes, the object will not have such a property, but the corresponding attributes of the structure-class will be. For them, you can add columns.
 
-_NB: Objects of structure-class are not created!_
+**NB:** Objects of structure-class are not created!
 
-## Example
+### Example
 
-**Structure-class:**
+_Structure-class:_
 
 ```
 {
@@ -178,7 +181,7 @@ _NB: Objects of structure-class are not created!_
 }
 ```
 
-**Meta class with an attribute of the "Structure [16]" type**
+_Meta class with an attribute of the "Structure [16]" type_
 
 ```
 {
@@ -278,11 +281,12 @@ Class object with an attribute of structure type in DB:
 
 
 
-### The next page: [User type](/docs/en/2_system_description/metadata_structure/meta_class/type_user17.md)
+### The next page: [User type](type_user17.md)
 --------------------------------------------------------------------------  
 
 
- #### [Licence](/LICENCE.md) &ensp;  [Contact us](https://iondv.com) &ensp;  [English](/docs/en/2_system_description/metadata_structure/meta_class/type_isstruct16.md)   &ensp; [FAQs](/faqs.md)          
+ #### [Licence](/LICENSE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [English](type_isstruct16.md)   &ensp;
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>       
 
 
 
