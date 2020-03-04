@@ -19,9 +19,10 @@ function mapDirProperties(str, cb) {
  * @param {String} str
  * @returns {String}
  */
-function escapeSep(str) {
+function escapeSep(str, sep) {
+  sep = sep || path.sep;
   return str
-    ? (String(str)).replace(new RegExp(`\\${path.sep}`, 'g'), '').toString()
+    ? (String(str)).replace(new RegExp(`\\${sep}`, 'g'), '').toString()
     : str;
 }
 
@@ -31,20 +32,22 @@ function escapeSep(str) {
  * @param {String} id
  * @param {String} attr
  * @param {Item} item
+ * @param {Boolean} isUrl
  * @returns {String|null}
  */
-function parseDirName(str, className, id, attr, item) {
+function parseDirName(str, className, id, attr, item, isUrl) {
   if (!str)
     return null;
+  const sep = isUrl ? '/' : path.sep;
   const m = moment();
   let result = str.replace(/\$\{class\}/g, className || '');
   result = result.replace(/\$\{id\}/g, id || '');
   result = result.replace(/\$\{attr\}/g, attr || '');
   mapDirProperties(str, (prop) => {
-    const propValue = escapeSep(item && item.get(prop) || '');
+    const propValue = escapeSep(item && item.get(prop) || '', sep);
     result = result.replace(new RegExp(`\\$\\{item\\.${prop}\\}`, 'g'), propValue);
   });
-  const regx = new RegExp(`\\\${([^\\${path.sep}\\$\\{\\}]*)}`, 'g');
+  const regx = new RegExp(`\\\${([^\\${sep}\\$\\{\\}]*)}`, 'g');
   const momentStr = result;
   let moments = regx.exec(momentStr);
   while (Array.isArray(moments)) {
@@ -73,13 +76,14 @@ function ensureItemProperties(template, cn, id, dataRepo) {
  * @param {String} id
  * @param {String} property
  * @param {DataRepository} dataRepo
+ * @param {Boolean} isUrl
  * @returns {Promise.<String|null>}
  */
-function produceDirName(template, className, id, property, dataRepo) {
+function produceDirName(template, className, id, property, dataRepo, isUrl) {
   if (!template || !className)
     return Promise.resolve(null);
   const itemGetter = id ? ensureItemProperties(template, className, id, dataRepo) : Promise.resolve(null);
-  return itemGetter.then(item => parseDirName(template, className, id, property, item));
+  return itemGetter.then(item => parseDirName(template, className, id, property, item, isUrl));
 }
 
 module.exports.mapDirProperties = mapDirProperties;
