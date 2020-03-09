@@ -1,12 +1,6 @@
 {
   "name": "iondv-framework",
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "git add"
-    ]
-  },
-  "license": "LLC ION DV",
+  "license": "Apache License 2.0",
   "engines": {
     "node": ">=8.11.4"
   },
@@ -14,15 +8,15 @@
     "test": "test"
   },
   "bugs": {
-    "url": "https://ion-dv.atlassian.net/projects/IOCORE/issues"
+    "url": "https://github.com/iondv/framework/issues"
   },
   "private": true,
   "repository": {
-    "url": "https://git.iondv.ru/ION/platform.git",
+    "url": "https://github.com/iondv/framework.git",
     "type": "git"
   },
-  "homepage": "https://git.iondv.ru/ION/platform",
-  "version": "3.3.0",
+  "homepage": "https://iondv.com",
+  "version": "4.0.0",
   "dependencies": {
     "acl": "^0.4.11",
     "base64-js": "^1.2.1",
@@ -78,7 +72,6 @@
   },
   "scripts": {
     "setup": "gulp deploy",
-    "lint": "eslint --fix",
     "start": "node bin/www",
     "build": "gulp build",
     "test": "gulp test"
