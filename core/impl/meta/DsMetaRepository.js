@@ -15,6 +15,8 @@ const clone = require('clone');
 const merge = require('merge');
 const F = require('core/FunctionCodes');
 const strings = require('core/strings');
+const IonError = require('core/IonError');
+const Errors = require('core/errors/meta-repo');
 
 const defaultVersion = '___default';
 
@@ -191,7 +193,13 @@ function DsMetaRepository(options) {
         return classMeta[ns][name][defaultVersion];
       }
     }
-    throw new Error('Класс ' + name + (version ? ' (вер.' + version + ')' : '') + ' не найден в пространстве имен ' + namespace + '!');
+    throw new IonError(
+      Errors.NO_CLASS,
+      {
+        class: name,
+        namespace: namespace
+      }
+    );
   }
 
   this._getMeta = function (name, version, namespace) {
