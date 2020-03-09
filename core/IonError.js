@@ -1,12 +1,11 @@
 /**
  * Created by Vasiliy Ermilov (ermilov.work@yandex.ru) on 2/27/17.
  */
-'use strict';
 const strings = require('core/strings');
 
 /**
  *
- * @param {Number} code
+ * @param {String | Number} code
  * @param {{}} [params]
  * @param {Error} cause
  * @constructor
@@ -31,9 +30,10 @@ module.exports = IonError;
 
 /**
  * @param {{}} base
+ * @param {String} [lang]
  */
-module.exports.registerMessages = function (base) {
+module.exports.registerMessages = function (base, lang) {
   if (base) {
-    strings.registerBase('errors', base);
+    strings.registerBase('errors', base, lang);
   }
 };

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Платформа ION: Вход</title>
+  <title><%= pageTitle %>: <%=__('templates.default.login.title')%></title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
   <base id="baseUrl" href="<%=baseUrl%>">
@@ -36,39 +36,39 @@
     <% } %>
     <!-- login form -->
     <form action="auth" method="post" class="sky-form boxed">
-      <header><i class="fa fa-users"></i> Вход в систему</header>
+      <header><i class="fa fa-users"></i> <%=__('templates.default.login.title')%></header>
       <input type="hidden" name="timezone" value="" />
       <fieldset>
         <section>
-          <label class="label">Логин</label>
+          <label class="label"><%=__('templates.default.login')%></label>
           <label class="input">
             <i class="icon-append fa fa-user"></i>
             <input id="username" type="login" name="username">
-            <span class="tooltip tooltip-top-right">Логин</span>
+            <span class="tooltip tooltip-top-right"><%=__('templates.default.login')%></span>
           </label>
         </section>
 
         <section>
-          <label class="label">Пароль</label>
+          <label class="label"><%=__('templates.default.password')%></label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password" type="password" name="password">
-            <b class="tooltip tooltip-top-right">Пароль</b>
+            <b class="tooltip tooltip-top-right"><%=__('templates.default.password')%></b>
           </label>
         </section>
       </fieldset>
 
       <footer>
         <button id="authbutton" type="submit" class="btn btn-primary pull-left" style="margin-left:0;">
-          Войти
+          <%=__('templates.default.login.signin')%>
         </button>
         <div class="forgot-password pull-right">
           <% if (canRegister) { %>
-          <a class="btn btn-link" href="register"><b>Зарегистрироваться</b></a>
+          <a class="btn btn-link" href="register"><b><%=__('templates.default.login.register')%></b></a>
           <% } %>
           <% if (goHome) { %>
           &nbsp;&nbsp;
-          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b>Домой</b></a>
+          <a class="btn btn-link" href="<%- goHome %>"><span class="glyphicon glyphicon-home"></span> <b><%=__('templates.default.home')%></b></a>
           <% } %>
         </div>
       </footer>

@@ -1,4 +1,3 @@
-'use strict';
 /**
  * Created by krasilneg on 07.06.17.
  */
@@ -8,8 +7,8 @@ function User(data, coactors, tz) {
 
   let timezone = tz;
 
-  this.id = function () {
-    return data.id + (data.type ? '@' + data.type : '');
+  this.id = function() {
+    return data.id + (data.type ? `@${data.type}` : '');
   };
 
   this.login = function () {
@@ -20,64 +19,68 @@ function User(data, coactors, tz) {
     return data.name || this.id();
   };
 
-  this.type = function () {
+  this.type = function() {
     return data.type;
   };
 
-  this.email = function () {
+  this.email = function() {
     return (data.properties && data.properties.email) || data.email;
   };
 
-  this.pwdDate = function () {
+  this.pwdDate = function() {
     return data.pwdDate;
   };
 
-  this.pwdHash = function () {
+  this.pwdHash = function() {
     return data.pwd;
   };
-  
-  this.needPwdReset = function () {
+
+  this.needPwdReset = function() {
     return data.needPwdReset;
   };
 
-  this.toString = function () {
+  this.toString = function() {
     return this.name();
   };
 
-  this.properties = function () {
+  this.properties = function() {
     return data.properties || {};
   };
 
-  this.setTz = function (tz) {
+  this.setTz = function(tz) {
     timezone = tz;
   };
 
-  this.setCoactors = function (ca2) {
+  this.setCoactors = function(ca2) {
     ca = Object.assign(ca, ca2);
   };
 
-  this.setProperties = function (properties) {
+  this.setProperties = function(properties) {
     data.properties = Object.assign(data.properties || {}, properties);
   };
 
-  this.isMe = function (sid) {
+  this.isMe = function(sid) {
     return this.id() === sid || ca.hasOwnProperty(sid) && ca[sid];
   };
 
-  this.addCoactor = function (id) {
+  this.addCoactor = function(id) {
     ca[id] = true;
   };
 
-  this.coactors = function () {
+  this.coactors = function() {
     return Object.keys(ca);
   };
 
-  this.timeZone = function () {
+  this.timeZone = function() {
     return timezone;
   };
 
-  this.isDisabled = function () {
+  this.isDisabled = function() {
     return data.disabled;
+  };
+
+  this.language = function() {
+    return data.language;
   };
 }
 

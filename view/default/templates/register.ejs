@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Платформа ION: регистрация</title>
+  <title><%= pageTitle %>: <%=__('templates.default.register.title')%></title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
   <meta name="robots" content="noindex,nofollow">
@@ -43,34 +43,34 @@
     </div>
     <% } %>
     <form id="reg-form" action="register" method="post" class="sky-form boxed">
-      <header><i class="fa fa-users"></i> Регистрация в системе</header>
+      <header><i class="fa fa-users"></i> <%=__('templates.default.register.title')%></header>
       <fieldset>
         <section>
-          <label class="label">Логин</label>
+          <label class="label"><%=__('templates.default.login')%></label>
           <label class="input">
             <i class="icon-append fa fa-user"></i>
             <input id="username" type="login" name="username">
-            <span class="tooltip tooltip-top-right">Логин</span>
+            <span class="tooltip tooltip-top-right"><%=__('templates.default.login')%></span>
           </label>
         </section>
 
         <section>
-          <label class="label">Пароль</label>
+          <label class="label"><%=__('templates.default.password')%></label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password" type="password" name="password">
             <div class="pwd-error" style="display: none;"></div>
-            <b class="tooltip tooltip-top-right">Пароль</b>
+            <b class="tooltip tooltip-top-right"><%=__('templates.default.password')%></b>
           </label>
         </section>
 
         <section>
-          <label class="label">Повтор пароля</label>
+          <label class="label"><%=__('templates.default.repeatPwd')%></label>
           <label class="input">
             <i class="icon-append fa fa-lock"></i>
             <input id="password2" type="password" name="password2">
             <div class="pwd-error" style="display: none;"></div>
-            <b class="tooltip tooltip-top-right">Повтор пароля</b>
+            <b class="tooltip tooltip-top-right"><%=__('templates.default.repeatPwd')%></b>
           </label>
         </section>
 
@@ -95,9 +95,9 @@
         <% }) %>
       </fieldset>
       <footer>
-        <button id="authbutton" type="submit" class="btn btn-primary pull-right">Регистрация</button>
+        <button id="authbutton" type="submit" class="btn btn-primary pull-right"><%=__('templates.default.register.register')%></button>
         <div class="forgot-password pull-left">
-          <a href="auth"><b>Вход в систему</b></a>
+          <a href="auth"><b><%=__('templates.default.enter')%></b></a>
         </div>
       </footer>
     </form>
