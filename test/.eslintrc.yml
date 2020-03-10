@@ -1,0 +1,17 @@
+env:
+  mocha: true #  adds all of the Mocha testing global variables
+  protractor: true # Protractor global variables
+globals:
+  app: false
+  assert: true
+  ionTestParam: true
+  page: true
+  browser: true
+  describe: true
+  it: true
+  before: true
+  after: true
+rules:
+  no-console: off
+  no-sync: off # Разрешено использовать синхронные функции в тесте
+  no-invalid-this: off # Разрешаем использование this - нужно для mocha
