@@ -129,16 +129,18 @@ Install and run the [MongoDB](https://www.mongodb.org/) DBMS to store the data. 
 
 ### Installer
 
-You can use IONDV. Framework apps installer, requiring installed node.js, mongodb and git. During the installation, all other dependencies will be checked and installed, and the application itself will be built and run.
+You can use [IONDV. Framework apps installer](https://github.com/iondv/iondv-app), requiring installed node.js, mongodb and git. During the installation, all other dependencies will be checked and installed, and the application itself will be built and run.
 
 Install in one command:
 
 ```
-bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-app) -q -i -m localhost:27017 develop-and-test
+bash <(curl -sL https://raw.githubusercontent.com/iondv/iondv-app/master/iondv-app) -t git -q -i -m localhost:27017 develop-and-test
 ```
 Where  `localhost: 27017` is the MongoDB address, and `develop-and-test` is the app name.
 
 Also the other way is to clone - (`git clone https://github.com/iondv/iondv-app.git`) and install the app by using the `bash iondv-app -m localhost:27017 develop-and-test` command.
+
+You can also build the application in Docker containers, then only docker and mongodb DBMS in the Docker container are needed from the environment. For more information, see the [IONDV. Framework apps installer] (https://github.com/iondv/iondv-app)
 
 <details>
   <summary> 
@@ -246,9 +248,9 @@ Open this link `http://localhost:8888` in a browser and log in. `8888` —  is a
 ### Docker
 Follow these steps to deploy docker container on the example of the `develop-and-test` application:
 
-1. Run mongodb DBMS: `docker run - name mongodb -v mongodb_data: / data / db -p 27017: 27017 -d mongo`
-2. Run IONDV. develop-and-test `docker run -d -p 80: 8888 --link mongodb iondv / develop-and-test`.
-3. Open the `http: // localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: **demo**, password: **ion-demo**
+1. Run mongodb DBMS: `docker run --name mongodb -v mongodb_data:/data/db -p 27017:27017 -d mongo`
+2. Run IONDV. develop-and-test `docker run -d -p 80: 8888 --link mongodb iondv/dnt`.
+3. Open the `http://localhost` link in the browser in a minute (it takes time to initialize the data). For back office login: **demo**, password: **ion-demo**
 
 
 ## Documentation 
@@ -268,7 +270,7 @@ Some handy links to learn more information on developing applications using IOND
 
 
 #### [Licence](/LICENCE) &ensp;  [Contact us](https://iondv.com/portal/contacts) &ensp;  [Russian](/docs/ru/readme.md)   &ensp;           
-<div><img src="https://mc.iondv.com/watch/github/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
+<div><img src="https://mc.iondv.com/watch/local/docs/framework" style="position:absolute; left:-9999px;" height=1 width=1 alt="iondv metrics"></div>
 
 
 --------------------------------------------------------------------------  

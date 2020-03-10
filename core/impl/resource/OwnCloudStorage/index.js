@@ -26,7 +26,6 @@ const {
 // jshint maxstatements: 100, maxcomplexity: 20
 
 function OwnCloudStorage(config) {
-
   if (!config.url || !config.login || !config.password) {
     throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
   }
@@ -174,26 +173,26 @@ function OwnCloudStorage(config) {
   }
 
   function mkdirp(path) {
-    let dir = parseDirId(path);
+    const dir = parseDirId(path);
     return checkDir(dir)
       .then((exists) => {
         if (exists) {
           return true;
         }
-        let parts = dir.split('/').filter(v => v);
-        let p;
+        const parts = dir.split('/').filter(v => v);
+        let p = Promise.resolve();
         parts.forEach((part, i) => {
           if (i < parts.length - 1) {
-            let pth = parts.slice(0, i + 1).join('/');
-            p = p ? p.then(() => mkdirp(pth)) : mkdirp(pth);
+            const pth = parts.slice(0, i + 1).join('/');
+            p = p.then(() => mkdirp(pth));
           }
         });
-        return p ? p.then(() => _this._createDir(parts.join('/'))) : _this._createDir(parts.join('/'));
+        const dirName = parts.pop();
+        return p.then(() => _this._createDir(dirName, parts.join('/')));
       });
   }
 
-  function requestProperties(id, options) {
-    options = options || {};
+  function requestProperties(id) {
     id = parseDirId(id);
     const reqParams = {
       uri: urlResolver(config.url, urlTypes.WEBDAV, escape(id)),
@@ -258,7 +257,7 @@ function OwnCloudStorage(config) {
   this._accept = function (data, directory, options) {
     try {
       options = options || {};
-      directory = parseDirId(directory);
+      directory = directory && parseDirId(directory);
       directory = ensureDirSep(directory);
 
       if (!data) {
@@ -431,7 +430,7 @@ function OwnCloudStorage(config) {
 
   function parseDirId(id) {
     let result = null;
-    let urlObj = url.parse(id, true);
+    let urlObj = url.parse(String(id), true);
     if (urlObj.host === ownCloudUrl.host) {
       if (urlObj.query && urlObj.query.dir) {
         result = urlObj.query.dir;
@@ -536,6 +535,9 @@ function OwnCloudStorage(config) {
     name = name && parseDirId(name);
     parentDirId = parentDirId && parseDirId(parentDirId);
     let id = slashChecker(parentDirId) + ensureDirSep(name);
+    if (name.split('/').filter(n => n).length > 1) {
+      return mkdirp(name, parentDirId).then(() => fetch ? _this._getDir(id) : null);
+    }
     let reqParams = {
       uri: encodeURI(urlConcat(config.url, urlTypes.WEBDAV, id)),
       auth: {

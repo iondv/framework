@@ -66,23 +66,25 @@ function RoleAccessManager() {
   /**
    * @param {String[]} subjects
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this.assignRoles = function (subjects, roles) {
-    return this._assignRoles(subjects, roles);
+  this.assignRoles = function (subjects, roles, author) {
+    return this._assignRoles(subjects, roles, author);
   };
 
   /**
    * @param {String[]} subjects
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this.unassignRoles = function (subjects, roles) {
-    return this._unassignRoles(subjects, roles);
+  this.unassignRoles = function (subjects, roles, author) {
+    return this._unassignRoles(subjects, roles, author);
   };
 
-  this.defineRole = function (role, caption = null) {
-    return this._defineRole(role, caption);
+  this.defineRole = function (role, caption = null, description = null, author = null) {
+    return this._defineRole(role, caption, description, author);
   };
 
   this.defineResource = function (resource, caption = null) {
@@ -91,10 +93,11 @@ function RoleAccessManager() {
 
   /**
    * @param {String[]} roles
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this.undefineRoles = function (roles) {
-    return this._undefineRoles(roles);
+  this.undefineRoles = function (roles, author) {
+    return this._undefineRoles(roles, author);
   };
 
   /**
@@ -109,20 +112,22 @@ function RoleAccessManager() {
    * @param {String[]} roles
    * @param {String[]} resources
    * @param {String[]} [permissions]
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this.grant = function (roles, resources, permissions) {
-    return this._grant(roles, resources, permissions);
+  this.grant = function (roles, resources, permissions, author) {
+    return this._grant(roles, resources, permissions, author);
   };
 
   /**
    * @param {String[]} roles
    * @param {String[]} resources
    * @param {String[]} [permissions]
+   * @param {User} [author]
    * @returns {Promise}
    */
-  this.deny = function (roles, resources, permissions) {
-    return this._deny(roles, resources, permissions);
+  this.deny = function (roles, resources, permissions, author) {
+    return this._deny(roles, resources, permissions, author);
   };
 }
 

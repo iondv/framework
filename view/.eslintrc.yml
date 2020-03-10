@@ -1,0 +1,15 @@
+env:
+  browser: true # browser global variables TODO - в папку скриптов остальных модулей
+  jquery: true #  jQuery global variables TODO - в папку скриптов остальных модулей
+  # es6: false # enable all ECMAScript 6 features except for modules
+parserOptions:
+    #ecmaVersion: 6 # specify the version of ECMAScript
+  sourceType: script # Тип настроек линта - для скриптов
+rules:
+  no-alert: error # Запрет на allert и другие методы - которые нельзя в браузере протыкать - Откл.в recommended
+  no-implicit-globals: warn # Не разрешается объявление функций и переменных глобально - Откл.в recommended
+  no-iterator: error # Запрет испльзования __iterator__ в скриптах - Откл.в recommended
+  no-script-url: error # Запрет для javascript:url - анало eval - Откл.в recommended
+  strict: off # Не обязательный strict режим для скриптов
+  no-var: off # Разрешаем использования var
+

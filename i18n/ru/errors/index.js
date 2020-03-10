@@ -4,6 +4,7 @@
 const merge = require('merge');
 
 module.exports = merge(
+  require('./auth'),
   require('./data-repo'),
   require('./data-source'),
   require('./di'),

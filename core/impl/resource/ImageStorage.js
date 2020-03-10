@@ -6,7 +6,6 @@
 
 const ResourceStorage = require('core/interfaces/ResourceStorage').ResourceStorage;
 const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
-const sharp = require('sharp');
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
@@ -45,6 +44,7 @@ StoredImage.prototype.constructor = StoredImage;
  * @param {{}} options.thumbnails
  * @param {{}} options.urlBase
  * @param {Boolean} options.storeThumbnails
+ * @param {ThumbnailGenerator} [options.thumbsGenerator]
  * @param {String} [options.thumbsDirectoryMode]
  * @param {String} [options.thumbsDirectory]
  * @param {{apply: Function} | Array | Function} [options.preProcessors]
@@ -54,16 +54,12 @@ StoredImage.prototype.constructor = StoredImage;
  */
 function ImageStorage(options) { // jshint ignore:line
 
-  let fileStorage = options.fileStorage;
+  let {fileStorage} = options;
+  const tg = options.thumbsGenerator;
 
   let storeThumbnails = (options.storeThumbnails !== false);
   if (typeof options.fileStorage.fileOptionsSupport === 'function') {
-    storeThumbnails = storeThumbnails && options.fileStorage.fileOptionsSupport();
-  }
-
-  function thumbnail(source, opts) {
-    let format = opts.format || 'png';
-    return sharp(source).resize(opts.width, opts.height).max().toFormat(format);
+    storeThumbnails = tg && storeThumbnails && options.fileStorage.fileOptionsSupport();
   }
 
   function streamToBuffer(stream) {
@@ -81,6 +77,13 @@ function ImageStorage(options) { // jshint ignore:line
    * @returns {*}
    */
   function setThumbnails(file, thumbnails) {
+    if (!tg) {
+      Object.keys(options.thumbnails).forEach((thumb) => {
+        thumbnails[thumb] = file.clone();
+      });
+      return;
+    }
+
     Object.keys(options.thumbnails).forEach((thumb) => {
       let o = clone(file.options);
       o.thumbType = thumb;
@@ -91,11 +94,11 @@ function ImageStorage(options) { // jshint ignore:line
         o,
         (callback) => {
           if (file.buffer) {
-            callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+            callback(null, tg.generate(file.buffer, options.thumbnails[thumb]));
           } else {
             if (file.loading) {
               file.onloaded.push(() => {
-                callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+                callback(null, tg.generate(file.buffer, options.thumbnails[thumb]));
               });
             } else {
               file.loading = true;
@@ -106,7 +109,7 @@ function ImageStorage(options) { // jshint ignore:line
                   file.buffer = buff;
                   file.loading = false;
                   file.onloaded.forEach(f => f());
-                  callback(null, thumbnail(file.buffer, options.thumbnails[thumb]));
+                  callback(null, tg.generate(file.buffer, options.thumbnails[thumb]));
                 })
                 .catch(e => callback(e));
             }
@@ -250,7 +253,7 @@ function ImageStorage(options) { // jshint ignore:line
                 () => options.fileStorage.accept(
                   {
                     name: thumb + '_' + nm.replace(/\.\w+$/, '.' + format),
-                    stream: thumbnail(source, options.thumbnails[thumb])
+                    stream: tg.generate(source, options.thumbnails[thumb])
                   },
                   thumbDirectory,
                   o)
@@ -328,8 +331,6 @@ function ImageStorage(options) { // jshint ignore:line
     }
     return file;
   }
-
-
 
   /**
    * @param {String[]} ids

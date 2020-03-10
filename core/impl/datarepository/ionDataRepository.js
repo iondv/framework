@@ -2297,9 +2297,14 @@ function IonDataRepository(options) {
           let item;
           if (d && (typeof d === 'object')) {
             item = _this._wrap(d._class, d, d._classVer, options);
+          } else if (options.skipResult) {
+            item = _this._wrap(classname, merge(true, conditionsData, updates), null, options);
           } else {
-            item = _this._wrap(classname, conditionsData || updates, null, options);
+            throw new IonError(Errors.FAIL, {operation: 'saveItem', info: `${classname}@${id}`}, null);
           }
+          /* else {
+           item = _this._wrap(classname, merge(true, conditionsData, updates), null, options);
+           }*/
           return logChanges(changeLogger, {type: event, item: item, base: base, updates: updates});
         })
         .then((item) => {
