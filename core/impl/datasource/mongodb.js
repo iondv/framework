@@ -240,7 +240,7 @@ function MongoDs(config) {
    * @returns {Promise}
    */
   function openDb() {
-    if (_this.db && _this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
+    if (_this.db && _this.isOpen && _this.db.serverConfig.isConnected()) {
       return Promise.resolve(_this.db);
     } else if (_this.db && _this.busy) {
       return new Promise((resolve) => {
