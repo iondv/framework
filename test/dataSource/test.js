@@ -1,67 +1,96 @@
+/* eslint-disable max-statements */
+/* eslint-disable require-jsdoc */
 'use strict';
 
 const assert = require('assert').strict;
 const IonLogger = require('core/impl/log/IonLogger');
 const testLog = new IonLogger({});
 
-testLog.log('DataSource test.');
-
 const Ds = require(process.argv[2]);
-const options = {
-  logger: testLog,
-  uri: process.argv[3],
-  options: {
-    connectionString: process.argv[3]
+
+runTests(process.argv[3], process.argv[4]);
+
+async function runTests(connectionString, mask) {
+  const options = {
+    logger: testLog,
+    options: {
+      connectionString
+    }
+  };
+  const ds = new Ds(options);
+
+  if (mask & 1) {
+    try {
+      testLog.log('DataSource connection test.');
+      await testConnecting(ds);
+      testLog.log('DataSource connection test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
   }
-};
-const dsInstance = new Ds(options);
+  if (mask & 2) {
+    try {
+      testLog.log('DataSource inserting test.');
+      await testInserting(ds);
+      testLog.log('DataSource inserting test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  if (mask & 4) {
+    try {
+      testLog.log('DataSource deleting test.');
+      await testDeleting(ds);
+      testLog.log('DataSource deleting test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  if (mask & 8) {
+    try {
+      testLog.log('DataSource updating test.');
+      await testUpserting(ds);
+      testLog.log('DataSource updating test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  if (mask & 16) {
+    try {
+      testLog.log('DataSource upserting test.');
+      await testUpserting(ds);
+      testLog.log('DataSource upserting test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  process.exit();
+}
 
-Promise.resolve(dsInstance.connection())
-  .then(result => assertDisconnection(result, 'Check connection before open'))
-  .then(() => dsInstance.close())
-  .then(result => assertDisconnection(result, 'Check close before open'))
-
-  .then(() => Promise.all([
-    dsInstance.open()
-      .then(result => assertConnection(result, 'Check open')),
-    dsInstance.open()
-      .then(result => assertConnection(result, 'Check open while open')),
-    Promise.resolve(dsInstance.connection())
-      .then(result => assertDisconnection(result, 'Check connection while opening')),
-    dsInstance.close()
-      .then(result => assertDisconnection(result, 'Check close while opening'))
-  ]))
-
-  .then(() => dsInstance.open())
-  .then(result => assertConnection(result, 'Check open after open'))
-  .then(() => assertConnection(dsInstance.connection(), 'Check connection after open'))
-
-  .then(() => Promise.all([
-    dsInstance.close()
-      .then(result => assertDisconnection(result, 'Check close after open')),
-    dsInstance.close()
-      .then(result => assertDisconnection(result, 'Check close while close')),
-    dsInstance.open()
-      .then(result => assertDisconnection(result, 'Check open while close')),
-    Promise.resolve(dsInstance.connection())
-      .then(result => assertDisconnection(result, 'Check connection while opening'))
-  ]))
-
-  .then(() => dsInstance.connection())
-  .then(result => assertDisconnection(result, 'Check connection after close'))
-  .then(dsInstance.close())
-  .then(result => assertDisconnection(result, 'Check close after close'))
-  .then(dsInstance.open())
-  .then(result => assertConnection(result, 'Check open after close'))
-  .then(() => dsInstance.close())
-  .then(() => {
-    testLog.log('DataSource test successfully passed.');
-    process.exit();
-  })
-  .catch((error) => {
-    testLog.error(error);
-    process.exit(1);
-  });
+/**
+ * @param {*} dsInstance 
+ */
+function testConnecting(dsInstance) {
+  return Promise.resolve(dsInstance.connection())
+    .then(result => assertDisconnection(result, 'Check connection before open'))
+    .then(() => dsInstance.close())
+    .then(result => assertDisconnection(result, 'Check close before open'))
+    .then(() => dsInstance.open())
+    .then(result => assertConnection(result, 'Check open'))
+    .then(() => dsInstance.open())
+    .then(result => assertConnection(result, 'Check open after open'))
+    .then(() => assertConnection(dsInstance.connection(), 'Check connection after open'))
+//TODO BUG далее промис обрывается
+    .then(() => dsInstance.close())
+    .then(result => assertDisconnection(result, 'Check close after open'))
+    .then(() => dsInstance.connection())
+    .then(result => assertDisconnection(result, 'Check connection after close'))
+    .then(() => dsInstance.close())
+    .then(result => assertDisconnection(result, 'Check close after close'))
+    .then(() => dsInstance.open())
+    .then(result => assertConnection(result, 'Check open after close'))
+    .then(() => dsInstance.close());
+}
 
 function assertConnection (result, message) {
   assert.ok(result, message);
@@ -69,4 +98,24 @@ function assertConnection (result, message) {
 
 function assertDisconnection (result, message) {
   assert.equal(!!result, false, message);
+}
+
+function testInserting(dsInstance) {
+  return dsInstance.open()
+    .then(() => dsInstance.insert('test', {test: 'Text', number: 3}))
+    .then(res => console.log(res));
+}
+
+function testDeleting(dsInstance) {
+  return dsInstance.open()
+    .then(() => dsInstance.delete('test'))
+    .then(res => console.log(res));
+}
+
+function testUpdating(dsInstance) {
+
+}
+
+function testUpserting(dsInstance) {
+
 }

@@ -1,8 +1,10 @@
+/* eslint-disable max-statements */
 const DataSource = require('core/interfaces/DataSource');
 const { Pool } = require('pg');
 const LoggerProxy = require('core/impl/log/LoggerProxy');
 const clone = require('fast-clone');
 const fs = require('fs');
+const Errors = require('core/errors/data-source');
 
 /**
  * @param {Object} config
@@ -108,6 +110,70 @@ function PostgreSQL(config) {
       });
     }
     return Promise.resolve();
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @returns {Promise}
+   */
+  this._delete = (type, conditions) => {
+    const q = {
+      text: `DELETE FROM ${type}`
+    };
+    return _this.pool.connect()
+      .then(client => client.query(q).finally(() => client.release()));
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @returns {Promise}
+   */
+  this._insert = (type, data, options) => {
+    const values = [];
+    const fields = [];
+    const params = [];
+    Object.keys(data).forEach((k, i) => {
+      params.push(`$${i+1}`);
+      fields.push(k);
+      values[i] = data[k];
+    });
+    const q = {
+      text: `INSERT INTO ${type}(${fields.join(',')}) VALUES (${params.join(',')})`,
+      values
+    };
+    return _this.pool.connect()
+      .then(client => client.query(q).finally(() => client.release()));
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.bulk]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @returns {Promise}
+   */
+  this._update = function (type, conditions, data, options) {
+    
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @returns {Promise}
+   */
+  this._upsert = function (type, conditions, data, options) {
   };
 }
 
