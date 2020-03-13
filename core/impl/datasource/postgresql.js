@@ -5,29 +5,29 @@ const clone = require('fast-clone');
 const fs = require('fs');
 
 /**
- * @param {*} config
+ * @param {Object} config
  * @param {*} config.logger
- * @param {*} config.options
-    user?: string;
-    database?: string;
-    password?: string;
-    port?: number;
-    host?: string;
-    connectionString?: string;
-    keepAlive?: boolean;
-    stream?: stream.Duplex;
-    statement_timeout?: false | number;
-    parseInputDatesAsUTC?: boolean;
-    ssl?: boolean | ConnectionOptions;
-    query_timeout?: number;
-    keepAliveInitialDelayMillis?: number;
-    max?: number;
-    min?: number;
-    connectionTimeoutMillis?: number;
-    idleTimeoutMillis?: number;
-    log?: (...messages: any[]) => void;
-    application_name?: string;
-    Promise?: PromiseConstructorLike;
+ * @param {Object} config.options
+ * @param {String} config.options.user
+ * @param {String} config.options.database
+ * @param {String} config.options.password
+ * @param {Number} config.options.port
+ * @param {String} config.options.host
+ * @param {String} config.options.connectionString
+ * @param {Boolean} config.options.keepAlive
+ * @param {stream.Duplex} config.options.stream
+ * @param {False|Number} config.options.statement_timeout
+ * @param {Boolean} config.options.parseInputDatesAsUTC
+ * @param {Boolean|ConnectionOptions} config.options.ssl
+ * @param {Number} config.options.query_timeout
+ * @param {Number} config.options.keepAliveInitialDelayMillis
+ * @param {Number} config.options.max
+ * @param {Number} config.options.min
+ * @param {Number} config.options.connectionTimeoutMillis
+ * @param {Number} config.options.idleTimeoutMillis
+ * @param {(...messages: any[]) => void} config.options.log
+ * @param {String} config.options.application_name
+ * @param {PromiseConstructorLike} config.options.Promise
  */
 function PostgreSQL(config) {
   const _this = this;
@@ -62,14 +62,14 @@ function PostgreSQL(config) {
   this._connection = () => {
     if (_this.pool)
       return _this.pool.connect();
-    return Promise.resolve();
+    return Promise.resolve(false);
   };
 
   /**
    * @returns {Promise}
    */
   this._open = () => {
-    let result = Promise.resolve();
+    let result = Promise.resolve(true);
     if (!_this.pool) {
       const opts = clone(config.options);
       if (opts.ssl) {
@@ -91,13 +91,10 @@ function PostgreSQL(config) {
       }
       return result.then(() => {
         _this.pool = new Pool(opts);
-        _this.pool.on('connect', client => log.info('connect'));
-        _this.pool.on('acquire', client => log.info('acquire'));
-        _this.pool.on('error', (err, client) => log.error(err));
-        _this.pool.on('remove', client => log.info('remove'));
+        return true;
       });
     }
-    return Promise.resolve();
+    return result;
   };
 
   /**
@@ -105,7 +102,10 @@ function PostgreSQL(config) {
    */
   this._close = () => {
     if (_this.pool) {
-      return _this.pool.end();
+      return _this.pool.end().then((result) => {
+        _this.pool = null;
+        return result;
+      });
     }
     return Promise.resolve();
   };
