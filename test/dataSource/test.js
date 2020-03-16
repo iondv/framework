@@ -10,6 +10,7 @@ const Ds = require(process.argv[2]);
 
 runTests(process.argv[3], process.argv[4]);
 
+// eslint-disable-next-line complexity
 async function runTests(connectionString, mask) {
   const options = {
     logger: testLog,
@@ -101,12 +102,19 @@ function assertDisconnection (result, message) {
 }
 
 function testInserting(dsInstance) {
+  //TODO skipResult
+  //TODO adjustAutoInc
+  //TODO dataTypes
+  //TODO errors
   return dsInstance.open()
-    .then(() => dsInstance.insert('test', {test: 'Text', number: 3}))
+    .then(() => dsInstance.insert('test', {test: 'Text'}))
     .then(res => console.log(res));
 }
 
 function testDeleting(dsInstance) {
+  //TODO conditions
+  //TODO only/skipResults
+  //TODO errors
   return dsInstance.open()
     .then(() => dsInstance.delete('test'))
     .then(res => console.log(res));

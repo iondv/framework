@@ -1,4 +1,8 @@
+/* eslint-disable no-magic-numbers */
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-statements */
+
 const DataSource = require('core/interfaces/DataSource');
 const { Pool } = require('pg');
 const LoggerProxy = require('core/impl/log/LoggerProxy');
@@ -37,9 +41,18 @@ function PostgreSQL(config) {
 
   this.pool = null;
 
-  /**
-   * @param {String[]|String} opts
-   */
+  const wrapError = (error) => {
+    throw error;
+  };
+
+  const processData = (data) => {
+    return data;
+  };
+
+  const parseCondition = (cond) => {
+    return {};
+  }
+
   const readFiles = (opts) => {
     if (Array.isArray(opts)) {
       let result = Promise.resolve();
@@ -57,6 +70,12 @@ function PostgreSQL(config) {
       return res(data);
     }));
   };
+
+  const execute = query => _this.pool.connect()
+    .then(client => client.query(query)
+      .catch(wrapError)
+      .finally(() => client.release())
+    );
 
   /**
    * @returns {*}
@@ -117,12 +136,18 @@ function PostgreSQL(config) {
    * @param {{}} conditions
    * @returns {Promise}
    */
-  this._delete = (type, conditions) => {
-    const q = {
-      text: `DELETE FROM ${type}`
-    };
-    return _this.pool.connect()
-      .then(client => client.query(q).finally(() => client.release()));
+  this._delete = (type, conditions, only = false, skipResult = true) => {
+    const cond = parseCondition(conditions);
+    const query = {text: `DELETE FROM${only ? ' ONLY' : ''} ${type} USING ${cond.using} WHERE ${cond.where}`};
+
+    if (!skipResult)
+      query.text += ' RETURNING *';
+
+    return execute(query).then((res) => {
+      if (!skipResult)
+        return processData(res.rows);
+      return res.rowCount;
+    });
   };
 
   /**
@@ -138,16 +163,24 @@ function PostgreSQL(config) {
     const fields = [];
     const params = [];
     Object.keys(data).forEach((k, i) => {
-      params.push(`$${i+1}`);
+      params.push(`$${i + 1}`);
       fields.push(k);
       values[i] = data[k];
     });
-    const q = {
+
+    const query = {
       text: `INSERT INTO ${type}(${fields.join(',')}) VALUES (${params.join(',')})`,
       values
     };
-    return _this.pool.connect()
-      .then(client => client.query(q).finally(() => client.release()));
+    if (!options.skipResult)
+      query.text += ' RETURNING *';
+
+    return execute(query)
+      .then((res) => {
+        if (!options.skipResult)
+          return processData(res.rows);
+        return null;
+      });
   };
 
   /**
