@@ -6,12 +6,37 @@ module.exports = (req, res) => respond(['auth'], (scope) => {
   try {
     const user = scope.auth.getUser(req);
     let base = strings.getBase(null, user.language());
-    if (!base || !Object.keys(base).length) {
+    if (!base || !Object.keys(base).length)
       base = strings.getBase();
-    }
+
     res
       .set('Content-type', 'application/javascript')
-      .render('i18n-handler', {base});
+      .send(Buffer.from(`
+'use strict';
+
+function I18nHandler() {
+  this.base = {};
+  this.s = function(prefix, id, params) {
+    if (prefix && id) {
+      if (this.base.hasOwnProperty(prefix) && this.base[prefix].hasOwnProperty(id)) {
+        var str = this.base[prefix][id];
+        if (params) {
+          for (var p in params) {
+            str = str.replace('%' + p, params[p]);
+          }
+        }
+        return str;
+      }
+      return id;
+    }
+    return '';
+  };
+}
+
+window.i18n = new I18nHandler();
+window.s = window.i18n.s.bind(window.i18n);
+window.i18n.base = ${JSON.stringify(base)};      
+      `));
   } catch (err) {
     scope.logRecorder.stop();
     onError(scope, err, res, true);
