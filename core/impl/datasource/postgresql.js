@@ -1,7 +1,3 @@
-/* eslint-disable no-magic-numbers */
-/* eslint-disable no-underscore-dangle */
-/* eslint-disable valid-jsdoc */
-/* eslint-disable max-statements */
 
 const DataSource = require('core/interfaces/DataSource');
 const { Pool } = require('pg');
@@ -9,7 +5,7 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const clone = require('fast-clone');
 const fs = require('fs');
 const Errors = require('core/errors/data-source');
-const sql = require('core/impl/datasource/sql');
+const sql = require('core/impl/datasource/sql')();
 
 /**
  * @param {Object} config
