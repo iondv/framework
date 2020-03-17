@@ -9,6 +9,7 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const clone = require('fast-clone');
 const fs = require('fs');
 const Errors = require('core/errors/data-source');
+const sql = require('core/impl/datasource/sql');
 
 /**
  * @param {Object} config
@@ -42,16 +43,14 @@ function PostgreSQL(config) {
   this.pool = null;
 
   const wrapError = (error) => {
+    //TODO
     throw error;
   };
 
   const processData = (data) => {
+    //TODO
     return data;
   };
-
-  const parseCondition = (cond) => {
-    return {};
-  }
 
   const readFiles = (opts) => {
     if (Array.isArray(opts)) {
@@ -71,11 +70,9 @@ function PostgreSQL(config) {
     }));
   };
 
-  const execute = query => _this.pool.connect()
-    .then(client => client.query(query)
-      .catch(wrapError)
-      .finally(() => client.release())
-    );
+  const execute = cb => _this.pool.connect()
+    .then(client => cb(client).finally(() => client.release()))
+    .catch(wrapError);
 
   /**
    * @returns {*}
@@ -136,18 +133,10 @@ function PostgreSQL(config) {
    * @param {{}} conditions
    * @returns {Promise}
    */
-  this._delete = (type, conditions, only = false, skipResult = true) => {
-    const cond = parseCondition(conditions);
-    const query = {text: `DELETE FROM${only ? ' ONLY' : ''} ${type} USING ${cond.using} WHERE ${cond.where}`};
-
-    if (!skipResult)
-      query.text += ' RETURNING *';
-
-    return execute(query).then((res) => {
-      if (!skipResult)
-        return processData(res.rows);
-      return res.rowCount;
-    });
+  this._delete = (type, conditions) => {
+    const {text, params: values} = sql.delete(???);
+    return execute(client => client.query({text, values})
+      .then(res => res.rowCount));
   };
 
   /**
@@ -159,28 +148,17 @@ function PostgreSQL(config) {
    * @returns {Promise}
    */
   this._insert = (type, data, options) => {
-    const values = [];
-    const fields = [];
-    const params = [];
-    Object.keys(data).forEach((k, i) => {
-      params.push(`$${i + 1}`);
-      fields.push(k);
-      values[i] = data[k];
-    });
-
-    const query = {
-      text: `INSERT INTO ${type}(${fields.join(',')}) VALUES (${params.join(',')})`,
-      values
-    };
-    if (!options.skipResult)
-      query.text += ' RETURNING *';
-
-    return execute(query)
+    const {skipResult, adjustAutoInc} = options;
+    const {text, params: values} = sql.insert(???);
+    return execute(client => client.query({text, values})
       .then((res) => {
-        if (!options.skipResult)
-          return processData(res.rows);
-        return null;
-      });
+        if (!skipResult) {
+          const {text, params: values} = sql.select(???);
+          return client.query({text, values})
+            .then((result) => processData(result.rows));
+        }
+        return res.rowCount;
+      }));
   };
 
   /**
@@ -194,7 +172,17 @@ function PostgreSQL(config) {
    * @returns {Promise}
    */
   this._update = function (type, conditions, data, options) {
-    
+    const {skipResult, bulk, adjustAutoInc} = options;
+    const {text, params: values} = sql.update(???);
+    return execute(client => client.query({text, values})
+      .then((res) => {
+        if (!skipResult) {
+          const {text, params: values} = sql.select(???);
+          return client.query({text, values})
+            .then((result) => processData(result.rows));
+        }
+        return res.rowCount;
+      }));
   };
 
   /**
@@ -207,6 +195,26 @@ function PostgreSQL(config) {
    * @returns {Promise}
    */
   this._upsert = function (type, conditions, data, options) {
+    const {skipResult, adjustAutoInc} = options;
+    const {text, params: values} = sql.select(???);
+    return execute(client => client.query({text, values})
+      .then((res) => {
+        if (res.rows[0]) {
+          const {text, params: values} = sql.update(???);
+          return client.query({text, values});
+        } else {
+          const {text, params: values} = sql.insert(???);
+          return client.query({text, values});
+        }
+      })
+      .then((res) => {
+        if (!skipResult) {
+          const {text, params: values} = sql.select(???);
+          return client.query({text, values})
+            .then((result) => processData(result.rows));
+        }
+        return res.rowCount;
+      }));
   };
 }
 
