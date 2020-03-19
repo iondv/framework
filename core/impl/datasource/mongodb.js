@@ -1331,7 +1331,6 @@ function MongoDs(config) {
         delete join.aggregates;
       }
 
-
       let jid = joinId(join, leftPrefix);
       if (!lookups.hasOwnProperty(jid)) {
         lookups[jid] = join;

@@ -5,7 +5,8 @@ const LoggerProxy = require('core/impl/log/LoggerProxy');
 const clone = require('fast-clone');
 const fs = require('fs');
 const Errors = require('core/errors/data-source');
-const sql = require('core/impl/datasource/sql')();
+const SqlAdapter = require('core/impl/datasource/sql');
+const Operations = require('core/FunctionCodes');
 
 /**
  * @param {Object} config
@@ -35,6 +36,19 @@ const sql = require('core/impl/datasource/sql')();
 function PostgreSQL(config) {
   const _this = this;
   const log = config.logger || new LoggerProxy();
+  const sql = new SqlAdapter({
+    structuredField: (field, parts) => {
+      return `(${field}#>'{${parts.join(',')}}'`;
+    },
+    select: (table, options, parts, params) => {
+      const {select, joins, where, groupBy, orderBy} = parts;
+      const limit = options.count ? `LIMIT ${count}` : '';
+      return {
+        text: `SELECT ${select} FROM ${table} ${joins} ${where} ${groupBy} ${orderBy} ${limit};`,
+        params
+      }
+    }
+  });
 
   this.pool = null;
 
@@ -130,10 +144,15 @@ function PostgreSQL(config) {
    * @returns {Promise}
    */
   this._delete = (type, conditions) => {
-    const {text, params: values} = sql.delete(???);
+    const {text, params: values} = sql.delete(type, conditions);
     return execute(client => client.query({text, values})
       .then(res => res.rowCount));
   };
+
+  const adjustAutoInc = (type, data, adjustAutoInc) => {
+    //TODO
+    return Promise.resolve();
+  }
 
   /**
    * @param {String} type
@@ -145,16 +164,22 @@ function PostgreSQL(config) {
    */
   this._insert = (type, data, options) => {
     const {skipResult, adjustAutoInc} = options;
-    const {text, params: values} = sql.insert(???);
+    const {text, params: values} = sql.insert(type, data);
     return execute(client => client.query({text, values})
-      .then((res) => {
-        if (!skipResult) {
-          const {text, params: values} = sql.select(???);
-          return client.query({text, values})
-            .then((result) => processData(result.rows));
-        }
-        return res.rowCount;
-      }));
+      .then(res => adjustAutoInc(type, data, adjustAutoInc)
+        .then(() => {
+          if (!skipResult) {
+            const conditions = {
+              [Operations.AND]: Object.keys(data).map((attr) => {
+                return {[Operations.EQUAL]: [`$${attr}`, data[attr]]};
+              })
+            };
+            const {text, params: values} = sql.select(type, {conditions, count: 1});
+            return client.query({text, values})
+              .then((result) => processData(result.rows));
+          }
+          return res.rowCount;
+        })));
   };
 
   /**
