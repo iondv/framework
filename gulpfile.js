@@ -265,8 +265,8 @@ function frontendInstall(pathDir) {
          */
         let packageJson = JSON.parse(fs.readFileSync(path.join(pathDir, 'package.json'), {encoding: 'utf-8'}));
         if (!packageJson.vendorDir) {
-          console.warn('In the package.json the destination directory for vendor files is not specified in [vendorDir]!\nSet default ./static/vendor');
-          packageJson.vendorDir = './static/vendor';
+         console.warn('In the package.json the destination directory for vendor files is not specified in [vendorDir]!\nSet default ./static/vendor');
+         packageJson.vendorDir = './vendor';
         }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
         // try { // 20200207 убрали ci из-за него много проблем
@@ -277,6 +277,12 @@ function frontendInstall(pathDir) {
         //   console.log('Installing the frontend packages for the path ' + pathDir);
         // }
         console.info(`Front NPM install: ${pathDir}`);
+        /* COMPATIBILITY LAYER FOR OLDER IONDV. SETUP
+        **
+        if (fs.existsSync(path.join(pathDir, packageJson.vendorDir))) {
+          fs.renameSync(path.join(pathDir, packageJson.vendorDir), path.join(pathDir, 'node_modules'));
+        }
+         */
         run(pathDir, 'npm', npmArgs, function () {
           const srcDir = path.join(pathDir, 'node_modules');
           try {
@@ -285,7 +291,7 @@ function frontendInstall(pathDir) {
             resolve();
             return;
           }
-          try {
+          /* DEPRECATED try {
             const vendorModules = fs.readdirSync(srcDir);
             let copyers = [];
             let copyer;
@@ -301,16 +307,63 @@ function frontendInstall(pathDir) {
           } catch (error) {
             return reject(error);
           }
+          */
+
+          /* COMPATIBILITY LAYER FOR OLDER IONDV. SETUP
+          ** extracting 'dist' and 'min' folders contents inside npm modules, renaming node_modules to the value of packageJson.vendorDir
+
+          try {
+            if (fs.existsSync(srcDir)) {
+              fs.readdirSync(srcDir).forEach((file) => {
+                let npmModulePath = path.join(srcDir,file);
+                try {
+                  if (fs.existsSync(path.join(npmModulePath,'dist'))) {
+                    fs.readdirSync(path.join(npmModulePath,'dist')).forEach((file) => {
+                      let nameToMove = path.join(npmModulePath,'dist',file);
+                      try {
+                        fs.renameSync(nameToMove, path.join(npmModulePath, file));
+                      } catch (e) {
+                        try {
+                          fs.readdirSync(nameToMove).forEach((file1) => {
+                            fs.renameSync(path.join(nameToMove,file1),path.join(npmModulePath,file,file1));
+                          })
+                        } catch (er) {}
+                      }
+                    });
+                  }
+                } catch (e) {}
+                try {
+                  if (fs.existsSync(path.join(npmModulePath,'min'))) {
+                    fs.readdirSync(path.join(npmModulePath,'min')).forEach((file) => {
+                      let nameToMove = path.join(npmModulePath,'min',file);
+                      try {
+                        fs.renameSync(nameToMove, path.join(npmModulePath, file));
+                      } catch (e) {
+                        try {
+                          fs.readdirSync(nameToMove).forEach((file1) => {
+                            fs.renameSync(path.join(nameToMove,file1),path.join(npmModulePath,file,file1));
+                          })
+                        } catch (er) {}
+                      }
+                    });
+                  }
+                } catch (e) {}
+              });
+              fs.renameSync(srcDir, path.join(pathDir, packageJson.vendorDir));
+              //fs.renameSync(srcDir, 'vendor');
+            } else {return reject('path error')}
+          } catch (error) {
+            return reject(error);
+          }*/
+
           resolve();
         }, reject);
-
       } catch (error) {
         reject(error);
       }
     });
   };
 }
-
 
 function copyVendorResources(src, dst, module) {
   return new Promise(function (resolve, reject) {
@@ -363,18 +416,18 @@ function copyResources(srcPath, destPath, msg) {
 function minifyCSS(p) {
   return function () {
     return new Promise(function (resolve, reject) {
-      if (!fs.existsSync(path.join(p, 'static', 'css'))) {
+      if (!fs.existsSync(path.join(p,'css'))) {
         return resolve();
       }
       console.log('Minification of front-end style files for the path ' + p);
       try {
         gulpSrc([
-          path.join(p, 'static', 'css', '*.css'),
-          '!' + path.join(p, 'static', 'css', '*.min.css')
-        ], {base: path.join(p, 'static', 'css')})
+          path.join(p, 'css', '*.css'),
+          '!' + path.join(p, 'css', '*.min.css')
+        ], {base: path.join(p, 'css')})
           .pipe(cssMin({rebase: false}))
           .pipe(rename({suffix: '.min'}))
-          .pipe(gulpDest(path.join(p, 'static', 'css')))
+          .pipe(gulpDest(path.join(p, 'css')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -387,20 +440,20 @@ function minifyCSS(p) {
 function minifyJS(p) {
   return function () {
     return new Promise(function (resolve, reject) {
-      if (!fs.existsSync(path.join(p, 'static', 'js'))) {
+      //if (!fs.existsSync(path.join(p, 'static', 'js'))) {
+      if (!fs.existsSync(path.join(p, 'js'))) {
         return resolve();
       }
-
       console.log('Minification frontend script files for the path ' + p);
       try {
         gulpSrc(
           [
-            path.join(p, 'static', 'js', '*.js'),
-            '!' + path.join(p, 'static', 'js', '*.min.js')
-          ], {base: path.join(p, 'static', 'js')})
+            path.join(p, 'js', '*.js'),
+            '!' + path.join(p, 'js', '*.min.js')
+          ], {base: path.join(p, 'js')})
           .pipe(jsMin())
           .pipe(rename({suffix: '.min'}))
-          .pipe(gulpDest(path.join(p, 'static', 'js')))
+          .pipe(gulpDest(path.join(p, 'js')))
           .on('finish', resolve)
           .on('error', reject);
       } catch (error) {
@@ -456,6 +509,35 @@ function buildDir(start, dir) {
 function themeDirs() {
   let themes = _themeDirs(path.join(platformPath, 'view'));
   let pth = path.join(platformPath, 'modules');
+  let coreViewDir = path.join(platformPath,'view');
+  if (fs.existsSync(coreViewDir)) {
+    if ((fs.statSync(coreViewDir)).isDirectory()) {
+      fs.readdirSync(coreViewDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach((folder) => {
+        let versionDir = path.join(coreViewDir,folder);
+        if ( (fs.statSync(versionDir) ).isDirectory()){
+          if ( (fs.readdirSync(versionDir)).includes('package.json') ) {
+            console.log('package.json located at', versionDir);
+            if (!themes.includes(versionDir)) {
+              themes.push(versionDir);
+              Array.prototype.push.apply(themes, _themeDirs(versionDir))
+            }
+          }
+          fs.readdirSync(versionDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach( (folder1) => {
+            let packageDir = path.join(versionDir,folder1);
+            if ( (fs.statSync(packageDir)).isDirectory() ) {
+              if ( (fs.readdirSync(packageDir)).includes('package.json') ) {
+                console.log('package.json located at', packageDir);
+                if (!themes.includes(packageDir)) {
+                  themes.push(packageDir);
+                  Array.prototype.push.apply(themes, _themeDirs(packageDir))
+                }
+              }
+            }
+          })
+        }
+      });
+    }
+  }
   let tmp = fs.readdirSync(pth).filter(dir => ! ['node_modules', '.git'].includes(dir));
   tmp.forEach(function (dir) {
     let module = path.join(pth, dir);
@@ -464,10 +546,37 @@ function themeDirs() {
       if (stat.isDirectory()) {
         let viewDir = path.join(module, 'view');
         try {
-          let statViewdir = fs.statSync(viewDir);
-          if (statViewdir.isDirectory()) {
-            themes.push(viewDir);
-            Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
+          let statViewDir = fs.statSync(viewDir);
+          if (statViewDir.isDirectory()) {
+            if (!themes.includes(viewDir)) {
+              themes.push(viewDir);
+              Array.prototype.push.apply(themes, _themeDirs(path.join(module, 'view')));
+            }
+            fs.readdirSync(viewDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach((folder) => {
+              let versionDir = path.join(viewDir,folder);
+              if ( (fs.statSync(versionDir) ).isDirectory()){
+                if ( (fs.readdirSync(versionDir)).includes('package.json') ) {
+                  console.log('package.json located at', versionDir);
+                  if (!themes.includes(versionDir)) {
+                    themes.push(versionDir);
+                    Array.prototype.push.apply(themes, _themeDirs(versionDir))
+                  }
+                }
+                fs.readdirSync(versionDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach( (folder1) => {
+                  let packageDir = path.join(versionDir,folder1);
+                  if ( (fs.statSync(packageDir)).isDirectory() ) {
+                    if ( (fs.readdirSync(packageDir)).includes('package.json') ) {
+                      console.log('package.json located at', packageDir);
+                      if (!themes.includes(packageDir)) {
+                        themes.push(packageDir);
+                        Array.prototype.push.apply(themes, _themeDirs(packageDir))
+                      }
+                    }
+                  }
+                })
+              }
+            });
+
           }
         } catch (e) {}
       }
@@ -495,7 +604,9 @@ function themeDirs() {
           try {
             let statSubdir = fs.statSync(appSubdir);
             if (statSubdir.isDirectory()) {
-              themes.push(appSubdir);
+              if (!themes.includes(appSubdir)) {
+                themes.push(appSubdir);
+              }
             }
           } catch (e) {}
         });

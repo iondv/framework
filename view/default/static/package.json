@@ -7,7 +7,7 @@
     "url": "https://github.com/iondv/framework.git"
   },
   "license": "Apache-2.0",
-  "vendorDir": "./static/vendor",
+  "vendorDir": "./vendor",
   "dependencies": {
     "bootstrap": "^3.4.1",
     "font-awesome": "^4.7.0",
