@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 
 const DataSource = require('core/interfaces/DataSource');
 const { Pool } = require('pg');
@@ -11,6 +12,7 @@ const Operations = require('core/FunctionCodes');
 /**
  * @param {Object} config
  * @param {*} config.logger
+ * @param {Boolean} cofig.queryLogging
  * @param {Object} config.options
  * @param {String} config.options.user
  * @param {String} config.options.database
@@ -37,16 +39,18 @@ function PostgreSQL(config) {
   const _this = this;
   const log = config.logger || new LoggerProxy();
   const sql = new SqlAdapter({
-    structuredField: (field, parts) => {
-      return `(${field}#>'{${parts.join(',')}}'`;
-    },
+    logCallback: result => config.queryLogging && log.log(JSON.stringify(result)),
+    result: ({text, params}) => Object({text, values: params}),
+    structuredField: (field, parts) => `(${field}#>'{${parts.join(',')}}'`,
     select: (table, options, parts, params) => {
-      const {select, joins, where, groupBy, orderBy} = parts;
-      const limit = options.count ? `LIMIT ${count}` : '';
+      const {
+        select, joins, where, groupBy, orderBy
+      } = parts;
+      const limit = options.count ? `LIMIT ${options.count}` : '';
       return {
         text: `SELECT ${select} FROM ${table} ${joins} ${where} ${groupBy} ${orderBy} ${limit};`,
         params
-      }
+      };
     }
   });
 
@@ -143,16 +147,26 @@ function PostgreSQL(config) {
    * @param {{}} conditions
    * @returns {Promise}
    */
-  this._delete = (type, conditions) => {
-    const {text, params: values} = sql.delete(type, conditions);
-    return execute(client => client.query({text, values})
-      .then(res => res.rowCount));
+  this._delete = (type, conditions) => execute(client => client.query(sql.delete(type, conditions))
+    .then(res => res.rowCount));
+
+  const adjustAutoIncrements = (client, type, data, adjustAutoInc) => {
+    //TODO Приведение счётчиков к данным
+    return Promise.resolve();
   };
 
-  const adjustAutoInc = (type, data, adjustAutoInc) => {
-    //TODO
-    return Promise.resolve();
-  }
+  const cleanNulls = (client, type, data) => {
+    //TODO Притекло из монги: Обеспечение undefined вместо null-значений для полей, состоящих в уникальных разреженных индексах
+    return Promise.resolve(data);
+  };
+
+  const filterByData  = (data) => {
+    return {
+      [Operations.AND]: Object.keys(data).map((attr) => {
+        return {[Operations.EQUAL]: [`$${attr}`, data[attr]]};
+      })
+    };
+  };
 
   /**
    * @param {String} type
@@ -163,23 +177,23 @@ function PostgreSQL(config) {
    * @returns {Promise}
    */
   this._insert = (type, data, options) => {
-    const {skipResult, adjustAutoInc} = options;
-    const {text, params: values} = sql.insert(type, data);
-    return execute(client => client.query({text, values})
-      .then(res => adjustAutoInc(type, data, adjustAutoInc)
-        .then(() => {
-          if (!skipResult) {
-            const conditions = {
-              [Operations.AND]: Object.keys(data).map((attr) => {
-                return {[Operations.EQUAL]: [`$${attr}`, data[attr]]};
-              })
-            };
-            const {text, params: values} = sql.select(type, {conditions, count: 1});
-            return client.query({text, values})
-              .then((result) => processData(result.rows));
-          }
-          return res.rowCount;
-        })));
+    const {
+      skipResult, adjustAutoInc
+    } = options;
+    return execute(client => cleanNulls(client, type, data)
+      .then(cleanedData => client.query(sql.insert(type, cleanedData))
+        .then(res => adjustAutoIncrements(client, type, cleanedData, adjustAutoInc)
+          .then(() => {
+            if (!skipResult) {
+              const q = sql.select(type, {
+                condition: filterByData(cleanedData),
+                count: 1
+              });
+              return client.query(q)
+                .then(result => processData(result.rows[0]));
+            }
+            return res.rowCount;
+          }))));
   };
 
   /**
@@ -192,18 +206,20 @@ function PostgreSQL(config) {
    * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
-  this._update = function (type, conditions, data, options) {
-    const {skipResult, bulk, adjustAutoInc} = options;
-    const {text, params: values} = sql.update(???);
-    return execute(client => client.query({text, values})
-      .then((res) => {
-        if (!skipResult) {
-          const {text, params: values} = sql.select(???);
-          return client.query({text, values})
-            .then((result) => processData(result.rows));
-        }
-        return res.rowCount;
-      }));
+  this._update = (type, conditions, data, options) => {
+    const {
+      skipResult, adjustAutoInc
+    } = options;
+    return execute(client => cleanNulls(client, type, data)
+      .then(cleanedData => client.query(sql.update(type, cleanedData, conditions))
+        .then(res => adjustAutoIncrements(client, type, cleanedData, adjustAutoInc)
+          .then(() => {
+            if (!skipResult) {
+              const q = sql.select(type, {conditions: filterByData(cleanedData)});
+              return client.query(q).then(result => processData(result.rows));
+            }
+            return res.rowCount;
+          }))));
   };
 
   /**
@@ -215,27 +231,29 @@ function PostgreSQL(config) {
    * @param {Boolean} [options.adjustAutoInc]
    * @returns {Promise}
    */
-  this._upsert = function (type, conditions, data, options) {
-    const {skipResult, adjustAutoInc} = options;
-    const {text, params: values} = sql.select(???);
-    return execute(client => client.query({text, values})
-      .then((res) => {
-        if (res.rows[0]) {
-          const {text, params: values} = sql.update(???);
-          return client.query({text, values});
-        } else {
-          const {text, params: values} = sql.insert(???);
-          return client.query({text, values});
-        }
-      })
-      .then((res) => {
-        if (!skipResult) {
-          const {text, params: values} = sql.select(???);
-          return client.query({text, values})
-            .then((result) => processData(result.rows));
-        }
-        return res.rowCount;
-      }));
+  this._upsert = (type, conditions, data, options) => {
+    const {
+      skipResult, adjustAutoInc
+    } = options;
+    return execute(client => cleanNulls(client, type, data)
+      .then(cleanedData => client.query(sql.select(type, {conditions}))
+        .then((res) => {
+          const q = res.rows[0] ?
+            sql.update(type, cleanedData, filterByData(res.rows[0])) :
+            sql.insert(type, cleanedData);
+          return client.query(q);
+        })
+        .then(res => adjustAutoIncrements(client, type, cleanedData, adjustAutoInc)
+          .then(() => {
+            if (!skipResult) {
+              const q = sql.select(type, {
+                conditions: filterByData(cleanedData),
+                count: 1
+              });
+              return client.query(q).then(result => processData(result.rows));
+            }
+            return res.rowCount;
+          }))));
   };
 }
 

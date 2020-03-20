@@ -7,6 +7,8 @@ const Operations = require('core/FunctionCodes');
  * @param {String} overriding.NOT_EQUAL
  * @param {Function} overriding.select
  * @param {{}} overriding.parseOperation
+ * @param {Function} overriding.logCallback
+ * @param {Function} overriding.result
  */
 function SqlAdapter(overriding = {}) {
   const OPERS = {
@@ -73,10 +75,11 @@ function SqlAdapter(overriding = {}) {
 
   const binary = (operation, oper1, oper2) => {
     if (operation === OPERS[Operations.EQUAL] || operation === OPERS[Operations.NOT_EQUAL]) {
-      if (oper1 === null || oper2 === null)
+      if (oper1 === null || oper2 === null) {
         oper1 = oper1 === null ? oper2 : oper1;
-      operation = operation === OPERS[Operations.EQUAL] ? OPERS[Operations.EMPTY] : OPERS[Operations.NOT_EMPTY];
-      return postpred(operation, oper1);
+        operation = operation === OPERS[Operations.EQUAL] ? OPERS[Operations.EMPTY] : OPERS[Operations.NOT_EMPTY];
+        return postpred(operation, oper1);
+      }
     }
     return `(${oper1} ${operation} ${oper2})`;
   };
@@ -92,7 +95,7 @@ function SqlAdapter(overriding = {}) {
       const [oper] = Object.keys(cond);
       const attrs = cond[oper].map(attr => parseCondition(attr, params, joins));
 
-      if (overriding.parseOperation[oper] && typeof overriding.parseOperation[oper] === 'function')
+      if (overriding.parseOperation && overriding.parseOperation[oper] && typeof overriding.parseOperation[oper] === 'function')
         return overriding.parseOperation[oper](attrs);
 
       switch (oper) {
@@ -142,7 +145,7 @@ function SqlAdapter(overriding = {}) {
     Object.keys(sort).map(attr => `${attr} ${sort[attr] < 0 ? 'DESC' : 'ASC'}`).join(',');
   };
 
-  this.select = (table, options) => {
+  const _select = (table, options) => {
     const {
       conditions, sort, count, joins: joinsConfig
     } = options;
@@ -168,7 +171,13 @@ function SqlAdapter(overriding = {}) {
     };
   };
 
-  this.insert = (table, data) => {
+  this.select = (table, options) => {
+    const result = _select(table, options);
+    typeof overriding.logCallback === 'function' && overriding.logCallback(result);
+    return typeof overriding.result === 'function' ? overriding.result(result) : result;
+  };
+
+  const _insert = (table, data) => {
     const params = [];
     const fields = [];
     const refs = [];
@@ -185,7 +194,13 @@ function SqlAdapter(overriding = {}) {
     };
   };
 
-  this.delete = (table, condition) => {
+  this.insert = (table, data) => {
+    const result = _insert(table, data);
+    typeof overriding.logCallback === 'function' && overriding.logCallback(result);
+    return typeof overriding.result === 'function' ? overriding.result(result) : result;
+  };
+
+  const _delete = (table, condition) => {
     const params = [];
     const where = condition ? `WHERE ${parseCondition(condition, params)}` : '';
     return {
@@ -194,12 +209,18 @@ function SqlAdapter(overriding = {}) {
     };
   };
 
-  this.update = (table, data, condition) => {
+  this.delete = (table, condition) => {
+    const result = _delete(table, condition);
+    typeof overriding.logCallback === 'function' && overriding.logCallback(result);
+    return typeof overriding.result === 'function' ? overriding.result(result) : result;
+  };
+
+  const _update = (table, data, condition) => {
     const set = [];
     const params = [];
     Object.keys(data).forEach((column) => {
       params.push(prepareValue(data[column]));
-      set.push(`${column}=${params.length}`);
+      set.push(`${column}=$${params.length}`);
     });
     const where = condition ? `WHERE ${parseCondition(condition, params)}` : '';
 
@@ -207,6 +228,12 @@ function SqlAdapter(overriding = {}) {
       text: `UPDATE ${table} SET ${set.join(',')} ${where};`,
       params
     };
+  };
+
+  this.update = (table, data, condition) => {
+    const result = _update(table, data, condition);
+    typeof overriding.logCallback === 'function' && overriding.logCallback(result);
+    return typeof overriding.result === 'function' ? overriding.result(result) : result;
   };
 }
 

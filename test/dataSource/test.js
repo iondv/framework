@@ -5,6 +5,7 @@
 const assert = require('assert').strict;
 const IonLogger = require('core/impl/log/IonLogger');
 const testLog = new IonLogger({});
+const Operations = require('core/FunctionCodes');
 
 const Ds = require(process.argv[2]);
 
@@ -14,6 +15,7 @@ runTests(process.argv[3], process.argv[4]);
 async function runTests(connectionString, mask) {
   const options = {
     logger: testLog,
+    queryLogging: true,
     options: {
       connectionString
     }
@@ -31,36 +33,35 @@ async function runTests(connectionString, mask) {
   }
   if (mask & 2) {
     try {
-      testLog.log('DataSource inserting test.');
       await testInserting(ds);
-      testLog.log('DataSource inserting test successfully passed.');
     } catch (error) {
       testLog.error(error);
     }
   }
   if (mask & 4) {
     try {
-      testLog.log('DataSource deleting test.');
       await testDeleting(ds);
-      testLog.log('DataSource deleting test successfully passed.');
     } catch (error) {
       testLog.error(error);
     }
   }
   if (mask & 8) {
     try {
-      testLog.log('DataSource updating test.');
-      await testUpserting(ds);
-      testLog.log('DataSource updating test successfully passed.');
+      await testUpdating(ds);
     } catch (error) {
       testLog.error(error);
     }
   }
   if (mask & 16) {
     try {
-      testLog.log('DataSource upserting test.');
       await testUpserting(ds);
-      testLog.log('DataSource upserting test successfully passed.');
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  if (mask & 32) {
+    try {
+      await testSelecting(ds);
     } catch (error) {
       testLog.error(error);
     }
@@ -101,29 +102,101 @@ function assertDisconnection (result, message) {
   assert.equal(!!result, false, message);
 }
 
-function testInserting(dsInstance) {
-  //TODO skipResult
-  //TODO adjustAutoInc
-  //TODO dataTypes
-  //TODO errors
+function createTestTable(dsInstance, table, fields) {
   return dsInstance.open()
-    .then(() => dsInstance.insert('test', {test: 'Text'}))
-    .then(res => console.log(res));
+    .then(() => testLog.log(`Create test-table '${table}'.`))
+    .then(() => dsInstance.connection())
+    .then(client => client.query(`CREATE TABLE IF NOT EXISTS ${table} (${fields.join(',')});`)
+      .finally(() => client.release()))
+    .catch(error => testLog.error(error));
+}
+
+function dropTestTable(dsInstance, table) {
+  return dsInstance.open()
+    .then(() => testLog.log(`Drop test-table '${table}'.`))
+    .then(() => dsInstance.connection())
+    .then(client => client.query(`DROP TABLE IF EXISTS ${table} CASCADE;`)
+      .finally(() => client.release()))
+    .catch(error => testLog.error(error));
+}
+
+function insertTestRow(dsInstance, table, data) {
+  return dsInstance.open()
+    .then(() => testLog.log(`Insert test-row in table '${table}'.`))
+    .then(() => dsInstance.connection())
+    .then(client => client.query(`INSERT INTO ${table} (${Object.keys(data).join(',')}) VALUES (${Object.values(data).join(',')});`)
+      .finally(() => client.release()))
+    .catch(error => testLog.error(error));
+}
+
+function selectTestRows(dsInstance, table, sort) {
+  return dsInstance.open()
+    .then(() => testLog.log(`Select test-rows from table '${table}'.`))
+    .then(() => dsInstance.connection())
+    .then(client => client.query(`SELECT * FROM ${table} ${sort};`)
+      .finally(() => client.release()))
+    .catch(error => testLog.error(error));
+}
+
+function testInserting(dsInstance) {
+  const type = 'for_insert';
+  const data = {
+    string: 'azaza', number: 12, bool: false, date: new Date(2020, 2, 20, 0, 0, 0, 0)
+  };
+  return dsInstance.open()
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, [
+      'string varchar(40)', 'number integer', 'bool boolean', 'date date'
+    ]))
+    .then(() => testLog.log('DataSource inserting test.'))
+    .then(() => dsInstance.insert(type, data, {skipResult: false, adjustAutoInc: true}))
+    .then(res => assert.deepStrictEqual(res, data, 'Check result.'))
+    .then(() => selectTestRows(dsInstance, type))
+    .then(res => assert.deepStrictEqual(res.rows[0], data, 'Check in database.'))
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource inserting test successfuly completed.'));
 }
 
 function testDeleting(dsInstance) {
-  //TODO conditions
-  //TODO only/skipResults
-  //TODO errors
+  const type = 'for_delete';
   return dsInstance.open()
-    .then(() => dsInstance.delete('test'))
-    .then(res => console.log(res));
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, ['string varchar(40)']))
+    .then(() => insertTestRow(dsInstance, type, {string: '\'azaza\''}))
+    .then(() => testLog.log('DataSource deleting test.'))
+    .then(() => dsInstance.delete(type, {[Operations.EQUAL]: ['$string', 'azaza']}))
+    .then(() => selectTestRows(dsInstance, type))
+    .then(res => assert.equal(res.rowCount, 0))
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource deleting test successfuly completed.'));
 }
 
 function testUpdating(dsInstance) {
+  const type = 'for_update';
+  const conditions = {[Operations.EQUAL]: ['$bool', true]};
+  const data = {string: 'check', bool: false, number: 4};
+  const options = {slipResult: false, bulk: true, adjustAutoInc: true};
+  return dsInstance.open()
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, ['string varchar(40)', 'number integer', 'bool boolean']))
+    .then(() => insertTestRow(dsInstance, type, {string: '\'azaza\'', number: 1, bool: true}))
+    .then(() => insertTestRow(dsInstance, type, {string: '\'ololo\'', number: 2, bool: false}))
+    .then(() => insertTestRow(dsInstance, type, {string: '\'ikiki\'', number: 3, bool: true}))
 
+    .then(() => testLog.log('DataSource updating test.'))
+    .then(() => dsInstance.update(type, conditions, data, options))
+    .then(res => assert.deepStrictEqual(res, [data, data], 'Check result.'))
+    .then(() => selectTestRows(dsInstance, type, 'ORDER BY number ASC'))
+    .then(res => assert.deepStrictEqual(res.rows, [{string: 'ololo', bool: false, number: 2}, data, data], 'Check in database.'))
+
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource updating test successfuly completed.'));
 }
 
 function testUpserting(dsInstance) {
+  testLog.log('DataSource upserting test.');
+}
 
+function testSelecting(dsInstance) {
+  testLog.log('DataSource selecting test.');
 }
