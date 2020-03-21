@@ -235,22 +235,24 @@ function PostgreSQL(config) {
     const {
       skipResult, adjustAutoInc
     } = options;
+    let resConds = null;
     return execute(client => cleanNulls(client, type, data)
       .then(cleanedData => client.query(sql.select(type, {conditions}))
         .then((res) => {
           const q = res.rows[0] ?
             sql.update(type, cleanedData, filterByData(res.rows[0])) :
             sql.insert(type, cleanedData);
+          resConds = res.rows[0] ? Object.assign({}, res.rows[0], cleanedData) : cleanedData;
           return client.query(q);
         })
         .then(res => adjustAutoIncrements(client, type, cleanedData, adjustAutoInc)
           .then(() => {
             if (!skipResult) {
               const q = sql.select(type, {
-                conditions: filterByData(cleanedData),
+                conditions: filterByData(resConds),
                 count: 1
               });
-              return client.query(q).then(result => processData(result.rows));
+              return client.query(q).then(result => processData(result.rows[0]));
             }
             return res.rowCount;
           }))));

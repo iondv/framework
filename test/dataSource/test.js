@@ -9,13 +9,13 @@ const Operations = require('core/FunctionCodes');
 
 const Ds = require(process.argv[2]);
 
-runTests(process.argv[3], process.argv[4]);
+runTests(process.argv[3], process.argv[4], process.argv[5]);
 
 // eslint-disable-next-line complexity
-async function runTests(connectionString, mask) {
+async function runTests(connectionString, mask, queryLogging = false) {
   const options = {
     logger: testLog,
-    queryLogging: true,
+    queryLogging,
     options: {
       connectionString
     }
@@ -193,8 +193,43 @@ function testUpdating(dsInstance) {
     .then(() => testLog.log('DataSource updating test successfuly completed.'));
 }
 
+/**
+   * @param {String} type
+   * @param {{}} conditions
+   * @param {{}} data
+   * @param {{}} [options]
+   * @param {Boolean} [options.skipResult]
+   * @param {Boolean} [options.adjustAutoInc]
+   * @returns {Promise}
+   */
 function testUpserting(dsInstance) {
-  testLog.log('DataSource upserting test.');
+  const type = 'for_upsert';
+  const options = {slipResult: false, adjustAutoInc: true};
+  const conditions = {[Operations.EQUAL]: ['$c', true]};
+  const initial = {a: '\'azaza\'', b: 1, c: false};
+  const data1 = {a: 'check', b: 2, c: true};
+  const expecting1 = [{a: 'azaza', b: initial.b, c: initial.c}, data1];
+  const data2 = {c: true};
+  const expecting2 = {a: 'azaza', b: initial.b, c: true};
+  const expecting3 = [expecting2, data1];
+  return dsInstance.open()
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, ['a varchar(40)', 'b integer', 'c boolean']))
+    .then(() => insertTestRow(dsInstance, type, initial))
+
+    .then(() => testLog.log('DataSource upserting test.'))
+    .then(() => dsInstance.upsert(type, conditions, data1, options))
+    .then(res => assert.deepStrictEqual(res, data1, 'Check insert result.'))
+    .then(() => selectTestRows(dsInstance, type, 'ORDER BY b ASC'))
+    .then(res => assert.deepStrictEqual(res.rows, expecting1, 'Check insertion in database.')
+    )
+    .then(() => dsInstance.upsert(type, null, data2, options))
+    .then(res => assert.deepStrictEqual(res, expecting2, 'Check update result.'))
+    .then(() => selectTestRows(dsInstance, type, 'ORDER BY b ASC'))
+    .then(res => assert.deepStrictEqual(res.rows, expecting3, 'Check update in database.'))
+
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource upserting test successfuly completed.'));
 }
 
 function testSelecting(dsInstance) {

@@ -93,6 +93,9 @@ function SqlAdapter(overriding = {}) {
       return `(${attrs.join(` ${OPERS[Operations.AND]} `)})`;
     } else if (cond && typeof cond === 'object' && !(cond instanceof Date)) {
       const [oper] = Object.keys(cond);
+
+      if (!oper)
+        throw new Error('Оператор не передан.');
       const attrs = cond[oper].map(attr => parseCondition(attr, params, joins));
 
       if (overriding.parseOperation && overriding.parseOperation[oper] && typeof overriding.parseOperation[oper] === 'function')
