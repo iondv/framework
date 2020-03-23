@@ -8,6 +8,7 @@ const fs = require('fs');
 const Errors = require('core/errors/data-source');
 const SqlAdapter = require('core/impl/datasource/sql');
 const Operations = require('core/FunctionCodes');
+const cuid = require('cuid');
 
 /**
  * @param {Object} config
@@ -257,6 +258,45 @@ function PostgreSQL(config) {
             return res.rowCount;
           }))));
   };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @param {{unique: Boolean}} [options]
+   * @returns {Promise}
+   */
+  this._ensureIndex = function (type, properties, options) {
+    const name = 'index_' + cuid();
+    const columns = Object.keys(properties).map(key => `${key} ${properties[key] < 0 ? 'DESC' : 'ASC'}`);
+    return execute(client => client.query(sql.createIndex(name, type, columns, options.unique)))
+      .then(() => name);
+  };
+
+  /**
+   * @param {String} type
+   * @param {{}} properties
+   * @returns {Promise}
+   */
+  this._ensureAutoincrement = (type, properties) => execute((client) => {
+      let pr = Promise.resolve();
+      let names = {};
+      Object.keys(properties).forEach((prop) => {
+        const name = 'sequence_' + cuid();
+        const opts = properties[prop] || 1;
+        const step = typeof opts === 'object' ? opts.step : opts;
+        const start = typeof opts === 'object' && typeof opts.start === 'number' ?
+          `START WITH ${opts.start}` :
+          '';
+        const query = `CREATE SEQUENCE ${name} INCREMENT BY ${step} ${start} OWNED BY ${type}.${prop};`;
+
+        pr = pr.then(() => {
+            config.queryLogging && log.log(JSON.stringify(query));
+            return client.query(query);
+          })
+          .then(() => names[prop] = name);
+      });
+      return pr.then(() => names);
+    });
 }
 
 PostgreSQL.prototype = new DataSource();

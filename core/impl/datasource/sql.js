@@ -238,6 +238,20 @@ function SqlAdapter(overriding = {}) {
     typeof overriding.logCallback === 'function' && overriding.logCallback(result);
     return typeof overriding.result === 'function' ? overriding.result(result) : result;
   };
+
+  const _createIndex = (name, table, columns, unique = false) => {
+    const params = [];
+    return {
+      text: `CREATE ${unique ? 'UNIQUE' : ''} INDEX ${name} ON ${table} (${columns.join(',')});`,
+      params
+    };
+  };
+
+  this.createIndex = (name, table, columns, unique) => {
+    const result = _createIndex(name, table, columns, unique);
+    typeof overriding.logCallback === 'function' && overriding.logCallback(result);
+    return typeof overriding.result === 'function' ? overriding.result(result) : result;
+  };
 }
 
 module.exports = SqlAdapter;

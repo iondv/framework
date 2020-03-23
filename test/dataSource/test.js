@@ -66,6 +66,20 @@ async function runTests(connectionString, mask, queryLogging = false) {
       testLog.error(error);
     }
   }
+  if (mask & 64) {
+    try {
+      await testEnsureIndex(ds);
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
+  if (mask & 128) {
+    try {
+      await testEnsureAutoincrement(ds);
+    } catch (error) {
+      testLog.error(error);
+    }
+  }
   process.exit();
 }
 
@@ -107,8 +121,7 @@ function createTestTable(dsInstance, table, fields) {
     .then(() => testLog.log(`Create test-table '${table}'.`))
     .then(() => dsInstance.connection())
     .then(client => client.query(`CREATE TABLE IF NOT EXISTS ${table} (${fields.join(',')});`)
-      .finally(() => client.release()))
-    .catch(error => testLog.error(error));
+      .finally(() => client.release()));
 }
 
 function dropTestTable(dsInstance, table) {
@@ -116,8 +129,7 @@ function dropTestTable(dsInstance, table) {
     .then(() => testLog.log(`Drop test-table '${table}'.`))
     .then(() => dsInstance.connection())
     .then(client => client.query(`DROP TABLE IF EXISTS ${table} CASCADE;`)
-      .finally(() => client.release()))
-    .catch(error => testLog.error(error));
+      .finally(() => client.release()));
 }
 
 function insertTestRow(dsInstance, table, data) {
@@ -125,17 +137,15 @@ function insertTestRow(dsInstance, table, data) {
     .then(() => testLog.log(`Insert test-row in table '${table}'.`))
     .then(() => dsInstance.connection())
     .then(client => client.query(`INSERT INTO ${table} (${Object.keys(data).join(',')}) VALUES (${Object.values(data).join(',')});`)
-      .finally(() => client.release()))
-    .catch(error => testLog.error(error));
+      .finally(() => client.release()));
 }
 
-function selectTestRows(dsInstance, table, sort) {
+function selectTestRows(dsInstance, table, details) {
   return dsInstance.open()
     .then(() => testLog.log(`Select test-rows from table '${table}'.`))
     .then(() => dsInstance.connection())
-    .then(client => client.query(`SELECT * FROM ${table} ${sort};`)
-      .finally(() => client.release()))
-    .catch(error => testLog.error(error));
+    .then(client => client.query(`SELECT * FROM ${table} ${details};`)
+      .finally(() => client.release()));
 }
 
 function testInserting(dsInstance) {
@@ -234,4 +244,71 @@ function testUpserting(dsInstance) {
 
 function testSelecting(dsInstance) {
   testLog.log('DataSource selecting test.');
+}
+
+function testEnsureIndex(dsInstance) {
+  const type = 'for_ensure_index';
+
+  return dsInstance.open()
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, ['a varchar(40)', 'b integer']))
+
+    .then(() => testLog.log('DataSource ensure index test.'))
+    .then(() => dsInstance.ensureIndex(type, {b: -1}, {unique: true}))
+    .then(res => selectTestRows(dsInstance, 'pg_indexes', `WHERE tablename=\'${type}\'`)
+      .then(res2 => assert.strictEqual(res, res2.rows[0].indexname, 'Check index in database.'))
+      .then(() => insertTestRow(dsInstance, type, {a: '\'azaza\'', b: 0}))
+      .then(() => assert.rejects(
+        insertTestRow(dsInstance, type, {a: '\'azaza\'', b: 0}),
+        {
+          table: type,
+          constraint: res,
+          code: '23505'
+        },
+        'Check unique violation.'
+      )))
+
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource ensure index test successfuly completed.'));
+}
+
+function testEnsureAutoincrement(dsInstance) {
+  const type = 'for_ensure_autoincrement';
+  const properties = {
+    b: 1,
+    c: {step: 3, start: 2},
+    d: {step: -2, start: -2}
+  };
+  const expecting = [
+    {a: 'azaza', b: 1, c: 2, d: -2},
+    {a: 'ololo', b: 2, c: 5, d: -4},
+    {a: 'ikiki', b: 3, c: 8, d: -6}
+  ];
+
+  return dsInstance.open()
+    .then(() => testLog.log('============================================'))
+    .then(() => createTestTable(dsInstance, type, ['a varchar(40)', 'b integer', 'c integer', 'd integer']))
+
+    .then(() => testLog.log('DataSource ensure autoincrement test.'))
+    .then(() => dsInstance.ensureAutoincrement(type, properties))
+    .then(res => insertTestRow(dsInstance, type, {
+      a: '\'azaza\'',
+      b: `nextval('${res.b}')`,
+      c: `nextval('${res.c}')`,
+      d: `nextval('${res.d}')`})
+      .then(() => insertTestRow(dsInstance, type, {
+        a: '\'ololo\'',
+        b: `nextval('${res.b}')`,
+        c: `nextval('${res.c}')`,
+        d: `nextval('${res.d}')`}))
+      .then(() => insertTestRow(dsInstance, type, {
+        a: '\'ikiki\'',
+        b: `nextval('${res.b}')`,
+        c: `nextval('${res.c}')`,
+        d: `nextval('${res.d}')`})))
+    .then(() => selectTestRows(dsInstance, type, 'ORDER BY b ASC'))
+    .then(res => assert.deepStrictEqual(res.rows, expecting, 'Check autoincremented rows from database.'))
+
+    .then(() => dropTestTable(dsInstance, type))
+    .then(() => testLog.log('DataSource ensure index test successfuly completed.'));
 }
