@@ -281,7 +281,7 @@ function PostgreSQL(config) {
       let pr = Promise.resolve();
       let names = {};
       Object.keys(properties).forEach((prop) => {
-        const name = 'sequence_' + cuid();
+        const name = `sequence_${type}_${prop}`;
         const opts = properties[prop] || 1;
         const step = typeof opts === 'object' ? opts.step : opts;
         const start = typeof opts === 'object' && typeof opts.start === 'number' ?
