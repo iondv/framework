@@ -594,6 +594,30 @@ function themeDirs() {
           const themesStat = fs.statSync(themesDir);
           if (themesStat.isDirectory()) {
             Array.prototype.push.apply(themes, _themeDirs(themesDir));
+            fs.readdirSync(themesDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach((folder) => {
+              let versionDir = path.join(themesDir,folder);
+              if ( (fs.statSync(versionDir) ).isDirectory()){
+                if ( (fs.readdirSync(versionDir)).includes('package.json') ) {
+                  console.log('package.json located at', versionDir);
+                  if (!themes.includes(versionDir)) {
+                    themes.push(versionDir);
+                    Array.prototype.push.apply(themes, _themeDirs(versionDir))
+                  }
+                }
+                fs.readdirSync(versionDir).filter(dir => ! ['node_modules', '.git'].includes(dir)).forEach( (folder1) => {
+                  let packageDir = path.join(versionDir,folder1);
+                  if ( (fs.statSync(packageDir)).isDirectory() ) {
+                    if ( (fs.readdirSync(packageDir)).includes('package.json') ) {
+                      console.log('package.json located at', packageDir);
+                      if (!themes.includes(packageDir)) {
+                        themes.push(packageDir);
+                        Array.prototype.push.apply(themes, _themeDirs(packageDir))
+                      }
+                    }
+                  }
+                })
+              }
+            });
           }
         } catch (e) {}
         let appFolders = fs.readdirSync(application)
