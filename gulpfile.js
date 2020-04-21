@@ -264,10 +264,10 @@ function frontendInstall(pathDir) {
          * @property {String} vendorDir - package installation folder
          */
         let packageJson = JSON.parse(fs.readFileSync(path.join(pathDir, 'package.json'), {encoding: 'utf-8'}));
-        if (!packageJson.vendorDir) {
-         console.warn('In the package.json the destination directory for vendor files is not specified in [vendorDir]!\nSet default ./static/vendor');
-         packageJson.vendorDir = './vendor';
-        }
+        // if (!packageJson.vendorDir) {
+        //  console.warn('In the package.json the destination directory for vendor files is not specified in [vendorDir]!\nSet default ./static/vendor');
+        //  packageJson.vendorDir = './vendor';
+        // }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
         // try { // 20200207 убрали ci из-за него много проблем
         //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
@@ -283,14 +283,15 @@ function frontendInstall(pathDir) {
           fs.renameSync(path.join(pathDir, packageJson.vendorDir), path.join(pathDir, 'node_modules'));
         }
          */
-        run(pathDir, 'npm', npmArgs, function () {
-          const srcDir = path.join(pathDir, 'node_modules');
-          try {
-            fs.accessSync(srcDir);
-          } catch (err) {
-            resolve();
-            return;
-          }
+        run(pathDir, 'npm', npmArgs, resolve,
+          // function () {
+          // const srcDir = path.join(pathDir, 'node_modules');
+          // try {
+          //   fs.accessSync(srcDir);
+          // } catch (err) {
+          //   resolve();
+          //   return;
+          // }
           /* DEPRECATED try {
             const vendorModules = fs.readdirSync(srcDir);
             let copyers = [];
@@ -356,8 +357,9 @@ function frontendInstall(pathDir) {
             return reject(error);
           }*/
 
-          resolve();
-        }, reject);
+          // resolve();
+        // },
+        reject);
       } catch (error) {
         reject(error);
       }
