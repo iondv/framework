@@ -269,6 +269,7 @@ function frontendInstall(pathDir) {
         //  packageJson.vendorDir = './vendor';
         // }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
+
         // try { // 20200207 убрали ci из-за него много проблем
         //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
         //   console.log('Installing CI the frontend packages for the path ' + pathDir);
@@ -367,53 +368,53 @@ function frontendInstall(pathDir) {
   };
 }
 
-function copyVendorResources(src, dst, module) {
-  return new Promise(function (resolve, reject) {
-    let dist = path.join(src, module, 'dist');
-    let min = path.join(src, module, 'min');
-    let dest = path.join(dst, module);
+// function copyVendorResources(src, dst, module) {
+//   return new Promise(function (resolve, reject) {
+//     let dist = path.join(src, module, 'dist');
+//     let min = path.join(src, module, 'min');
+//     let dest = path.join(dst, module);
+//
+//     copyResources(
+//       dist,
+//       dest,
+//       'Copied distribution files of vendor package ' + module
+//     )(false).then(copyResources(
+//       min,
+//       dest,
+//       'Copied minified files vendor package ' + module
+//       )
+//     ).then(copyResources(
+//       path.join(src, module),
+//       dest,
+//       'Copied vendor package files ' + module
+//       )
+//     ).then(resolve).catch(reject);
+//   });
+// }
 
-    copyResources(
-      dist,
-      dest,
-      'Copied distribution files of vendor package ' + module
-    )(false).then(copyResources(
-      min,
-      dest,
-      'Copied minified files vendor package ' + module
-      )
-    ).then(copyResources(
-      path.join(src, module),
-      dest,
-      'Copied vendor package files ' + module
-      )
-    ).then(resolve).catch(reject);
-  });
-}
-
-function copyResources(srcPath, destPath, msg) {
-  return function (skip) {
-    return new Promise(function (resolve, reject) {
-      if (!skip) {
-        try {
-          fs.accessSync(srcPath);
-        } catch (err) {
-          resolve(false);
-          return;
-        }
-        gulpSrc([path.join(srcPath, '**', '*')])
-          .pipe(gulpDest(destPath))
-          .on('finish', function () {
-            //console.log(msg); // Output from copyVendorResources
-            resolve(true);
-          })
-          .on('error', reject);
-      } else {
-        resolve(true);
-      }
-    });
-  };
-}
+// function copyResources(srcPath, destPath, msg) {
+//   return function (skip) {
+//     return new Promise(function (resolve, reject) {
+//       if (!skip) {
+//         try {
+//           fs.accessSync(srcPath);
+//         } catch (err) {
+//           resolve(false);
+//           return;
+//         }
+//         gulpSrc([path.join(srcPath, '**', '*')])
+//           .pipe(gulpDest(destPath))
+//           .on('finish', function () {
+//             //console.log(msg); // Output from copyVendorResources
+//             resolve(true);
+//           })
+//           .on('error', reject);
+//       } else {
+//         resolve(true);
+//       }
+//     });
+//   };
+// }
 
 function minifyCSS(p) {
   return function () {
