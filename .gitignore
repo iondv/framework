@@ -14,7 +14,8 @@
 !/modules/readme.md
 /applications/*
 
-/view/**/vendor/*
+/htmlFiles
+
 /view/**/node_modules/*
 /view/**/*.less.css
 /view/**/*.min.css
