@@ -387,7 +387,8 @@
           "workflow": "ion://workflows",
           "meta": "ion://metaRepo",
           "log": "ion://sysLog",
-          "calc": "lazy://calculator"
+          "calc": "lazy://calculator",
+          "resourcePortionSize": 50000
         }
       },
       "background": {
