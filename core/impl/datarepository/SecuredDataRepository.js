@@ -93,6 +93,8 @@ function SecuredDataRepository(options) {
 
   var rolePermissionCache = {};
 
+  const resourcePortionSize = options.resourcePortionSize || 100000;
+
   this.init = function () {
     if (options.roleMap && options.accessManager instanceof RoleAccessManager) {
       /**
@@ -288,14 +290,17 @@ function SecuredDataRepository(options) {
    */
   function itemToPermMap(item, permissions, permMap, options) {
     if (item && item.getItemId()) {
-      permMap[item.getClassName() + '@' + item.getItemId()] = merge(true,
+      permMap[item.getClassName() + '@' + item.getItemId()] = merge(
+        permMap[item.getClassName() + '@' + item.getItemId()] || true,
         permissions[itemPrefix + item.getClassName() + '@' + item.getItemId()] || {},
         permissions[classPrefix + item.getClassName()] || {},
         permissions[globalMarker] || {}
       );
 
-      permMap[item.getClassName() + '@' + item.getItemId()].__attr =
-        attrPermMap(item, permissions, options, permMap[item.getClassName() + '@' + item.getItemId()]) || {};
+      permMap[item.getClassName() + '@' + item.getItemId()].__attr = merge(
+        permMap[item.getClassName() + '@' + item.getItemId()].__attr || true,
+        attrPermMap(item, permissions, options, permMap[item.getClassName() + '@' + item.getItemId()]) || {}
+      );
 
       let props = item.getProperties();
       Object.values(props).forEach((p) => {
@@ -339,14 +344,20 @@ function SecuredDataRepository(options) {
       }
     });
 
-    return aclProvider.getPermissions(options.user, resources, true)
-      .then((permissions) => {
-        let permMap = {};
-        list.forEach((item) => {
-          itemToPermMap(item, permissions, permMap, options);
+    let p = Promise.resolve();
+    let permMap = {};
+
+    for (let i = 0; i < Math.ceil(resources.length/resourcePortionSize); i++) {
+      const start = i*resourcePortionSize;
+      const portion = resources.slice(start, start + resourcePortionSize);
+      p = p.then(() => aclProvider.getPermissions(options.user, portion, true))
+        .then((permissions) => {
+          list.forEach((item) => {
+            itemToPermMap(item, permissions, permMap, options);
+          });
         });
-        return permMap;
-      });
+    }
+    return p.then(() => permMap);
   }
 
   /**
