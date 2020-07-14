@@ -121,12 +121,12 @@ class LocalAccountStorage extends IAccountStorage {
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
           if (err) {
-            reject(new Error('Не удалось поменять пароль!'));
+            return reject(new Error('Не удалось поменять пароль!'));
           }
           if (verified) {
-            reject(new Error('Новый пароль совпадает со старым!'));
+            return reject(new Error('Новый пароль совпадает со старым!'));
           }
-          writer(resolve, reject);
+          return writer(resolve, reject);
         });
     });
   }
