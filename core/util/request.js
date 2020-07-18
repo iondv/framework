@@ -6,6 +6,12 @@ const request = require('request');
  */
 module.exports = reqParams => new Promise(
   (resolve, reject) => {
-    request(reqParams, (err, res, body) => err ? reject(err) : resolve(body));
+    request(reqParams, (err, res, body) => {
+      if (err)
+        return reject(err);
+      if (res.statusCode !== 200)
+        return reject(res);
+      return resolve(body);
+    });
   }
 );
