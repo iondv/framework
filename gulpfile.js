@@ -14,7 +14,7 @@ const gulpDest = require('gulp').dest;
 const assert = require('assert');
 
 const cssMin = require('gulp-clean-css');
-const jsMin = require('gulp-jsmin');
+const jsMin = require('gulp-minify');
 const rename = require('gulp-rename');
 const spawn = require('child_process').spawn;
 const extend = require('extend');
