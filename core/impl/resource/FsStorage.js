@@ -55,7 +55,8 @@ function FsStorage(options) {
   this._accept = function (data, directory, options) {
     let opts = clone(options) || {};
     let m = moment();
-    let pth = directory ? directory.replace(/[\\/]/, path.sep) : m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
+    let pth = directory ? directory.replace(/[\\/]/, path.sep) :
+                          path.join(m.format('YYYY'),m.format('MM'),m.format('DD')); //m.format('YYYY' + path.sep + 'MM' + path.sep + 'DD');
     if (pth.charAt(0) === path.sep) {
       pth = pth.slice(1);
     }
