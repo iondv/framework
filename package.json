@@ -58,7 +58,7 @@
     "mongodb": "~3.1",
     "morgan": "^1.9.0",
     "nearley": "^2.13.0",
-    "node-forge": "^0.7.1",
+    "node-forge": "^0.10.0",
     "nodemailer": "^6.0.0",
     "oauth2-server": "^3.0.0",
     "passport": "^0.4.0",
