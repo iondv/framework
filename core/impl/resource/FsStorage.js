@@ -94,10 +94,13 @@ function FsStorage(options) {
         d = data.stream;
       }
 
-      let dt = clone(data);
-      delete dt.buffer;
-      delete dt.path;
-      delete dt.stream;
+      const exclude = ['buffer', 'path', 'stream'];
+      let dt = Object.keys(data).reduce((a, nm) => {
+        if (exclude.indexOf(nm) < 0) {
+	  a[nm] = clone(data[nm]);
+	}
+	return a;
+      }, {});
 
       opts = merge(opts, dt);
     } else {
