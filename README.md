@@ -42,14 +42,16 @@ IONDV. Framework - is a node.js open source framework for developing accounting 
 or microservices based on metadata and individual modules. Framework is a part of 
 instrumental digital platform to create enterprise 
 (ERP) apps. This platform consists of the following open-source components: the [IONDV. Framework](https://github.com/iondv/framework), the
-[modules](https://github.com/topics/iondv-module) и ready-made applications expanding it
-functionality, visual development environment [Studio](https://github.com/iondv/studio) to create metadata for the app.
+[modules](https://github.com/topics/iondv-module) and ready-made applications expanding its
+functionality, as well as the [Studio](https://github.com/iondv/studio) [open source](https://github.com/iondv/studio) visual development environment to create metadata for the app. The UML-scheme modeled applications can be launched in [80 seconds](https://youtu.be/s7q9_YXkeEo).
 
 ## Description  
 
-**IONDV. Framework** — is a tool for creating high-level web applications based on metadata. You can change the system by adding the additional components to change functionality. There are ready-made modules, but nothing limits you to create new ones to personalize the application. Moreover, it's low-code framework
+**IONDV. Framework** — is a tool for creating high-level web applications based on metadata. You can change the system by adding the additional components to change functionality. There are ready-made modules, but nothing limits you to create new ones to personalize the application. Moreover, it's a low-code framework.
 
 The main purpose is the implementation of complex data registry systems. The functional base is the data registry - the Registry module. This is a key module designed specifically to work with data based on metadata structures - including the management of projects, programs, activities, etc.
+
+The Framework is suitaible for creating systems for big data accumulation and processing and for artificial intelligence. A special module [Artificial Intelligence Bus](https://github.com/iondv/aib) and demonstration applications, such as [TensorFlow models](https://github.com/iondv/tensorflow-dataset) data markup and training, are being developed for these purposes.
 
 **IONDV. Framework** is an open source software in JavaScript with open metadata structure in human-readable JSON files.
 
