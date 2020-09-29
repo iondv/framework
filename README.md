@@ -45,6 +45,7 @@ instrumental digital platform to create enterprise
 [modules](https://github.com/topics/iondv-module) and ready-made applications expanding its
 functionality, as well as the [Studio](https://github.com/iondv/studio) [open source](https://github.com/iondv/studio) visual development environment to create metadata for the app. The UML-scheme modeled applications can be launched in [80 seconds](https://youtu.be/s7q9_YXkeEo).
 
+
 ## Description  
 
 **IONDV. Framework** — is a tool for creating high-level web applications based on metadata. You can change the system by adding the additional components to change functionality. There are ready-made modules, but nothing limits you to create new ones to personalize the application. Moreover, it's a low-code framework.
