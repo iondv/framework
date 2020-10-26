@@ -1,108 +1,125 @@
 /**
  * Created by krasilneg on 25.04.17.
  */
-const merge = require('merge');
-const {setupLang} = require('./i18n-setup');
-
+const merge = require('merge')
 const systemBase = {};
-const byLangBase = {};
 
-const parseLang = lang => typeof lang === 'string' ? (lang.match(/[a-z]+/gi)[0]).toLowerCase() : undefined;
+let defaultLocale = 'en';
+
+const defaultBase = () => ({
+  get: id => id,
+  toJSON: () => ({})
+});
+defaultBase.has = () => false;
+
+//const parseLang = lang => typeof lang === 'string' ? (lang.match(/[a-z]+/gi)[0]).toLowerCase() : undefined;
 
 /**
  * @param {String} prefix
  * @param {String} id
  * @param {{}} params
+ * @param {String} lang
  */
-const strings = (prefix, id, params, language) => {
-  let str;
-  const lang = parseLang(language);
+const strings = (prefix, id, params, lang) => {
   if (prefix && id) {
-    if (lang) {
-      if (!byLangBase.hasOwnProperty(lang)) {
-        setupLang(lang);
-        byLangBase[lang] = byLangBase[lang] || {};
-      }
-      const base = byLangBase[lang];
-      if (base.hasOwnProperty(prefix)) {
-        if (base[prefix].hasOwnProperty(id))
-          str = base[prefix][id];
-      }
+    let str = id;
+    if (systemBase.hasOwnProperty(prefix)) {
+      const base = systemBase[prefix];
+      if (base.has(id))
+        str = base(lang || defaultLocale, prefix).get(id);
     }
-    if (!str && systemBase.hasOwnProperty(prefix)) {
-      if (systemBase[prefix].hasOwnProperty(id))
-        str = systemBase[prefix][id];
-    }
-    if (str) {
-      params && Object.keys(params).forEach((p) => {
-        str = str.replace(`%${p}`, params[p]);
-      });
-      return str;
-    }
-    return id;
+    params && Object.keys(params).forEach(p => {
+      str = str.replace(`%${p}`, params[p]);
+    });
+    return str;
   }
   return '';
 };
+
 module.exports.s = strings;
 
-/**
- * @param {String} prefix
- * @param {{}} base
- * @param {String} [lang]
- */
-module.exports.registerBase = function(prefix, base, lang) {
-  if (prefix && base) {
-    systemBase[prefix] = merge(base, systemBase[prefix] || {});
-    if (lang) {
-      byLangBase[lang] = byLangBase[lang] || {};
-      byLangBase[lang][prefix] = merge(base, byLangBase[lang][prefix] || {});
+function wrap(msgs, prev) {
+  const result = (lang, domain) => {
+    const base = prev(lang);
+    return {
+      get: id => {
+        if (msgs.hasOwnProperty(id)) {
+          return msgs[id]({lang, domain});
+        }
+        return base.get(id);
+      },
+      toJSON: () => {
+        let result = {};
+        for (id in msgs) {
+          result[id] = msgs[id]({lang, domain});
+        }
+        return merge(base.toJSON(), result);
+      }
     }
+  };
+  result.has = (id) => {
+    return msgs.hasOwnProperty(id) || prev.has(id);
   }
-};
+  return result;
+}
 
 /**
- * @param {String} lang
  * @param {String} prefix
- * @param {{}} base
+ * @param {Function} base
  */
-module.exports.registerLang = function(language, prefix, base) {
-  const lang = parseLang(language);
-  if (prefix && base && Object.keys(base).length && lang) {
-    byLangBase[lang] = byLangBase[lang] || {};
-    byLangBase[lang][prefix] = merge(base, byLangBase[lang][prefix] || {});
+module.exports.registerBase = function(prefix, base) {
+  if (prefix && ('function' == typeof base)) {
+    systemBase[prefix] = base(systemBase[prefix] || defaultBase);
+  } else if (prefix && ('object' == typeof base)) {
+    systemBase[prefix] = wrap(base, systemBase[prefix] || defaultBase);
   }
 };
-
-/**
- * @returns {Array.<String>}
- */
-module.exports.getLangs = () => Object.keys(byLangBase);
 
 /**
  * @param {String} prefix
  * @param {String} lang
  * @returns {Function}
  */
-module.exports.unprefix = (prefix, lang) => (str, params) => strings(prefix, str, params, lang);
+module.exports.unprefix = (prefix) => (str, params, lang) => strings(prefix, str, params, lang);
 
 /**
  * @param {String} lang
  * @param {String} prefix
  * @returns {{}}
  */
-module.exports.getBase = (prefix, language) => {
-  const lang = parseLang(language);
-  if (lang) {
-    if (!byLangBase.hasOwnProperty(lang)) {
-      setupLang(lang);
-      byLangBase[lang] = byLangBase[lang] || {};
-    }
-    if (prefix && byLangBase[lang].hasOwnProperty(prefix)) {
-      return byLangBase[lang][prefix] || {};
-    }
-    return byLangBase[lang] || {};
-  } else if (systemBase.hasOwnProperty(prefix)) {
-    return systemBase[prefix] || {};
+module.exports.getBase = (prefix) => {
+  if (!prefix) {
+    return lang => ({
+      has: id => {
+        const bases = Object.values(systemBase);
+        for (base of bases) {
+          if (base.has(id))
+            return true;
+        }
+        return false;
+      },
+      get: id => {
+        const bases = Object.values(systemBase);
+        for (base of bases) {
+          if (base.has(id)) {
+            return base(lang || defaultLocale, prefix).get(id);
+          }
+        }
+        return id;
+      },
+      toJSON: () => {
+        let result = {};
+        const bases = Object.values(systemBase);
+        for (base of bases) {
+            result = merge(result, base(lang || defaultLocale, prefix).toJSON());
+        }
+        return result;
+      }  
+    })
   }
-  return systemBase || {};
+  return systemBase[prefix] || defaultBase;
+};
+
+module.exports.setDefaultLocale = (lang) => {
+  defaultLocale = lang;
 };

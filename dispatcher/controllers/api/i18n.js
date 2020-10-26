@@ -5,9 +5,7 @@ const strings = require('core/strings');
 module.exports = (req, res) => respond(['auth'], (scope) => {
   try {
     const user = scope.auth.getUser(req);
-    let base = strings.getBase(null, user.language());
-    if (!base || !Object.keys(base).length)
-      base = strings.getBase();
+    let base = strings.getBase('frontend');
 
     res
       .set('Content-type', 'application/javascript')
@@ -35,7 +33,7 @@ function I18nHandler() {
 
 window.i18n = new I18nHandler();
 window.s = window.i18n.s.bind(window.i18n);
-window.i18n.base = ${JSON.stringify(base)};      
+window.i18n.base = ${JSON.stringify(base(user.language()))};      
       `));
   } catch (err) {
     scope.logRecorder.stop();

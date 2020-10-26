@@ -17,6 +17,7 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
 const SharesApi = require('./SharesApi');
+const IonError = require('core/IonError');
 const {
   urlResolver,
   slashChecker,

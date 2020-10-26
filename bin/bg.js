@@ -11,9 +11,14 @@ const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extendDi = require('core/extendModuleDi');
+const {s} = require('core/strings');
 const extend = require('extend');
 const path = require('path');
-errorSetup(config.lang || 'ru');
+const {format} = require('util');
+const i18n = require('core/i18n');
+const lang = config.lang || 'en';
+const t = msg => i18n.t(msg)({lang, domain: 'bg'});
+errorSetup();
 
 let params = {};
 
@@ -59,19 +64,19 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then((scope) => {
     let worker = scope[params.task];
     if (!worker) {
-      throw new Error('Не найден рабочий компонент фоновой процедуры ' + params.task);
+      throw new Error(format(t('Worker component not found for background job %s'), params.task));
     }
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
-      throw new Error('Рабочий компонент фоновой процедуры ' + params.task + ' не имеет метода запуска');
+      throw new Error(format(t('Worker component of background job %s has no launch method'), params.task));
     }
-    sysLog.info(new Date().toISOString() + ': Начало выполнения фоновой процедуры ' + params.task);
+    sysLog.info(format(t('%s: Start of background job %s'), new Date().toISOString(), params.task));
     return typeof worker === 'function' ? worker(params) : worker.run(params);
   })
   .then((result) => {
     if (typeof process.send === 'function') {
       process.send(result);
     }
-    sysLog.info(new Date().toISOString() + ': Фоновая процедура ' + params.task + ' выполнена');
+    sysLog.info(format(t('%s: Background job %s done'), new Date().toISOString(), params.task));
     process.exit(0);
   })
   .catch((err) => {

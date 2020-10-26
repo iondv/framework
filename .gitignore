@@ -30,3 +30,4 @@
 *.swp
 
 /.git-*/*
+output.log

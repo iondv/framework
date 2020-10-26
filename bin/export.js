@@ -10,7 +10,11 @@ const IonLogger = require('core/impl/log/IonLogger');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
+const i18n = require('core/i18n');
+const lang = config.lang || 'en';
+const t = msg => i18n.t(msg)({lang, domain: 'export'});
+
+errorSetup();
 
 var sysLog = new IonLogger({});
 
@@ -44,7 +48,7 @@ process.argv.forEach(function (val) {
   }
 });
 
-// Связываем приложение
+// Application binding
 di('boot', config.bootstrap,
   {
     sysLog: sysLog
@@ -84,7 +88,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Экспорт выполнен успешно.', params.dst);
+    console.info(t('Export successfully done.'), params.dst);
     process.exit(0);
   })
   .catch((err) => {

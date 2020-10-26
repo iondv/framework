@@ -10,11 +10,11 @@ const IonLogger = require('core/impl/log/IonLogger');
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const i18n = require('core/i18n');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
 const aclImport = require('lib/aclImport');
 
-var params = {
+const params = {
   permissions: [],
   users: [],
   resources: [],
@@ -23,6 +23,12 @@ var params = {
 };
 
 var setParam = false;
+
+const lang = config.lang || 'en';
+
+const t = msg => i18n.t(msg)({lang, domain: 'acl'});
+
+errorSetup();
 
 // jshint maxstatements: 40, maxcomplexity: 20
 
@@ -52,19 +58,19 @@ process.argv.forEach(function (val) {
 
 if (!params.aclDir) {
   if (!params.roles.length) {
-    console.error('Не указаны роли!');
+    console.error(t('No roles specified!'));
     process.exit(130);
   }
 
   if (!params.users.length && !params.resources.length && !params.permissions.length) {
-    console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
+    console.error(t('No users nor resources nor permissions are specified!'));
     process.exit(130);
   }
 }
 
 let sysLog = new IonLogger(config.log || {});
 
-// Связываем приложение
+// Application binding
 di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   .then(scope =>
     di(
@@ -99,7 +105,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   })
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Права назначены');
+    console.info(t('Permissions granted'));
     process.exit(0);
   })
   .catch((err) => {

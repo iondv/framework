@@ -12,7 +12,7 @@ const Logger = require('core/interfaces/Logger');
  * @param {Response} res
  * @param {String | Boolean} userMsg
  */
-module.exports = function (scope, err, res, userMsg) {
+module.exports = function (scope, err, res, userMsg, lang) {
   if (scope.logRecorder) {
     scope.logRecorder.stop();
   }
@@ -25,9 +25,9 @@ module.exports = function (scope, err, res, userMsg) {
 
   let msg;
   if (typeof userMsg === 'boolean' && userMsg) {
-    msg = 'Внутренняя ошибка сервера.';
+    msg = 'Internal server error.';
   } else {
-    msg = userMsg || (err instanceof Error ? err.message : err);
+    msg = userMsg || (err instanceof Error ? err.getMessage(lang) : err);
   }
 
   if (res) {

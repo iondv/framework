@@ -10,7 +10,10 @@ const path = require('path');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
+const i18n = require('core/i18n');
+const lang = config.lang || 'en';
+const t = msg => i18n.t(msg)({lang, domain: 'bg'});
+errorSetup();
 
 var IonLogger = require('core/impl/log/IonLogger');
 
@@ -56,7 +59,7 @@ if (process.argv.length > 2) {
     )
     .then(scope => scope.dataSources.disconnect())
     .then(() => {
-      console.info('Настройка выполнена успешно.');
+      console.info(t('Setup complete.'));
       process.exit(0);
     })
     .catch((err) => {

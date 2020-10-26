@@ -10,7 +10,10 @@ const IonLogger = require('core/impl/log/IonLogger');
 
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
-errorSetup(config.lang || 'ru');
+const i18n = require('core/i18n');
+const lang = config.lang || 'en';
+const t = msg => i18n.t(msg)({lang, domain: 'schedule'});
+errorSetup();
 
 
 // jshint maxcomplexity: 20, maxstatements: 30
@@ -35,7 +38,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
     }
   )
   .then(() => {
-    sysLog.info('Задания запущены');
+    sysLog.info(t('Schedule started'));
   })
   .catch((err) => {
     sysLog.error(err);
