@@ -1,13 +1,5 @@
 /*eslint "require-jsdoc": off,  "no-console": off, "no-sync": off*/
 
-// TODO размер для прода
-//   - Можно удалять папки views/**/vendor после установки
-//   - Можно удалять .git
-//   - Можно удалять пакеты gulp из devDependences
-// TODO Оптимизация установки
-//   - копирование вендосрких файлов - лучше через pipe с кешем гулпа - т.к. часто эти папки уже есть
-//   - минификация - затратно, каждый раз делать
-
 const {series} = require('gulp');
 const gulpSrc = require('gulp').src;
 const gulpDest = require('gulp').dest;
@@ -40,7 +32,7 @@ assert.ok(process.env.NODE_PATH,
 const nodePath = process.env.NODE_PATH.toLowerCase();
 
 assert.notEqual(nodePath.indexOf(__dirname.toLowerCase()), -1,
-  '\x1b[93;41mNODE_PATH must contain the path to the application launch directory.\x1b[0m\nСейчас:           ' +
+  '\x1b[93;41mNODE_PATH must contain the path to the application launch directory.\x1b[0m\n          ' +
              nodePath + '\nMust contain: ' + __dirname.toLowerCase());
 
 
@@ -236,7 +228,7 @@ function npm(pathDir) {
   return function () {
     return new Promise(function (resolve, reject) {
       let npmArgs = ['install', '--no-save', '--prefer-offline']; // TODO '--only=prod' if use - delete gulp in devDependce
-      // try { // 20200207 убрали ci - из-за него много проблем
+      // try {
       //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
       //   console.log('Installing CI the backend packages for the path ' + pathDir); // TODO '--only=prod' if use - delete gulp in devDependce
       //   npmArgs = ['ci', '--prefer-offline'];
@@ -270,7 +262,7 @@ function frontendInstall(pathDir) {
         // }
         let npmArgs = ['install', '--only=prod', '--no-save', '--prefer-offline'];
 
-        // try { // 20200207 убрали ci из-за него много проблем
+        // try {
         //   fs.accessSync(path.join(pathDir, 'package-lock.json'));
         //   console.log('Installing CI the frontend packages for the path ' + pathDir);
         //   npmArgs = ['ci', '--only=prod', '--prefer-offline'];

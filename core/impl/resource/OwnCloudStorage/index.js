@@ -23,12 +23,15 @@ const {
   slashChecker,
   ensureDirSep
 } = require('./util');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'owncloud'});
 
 // jshint maxstatements: 100, maxcomplexity: 20
 
 function OwnCloudStorage(config) {
   if (!config.url || !config.login || !config.password) {
-    throw new Error('не указаны параметры подключения к OwnCloud (url, login, password)');
+    throw new Error(t('OwnCloud connection parameters (url, login, password) are not specified.'));
   }
 
   let _this = this;
@@ -108,7 +111,10 @@ function OwnCloudStorage(config) {
           .on('response', (res) => {
             obtained = true;
             if (res.statusCode !== 200) {
-              return callback(new Error('Не удалось получить файл из удаленного хранилища! Код ошибки (' + res.statusCode + ').'));
+              return callback(new Error(format(
+                t('Failed to obtain file from remote storage! Error code (%s).'),
+                res.statusCode
+              )));
             }
 
             let piper = getStream.pipe;
@@ -153,7 +159,7 @@ function OwnCloudStorage(config) {
           return reject(err);
         }
         if (!body) {
-          return reject(new Error(`Empty response, status: ${res.statusCode}`));
+          return reject(new Error(format(t('Empty response, status: %s'), res.statusCode)));
         }
         try {
           let dom = new Dom();
@@ -262,7 +268,7 @@ function OwnCloudStorage(config) {
       directory = ensureDirSep(directory);
 
       if (!data) {
-        return Promise.reject(new Error('Нет данных для приема в хранилище.'));
+        return Promise.reject(new Error(t('No data to put into storage.')));
       }
 
       let fn = null;
@@ -282,7 +288,7 @@ function OwnCloudStorage(config) {
       }
 
       if (!d) {
-        return Promise.reject(new Error('Переданы данные недопустимого типа!'));
+        return Promise.reject(new Error(t('Data of inapropriate type received!')));
       }
 
       let reader;
@@ -417,11 +423,11 @@ function OwnCloudStorage(config) {
       _this.fetch([decodeURI(fileId)])
         .then((files) => {
           if (!files[0]) {
-            return res.status(404).send('Файл не найден!');
+            return res.status(404).send('File not found!');
           }
           return files[0].getContents()
             .then(respondFile(req, res))
-            .catch(() => res.status(404).send('Файл не найден!'));
+            .catch(() => res.status(404).send('File not found!'));
         })
         .catch((err) => {
           res.status(500).send(err.message);
@@ -448,7 +454,7 @@ function OwnCloudStorage(config) {
     if (result) {
       return result;
     } else {
-      throw new Error('Передан неправильный путь до директории');
+      throw new Error(t('Invalid path to directory specified.'));
     }
   }
 
@@ -709,7 +715,7 @@ function OwnCloudStorage(config) {
         return findShare(id);
       }
     }
-    return Promise.reject(new Error('Передан неправильный путь до share'));
+    return Promise.reject(new Error('Invalid path for share specified.'));
   }
 
   function parseUserPermissions(user) {
@@ -762,7 +768,7 @@ function OwnCloudStorage(config) {
     try {
       dirId = parseDirId(id);
     } catch (err) {
-      return Promise.reject(new Error('Передан неправильный путь до директории'));
+      return Promise.reject(new Error('Invalid path to directory specified'));
     }
     return sharesApi.get(dirId)
       .then((shares) => {

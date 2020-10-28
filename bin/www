@@ -5,15 +5,17 @@ const config = require('../config');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const server = require('lib/server');
+const {t} = require('core/i18n');
+const opts = {domain: 'www'};
 
 server({
   config,
   sysLog,
   onStart: (scope) => {
     if (config.runJobs) {
-      sysLog.info('Запуск заданий по расписанию');
+      sysLog.info(t('Starting scheduler')(opts));
       return scope.scheduler.start().then(() => {
-        sysLog.info('Подсистема заданий по расписанию запущена');
+        sysLog.info(t('Scheduler started')(opts));
       });
     }
   }

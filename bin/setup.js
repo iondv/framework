@@ -9,9 +9,10 @@ const di = require('core/di');
 const path = require('path');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const extend = require('extend');
 const i18n = require('core/i18n');
-const lang = config.lang || 'en';
+i18n.default(config.lang);
 const t = msg => i18n.t(msg)({lang, domain: 'bg'});
 errorSetup();
 
@@ -40,7 +41,8 @@ if (process.argv.length > 2) {
     }
   }
 
-  di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+  i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+    .then(di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
     .then(scope =>
       di(
         'app',

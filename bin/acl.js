@@ -24,9 +24,8 @@ const params = {
 
 var setParam = false;
 
-const lang = config.lang || 'en';
-
-const t = msg => i18n.t(msg)({lang, domain: 'acl'});
+i18n.default(config.lang);
+const t = msg => i18n.t(msg)({domain: 'acl'});
 
 errorSetup();
 
@@ -56,22 +55,24 @@ process.argv.forEach(function (val) {
   }
 });
 
-if (!params.aclDir) {
-  if (!params.roles.length) {
-    console.error(t('No roles specified!'));
-    process.exit(130);
-  }
-
-  if (!params.users.length && !params.resources.length && !params.permissions.length) {
-    console.error(t('No users nor resources nor permissions are specified!'));
-    process.exit(130);
-  }
-}
-
 let sysLog = new IonLogger(config.log || {});
 
 // Application binding
-di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+  .then(() => {
+    if (!params.aclDir) {
+      if (!params.roles.length) {
+        console.error(t('No roles specified!'));
+        process.exit(130);
+      }
+    
+      if (!params.users.length && !params.resources.length && !params.permissions.length) {
+        console.error(t('No users nor resources nor permissions are specified!'));
+        process.exit(130);
+      }
+    }    
+    return di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']);
+  })
   .then(scope =>
     di(
       'app',

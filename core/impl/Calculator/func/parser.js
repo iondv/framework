@@ -5,6 +5,9 @@ const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 const Errors = require('core/errors/data-repo');
 const merge = require('merge');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'formula'});
 
 function findComma(src, start) {
   let pos = src.indexOf(',', start);
@@ -43,7 +46,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
       while (open > 0) {
         closeBracketPos = argsSrc.indexOf(')', bp);
         if (closeBracketPos < 0) {
-          throw new Error('Ошибка синтаксиса формулы во фрагменте "' + argsSrc + '".');
+          throw new Error(format(t('Syntax error in formula fragment "%s".'), argsSrc));
         }
 
         openBracketPos = argsSrc.indexOf('(', bp);
@@ -59,7 +62,7 @@ function parseArgs(argsSrc, funcLib, dataRepoGetter, options) {
             bp = openBracketPos + 1;
           }
         } else {
-          throw new Error('syntax error in expression "' + argsSrc + '": bracket not closed');
+          throw new Error(format(t('Syntax error in expression "%s": bracket not closed'), argsSrc));
         }
       }
       result.push(
@@ -304,7 +307,7 @@ function evaluate(formula, funcLib, dataRepoGetter, options) {
       let f = funcLib[func];
       let closeBracketPos = formula.lastIndexOf(')');
       if (closeBracketPos < 0) {
-        throw new Error('Ошибка синтаксиса формулы во фрагменте "' + formula + '"');
+        throw new Error(format(t('Syntax error in formula fragment "%s"'), formula));
       }
       let args = parseArgs(
         formula.substring(pos + 1, closeBracketPos).trim(),
@@ -318,7 +321,7 @@ function evaluate(formula, funcLib, dataRepoGetter, options) {
       }
       return funcLib[func](args);
     } else {
-      throw new Error('Не найдена функция ' + func);
+      throw new Error(format(t('Function %s not found'), func));
     }
   }
 

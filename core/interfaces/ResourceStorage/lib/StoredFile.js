@@ -2,6 +2,8 @@
  * Created by kras on 26.07.16.
  */
 'use strict';
+const i18n = require('core/i18n');
+const t = msg => i18n.t(msg)({domain: 'filestorage'});
 
 function StoredFile (id, link, options, streamGetter) {
   this.id = id;
@@ -24,7 +26,7 @@ function StoredFile (id, link, options, streamGetter) {
               return reject(err);
             }
             if (!stream) {
-              return reject(new Error('Не удалось получить поток чтения файла.'));
+              return reject(new Error(t('Failed to obtain file reading stream.')));
             }
             return resolve({
               name: this.name,
@@ -36,7 +38,7 @@ function StoredFile (id, link, options, streamGetter) {
           reject(err);
         }
       } else {
-        reject(new Error('Не указана функция получения потока ввода для файла.'));
+        reject(new Error(t('Function for getting file input stream not specified.')));
       }
     });
   };

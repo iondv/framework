@@ -11,29 +11,28 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const extend = require('extend');
-const i18n = require('core/i18n');
-const lang = config.lang || 'en';
-const t = msg => i18n.t(msg)({lang, domain: 'bg'});
 const {format} = require('util');
+const i18n = require('core/i18n');
+i18n.default(config.lang);
+const t = msg => i18n.t(msg)({domain: 'bg'});
 errorSetup();
 
 let jobName = false;
-
-if (process.argv.length > 2) {
-  jobName = process.argv[2];
-} else {
-  console.error(t('Job name not specified'));
-  process.exit(130);
-}
-
 let job = false;
 let notifier = null;
 
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents'])
+i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+  .then(() => {
+    if (process.argv.length > 2) {
+      jobName = process.argv[2];
+    } else {
+      console.error(t('Job name not specified'));
+      process.exit(130);
+    }    
+    return di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']);
+  })
   .then(scope =>
     di(
       'app',

@@ -1,4 +1,8 @@
 const Scheduler = require('core/impl/Scheduler');
+const i18n = require('core/i18n');
+const {format} = require('util');
+
+const t = msg => i18n.t(msg)({domain: 'accounts'});
 
 /**
  * Created by krasilneg on 08.11.18.
@@ -76,7 +80,7 @@ function SchedulerAgent(options) {
     try {
       let jobs = options.settings.get('jobs');
       if (!jobs.hasOwnProperty(job)) {
-        throw new Error(`Задание ${job} не найдено в конфигурации`);
+        throw new Error(format(t('Job %s not found in the configuration'), job));
       }
 
       return setStatus(job, Scheduler.statusCodes.MANUALLY_STARTING);
@@ -93,7 +97,7 @@ function SchedulerAgent(options) {
     try {
       let jobs = options.settings.get('jobs');
       if (!jobs.hasOwnProperty(job)) {
-        throw new Error(`Задание ${job} не найдено в конфигурации.`);
+        throw new Error(format(t('Job %s not found in the configuration'), job));
       }
       return setStatus(job, Scheduler.statusCodes.STARTING);
     } catch (err) {
@@ -186,7 +190,7 @@ function SchedulerAgent(options) {
   this.saveJob = function (jobName, jobSettings) {
     let jobs = options.settings.get('jobs');
     if (!jobSettings || !jobSettings.launch || !jobSettings.worker || !jobSettings.di) {
-      throw new Error('Переданы некорректные параметры задания.');
+      throw new Error(t('Invalid job parameters specified.'));
     }
     jobs[jobName] = jobSettings;
     options.settings.set('jobs', jobs, true);

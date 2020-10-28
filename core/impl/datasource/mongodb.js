@@ -17,6 +17,9 @@ const moment = require('moment');
 const Operations = require('core/FunctionCodes');
 const DsOperations = require('core/DataSourceFunctionCodes');
 const fs = require('fs');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'datasource'});
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';
@@ -165,7 +168,7 @@ function MongoDs(config) {
 
     if (config.url && typeof config.url === 'object') {
       if (!config.url.hosts) {
-        throw new Error('Не указаны настройки соединения с сервером БД.');
+        throw new Error(t('Connection to database server parameters are not specified.'));
       }
 
       let uri = config.url.hosts;
@@ -197,7 +200,7 @@ function MongoDs(config) {
       }
       return 'mongodb://' + uri;
     }
-    throw new Error('Не указаны настройки соединения с сервером БД.');
+    throw new Error(t('Connection to database server parameters are not specified.'));
   }
 
   function readFiles(opts, nm) {
@@ -283,7 +286,7 @@ function MongoDs(config) {
                 _this.db = _this.client.db();
                 _this.busy = false;
                 _this.isOpen = true;
-                log.info('Получено соединение с базой: ' + _this.db.s.databaseName);
+                log.info(format(t('Connected to database: %s'), _this.db.s.databaseName));
                 _this._ensureIndex(AUTOINC_COLLECTION, {__type: 1}, {unique: true})
                   .then(() => _this._ensureIndex(GEOFLD_COLLECTION, {__type: 1}, {unique: true}))
                   .then(
@@ -344,7 +347,6 @@ function MongoDs(config) {
   function getCollection(type) {
     return openDb()
       .then(function () {
-        // Здесь мы перехватываем автосоздание коллекций, чтобы вставить хук для создания индексов, например
         return new Promise((resolve, reject) => {
           _this.db.collection(type, {strict: true}, (err, c) => {
             if (!c) {
@@ -620,7 +622,7 @@ function MongoDs(config) {
       case 'd': interval = {$multiply: [interval, 86400000]};break;
       case 'm': interval = {$multiply: [interval, 2626200000]};break;
       case 'y': interval = {$multiply: [interval, 31514400000]};break;
-      default: throw 'Передан некорректный тип интервала дат!';
+      default: throw new Error(t('Invalid date interval type specified!'));
     }
     return {$add: [base, interval]};
   }
@@ -709,7 +711,7 @@ function MongoDs(config) {
       case 'min': result = {$divide: [{$subtract: [d1, d2]}, 60000]};break;
       case 'h': result = {$divide: [{$subtract: [d1, d2]}, 3600000]};break;
       case 'd': result = {$divide: [{$subtract: [d1, d2]}, 86400000]};break;
-      default: throw 'Передан некорректный тип интервала дат!';
+      default: throw new Error(t('Invalid date interval type specified!'));
     }
 
     if (floor) {
@@ -998,7 +1000,7 @@ function MongoDs(config) {
                   break;
               }
             } else if (oper === Operations.LIKE) {
-              throw new Error('Операция LIKE не может быть использована в выражении для поля выборки.');
+              throw new Error(t('LIKE operation cannot be used for result set field expression.'));
             } else {
               return {[o]: parseExpression(e[oper], attributes, joinedSources, explicitJoins, joins, counter)};
             }
@@ -1268,7 +1270,7 @@ function MongoDs(config) {
   function processJoins(attributes, joins, result, prefix) {
     if (joins.length) {
       if (!attributes || !attributes.length) {
-        throw new Error('Не передан список атрибутов необходимый для выполнения объединений.');
+        throw new Error(t('Attribute list nescessary for performing join is not specified.'));
       }
       joins.forEach((join) => {
         let left = (prefix ? prefix + '.' : '') + join.left;
@@ -1360,7 +1362,7 @@ function MongoDs(config) {
       let result = [];
       for (let i = 0; i < find.length; i++) {
         let tmp = producePrefilter(attributes, find[i], joins, explicitJoins, analise, counter, prefix);
-        //if (tmp !== null) { // TODO Потенциальная жопа с парсингом аргументов логических атрибутов
+        //if (tmp !== null) { // TODO Potential problems with boolean attributes parsing
           result.push(tmp);
         //}
       }

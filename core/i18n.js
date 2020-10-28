@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const translators = {};
+let defaultLocale = 'en';
 
 const _ = f => {
   return new Promise((resolve, reject) => f(resolve, reject));
@@ -43,7 +44,7 @@ const loadLang = (lang, dir, domain = null) => {
   });
 }
 
-module.exports.register = (dir) => {
+module.exports.load = (dir) => {
   return _((resolve, reject) => {
     if (!dir) return resolve();
     fs.readdir(dir, (err, nms) => {
@@ -60,16 +61,37 @@ module.exports.register = (dir) => {
   });
 };
 
-module.exports.t = msg => ({lang, plural, domain}) => {
-  if (!translators.hasOwnProperty(lang)) {
-    throw new Error(`Locale ${lang} is not initialized.`);
+module.exports.default = lang => {
+  defaultLocale = lang || defaultLocale;
+};
+
+module.exports.supported = () => {
+  return Object.keys(translators);
+}
+
+module.exports.t = (msg, ...args) => {
+  let plural;
+  let plural_msg;
+
+  if (args.length > 0) {
+    plural_msg = args[0];
+    if (args.length > 1) {
+      plural = args[1];
+    }
   }
-  if (typeof domain != 'undefined') {
+
+  return ({lang, domain}) => {
+    lang = lang || defaultLocale;
+    if (!translators.hasOwnProperty(lang)) {
+      return (typeof plural == 'undefined') ? msg : (plural_msg || msg);
+    }
+    if (typeof domain != 'undefined') {
+      return (typeof plural == 'undefined') ?
+        translators[lang].dgettext(domain, msg) :
+        translators[lang].dngettext(domain, msg, plural_msg || msg, plural);
+    }
     return (typeof plural == 'undefined') ?
-      translators[lang].dgettext(domain, msg) :
-      translators[lang].dngettext(domain, msg, msg, plural);
-  }
-  return (typeof plural == 'undefined') ?
-    translators[lang].gettext(msg) :
-    translators[lang].ngettext(msg, msg, plural);
+      translators[lang].gettext(msg) :
+      translators[lang].ngettext(msg, plural_msg || msg, plural);
+  };
 };

@@ -9,16 +9,17 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const extend = require('extend');
 const i18n = require('core/i18n');
-const lang = config.lang || 'en';
-const t = msg => i18n.t(msg)({lang, domain: 'export'});
+i18n.default(config.lang);
+const t = msg => i18n.t(msg)({domain: 'export'});
 
 errorSetup();
 
-var sysLog = new IonLogger({});
+const sysLog = new IonLogger({});
 
-var params = {
+const params = {
   dst: '../out',
   ver: null,
   ns: '',
@@ -49,10 +50,12 @@ process.argv.forEach(function (val) {
 });
 
 // Application binding
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents'])
+i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+  .then(di('boot', config.bootstrap,
+    {
+      sysLog: sysLog
+    }, null, ['rtEvents'])
+  )
   .then(scope =>
     di(
       'app',

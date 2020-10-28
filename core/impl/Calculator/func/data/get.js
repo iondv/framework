@@ -5,6 +5,8 @@
 const calc = require('../util').calculate;
 const F = require('core/FunctionCodes');
 const Item = require('core/interfaces/DataRepository').Item;
+const i18n = require('core/i18n');
+const t = msg => i18n.t(msg)({domain: 'formula'});
 
 /**
  * @param {DataRepository} dataRepo
@@ -27,7 +29,7 @@ module.exports = function (dataRepo) {
           if (n > 0) {
             if (n === 1) {
               if (!(args[0] instanceof Item)) {
-                throw new Error('Функции выборки не переданы все необходимые аргументы!');
+                throw new Error(t('Nescessary arguments are not specified for fetch function!'));
               }
               return dataRepo.getItem(args[0], null, options);
             } else if (n === 2) {
@@ -47,7 +49,7 @@ module.exports = function (dataRepo) {
                 .then(data => data.length ? data[0] : null);
             }
           } else {
-            throw new Error('Функции выборки не переданы все необходимые аргументы!');
+            throw new Error(t('Nescessary arguments are not specified for fetch function!'));
           }
         });
       };

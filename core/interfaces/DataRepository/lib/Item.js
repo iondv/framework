@@ -6,6 +6,9 @@
 const Property = require('./Property');
 const PropertyTypes = require('core/PropertyTypes');
 const cast = require('core/cast');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 /**
  * @param {String} id
@@ -203,7 +206,7 @@ function Item(id, base, classMeta, options) {
     if ((dot = nm.indexOf('.')) > -1) {
       const pm = cm.getPropertyMeta(nm.substring(0, dot));
       if (!pm)
-        throw new Error(`Не найден атрибут ${nm} класса ${cm.getCanonicalName()}`);
+        throw new Error(format(t('Attribute %s of class %s not found'), nm, cm.getCanonicalName()));
       if (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION)
         return findPropertyMeta(nm.substring(dot + 1), pm._refClass);
       return null;

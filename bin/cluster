@@ -5,6 +5,11 @@ const config = require('../config');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const di = require('core/di');
+const i18n = require('core/i18n');
+const {format} = require('util');
+
+i18n.default(config.lang);
+const t = msg => i18n.t(msg)({domain: 'cluster'});
 const extend = require('extend');
 
 function killEmAll() {
@@ -30,18 +35,21 @@ if (cluster.isMaster) {
   }
 
   cluster.on('exit', (worker) => {
-    sysLog.warn(`Приложение ION (pid:${worker.process.pid}) остановлено.`);
+    sysLog.warn(format(t('ION application (pid: %s) stopped.'), worker.process.pid));
     if (!stopping) {
       cluster.fork();
     }
   });
 
   cluster.on('listening', (worker, address) => {
-    sysLog.info(`Приложение ION (pid:${worker.process.pid}) запущено по адресу ${address.address || 'localhost'}:${address.port}`);
+    sysLog.info(format(
+      t('ION application (pid: %s) started on address %s:%s'),
+      worker.process.pid, address.address || 'localhost', address.port
+    ));
   });
 
   process.on('SIGHUP', () => {
-    sysLog.warn('Перезагрузка кластера приложений ION');
+    sysLog.warn(t('ION application cluster restart'));
     killEmAll();
   });
 
@@ -50,9 +58,9 @@ if (cluster.isMaster) {
     killEmAll();
   });
 
-  sysLog.info(`Запуск кластера приложений ION (pid:${process.pid})`);
-
-  let p = Promise.resolve();
+  let p = i18n.load(path.normalize(path.join(__dirname, '..', 'i18n'))).then(() => {
+    sysLog.info(format(t('Starting ION application cluster (pid: %s)'), process.pid));
+  });
   for (let i = 1; i < numWorkers; i++) {
     p = p.then(() => {
       let w = cluster.fork();
@@ -78,9 +86,9 @@ if (cluster.isMaster) {
       )
       .then(
         (scope) => {
-          sysLog.info('Запуск заданий по расписанию');
+          sysLog.info(t('Starting scheduler'));
           return scope.scheduler.start().then(() => {
-            sysLog.info('Подсистема заданий по расписанию запущена');
+            sysLog.info(t('Scheduler started'));
           });
         }
       )

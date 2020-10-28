@@ -17,6 +17,9 @@ const Logger = require('core/interfaces/Logger');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 // const F = require('core/FunctionCodes');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'data-repo'});
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {
@@ -563,7 +566,7 @@ function SecuredDataRepository(options) {
       let p = item.property(pn);
       if (!p) {
         if (options.log instanceof Logger) {
-          options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + pn + ' класса ' + item.getClassName());
+          options.log.warn(format(t('Attribute %s of class %s was not found on ABAC check'), pn, item.getClassName()));
         }
         return false;
       }
@@ -815,7 +818,7 @@ function SecuredDataRepository(options) {
     let pm = findPm(cm, tmp);
     if (!pm) {
       if (options.log instanceof Logger) {
-        options.log.warn('При проверке динамической безопасности не удалось найти атрибут ' + tmp.join('.') + ' класса ' + cm.getCanonicalName());
+        options.log.warn(format(t('Attribute %s of class %s was not found on ABAC check'), tmp.join('.'), cm.getCanonicalName()));
       }
       return [];
     }

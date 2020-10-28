@@ -6,7 +6,7 @@ const codes = require('core/errors/file-storage');
 const {t} = require('core/i18n');
 
 module.exports = {
-  [codes.BAD_DATA]: t(`Некоррекный формат данных.`),
-  [codes.NO_DIR]: t(`Директория '%dir' не найдена.`),
-  [codes.NO_FILE]: t(`Файл '%file' не найден.`)
+  [codes.BAD_DATA]: t(`Invalid data format.`),
+  [codes.NO_DIR]: t(`Directory '%dir' not found.`),
+  [codes.NO_FILE]: t(`File '%file' not found.`)
 };

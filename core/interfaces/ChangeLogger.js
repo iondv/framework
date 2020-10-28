@@ -2,6 +2,8 @@
  * Created by kras on 28.04.16.
  */
 'use strict';
+const i18n = require('core/i18n');
+const t = msg => i18n.t(msg)({domain: 'changelog'});
 
 const logRecordTypes = {
   CREATE: 'CREATE',
@@ -96,7 +98,7 @@ function ChangeLogger() {
    */
   this.logChange = function (type, objectClass, objectId, updates, base) {
     if (!logRecordTypes.hasOwnProperty(type.toUpperCase())) {
-      throw new Error('Неверно указан тип записи журнала изменений!');
+      throw new Error(t('Invalid changelog journal record type specified!'));
     }
     return this._log(type.toUpperCase(), objectClass, objectId, updates, base || {});
   };
@@ -117,14 +119,14 @@ function ChangeLogger() {
   this.getChanges = function (options) {
     let {className, id, since, till, author, type} = options;
     if (!(className || id || since || till || author || type)) {
-      throw new Error('Не указаны критерии выборки записей лога изменений');
+      throw new Error(t('Changelog record fetch criteria not specified'));
     }
 
     if (
       since && !(since instanceof Date) ||
       till && !(till instanceof Date)
     ) {
-      throw new Error('Интервал должен быть задан объектами класса Date!');
+      throw new Error(t('Interval should be specified as Date instance!'));
     }
 
     if (since && till && since.getTime() > till.getTime()) {

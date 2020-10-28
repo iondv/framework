@@ -1,10 +1,8 @@
 /**
  * Created by krasilneg on 25.04.17.
  */
-const merge = require('merge')
+const merge = require('merge');
 const systemBase = {};
-
-let defaultLocale = 'en';
 
 const defaultBase = () => ({
   get: id => id,
@@ -26,7 +24,7 @@ const strings = (prefix, id, params, lang) => {
     if (systemBase.hasOwnProperty(prefix)) {
       const base = systemBase[prefix];
       if (base.has(id))
-        str = base(lang || defaultLocale, prefix).get(id);
+        str = base(lang, prefix).get(id);
     }
     params && Object.keys(params).forEach(p => {
       str = str.replace(`%${p}`, params[p]);
@@ -102,7 +100,7 @@ module.exports.getBase = (prefix) => {
         const bases = Object.values(systemBase);
         for (base of bases) {
           if (base.has(id)) {
-            return base(lang || defaultLocale, prefix).get(id);
+            return base(lang, prefix).get(id);
           }
         }
         return id;
@@ -111,15 +109,11 @@ module.exports.getBase = (prefix) => {
         let result = {};
         const bases = Object.values(systemBase);
         for (base of bases) {
-            result = merge(result, base(lang || defaultLocale, prefix).toJSON());
+            result = merge(result, base(lang, prefix).toJSON());
         }
         return result;
       }  
     })
   }
   return systemBase[prefix] || defaultBase;
-};
-
-module.exports.setDefaultLocale = (lang) => {
-  defaultLocale = lang;
 };

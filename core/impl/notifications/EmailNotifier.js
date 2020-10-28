@@ -2,6 +2,9 @@ const INotificationSender = require('core/interfaces/NotificationSender');
 const resolvePath = require('core/resolvePath');
 const ejs = require('ejs');
 const path = require('path');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'notifier'});
 
 class EmailNotifier extends INotificationSender {
   /**
@@ -88,7 +91,7 @@ class EmailNotifier extends INotificationSender {
           )
           .catch((err) => {
             if (this.log) {
-              this.log.warn('Не удалось отправить оповещения на адреса электронной почты: ', rcvrs.join(', '));
+              this.log.warn(format(t('Failed to send notifications to those emails: %s'), rcvrs.join(', ')));
               this.log.error(err);
             }
           });
@@ -116,7 +119,7 @@ class EmailNotifier extends INotificationSender {
             )
             .catch((err) => {
               if (this.log) {
-                this.log.warn('Не удалось отправить оповещение на электронную почту ' + reciever.email());
+                this.log.warn(format(t('Failed to send notification to email %s'), reciever.email()));
                 this.log.error(err);
               }
             });

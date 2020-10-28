@@ -5,20 +5,20 @@ const codes = require('core/errors/data-repo');
 const {t} = require('core/i18n');
 
 module.exports = {
-  [codes.ITEM_EXISTS]: t(`%class c таким атрибутом '%attr' уже существует.`),
-  [codes.ITEM_EXISTS_MULTI]: t(`%class c такими атрибутами '%attr' уже существует.`),
-  [codes.ITEM_NOT_FOUND]: t(`Объект '%info' не найден.`),
-  [codes.EXISTS_IN_COL]: t(`Объект '%info' уже присутствует в коллекции '%col'.`),
-  [codes.BAD_PARAMS]: t(`Некорректные параметры переданы методу '%method'.`),
-  [codes.FILE_ATTR_SAVE]: t(`Не удалось сохранить данные в файловый атрибут '%attr' объекта '%info'.`),
-  [codes.FILE_ATTR_LOAD]: t(`Не удалось загрузить файловый атрибут '%attr'.`),
-  [codes.NO_COLLECTION]: t(`В объекте %info отсутствует коллекция '%attr'.`),
-  [codes.INVALID_META]: t(`Ошибка в мета-данных класса объекта '%info'.`),
-  [codes.COMPOSITE_KEY]: t(`Использование составных ключей в операции '%oper' не поддерживается.`),
-  [codes.FAIL]: t(`Действие '%operation' не было выполнено для объекта '%info'.`),
-  [codes.MISSING_REQUIRED]: t(`Не заполнены обязательные атрибуты %info.`),
-  [codes.NO_KEY_SPEC]: t(`Не указано значение ключевого атрибута %info.`),
-  [codes.NO_BACK_REF]: t(`По обратной ссылке %backRef не найден атрибут %backAttr.`),
-  [codes.UNEXPECTED_ASYNC]: t(`При расчете значения по умолчанию атрибута %info выполнена асинхронная операция.`),
-  [codes.PERMISSION_LACK]: t(`Недостаточно прав для выполнения действия`)
+  [codes.ITEM_EXISTS]: t(`%class with this '%attr' value already exists.`),
+  [codes.ITEM_EXISTS_MULTI]: t(`%class having same values of '%attr' already exists.`),
+  [codes.ITEM_NOT_FOUND]: t(`Object '%info' not found.`),
+  [codes.EXISTS_IN_COL]: t(`Object '%info' is aleady in collection '%col'.`),
+  [codes.BAD_PARAMS]: t(`Invalid parameters specified for method '%method'.`),
+  [codes.FILE_ATTR_SAVE]: t(`Failed to save data to file attribute '%attr' of object '%info'.`),
+  [codes.FILE_ATTR_LOAD]: t(`Failed to load file attribute '%attr'.`),
+  [codes.NO_COLLECTION]: t(`collection '%attr' is abscent in object %info.`),
+  [codes.INVALID_META]: t(`Error in meta-model of object '%info'.`),
+  [codes.COMPOSITE_KEY]: t(`Using complex keys in operation '%oper' is not supported yet.`),
+  [codes.FAIL]: t(`'%operation' action was not applied to object '%info'.`),
+  [codes.MISSING_REQUIRED]: t(`Required attributes are not set for object %info.`),
+  [codes.NO_KEY_SPEC]: t(`Key attribute value not set for object %info.`),
+  [codes.NO_BACK_REF]: t(`Attribute %backAttr not found for back reference %backRef.`),
+  [codes.UNEXPECTED_ASYNC]: t(`Async operation performed when calculation the default value for attribute %info.`),
+  [codes.PERMISSION_LACK]: t(`Not enough permissions for action`)
 };

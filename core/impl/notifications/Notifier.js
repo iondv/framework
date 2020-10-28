@@ -9,6 +9,9 @@ const resolvePath = require('core/resolvePath');
 const path = require('path');
 const User = require('core/User');
 const merge = require('merge');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'notifier'});
 
 class Notifier extends INotifier {
 
@@ -48,7 +51,7 @@ class Notifier extends INotifier {
    */
   _notify(notification) {
     if (!notification.message) {
-      throw new Error('Не указан текст уведомления.');
+      throw new Error('Notification text not specified.');
     }
 
     if (!notification.type) {
@@ -144,7 +147,7 @@ class Notifier extends INotifier {
                     )
                     .catch((err) => {
                       if (this.log) {
-                        this.log.warn('Ошибка при отправке уведомления в ' + dest);
+                        this.log.warn(format(t('Notification sending to %s failed'), dest));
                         this.log.info(notification.subject);
                         this.log.info(notification.message);
                         this.log.error(err);
@@ -193,7 +196,7 @@ class Notifier extends INotifier {
               })
               .catch((err) => {
                 if (this.log) {
-                  this.log.warn('Не удалось отправить уведомление');
+                  this.log.warn(t('Failed to send notification'));
                   this.log.info(notification.subject);
                   this.log.info(notification.message);
                   this.log.error(err);
@@ -212,7 +215,7 @@ class Notifier extends INotifier {
         if (this.log) {
           this.log.error(err);
         }
-        throw new Error('Не удалось отозвать уведомление ' + id);
+        throw new Error(format(t('Failed to revoke notification %s'), id));
       });
   }
 

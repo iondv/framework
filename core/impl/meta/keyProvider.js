@@ -5,6 +5,9 @@
 
 const KeyProvider = require('core/interfaces/KeyProvider');
 const cast = require('core/cast');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 /**
  * @param {{}} options
@@ -60,7 +63,7 @@ function MetaKeyProvider(options) {
       if (keyProps.length === 1) {
         let pm = cm.getPropertyMeta(keyProps[0]);
         if (!pm) {
-          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+          throw new Error(format(t('Attribute %s of class %s not found!'), keyProps[0], cm.getCaption()));
         }
         return {[keyProps[0]]: cast(id, pm.type)};
       }
@@ -69,7 +72,7 @@ function MetaKeyProvider(options) {
       for (let i = 0; i < keyProps.length; i++) {
         let pm = cm.getPropertyMeta(keyProps[i]);
         if (!pm) {
-          throw new Error(`Не найден атрибут ${keyProps[0]} класса ${cm.getCaption()}!`);
+          throw new Error(format(t('Attribute %s of class %s not found!'), keyProps[0], cm.getCaption()));
         }
         result[keyProps[i]] = cast(parts[i], pm.type);
       }

@@ -3,6 +3,8 @@ const OwnCloudError = require('./OwnCloudError');
 const {urlResolver, slashChecker} = require('./util');
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 const requester = require('core/util/request');
+const i18n = require('core/i18n');
+const t = msg => i18n.t(msg)({domain: 'share-api'});
 
 const urlTypes = {
   OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',
@@ -32,7 +34,7 @@ function parseShareResponse(body) {
     try {
       body = JSON.parse(body);
     } catch (err) {
-      throw new OwnCloudError('Некорректный ответ сервера owncloud', null, body);
+      throw new OwnCloudError(t('Invalid Owncloud server response'), null, body);
     }
   }
 
@@ -41,7 +43,7 @@ function parseShareResponse(body) {
   }
 
   if (!body.ocs || !body.ocs.data) {
-    throw new OwnCloudError('Unknown result of operation');
+    throw new OwnCloudError(t('Unknown result of operation'));
   }
 
   return produceShare(body.ocs.data);
@@ -57,7 +59,7 @@ class SharesApi {
    */
   constructor(options) {
     if (!options.url || !options.login || !options.password) {
-      throw new Error('не указаны параметры подключения (url, login, password)');
+      throw new Error(t('Connection parameters (url, login, password) are not specified.'));
     }
 
     this.options = options;
@@ -74,7 +76,7 @@ class SharesApi {
       case ShareAccessLevel.READ: return '1';
       case ShareAccessLevel.WRITE: return '15';
       default:
-        throw new Error('Некорректное значение уровня доступа!');
+        throw new Error(t('Invalid access level value!'));
     }
   }
 
@@ -93,7 +95,7 @@ class SharesApi {
       result = share;
     }
     if (typeof result === 'undefined') {
-      throw new Error('Передан неправильный адрес share');
+      throw new Error(t('Invalid share address specified.'));
     }
 
     return result;
@@ -148,7 +150,7 @@ class SharesApi {
    */
   create(params) {
     if (!params || !params.path || !params.shareType) {
-      return Promise.reject(new Error('mandatory fields (shareType, path) not specified'));
+      return Promise.reject(new Error(t('Mandatory fields (shareType, path) not specified')));
     }
 
     const req = {

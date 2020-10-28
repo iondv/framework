@@ -5,6 +5,8 @@
 'use strict';
 const calc = require('../util').calculate;
 const F = require('core/FunctionCodes');
+const i18n = require('core/i18n');
+const t = msg => i18n.t(msg)({domain: 'formula'});
 
 // jshint maxcomplexity
 module.exports = function (collFunc, af) {
@@ -68,7 +70,7 @@ module.exports = function (collFunc, af) {
               return null;
             }
           } else {
-            throw new Error('Не указан источник данных агрегации!');
+            throw new Error(t('Datasource of aggregation is not specified!'));
           }
         });
       };

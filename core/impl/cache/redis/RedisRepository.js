@@ -6,6 +6,9 @@
 const Repository = require('core/interfaces/Repository');
 const redis = require('redis');
 var LoggerProxy = require('core/impl/log/LoggerProxy');
+const i18n = require('core/i18n');
+
+const t = msg => i18n.t(msg)({domain: 'redis'});
 
 /**
  *
@@ -68,7 +71,7 @@ function RedisRepository(config) {
     if (!config.enabled) {
       return Promise.resolve();
     }
-    log.info('Инициализация Redis');
+    log.info(t('Redis repository initialization'));
     const redisOptions = {host: rHost, port: rPort};
     if (config.connectOptions) {
       for (let p in config.connectOptions) {
@@ -80,7 +83,7 @@ function RedisRepository(config) {
     client = redis.createClient(redisOptions);
     return new Promise((resolve) => {
       client.on('ready', () => {
-        log.info('Redis подключен');
+        log.info(t('Redis repository connected'));
         available = true;
         resolve();
       });

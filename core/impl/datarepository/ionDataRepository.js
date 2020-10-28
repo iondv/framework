@@ -32,6 +32,9 @@ const merge = require('merge');
 const Operations = require('core/FunctionCodes');
 const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'data-repo'});
 
 const EVENT_CANCELED = '____CANCELED___';
 
@@ -480,10 +483,10 @@ function IonDataRepository(options) {
             for (let i = 0; i < src.length; i++) {
               if (itemsByKey.hasOwnProperty(src[i].getItemId())) {
                 if (itemsByKey[src[i].getItemId()].length > 1 && options.log) {
-                  options.log.warn('Обратной ссылке "' +
-                    src[i].property(attr.attrName).getCaption() +
-                    '" соответствует несколько объектов '
-                  );
+                  options.log.warn(format(
+                    t('Several objects match back reference "%s"'),
+                    src[i].property(attr.attrName).getCaption()
+                  ));
                 }
                 src[i].base[attr.attrName] = itemsByKey[src[i].getItemId()][0].getItemId();
                 src[i].references[attr.attrName] = itemsByKey[src[i].getItemId()][0];
@@ -995,7 +998,7 @@ function IonDataRepository(options) {
                   left: cntxt + (pm.backRef ? cm.getKeyProperties()[0] : pm.name),
                   right: pm.backRef ? pm.backRef : rc.getKeyProperties()[0],
                   many: pm.type === PropertyTypes.COLLECTION && !pm.backRef//,
-                  //filter: addDiscriminatorFilter(null, rc) @TODO Вернуть когда уйдем с монги
+                  //filter: addDiscriminatorFilter(null, rc) @TODO uncomment when RDBMS support implemented
                 };
                 joinsHash[jpth] = join;
 
@@ -1340,7 +1343,11 @@ function IonDataRepository(options) {
           .then(() => _this._getItem(props[i]._refClass.getCanonicalName(), data[props[i].name], {needed: {}}))
           .then((check) => {
             if (!isSubclassAllowed(cm, props[i].allowedSubclasses, check.getMetaClass())) {
-              throw new Error(`Обьекты класса "${check.getMetaClass().getCaption()}" недопустимы в ссылке "${cm.getCaption()}.${props[i].caption}".`);
+              throw new Error(format(
+                t('Objects of class "%s" are not valid for reference "%s.%s".'),
+                check.getMetaClass().getCaption(), cm.getCaption(), props[i].caption
+                )
+              );
             }
           });
       }
@@ -1362,7 +1369,7 @@ function IonDataRepository(options) {
         throw err;
       }
       if (options.log) {
-        options.log.warn('Ошибка контроля целостности сохраняемого объекта', err.message);
+        options.log.warn(t('Saved object integrity check failed'), err.message);
       }
     }
     return result;
@@ -1524,8 +1531,13 @@ function IonDataRepository(options) {
           let lost = bro.property(pm.backRef).evaluate();
           if (lost) {
             if (options.log) {
-              options.log.warn('Объект "' + bro.getClassName() + '@' + bro.getItemId +
-                '" был отвязан от "' + lost.getClassName() + '@' + lost.getItemId() + '".');
+              options.log.warn(format(
+                t('Object "%s@%s" was onlinked from object "%s@%s".'),
+                bro.getClassName(),
+                bro.getItemId,
+                lost.getClassName(),
+                lost.getItemId())
+              );
             }
           }
           return options.dataSource.update(tn(rcm), conds, ups);
@@ -1538,8 +1550,11 @@ function IonDataRepository(options) {
         p = options.dataSource.get(tn(rcm), clrf).then((bri) => {
           if (bri) {
             if (options.log) {
-              options.log.warn('Предыдущий объект по ссылке "' + cm.getCaption() + '.' + pm.caption +
-                '" не может быть отвязан. Обратная ссылка не была присвоена.');
+              options.log.warn(format(
+                t('Previous object referenced by attribute "%s.%s" can not be unlinked. Back reference was not assigned.'),
+                cm.getCaption(),
+                pm.caption)
+              );
             }
             return Promise.reject('_NOT_UNLINKED_');
           }
@@ -1947,7 +1962,7 @@ function IonDataRepository(options) {
     try {
       let cm = _this.meta.getMeta(classname, version);
       if (cm.isAbstract()) {
-        throw new Error('Обьект абстрактного класса не может быть создан!');
+        throw new Error(t('Abstract class can not be instantiated!'));
       }
       let rcm = getRootType(cm);
 
@@ -1999,7 +2014,7 @@ function IonDataRepository(options) {
             if (options.skipResult && !(da.refUpdates || da.backRefUpdates)) {
               return Promise.resolve();
             } else {
-              throw new Error('Объект не был найден после создания.');
+              throw new Error(t('Object was not found after creation.'));
             }
           }
           let item = _this._wrap(data._class, data, data._classVer, options);
@@ -2207,7 +2222,7 @@ function IonDataRepository(options) {
       let cm = _this.meta.getMeta(classname, version);
 
       if (cm.isAbstract()) {
-        throw new Error('Обьект абстрактного класса не может быть создан!');
+        throw new Error(t('Abstract class can not be instantiated!'));
       }
 
       let rcm = getRootType(cm);
@@ -2470,7 +2485,7 @@ function IonDataRepository(options) {
    * @param {Item[]} masters
    * @param {String[]} collections
    * @param {Item[]} details
-   * @param {String} action - 'put' или 'eject' - вставка или извлечение
+   * @param {String} action // put, eject
    * @returns {Promise}
    */
   function editCollections(masters, collections, details, action) {
@@ -2505,7 +2520,11 @@ function IonDataRepository(options) {
                       ) {
                         src.push(details[j].getItemId());
                       } else {
-                        throw new Error(`Обьекты класса "${details[j].getMetaClass().getCaption()}" недопустимы в коллекции "${m.getMetaClass().getCaption()}.${pm.caption}".`);
+                        throw new Error(format(
+                          t('Object of class "%s" are invalid in collection "%s.%s".'),
+                          details[j].getMetaClass().getCaption(),
+                          m.getMetaClass().getCaption(),
+                          pm.caption));
                       }
                     }
                   }
@@ -2560,7 +2579,12 @@ function IonDataRepository(options) {
         if (!asc.length || isSubclassAllowed(master.getMetaClass(), asc, d.getMetaClass())) {
           writers = writers.then(() => _this._editItem(d.getClassName(), d.getItemId(), update));
         } else {
-          throw new Error(`Обьекты класса "${d.getMetaClass().getCaption()}" недопустимы в коллекции "${master.getMetaClass().getCaption()}.${pm.caption}".`);
+          throw new Error(format(
+            t('Objects of class "%s" are invalid in collection "%s.%s".'),
+            d.getMetaClass().getCaption(),
+            master.getMetaClass().getCaption(),
+            pm.caption)
+          );
         }
       });
 
@@ -2657,7 +2681,7 @@ function IonDataRepository(options) {
    * @param {Item} master
    * @param {String} collection
    * @param {{}} options
-   * @param {Boolean} onlyCount - определяте получаемый результат, если true то только считаем количество
+   * @param {Boolean} onlyCount
    * @returns {*}
    */
   function getCollection(master, collection, options, onlyCount) {

@@ -6,6 +6,10 @@
 var Repository = require('core/interfaces/Repository');
 var Memcached = require('memcached');
 var LoggerProxy = require('core/impl/log/LoggerProxy');
+const i18n = require('core/i18n');
+const {format} = require('util');
+
+const t = msg => i18n.t(msg)({domain: 'memcached'});
 
 /**
  * @param {{}} config
@@ -43,7 +47,7 @@ function MemcachedRepository(config) {
 
   function afterConnect(cb) {
     return function () {
-      log.info('Выполнена проверка доступности серверов memcached.');
+      log.info(t('Memcached servers accessibility check done.'));
       setTimeout(() => {
         checkingForServers = false;
       }, reconnectTimeout * 1000);
@@ -66,7 +70,7 @@ function MemcachedRepository(config) {
                 availableServers.push(server);
               }
             } else {
-              log.warn('Сервер memcached ' + server + ' недоступен.');
+              log.warn(format(t('Memcached server %s is not accessible.'), server));
             }
             resolve();
           });
@@ -132,7 +136,7 @@ function MemcachedRepository(config) {
         return resolve();
       }
       try {
-        log.log('Инициализация memcached...');
+        log.log(t('Memcached repository initialization...'));
         memcached = new Memcached(mServerLocations, mOptions);
         memcached
           .on('issue', (details) => {

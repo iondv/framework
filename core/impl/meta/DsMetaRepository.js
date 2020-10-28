@@ -17,6 +17,9 @@ const F = require('core/FunctionCodes');
 const strings = require('core/strings');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/meta-repo');
+const i18n = require('core/i18n');
+const {format} = require('util');
+const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 const defaultVersion = '___default';
 
@@ -77,7 +80,7 @@ function DsMetaRepository(options) {
   const __ = (...args) => strings.s('meta-captions', ...args);
 
   if (!ds) {
-    throw 'Не указан источник данных мета репозитория!';
+    throw new Error(t('Meta repository data source not specified!'));
   }
 
   let classMeta = {};
@@ -526,7 +529,7 @@ function DsMetaRepository(options) {
             let cr = this.matrix[j]._checker.apply(item);
             if (cr) {
               if (cr instanceof Promise) {
-                throw new Error('Асинхронные вызовы в условиях соответствия списков выбора недопустимы!');
+                throw new Error(t('Async calls are not valid in selection lists conditions!'));
               }
               Array.prototype.push.apply(result, this.matrix[j].result || []);
             }
@@ -569,8 +572,11 @@ function DsMetaRepository(options) {
         try {
           structClass = getFromMeta(cm.plain.properties[i].refClass, cm.plain.version, cm.getNamespace());
         } catch (err) {
-          throw new Error('Не найден класс [' + cm.plain.properties[i].refClass +
-            '] для структуры [' + cm.plain.caption + '].[' + cm.plain.properties[i].caption + ']');
+          throw new Error(format(t('Class [%s] for structure [%s].[%s] not found.'),
+            cm.plain.properties[i].refClass,
+            cm.plain.caption,
+            cm.plain.properties[i].caption
+          ));
         }
         if (!structClass.___structs_expanded) {
           expandProperty(structClass);
@@ -794,8 +800,11 @@ function DsMetaRepository(options) {
                   cm.ancestor = _this._getMeta(cm.plain.ancestor, cm.plain.version, cm.namespace);
                   cm.ancestor.descendants.push(cm);
                 } catch (e) {
-                  throw new Error('Не найден родительский класс "' + cm.plain.ancestor + '" класса ' +
-                    cm.getCanonicalName() + '.');
+                  throw new Error(format(
+                    t('Parent class "%s" for class %s not found.'),
+                    cm.plain.ancestor,
+                    cm.getCanonicalName()
+                  ));
                 }
               }
 
@@ -809,35 +818,36 @@ function DsMetaRepository(options) {
                   try {
                     pm._refClass = _this._getMeta(pm.refClass, cm.plain.version, cm.getNamespace());
                   } catch (e) {
-                    throw new Error(
-                      'Не найден класс "' + pm.refClass + '" по ссылке атрибута ' +
-                      cm.getCanonicalName() + '.' + pm.name + '.'
-                    );
+                    throw new Error(format(
+                      t('Class "%s" for reference attribute %s.%s not found.'),
+                      pm.refClass, cm.getCanonicalName(), pm.name
+                    ));
                   }
                 } else if (pm.type === PropertyTypes.COLLECTION && typeof pm.itemsClass !== 'undefined') {
                   try {
                     pm._refClass = _this._getMeta(pm.itemsClass, cm.plain.version, cm.namespace);
                   } catch (e) {
-                    throw new Error(
-                      'Не найден класс "' + pm.itemsClass + '" по ссылке атрибута ' +
-                      cm.getCanonicalName() + '.' + pm.name + '.'
-                    );
+                    throw new Error(format(
+                      t('Class "%s" for reference attribute %s.%s not found.'),
+                      pm.itemsClass, cm.getCanonicalName(), pm.name
+                    ));
                   }
                 }
                 if (pm.formula && options.calc instanceof Calculator) {
                   try {
                     if (typeof pm.formula === 'string') {
-                      (options.log || console).warn(
-                        'Формула вычисляемого атрибута "' + cm.getCanonicalName() + '.' + pm.name +
-                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
-                      );
+                      (options.log || console).warn(format(
+                        t('Calculated attribute "%s.%s" formula is specified as string. This format is deprecated and wil be removed from later versions.'),
+                        cm.getCanonicalName(),
+                        pm.name
+                      ));
                     }
                     pm._formula = options.calc.parseFormula(pm.formula);
                   } catch (e) {
-                    throw new Error(
-                      'Некорректно задана формула для вычисляемого атрибута "' +
-                      cm.getCanonicalName() + '.' + pm.name + '": ' + e.message
-                    );
+                    throw new Error(format(
+                      t('Invalid formula for calculated attribute "%s.%s": %s'),
+                      cm.getCanonicalName(), pm.name, e.message
+                    ));
                   }
                 }
                 if (
@@ -851,10 +861,11 @@ function DsMetaRepository(options) {
                   try {
                     pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                     if (typeof pm.defaultValue === 'string') {
-                      (options.log || console).warn(
-                        'Формула значения по умолчанию атрибута "' + cm.getCanonicalName() + '.' + pm.name +
-                        '" задана в строковом виде. Этот формат является устаревшим и будет исключен в следующих версиях.'
-                      );
+                      (options.log || console).warn(format(
+                        t('Attribute "%s.%s" default value formula is specified as string. This format is deprecated and wil be removed from later versions.'),
+                        cm.getCanonicalName(),
+                        pm.name
+                      ));
                     }
                   } catch (e) {
                     pm._dvFormula = null;
@@ -1092,7 +1103,7 @@ function DsMetaRepository(options) {
       } catch (e) {
         if (options.log) {
           options.log.warn(e);
-          options.log.warn('Бизнес-процесс ' + wf.name + '@' + wf.namespace + ' не был инициализирован!');
+          options.log.warn(format(t('Workflow %s was not initialized!'),  wf.name + '@' + wf.namespace));
         }
       }
     }

@@ -1,6 +1,6 @@
 /* eslint no-invalid-this:off */
 /**
- * Created by Данил on 10.10.2016.
+ * Created by krasilneg on 10.10.2016.
  */
 'use strict';
 // jshint maxstatements: 30
@@ -12,6 +12,8 @@ const Operations = require('core/FunctionCodes');
 const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
 const cast = require('core/cast');
+const IonError = require('core/IonError');
+const errros = require('core/errors/conditions');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -23,6 +25,8 @@ const Funcs = [
   OperationTypes.DATE_MONTH, OperationTypes.DATE_DAY, OperationTypes.DATE_HOUR, OperationTypes.DATE_MINUTE,
   OperationTypes.DATE_SECOND
 ];
+
+const t = msg => i18n.t(msg)({domain: 'meta-model'})
 
 // jshint maxstatements: 40, maxcomplexity: 50
 /**
@@ -130,10 +134,10 @@ function produceContainsFilter(rcm, condition, context, lang) {
       let tmp = toScalar(condition.value, context);
       return {[Operations.LIKE]: ['$' + condition.property, tmp[0]]};
     } else {
-      throw new Error('Условие CONTAINS не применимо к атрибуту ' + rcm.getCanonicalName() + '.' + condition.property);
+      throw new IonError(errors.NON_APPLICABLE, {'condition': 'CONTAINS', 'class': rcm.getCanonicalName(), 'attr': condition.property});
     }
   } else {
-    throw new Error('Указанный в условии атрибут ' + rcm.getCanonicalName() + '.' + condition.property + ' не найден');
+    throw new IonError(erros.ATTR_NOT_FOUND, {'class': rcm.getCanonicalName(), 'attr': condition.property});
   }
 }
 
@@ -199,7 +203,7 @@ function produceFilter(condition, type, rcm, context, lang, unar) {
 function produceAggregationOperation(condition, rcm, context, lang) {
   var an, av, pn, pm;
   if (!condition.value || !condition.value.length) {
-    throw new Error('Некорректно указана операция агрегации - отсутствует информация о классе и свойстве.');
+    throw new IonError(code.INVALID_AGGREG);
   }
 
   if (condition.value.length === 1) {
@@ -302,7 +306,7 @@ function conditionParser(condition, rcm, context, lang) {
           }
           return {[Operations.IN]: ['$' + condition.property, arr]};
         }
-        default: throw new Error('Некорректный тип условия!');
+        default: throw new IonError(errors.INVALID_CONDITION);
       }
     } else {
       let oper = parseInt(condition.operation);
@@ -313,10 +317,10 @@ function conditionParser(condition, rcm, context, lang) {
             case OperationTypes.AND: return {[Operations.AND]: tmp};
             case OperationTypes.OR: return {[Operations.OR]: tmp};
             case OperationTypes.NOT: return {[Operations.NOT]: tmp};
-            default: throw new Error('Некорректный тип операции!');
+            default: throw new IonError(errors.INVALID_OPERATION);
           }
         } else {
-          throw new Error('Не указаны аргументы операции!');
+          throw new IonError(errors.NO_ARGS);
         }
       } else if (AgregOpers.indexOf(oper) !== -1) {
         let tmp =  produceAggregationOperation(condition, rcm, context, lang);
@@ -327,10 +331,10 @@ function conditionParser(condition, rcm, context, lang) {
             case OperationTypes.AVG: return {[Operations.AVG]: tmp};
             case OperationTypes.SUM: return {[Operations.SUM]: tmp};
             case OperationTypes.COUNT: return {[Operations.COUNT]: tmp};
-            default: throw new Error('Некорректный тип операции!');
+            default: throw new IonError(errors.INVALID_OPERATION);
           }
         } else {
-          throw new Error('Не указаны аргументы операции!');
+          throw new IonError(errors.NO_ARGS);
         }
       } else if (Funcs.indexOf(oper) !== -1) {
         let tmp = [];
@@ -369,7 +373,7 @@ function conditionParser(condition, rcm, context, lang) {
           case OperationTypes.SUBSTR: return {[Operations.SUBSTR]: tmp};
           case OperationTypes.MOD: return {[Operations.MOD]: tmp};
           case OperationTypes.ABS: return {[Operations.ABS]: tmp};
-          default: throw new Error('Некорректный тип операции!');
+          default: throw new IonError(errors.INVALID_OPERATION);
         }
       } else if (condition.value && condition.value.length) {
         return toScalar(condition.value, context, PropertyTypes.STRING, lang);
@@ -377,7 +381,6 @@ function conditionParser(condition, rcm, context, lang) {
     }
   }
   return null;
-  // Throw new Error('Мета условий выборки не соответствует спецификации!');
 }
 
 module.exports = conditionParser;
