@@ -3,7 +3,7 @@
  */
 'use strict';
 const codes = require('core/errors/meta-repo');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.NO_CLASS]: t('Class %class not found in namespace %namespace.'),

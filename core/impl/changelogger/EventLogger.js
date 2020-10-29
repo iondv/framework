@@ -1,8 +1,7 @@
 /* eslint-disable func-names */
 const clone = require('clone');
 const F = require('core/FunctionCodes');
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'eventlogger'});
+const {t} = require('core/i18n');
 
 /**
  * @param {table: String, DataSource: dataSource, types: {}} options

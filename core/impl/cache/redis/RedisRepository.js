@@ -6,9 +6,7 @@
 const Repository = require('core/interfaces/Repository');
 const redis = require('redis');
 var LoggerProxy = require('core/impl/log/LoggerProxy');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'redis'});
+const {t} = require('core/i18n');
 
 /**
  *

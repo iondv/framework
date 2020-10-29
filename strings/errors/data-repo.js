@@ -2,7 +2,7 @@
  * Created by krasilneg on 25.04.17.
  */
 const codes = require('core/errors/data-repo');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.ITEM_EXISTS]: t(`%class with this '%attr' value already exists.`),

@@ -10,14 +10,13 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const path = require('path');
-const i18n = require('core/i18n');
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'schedule'});
+const {t, load, lang} = require('core/i18n');
+lang(config.lang);
 errorSetup();
 
 
 // jshint maxcomplexity: 20, maxstatements: 30
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
   .then(scope =>
     di(

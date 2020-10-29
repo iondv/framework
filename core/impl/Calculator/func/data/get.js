@@ -5,8 +5,7 @@
 const calc = require('../util').calculate;
 const F = require('core/FunctionCodes');
 const Item = require('core/interfaces/DataRepository').Item;
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'formula'});
+const {t} = require('core/i18n');
 
 /**
  * @param {DataRepository} dataRepo

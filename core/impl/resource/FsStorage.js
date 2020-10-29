@@ -16,9 +16,8 @@ const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'filestorage'});
 
 /* jshint maxcomplexity: 20, maxstatements: 40 */
 /**

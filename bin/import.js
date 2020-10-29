@@ -11,9 +11,8 @@ const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
 const path = require('path');
 const extend = require('extend');
-const i18n = require('core/i18n');
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'import'});
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
 errorSetup();
 
 var sysLog = new IonLogger(config.log || {});
@@ -33,7 +32,7 @@ process.argv.forEach(function (val) {
   }
 });
 
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(di('boot', config.bootstrap,
     {
       sysLog: sysLog

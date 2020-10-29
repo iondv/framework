@@ -32,9 +32,8 @@ const merge = require('merge');
 const Operations = require('core/FunctionCodes');
 const dsF = require('core/DataSourceFunctionCodes');
 const isEmpty = require('core/empty');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'data-repo'});
 
 const EVENT_CANCELED = '____CANCELED___';
 

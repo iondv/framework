@@ -3,8 +3,7 @@ const OwnCloudError = require('./OwnCloudError');
 const {urlResolver, slashChecker} = require('./util');
 const ShareAccessLevel = require('core/interfaces/ResourceStorage/lib/ShareAccessLevel');
 const requester = require('core/util/request');
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'share-api'});
+const {t} = require('core/i18n');
 
 const urlTypes = {
   OCS: 'ocs/v1.php/apps/files_sharing/api/v1/shares',

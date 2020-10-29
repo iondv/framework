@@ -14,16 +14,15 @@ const alias = require('core/scope-alias');
 const path = require('path');
 const extend = require('extend');
 const {format} = require('util');
-const i18n = require('core/i18n');
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'bg'});
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
 errorSetup();
 
 let jobName = false;
 let job = false;
 let notifier = null;
 
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(() => {
     if (process.argv.length > 2) {
       jobName = process.argv[2];

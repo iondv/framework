@@ -5,9 +5,8 @@
 
 const KeyProvider = require('core/interfaces/KeyProvider');
 const cast = require('core/cast');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 /**
  * @param {{}} options

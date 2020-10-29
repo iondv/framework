@@ -2,8 +2,7 @@
  * Created by kras on 19.07.16.
  */
 'use strict';
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'changelogger'});
+const {t} = require('core/i18n');
 
 var DsChangeLogger = require('./DsChangeLogger');
 

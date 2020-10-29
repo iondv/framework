@@ -13,7 +13,7 @@ const Item = require('core/interfaces/DataRepository/lib/Item');
 const strToDate = require('core/strToDate');
 const cast = require('core/cast');
 const IonError = require('core/IonError');
-const errros = require('core/errors/conditions');
+const errors = require('core/errors/conditions');
 
 const BoolOpers = [OperationTypes.AND, OperationTypes.OR, OperationTypes.NOT];
 const AgregOpers = [OperationTypes.MIN, OperationTypes.MAX, OperationTypes.AVG,
@@ -25,8 +25,6 @@ const Funcs = [
   OperationTypes.DATE_MONTH, OperationTypes.DATE_DAY, OperationTypes.DATE_HOUR, OperationTypes.DATE_MINUTE,
   OperationTypes.DATE_SECOND
 ];
-
-const t = msg => i18n.t(msg)({domain: 'meta-model'})
 
 // jshint maxstatements: 40, maxcomplexity: 50
 /**
@@ -137,7 +135,7 @@ function produceContainsFilter(rcm, condition, context, lang) {
       throw new IonError(errors.NON_APPLICABLE, {'condition': 'CONTAINS', 'class': rcm.getCanonicalName(), 'attr': condition.property});
     }
   } else {
-    throw new IonError(erros.ATTR_NOT_FOUND, {'class': rcm.getCanonicalName(), 'attr': condition.property});
+    throw new IonError(errors.ATTR_NOT_FOUND, {'class': rcm.getCanonicalName(), 'attr': condition.property});
   }
 }
 

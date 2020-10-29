@@ -8,9 +8,7 @@ const Preprocessor = require('core/interfaces/Preprocessor');
 const base64 = require('base64-js');
 const buf = require('core/buffer');
 const F = require('core/FunctionCodes');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'digital-sign'});
+const {t} = require('core/i18n');
 
 // jshint maxcomplexity: 20
 

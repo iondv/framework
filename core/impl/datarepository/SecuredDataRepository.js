@@ -17,9 +17,8 @@ const Logger = require('core/interfaces/Logger');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/data-repo');
 // const F = require('core/FunctionCodes');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'data-repo'});
 
 /* jshint maxstatements: 100, maxcomplexity: 100, maxdepth: 30 */
 function AclMock() {

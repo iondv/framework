@@ -1,5 +1,5 @@
 const codes = require('core/errors/conditions');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.NON_APPLICABLE]: t('Condition %condition is not applicable to attribute %class.%attr.'),

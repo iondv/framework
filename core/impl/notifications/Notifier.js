@@ -9,9 +9,8 @@ const resolvePath = require('core/resolvePath');
 const path = require('path');
 const User = require('core/User');
 const merge = require('merge');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'notifier'});
 
 class Notifier extends INotifier {
 

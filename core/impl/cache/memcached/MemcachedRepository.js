@@ -6,10 +6,8 @@
 var Repository = require('core/interfaces/Repository');
 var Memcached = require('memcached');
 var LoggerProxy = require('core/impl/log/LoggerProxy');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-
-const t = msg => i18n.t(msg)({domain: 'memcached'});
 
 /**
  * @param {{}} config

@@ -13,9 +13,8 @@ const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const {format} = require('util');
 const toAbsolutePath = require('core/system').toAbsolute;
-const i18n = require('core/i18n');
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'bg'});
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
 
 errorSetup();
 
@@ -133,7 +132,7 @@ function calcCheckInterval(launch, dv) {
   return dv;
 }
 
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(() => {
     if (process.argv.length > 2) {
       jobName = process.argv[2];

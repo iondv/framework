@@ -4,9 +4,7 @@
 'use strict';
 
 const LoggerProxy = require('core/impl/log/LoggerProxy');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'datasource'})
+const {t} = require('core/i18n');
 
 function Datasources(options) {
   var _this = this;

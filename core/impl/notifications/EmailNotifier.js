@@ -2,9 +2,8 @@ const INotificationSender = require('core/interfaces/NotificationSender');
 const resolvePath = require('core/resolvePath');
 const ejs = require('ejs');
 const path = require('path');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'notifier'});
 
 class EmailNotifier extends INotificationSender {
   /**

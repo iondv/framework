@@ -5,9 +5,7 @@
 const contexts = {};
 const clone = require('clone');
 const {format} = require('util');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'di'});
+const {t} = require('core/i18n');
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 

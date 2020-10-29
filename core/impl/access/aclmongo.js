@@ -10,9 +10,7 @@ const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
 const clone = require('clone');
 const merge = require('merge');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'acl'});
+const {t} = require('core/i18n');
 
 function MongoAcl(config) {
 

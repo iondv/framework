@@ -8,12 +8,13 @@ const path = require('path');
 
 const translators = {};
 let defaultLocale = 'en';
+const DEFAULT_DOMAIN = 'ION_TEXT_DOMAIN';
 
 const _ = f => {
   return new Promise((resolve, reject) => f(resolve, reject));
 }
 
-const loadLang = (lang, dir, domain = null) => {
+const loadLang = (lang, dir, domain) => {
   return _((resolve, reject) => {
     fs.readdir(dir, (err, nms) => {
       if (err) return reject(err);
@@ -22,17 +23,18 @@ const loadLang = (lang, dir, domain = null) => {
         const d = path.join(dir, nm);
         p = p.then(() => _((r, j) => {
           fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));  
-        })).then(isDir => isDir ? loadLang(lang, d, nm) : _((r, j) => {
+        })).then(isDir => isDir ? loadLang(lang, d, domain) : _((r, j) => {
           fs.readFile(d, (err, data) => {
             if (err) return j(err);
             const type = path.extname(nm);
             if (!translators.hasOwnProperty(lang)) {
               translators[lang] = new Gettext();
               translators[lang].setLocale(lang);
+              translators[lang].setTextDomain(DEFAULT_DOMAIN);
             }
             translators[lang].addTranslations(
               lang,
-              domain || nm.substring(0, nm.length - 3),
+              domain || DEFAULT_DOMAIN,
               ((type == 'po') ? po : mo).parse(data)
             );
             r();
@@ -44,9 +46,14 @@ const loadLang = (lang, dir, domain = null) => {
   });
 }
 
-module.exports.load = (dir) => {
+module.exports.load = (dir, domain, lang) => {
   return _((resolve, reject) => {
     if (!dir) return resolve();
+    if (lang) {
+      const d = path.join(dir, lang);
+      return _((r, j) => {fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));})
+        .then(load => load ? loadLang(lang, d, domain) : null);
+    }
     fs.readdir(dir, (err, nms) => {
       if (err) return reject(err);
       let  p = Promise.resolve();
@@ -54,44 +61,56 @@ module.exports.load = (dir) => {
         const d = path.join(dir, lang);
         p = p.then(() => _((r, j) => {
           fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));  
-        })).then(load => load ? loadLang(lang, d) : null);
+        })).then(load => load ? loadLang(lang, d, domain) : null);
       });
       p.then(resolve).catch(reject);
     });
   });
 };
 
-module.exports.default = lang => {
+module.exports.lang = lang => {
   defaultLocale = lang || defaultLocale;
 };
+
+module.exports.domain = domain => {
+  for (lang in translators) {
+    translators[lang].setTextDomain(domain);
+  }
+}
 
 module.exports.supported = () => {
   return Object.keys(translators);
 }
 
-module.exports.t = (msg, ...args) => {
+const t = module.exports.t = (msg, ...args) => {
   let plural;
   let plural_msg;
+  let lang;
+  let domain;
 
-  if (args.length > 0) {
-    plural_msg = args[0];
-    if (args.length > 1) {
-      plural = args[1];
+  args.forEach(arg => {
+    if (typeof arg == 'object') {
+      lang = arg.lang;
+      domain = arg.domain;
+    } else if (typeof arg == 'string') {
+      plural_msg = arg;
+    } else if (typeof arg == 'number') {
+      plural = arg;
     }
+  });
+
+  lang = lang || defaultLocale;
+  if (!translators.hasOwnProperty(lang)) {
+    return (typeof plural == 'undefined') ? msg : (plural_msg || msg);
   }
-
-  return ({lang, domain}) => {
-    lang = lang || defaultLocale;
-    if (!translators.hasOwnProperty(lang)) {
-      return (typeof plural == 'undefined') ? msg : (plural_msg || msg);
-    }
-    if (typeof domain != 'undefined') {
-      return (typeof plural == 'undefined') ?
-        translators[lang].dgettext(domain, msg) :
-        translators[lang].dngettext(domain, msg, plural_msg || msg, plural);
-    }
+  if (typeof domain != 'undefined') {
     return (typeof plural == 'undefined') ?
-      translators[lang].gettext(msg) :
-      translators[lang].ngettext(msg, plural_msg || msg, plural);
-  };
-};
+      translators[lang].dgettext(domain, msg) :
+      translators[lang].dngettext(domain, msg, plural_msg || msg, plural);
+  }
+  return (typeof plural == 'undefined') ?
+    translators[lang].gettext(msg) :
+    translators[lang].ngettext(msg, plural_msg || msg, plural);
+}
+
+module.exports.w = (msg, ...args) => ({lang, domain}) => t(msg, ...args, {lang, domain});

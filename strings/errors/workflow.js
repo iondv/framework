@@ -3,7 +3,7 @@
  */
 'use strict';
 const codes = require('core/errors/workflow');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.ACCESS_DENIED]: t(`Access level not enough to perform workflow transition '%trans'`),

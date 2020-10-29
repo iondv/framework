@@ -4,9 +4,7 @@ const UserTypes = require('core/UserTypes');
 const F = require('core/FunctionCodes');
 const pwdHasher = require('password-hash-and-salt');
 const clone = require('clone');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'accounts'});
+const {t} = require('core/i18n');
 
 class LocalAccountStorage extends IAccountStorage {
   /**

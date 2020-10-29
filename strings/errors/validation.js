@@ -4,7 +4,7 @@
 'use strict';
 
 const codes = require('core/errors/validation');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 const defaultMessage = t('Invalid value assigned to attribute %class.%property.');
 const messageForRealAndDecimal = t('Attribute %class.%property value should be a number (fractional part should be separated with dot).');

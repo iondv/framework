@@ -17,9 +17,8 @@ const F = require('core/FunctionCodes');
 const strings = require('core/strings');
 const IonError = require('core/IonError');
 const Errors = require('core/errors/meta-repo');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 const defaultVersion = '___default';
 

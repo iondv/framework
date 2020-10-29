@@ -2,8 +2,7 @@
  * Created by kras on 28.04.16.
  */
 'use strict';
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'changelog'});
+const {t} = require('core/i18n');
 
 const logRecordTypes = {
   CREATE: 'CREATE',

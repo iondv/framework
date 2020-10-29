@@ -10,7 +10,7 @@ const IonLogger = require('core/impl/log/IonLogger');
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
-const i18n = require('core/i18n');
+const {t, lang, load} = require('core/i18n');
 const extend = require('extend');
 const aclImport = require('lib/aclImport');
 
@@ -24,8 +24,7 @@ const params = {
 
 var setParam = false;
 
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'acl'});
+lang(config.lang);
 
 errorSetup();
 
@@ -58,7 +57,7 @@ process.argv.forEach(function (val) {
 let sysLog = new IonLogger(config.log || {});
 
 // Application binding
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(() => {
     if (!params.aclDir) {
       if (!params.roles.length) {

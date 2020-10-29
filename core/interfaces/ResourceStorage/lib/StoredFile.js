@@ -2,8 +2,7 @@
  * Created by kras on 26.07.16.
  */
 'use strict';
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'filestorage'});
+const {t} = require('core/i18n');
 
 function StoredFile (id, link, options, streamGetter) {
   this.id = id;

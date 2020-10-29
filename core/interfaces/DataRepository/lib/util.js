@@ -11,9 +11,8 @@ const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
 const DateSize = require('core/DateSizes');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 

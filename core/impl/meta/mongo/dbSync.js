@@ -8,9 +8,8 @@ const DbSync = require('core/interfaces/DbSync');
 const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'meta-model'});
 
 /* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {

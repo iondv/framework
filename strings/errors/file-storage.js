@@ -3,7 +3,7 @@
  */
 'use strict';
 const codes = require('core/errors/file-storage');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.BAD_DATA]: t(`Invalid data format.`),

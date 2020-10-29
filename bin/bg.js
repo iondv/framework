@@ -15,10 +15,9 @@ const {s} = require('core/strings');
 const extend = require('extend');
 const path = require('path');
 const {format} = require('util');
-const i18n = require('core/i18n');
+const {t, lang, load} = require('core/i18n');
 
-i18n.default(config.lang);
-const t = msg => i18n.t(msg)({domain: 'bg'});
+lang(config.lang);
 errorSetup();
 
 let params = {};
@@ -42,7 +41,7 @@ if (params.path) {
   moduleName = path.basename(params.path);
 }
 
-i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')))
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
   .then(di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
   .then(scope =>
     di(

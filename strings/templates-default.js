@@ -1,4 +1,4 @@
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   "templates.default.home": t("Home"),

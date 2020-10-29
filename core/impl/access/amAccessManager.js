@@ -9,9 +9,7 @@ const Permissions = require('core/Permissions');
 const chain = require('core/util/chain');
 const _ = require('lodash');
 const F = require('core/FunctionCodes');
-const i18n = require('core/i18n');
-
-const t = msg => i18n.t(msg)({domain: 'acl'});
+const {t} = require('core/i18n');
 
 /**
  * @param {{}} config

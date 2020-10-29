@@ -5,9 +5,8 @@ const PropertyTypes = require('core/PropertyTypes');
 const F = require('core/FunctionCodes');
 const Errors = require('core/errors/data-repo');
 const merge = require('merge');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'formula'});
 
 function findComma(src, start) {
   let pos = src.indexOf(',', start);

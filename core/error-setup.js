@@ -5,9 +5,7 @@
 const IonError = require('core/IonError');
 const path = require('path');
 const fs = require('fs');
-const i18n = require('core/i18n');
-const lang = config.lang || 'en';
-const t = msg => i18n.t(msg)({lang, domain: 'bg'});
+const {t} = require('core/i18n');
 const {format} = require('util');
 
 /**

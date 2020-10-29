@@ -1,7 +1,6 @@
 'use strict';
 const calc = require('../util').calculate;
-const i18n = require('core/i18n');
-const t = msg => i18n.t(msg)({domain: 'formula'});
+const {t} = require('core/i18n');
 
 /**
  * @param {SequenceProvider} sp

@@ -17,9 +17,8 @@ const moment = require('moment');
 const Operations = require('core/FunctionCodes');
 const DsOperations = require('core/DataSourceFunctionCodes');
 const fs = require('fs');
-const i18n = require('core/i18n');
+const {t} = require('core/i18n');
 const {format} = require('util');
-const t = msg => i18n.t(msg)({domain: 'datasource'});
 
 const AUTOINC_COLLECTION = '__autoinc';
 const GEOFLD_COLLECTION = '__geofields';

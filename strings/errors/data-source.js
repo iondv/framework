@@ -3,7 +3,7 @@
  */
 'use strict';
 const codes = require('core/errors/data-source');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.UNIQUENESS_VIOLATION]: t(`Uniqueness of key '%key' of dataset '%table' is violated`),

@@ -1,5 +1,5 @@
 const codes = require('core/errors/auth');
-const {t} = require('core/i18n');
+const {w: t} = require('core/i18n');
 
 module.exports = {
   [codes.NO_DS]: t(`Authentication datasource is not set up.`),
