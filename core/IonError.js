@@ -25,12 +25,11 @@ function IonError(code, params, cause) {
   Error.captureStackTrace(this, IonError);
 }
 
-Error.prototype.getMessage = function (lang) {
-  return strings.s('errors', this.code, this.params, lang) || this.cause && this.cause.message || 'Unknown error';
-};
-
 IonError.prototype = Object.create(Error.prototype);
 IonError.prototype.constructor = IonError;
+IonError.prototype.getMessage = function (lang) {
+  return strings.s('errors', this.code, this.params, lang) || this.cause && this.cause.message || 'Unknown error';
+};
 
 module.exports = IonError;
 

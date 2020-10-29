@@ -103,3 +103,7 @@ const t = module.exports.t = (msg, ...args) => {
 }
 
 module.exports.w = (msg, ...args) => ({lang, domain}) => t(msg, ...args, {lang, domain});
+
+Error.prototype.getMessage = function (lang) {
+  return t(this.message, {lang});
+}
