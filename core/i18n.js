@@ -5,67 +5,56 @@ const {po, mo} = require('gettext-parser');
 const Gettext = require('node-gettext');
 const fs = require('fs');
 const path = require('path');
+const {promisify: __} = require('util');
+const readdir = __(fs.readdir);
+const lstat = __(fs.lstat);
+const readFile = __(fs.readFile);
 
 const translators = {};
-let defaultLocale = 'en';
+let defaultLocale = process.env.LANG || 'en_US';
 const DEFAULT_DOMAIN = 'ION_TEXT_DOMAIN';
 
-const _ = f => {
-  return new Promise((resolve, reject) => f(resolve, reject));
-}
+const loadLang = async (lang, dir, domain) => {
+  const nms = await readdir(dir);
+  for (nm of nms) {
+    const d = path.join(dir, nm);
+    const stat = await lstat(d);
+    if (stat.isDirectory) {
+      await loadLang(lang, d, domain);
+    } else {
+      const data = await readFile(d);
+      const type = path.extname(nm);
+      if (!translators.hasOwnProperty(lang)) {
+        translators[lang] = new Gettext();
+        translators[lang].setLocale(lang);
+        translators[lang].setTextDomain(DEFAULT_DOMAIN);
+      }
+      translators[lang].addTranslations(
+        lang,
+        domain || DEFAULT_DOMAIN,
+        ((type == 'po') ? po : mo).parse(data)
+      );
+    }
+  }
+};
 
-const loadLang = (lang, dir, domain) => {
-  return _((resolve, reject) => {
-    fs.readdir(dir, (err, nms) => {
-      if (err) return reject(err);
-      let  p = Promise.resolve();
-      nms.forEach(nm => {
-        const d = path.join(dir, nm);
-        p = p.then(() => _((r, j) => {
-          fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));  
-        })).then(isDir => isDir ? loadLang(lang, d, domain) : _((r, j) => {
-          fs.readFile(d, (err, data) => {
-            if (err) return j(err);
-            const type = path.extname(nm);
-            if (!translators.hasOwnProperty(lang)) {
-              translators[lang] = new Gettext();
-              translators[lang].setLocale(lang);
-              translators[lang].setTextDomain(DEFAULT_DOMAIN);
-            }
-            translators[lang].addTranslations(
-              lang,
-              domain || DEFAULT_DOMAIN,
-              ((type == 'po') ? po : mo).parse(data)
-            );
-            r();
-          });
-        }));
-      });
-      p.then(resolve).catch(reject);
-    });
-  });
-}
-
-module.exports.load = (dir, domain, lang) => {
-  return _((resolve, reject) => {
-    if (!dir) return resolve();
+module.exports.load = async (dir, domain, lang) => {
+    if (!dir) return;
     if (lang) {
       const d = path.join(dir, lang);
-      return _((r, j) => {fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));})
-        .then(load => load ? loadLang(lang, d, domain) : null);
+      const stat = await lstat(d);
+      if (stat.isDirectory()) {
+        return await loadLang(lang, d, domain);
+      }
     }
-    fs.readdir(dir, (err, nms) => {
-      if (err) return reject(err);
-      let  p = Promise.resolve();
-      nms.forEach(lang => {
-        const d = path.join(dir, lang);
-        p = p.then(() => _((r, j) => {
-          fs.lstat(d, (err, stat) => err ? j(err) : r(stat.isDirectory()));  
-        })).then(load => load ? loadLang(lang, d, domain) : null);
-      });
-      p.then(resolve).catch(reject);
-    });
-  });
+    const nms = await readdir(dir);
+    for (lang of nms) {
+      const d = path.join(dir, lang);
+      const stat = await lstat(d);
+      if (stat.isDirectory()) {
+        await loadLang(lang, d, domain);
+      }      
+    }
 };
 
 module.exports.lang = lang => {
