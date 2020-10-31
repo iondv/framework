@@ -65,11 +65,13 @@ function wrap(msgs, prev) {
  * @param {String} prefix
  * @param {Function} base
  */
-module.exports.registerBase = function(prefix, base) {
+const register = module.exports.registerBase = function(prefix, base) {
   if (prefix && ('function' == typeof base)) {
     systemBase[prefix] = base(systemBase[prefix] || defaultBase);
   } else if (prefix && ('object' == typeof base)) {
     systemBase[prefix] = wrap(base, systemBase[prefix] || defaultBase);
+  } else if (prefix && ('string' == typeof base)) {
+    register(prefix, require(base));
   }
 };
 
