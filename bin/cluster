@@ -4,8 +4,9 @@ const cluster = require('cluster');
 const config = require('../config');
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
+const path = require('path');
 const di = require('core/di');
-const {t, lang, load} = require('core/i18n');
+const {t, lang} = require('core/i18n');
 const {format} = require('util');
 
 lang(config.lang);

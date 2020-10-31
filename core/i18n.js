@@ -41,19 +41,27 @@ const loadLang = async (lang, dir, domain) => {
 module.exports.load = async (dir, domain, lang) => {
     if (!dir) return;
     if (lang) {
-      const d = path.join(dir, lang);
-      const stat = await lstat(d);
-      if (stat.isDirectory()) {
-        return await loadLang(lang, d, domain);
+      try {
+        const d = path.join(dir, lang);
+        const stat = await lstat(d);
+        if (stat.isDirectory()) {
+          return await loadLang(lang, d, domain);
+        }
+      } catch (err) {
+
       }
     }
-    const nms = await readdir(dir);
-    for (lang of nms) {
-      const d = path.join(dir, lang);
-      const stat = await lstat(d);
-      if (stat.isDirectory()) {
-        await loadLang(lang, d, domain);
-      }      
+    try {
+      const nms = await readdir(dir);
+      for (lang of nms) {
+        const d = path.join(dir, lang);
+        const stat = await lstat(d);
+        if (stat.isDirectory()) {
+          await loadLang(lang, d, domain);
+        }      
+      }  
+    } catch (err) {
+      return;
     }
 };
 

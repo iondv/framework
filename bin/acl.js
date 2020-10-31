@@ -10,6 +10,7 @@ const IonLogger = require('core/impl/log/IonLogger');
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const {t, lang, load} = require('core/i18n');
 const extend = require('extend');
 const aclImport = require('lib/aclImport');

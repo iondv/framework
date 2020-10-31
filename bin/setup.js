@@ -9,7 +9,6 @@ const di = require('core/di');
 const path = require('path');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
-const path = require('path');
 const extend = require('extend');
 const {t, load, lang} = require('core/i18n');
 lang(config.lang);
