@@ -836,10 +836,9 @@ function DsMetaRepository(options) {
                   try {
                     if (typeof pm.formula === 'string') {
                       (options.log || console).warn(format(
-                        t('Calculated attribute "%s.%s" formula is specified as string. This format is deprecated and wil be removed from later versions.'),
-                        cm.getCanonicalName(),
-                        pm.name
-                      ));
+                        t('Calculated attribute "%s" formula is specified as string.'),
+                        `${cm.getCanonicalName()}.${pm.name}`
+                      ) + ' ' + t('This format is deprecated and wil be removed from later versions.'));
                     }
                     pm._formula = options.calc.parseFormula(pm.formula);
                   } catch (e) {
@@ -861,10 +860,9 @@ function DsMetaRepository(options) {
                     pm._dvFormula = options.calc.parseFormula(pm.defaultValue);
                     if (typeof pm.defaultValue === 'string') {
                       (options.log || console).warn(format(
-                        t('Attribute "%s.%s" default value formula is specified as string. This format is deprecated and wil be removed from later versions.'),
-                        cm.getCanonicalName(),
-                        pm.name
-                      ));
+                        t('Attribute "%s" default value formula is specified as string.'),
+                        `${cm.getCanonicalName()}.${pm.name}`
+                      ) + ' ' + t('This format is deprecated and wil be removed from later versions.'));
                     }
                   } catch (e) {
                     pm._dvFormula = null;

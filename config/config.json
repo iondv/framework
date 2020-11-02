@@ -3,6 +3,7 @@
     "parametrised": true,
     "baseUrl": "[[app.baseUrl]]",
     "port": "[[server.ports]]",
+    "lang": "[[app.lang]]",
     "defaultModule":"[[module.default]]",
     "skipModules": "[[module.skip]]",
     "requestSizeLimit": "[[server.requestSizeLimit]]",

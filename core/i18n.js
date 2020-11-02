@@ -19,11 +19,11 @@ const loadLang = async (lang, dir, domain) => {
   for (nm of nms) {
     const d = path.join(dir, nm);
     const stat = await lstat(d);
-    if (stat.isDirectory) {
+    if (stat.isDirectory()) {
       await loadLang(lang, d, domain);
     } else {
       const data = await readFile(d);
-      const type = path.extname(nm);
+      const type = path.extname(nm).substring(1);
       if (!translators.hasOwnProperty(lang)) {
         translators[lang] = new Gettext();
         translators[lang].setLocale(lang);
@@ -32,7 +32,7 @@ const loadLang = async (lang, dir, domain) => {
       translators[lang].addTranslations(
         lang,
         domain || DEFAULT_DOMAIN,
-        ((type == 'po') ? po : mo).parse(data)
+        ((type == 'po') ? po : mo).parse(data, 'utf-8')
       );
     }
   }
@@ -48,11 +48,19 @@ module.exports.load = async (dir, domain, lang) => {
           return await loadLang(lang, d, domain);
         }
       } catch (err) {
-
+        console.error(err);
       }
     }
+    let nms;
     try {
-      const nms = await readdir(dir);
+      nms = await readdir(dir);
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.error(err);
+      }
+      return;
+    }
+    try {
       for (lang of nms) {
         const d = path.join(dir, lang);
         const stat = await lstat(d);
@@ -61,6 +69,7 @@ module.exports.load = async (dir, domain, lang) => {
         }      
       }  
     } catch (err) {
+      console.error(err);
       return;
     }
 };
