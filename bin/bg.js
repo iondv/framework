@@ -42,7 +42,7 @@ if (params.path) {
 }
 
 load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
-  .then(di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
+  .then(() => di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
   .then(scope =>
     di(
       'app',
