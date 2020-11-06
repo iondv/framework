@@ -24,7 +24,7 @@ const strings = (prefix, id, params, lang) => {
     if (systemBase.hasOwnProperty(prefix)) {
       const base = systemBase[prefix];
       if (base.has(id))
-        str = base(lang, prefix).get(id);
+        str = base(lang).get(id);
     }
     params && Object.keys(params).forEach(p => {
       str = str.replace(`%${p}`, params[p]);
@@ -102,7 +102,7 @@ module.exports.getBase = (prefix) => {
         const bases = Object.values(systemBase);
         for (base of bases) {
           if (base.has(id)) {
-            return base(lang, prefix).get(id);
+            return base(lang).get(id);
           }
         }
         return id;
@@ -111,7 +111,7 @@ module.exports.getBase = (prefix) => {
         let result = {};
         const bases = Object.values(systemBase);
         for (base of bases) {
-            result = merge(result, base(lang, prefix).toJSON());
+            result = merge(result, base(lang).toJSON());
         }
         return result;
       }  
