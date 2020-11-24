@@ -5,23 +5,20 @@
  */
 const child = require('child_process');
 const moment = require('moment');
+const path = require('path');
 const config = require('../config');
 const di = require('core/di');
-
 const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
+const {format} = require('util');
 const toAbsolutePath = require('core/system').toAbsolute;
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
 
-errorSetup(config.lang || 'ru');
+errorSetup();
 
 let jobName = false;
-if (process.argv.length > 2) {
-  jobName = process.argv[2];
-} else {
-  console.error('Не передано имя задания');
-  process.exit(130);
-}
 
 let interval;
 
@@ -135,7 +132,16 @@ function calcCheckInterval(launch, dv) {
   return dv;
 }
 
-di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  .then(() => {
+    if (process.argv.length > 2) {
+      jobName = process.argv[2];
+    } else {
+      console.error(t('Job name not specified'));
+      process.exit(130);
+    }    
+    return di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']);
+  })
   .then(
     /**
      * @param {{}} scope
@@ -155,11 +161,11 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
          */
         let job = jobs[jobName];
         if (!job.worker) {
-          throw new Error('Не указан рабочий компонент задания ' + jobName);
+          throw new Error(format(t('Worker component for job %s is not specified'), jobName));
         }
 
         if (!job.launch) {
-          throw new Error('Не указаны параметры задания ' + jobName);
+          throw new Error(format(t('Parameters are not specified for job %s'), jobName));
         }
 
         let checkInterval = 1000;
@@ -195,7 +201,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
             let ch = child.fork(toAbsolutePath('bin/job'), [jobName], chopts);
             let rto = setTimeout(() => {
               if (ch.connected) {
-                sysLog.warn(new Date().toISOString() + ': Задание ' + jobName + ' было прервано по таймауту');
+                sysLog.warn(format(t('%s: Job %s was interrupted by timeout'), new Date().toISOString(), jobName));
                 ch.kill(9);
                 busy = false;
               }
@@ -211,10 +217,10 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
           interval = setTimeout(starter, checkInterval);
         };
 
-        sysLog.info(new Date().toISOString() + ': Задание ' + jobName + ' запущено');
+        sysLog.info(format(t('%s: Job %s started'), new Date().toISOString(), jobName));
         starter();
       } else {
-        throw new Error('Задание ' + jobName + ' не найдено');
+        throw new Error(format(t('Job %s not found'), jobName));
       }
     }
   )

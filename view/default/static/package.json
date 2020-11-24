@@ -12,6 +12,7 @@
     "bootstrap": "^3.4.1",
     "font-awesome": "^4.7.0",
     "jquery": "^3.4",
+    "gettext.js": "*",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.23"
   }

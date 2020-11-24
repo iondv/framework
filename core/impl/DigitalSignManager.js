@@ -8,6 +8,7 @@ const Preprocessor = require('core/interfaces/Preprocessor');
 const base64 = require('base64-js');
 const buf = require('core/buffer');
 const F = require('core/FunctionCodes');
+const {t} = require('core/i18n');
 
 // jshint maxcomplexity: 20
 
@@ -85,7 +86,7 @@ function DigitalSignManager(options) {
    */
   this._persistSignature = function (id, data, signature, attributes) {
     if (!options.dataSource) {
-        throw new Error('Не настроен источник данных.');
+        throw new Error(t('Datasource is not set up.'));
     }
 
     if (Array.isArray(signature)) {
@@ -152,7 +153,7 @@ function DigitalSignManager(options) {
    */
   this._getSignatures = function (id, since, till, opts) {
     if (!options.dataSource) {
-      throw new Error('Не настроен источник данных.');
+      throw new Error(t('Datasource is not set up.'));
     }
 
     let and = [];
@@ -173,7 +174,7 @@ function DigitalSignManager(options) {
     }
 
     if (!and.length) {
-      throw new Error('Не указаны параметры выборки!');
+      throw new Error(t('Fetch parameters are not specified!'));
     }
 
     return options.dataSource.fetch('ion_signatures',

@@ -16,6 +16,8 @@ const clone = require('clone');
 const mkdirp = require('mkdirp');
 const xss = require('xss');
 const Share = require('core/interfaces/ResourceStorage/lib/Share');
+const {t} = require('core/i18n');
+const {format} = require('util');
 
 /* jshint maxcomplexity: 20, maxstatements: 40 */
 /**
@@ -37,7 +39,7 @@ function FsStorage(options) {
    */
   var dataSource = options.dataSource;
   if (!dataSource) {
-    throw new Error('Не указан источник данных файлового хранилища!');
+    throw new Error(t('File storage data source not specified!'));
   }
 
   delete options.dataSource;
@@ -104,7 +106,7 @@ function FsStorage(options) {
 
       opts = merge(opts, dt);
     } else {
-      throw new Error('Переданы данные недопустимого типа:!');
+      throw new Error(t('Inapropriate data type received!'));
     }
 
     function checkDest(filename, prompt) {
@@ -149,7 +151,7 @@ function FsStorage(options) {
           });
         })
       )
-      .then(pth => dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE})) // TODO Определять mime-type и content-type
+      .then(pth => dataSource.insert('ion_files', {id: id, path: pth, options: opts, type: resourceType.FILE}))
       .then(r =>
         new StoredFile(
             r.id,
@@ -385,7 +387,7 @@ function FsStorage(options) {
                     return dataSource.update('ion_files', {[F.EQUAL]: ['$id', parentDir.id]}, parentDir)
                       .then(() => fetch ? dir : null);
                   } else {
-                    return Promise.reject('нет такой директории');
+                    return Promise.reject(new Error(format(t('No such directory %s'), parentDir)));
                   }
                 });
           } else {
@@ -416,7 +418,7 @@ function FsStorage(options) {
           dir.files.push(fileId);
           return dataSource.update('ion_files', {[F.EQUAL]: ['$id', dirId]}, dir).then(() => fileId);
         } else {
-          return Promise.reject('Нет такой директории');
+          throw new Error(format(t('No such directory %s'), dirId));
         }
       });
   };
@@ -437,7 +439,7 @@ function FsStorage(options) {
           }
           return dataSource.update('ion_files', {[F.EQUAL]: ['$id', dirId]}, dir).then(() => fileId);
         } else {
-          return Promise.reject('Нет такой директории');
+         throw new Error(format(t('No such directory %s'), dirId));
         }
       });
   };
@@ -451,7 +453,7 @@ function FsStorage(options) {
    */
   this._share = function (id) {
     if (!_options.shareBase) {
-      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
+      return Promise.reject(new Error(t('Base URL for share is not set up!')));
     }
     return dataSource
       .update('ion_files', {[F.EQUAL]: ['$id', id]}, {shared: true})
@@ -465,14 +467,14 @@ function FsStorage(options) {
    */
   this._currentShare  = function (id) {
     if (!_options.shareBase) {
-      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
+      return Promise.reject(new Error(t('Base URL for share is not set up!')));
     }
     return Promise.resolve(new Share(_options.shareBase + '/' + id, {}));
   };
 
   this._deleteShare = function (share) {
     if (!_options.shareBase) {
-      return Promise.reject(new Error('Не настроен базовый URL файлов с общим доступом!'));
+      return Promise.reject(new Error(t('Base URL for share is not set up!')));
     }
 
     let basePath = url.parse(_options.shareBase).path;

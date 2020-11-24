@@ -4,6 +4,8 @@
 'use strict';
 const contexts = {};
 const clone = require('clone');
+const {format} = require('util');
+const {t} = require('core/i18n');
 
 // jshint maxstatements: 35, maxcomplexity: 30, maxparams: 15
 
@@ -83,7 +85,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
         if (components.hasOwnProperty(nm)) {
           return loadComponent(nm, components[nm], scope, components, init, skip, cwd);
         }
-        throw new Error('Не найден компонент с именем ' + nm + '.');
+        throw new Error(format(t('Component %s not found.'), nm));
       } else if (options.substr(0, 7) === 'lazy://') {
         let nm = options.substr(7);
         if (!nm && skip && skip.indexOf(nm) >= 0) {
@@ -92,7 +94,7 @@ function processOptions(options, scope, components, init, skip, cwd) {
         if (components.hasOwnProperty(nm)) {
           return createProxy(scope, options.substr(7));
         }
-        throw new Error('Не найден компонент с именем ' + nm + '.');
+        throw new Error(format(t('Component %s not found.'), nm));
       }
       return options;
     } else if (options instanceof Array) {
@@ -142,7 +144,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
     if (scope.hasOwnProperty(name)) {
       return scope[name];
     } else {
-      throw new Error('Компонент ' + name + ' имеет циклическую зависимость с другим компонентом.');
+      throw new Error(format(t('Component %s has a cyclic reference to another component.'), name));
     }
   }
 
@@ -163,7 +165,7 @@ function loadComponent(name, component, scope, components, init, skip, cwd) {
       };
       if (component.initMethod) {
         if (typeof F[component.initMethod] != 'function') {
-          throw new Error('Не найден метод ' + component.initMethod + ' компонента ' + name);
+          throw new Error(format(t('Method %s of component %s not found.'), component.initMethod, name));
         }
         result[component.initMethod] = F[component.initMethod];
       } else if (typeof F._initialization === 'function') {
@@ -243,10 +245,10 @@ function di(context, struct, presets, parentContext, skip, cwd) {
       if (typeof c[im] == 'function') {
         p = p.then(() => c[im].call(c, scope));
       } else {
-        return Promise.reject(new Error('Не найден метод ' + im + ' компонента ' + initiator.name));
+        return Promise.reject(new Error(format(t('Method %s of component %s not found.'), im, initiator.name)));
       }
     } else {
-      return Promise.reject(new Error('Не найден компонент ' + initiator.name));
+      return Promise.reject(new Error(format(t('Component %s not found.'), initiator.name)));
     }
     p = p.then();
   });

@@ -9,6 +9,7 @@ const StoredFile = require('core/interfaces/ResourceStorage').StoredFile;
 const cuid = require('cuid');
 const clone = require('clone');
 const path = require('path');
+const IonError = require('core/IonError');
 
 const thumbsDirectoryModes = {
   IGNORE: 'ignore',
@@ -202,7 +203,7 @@ function ImageStorage(options) { // jshint ignore:line
     let mime = opts.mimetype || opts.mimeType || data.mimetype || data.mimeType;
 
     if (mime && mime.indexOf('image/') !== 0) {
-      return Promise.reject(new Error('Переданные данные не являются изображением!'));
+      return Promise.reject(new Error('Data sent is not an image!'));
     }
 
     let p = Promise.resolve();
@@ -401,7 +402,7 @@ function ImageStorage(options) { // jshint ignore:line
           if (options.log) {
             options.log.error(err);
           }
-          res.status(500).send(err.message || err);
+          res.status(500).send(err.getMessage(req.locals.lang) || err);
         });
     }.bind(this);
   }

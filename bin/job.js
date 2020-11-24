@@ -11,25 +11,27 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
+const {format} = require('util');
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
+errorSetup();
 
 let jobName = false;
-
-if (process.argv.length > 2) {
-  jobName = process.argv[2];
-} else {
-  console.error('Не передано имя задания');
-  process.exit(130);
-}
-
 let job = false;
 let notifier = null;
 
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents'])
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  .then(() => {
+    if (process.argv.length > 2) {
+      jobName = process.argv[2];
+    } else {
+      console.error(t('Job name not specified'));
+      process.exit(130);
+    }    
+    return di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']);
+  })
   .then(scope =>
     di(
       'app',
@@ -56,23 +58,23 @@ di('boot', config.bootstrap,
         job = jobs[jobName];
         notifier = scope.notifier;
         if (!job.worker) {
-          throw new Error('Не указан рабочий компонент задания ' + jobName);
+          throw new Error(format(t('Worker component not specified for job %s'), jobName));
         }
         return di('job', jobs[jobName].di || {}, {}, 'app');
       } else {
-        throw new Error('Задание ' + jobName + ' не найдено');
+        throw new Error(format(t('Job %s not found'), jobName));
       }
     }
   )
   .then((scope) => {
     let worker = scope[job.worker];
     if (!worker) {
-      throw new Error('Не найден рабочий компонент задания ' + jobName);
+      throw new Error(format(t('Worker component of job %s not found'), jobName));
     }
     if (typeof worker !== 'function' && typeof worker.run !== 'function') {
-      throw new Error('Рабочий компонент задания ' + jobName + ' не имеет метода запуска');
+      throw new Error(format(t('Worker component of job %s has no launch method'), jobName));
     }
-    let msg = 'Начало выполнения задания ' + jobName;
+    let msg = format(t('Job %s started'), jobName);
     sysLog.info(msg);
     let promise = Promise.resolve();
     if (notifier && job.notify) {
@@ -86,7 +88,7 @@ di('boot', config.bootstrap,
     return promise.then(() => (typeof worker === 'function') ? worker() : worker.run());
   })
   .then(() => {
-    let msg = 'Задание ' + jobName + ' выполнено';
+    let msg = format(t('Job %s done'), jobName);
     sysLog.info(msg);
     let p = Promise.resolve();
     if (notifier && job.notify) {

@@ -3,31 +3,18 @@
  */
 
 const IonError = require('core/IonError');
-const {
-  merge, isConfig, processDir, readConfig
-} = require('core/util/read');
 const path = require('path');
 const fs = require('fs');
+const {t} = require('core/i18n');
+const {format} = require('util');
 
 /**
- * @param {String} lang
  * @param {String} baseDir
  */
-module.exports = function errorSetup(lang, baseDir) {
-  baseDir = baseDir || path.normalize(path.join(__dirname, '..', 'i18n'));
-  const msgDir = path.join(baseDir, lang, 'errors');
+module.exports = function errorSetup(baseDir) {
+  baseDir = baseDir || path.normalize(path.join(__dirname, '..', 'strings'));
+  const msgDir = path.join(baseDir, 'errors');
   if (!fs.existsSync(msgDir)) // eslint-disable-line no-sync
-    throw new Error(`Error message base for language "${lang}" does not exist in path "${baseDir}"`);
-  let base;
-  try {
-    base = require(msgDir);
-  } catch (err) {
-    // Do nothing
-  }
-  base = base || {};
-  processDir(msgDir, isConfig, (fn) => {
-    const messages = readConfig(fn);
-    base = merge(base, messages);
-  });
-  IonError.registerMessages(base, lang);
+    throw new Error(format(t('Error message base does not exist in path "%s"'), baseDir));
+  IonError.registerMessages(require(msgDir));
 };

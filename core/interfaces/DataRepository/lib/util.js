@@ -11,6 +11,8 @@ const Item = require('./Item');
 const Operations = require('core/FunctionCodes');
 const dsOperations = require('core/DataSourceFunctionCodes');
 const DateSize = require('core/DateSizes');
+const {t} = require('core/i18n');
+const {format} = require('util');
 
 // jshint maxparams: 12, maxstatements: 60, maxcomplexity: 60, maxdepth: 15
 
@@ -48,7 +50,7 @@ function castValue(value, pm) {
     }
     let rpm = pm._refClass.getPropertyMeta(refkey[0]);
     if (!rpm) {
-      throw new Error(`Не найден атрибут "${refkey[0]}" класса "${pm._refClass.getCaption()}"!`);
+      throw new Error(format(t('Attribute "%s" of class "%s" not found!'), refkey[0], pm._refClass.getCaption()));
     }
     return castValue(value, rpm);
   } else if (pm.type === PropertyTypes.BOOLEAN) {
@@ -167,7 +169,7 @@ module.exports.formDsUpdatedData = formUpdatedData;
  */
 function filterByItemIds(keyProvider, cm, ids) {
   if (!Array.isArray(ids)) {
-    throw new Error('неправильные данные');
+    throw new Error(t('Invalid data'));
   }
   if (cm.getKeyProperties().length === 1) {
     let filter = [];
@@ -233,7 +235,7 @@ function joinColl(cm, pm, joins, context, numGen) {
   let colMeta = pm._refClass;
 
   if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-    throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+    throw new Error(t('Conditions for collections based on composite keys are not supported yet!'));
   }
 
   let tbl = tn(colMeta);
@@ -267,11 +269,16 @@ function prepareContains(cm, filter, joins, numGen, context) {
   let nm = filter[0].substr(1);
   let pm = findPm(cm, nm);
   if (!pm) {
-    throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+    throw new Error(format(t('Attribute %s of class %s not found'), nm, cm.getCanonicalName()));
   }
 
   if (pm.type !== PropertyTypes.COLLECTION) {
-    throw new Error('Операция contains не применима к атрибуту ' + nm + ' класса ' + cm.getCanonicalName());
+    throw new Error(format(
+      t('Operation %s is not applicable to attribute %s of class %s'),
+      'contains',
+      nm,
+      cm.getCanonicalName()
+    ));
   }
 
   return prepareFilterOption(pm._refClass, filter[1], joins, numGen, joinColl(cm, pm, joins, context, numGen));
@@ -288,14 +295,14 @@ function prepareSize(cm, filter, joins, numGen, context) {
     let nm = filter[0].substr(1);
     let pm = findPm(cm, nm);
     if (!pm) {
-      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+      throw new Error(format(t('Attribute %s of class %s not found'), nm, cm.getCanonicalName()));
     }
 
     if (pm.type !== PropertyTypes.COLLECTION) {
       return {[Operations.SIZE]: [filter[0]]};
     }
 
-    // TODO Реализовать возможность обращения через несколько уровней вложенности
+    // TODO implement reference through several levels of nesting
 
     return {[dsOperations.JOIN_SIZE]: join(pm, cm, pm._refClass, null, context)};
   }
@@ -316,15 +323,15 @@ function prepareEmpty(cm, filter, empty, joins, numGen, context) {
   if (nm.indexOf('.') < 0) {
     let pm = findPm(cm, nm);
     if (!pm) {
-      throw new Error('Не найден атрибут ' + nm + ' класса ' + cm.getCanonicalName());
+      throw new Error(format(t('Attribute %s of class %s not found'), nm, cm.getCanonicalName()));
     }
     if (pm.type === PropertyTypes.COLLECTION) {
       let colMeta = pm._refClass;
       if (!pm.backRef && colMeta.getKeyProperties().length > 1) {
-        throw new Error('Условия на коллекции на составных ключах не поддерживаются!');
+        throw new Error(t('Conditions for collections based on composite keys are not supported yet!'));
       }
 
-      // TODO Реализовать возможность обращения через несколько уровней вложенности
+      // TODO implement reference through several levels of nesting
 
       if (empty) {
         return {[dsOperations.JOIN_NOT_EXISTS]: join(pm, cm, colMeta, null, context)};
@@ -381,7 +388,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
   if (pm && (pm.type === PropertyTypes.REFERENCE || pm.type === PropertyTypes.COLLECTION) && path.length > 1) {
     let rMeta = pm._refClass;
     if (!pm.backRef && rMeta.getKeyProperties().length > 1) {
-      throw new Error('Условия на ссылки на составных ключах не поддерживаются!');
+      throw new Error(t('Conditions for collections based on composite keys are not supported yet!'));
     }
     let tbl = tn(rMeta);
     let alias = '';
@@ -394,7 +401,7 @@ function prepareLinked(cm, path, joins, numGen, context) {
         left: (context ? context.alias + '.' : '') +
                 (pm.backRef ? (pm.binding ? pm.binding : cm.getKeyProperties()[0]) : pm.name),
         right: pm.backRef ? pm.backRef : rMeta.getKeyProperties()[0],
-        // filter: addDiscriminatorFilter(null, rMeta), TODO: Вернуть когда уйдем от монги, или вынести в настройку
+        // filter: addDiscriminatorFilter(null, rMeta), TODO: uncomment when RDBMS support implemented
         alias: alias
       };
       joins.push(j);

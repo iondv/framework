@@ -10,11 +10,12 @@ const IonLogger = require('core/impl/log/IonLogger');
 const Permissions = require('core/Permissions');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
+const {t, lang, load} = require('core/i18n');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
 const aclImport = require('lib/aclImport');
 
-var params = {
+const params = {
   permissions: [],
   users: [],
   resources: [],
@@ -23,6 +24,10 @@ var params = {
 };
 
 var setParam = false;
+
+lang(config.lang);
+
+errorSetup();
 
 // jshint maxstatements: 40, maxcomplexity: 20
 
@@ -50,22 +55,24 @@ process.argv.forEach(function (val) {
   }
 });
 
-if (!params.aclDir) {
-  if (!params.roles.length) {
-    console.error('Не указаны роли!');
-    process.exit(130);
-  }
-
-  if (!params.users.length && !params.resources.length && !params.permissions.length) {
-    console.error('Не указаны ни пользователи, ни ресурсы, ни права!');
-    process.exit(130);
-  }
-}
-
 let sysLog = new IonLogger(config.log || {});
 
-// Связываем приложение
-di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+// Application binding
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  .then(() => {
+    if (!params.aclDir) {
+      if (!params.roles.length) {
+        console.error(t('No roles specified!'));
+        process.exit(130);
+      }
+    
+      if (!params.users.length && !params.resources.length && !params.permissions.length) {
+        console.error(t('No users nor resources nor permissions are specified!'));
+        process.exit(130);
+      }
+    }    
+    return di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']);
+  })
   .then(scope =>
     di(
       'app',
@@ -99,7 +106,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
   })
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Права назначены');
+    console.info(t('Permissions granted'));
     process.exit(0);
   })
   .catch((err) => {

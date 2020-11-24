@@ -10,6 +10,7 @@ const AclProvider = require('core/interfaces/AclProvider');
 const Permissions = require('core/Permissions');
 const clone = require('clone');
 const merge = require('merge');
+const {t} = require('core/i18n');
 
 function MongoAcl(config) {
 
@@ -18,7 +19,7 @@ function MongoAcl(config) {
   var ds = config.dataSource;
 
   if (!ds || ds.constructor.prototype.constructor.name !== 'DataSource') {
-    throw 'Не указан источник данных для подсистемы контроля доступа!';
+    throw new Error(t('Data source not specified for ACL subsytem!'));
   }
 
   var _acl = null;
@@ -35,7 +36,7 @@ function MongoAcl(config) {
       return Promise.resolve(_acl);
     }
     if (connecting) {
-      return Promise.reject(new Error('Не удалось инициализировать ACL'));
+      return Promise.reject(new Error(t('Failed to initialize ACL subsystem.')));
     }
     _acl = null;
     connecting = true;

@@ -100,12 +100,12 @@
         if (options.pwdMinLength) {
           if (pwd.length < options.pwdMinLength) {
             valid = false;
-            messages.push('Минимальная длина пароля ' + options.pwdMinLength + ' символов');
+            messages.push('Minimal password length is ' + options.pwdMinLength + ' symbols');
           }
         }
       } else {
         valid = false;
-        messages.push('Неверный повтор пароля');
+        messages.push('Invalid password repeat');
       }
       if (valid) {
         $regForm.submit();

@@ -129,7 +129,7 @@ function Property(item, propertyMeta, name) {
     if (this.meta.selectionProvider) {
       let selection = this.getSelection();
       if (Array.isArray(selection)) {
-        for (let i = 0; i < selection.length; i++) { // TODO Оптимизировать (искать по хешу?)
+        for (let i = 0; i < selection.length; i++) { // TODO
           if (this.selectionKeyMatch(selection[i].key)) {
             return selection[i].value;
           }

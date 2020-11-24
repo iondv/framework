@@ -7,15 +7,17 @@ const config = require('../config');
 const di = require('core/di');
 const extend = require('extend');
 const IonLogger = require('core/impl/log/IonLogger');
-
 const sysLog = new IonLogger(config.log || {});
 const errorSetup = require('core/error-setup');
-errorSetup(config.lang || 'ru');
+const path = require('path');
+const {t, load, lang} = require('core/i18n');
+lang(config.lang);
+errorSetup();
 
 
 // jshint maxcomplexity: 20, maxstatements: 30
-
-di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  .then(() => di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
   .then(scope =>
     di(
       'app',
@@ -35,7 +37,7 @@ di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents'])
     }
   )
   .then(() => {
-    sysLog.info('Задания запущены');
+    sysLog.info(t('Schedule started'));
   })
   .catch((err) => {
     sysLog.error(err);

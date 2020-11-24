@@ -14,3 +14,4 @@ module.exports = merge(
   require('./validation'),
   require('./front-end')
 );
+
