@@ -1,0 +1,437 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-11-01 23:27+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bin/acl.js:65
+msgid "No roles specified!"
+msgstr ""
+
+#: bin/acl.js:70
+msgid "No users nor resources nor permissions are specified!"
+msgstr ""
+
+#: bin/acl.js:109
+msgid "Permissions granted"
+msgstr ""
+
+#: bin/adduser.js:74
+msgid "User successfully created."
+msgstr ""
+
+#: bin/bg.js:68
+#, javascript-format
+msgid "Worker component not found for background job %s"
+msgstr ""
+
+#: bin/bg.js:71
+#, javascript-format
+msgid "Worker component of background job %s has no launch method"
+msgstr ""
+
+#: bin/bg.js:73
+#, javascript-format
+msgid "%s: Start of background job %s"
+msgstr ""
+
+#: bin/bg.js:80
+#, javascript-format
+msgid "%s: Background job %s done"
+msgstr ""
+
+#: bin/export.js:93
+msgid "Export successfully done."
+msgstr ""
+
+#: bin/import-data.js:30
+msgid "Data integrity checks are ignored"
+msgstr ""
+
+#: bin/import-data.js:73
+msgid "Import is successfully done."
+msgstr ""
+
+#: bin/import.js:65
+msgid "Model import successfully done"
+msgstr ""
+
+#: bin/job-runner.js:140 bin/job.js:30
+msgid "Job name not specified"
+msgstr ""
+
+#: bin/job-runner.js:164
+#, javascript-format
+msgid "Worker component for job %s is not specified"
+msgstr ""
+
+#: bin/job-runner.js:168
+#, javascript-format
+msgid "Parameters are not specified for job %s"
+msgstr ""
+
+#: bin/job-runner.js:204
+#, javascript-format
+msgid "%s: Job %s was interrupted by timeout"
+msgstr ""
+
+#: bin/job-runner.js:220
+#, javascript-format
+msgid "%s: Job %s started"
+msgstr ""
+
+#: bin/job-runner.js:223 bin/job.js:65
+#, javascript-format
+msgid "Job %s not found"
+msgstr ""
+
+#: bin/job.js:61
+#, javascript-format
+msgid "Worker component not specified for job %s"
+msgstr ""
+
+#: bin/job.js:72
+#, javascript-format
+msgid "Worker component of job %s not found"
+msgstr ""
+
+#: bin/job.js:75
+#, javascript-format
+msgid "Worker component of job %s has no launch method"
+msgstr ""
+
+#: bin/job.js:77
+#, javascript-format
+msgid "Job %s started"
+msgstr ""
+
+#: bin/job.js:91
+#, javascript-format
+msgid "Job %s done"
+msgstr ""
+
+#: bin/schedule.js:40
+msgid "Schedule started"
+msgstr ""
+
+#: bin/setup.js:62
+msgid "Setup complete."
+msgstr ""
+
+#: core/datasources.js:29
+msgid "Connecting datasources"
+msgstr ""
+
+#: core/datasources.js:51
+msgid "All datasources successfully disconnected!"
+msgstr ""
+
+#: core/di.js:88 core/di.js:97 core/di.js:251
+#, javascript-format
+msgid "Component %s not found."
+msgstr ""
+
+#: core/di.js:147
+#, javascript-format
+msgid "Component %s has a cyclic reference to another component."
+msgstr ""
+
+#: core/di.js:168 core/di.js:248
+#, javascript-format
+msgid "Method %s of component %s not found."
+msgstr ""
+
+#: core/error-setup.js:18
+#, javascript-format
+msgid "Error message base does not exist in path \"%s\""
+msgstr ""
+
+#: lib/aclImport.js:21
+#, javascript-format
+msgid "Resource %s[%s] registered."
+msgstr ""
+
+#: lib/aclImport.js:34
+#, javascript-format
+msgid "Role %s[%s] registered."
+msgstr ""
+
+#: lib/aclImport.js:46
+#, javascript-format
+msgid "Role %s permissions to resource %s granted."
+msgstr ""
+
+#: lib/aclImport.js:82
+#, javascript-format
+msgid "User %s registered."
+msgstr ""
+
+#: lib/aclImport.js:93
+#, javascript-format
+msgid "Roles assigned to user %s."
+msgstr ""
+
+#: lib/aclImport.js:139
+#, javascript-format
+msgid "File %s import."
+msgstr ""
+
+#: lib/aclImport.js:141
+#, javascript-format
+msgid "File %s was not imported."
+msgstr ""
+
+#: lib/aclImport.js:146
+msgid "ACL import complete."
+msgstr ""
+
+#: lib/aclImport.js:148
+msgid "Specified ACL settings directory does not exist."
+msgstr ""
+
+#: lib/aclImport.js:151
+msgid "Component for RBAC is not specified."
+msgstr ""
+
+#: lib/auth.js:683
+msgid "User registration failed!"
+msgstr ""
+
+#: lib/deploy.js:20
+#, javascript-format
+msgid "Application %s deployment"
+msgstr ""
+
+#: lib/deploy.js:32
+msgid "Application deployment script started"
+msgstr ""
+
+#: lib/deploy.js:40
+msgid "Failed to read deployment configuration."
+msgstr ""
+
+#: lib/export.js:340
+#, javascript-format
+msgid "Exporting class %s"
+msgstr ""
+
+#: lib/export.js:477
+msgid "Export of meta model."
+msgstr ""
+
+#: lib/export.js:520
+#, javascript-format
+msgid "Exporting data for class %s"
+msgstr ""
+
+#: lib/export.js:531
+msgid "Exporting named sequences"
+msgstr ""
+
+#: lib/export.js:546
+msgid "Exporting ACL"
+msgstr ""
+
+#: lib/import-data.js:117
+#, javascript-format
+msgid "Processed %d of %d objects"
+msgstr ""
+
+#: lib/import-data.js:134
+#, javascript-format
+msgid "Error on file %s unpacking"
+msgstr ""
+
+#: lib/import-data.js:196
+#, javascript-format
+msgid "Archive %s read"
+msgstr ""
+
+#: lib/import-data.js:202
+#, javascript-format
+msgid "Imported %d/%d objects from archive %s"
+msgstr ""
+
+#: lib/import-data.js:215
+#, javascript-format
+msgid "Error on unpacking file %s"
+msgstr ""
+
+#: lib/import-data.js:224
+#, javascript-format
+msgid "Objects imported from archive %s."
+msgstr ""
+
+#: lib/import-data.js:254
+#, javascript-format
+msgid "data objects for import quantity %d, archive quantity %d"
+msgstr ""
+
+#: lib/import-data.js:275
+#, javascript-format
+msgid ""
+"Error on parsing %s\n"
+"Assuming empty\n"
+"%s"
+msgstr ""
+
+#: lib/import-meta.js:233
+#, javascript-format
+msgid ""
+"View model for workflow status %s.%s is placed into \"workflows\" directory "
+"instead of \"wfviews\" directory. That way is deprecated and will be removed "
+"later versions."
+msgstr ""
+
+#: lib/import-meta.js:242
+#, javascript-format
+msgid "Failed to interpret view model path %s!"
+msgstr ""
+
+#: lib/server.js:43
+msgid "Starting ION application"
+msgstr ""
+
+#: lib/server.js:124
+#, javascript-format
+msgid "Failed to connect to port %s"
+msgstr ""
+
+#: lib/server.js:130
+msgid "Failed to start server. All specified ports are busy."
+msgstr ""
+
+#: lib/server.js:137
+#, javascript-format
+msgid "Loading module %s"
+msgstr ""
+
+#: lib/server.js:140
+#, javascript-format
+msgid "Module %s loaded."
+msgstr ""
+
+#: lib/server.js:192
+msgid "Default module not specified."
+msgstr ""
+
+#: lib/server.js:222
+msgid "Loading web-modules."
+msgstr ""
+
+#: lib/server.js:257
+#, javascript-format
+msgid "Module %s is not an express.js application."
+msgstr ""
+
+#: lib/server.js:279
+msgid "All modules are loaded."
+msgstr ""
+
+#: lib/server.js:300
+#, javascript-format
+msgid "Listening to conveyer %s"
+msgstr ""
+
+#: lib/server.js:302
+#, javascript-format
+msgid "Listening to port %s"
+msgstr ""
+
+#: strings/frontend.js:4
+#, javascript-format
+msgid "Field %field value is required"
+msgstr ""
+
+#: strings/templates-default.js:4
+msgid "Home"
+msgstr ""
+
+#: strings/templates-default.js:5
+msgid "Login"
+msgstr ""
+
+#: strings/templates-default.js:6
+msgid "Password"
+msgstr ""
+
+#: strings/templates-default.js:7
+msgid "Repeat password"
+msgstr ""
+
+#: strings/templates-default.js:8
+msgid "Sign in"
+msgstr ""
+
+#: strings/templates-default.js:9
+msgid "Sign in form"
+msgstr ""
+
+#: strings/templates-default.js:10 strings/templates-default.js:24
+msgid "Sign up"
+msgstr ""
+
+#: strings/templates-default.js:11
+msgid "Enter"
+msgstr ""
+
+#: strings/templates-default.js:12
+msgid "Password change form"
+msgstr ""
+
+#: strings/templates-default.js:13
+msgid "New password"
+msgstr ""
+
+#: strings/templates-default.js:14
+msgid "Change password"
+msgstr ""
+
+#: strings/templates-default.js:15
+msgid "OAuth2 access request"
+msgstr ""
+
+#: strings/templates-default.js:16
+msgid "Application %app claims access with your account"
+msgstr ""
+
+#: strings/templates-default.js:17
+msgid "Grant access"
+msgstr ""
+
+#: strings/templates-default.js:18
+msgid "Deny access"
+msgstr ""
+
+#: strings/templates-default.js:19
+msgid "User %name profile"
+msgstr ""
+
+#: strings/templates-default.js:20
+msgid "Save"
+msgstr ""
+
+#: strings/templates-default.js:21
+msgid "Back to application"
+msgstr ""
+
+#: strings/templates-default.js:22
+msgid "Language"
+msgstr ""
+
+#: strings/templates-default.js:23
+msgid "Sign up form"
+msgstr ""
