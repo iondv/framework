@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-08 23:37+0000\n"
-"PO-Revision-Date: 2021-02-08 23:35+0000\n"
-"Last-Translator: allys <allys@live.ru>\n"
+"POT-Creation-Date: 2021-02-09 03:28+0000\n"
+"PO-Revision-Date: 2021-02-09 03:15+0000\n"
+"Last-Translator: Анастасия <nasya.piskunova@gmail.com>\n"
 "Language-Team: Russian <http://weblate.iondv.com/projects/iondv-framework/"
 "core/ru/>\n"
 "Language: ru\n"
@@ -36,7 +36,7 @@ msgstr ""
 #: lib/util/recache.js:85
 #, javascript-format
 msgid "Recalculating objects of class %s"
-msgstr ""
+msgstr "Пересчет объектов класса %s"
 
 #: lib/util/recache.js:90
 msgid "Recalculation complete!"
