@@ -13,5 +13,5 @@ globals:
   after: true
 rules:
   no-console: off
-  no-sync: off # Разрешено использовать синхронные функции в тесте
-  no-invalid-this: off # Разрешаем использование this - нужно для mocha
+  no-sync: off # It is allowed to use synchronous functions in the test
+  no-invalid-this: off # We allow the use of this - necessary for mocha

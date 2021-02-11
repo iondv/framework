@@ -42,7 +42,7 @@ IONDV. Framework - is a node.js open source framework for developing accounting 
 or microservices based on metadata and individual modules. Framework is a part of 
 instrumental digital platform to create enterprise 
 (ERP) apps. This platform consists of the following open-source components: the [IONDV. Framework](https://github.com/iondv/framework), the
-[modules](https://github.com/topics/iondv-module) и ready-made applications expanding it
+[modules](https://github.com/topics/iondv-module) and ready-made applications expanding it
 functionality, visual development environment [Studio](https://github.com/iondv/studio) to create metadata for the app.
 
 ## Description  
@@ -66,7 +66,7 @@ Describe the data and apply ready-made modules that you can adjust for specific 
 <h1 align="center"> <a href="https://www.iondv.com/"><img src="/docs/ru/images/app_structure1.png" height="500px" alt="Application structure - core, metadata, modules" align="center"></a>
 </h1>  
 
-In the square frames  - *ioncore*, *meta class*, *meta view*, *meta navigation* и *registry module* - are the base of the simplest application. Below are additional types of meta and modules. They represent additional functionality and could be applied in accordance with the application. Look for the application dependencies in the `package.json` file.
+In the square frames  - *ioncore*, *meta class*, *meta view*, *meta navigation* and *registry module* - are the base of the simplest application. Below are additional types of meta and modules. They represent additional functionality and could be applied in accordance with the application. Look for the application dependencies in the `package.json` file.
 
 ### Typical applications
 
