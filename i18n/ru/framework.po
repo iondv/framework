@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-09 03:28+0000\n"
-"PO-Revision-Date: 2021-02-09 03:15+0000\n"
-"Last-Translator: Анастасия <nasya.piskunova@gmail.com>\n"
+"POT-Creation-Date: 2021-02-12 03:42+0000\n"
+"PO-Revision-Date: 2021-02-10 04:40+0000\n"
+"Last-Translator: Alena Kremenetskaya <alena.kremenetskaya@mail.ru>\n"
 "Language-Team: Russian <http://weblate.iondv.com/projects/iondv-framework/"
 "core/ru/>\n"
 "Language: ru\n"
@@ -27,11 +27,11 @@ msgstr "Не удалось зарегистрировать пользоват�
 #: lib/util/recache.js:43
 #, javascript-format
 msgid "%s objects processed"
-msgstr ""
+msgstr "%s объектов обработано"
 
 #: lib/util/recache.js:58
 msgid "Cache recalculation started"
-msgstr ""
+msgstr "Пересчет кэша запущен"
 
 #: lib/util/recache.js:85
 #, javascript-format
@@ -40,38 +40,38 @@ msgstr "Пересчет объектов класса %s"
 
 #: lib/util/recache.js:90
 msgid "Recalculation complete!"
-msgstr ""
+msgstr "Пересчет завершен!"
 
 #: lib/util/theme.js:47
 #, javascript-format
 msgid "Theme %s not found"
-msgstr ""
+msgstr "Тема %s не найдена"
 
 #: lib/util/theme.js:50
 #, javascript-format
 msgid "Using theme from %s"
-msgstr ""
+msgstr "Использование темы из %s"
 
 #: lib/deploy.js:20
 #, javascript-format
 msgid "Application %s deployment"
-msgstr ""
+msgstr "Развертывание приложения %s"
 
 #: lib/deploy.js:32
 msgid "Application deployment script started"
-msgstr ""
+msgstr "Скрипт развертывания приложения запущен"
 
 #: lib/deploy.js:40
 msgid "Failed to read deployment configuration."
-msgstr ""
+msgstr "Не удалось прочитать конфигурацию развертывания."
 
 #: lib/plugins/customProfile.js:22
 msgid "Failed to refer dependecy components"
-msgstr ""
+msgstr "Не удалось обратиться к компонентам зависимостей"
 
 #: lib/plugins/customProfile.js:175
 msgid "Required fields are not set."
-msgstr ""
+msgstr "Обязательные поля не заполнены."
 
 #: lib/import-meta.js:233
 #, javascript-format
@@ -80,115 +80,118 @@ msgid ""
 "instead of \"wfviews\" directory. That way is deprecated and will be removed "
 "later versions."
 msgstr ""
+"Просмотр модели состояния бизнес-процесса %s. %s помещен в директорию "
+"\"workflows\" вместо директории \"wfviews\". Этот способ устарел и будет "
+"удален в более поздних версиях."
 
 #: lib/import-meta.js:242
 #, javascript-format
 msgid "Failed to interpret view model path %s!"
-msgstr ""
+msgstr "Не удалось интерпретировать путь модели представления %s!"
 
 #: lib/export.js:340
 #, javascript-format
 msgid "Exporting class %s"
-msgstr ""
+msgstr "Экспорт класса %s"
 
 #: lib/export.js:477
 msgid "Export of meta model."
-msgstr ""
+msgstr "Экспорт метамодели."
 
 #: lib/export.js:520
 #, javascript-format
 msgid "Exporting data for class %s"
-msgstr ""
+msgstr "Экспорт данных для класса %s"
 
 #: lib/export.js:531
 msgid "Exporting named sequences"
-msgstr ""
+msgstr "Экспорт именованных последовательностей"
 
 #: lib/export.js:546
 msgid "Exporting ACL"
-msgstr ""
+msgstr "Экспорт ACL"
 
 #: lib/aclImport.js:21
 #, javascript-format
 msgid "Resource %s[%s] registered."
-msgstr ""
+msgstr "Ресурс %s[%s] зарегистрирован."
 
 #: lib/aclImport.js:34
 #, javascript-format
 msgid "Role %s[%s] registered."
-msgstr ""
+msgstr "Роль %s[%s] зарегистрирована."
 
 #: lib/aclImport.js:46
 #, javascript-format
 msgid "Role %s permissions to resource %s granted."
-msgstr ""
+msgstr "Права доступа ролей %s для ресурса %s предоставлены."
 
 #: lib/aclImport.js:82
 #, javascript-format
 msgid "User %s registered."
-msgstr ""
+msgstr "Пользователь %s зарегистрирован."
 
 #: lib/aclImport.js:93
 #, javascript-format
 msgid "Roles assigned to user %s."
-msgstr ""
+msgstr "Роли назначены пользователю %s."
 
 #: lib/aclImport.js:139
 #, javascript-format
 msgid "File %s import."
-msgstr ""
+msgstr "Импорт файла %s"
 
 #: lib/aclImport.js:141
 #, javascript-format
 msgid "File %s was not imported."
-msgstr ""
+msgstr "Файл %s не импортирован."
 
 #: lib/aclImport.js:146
 msgid "ACL import complete."
-msgstr ""
+msgstr "Импорт ACL завершен."
 
 #: lib/aclImport.js:148
 msgid "Specified ACL settings directory does not exist."
-msgstr ""
+msgstr "Указанный каталог настроек ACL не существует."
 
 #: lib/aclImport.js:151
 msgid "Component for RBAC is not specified."
-msgstr ""
+msgstr "Компонент для RBAC не указан."
 
 #: lib/import-data.js:117
 #, javascript-format
 msgid "Processed %d of %d objects"
-msgstr ""
+msgstr "Обработано %d из %d объектов"
 
 #: lib/import-data.js:134
 #, javascript-format
 msgid "Error on file %s unpacking"
-msgstr ""
+msgstr "Ошибка при распаковке файла %s"
 
 #: lib/import-data.js:196
 #, javascript-format
 msgid "Archive %s read"
-msgstr ""
+msgstr "Архив %s прочитан"
 
 #: lib/import-data.js:202
 #, javascript-format
 msgid "Imported %d/%d objects from archive %s"
-msgstr ""
+msgstr "Импортировано %d/%d объектов из архива %s"
 
 #: lib/import-data.js:215
 #, javascript-format
 msgid "Error on unpacking file %s"
-msgstr ""
+msgstr "Ошибка при распаковке файла %s"
 
 #: lib/import-data.js:224
 #, javascript-format
 msgid "Objects imported from archive %s."
-msgstr ""
+msgstr "Объекты импортированные из архива %s."
 
 #: lib/import-data.js:254
 #, javascript-format
 msgid "data objects for import quantity %d, archive quantity %d"
-msgstr ""
+msgstr "Количество объектов данных для импорта %d, архива %d"
 
 #: lib/import-data.js:275
 #, javascript-format
@@ -197,89 +200,92 @@ msgid ""
 "Assuming empty\n"
 "%s"
 msgstr ""
+"Ошибка при парсинге %s\n"
+"Предположительно пусто\n"
+"%s"
 
 #: lib/server.js:123
 #, javascript-format
 msgid "Failed to connect to port %s"
-msgstr ""
+msgstr "Не удалось подключиться к порту %s"
 
 #: lib/server.js:129
 msgid "Failed to start server. All specified ports are busy."
-msgstr ""
+msgstr "Не удалось запустить сервер. Все указанные порты заняты."
 
 #: lib/server.js:136
 #, javascript-format
 msgid "Loading module %s"
-msgstr ""
+msgstr "Загрузка модуля %s"
 
 #: lib/server.js:139
 #, javascript-format
 msgid "Module %s loaded."
-msgstr ""
+msgstr "Модуль %s загружен."
 
 #: lib/server.js:149
 msgid "Starting ION application"
-msgstr ""
+msgstr "Запуск приложения ION"
 
 #: lib/server.js:194
 msgid "Default module not specified."
-msgstr ""
+msgstr "Модуль по умолчанию не указан."
 
 #: lib/server.js:224
 msgid "Loading web-modules."
-msgstr ""
+msgstr "Загрузка веб-модулей."
 
 #: lib/server.js:259
 #, javascript-format
 msgid "Module %s is not an express.js application."
-msgstr ""
+msgstr "Модуль %s не является приложением express.js."
 
 #: lib/server.js:281
 msgid "All modules are loaded."
-msgstr ""
+msgstr "Все модули загружены."
 
 #: lib/server.js:302
 #, javascript-format
 msgid "Listening to conveyer %s"
-msgstr ""
+msgstr "Слушается конвейер %s"
 
 #: lib/server.js:304
 #, javascript-format
 msgid "Listening to port %s"
-msgstr ""
+msgstr "Слушается порт %s"
 
 #: lib/session/index.js:22
 msgid "Settings for session storage are not specified."
-msgstr ""
+msgstr "Параметры session storage не указаны."
 
 #: lib/session/connect-adapter.js:43
 msgid "Specified session storage type is not supported!"
-msgstr ""
+msgstr "Указанный тип session storage не поддерживается!"
 
 #: core/di.js:88 core/di.js:97 core/di.js:251
 #, javascript-format
 msgid "Component %s not found."
-msgstr ""
+msgstr "Компонент %s не найден."
 
 #: core/di.js:147
 #, javascript-format
 msgid "Component %s has a cyclic reference to another component."
-msgstr ""
+msgstr "Компонент %s имеет циклическую ссылку на другой компонент."
 
 #: core/di.js:168 core/di.js:248
 #, javascript-format
 msgid "Method %s of component %s not found."
-msgstr ""
+msgstr "Метод %s компонента %s не найден."
 
 #: core/impl/notifications/EmailNotifier.js:93
 #, javascript-format
 msgid "Failed to send notifications to those emails: %s"
-msgstr ""
+msgstr "Не удалось отправить уведомления на следующие e-mail: %s"
 
 #: core/impl/notifications/EmailNotifier.js:121
 #, javascript-format
 msgid "Failed to send notification to email %s"
-msgstr ""
+msgstr "Не удалось отправить уведомление на e-mail %s"
 
 #: core/impl/notifications/Notifier.js:149
 #, javascript-format
