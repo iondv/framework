@@ -1,5 +1,5 @@
-# Назначение папки
-Папка предназначена для размещения тестов
+# Folder assignment
+The folder is intended for placing tests
 
-## Использование в продкутиве
-Папка при сборке дистрибутива, не добавляется в проект
+## Use in the product
+Folder when you build the distribution package is not added to the project
