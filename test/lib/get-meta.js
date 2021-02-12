@@ -5,7 +5,7 @@ const path = require('path');
 const ARR_NOTFOUND = -1;
 const JSON_EXT = '.json';
 /*
-Нормализация имени класса, с учётом нейспейса
+Normalization of a class name, subject to namespace
  */
 function nz(className, namespace) {
   if (className && className.indexOf('@') === ARR_NOTFOUND && namespace) {
@@ -90,13 +90,13 @@ function getMetaFiles(pathMeta, meta = {}) {
         } else if (metaType === 'workflows') {
           meta[nz(tempMetaClass.name, ns)] = tempMetaClass;
         } else {
-          console.error('Необрабатываемый тип меты', metaType);
+          console.error('Unprocessed meta type', metaType);
         }
       } catch (err) {
-        console.error('Ошибка в', err.message);
+        console.error('Error in', err.message);
       }
     },
-    (err) => {console.error('Ошибка считывания файлов', err);});
+    (err) => {console.error('File reading error', err);});
   return meta;
 }
 

@@ -28,24 +28,17 @@ module.exports = function (period) {
     m: 0,
     s: 0
   };
-  var parser = /(\d+)\s*([yMwdhmsгМндчмс])/g;
+  var parser = /(\d+)\s*([yMwdhms])/g;
   var parsed = period.match(parser);
   while ((parsed = parser.exec(period)) !== null) {
     switch (parsed[2]) {
-      case 'y':
-      case 'г': parts.y += parseInt(parsed[1]);break;
-      case 'M':
-      case 'М': parts.M += parseInt(parsed[1]);break;
-      case 'w':
-      case 'н': parts.w += parseInt(parsed[1]);break;
-      case 'd':
-      case 'д': parts.d += parseInt(parsed[1]);break;
-      case 'h':
-      case 'ч': parts.h += parseInt(parsed[1]);break;
-      case 'm':
-      case 'м': parts.m += parseInt(parsed[1]);break;
-      case 's':
-      case 'с': parts.s += parseInt(parsed[1]);break;
+      case 'y': parts.y += parseInt(parsed[1]);break;
+      case 'M': parts.M += parseInt(parsed[1]);break;
+      case 'w': parts.w += parseInt(parsed[1]);break;
+      case 'd': parts.d += parseInt(parsed[1]);break;
+      case 'h': parts.h += parseInt(parsed[1]);break;
+      case 'm': parts.m += parseInt(parsed[1]);break;
+      case 's': parts.s += parseInt(parsed[1]);break;
     }
   }
 

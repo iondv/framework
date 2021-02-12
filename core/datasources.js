@@ -3,7 +3,8 @@
  */
 'use strict';
 
-var LoggerProxy = require('core/impl/log/LoggerProxy');
+const LoggerProxy = require('core/impl/log/LoggerProxy');
+const {t} = require('core/i18n');
 
 function Datasources(options) {
   var _this = this;
@@ -25,7 +26,7 @@ function Datasources(options) {
   this.connect = function () {
     var all, i;
     all = [];
-    log.info('Подключение источников данных');
+    log.info(t('Connecting datasources'));
     for (i = 0; i < this.sources.length; i++) {
       all.push(this.sources[i].open());
     }
@@ -47,7 +48,7 @@ function Datasources(options) {
   if (this.runtimeEvents) {
     this.runtimeEvents.on('stop', function () {
       _this.disconnect().then(function () {
-        log.info('Источники данных успешно отключены!');
+        log.info(t('All datasources successfully disconnected!'));
       }).catch(function (err) {
         log.error(err);
       });

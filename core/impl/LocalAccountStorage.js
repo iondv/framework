@@ -4,6 +4,7 @@ const UserTypes = require('core/UserTypes');
 const F = require('core/FunctionCodes');
 const pwdHasher = require('password-hash-and-salt');
 const clone = require('clone');
+const {t} = require('core/i18n');
 
 class LocalAccountStorage extends IAccountStorage {
   /**
@@ -65,7 +66,7 @@ class LocalAccountStorage extends IAccountStorage {
     } else if (user.type !== UserTypes.LOCAL) {
       return this.ds.upsert('ion_user', {[F.AND]: [{[F.EQUAL]: ['$id', user.id]}, {[F.EQUAL]: ['$type', user.type]}]}, user).then(u => new User(u));
     } else {
-      throw new Error('Не передан пароль');
+      throw new Error(t('Password not specified'));
     }
   }
 
@@ -121,10 +122,10 @@ class LocalAccountStorage extends IAccountStorage {
       hasher.verifyAgainst(oldpwd,
         (err, verified) => {
           if (err) {
-            reject(new Error('Не удалось поменять пароль!'));
+            reject(new Error(t('Failed to change password!')));
           }
           if (verified) {
-            reject(new Error('Новый пароль совпадает со старым!'));
+            reject(new Error(t('New password is the same as previous!')));
           }
           writer(resolve, reject);
         });
@@ -192,14 +193,14 @@ class LocalAccountStorage extends IAccountStorage {
           }
           return new Promise((resolve, reject) => {
             if (!user.pwd && pwd || user.pwd && !pwd) {
-              return reject(new Error('Неверно указан пароль.'));
+              return reject(new Error(t('Wrong password')));
             }
             checker.verifyAgainst(user.pwd, (err, verified) => {
               if (verified) {
                 return resolve(user);
               }
               if (!err) {
-                err = new Error('Неверно указан пароль.');
+                err = new Error(t('Wrong password.'));
               }
               reject(err);
             });

@@ -1,5 +1,6 @@
 'use strict';
 const calc = require('../util').calculate;
+const {t} = require('core/i18n');
 
 /**
  * @param {SequenceProvider} sp
@@ -12,7 +13,7 @@ module.exports = function (sp) {
         if (args.length > 0) {
           return sp.next(args[0]);
         } else {
-          throw new Error('Не указано имя последовательности!');
+          throw new Error(t('Sequence name not specified!'));
         }
       });
     };

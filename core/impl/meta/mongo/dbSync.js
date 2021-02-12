@@ -8,6 +8,8 @@ const DbSync = require('core/interfaces/DbSync');
 const AUTOINC_COLL = '__autoinc';
 const GEOFLD_COLL = '__geofields';
 const PropertyTypes = require('core/PropertyTypes');
+const {t} = require('core/i18n');
+const {format} = require('util');
 
 /* jshint maxstatements: 40, maxcomplexity: 30 */
 function MongoDbSync(options) {
@@ -194,7 +196,7 @@ function MongoDbSync(options) {
         }
         findClassRoot(anc, namespace, metaCollection, done, h);
       } else {
-        done(new Error('Класс ' + cn.name + '@' + namespace + ' не найден!'));
+        done(new Error(format(t('Class %s not found!'), cn.name + '@' + namespace)));
       }
     });
   }
@@ -367,7 +369,10 @@ function MongoDbSync(options) {
           for (let j = 0; j < cm.compositeIndexes[i].properties.length; j++) {
             let pmn = cm.compositeIndexes[i].properties[j];
             if (!props.hasOwnProperty(pmn)) {
-              throw new Error(`Атрибут ${pmn} указанный в составном индексе отсутствует в классе "${cm.caption} (${cm.name})".`);
+              throw new Error(format(
+                t('Attribute %s specified in composite index not found in class "%s (%s)".'),
+                pmn, cm.caption, cm.name
+              ));
             }
 
             if (
@@ -479,7 +484,6 @@ function MongoDbSync(options) {
                 .then(addIndexes(classMeta, cm, namespace, chierarchy))
                 .then(() => {
                   delete classMeta._id;
-                  log.log('Регистрирация класса ' + classMeta.name + '@' + namespace);
                   metaCollection.replaceOne(
                     {
                       name: classMeta.name,
@@ -492,7 +496,7 @@ function MongoDbSync(options) {
                       if (err) {
                         return reject(err);
                       }
-                      log.log('Класс ' + classMeta.name + '@' + namespace + ' зарегистрирован.');
+                      log.log(format(t('Class %s registered.'), classMeta.name + '@' + namespace));
                       resolve(result);
                     }
                   );
@@ -546,8 +550,6 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создано представление ' + type +
-                ' для класса ' + className + (viewMeta.path ? ' и пути ' + viewMeta.path : ''));
               resolve(vm);
             }
           );
@@ -590,9 +592,6 @@ function MongoDbSync(options) {
             (err, ns) => err ? reject(err) : resolve(ns)
           );
         });
-      })
-      .then(() => {
-        log.log('Создана секция навигации ' + navSection.namespace + '@' + navSection.name);
       });
   };
 
@@ -644,7 +643,6 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создан узел навигации ' + navNode.namespace + '@' + navNode.code);
               resolve(ns);
             }
           );
@@ -698,7 +696,6 @@ function MongoDbSync(options) {
               if (err) {
                 return reject(err);
               }
-              log.log('Создан бизнес-процесс ' + wfMeta.name + '@' + wfMeta.namespace + ' для класса ' + wfMeta.wfClass);
               resolve(wf);
             });
         })

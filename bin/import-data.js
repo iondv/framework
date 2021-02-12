@@ -9,8 +9,11 @@ const di = require('core/di');
 const IonLogger = require('core/impl/log/IonLogger');
 const errorSetup = require('core/error-setup');
 const alias = require('core/scope-alias');
+const path = require('path');
 const extend = require('extend');
-errorSetup(config.lang || 'ru');
+const {t, lang, load} = require('core/i18n');
+lang(config.lang);
+errorSetup();
 
 var sysLog = new IonLogger(config.log || {});
 
@@ -24,7 +27,7 @@ let setParam = null;
 
 process.argv.forEach(function (val) {
   if (val === '--ignoreIntegrityCheck') {
-    console.warn('При импорте игнорируется целостность данных, возможны ошибки в БД');
+    console.warn(t('Data integrity checks are ignored'));
     params.ignoreIntegrityCheck = true;
   } else if (val.substr(0, 2) === '--') {
     setParam = val.substr(2);
@@ -33,11 +36,8 @@ process.argv.forEach(function (val) {
   }
 });
 
-// Связываем приложение
-di('boot', config.bootstrap,
-  {
-    sysLog: sysLog
-  }, null, ['rtEvents'])
+load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  .then(() => di('boot', config.bootstrap, {sysLog: sysLog}, null, ['rtEvents']))
   .then(scope =>
     di(
       'app',
@@ -66,7 +66,7 @@ di('boot', config.bootstrap,
   )
   .then(scope => scope.dataSources.disconnect())
   .then(() => {
-    console.info('Импорт данных выполнен успешно.');
+    console.info(t('Import is successfully done.'));
     process.exit(0);
   })
   .catch((err) => {

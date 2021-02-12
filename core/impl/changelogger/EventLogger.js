@@ -1,6 +1,7 @@
 /* eslint-disable func-names */
 const clone = require('clone');
 const F = require('core/FunctionCodes');
+const {t} = require('core/i18n');
 
 /**
  * @param {table: String, DataSource: dataSource, types: {}} options
@@ -11,7 +12,7 @@ module.exports = function (options) {
   
   this.logChange = function(type, datas) {
     if (!this.types()[type.toUpperCase()])
-      throw new Error('Неверно указан тип записи журнала изменений!');
+      throw new Error(t('Invalid changelog journal record type specified!'));
     const record = this.normalize(datas);
     record.timestamp = new Date();
     record.type = type;
