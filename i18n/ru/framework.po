@@ -7,10 +7,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-12 20:16+0000\n"
-"PO-Revision-Date: 2021-02-10 04:40+0000\n"
+"POT-Creation-Date: 2021-02-18 02:22+0000\n"
+"PO-Revision-Date: 2021-02-17 08:10+0000\n"
 "Last-Translator: Alena Kremenetskaya <alena.kremenetskaya@mail.ru>\n"
-"Language-Team: Russian <http://weblate.iondv.com/projects/iondv-framework/"
+"Language-Team: Russian <http://weblate.iondv.ru/projects/iondv-framework/"
 "core/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -20,7 +20,7 @@ msgstr ""
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Weblate 4.4.2\n"
 
-#: lib/auth.js:690
+#: lib/auth.js:694
 msgid "User registration failed!"
 msgstr "Не удалось зарегистрировать пользователя!"
 
@@ -124,7 +124,7 @@ msgstr "Роль %s[%s] зарегистрирована."
 #: lib/aclImport.js:46
 #, javascript-format
 msgid "Role %s permissions to resource %s granted."
-msgstr "Права доступа ролей %s для ресурса %s предоставлены."
+msgstr "Разрешения для ролей %s для ресурса %s предоставлены."
 
 #: lib/aclImport.js:82
 #, javascript-format
@@ -290,113 +290,114 @@ msgstr "Не удалось отправить уведомление на e-mai
 #: core/impl/notifications/Notifier.js:149
 #, javascript-format
 msgid "Notification sending to %s failed"
-msgstr ""
+msgstr "Не удалось отправить уведомление %s"
 
 #: core/impl/notifications/Notifier.js:198
 msgid "Failed to send notification"
-msgstr ""
+msgstr "Не удалось отправить уведомление"
 
 #: core/impl/notifications/Notifier.js:217
 #, javascript-format
 msgid "Failed to revoke notification %s"
-msgstr ""
+msgstr "Не удалось отменить уведомление %s"
 
 #: core/impl/changelogger/DsChangelogFactory.js:13
 msgid "Datasource not specified for changelogger factory!"
-msgstr ""
+msgstr "Источник данных не указан для журнала изменений!"
 
 #: core/impl/changelogger/EventLogger.js:15 core/interfaces/ChangeLogger.js:100
 msgid "Invalid changelog journal record type specified!"
-msgstr ""
+msgstr "Указан недопустимый тип записи журнала изменений!"
 
 #: core/impl/meta/DsMetaRepository.js:82
 msgid "Meta repository data source not specified!"
-msgstr ""
+msgstr "Не указан источник данных мета репозитория!"
 
 #: core/impl/meta/DsMetaRepository.js:531
 msgid "Async calls are not valid in selection lists conditions!"
-msgstr ""
+msgstr "Асинхронные вызовы недопустимы в условиях списков выбора!"
 
 #: core/impl/meta/DsMetaRepository.js:574
 #, javascript-format
 msgid "Class [%s] for structure [%s].[%s] not found."
-msgstr ""
+msgstr "Класс [%s] для структуры [%s].[%s] не найден."
 
 #: core/impl/meta/DsMetaRepository.js:803
 #, javascript-format
 msgid "Parent class \"%s\" for class %s not found."
-msgstr ""
+msgstr "Родительский класс \"%s\" для класса %s не найден."
 
 #: core/impl/meta/DsMetaRepository.js:821
 #: core/impl/meta/DsMetaRepository.js:830
 #, javascript-format
 msgid "Class \"%s\" for reference attribute %s.%s not found."
-msgstr ""
+msgstr "Класс \"%s\" для ссылочного атрибута %s.%s не найден."
 
 #: core/impl/meta/DsMetaRepository.js:839
 #, javascript-format
 msgid "Calculated attribute \"%s\" formula is specified as string."
-msgstr ""
+msgstr "Формула вычисляемого атрибута \"%s\" задается в виде строки."
 
 #: core/impl/meta/DsMetaRepository.js:841
 #: core/impl/meta/DsMetaRepository.js:865
 msgid "This format is deprecated and wil be removed from later versions."
-msgstr ""
+msgstr "Этот формат устарел и будет удален из более поздних версий."
 
 #: core/impl/meta/DsMetaRepository.js:846
 #, javascript-format
 msgid "Invalid formula for calculated attribute \"%s.%s\": %s"
-msgstr ""
+msgstr "Недопустимая формула для вычисляемого атрибута \"%s.%s\": %s"
 
 #: core/impl/meta/DsMetaRepository.js:863
 #, javascript-format
 msgid "Attribute \"%s\" default value formula is specified as string."
-msgstr ""
+msgstr "Значение формулы атрибута \"%s\" по умолчанию задается в виде строки."
 
 #: core/impl/meta/DsMetaRepository.js:1103
 #, javascript-format
 msgid "Workflow %s was not initialized!"
-msgstr ""
+msgstr "Бизнес-процесс %s не был инициализирован!"
 
 #: core/impl/meta/keyProvider.js:65 core/impl/meta/keyProvider.js:74
 #, javascript-format
 msgid "Attribute %s of class %s not found!"
-msgstr ""
+msgstr "Атрибут %s класса %s не найден!"
 
 #: core/impl/meta/mongo/dbSync.js:199
 #, javascript-format
 msgid "Class %s not found!"
-msgstr ""
+msgstr "Класс %s не найден!"
 
 #: core/impl/meta/mongo/dbSync.js:373
 #, javascript-format
 msgid ""
 "Attribute %s specified in composite index not found in class \"%s (%s)\"."
 msgstr ""
+"Атрибут %s , указанный в составном индексе, не найден в классе \"%s (%s)\"."
 
 #: core/impl/meta/mongo/dbSync.js:499
 #, javascript-format
 msgid "Class %s registered."
-msgstr ""
+msgstr "Класс %s зарегистрирован."
 
 #: core/impl/datarepository/ionDataRepository.js:486
 #, javascript-format
 msgid "Several objects match back reference \"%s\""
-msgstr ""
+msgstr "Несколько объектов соответствуют обратной ссылке \"%s\""
 
 #: core/impl/datarepository/ionDataRepository.js:1346
 #, javascript-format
 msgid "Objects of class \"%s\" are not valid for reference \"%s.%s\"."
-msgstr ""
+msgstr "Объекты класса \"%s\" недопустимы для ссылки \"%s.%s\"."
 
 #: core/impl/datarepository/ionDataRepository.js:1371
 msgid "Saved object integrity check failed"
-msgstr ""
+msgstr "Ошибка проверки целостности сохраненного объекта"
 
 #: core/impl/datarepository/ionDataRepository.js:1534
 #, javascript-format
 msgid "Object \"%s@%s\" was onlinked from object \"%s@%s\"."
-msgstr ""
+msgstr "Объект \"%s@%s\" был отключен от объекта \"%s@%s\"."
 
 #: core/impl/datarepository/ionDataRepository.js:1553
 #, javascript-format
@@ -404,235 +405,237 @@ msgid ""
 "Previous object referenced by attribute \"%s.%s\" can not be unlinked. Back "
 "reference was not assigned."
 msgstr ""
+"Связь с предыдущим объектом, на который ссылается атрибут \"%s.%s\" не может "
+"быть разорвана. Обратная ссылка не была назначена."
 
 #: core/impl/datarepository/ionDataRepository.js:1964
 #: core/impl/datarepository/ionDataRepository.js:2224
 msgid "Abstract class can not be instantiated!"
-msgstr ""
+msgstr "Невозможно создать экземпляр абстрактного класса!"
 
 #: core/impl/datarepository/ionDataRepository.js:2016
 msgid "Object was not found after creation."
-msgstr ""
+msgstr "Объект не был найден после создания."
 
 #: core/impl/datarepository/ionDataRepository.js:2523
 #, javascript-format
 msgid "Object of class \"%s\" are invalid in collection \"%s.%s\"."
-msgstr ""
+msgstr "Объект класса \"%s\" недопустим в коллекции \"%s.%s\"."
 
 #: core/impl/datarepository/ionDataRepository.js:2582
 #, javascript-format
 msgid "Objects of class \"%s\" are invalid in collection \"%s.%s\"."
-msgstr ""
+msgstr "Объекты класса \"%s\" недопустимы в коллекции \"%s.%s\"."
 
 #: core/impl/datarepository/SecuredDataRepository.js:568
 #: core/impl/datarepository/SecuredDataRepository.js:820
 #, javascript-format
 msgid "Attribute %s of class %s was not found on ABAC check"
-msgstr ""
+msgstr "Атрибут %s класса %s не был найден при проверке ABAC"
 
 #: core/impl/cache/memcached/MemcachedRepository.js:48
 msgid "Memcached servers accessibility check done."
-msgstr ""
+msgstr "Проверка доступности серверов Memcached выполнена."
 
 #: core/impl/cache/memcached/MemcachedRepository.js:71
 #, javascript-format
 msgid "Memcached server %s is not accessible."
-msgstr ""
+msgstr "Сервер Memcached %s недоступен."
 
 #: core/impl/cache/memcached/MemcachedRepository.js:137
 msgid "Memcached repository initialization..."
-msgstr ""
+msgstr "Инициализация репозитория Memcached..."
 
 #: core/impl/cache/redis/RedisRepository.js:72
 msgid "Redis repository initialization"
-msgstr ""
+msgstr "Инициализация репозитория Redis"
 
 #: core/impl/cache/redis/RedisRepository.js:84
 msgid "Redis repository connected"
-msgstr ""
+msgstr "Репозиторий Redis подключен"
 
 #: core/impl/Calculator/func/aggreg/oper.js:72
 msgid "Datasource of aggregation is not specified!"
-msgstr ""
+msgstr "Источник данных агрегации не указан!"
 
 #: core/impl/Calculator/func/parser.js:48
 #, javascript-format
 msgid "Syntax error in formula fragment \"%s\"."
-msgstr ""
+msgstr "Синтаксическая ошибка во фрагменте формулы \"%s\"."
 
 #: core/impl/Calculator/func/parser.js:64
 #, javascript-format
 msgid "Syntax error in expression \"%s\": bracket not closed"
-msgstr ""
+msgstr "Синтаксическая ошибка в выражении \"%s\": скобка не закрыта"
 
 #: core/impl/Calculator/func/parser.js:309
 #, javascript-format
 msgid "Syntax error in formula fragment \"%s\""
-msgstr ""
+msgstr "Синтаксическая ошибка во фрагменте формулы \"%s\""
 
 #: core/impl/Calculator/func/parser.js:323
 #, javascript-format
 msgid "Function %s not found"
-msgstr ""
+msgstr "Функция %s не найдена"
 
 #: core/impl/Calculator/func/sequence/next.js:16
 msgid "Sequence name not specified!"
-msgstr ""
+msgstr "Имя последовательности не указано!"
 
 #: core/impl/Calculator/func/data/get.js:31
 #: core/impl/Calculator/func/data/get.js:51
 msgid "Nescessary arguments are not specified for fetch function!"
-msgstr ""
+msgstr "Hе указаны необходимые аргументы для функции fetch!"
 
 #: core/impl/datasource/mongodb.js:170 core/impl/datasource/mongodb.js:202
 msgid "Connection to database server parameters are not specified."
-msgstr ""
+msgstr "Параметры подключения к серверу базы данных не заданы."
 
 #: core/impl/datasource/mongodb.js:288
 #, javascript-format
 msgid "Connected to database: %s"
-msgstr ""
+msgstr "Подключено к базе данных: %s"
 
 #: core/impl/datasource/mongodb.js:624 core/impl/datasource/mongodb.js:713
 msgid "Invalid date interval type specified!"
-msgstr ""
+msgstr "Указан недопустимый тип интервала дат!"
 
 #: core/impl/datasource/mongodb.js:1002
 msgid "LIKE operation cannot be used for result set field expression."
 msgstr ""
+"Операция LIKE не может быть использована для выбранного набора выражений."
 
 #: core/impl/datasource/mongodb.js:1272
 msgid "Attribute list nescessary for performing join is not specified."
-msgstr ""
+msgstr "Список атрибутов, необходимых для выполнения соединения, не указан."
 
 #: core/impl/access/amAccessManager.js:25 core/impl/access/aclmongo.js:22
 msgid "Data source not specified for ACL subsytem!"
-msgstr ""
+msgstr "Источник данных не указан для подсистемы ACL!"
 
 #: core/impl/access/aclmongo.js:39
 msgid "Failed to initialize ACL subsystem."
-msgstr ""
+msgstr "Не удалось инициализировать подсистему ACL."
 
 #: core/impl/LocalAccountStorage.js:69
-#, fuzzy
 msgid "Password not specified"
-msgstr "Не задано ни одной роли!"
+msgstr "Пароль не указан"
 
 #: core/impl/LocalAccountStorage.js:125
 msgid "Failed to change password!"
-msgstr ""
+msgstr "Не удалось сменить пароль!"
 
 #: core/impl/LocalAccountStorage.js:128
 msgid "New password is the same as previous!"
-msgstr ""
+msgstr "Новый пароль совпадает с предыдущим!"
 
 #: core/impl/LocalAccountStorage.js:196
 msgid "Wrong password"
-msgstr ""
+msgstr "Неправильный пароль"
 
 #: core/impl/LocalAccountStorage.js:203
 msgid "Wrong password."
-msgstr ""
+msgstr "Неправильный пароль."
 
 #: core/impl/resource/FsStorage.js:42
 msgid "File storage data source not specified!"
-msgstr ""
+msgstr "Источник данных для файлового хранилища не указан!"
 
 #: core/impl/resource/FsStorage.js:109
 msgid "Inapropriate data type received!"
-msgstr ""
+msgstr "Получен несоответствующий тип данных!"
 
 #: core/impl/resource/FsStorage.js:390 core/impl/resource/FsStorage.js:421
 #: core/impl/resource/FsStorage.js:442
 #, javascript-format
 msgid "No such directory %s"
-msgstr ""
+msgstr "Каталог %s не существует"
 
 #: core/impl/resource/FsStorage.js:456 core/impl/resource/FsStorage.js:470
 #: core/impl/resource/FsStorage.js:477
 msgid "Base URL for share is not set up!"
-msgstr ""
+msgstr "Базовый URL для общего доступа не настроен!"
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:36
 msgid "Invalid Owncloud server response"
-msgstr ""
+msgstr "Недопустимый ответ сервера Owncloud"
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:45
 msgid "Unknown result of operation"
-msgstr ""
+msgstr "Неизвестный результат операции"
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:61
 msgid "Connection parameters (url, login, password) are not specified."
-msgstr ""
+msgstr "Параметры подключения (url, логин, пароль) не указаны."
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:78
 msgid "Invalid access level value!"
-msgstr ""
+msgstr "Недопустимое значение уровня доступа!"
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:97
 msgid "Invalid share address specified."
-msgstr ""
+msgstr "Указан недействительный адрес общего доступа."
 
 #: core/impl/resource/OwnCloudStorage/SharesApi.js:152
 msgid "Mandatory fields (shareType, path) not specified"
-msgstr ""
+msgstr "Обязательные поля (shareType, путь) не указаны"
 
 #: core/impl/resource/OwnCloudStorage/index.js:33
 msgid ""
 "OwnCloud connection parameters (url, login, password) are not specified."
-msgstr ""
+msgstr "Параметры подключения ownCloud (url, логин, пароль) не указаны."
 
 #: core/impl/resource/OwnCloudStorage/index.js:114
 #, javascript-format
 msgid "Failed to obtain file from remote storage! Error code (%s)."
-msgstr ""
+msgstr "Не удалось получить файл из удаленного хранилища! Код ошибки (%s)."
 
 #: core/impl/resource/OwnCloudStorage/index.js:161
 #, javascript-format
 msgid "Empty response, status: %s"
-msgstr ""
+msgstr "Пустой ответ, статус: %s"
 
 #: core/impl/resource/OwnCloudStorage/index.js:270
 msgid "No data to put into storage."
-msgstr ""
+msgstr "Нет данных для хранения."
 
 #: core/impl/resource/OwnCloudStorage/index.js:290
 msgid "Data of inapropriate type received!"
-msgstr ""
+msgstr "Получены данные несоответствующего типа!"
 
 #: core/impl/resource/OwnCloudStorage/index.js:456
 msgid "Invalid path to directory specified."
-msgstr ""
+msgstr "Указан неверный путь к каталогу."
 
 #: core/impl/DigitalSignManager.js:89 core/impl/DigitalSignManager.js:156
 msgid "Datasource is not set up."
-msgstr ""
+msgstr "Источник данных не настроен."
 
 #: core/impl/DigitalSignManager.js:177
 msgid "Fetch parameters are not specified!"
-msgstr ""
+msgstr "Параметры выборки не указаны!"
 
 #: core/impl/SchedulerAgent.js:80 core/impl/SchedulerAgent.js:97
 #, javascript-format
 msgid "Job %s not found in the configuration"
-msgstr ""
+msgstr "Задание %s не найдено в конфигурации"
 
 #: core/impl/SchedulerAgent.js:190
 msgid "Invalid job parameters specified."
-msgstr ""
+msgstr "Указаны недопустимые параметры задания."
 
 #: core/datasources.js:29
 msgid "Connecting datasources"
-msgstr ""
+msgstr "Подключение источников данных"
 
 #: core/datasources.js:51
 msgid "All datasources successfully disconnected!"
-msgstr ""
+msgstr "Все источники данных успешно отключены!"
 
 #: core/error-setup.js:18
 #, javascript-format
 msgid "Error message base does not exist in path \"%s\""
-msgstr ""
+msgstr "База сообщений об ошибках не существует в path \"%s\""
 
 #: core/interfaces/DataRepository/lib/Item.js:208
 #: core/interfaces/DataRepository/lib/util.js:272
@@ -640,16 +643,16 @@ msgstr ""
 #: core/interfaces/DataRepository/lib/util.js:326
 #, javascript-format
 msgid "Attribute %s of class %s not found"
-msgstr ""
+msgstr "Атрибут %s класса %s не найден"
 
 #: core/interfaces/DataRepository/lib/util.js:53
 #, javascript-format
 msgid "Attribute \"%s\" of class \"%s\" not found!"
-msgstr ""
+msgstr "Атрибут \"%s\" класса \"%s\" не найден!"
 
 #: core/interfaces/DataRepository/lib/util.js:172
 msgid "Invalid data"
-msgstr ""
+msgstr "Неверные данные"
 
 #: core/interfaces/DataRepository/lib/util.js:238
 #: core/interfaces/DataRepository/lib/util.js:331
@@ -657,136 +660,137 @@ msgstr ""
 msgid ""
 "Conditions for collections based on composite keys are not supported yet!"
 msgstr ""
+"Условия для коллекций на основе составных ключей пока не поддерживаются!"
 
 #: core/interfaces/DataRepository/lib/util.js:277
 #, javascript-format
 msgid "Operation %s is not applicable to attribute %s of class %s"
-msgstr ""
+msgstr "Операция %s не применима к атрибуту %s класса %s"
 
 #: core/interfaces/ResourceStorage/lib/StoredFile.js:28
 msgid "Failed to obtain file reading stream."
-msgstr ""
+msgstr "Не удалось получить поток чтения из файла."
 
 #: core/interfaces/ResourceStorage/lib/StoredFile.js:40
 msgid "Function for getting file input stream not specified."
-msgstr ""
+msgstr "Функция получения входного потока из файла не указана."
 
 #: core/interfaces/ChangeLogger.js:121
 msgid "Changelog record fetch criteria not specified"
-msgstr ""
+msgstr "Критерии выборки записей журнала изменений не указаны"
 
 #: core/interfaces/ChangeLogger.js:128
 msgid "Interval should be specified as Date instance!"
-msgstr ""
+msgstr "Интервал должен быть указан как Дата!"
 
 #: strings/templates-default.js:4
 msgid "Home"
-msgstr ""
+msgstr "Главная страница"
 
 #: strings/templates-default.js:5
 msgid "Login"
-msgstr ""
+msgstr "Логин"
 
 #: strings/templates-default.js:6
 msgid "Password"
-msgstr ""
+msgstr "Пароль"
 
 #: strings/templates-default.js:7
 msgid "Repeat password"
-msgstr ""
+msgstr "Повторите пароль"
 
 #: strings/templates-default.js:8
 msgid "Sign in"
-msgstr ""
+msgstr "Войти"
 
 #: strings/templates-default.js:9
 msgid "Sign in form"
-msgstr ""
+msgstr "Форма авторизации"
 
 #: strings/templates-default.js:10 strings/templates-default.js:24
 msgid "Sign up"
-msgstr ""
+msgstr "Зарегистрироваться"
 
 #: strings/templates-default.js:11
 msgid "Enter"
-msgstr ""
+msgstr "Ввод"
 
 #: strings/templates-default.js:12
 msgid "Password change form"
-msgstr ""
+msgstr "Форма смены пароля"
 
 #: strings/templates-default.js:13
 msgid "New password"
-msgstr ""
+msgstr "Новый пароль"
 
 #: strings/templates-default.js:14
 msgid "Change password"
-msgstr ""
+msgstr "Смените пароль"
 
 #: strings/templates-default.js:15
 msgid "OAuth2 access request"
-msgstr ""
+msgstr "Запрос доступа OAuth2"
 
 #: strings/templates-default.js:16
 msgid "Application %app claims access with your account"
-msgstr ""
+msgstr "Приложение %app запрашивает доступ к вашему аккаунту"
 
 #: strings/templates-default.js:17
 msgid "Grant access"
-msgstr ""
+msgstr "Предоставить доступ"
 
 #: strings/templates-default.js:18
 msgid "Deny access"
-msgstr ""
+msgstr "Запретить доступ"
 
 #: strings/templates-default.js:19
 msgid "User %name profile"
-msgstr ""
+msgstr "Профиль пользователя %name"
 
 #: strings/templates-default.js:20
 msgid "Save"
-msgstr ""
+msgstr "Сохранить"
 
 #: strings/templates-default.js:21
 msgid "Back to application"
-msgstr ""
+msgstr "Вернуться к приложению"
 
 #: strings/templates-default.js:22
 msgid "Language"
-msgstr ""
+msgstr "Язык"
 
 #: strings/templates-default.js:23
 msgid "Sign up form"
-msgstr ""
+msgstr "Форма регистрации"
 
 #: strings/errors/auth.js:5
 msgid "Authentication datasource is not set up."
-msgstr ""
+msgstr "Источник данных аутентификации не настроен."
 
 #: strings/errors/auth.js:6
 msgid "You dont have enough permissions to login."
-msgstr ""
+msgstr "У вас недостаточно разрешений для входа."
 
 #: strings/errors/auth.js:7
 #, javascript-format
 msgid "Account is blocked till %d"
-msgstr ""
+msgstr "Аккаунт заблокирован до %d"
 
 #: strings/errors/auth.js:8
 msgid "Failed to sign in."
-msgstr ""
+msgstr "Не удалось войти."
 
 #: strings/errors/auth.js:9
 msgid "Account is not secured with password."
-msgstr ""
+msgstr "Учетная запись не защищена паролем."
 
 #: strings/errors/auth.js:10
 msgid "Sign in is temporary unavailable due to technical reasons."
-msgstr ""
+msgstr "Вход временно недоступен по техническим причинам."
 
 #: strings/errors/auth.js:11
 msgid "User password not specified"
-msgstr ""
+msgstr "Пароль пользователя не указан"
 
 #: strings/errors/auth.js:12
 msgid "Internal server error"
@@ -794,370 +798,379 @@ msgstr "Внутренняя ошибка сервера"
 
 #: strings/errors/auth.js:13
 msgid "Wrong password repeat!"
-msgstr ""
+msgstr "Повтор неверного пароля!"
 
 #: strings/errors/auth.js:14
 msgid "Minimal password length is %p symbols"
-msgstr ""
+msgstr "Минимальная длина пароля - %p символов"
 
 #: strings/errors/auth.js:15
 msgid "Using one of %p previous passwords is prohibited."
-msgstr ""
+msgstr "Запрещено использование одного из %p предыдущих паролей."
 
 #: strings/errors/auth.js:16
 msgid "Password too weak. Password should contain "
-msgstr ""
+msgstr "Слишком слабый пароль. Пароль должен содержать "
 
 #: strings/errors/auth.js:17
 msgid "letters in lower and upper case"
-msgstr ""
+msgstr "буквы в нижнем и верхнем регистре"
 
 #: strings/errors/auth.js:18
 msgid "numbers"
-msgstr ""
+msgstr "цифры"
 
 #: strings/errors/auth.js:19
 msgid "special symbols (@, $, & etc.)"
-msgstr ""
+msgstr "специальные символы (@, $, & etc.)"
 
 #: strings/errors/auth.js:20
 msgid "and"
-msgstr ""
+msgstr "и"
 
 #: strings/errors/auth.js:21
 msgid "Public sign up is prohibited!"
-msgstr ""
+msgstr "Публичная регистрация запрещена!"
 
 #: strings/errors/auth.js:22
 msgid "User sign up failed!"
-msgstr ""
+msgstr "Регистрация пользователя не удалась!"
 
 #: strings/errors/auth.js:23
 msgid "Failed to edit user profile!"
-msgstr ""
+msgstr "Не удалось отредактировать профиль пользователя!"
 
 #: strings/errors/auth.js:24
 msgid "Password change prohibition period was not ended."
-msgstr ""
+msgstr "Период запрета на смену пароля не закончился."
 
 #: strings/errors/auth.js:25
 msgid "User was not authenicated."
-msgstr ""
+msgstr "Пользователь не прошел аутентификацию."
 
 #: strings/errors/auth.js:26
 msgid "User is blocked."
-msgstr ""
+msgstr "Пользователь заблокирован."
 
 #: strings/errors/auth.js:27
 msgid "Failed to determine user id."
-msgstr ""
+msgstr "Не удалось определить идентификатор пользователя."
 
 #: strings/errors/auth.js:28
 msgid "Failed to sign up user from external system."
-msgstr ""
+msgstr "Не удалось зарегистрировать пользователя из внешней системы."
 
 #: strings/errors/auth.js:29
 msgid "No strategy specified for passport %nm"
-msgstr ""
+msgstr "Для паспорта %nm не указана стратегия"
 
 #: strings/errors/data-repo.js:8
 msgid "%class with this '%attr' value already exists."
-msgstr ""
+msgstr "%class с этим '%attr' значением уже существует."
 
 #: strings/errors/data-repo.js:9
 msgid "%class having same values of '%attr' already exists."
-msgstr ""
+msgstr "%class с такими же значениями '%attr' уже существует."
 
 #: strings/errors/data-repo.js:10
 msgid "Object '%info' not found."
-msgstr ""
+msgstr "Объект '%info' не найден."
 
 #: strings/errors/data-repo.js:11
 msgid "Object '%info' is aleady in collection '%col'."
-msgstr ""
+msgstr "Объект '%info' уже находится в коллекции '%col'."
 
 #: strings/errors/data-repo.js:12
 msgid "Invalid parameters specified for method '%method'."
-msgstr ""
+msgstr "Указаны недопустимые параметры для метода '%method'."
 
 #: strings/errors/data-repo.js:13
 msgid "Failed to save data to file attribute '%attr' of object '%info'."
-msgstr ""
+msgstr "Не удалось сохранить данные в файл атрибута '%attr' объекта '%info'."
 
 #: strings/errors/data-repo.js:14
 msgid "Failed to load file attribute '%attr'."
-msgstr ""
+msgstr "Не удалось загрузить атрибут файла '%attr'."
 
 #: strings/errors/data-repo.js:15
 msgid "collection '%attr' is abscent in object %info."
-msgstr ""
+msgstr "Коллекция '%attr' отсутствует в объекте %info."
 
 #: strings/errors/data-repo.js:16
 msgid "Error in meta-model of object '%info'."
-msgstr ""
+msgstr "Ошибка в метамодели объекта '%info'."
 
 #: strings/errors/data-repo.js:17
 #, javascript-format
 msgid "Using complex keys in operation '%oper' is not supported yet."
 msgstr ""
+"Использование сложных ключей в операции '%oper' пока не поддерживается."
 
 #: strings/errors/data-repo.js:18
 msgid "'%operation' action was not applied to object '%info'."
-msgstr ""
+msgstr "Действие '%operation' не было применено к объекту '%info'."
 
 #: strings/errors/data-repo.js:19
 msgid "Required attributes are not set for object %info."
-msgstr ""
+msgstr "Для объекта %info не установлены обязательные атрибуты."
 
 #: strings/errors/data-repo.js:20
 msgid "Key attribute value not set for object %info."
-msgstr ""
+msgstr "Не задано значение ключевого атрибута для объекта %info."
 
 #: strings/errors/data-repo.js:21
 #, javascript-format
 msgid "Attribute %backAttr not found for back reference %backRef."
-msgstr ""
+msgstr "Атрибут %backAttr не найден для обратной ссылки %backRef."
 
 #: strings/errors/data-repo.js:22
 msgid ""
 "Async operation performed when calculation the default value for attribute "
 "%info."
 msgstr ""
+"Асинхронная операция выполняется при вычислении значения по умолчанию для "
+"атрибута %info."
 
 #: strings/errors/data-repo.js:23
 msgid "Not enough permissions for action"
-msgstr ""
+msgstr "Недостаточно разрешений для выполнения действия"
 
 #: strings/errors/front-end.js:8
 msgid "Access level not enough for the action."
-msgstr ""
+msgstr "Недостаточный уровень доступа для выполнения действия."
 
 #: strings/errors/meta-repo.js:9
 msgid "Class %class not found in namespace %namespace."
-msgstr ""
+msgstr "Класс %class не найден в пространстве имен %namespace."
 
 #: strings/errors/meta-repo.js:10
 msgid "Attribute '%attr' not found in class '%class'."
-msgstr ""
+msgstr "Атрибут '%attr' не найден в классе '%class'."
 
 #: strings/errors/meta-repo.js:11
 msgid "View '%view' not found."
-msgstr ""
+msgstr "Представление '%view' не найдено."
 
 #: strings/errors/meta-repo.js:12 strings/errors/workflow.js:10
 msgid "Workflow '%workflow' not found."
-msgstr ""
+msgstr "Бизнес-процесс '%workflow' не найден."
 
 #: strings/errors/validation.js:9
 msgid "Invalid value assigned to attribute %class.%property."
-msgstr ""
+msgstr "Атрибуту присвоено недопустимое значение %class.%property."
 
 #: strings/errors/validation.js:10
 msgid ""
 "Attribute %class.%property value should be a number (fractional part should "
 "be separated with dot)."
 msgstr ""
+"Значение атрибута %class.%property должно быть числом (дробная часть должна "
+"быть отделена точкой)."
 
 #: strings/errors/validation.js:11
 msgid "Invalid date value assigned to attribute %class.%property."
-msgstr ""
+msgstr "Недопустимое значение даты присвоено атрибуту %class.%property."
 
 #: strings/errors/validation.js:14
 msgid "Attribute %class.%property value should be an integer number."
-msgstr ""
+msgstr "Значение атрибута %class.%property должно быть целым числом."
 
 #: strings/errors/data-source.js:9
 msgid "Uniqueness of key '%key' of dataset '%table' is violated"
-msgstr ""
+msgstr "Нарушено уникальность ключа '%key' набора данных '%table'"
 
 #: strings/errors/data-source.js:10
 msgid "Error in query."
-msgstr ""
+msgstr "Ошибка в запросе."
 
 #: strings/errors/data-source.js:11
 msgid "Operation '%oper' was not applied to '%table' dataset."
-msgstr ""
+msgstr "Операция '%oper' не была применена к набору данных '%table'."
 
 #: strings/errors/workflow.js:9
 msgid "Access level not enough to perform workflow transition '%trans'"
 msgstr ""
+"Уровень доступа недостаточен для выполнения перехода бизнес-процесса '%trans'"
 
 #: strings/errors/workflow.js:11
 msgid "Transition '%trans' failed."
-msgstr ""
+msgstr "Не удалось выполнить переход '%trans'."
 
 #: strings/errors/workflow.js:12
 msgid "Status '%state' of workflow '%workflow' not found."
-msgstr ""
+msgstr "Статус '%state' бизнес-процесса '%workflow' не найден."
 
 #: strings/errors/workflow.js:14
 msgid ""
 "Object '%info' does not satisfy conditions of final state '%state' of "
 "workflow '%workflow'."
 msgstr ""
+"Объект '%info' не удовлетворяет условиям конечного состояния '%state' бизнес-"
+"процесса '%workflow'."
 
 #: strings/errors/workflow.js:15
 msgid "Object '%info' is not in workflow '%workflow'."
-msgstr ""
+msgstr "Объект'%info' отсутствует в бизнес-процессе '%workflow'."
 
 #: strings/errors/workflow.js:16
 msgid "Transition '%trans' of workflow '%workflow' is not allowed."
-msgstr ""
+msgstr "Переход '%trans' бизнес-процесса '%workflow' не допускается."
 
 #: strings/errors/workflow.js:17
 msgid "Transition '%trans' of workflow '%workflow' not found."
-msgstr ""
+msgstr "Переход '%trans' бизнес-процесса '%workflow' не найден."
 
 #: strings/errors/workflow.js:18
 msgid "Object is already in workflow '%workflow'"
-msgstr ""
+msgstr "Объект уже находится в бизнес-процессе '%workflow'"
 
 #: strings/errors/conditions.js:5
 msgid "Condition %condition is not applicable to attribute %class.%attr."
-msgstr ""
+msgstr "Условие %condition не применимо к атрибуту %class.%attr."
 
 #: strings/errors/conditions.js:6
 msgid "Attribute %class.%attr specified for condition is not found."
-msgstr ""
+msgstr "Атрибут %class.%attr , указанный для условия, не найден."
 
 #: strings/errors/conditions.js:7
 msgid ""
 "Aggregation operation specification is invalid - class and attribute are not "
 "specified."
 msgstr ""
+"Спецификация операции агрегации недопустима - класс и атрибут не указаны."
 
 #: strings/errors/conditions.js:8
 msgid "Invalid operation type"
-msgstr ""
+msgstr "Недопустимый тип операции"
 
 #: strings/errors/conditions.js:9
 msgid "Invalid condition type"
-msgstr ""
+msgstr "Недопустимый тип условия"
 
 #: strings/errors/conditions.js:10
 msgid "Operation arguments are not specified"
-msgstr ""
+msgstr "Аргументы операции не указаны"
 
 #: strings/errors/file-storage.js:9
 msgid "Invalid data format."
-msgstr ""
+msgstr "Недопустимый формат данных."
 
 #: strings/errors/file-storage.js:10
 #, javascript-format
 msgid "Directory '%dir' not found."
-msgstr ""
+msgstr "Каталог '%dir' не найден."
 
 #: strings/errors/file-storage.js:11
 #, javascript-format
 msgid "File '%file' not found."
-msgstr ""
+msgstr "Файл '%file' не найден."
 
 #: strings/frontend.js:4
 #, javascript-format
 msgid "Field %field value is required"
-msgstr ""
+msgstr "Значение поля %field обязательно"
 
 #: bin/schedule.js:40
 msgid "Schedule started"
-msgstr ""
+msgstr "Расписание запущено"
 
 #: bin/import.js:61
 msgid "Model import successfully done"
-msgstr ""
+msgstr "Импорт модели успешно выполнен"
 
 #: bin/job.js:30 bin/job-runner.js:140
 msgid "Job name not specified"
-msgstr ""
+msgstr "Не указано название задания"
 
 #: bin/job.js:61
 #, javascript-format
 msgid "Worker component not specified for job %s"
-msgstr ""
+msgstr "Не указан рабочий компонент для задания %s"
 
 #: bin/job.js:65 bin/job-runner.js:223
 #, javascript-format
 msgid "Job %s not found"
-msgstr ""
+msgstr "Задание %s не найдено"
 
 #: bin/job.js:72
 #, javascript-format
 msgid "Worker component of job %s not found"
-msgstr ""
+msgstr "Рабочий компонент задания %s не найден"
 
 #: bin/job.js:75
 #, javascript-format
 msgid "Worker component of job %s has no launch method"
-msgstr ""
+msgstr "Рабочий компонент задания %s не имеет метода запуска"
 
 #: bin/job.js:77
 #, javascript-format
 msgid "Job %s started"
-msgstr ""
+msgstr "Задание %s запущено"
 
 #: bin/job.js:91
 #, javascript-format
 msgid "Job %s done"
-msgstr ""
+msgstr "Задание %s выполнено"
 
 #: bin/setup.js:62
 msgid "Setup complete."
-msgstr ""
+msgstr "Настройка завершена."
 
 #: bin/export.js:89
 msgid "Export successfully done."
-msgstr ""
+msgstr "Экспорт успешно завершен."
 
 #: bin/adduser.js:74
 msgid "User successfully created."
-msgstr ""
+msgstr "Пользователь успешно создан."
 
 #: bin/import-data.js:30
 msgid "Data integrity checks are ignored"
-msgstr ""
+msgstr "Проверки целостности данных игнорируются"
 
 #: bin/import-data.js:69
 msgid "Import is successfully done."
-msgstr ""
+msgstr "Импорт успешно выполнен."
 
 #: bin/job-runner.js:164
 #, javascript-format
 msgid "Worker component for job %s is not specified"
-msgstr ""
+msgstr "Рабочий компонент для задания %s не указан"
 
 #: bin/job-runner.js:168
 #, javascript-format
 msgid "Parameters are not specified for job %s"
-msgstr ""
+msgstr "Не указаны параметры для задания %s"
 
 #: bin/job-runner.js:204
 #, javascript-format
 msgid "%s: Job %s was interrupted by timeout"
-msgstr ""
+msgstr "%s: Задание %s было прервано по таймауту"
 
 #: bin/job-runner.js:220
 #, javascript-format
 msgid "%s: Job %s started"
-msgstr ""
+msgstr "%s: Задание %s запущено"
 
 #: bin/bg.js:68
 #, javascript-format
 msgid "Worker component not found for background job %s"
-msgstr ""
+msgstr "Рабочий компонент не найден для фонового задания %s"
 
 #: bin/bg.js:71
 #, javascript-format
 msgid "Worker component of background job %s has no launch method"
-msgstr ""
+msgstr "Рабочий компонент фонового задания %s не имеет метода запуска"
 
 #: bin/bg.js:73
 #, javascript-format
 msgid "%s: Start of background job %s"
-msgstr ""
+msgstr "%s: Запуск фонового задания %s"
 
 #: bin/bg.js:80
 #, javascript-format
 msgid "%s: Background job %s done"
-msgstr ""
+msgstr "%s: Фоновое задание %s выполнено"
 
 #: bin/acl.js:65
 msgid "No roles specified!"
@@ -1165,20 +1178,20 @@ msgstr "Не задано ни одной роли!"
 
 #: bin/acl.js:70
 msgid "No users nor resources nor permissions are specified!"
-msgstr ""
+msgstr "Ни пользователей, ни ресурсов, ни разрешений не указано!"
 
 #: bin/acl.js:109
 msgid "Permissions granted"
-msgstr ""
+msgstr "Разрешения предоставлены"
 
 #: view/default/templates/403.ejs:4 view/default/templates/403.ejs:19
 msgid "Access denied"
-msgstr ""
+msgstr "В доступе отказано"
 
 #: view/default/templates/403.ejs:23
 msgid "Sorry, but access to this resource is prohibited"
-msgstr ""
+msgstr "Извините, но доступ к этому ресурсу запрещен"
 
 #: view/default/templates/403.ejs:28
 msgid "Back to home"
-msgstr ""
+msgstr "Вернуться на главную"
