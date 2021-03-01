@@ -7,6 +7,22 @@ module.exports = (req, res) => respond(['auth'], (scope) => {
     const user = scope.auth.getUser(req);
     let base = strings.getBase('frontend');
 
+    let acceptedLanguages = user.language()?
+      [user.language()]
+      : [];
+    acceptedLanguages = acceptedLanguages.concat(
+      req.headers['accept-language']
+        .split(',')
+        .map(lang => lang.split(';')[0])
+    );
+    let languageToUse;
+    for (const language of acceptedLanguages) {
+      if (app.locals.supportedLanguages.includes(language)) {
+        languageToUse = language;
+        break;
+      }
+    }
+
     res
       .set('Content-type', 'application/javascript')
       .send(Buffer.from(`
@@ -33,7 +49,7 @@ function I18nHandler() {
 
 window.i18n = new I18nHandler();
 window.s = window.__ = function (id, params) {return window.i18n.s(id, params);};
-window.i18n.base = ${JSON.stringify(base(user.language()))};      
+window.i18n.base = ${JSON.stringify(base(languageToUse))};
       `));
   } catch (err) {
     if (scope.logRecorder) {
