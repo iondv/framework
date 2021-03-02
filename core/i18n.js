@@ -13,7 +13,8 @@ const merge = require('merge');
 
 const translators = {};
 const translations = {};
-let defaultLocale = process.env.LANG || 'en_US';
+const SOURCE_LANGUAGE = 'en-US';
+let defaultLocale = process.env.LANG || SOURCE_LANGUAGE;
 const DEFAULT_DOMAIN = 'ION_TEXT_DOMAIN';
 
 const loadLang = async (lang, dir, domain) => {
@@ -80,7 +81,7 @@ module.exports.load = async (dir, domain, lang) => {
         if (stat.isDirectory()) {
           await loadLang(lang, d, domain);
           applyLang(lang);
-        }     
+        }
       }
     } catch (err) {
       console.error(err);
@@ -99,7 +100,7 @@ module.exports.domain = domain => {
 };
 
 module.exports.supported = () => {
-  return Object.keys(translators);
+  return Object.keys(translators).concat(['en-US', 'en']);
 };
 
 const t = module.exports.t = (msg, ...args) => {
