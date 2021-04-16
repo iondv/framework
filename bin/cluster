@@ -6,10 +6,11 @@ const IonLogger = require('core/impl/log/IonLogger');
 const sysLog = new IonLogger(config.log || {});
 const path = require('path');
 const di = require('core/di');
-const {t, lang} = require('core/i18n');
+const {t, load, lang} = require('core/i18n');
 const {format} = require('util');
 
 lang(config.lang);
+
 const extend = require('extend');
 
 function killEmAll() {
@@ -58,7 +59,8 @@ if (cluster.isMaster) {
     killEmAll();
   });
 
-  let p = i18n.load(path.normalize(path.join(__dirname, '..', 'i18n')), null, config.lang)
+  const rootPath = path.normalize(path.join(__dirname, '..'));
+  let p = load(path.join(rootPath, 'i18n'))
     .then(() => {
       sysLog.info(format(t('Starting ION application cluster (pid: %s)'), process.pid));
     });
