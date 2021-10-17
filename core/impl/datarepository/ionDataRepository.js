@@ -888,14 +888,16 @@ function IonDataRepository(options) {
 
   function ItemIterator(iterator, options) {
     this._next = function () {
-      iterator.next().then((data) => {
-        if (data) {
-          let item = _this._wrap(data._class, data, data._classVer, options);
-          return loadFiles(item, _this.fileStorage, _this.imageStorage)
-            .then(item => enrich(item, merge(options, {skipCalc: true}), item.getMetaClass()))
-            .then(item => options.skipCalculations ? item : calcItemsProperties([item], options).then(() => item));
-        }
-        return Promise.resolve(null);
+      return new Promise(resolve => {
+        iterator.next().then((data) => {
+          if (data) {
+            let item = _this._wrap(data._class, data, data._classVer, options);
+            return loadFiles(item, _this.fileStorage, _this.imageStorage)
+              .then(item => enrich(item, merge(options, {skipCalc: true}), item.getMetaClass()))
+              .then(item => options.skipCalculations ? resolve(item) : calcItemsProperties([item], options).then(() => resolve(item)));
+          }
+          return resolve(null);
+        });
       });
     };
 
